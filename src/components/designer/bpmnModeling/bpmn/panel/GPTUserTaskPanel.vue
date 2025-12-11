@@ -46,113 +46,22 @@
                     </div>
                 </div> -->
 
-                <!-- agent -->
-                <span class="text-body-1">{{ $t('WorkItem.researchMethod') }}</span>
-                <div class="mt-4">
-                    <user-select-field
-                        v-model="selectedAgent"
-                        :name="$t('organizationChartDefinition.agent')"
-                        :hide-details="true"
-                        :return-object="true"
-                        :use-agent="true"
-                        :use-multiple="false"
-                    ></user-select-field>
-                </div>
-
-                <!-- agent mode -->
-                <div v-if="selectedAgent !== null" class="mt-4">
-                    <v-select 
-                        v-model="activity.agentMode" 
-                        :items="agentModeItems" 
-                        item-title="titleKey"
-                        item-value="value"
-                        density="compact" 
-                        :label="$t('BpmnPropertyPanel.agentMode')"
-                        variant="outlined"
-                    >
-                        <template v-slot:selection="{ item }">
-                            <span>{{ item.raw.icon }} {{ $t(item.raw.titleKey) }}</span>
-                        </template>
-                        <template v-slot:item="{ item, props }">
-                            <v-list-item
-                                v-bind="props"
-                            >
-                                <template v-slot:title>
-                                    <div class="d-flex align-center">
-                                        <span class="font-weight-medium">{{ $t(item.raw.titleKey) }}</span>
-                                        <v-chip 
-                                            v-if="item.raw.badge" 
-                                            size="x-small" 
-                                            class="ml-2"
-                                            :color="item.raw.badgeColor || 'primary'"
-                                        >
-                                            {{ item.raw.badge }}
-                                        </v-chip>
-                                    </div>
-                                </template>
-                                <template v-slot:subtitle>
-                                    <div class="text-wrap mt-1">{{ $t(item.raw.descKey) }}</div>
-                                </template>
-                            </v-list-item>
-                        </template>
-                    </v-select>
-                </div>
-
-                <!-- Orchestration -->
-                <div v-if="agentType == 'agent'" class="mt-4">
-                    <v-select 
-                        v-model="activity.orchestration" 
-                        :items="orchestrationItems" 
-                        item-title="titleKey"
-                        item-value="value"
-                        density="compact" 
-                        :label="$t('AgentSelectInfo.orcation')"
-                        variant="outlined"
-                        :menu-props="{ maxHeight: 600 }"
-                    >
-                        <template v-slot:selection="{ item }">
-                            <v-row class="ma-0 pa-0 align-center">
-                                <Icons v-if="item.raw.icon" :icon="item.raw.icon" class="select-icon" :size="40" />
-                                <div>{{ $t(item.raw.titleKey) }}</div>
-                            </v-row>
-                        </template>
-                        <template v-slot:item="{ item, props }">
-                            <div class="pa-2 pt-0 pb-0">
-                                <v-list-item
-                                    v-bind="props"
-                                    :class="{ 'divider-top': item.raw.divider }"
-                                >
-                                    <template v-if="item.raw.icon" v-slot:prepend>
-                                        <Icons :icon="item.raw.icon" class="select-icon" :size="48" />
-                                    </template>
-                                    <template v-slot:title>
-                                        <div class="d-flex align-center">
-                                            <span class="font-weight-medium">{{ $t(item.raw.titleKey) }}</span>
-                                            <v-chip 
-                                                v-if="item.raw.costKey" 
-                                                size="x-small" 
-                                                class="ml-2"
-                                                :color="getCostColor(item.raw.costKey)"
-                                                variant="outlined"
-                                            >
-                                                {{ $t(item.raw.costKey) }}
-                                            </v-chip>
-                                
-                                            <!-- 각 아이템별 상세 정보 -->
-                                            <DetailComponent v-if="item.raw.detailDesc" class="py-2 ml-2"
-                                                :title="$t(item.raw.detailDesc.title)"
-                                                :details="item.raw.detailDesc.details"
-                                            />
-                                        </div>
-                                    </template>
-                                    <template v-slot:subtitle>
-                                        <div class="text-wrap mt-1">{{ $t(item.raw.descKey) }}</div>
-                                    </template>
-                                </v-list-item>
-                            </div>
-                        </template>
-                    </v-select>
-                </div>
+                <AgentSelectField
+                    v-model="activity"
+                    :backend="backend"
+                    @update:modelValue="(newVal) => activity = newVal"
+                    class="mb-4"
+                ></AgentSelectField>
+                
+                <v-divider class="mb-4"></v-divider>
+                
+                <!-- Custom Properties (Key-Value) -->
+                <KeyValueField
+                    v-model="activity.customProperties"
+                    :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                    :readonly="isViewMode"
+                    class="mb-4"
+                ></KeyValueField>
             </v-window-item>
 
             <!-- Input Data -->
@@ -211,7 +120,8 @@
 import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import Description from '@/components/designer/DescriptionField.vue';
-import UserSelectField from '@/components/ui/field/UserSelectField.vue';
+import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
+import KeyValueField from '@/components/designer/KeyValueField.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
@@ -225,7 +135,8 @@ export default {
         Checkpoints,
         Description,
         FormDefinition,
-        UserSelectField
+        AgentSelectField,
+        KeyValueField
     },
     props: {
         uengineProperties: Object,
@@ -255,79 +166,16 @@ export default {
                 agentMode: 'none',
                 orchestration: null,
                 tool: '',
-                inputData: []
+                inputData: [],
+                customProperties: []
             },
             formId: '',
             tempFormHtml: '',
             activeTab: 'setting',
             fieldsJson: [],
-            agentModeItems: [
-                { 
-                    titleKey: 'AgentSelectInfo.agentMode.none.title',
-                    value: 'none',
-                    descKey: 'AgentSelectInfo.agentMode.none.description'
-                },
-                { 
-                    titleKey: 'AgentSelectInfo.agentMode.draft.title',
-                    value: 'draft',
-                    descKey: 'AgentSelectInfo.agentMode.draft.description',
-                },
-                { 
-                    titleKey: 'AgentSelectInfo.agentMode.complete.title',
-                    value: 'complete',
-                    descKey: 'AgentSelectInfo.agentMode.complete.description',
-                }
-            ],
-            orchestrationItems: [
-                { 
-                    titleKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.title',
-                    value: 'crewai-deep-research',
-                    icon: 'playoff',
-                    descKey: 'AgentSelectInfo.orchestration.crewaiDeepResearch.description',
-                    costKey: 'AgentSelectInfo.cost.medium',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.title',
-                        details: [
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.0.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.1.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.2.title'
-                            }
-                        ]
-                    }
-                },
-                { 
-                    titleKey: 'AgentSelectInfo.orchestration.crewaiAction.title',
-                    value: 'crewai-action',
-                    icon: 'flowchart',
-                    descKey: 'AgentSelectInfo.orchestration.crewaiAction.description',
-                    costKey: 'AgentSelectInfo.cost.low',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.title',
-                        details: [
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.0.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.1.title'
-                            },
-                            {
-                                title: 'AgentSelectInfo.orchestration.crewaiAction.detailDesc.details.2.title'
-                            }
-                        ]
-                    }
-                }
-            ],
             selectedForms: [],
             availableForms: [],
             formFields: {},
-            
-            selectedAgent: null,
-            agentType: null,
         };
     },
     created() {
@@ -357,6 +205,7 @@ export default {
             if (this.copyUengineProperties.attachments !== undefined) this.activity.attachments = this.copyUengineProperties.attachments;
             if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
             if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
+            if (this.copyUengineProperties.customProperties !== undefined) this.activity.customProperties = this.copyUengineProperties.customProperties;
         }
 
         if (this.activity.inputData) {
@@ -389,9 +238,13 @@ export default {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal !== oldVal) {
-                    if (this.$refs.formDefinition && this.$refs.formDefinition[0]) {
+                    // 폼 편집 탭에서 나갈 때 HTML 저장
+                    if (oldVal === 'edit' && this.$refs.formDefinition && this.$refs.formDefinition[0]) {
                         this.tempFormHtml = this.$refs.formDefinition[0].getFormHTML();
-                    } else if (newVal == 'inputData') {
+                    }
+                    
+                    // 참조정보 탭으로 들어갈 때 이전 폼 목록 로드
+                    if (newVal === 'inputData') {
                         await this.getPreviousForms();
                     }
                 }
@@ -428,34 +281,8 @@ export default {
                 this.updateInputData()
             }
         },
-        selectedAgent: {
-            deep: true,
-            handler(newVal) {
-                if (newVal && newVal.id) {
-                    this.agentType = newVal.agentType;
-                    this.activity.agent = newVal.id;
-                    if (this.agentType !== 'agent') {
-                        this.activity.orchestration = this.agentType;
-                    } else {
-                        this.activity.orchestration = 'crewai-action';
-                    }
-                } else {
-                    this.agentType = null;
-                }
-            }
-        }
     },
     methods: {
-        getCostColor(costKey) {
-            if (costKey === 'AgentSelectInfo.cost.low') {
-                return 'success';
-            } else if (costKey === 'AgentSelectInfo.cost.medium') {
-                return 'warning';
-            } else if (costKey === 'AgentSelectInfo.cost.high') {
-                return 'error';
-            }
-            return 'grey';
-        },
         async init() {
             var me = this;
             if(me.isPreviewMode){
@@ -494,20 +321,6 @@ export default {
                 me.formId = 'defaultform';
                 me.tempFormHtml = await me.backend.getRawDefinition('defaultform', { type: 'form' });
             }
-
-            // activity.agent 값으로 selectedAgent 초기화
-            if (me.activity.agent && me.activity.agent !== null) {
-                const agent = await me.backend.getAgent(me.activity.agent);
-                if (agent) {
-                    me.selectedAgent = {
-                        ...agent,
-                        id: agent.id,
-                        name: agent.username,
-                        isAgent: agent.is_agent,
-                        agentType: agent.agent_type,
-                    };
-                }
-            }
             
             me.copyDefinition = me.definition;
         },
@@ -527,6 +340,9 @@ export default {
             if (me.tempFormHtml && me.tempFormHtml != '') {
                 if (me.lastPath) {
                     if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
+                        if(me.formId == 'defaultform') {
+                            me.formId = me.element.id + '_form';
+                        }
                         localStorage.setItem(me.formId, me.tempFormHtml);
                     } else {
                         await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
@@ -552,7 +368,8 @@ export default {
                 orchestration: me.activity.orchestration,
                 attachments: me.activity.attachments,
                 inputData: me.activity.inputData,
-                tool: me.activity.tool
+                tool: me.activity.tool,
+                customProperties: me.activity.customProperties
             };
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);

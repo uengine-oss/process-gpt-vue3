@@ -17,7 +17,7 @@
         "reworkRequested": "재작업이 요청되었습니다."
     },
     "errorMsg": {
-        "isBackendConnected" : "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
+        "isBackendConnected": "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
         "languageChangeFailed": "언어 설정 변경에 실패했습니다."
     },
     "App": {
@@ -35,7 +35,7 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "headerMenu": {
-        "sidebar" : "사이드바 보기",
+        "sidebar" : "사이드바 접기/펼치기",
         "dashboard" : "대시보드",
         "todoList" : "나의 업무",
         "schedule" : "스케줄러",
@@ -46,8 +46,10 @@
         "search": "검색",
         "searchResult": "검색 결과",
         "searchKeyword": "검색하고자 하는 키워드 입력 후 엔터를 눌러주세요.",
+        "searching": "검색 중",
         "noSearchResult": "검색 결과가 없습니다.",
-        "pricing" : "가격 정보"
+        "agent": "에이전트",
+        "pricing": "가격 정보"
     },
     "DashboardTodoList": {
         "todo": "나의 업무",
@@ -204,10 +206,12 @@
         "title": "시스템 정의"
     },
     "organizationChartDefinition": {
-        "title": "조직도 정의",
+        "title": "조직도 추가 및 관리",
         "cardTitle": "조직도 관리",
         "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다.",
         "addTeam": "팀 추가",
+        "deleteTeam": "팀 삭제",
+        "editTeam": "팀 수정",
         "teamId": "팀 ID",
         "teamName": "팀명",
         "team": "팀",
@@ -235,6 +239,9 @@
         "emailAlreadyExists": "이미 존재하는 이메일입니다.",
         "addUserSuccess": "사용자가 추가되었습니다.",
         "addUserFailed": "사용자 추가에 실패했습니다.",
+        "addNewTeam": "신규 팀 추가",
+        "addTeamSuccess": "팀이 추가되었습니다.",
+        "addTeamFailed": "팀 추가에 실패했습니다.",
         "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다.",
         "agent": "에이전트",
         "deleteAgentExplanation": "팀원 삭제가 아닌 영구 삭제입니다. 삭제된 에이전트는 복구할 수 없습니다. 팀원 삭제를 원하신다면 소속 팀의 + 버튼을 눌러 팀원을 수정해주세요.",
@@ -264,7 +271,7 @@
         "addMega": "Mega 프로세스",
         "addMajor": "Major 프로세스",
         "addSub": "Sub 프로세스",
-        "save" : "저장",
+        "save": "저장",
         "downloadImage": "정의 체계도를 이미지로 다운로드",
         "consultingAI": "프로세스 컨설팅 AI",
         "consultingButton": "프로세스 컨설팅 시작하기",
@@ -477,6 +484,11 @@
         "url": "URL",
         "description": "설명",
         "delete": "삭제",
+        "deleteUserSuccess": "{name} 사용자가 삭제되었습니다.",
+        "deleteUserFailed": "{name} 사용자 삭제에 실패했습니다.",
+        "confirmDeleteTitle": "사용자 삭제 확인",
+        "confirmDeleteMessage": "'{name}'을(를) 삭제하시겠습니까?",
+        "confirmDeleteInstruction": "삭제하려면 사용자 이름을 입력하세요:",
         "addHeader": "헤더 추가",
         "parameters": "파라미터",
         "addParameter": "파라미터 추가",
@@ -647,7 +659,15 @@
         "selectForm": "참조할 폼 선택",
         "noFormSelected": "폼을 선택해주세요",
         "instruction": "지침",
-        "scriptVariable": "스크립트 내부에서 사용할 변수는 프로세스 변수에 정의해야 합니다."
+        "scriptVariable": "스크립트 내부에서 사용할 변수는 프로세스 변수에 정의해야 합니다.",
+        "customProperties": "사용자 속성"
+    },
+    "KeyValueField": {
+        "add": "추가",
+        "key": "Key",
+        "value": "Value",
+        "noItems": "등록된 항목이 없습니다.",
+        "duplicateKey": "중복된 Key입니다."
     },
     "PDFPreviewer": {
         "saveDocument": "PDF 저장",
@@ -698,9 +718,9 @@
         "duplicateWarning": "이미 사용 중인 ID입니다. 기존 프로세스를 덮어쓰려면 체크 후 저장해주세요.",
         "regenerateNameTooltip": "새 이름 추천받기",
         "regenerateIdTooltip": "새 ID 추천받기",
-        "helpIntro": "프로세스를 저장할 때 버전 관리 및 최적화 옵션을 설정할 수 있습니다.\n\n주요 기능:",
-        "helpVersionToggle": "• 현 버전 토글: 체크하면 버전을 한 단계 올려서 저장하고, 체크하지 않으면 현재 버전에 저장합니다\n  예) 0.1 → 1.0 (체크), 0.1 → 0.2 (체크 안 함)",
-        "helpOptimize": "• 정의 최적화: 체크하면 프로세스의 각 작업(액티비티)에서 필요한 입력 데이터(참조 정보)를 AI가 자동으로 분석하고 설정합니다\n  - 작업 간 데이터 흐름을 자동으로 연결\n  - 각 작업에 필요한 정보를 지능적으로 추천\n  - 수동 설정 없이 데이터 연계 자동화",
+        "helpIntro": "이 다이얼로그에서는 프로세스를 저장하면서 버전과 설명, 최적화 옵션을 함께 설정할 수 있습니다.\n\n저장은 항상 별도의 버전 레코드로 남으며, 기존 버전은 그대로 유지됩니다.",
+        "helpVersionToggle": "• 버전 태그(minor / major):\n  - minor: 현재 버전의 소수점 이하를 1 증가시켜 저장합니다. 예) 1.3 → 1.4\n    * 주로 실제 운영(배포) 전에 여러 번 수정·보완하면서 \"임시 저장\"이나 작업 중인 스냅샷을 남길 때 사용합니다.\n  - major: 정수 버전을 1 증가시키고 소수점은 0으로 초기화합니다. 예) 1.3 → 2.0\n    * 실제로 적용·배포되는 프로세스 버전에 사용하며, 운영 환경에서 기준이 되는 버전입니다.\n  저장 시 선택한 버전 태그에 따라 다음 버전 번호(new version)가 자동 계산되어 사용됩니다.",
+        "helpOptimize": "• 프로세스 정의 최적화: 체크하면 저장 시 AI가 프로세스 정의를 분석하여 각 작업(액티비티)에 필요한 입력 데이터(참조 정보)와 데이터 흐름을 자동으로 보정합니다.\n  - 작업 간 데이터 연결 관계를 점검하고 필요한 변수를 추천\n  - 불필요한 필드나 누락된 필드를 제안하여 정의 품질 향상\n  - 직접 하나씩 수정하기 어려운 반복 작업을 자동화하여 모델링 시간을 단축합니다.",
         "generatingDiff": "변경 내역을 분석 중입니다..."
     },
     "FormDefinitionPanel": {
@@ -779,25 +799,25 @@
         "eventAttributes": "속성",
         "primaryKey": "고유 키",
         "correlationKey": "관계 키",
-        "attributeType" : "속성 타입",
-        "name" : "이름",
-        "save" : "저장",
-        "add" : "추가",
+        "attributeType": "속성 타입",
+        "name": "이름",
+        "save": "저장",
+        "add": "추가",
         "typeDescriptionTitle": "속성: 해당 항목에 대해 저장할 데이터를 정의",
         "typeDescriptionSubTitle1": "1. 고유 키 : 각 레코드를 고유하게 식별하는 키로, 데이터베이스 내에서 중복을 허용하지 않습니다. \n2. 관계 키 : 서로 다른 데이터 간의 관계를 설정하고 추적하는 데 사용되는 키로, 데이터의 연관성을 유지합니다."
     },
-    "UserTaskPanel" : {
-        "default" : "기본", 
+    "UserTaskPanel": {
+        "default": "기본",
         "defaultInfo": "현재 태스크의 역할에 해당하는 사용자 모두가 이 업무를 확인할 수 있습니다.  가장 먼저 업무를 선택한 사용자가 담당자로 지정됩니다.",
         "sharedGroupInfo": "선택된 공동 담당 그룹에 속한 사용자는 모두 이 업무를 확인할 수 있으며, 먼저 선택한 사용자가 담당자가 됩니다.  ex) 작성자,검토자",
         "assigneeInfo": "지정된 단일 사용자에게만 이 업무가 할당되며, 다른 사용자는 열람할 수 없습니다.",
         "loadBalancingInfo": "지정된 그룹 내 사용자에게 자동으로 업무를 분배합니다. 분배 전략을 선택할 수 있습니다.",
         "expressionInfo": "표현식을 기반으로 실행 시 동적으로 담당자를 결정합니다. ex) ${initiatorManager}",
-        "form" : "폼", 
-        "external" : "외부 어플리케이션",
-        "formCreateDialog" : "폼 생성을 하시겠습니까?",
-        "yes" : "예",
-        "no" : "아니오",
+        "form": "폼",
+        "external": "외부 어플리케이션",
+        "formCreateDialog": "폼 생성을 하시겠습니까?",
+        "yes": "예",
+        "no": "아니오",
         "radioSelectDescriptionTitle": "데이터 처리 방식 선택: 기본 데이터 처리, 커스텀 화면 생성, 외부 시스템 연동.",
         "radioSelectDescriptionSubTitle1": "1. 기본 : 기본적인 데이터 사용 \n2. 폼 : 화면 정의에서 생성한 화면 \n3. 외부 어플리케이션 : 업무 화면 URL 입력 필드 생성",
         "assignmentType": "업무 할당 방식",
@@ -819,8 +839,8 @@
         "leastTasks": "최소 작업량 우선",
         "idle": "오래 쉰 사용자 우선"
     },
-    "Mapper" : {
-        "mapper" : "매퍼"
+    "Mapper": {
+        "mapper": "매퍼"
     },
     "TaskPanel": {
         "inputData": "입력 데이터 (JSON/XML)",
@@ -830,16 +850,16 @@
         "inputData": "입력 데이터 (JSON/XML)",
         "resultInputVariable": "결과 입력 변수"
     },
-    "SubProcessPanel" : {
-        "forEachRole" : "역할 기반 다중 생성",
-        "role" : "역할로 서브프로세스를 여러 개 생성함",
-        "forEachVariable" : "변수 기반 다중 생성",
-        "variable" : "변수로 서브프로세스를 여러 개 생성함",
+    "SubProcessPanel": {
+        "forEachRole": "역할 기반 다중 생성",
+        "role": "역할로 서브프로세스를 여러 개 생성함",
+        "forEachVariable": "변수 기반 다중 생성",
+        "variable": "변수로 서브프로세스를 여러 개 생성함",
         "forEachVariableDescriptionTitle": "프로세스 변수에 등록된 데이터에 데이터 매핑을 해서 멀티 데이터를 삽입하면 프로세스 실행시 여러개 생성된 데이터를 기반으로 서브프로세스를 다중 생성",
         "forEachVariableDescriptionSubTitle1": "1. 화면 정의 관리에서 편집모드를 통해 다중 데이터 모드 체크",
         "forEachVariableDescriptionSubTitle2": "2. sub 프로세스가 실행될 이전 Task 패널에서 데이터 매핑 진행",
-        "forEachRoleDescriptionTitle" : "선택된 역할(role)을 가진 모든 사람에게 Sub Process 생성",
-        "forEachRoleDescriptionSubTitle1" : "적용 시나리오: \n다수의 팀원이 동일한 작업을 수행해야 하는 경우, 역할 기반 다중 생성을 통해 각 팀원에게 서브 프로세스를 개별적으로 할당할 수 있습니다. \n이를 통해 각 팀원이 독립적으로 작업을 진행하면서도 전체 프로세스는 중앙에서 관리될 수 있습니다. \n\n아래는 이미지의 강조된 박스 부분이 역할(role)에 해당합니다.",
+        "forEachRoleDescriptionTitle": "선택된 역할(role)을 가진 모든 사람에게 Sub Process 생성",
+        "forEachRoleDescriptionSubTitle1": "적용 시나리오: \n다수의 팀원이 동일한 작업을 수행해야 하는 경우, 역할 기반 다중 생성을 통해 각 팀원에게 서브 프로세스를 개별적으로 할당할 수 있습니다. \n이를 통해 각 팀원이 독립적으로 작업을 진행하면서도 전체 프로세스는 중앙에서 관리될 수 있습니다. \n\n아래는 이미지의 강조된 박스 부분이 역할(role)에 해당합니다.",
         "subProcessNamePattern": "서브프로세스명 패턴",
         "ruleGenerator": "결정론적 규칙화",
         "ruleGenerating": "결정론적 규칙화 중...",
@@ -853,27 +873,27 @@
         "confirm": "확인",
         "regenerate": "재생성"
     },
-    "ParticipantPanel" : {
-        "apiUrl" : "API URL",
-        "openAPISpec" : "Open API 스펙",
+    "ParticipantPanel": {
+        "apiUrl": "API URL",
+        "openAPISpec": "Open API 스펙",
         "system": "시스템 정의에서 불러오기",
         "systemDefinitionDescriptionTitle": "왼쪽 정의 관리 버튼 중 시스템 정의에 등록된 항목을 불러와 사용",
         "apiUrlDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
         "apiUrlDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n"
     },
-    "LanePanel" : { 
-        "selectRoleType" : "역할 선택", 
-        "none" : "없음", 
-        "IAMScope" : "역할명으로 역할 선택",
+    "LanePanel": {
+        "selectRoleType": "역할 선택",
+        "none": "없음",
+        "IAMScope": "역할명으로 역할 선택",
         "DirecUser": "직접 사용자 선택",
         "resolutionRule": "역할 규칙",
-        "scopeName" : "역할 명", 
+        "scopeName": "역할 명",
         "userID": "유저 ID",
         "externalCustomer": "외부 고객",
         "radioDescriptionTitle": "추가하고 싶은 역할을 선택합니다.",
         "radioDescriptionSubTitle": "없음 : 이 옵션을 선택하면 해당 작업에 대해 특정 역할이 할당되지 않습니다. 모든 사용자가 이 작업을 수행할 수 있습니다. \n\n역할명으로 역할 선택 : 이 옵션을 선택하면 미리 정의된 역할 목록에서 역할을 선택할 수 있습니다. 선택된 역할에 속한 사용자만 이 작업을 수행할 수 있습니다. \n\n직접 사용자 선택 : 이 옵션을 선택하면 특정 사용자를 직접 지정할 수 있습니다. 지정된 사용자만 이 작업을 수행할 수 있습니다."
     },
-    "MessageEventDefinitionPanel" : {
+    "MessageEventDefinitionPanel": {
         "correlationKey": "관계 키",
         "servicePath": "서비스 경로",
         "operationRef": "연산 참조",
@@ -888,11 +908,11 @@
         "operationReferenceTitle": "연산 참조는 특정 메시지를 처리하기 위한 연산(Operation)을 지정하는 참조입니다.",
         "operationReferenceSubTitle": "이는 메시지가 도착했을 때 수행될 작업이나 비즈니스 로직을 정의합니다. BPMN에서 연산 참조는 메시지의 내용과 이 메시지가 트리거할 작업을 명확히 하도록 돕습니다. \n예를 들어, 특정 연산 참조는 메시지를 받았을 때 데이터베이스 업데이트 또는 외부 서비스 호출을 수행할 수 있습니다."
     },
-    "DetailComponent" : {
+    "DetailComponent": {
         "details": "상세보기",
         "allDetails": "가이드 보기"
     },
-    "SendTaskPanel" : {
+    "SendTaskPanel": {
         "generation": "생성",
         "return": "Return 값을 저장 할 변수",
         "methodTypeDescriptionTitle": "API 요청을 보낼 때 사용할 메서드(GET, POST, PUT, PATCH)와 요청을 처리할 서버의 엔드포인트 URL을 설정",
@@ -901,12 +921,12 @@
         "message": "이메일 전송",
         "send": "Rest API 전송"
     },
-    "ScriptTaskPanel" : {
+    "ScriptTaskPanel": {
         "return": "Return 값을 저장 할 변수",
         "scriptDescriptionTitle": "Script Task 는 Javascript 나 Java 언어를 직접 액티비티에 설정하여 프로세스 설정만으로 처리하기 힘든 마이크로한 설정이나 액션을 실행가능하게 합니다.",
         "returnTitle": "드롭다운 메뉴는 프로세스 변수에서 등록된 변수 이름을 리스트로 출력합니다. \n위 작성된 내용을 저장할 변수를 선택합니다."
     },
-    "TimerEventDefinitionPanel" : {
+    "TimerEventDefinitionPanel": {
         "cron": "시간 입력(Cron)",
         "date": "날짜 선택",
         "time": "시간 선택",
@@ -921,29 +941,29 @@
         "confirm": "확인",
         "regenerate": "재생성"
     },
-    "GatewayPanel" : {
-        "gatewayDescriptionTitle" : "Gateway 조건처리를 통해 다음 작업으로 넘어가는 것을 선택할 때 사용함",
-        "gatewayDescriptionSubTitle" : "Exclusive Gateway : 나갈 때는 선에 적용된 조건에 맞는 하나의 작업으로 넘어감 들어올 때는 여러 작업 중 하나라도 들어오면 다음 작업으로 넘어가며 기존 작업은 종료됨",
-        "gatewayDescriptionSubTitle1" : "Pararell Gateway : 나갈 때는 선에 적용된 조건이 맞기만 하면 전부 병렬로 다음 작업을 진행함 들어올 때는 여러 작업이 있으면 모든 작업이 완료되어야 다음 작업으로 넘어갈 수 있음",
-        "gatewayDescriptionSubTitle2" : "Inclusive Gateway : 나갈 때는 선에 적용된 조건에 맞는 하나의 작업으로 넘어감 들어올 때는 여러 작업이 있으면 모든 작업이 완료되어야 다음 작업으로 넘어갈 수 있음",
-        "gatewayDescriptionSubTitle3" : "Event-based gateway : 특정 이벤트가 들어왔을 경우에만 다음 작업으로 넘어갈 수 있음",
-        "gatewayDescriptionSubTitle4" : "Complex Gateway(미구현) : 사용자가 임의의 조건을 추가하여 다음 작업으로 넘어가는 것을 선택할 수 있음"
+    "GatewayPanel": {
+        "gatewayDescriptionTitle": "Gateway 조건처리를 통해 다음 작업으로 넘어가는 것을 선택할 때 사용함",
+        "gatewayDescriptionSubTitle": "Exclusive Gateway : 나갈 때는 선에 적용된 조건에 맞는 하나의 작업으로 넘어감 들어올 때는 여러 작업 중 하나라도 들어오면 다음 작업으로 넘어가며 기존 작업은 종료됨",
+        "gatewayDescriptionSubTitle1": "Pararell Gateway : 나갈 때는 선에 적용된 조건이 맞기만 하면 전부 병렬로 다음 작업을 진행함 들어올 때는 여러 작업이 있으면 모든 작업이 완료되어야 다음 작업으로 넘어갈 수 있음",
+        "gatewayDescriptionSubTitle2": "Inclusive Gateway : 나갈 때는 선에 적용된 조건에 맞는 하나의 작업으로 넘어감 들어올 때는 여러 작업이 있으면 모든 작업이 완료되어야 다음 작업으로 넘어갈 수 있음",
+        "gatewayDescriptionSubTitle3": "Event-based gateway : 특정 이벤트가 들어왔을 경우에만 다음 작업으로 넘어갈 수 있음",
+        "gatewayDescriptionSubTitle4": "Complex Gateway(미구현) : 사용자가 임의의 조건을 추가하여 다음 작업으로 넘어가는 것을 선택할 수 있음"
     },
-    "SystemList" : {
-        "addDialogTitle" : "시스템 추가",
+    "SystemList": {
+        "addDialogTitle": "시스템 추가",
         "editDialogTitle": "시스템 수정",
-        "name" : "이름",
-        "description" : "설명",
-        "apiUrl" : "API URL",
-        "add" : "추가",
-        "edit" : "수정"
+        "name": "이름",
+        "description": "설명",
+        "apiUrl": "API URL",
+        "add": "추가",
+        "edit": "수정"
     },
-    "System" : {
-        "description" : "설명",
-        "edit" : "수정",
+    "System": {
+        "description": "설명",
+        "edit": "수정",
         "delete": "삭제",
-        "confirmDeleteTitle" : "시스템 정의 삭제",
-        "confirmDeleteText" : "을/를 삭제하시겠습니까?"
+        "confirmDeleteTitle": "시스템 정의 삭제",
+        "confirmDeleteText": "을/를 삭제하시겠습니까?"
     },
     "PaletteProvider": {
         "undoCmdZ": "되돌리기 (Cmd + Z)",
@@ -1098,10 +1118,11 @@
         "runningResearchMethod": "진행 중인 연구방식",
         "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
         "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다.",
-        "runAgain": "다시 수행하기"
+        "runAgain": "다시 수행하기",
+        "select": "선택"
     },
     "AgentSelectInfo": {
-        "orcation" : "에이전트 연구 방식",
+        "orcation": "에이전트 연구 방식",
         "agentMode": {
             "none": {
                 "title": "없음",
@@ -1440,7 +1461,7 @@
         "submittedMessage": "제출되었습니다."
     },
     "ProcessDefinitionChatHeader": {
-        "addMarketplace" : "마켓플레이스 등록",
+        "addMarketplace": "마켓플레이스 등록",
         "processDefinitionName": "프로세스 정의명"
     },
     "ProcessDefinitionMarketPlaceDialog": {
@@ -1518,7 +1539,7 @@
         "title": "전략 맵",
         "cardTitle": "전략 맵",
         "addStrategy": "전략 추가",
-        "editStrategy": "전략 수정", 
+        "editStrategy": "전략 수정",
         "deleteStrategy": "전략 삭제",
         "addConnection": "연결 추가",
         "deleteStrategyDialog": "전략 삭제",
@@ -1572,7 +1593,10 @@
         "save": "저장"
     },
     "OrganizationAddDialog": {
-        "add": "추가"
+        "add": "추가",
+        "addMemberToTeam": "팀에 멤버 추가",
+        "selectTeam": "팀 선택",
+        "selectTeamFirst": "먼저 팀을 선택하세요"
     },
     "Header": {
         "tutorial": "튜토리얼",
@@ -2193,7 +2217,8 @@
         "persona": "페르소나",
         "tools": "툴 & 스킬",
         "knowledge": "지식 온톨로지",
-        "achievements": "성과 & 뱃지"
+        "achievements": "성과 & 뱃지",
+        "settings": "설정"
     },
     "Gantt": {
         "description": "설명",

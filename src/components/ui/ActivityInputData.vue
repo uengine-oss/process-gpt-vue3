@@ -9,16 +9,16 @@
                             <div class="d-flex align-center">
                                 {{ $t('ActivityInputData.previousInput') }}
                             </div>
+                            <DetailComponent
+                                :title="$t('ActivityInputData.previousInputDescription')"
+                                :details="previousInputDetails"
+                            />
                             <!-- <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"></v-icon> -->
                         </v-card-title>
                         <div class="text-subtitle-1 font-weight-medium mb-2">
                             <v-icon class="mr-2" size="small">mdi-form-select</v-icon>
                             {{ getActivityName(field.formId) }}
                         </div>
-                        <DetailComponent
-                            :title="$t('ActivityInputData.previousInputDescription')"
-                            :details="previousInputDetails"
-                        />
                     </div>
                     <v-spacer></v-spacer>
                     <div

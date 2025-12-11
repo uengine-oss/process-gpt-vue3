@@ -26,8 +26,8 @@ export async function parseDocumentWithUpstage(file, options = {}) {
         }
 
         // API 키 가져오기
-        const UPSTAGE_API_KEY = import.meta.env.UPSTAGE_API_KEY || 
-                                 window._env_?.UPSTAGE_API_KEY || 
+        const UPSTAGE_API_KEY = import.meta.env.VITE_UPSTAGE_API_KEY || 
+                                 window._env_?.VITE_UPSTAGE_API_KEY || 
                                  localStorage.getItem('upstageApiKey');
         
         if (!UPSTAGE_API_KEY) {

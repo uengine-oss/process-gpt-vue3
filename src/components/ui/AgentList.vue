@@ -61,6 +61,8 @@ import BackendFactory from '@/components/api/BackendFactory';
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 
+import { useDefaultSetting } from '@/stores/defaultSetting';
+
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -166,11 +168,18 @@ export default {
         async loadAgentList() {
             this.isLoading = true;
             try {
+                // 기본 에이전트 목록 추가
+                const defaultSetting = useDefaultSetting();
+                const defaultAgentList = defaultSetting.getAgentList;
+                
                 // ProcessGPTBackend에 이미 있는 getAgentList() 메서드 사용
-                const agentList = await backend.getAgentList();
+                const backendAgentList = await backend.getAgentList();
+                
+                let agentList = [...defaultAgentList, ...backendAgentList];
                 
                 // 에이전트 데이터 가공
                 if (Array.isArray(agentList)) {
+                    agentList = agentList.filter(agent => !agent.is_hidden);
                     const processedAgents = agentList.map(agent => ({
                         id: agent.id,
                         name: agent.username || agent.name,

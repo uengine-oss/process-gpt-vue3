@@ -117,17 +117,13 @@
                 </div> -->
                 
                 <!-- 인스턴스 타이틀 + 목록 -->
-                <v-col  class="pa-0 mb-4">
-                    <div v-if="!pal" class="d-flex align-center">
-                        <div v-for="item in instanceItem" :key="item.title"
-                            style="height: 24px;"
-                        >
-                            <div v-if="!item.icon"
-                                style="font-size:14px;"
-                                class="text-medium-emphasis cp-menu mt-0 ml-2"
-                            >{{ $t(item.title) }}
-                            </div>
-                            <v-tooltip v-else-if="item.disable" location="bottom" :text="$t(item.title)">
+                <v-col v-if="isShowInstances" class="pa-0 mb-4">
+                    <div v-if="!pal && !JMS" class="d-flex align-center">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                            {{ $t('VerticalSidebar.instanceList') }}
+                        </div>
+                        <div v-for="item in instanceItem" :key="item.title">
+                            <v-tooltip location="bottom" :text="$t(item.title)">
                                 <template v-slot:activator="{ props }">
                                     <div class="pl-2 pt-1">
                                         <Icons @click="navigateTo(item.to)" v-bind="props"
@@ -141,32 +137,6 @@
                             </v-tooltip>
                         </div>
                     </div>
-                    <!-- <template v-for="(item, index) in instanceItem" :key="item.title">
-                        <div v-if="!pal && item.header && index === 0"
-                            style="font-size:14px;"
-                            class="text-medium-emphasis cp-menu mt-0 ml-2"
-                        >{{ $t(item.header) }}</div>
-                        <v-row v-if="item.header && !item.disable"
-                            class="pa-0 ma-0" 
-                        >
-                            <template v-for="subItem in instanceItem" :key="subItem.title">
-                                <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-if="!subItem.header && !subItem.disable"
-                                            @click="navigateTo(subItem.to)"
-                                            v-bind="props"
-                                            icon variant="text" 
-                                            class="text-medium-emphasis cp-menu"
-                                            density="comfortable"
-                                        >
-                                            <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />   
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                            </template>
-                        </v-row>
-                    </template> -->
 
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
@@ -175,12 +145,12 @@
 
 
                 <!-- 에이전트 타이틀 + 목록 -->
-                <div v-if="isShowAgentList" class="mb-4">
+                <div class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
                         </div>
-                        <div v-for="item in organizationItem" :key="item.title">
+                        <div v-if="isAdmin" v-for="item in organizationItem" :key="item.title">
                             <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
                                 <template v-slot:activator="{ props }">
                                     <Icons @click="navigateTo(item.to)" v-bind="props"
@@ -359,28 +329,23 @@ export default {
         pal() {
             return window.$pal;
         },
-        isShowProcessInstanceList() {
-            return this.instanceLists.length > 0;
+        isShowInstances() {
+            if (!this.pal && !this.JMS) {
+                return true;
+            }
+            return false;
         },
         isShowProject(){
             return true;
-        },
-        isShowAgentList(){
-            return this.isAdmin; // 관리자만 에이전트 목록을 볼 수 있도록 설정
         },
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
             return isAdmin;
         },
     },
-    created() {
-        // const isAdmin = localStorage.getItem('isAdmin');
-        // if (isAdmin == 'true') {
-        if(this.isAdmin) {
-            this.loadSidebar();
-        }
-    },
-    mounted() {
+    async mounted() {
+        await this.loadSidebar(this.isAdmin);
+
         this.EventBus.on('definitions-updated', async () => {
             await this.getDefinitionList();
         });
@@ -390,123 +355,122 @@ export default {
 
         window.addEventListener('localStorageChange', (event) => {
             if (event.detail.key === 'isAdmin') {
+                let isAdmin = false;
                 if (event.detail.value === 'true' || event.detail.value === true) {
-                    this.loadSidebar();
-                } else {
-                    this.instanceItem = [];
-                    this.organizationItem = [];
-                    this.definitionItem = [];
-                    this.definitionList = [];
+                    isAdmin = true;
                 }
+                this.loadSidebar(isAdmin);
             }
-                });
+        });
     },
     methods: {
         updateNotiCount(count) {
             this.notiCount = count;
         },
-        loadSidebar() {
-            this.definitionItem = [
-                {
-                    header: 'definitionManagement.title',
-                    disable: false
-                },
-                {
-                    title: 'processDefinition.title',
-                    icon: 'sidebarProcess',
-                    BgColor: 'primary',
-                    to: '/definitions/chat',
-                    disable: false
-                },
-                {
-                    title: 'uiDefinition.title',
-                    icon: 'document',
-                    BgColor: 'primary',
-                    to: '/ui-definitions/chat',
-                    disable: true
-                },
-                // {
-                //     title: 'BSCard.title',
-                //     icon: 'compass',
-                //     BgColor: 'primary',
-                //     to: '/bscard',
-                //     disable: true
-                // },
-                {
-                    title: 'systemDefinition.title',
-                    icon: 'server-line-duotone',
-                    BgColor: 'primary',
-                    to: '/system',
-                    disable: true
-                },
-                {
-                    title: 'definitionManagement.defaultForm',
-                    icon: 'formList',
-                    BgColor: 'primary',
-                    disable: true,
-                    to: '/ui-definitions/defaultform',
-                    size: 24
-                },
-                {
-                    title: 'definitionManagement.upload',
-                    icon: 'upload',
-                    BgColor: 'primary',
-                    to: function() {
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.accept = '.zip';
-                        input.onchange = (event) => {
-                            const file = event.target.files[0];
-                            if (file) {
-                                backend.uploadDefinition(file);
-                            }
-                        };
-                        input.click();
+        async loadSidebar(isAdmin) {
+            if (isAdmin) {
+                this.definitionItem = [
+                    {
+                        header: 'definitionManagement.title',
+                        disable: false
                     },
-                    disable: true
-                },
-                {
-                    title: 'definitionManagement.release',
-                    icon: 'download',
-                    BgColor: 'primary',
-                    disable: true,
-                    to: this.openDialog
-                },
-            ],
-            this.instanceItem = [
-                {
-                    title: 'VerticalSidebar.instanceList',
-                    // header: 'VerticalSidebar.instanceList',
-                    disable: false
-                },
-                {
-                    title: 'definitionManagement.completedList',
-                    icon: 'search',
-                    BgColor: 'primary',
-                    disable: true,
-                    to: '/list-pages/completed',
-                    size: 20
-                },
-            ],
-            this.organizationItem = [
-                {
-                    title: 'organizationChartDefinition.title',
-                    icon: 'users-group-rounded-line-duotone',
-                    BgColor: 'primary',
-                    to: '/organization',
-                    disable: false,
-                    size: 20
-                },
-            ]
-            if (this.mode === 'ProcessGPT') {
-                this.definitionItem = this.definitionItem.filter((item) => 
-                    item.title !== 'uiDefinition.title' && 
-                    item.title !== 'systemDefinition.title' &&
-                    item.title !== 'definitionManagement.upload' &&
-                    item.title !== 'definitionManagement.release'
-                );
+                    {
+                        title: 'processDefinition.title',
+                        icon: 'sidebarProcess',
+                        BgColor: 'primary',
+                        to: '/definitions/chat',
+                        disable: false
+                    },
+                    {
+                        title: 'uiDefinition.title',
+                        icon: 'document',
+                        BgColor: 'primary',
+                        to: '/ui-definitions/chat',
+                        disable: true
+                    },
+                    // {
+                    //     title: 'BSCard.title',
+                    //     icon: 'compass',
+                    //     BgColor: 'primary',
+                    //     to: '/bscard',
+                    //     disable: true
+                    // },
+                    {
+                        title: 'systemDefinition.title',
+                        icon: 'server-line-duotone',
+                        BgColor: 'primary',
+                        to: '/system',
+                        disable: true
+                    },
+                    {
+                        title: 'definitionManagement.defaultForm',
+                        icon: 'formList',
+                        BgColor: 'primary',
+                        disable: true,
+                        to: '/ui-definitions/defaultform',
+                        size: 24
+                    },
+                    {
+                        title: 'definitionManagement.upload',
+                        icon: 'upload',
+                        BgColor: 'primary',
+                        to: function() {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = '.zip';
+                            input.onchange = (event) => {
+                                const file = event.target.files[0];
+                                if (file) {
+                                    backend.uploadDefinition(file);
+                                }
+                            };
+                            input.click();
+                        },
+                        disable: true
+                    },
+                    {
+                        title: 'definitionManagement.release',
+                        icon: 'download',
+                        BgColor: 'primary',
+                        disable: true,
+                        to: this.openDialog
+                    },
+                ];
+                
+                if (this.mode === 'ProcessGPT') {
+                    this.definitionItem = this.definitionItem.filter((item) => 
+                        item.title !== 'uiDefinition.title' && 
+                        item.title !== 'systemDefinition.title' &&
+                        item.title !== 'definitionManagement.upload' &&
+                        item.title !== 'definitionManagement.release'
+                    );
+                }
+                this.getDefinitionList();
             }
-            this.getDefinitionList();
+
+            if (!this.pal && !this.JMS) {
+                // 사이드바에서 완료된 인스턴스 목록 보기 버튼 
+                // this.instanceItem = [
+                //     {
+                //         title: 'definitionManagement.completedList',
+                //         icon: 'search',
+                //         BgColor: 'primary',
+                //         disable: true,
+                //         to: '/list-pages/completed',
+                //         size: 20
+                //     },
+                // ];
+                this.organizationItem = [
+                    {
+                        title: 'organizationChartDefinition.title',
+                        icon: 'plus',
+                        BgColor: 'primary',
+                        to: '/organization',
+                        disable: false,
+                        size: 12
+                    },
+                ];
+            }
 
             if (!this.JMS) {
                 this.definitionItem.forEach((item) => {
@@ -514,20 +478,10 @@ export default {
                         item.disable = false;
                     }
                 });
-                this.instanceItem.forEach((item) => {
-                    if (item.disable) {
-                        item.disable = false;
-                    }
-                });
-                this.organizationItem.forEach((item) => {
-                    if (item.disable) {
-                        item.disable = false;
-                    }
-                });
             }
             
             // 완료된 인스턴스가 있는지 직접 확인
-            this.checkCompletedInstances();
+            await this.checkCompletedInstances();
         },
         async checkCompletedInstances() {
             try {
@@ -539,13 +493,13 @@ export default {
                 const hasCompleted = completedList && completedList.length > 0;
                 
                 // 버튼 상태 즉시 업데이트
-                if (this.instanceItem && this.instanceItem.length > 1) {
-                    this.instanceItem[1].disable = hasCompleted;
+                if (this.instanceItem && this.instanceItem.length > 0) {
+                    this.instanceItem[0].disable = !hasCompleted;
                 }
             } catch (error) {
                 // 오류 시 기본적으로 숨김
-                if (this.instanceItem && this.instanceItem.length > 1) {
-                    this.instanceItem[1].disable = false;
+                if (this.instanceItem && this.instanceItem.length > 0) {
+                    this.instanceItem[0].disable = true;
                 }
             }
         },

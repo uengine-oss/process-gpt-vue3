@@ -17,7 +17,7 @@
         "reworkRequested": "Rework has been requested."
     },
     "errorMsg": {
-        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
+        "isBackendConnected": "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
         "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
@@ -35,19 +35,21 @@
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
     "headerMenu": {
-        "sidebar": "Sidebar",
+        "sidebar" : "Collapse/Expand Sidebar",
         "dashboard": "Dashboard",
-        "todoList" : "My Task List",
-        "schedule" : "Scheduler",
+        "todoList": "My Task List",
+        "schedule": "Scheduler",
         "calendar": "Calendar",
         "layoutSetting": "Layout Setting",
-        "admin" : "Admin Page",
-        "setting" : "Setting",
+        "admin": "Admin Page",
+        "setting": "Setting",
         "search": "Search",
         "searchResult": "Search Result",
         "searchKeyword": "Enter the keyword you want to search for and press enter.",
+        "searching": "Searching",
         "noSearchResult": "No search results found.",
-        "pricing" : "Pricing Information"
+        "agent": "Agent",
+        "pricing": "Pricing Information"
     },
     "DashboardTodoList": {
         "todo": "My Task List",
@@ -204,10 +206,12 @@
         "title": "System Definition"
     },
     "organizationChartDefinition": {
-        "title": "Org Chart Setup",
+        "title": "Add and Manage Organization Chart",
         "cardTitle": "Org Chart Management",
         "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'",
         "addTeam": "Add Team",
+        "deleteTeam": "Delete Team",
+        "editTeam": "Edit Team",
         "teamId": "Team ID",
         "teamName": "Team Name",
         "team": "Team",
@@ -235,6 +239,9 @@
         "emailAlreadyExists": "Email already exists.",
         "addUserSuccess": "User added successfully.",
         "addUserFailed": "Failed to add user.",
+        "addNewTeam": "Add New Team",
+        "addTeamSuccess": "Team added successfully.",
+        "addTeamFailed": "Failed to add team.",
         "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
         "agent": "Agent",
         "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
@@ -477,6 +484,11 @@
         "value": "Value",
         "description": "Description",
         "delete": "Delete",
+        "deleteUserSuccess": "User '{name}' has been deleted successfully.",
+        "deleteUserFailed": "Failed to delete user '{name}'.",
+        "confirmDeleteTitle": "Confirm User Deletion",
+        "confirmDeleteMessage": "Are you sure you want to delete '{name}'?",
+        "confirmDeleteInstruction": "Please type the user name to confirm:",
         "addHeader": "Add Header",
         "parameters": "Parameters",
         "addParameter": "Add Parameter",
@@ -647,7 +659,15 @@
         "selectForm": "Select Form to Reference",
         "noFormSelected": "Sel  ect a form to reference",
         "instruction": "Instruction",
-        "scriptVariable": "Variables used in the script must be defined in the process variables."
+        "scriptVariable": "Variables used in the script must be defined in the process variables.",
+        "customProperties": "Custom Properties"
+    },
+    "KeyValueField": {
+        "add": "Add",
+        "key": "Key",
+        "value": "Value",
+        "noItems": "No items registered.",
+        "duplicateKey": "Duplicate Key."
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -698,9 +718,9 @@
         "duplicateWarning": "This ID is already in use. To overwrite the existing process, check the box and save.",
         "regenerateNameTooltip": "Get New Name Suggestion",
         "regenerateIdTooltip": "Get New ID Suggestion",
-        "helpIntro": "You can configure version management and optimization options when saving the process.\n\nMain Features:",
-        "helpVersionToggle": "• Version Toggle: If checked, saves by incrementing the version by one step; if unchecked, saves to the current version\n  e.g., 0.1 → 1.0 (checked), 0.1 → 0.2 (unchecked)",
-        "helpOptimize": "• Definition Optimization: When checked, AI automatically analyzes and configures the input data required for each task (activity) in the process\n  - Automatically connects data flow between tasks\n  - Intelligently recommends required information for each task\n  - Automates data linkage without manual configuration",
+        "helpIntro": "In this dialog, you can save the process while configuring the version, description, and optimization options.\n\nEach save is recorded as a separate version; existing versions remain unchanged.",
+        "helpVersionToggle": "• Version Tag (minor / major):\n  - minor: Increases the decimal part of the current version by 1. e.g., 1.3 → 1.4\n    * Typically used as an \"intermediate\" or working save before promoting to a major version, while you are still iterating on the process.\n  - major: Increases the integer part by 1 and resets the decimal to 0. e.g., 1.3 → 2.0\n    * Used for versions that are actually applied/released to users and treated as the main production version.\n  The next version number is automatically calculated from the selected tag and used when saving.",
+        "helpOptimize": "• Process Definition Optimization: When enabled, AI analyzes the process definition at save time and automatically refines the input data (reference information) and data flow for each activity.\n  - Checks and connects data flow between activities\n  - Recommends missing or unnecessary fields to improve definition quality\n  - Automates repetitive manual tuning so you can model faster.",
         "generatingDiff": "Analyzing process changes..."
     },
     "FormDefinitionPanel": {
@@ -888,11 +908,11 @@
         "operationReferenceTitle": "An operation reference is a reference that designates the operation to be performed to process a specific message.",
         "operationReferenceSubTitle": "It defines the actions or business logic that should be executed when the message arrives. In BPMN, an operation reference helps clarify the content of the message and the task it triggers. \nFor example, a specific operation reference may perform a database update or call an external service upon receiving the message."
     },
-    "DetailComponent" : {
+    "DetailComponent": {
         "details": "Details",
         "allDetails": "View full description"
     },
-    "SendTaskPanel" : {
+    "SendTaskPanel": {
         "generation": "Generation",
         "return": "Variable to store the return value",
         "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use when sending an API request and the server's endpoint URL to process the request.",
@@ -901,7 +921,7 @@
         "message": "Send Email",
         "send": "Send Rest API"
     },
-    "ScriptTaskPanel" : {
+    "ScriptTaskPanel": {
         "return": "Variable to store the return value",
         "scriptDescriptionTitle": "Script Task enables the execution of micro-level configurations or actions that are difficult to handle solely through process configuration by directly setting activities using JavaScript or Java.",
         "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
@@ -929,23 +949,23 @@
         "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
         "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
     },
-    "SystemList" : {
-        "addDialogTitle" : "Add System",
+    "SystemList": {
+        "addDialogTitle": "Add System",
         "editDialogTitle": "Edit System",
-        "name" : "Name",
-        "description" : "Description",
-        "apiUrl" : "API URL",
-        "add" : "Add",
-        "edit" : "Edit"
+        "name": "Name",
+        "description": "Description",
+        "apiUrl": "API URL",
+        "add": "Add",
+        "edit": "Edit"
     },
-    "System" : {
-        "description" : "Description",
-        "edit" : "Edit",
+    "System": {
+        "description": "Description",
+        "edit": "Edit",
         "delete": "Delete",
-        "confirmDeleteTitle" : "Delete System Definition",
-        "confirmDeleteText" : "Are you sure you want to delete?"
+        "confirmDeleteTitle": "Delete System Definition",
+        "confirmDeleteText": "Are you sure you want to delete?"
     },
-    "PaletteProvider" : {
+    "PaletteProvider": {
         "undoCmdZ": "Undo (Cmd + Z)",
         "undoCtrlZ": "Undo (Ctrl + Z)",
         "RedoCmdShiftZ": "Redo (Cmd + Shift + Z)",
@@ -1098,7 +1118,8 @@
         "runningResearchMethod": "Running Research Method",
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
         "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
-        "runAgain": "Run Again"
+        "runAgain": "Run Again",
+        "select": "Select"
     },
     "AgentSelectInfo": {
         "orcation": "Agent Research Method",
@@ -1572,7 +1593,10 @@
         "save": "Save"
     },
     "OrganizationAddDialog": {
-        "add": "Add"
+        "add": "Add",
+        "addMemberToTeam": "Add Member to Team",
+        "selectTeam": "Select Team",
+        "selectTeamFirst": "Please select a team first"
     },
     "Header": {
         "tutorial": "Tutorial",
@@ -1825,7 +1849,7 @@
         "privacyPolicyDescription3": "The collected information will not be used for any purpose other than the delivery of services, and will be immediately destroyed once the service is completed.",
         "privacyPolicyClose": "Close"
     },
-     "DelegateTask": {
+    "DelegateTask": {
         "title": "Delegate Task",
         "delegate": "Delegate",
         "close": "Close",
@@ -2179,7 +2203,8 @@
         "persona": "Persona",
         "tools": "Tools & Skills",
         "knowledge": "Knowledge Ontology",
-        "achievements": "Achievements & Badges"
+        "achievements": "Achievements & Badges",
+        "settings": "Settings"
     },
     "Gantt": {
         "description": "Description",

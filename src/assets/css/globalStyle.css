@@ -636,7 +636,17 @@ hr {
     overflow-y: auto;
 }
 .work-item-skeleton-loader .v-skeleton-loader__image {
-    height: 70vh;
+    height: calc(100% - 50px);
+    border-radius: 8px;
+}
+
+.process-definition-skeleton-loader .v-skeleton-loader__image {
+    height: calc(100vh - 120px);
+    border-radius: 8px;
+}
+
+.process-instance-chat-skeleton-loader .v-skeleton-loader__image {
+    height: calc(100vh - 280px);
     border-radius: 8px;
 }
 
@@ -945,7 +955,6 @@ hr {
   position: relative;
   max-width: 70%;
   margin-bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
 }
 
 .chat-message-bubble .form-layout-card:only-child {
@@ -1089,7 +1098,7 @@ hr {
 }
 
 .agent-field-dialog-contents {
-    max-height: 60vh;
+    max-height: 100%;
     overflow: auto;
 }
 .agent-chat-info-organization-edit-dialog .organization-edit-dialog-contents {
@@ -1473,7 +1482,7 @@ hr {
     }
 
     .agent-field-dialog-contents {
-        height: calc(100vh - 200px);
+        max-height: 100%;
         overflow: auto;
     }
 

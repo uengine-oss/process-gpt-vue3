@@ -22,14 +22,14 @@
                         }"
                     ></ProcessDefinitionDisplay>
                    
-                    <v-checkbox
+                    <!-- <v-checkbox
                         v-if="addType == 'sub'"
                         v-model="isNewDef"
                         class="cp-custom-sub"
                         :label="$t('processDialog.newProcessDefinition')"
                         color="primary"
                         density="compact"
-                    ></v-checkbox>
+                    ></v-checkbox> -->
                     
                     <v-text-field
                         v-if="addType != 'sub' || isNewDef"

@@ -44,6 +44,8 @@
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import BackendFactory from '@/components/api/BackendFactory';
 
+import { useDefaultSetting } from '@/stores/defaultSetting';
+
 export default {
     name: "UserSelectField",
 
@@ -169,17 +171,22 @@ export default {
         this.userList = await this.backend.getUserList();
 
         if(this.useAgent) {
+            // 기본 에이전트 목록 추가
+            const defaultSetting = useDefaultSetting();
+            const defaultAgentList = defaultSetting.getAgentList;
+            this.userList = [...defaultAgentList, ...this.userList];
+
             if (this.useMultiple) {
-                // 모든 유저를 선택 목록에 포함
-                this.usersToSelect = this.userList.map(member => {
+                this.usersToSelect = this.userList.map(agent => {
                     return {
-                        id: member.id,
-                        username: member.username,
-                        email: member.email,
-                        goal: member.goal,
-                        description: member.description,
-                        isAgent: member.is_agent,
-                        agentType: member.agent_type,
+                        id: agent.id,
+                        username: agent.username,
+                        email: agent.email,
+                        goal: agent.goal,
+                        description: agent.description,
+                        isAgent: agent.is_agent,
+                        agentType: agent.agent_type,
+                        alias: agent.alias,
                     };
                 });
             } else {
@@ -193,6 +200,7 @@ export default {
                         description: agent.description,
                         isAgent: agent.is_agent,
                         agentType: agent.agent_type,
+                        alias: agent.alias,
                     };
                 });
             }
@@ -207,24 +215,86 @@ export default {
                 return;
             }
 
-            // 선택된 값들 중 isAgent가 false인 유저가 2개 이상인지 확인
-            const nonAgentUsers = newValue.filter(user => {
-                const userData = this.returnObject ? user : this.usersToSelect.find(u => u[this.itemValue] === user);
-                return userData && !userData.isAgent;
-            });
+            const getUserData = (user) => {
+                return this.returnObject ? user : this.usersToSelect.find(u => u[this.itemValue] === user);
+            };
 
-            if (nonAgentUsers.length > 1) {
-                // isAgent가 false인 유저가 2개 이상이면 마지막 선택된 것만 유지
-                const lastNonAgentUser = nonAgentUsers[nonAgentUsers.length - 1];
-                const agentUsers = newValue.filter(user => {
-                    const userData = this.returnObject ? user : this.usersToSelect.find(u => u[this.itemValue] === user);
-                    return userData && userData.isAgent;
-                });
-                
-                this.localModelValue = [...agentUsers, lastNonAgentUser];
-            } else {
-                this.localModelValue = newValue;
+            // newValue를 순서대로 처리
+            const result = [];
+            let hasAgentTypeAgent = false;
+            let lastOtherAgentType = null;
+            let lastOtherAgentTypeUser = null;
+
+            for (const user of newValue) {
+                const userData = getUserData(user);
+                if (!userData) continue;
+
+                // isAgent가 false인 유저: 1개만 선택 가능
+                if (!userData.isAgent) {
+                    // 기존 일반 유저 제거하고 현재 것만 유지
+                    const existingIndex = result.findIndex(r => {
+                        const rData = getUserData(r);
+                        return rData && !rData.isAgent;
+                    });
+                    if (existingIndex >= 0) {
+                        result.splice(existingIndex, 1);
+                    }
+                    result.push(user);
+                }
+                // agentType이 'agent'인 에이전트: 여러 개 선택 가능
+                else if (userData.agentType === 'agent') {
+                    // 다른 agentType이 이미 선택되어 있으면 제거
+                    if (lastOtherAgentType) {
+                        const index = result.findIndex(r => {
+                            const rData = getUserData(r);
+                            return rData && rData.isAgent && rData.agentType === lastOtherAgentType;
+                        });
+                        if (index >= 0) {
+                            result.splice(index, 1);
+                        }
+                        lastOtherAgentType = null;
+                        lastOtherAgentTypeUser = null;
+                    }
+                    hasAgentTypeAgent = true;
+                    result.push(user);
+                }
+                // 다른 agentType의 에이전트: 1개만 선택 가능, 다른 타입 간 교차 선택 불가
+                else if (userData.agentType) {
+                    // agentType이 'agent'인 것이 이미 선택되어 있으면 제거
+                    if (hasAgentTypeAgent) {
+                        result.splice(0, result.length, ...result.filter(r => {
+                            const rData = getUserData(r);
+                            return !rData || !rData.isAgent || rData.agentType !== 'agent';
+                        }));
+                        hasAgentTypeAgent = false;
+                    }
+                    // 다른 agentType이 이미 선택되어 있으면 제거
+                    if (lastOtherAgentType && lastOtherAgentType !== userData.agentType) {
+                        const index = result.findIndex(r => {
+                            const rData = getUserData(r);
+                            return rData && rData.isAgent && rData.agentType === lastOtherAgentType;
+                        });
+                        if (index >= 0) {
+                            result.splice(index, 1);
+                        }
+                    }
+                    // 같은 agentType 내에서도 1개만
+                    if (lastOtherAgentType === userData.agentType) {
+                        const index = result.findIndex(r => {
+                            const rData = getUserData(r);
+                            return rData && rData.isAgent && rData.agentType === userData.agentType;
+                        });
+                        if (index >= 0) {
+                            result.splice(index, 1);
+                        }
+                    }
+                    lastOtherAgentType = userData.agentType;
+                    lastOtherAgentTypeUser = user;
+                    result.push(user);
+                }
             }
+
+            this.localModelValue = result;
         },
 
         getAgentType(agentType) {

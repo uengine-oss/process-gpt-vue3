@@ -89,16 +89,12 @@
                     class="mb-2"
                     rows="3"
                 ></v-textarea>
-                <v-combobox
-                    v-model="selectedSkills"
-                    :items="skills"
+                <v-textarea
+                    v-model="agent.skills" 
                     :label="$t('agentField.agentSkills')"
-                    multiple
-                    chips
-                    clearable
-                    closable-chips
-                    variant="outlined"
-                ></v-combobox>
+                    class="mb-2"
+                    rows="3"
+                ></v-textarea>
             </div>
 
             <div v-else>
@@ -176,6 +172,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ProfileField from '@/components/ui/field/ProfileField.vue';
 import UserInputGenerator from '@/components/ui/UserInputGenerator.vue';
+import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
     components: {
@@ -318,6 +315,12 @@ export default {
             ]
         }
     },
+    setup() {
+        const defaultSetting = useDefaultSetting();
+        return {
+            defaultSetting
+        }
+    },
     computed: {
         showDetailFields() {
             // A2A, PGAGENT 타입일 때는 바로 필드를 표시
@@ -443,16 +446,16 @@ export default {
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         async getTools() {
-            const backend = BackendFactory.createBackend();
-            const jsonData = await backend.getMCPByTenant();
+            const defaultMcpServers = this.defaultSetting.getMcpServers;
+
+            const jsonData = await this.backend.getMCPByTenant();
             if (jsonData) {
-                this.mcpTools = jsonData.mcpServers;
-                const tools = Object.keys(jsonData.mcpServers);
-                this.toolList = tools;
+                this.mcpTools = { ...defaultMcpServers, ...jsonData.mcpServers };
             } else {
-                alert('MCP 설정이 없습니다.');
-                this.$router.push('/account-settings');
+                this.mcpTools = defaultMcpServers;
             }
+            const tools = Object.keys(this.mcpTools);
+            this.toolList = tools;
         },
         async fetchAgentData() {
             if (!this.agent.endpoint) {

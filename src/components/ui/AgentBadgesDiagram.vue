@@ -12,7 +12,7 @@
                             variant="flat" 
                             class="rounded-pill"
                             density="compact"
-                        >{{ agentType == 'a2a' ? $t('AgentBadgesDiagram.chatWithAgent') : $t('AgentBadgesDiagram.trainAgent') }}
+                        >{{ $t('AgentBadgesDiagram.settings') }}
                         </v-btn>
                     </div>
                 </div>

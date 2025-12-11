@@ -126,7 +126,7 @@ create table if not exists public.users (
     email text null,
     is_admin boolean not null default false,
     role text null,
-    tenant_id text null,
+    tenant_id text not null 'process-gpt',
     device_token text null,
     goal text null,
     persona text null,
@@ -135,10 +135,17 @@ create table if not exists public.users (
     tools text null,
     skills text null,
     is_agent boolean not null default false,
+    agent_type text null,
     model text null,
+    alias text null,
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
+
+CREATE INDEX IF NOT EXISTS idx_users_is_agent_true
+  ON public.users (is_agent)
+  WHERE is_agent = true;
+
 
 create table if not exists public.configuration (
     key text not null,
@@ -383,6 +390,7 @@ create table if not exists public.form_def_marketplace (
     proc_def_id text not null,
     activity_id text not null,
     html text not null,
+    fields_json jsonb null,
     author_uid text null,
     constraint form_def_marketplace_pkey primary key (uuid)
 ) tablespace pg_default;
@@ -1211,7 +1219,7 @@ alter publication supabase_realtime add table todolist;
 alter publication supabase_realtime add table bpm_proc_inst;
 alter publication supabase_realtime add table proc_def; 
 alter publication supabase_realtime add table project;
-
+alter publication supabase_realtime add table events;
 
 
 -- schedule 관련
@@ -2594,108 +2602,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE;
 
-DROP FUNCTION IF EXISTS public.fetch_pending_task_dev(text, text, integer, text);
 
-CREATE OR REPLACE FUNCTION public.fetch_pending_task_dev(
-  p_agent_orch text,
-  p_consumer   text,
-  p_limit      integer,
-  p_tenant_id  text
-)
-RETURNS TABLE (
-  id uuid,
-  user_id text,
-  proc_inst_id text,
-  proc_def_id text,
-  activity_id text,
-  activity_name text,
-  start_date timestamp without time zone,
-  end_date timestamp without time zone,
-  description text,
-  tool text,
-  due_date timestamp without time zone,
-  tenant_id text,
-  reference_ids text[],
-  adhoc boolean,
-  assignees jsonb,
-  duration integer,
-  output jsonb,
-  retry integer,
-  consumer text,
-  log text,
-  draft jsonb,
-  project_id uuid,
-  feedback jsonb,
-  updated_at timestamp with time zone,
-  username text,
-  status public.todo_status,
-  agent_mode public.agent_mode,
-  agent_orch public.agent_orch,
-  temp_feedback text,
-  draft_status public.draft_status,
-  task_type public.draft_status
-)
-AS $$
-BEGIN
-  RETURN QUERY
-    WITH cte AS (
-      SELECT
-        t.*,
-        t.draft_status AS task_type
-      FROM todolist AS t
-      WHERE t.status = 'IN_PROGRESS'
-        AND t.tenant_id = p_tenant_id
-        AND (p_agent_orch IS NULL OR p_agent_orch = '' OR t.agent_orch::text = p_agent_orch)
-        AND (
-          (t.agent_mode IN ('DRAFT','COMPLETE') AND t.draft IS NULL AND t.draft_status IS NULL)
-          OR t.draft_status = 'FB_REQUESTED'
-        )
-      ORDER BY t.start_date
-      LIMIT p_limit
-      FOR UPDATE SKIP LOCKED
-    ),
-    upd AS (
-      UPDATE todolist AS t
-         SET draft_status = 'STARTED',
-             consumer     = p_consumer
-        FROM cte
-       WHERE t.id = cte.id
-       RETURNING
-         t.id,
-         t.user_id,
-         t.proc_inst_id,
-         t.proc_def_id,
-         t.activity_id,
-         t.activity_name,
-         t.start_date,
-         t.end_date,
-         t.description,
-         t.tool,
-         t.due_date,
-         t.tenant_id,
-         t.reference_ids,
-         t.adhoc,
-         t.assignees,
-         t.duration,
-         t.output,
-         t.retry,
-         t.consumer,
-         t.log,
-         t.draft,
-         t.project_id,
-         t.feedback,
-         t.updated_at,
-         t.username,
-         t.status,
-         t.agent_mode,
-         t.agent_orch,
-         t.temp_feedback,
-         t.draft_status,
-         cte.task_type
-    )
-    SELECT * FROM upd;
-END;
-$$ LANGUAGE plpgsql VOLATILE;
 
 
 -- 익명(anon) 역할에 실행 권한 부여

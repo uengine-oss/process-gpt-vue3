@@ -60,7 +60,7 @@
                     <div v-show="isBpmnLoading">
                         <v-skeleton-loader
                             type="image"
-                            class="mx-auto work-item-skeleton-loader"
+                            class="mx-auto process-definition-skeleton-loader"
                         ></v-skeleton-loader>
                     </div>
                     <div v-if="isXmlMode" style="height: calc(100% - 50px); margin-top: 50px; overflow: auto; padding: 10px">
@@ -353,6 +353,7 @@ export default {
         ],
         taskStatus: null,
         isBpmnLoading: false,
+        bpmnLoadingTimer: null,
 
         // preview
         isPreviewMode: false,
@@ -361,6 +362,7 @@ export default {
         currentActivities: [],
         validationList: {},
         // definitionPath: null
+        options: {},
 
         bpmnKey: 0,
     }),

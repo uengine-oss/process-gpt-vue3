@@ -70,17 +70,31 @@
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
                 :key="componentKey"
             ></component>
-            <v-dialog v-if="isViewMode" v-model="printDialog" max-width="800px">
+            <v-dialog
+                v-if="isViewMode"
+                v-model="printDialog"
+                max-width="1150px"
+                max-height="80vh"
+            >
                 <template v-slot:activator="{ on, attrs }">
                     <v-btn block color="primary" class="panel-download-btn" v-bind="attrs" v-on="on" @click="printDocument">
                         {{ $t('BpmnPropertyPanel.printDocument') }}
                     </v-btn>
                 </template>
-                <v-card>
+                <v-card style="max-height: 80vh; display: flex; flex-direction: column;">
                     <v-card-title class="headline">{{ $t('BpmnPropertyPanel.pdfPreview') }}</v-card-title>
-                    <v-card-text >
-                        <PDFPreviewer :element="html" @closeDialog="printDialog = false" :name="name" />
+                    <v-card-text style="flex: 1; overflow: auto;">
+                        <PDFPreviewer ref="pdfPreviewer" :element="html" :name="name" />
                     </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" text @click="$refs.pdfPreviewer.saveDocument()">
+                            {{ $t('PDFPreviewer.saveDocument') }}
+                        </v-btn>
+                        <v-btn color="error" text @click="printDialog = false">
+                            {{ $t('PDFPreviewer.close') }}
+                        </v-btn>
+                    </v-card-actions>
                 </v-card>
             </v-dialog>
         </v-card-text>
@@ -124,9 +138,20 @@ export default {
             this.name = this.element.name;
             this.text = this.element.text;
         }
-        const json = this.element.extensionElements.values[0].json;
+        const extensionElement = this.element.extensionElements.values[0];
+        const json = extensionElement.json;
         if( json ) {
             this.uengineProperties = JSON.parse(json);
+        }
+        
+        // customProperties 복원
+        if (extensionElement.variables && extensionElement.variables.length > 0) {
+            this.uengineProperties.customProperties = extensionElement.variables.map(variable => {
+                return {
+                    key: variable.key,
+                    value: variable.value
+                };
+            });
         }
         if (this.element.lanes?.length > 0) {
             this.role = this.element.lanes[0];
@@ -291,13 +316,32 @@ export default {
                 await this.$refs.panelComponent.beforeSave();
                 console.log(this.uengineProperties)
             }
-
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
             const task = elementRegistry.get(this.element.id);
             const name = this.name;
 
             const json = JSON.stringify(this.uengineProperties);
+            const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
+            
+            // customProperties 처리
+            let variables = [];
+            if (this.uengineProperties.customProperties && Array.isArray(this.uengineProperties.customProperties)) {
+                variables = this.uengineProperties.customProperties
+                    .filter(prop => prop.key && prop.key.trim() !== '') // 빈 키 필터링
+                    .map(prop => {
+                        return bpmnFactory.create('uengine:Variable', {
+                            key: prop.key,
+                            value: prop.value,
+                            json: '{}'
+                        });
+                    });
+            }
+
+            // // uengineProperties에서 customProperties 제거 (json에는 포함되지 않도록)
+            // const propertiesToSave = { ...this.uengineProperties };
+            // delete propertiesToSave.customProperties;
+            // const json = JSON.stringify(propertiesToSave);
             
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
             if(task) {
@@ -326,14 +370,20 @@ export default {
                 }
             }
 
-           
-
             if (elementCopyDeep.extensionElements && elementCopyDeep.extensionElements.values) {
                 elementCopyDeep.extensionElements.values[0].json = json;
+                // variables 업데이트
+                elementCopyDeep.extensionElements.values[0].variables = variables;
             } else {
-                elementCopyDeep.extensionElements = {
-                    values: [{ json }]
-                };
+                // uengine:Properties 생성
+                const uengineProps = bpmnFactory.create('uengine:Properties', {
+                    json: json,
+                    variables: variables
+                });
+                
+                elementCopyDeep.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', {
+                    values: [uengineProps]
+                });
             }
 
             if (this.elementCopy.text) elementCopyDeep.text = this.text;
