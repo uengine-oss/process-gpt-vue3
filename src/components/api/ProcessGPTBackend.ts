@@ -2281,16 +2281,23 @@ class ProcessGPTBackend implements Backend {
         try {
             let results: any[] = [];
 
-            const dbPromise = storage.search(keyword);
+            const dbPromise = storage.search ? storage.search(keyword) : Promise.resolve([]);
             const vectorPromise = this.searchVector(keyword);
+            const agentPromise = this.searchAgents(keyword);
 
             results.push({
                 type: 'loading',
                 header: '유사한 결과 검색 중...',
                 list: []
             });
+            
             const dbResult = await dbPromise;
             results = [...results, ...dbResult];
+            
+            const agentResult = await agentPromise;
+            if (agentResult) {
+                results.push(agentResult);
+            }
             
             if (callback) {
                 callback(results);
@@ -2361,6 +2368,38 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async searchAgents(keyword: string) {
+        try {
+            const agentList = await this.getAgentList();
+            const lowerKeyword = keyword.toLowerCase();
+            
+            const filteredAgents = agentList.filter((agent: any) => {
+                const name = agent.username || agent.name || '';
+                const role = agent.role || '';
+                return name.toLowerCase().includes(lowerKeyword) || 
+                       role.toLowerCase().includes(lowerKeyword);
+            });
+
+            if (filteredAgents.length > 0) {
+                return {
+                    type: 'agent',
+                    header: 'headerMenu.agent',
+                    list: filteredAgents.map((agent: any) => ({
+                        title: agent.username || agent.name,
+                        href: `/agent-chat/${agent.id}`,
+                        matches: [agent.role || ''],
+                        img: agent.profile || agent.img
+                    }))
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Agent search error:', error);
+            return null;
         }
     }
 

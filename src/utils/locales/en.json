@@ -48,6 +48,7 @@
         "searchKeyword": "Enter the keyword you want to search for and press enter.",
         "searching": "Searching",
         "noSearchResult": "No search results found.",
+        "agent": "Agent",
         "pricing": "Pricing Information"
     },
     "DashboardTodoList": {

@@ -1098,7 +1098,7 @@ hr {
 }
 
 .agent-field-dialog-contents {
-    max-height: 60vh;
+    max-height: 100%;
     overflow: auto;
 }
 .agent-chat-info-organization-edit-dialog .organization-edit-dialog-contents {
@@ -1482,7 +1482,7 @@ hr {
     }
 
     .agent-field-dialog-contents {
-        height: calc(100vh - 200px);
+        max-height: 100%;
         overflow: auto;
     }
 
