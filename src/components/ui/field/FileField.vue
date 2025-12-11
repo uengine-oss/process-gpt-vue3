@@ -187,14 +187,7 @@ export default {
             const newFiles = data.files.map(file => {
                 // File 객체에 추가 속성 설정
                 file.originalFileName = file.name;
-                
-                // ✅ 브라우저 유즈 파일인 경우 원본 URL 사용
-                if (file.isBrowserUseFile && file.originalUrl) {
-                    file.path = file.originalUrl;
-                    console.log(`[FileField] 브라우저 유즈 파일 - 원본 URL 사용: ${file.originalUrl}`);
-                } else {
-                    file.path = file.name; // 임시 path
-                }
+                file.path = file.url;
                 
                 return file;
             });

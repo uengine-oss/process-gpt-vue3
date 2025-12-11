@@ -288,7 +288,11 @@ export default {
         this.EventBus.on('form-values-updated', (formValues) => {
             if(formValues){
                 Object.keys(formValues).forEach(function (key){
-                    me.formData[key] = formValues[key]
+                    if(typeof me.formData[key] === 'string' && formValues[key] && typeof formValues[key] != 'string') {
+                        me.formData[key] = JSON.stringify(formValues[key]);
+                    } else {
+                        me.formData[key] = formValues[key]
+                    }
                 })
             }
         });
