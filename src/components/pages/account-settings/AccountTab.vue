@@ -11,7 +11,7 @@
                 <v-row class="justify-center ma-0 pa-0 mb-7">
                     <v-dialog width="650" v-model="imageChangeDialog">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" color="gray" class="mx-2" rounded="pill" variant="flat" text="이미지 선택">
+                            <v-btn v-bind="props" color="gray" class="mx-2" rounded="pill" variant="flat">
                                 {{ $t('accountTab.imageSelect') }}
                             </v-btn>
                         </template>

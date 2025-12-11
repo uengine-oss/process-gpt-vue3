@@ -35,7 +35,7 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "headerMenu": {
-        "sidebar" : "사이드바 보기",
+        "sidebar" : "사이드바 접기/펼치기",
         "dashboard" : "대시보드",
         "todoList" : "나의 업무",
         "schedule" : "스케줄러",
@@ -204,10 +204,12 @@
         "title": "시스템 정의"
     },
     "organizationChartDefinition": {
-        "title": "조직도 정의",
+        "title": "조직도 추가 및 관리",
         "cardTitle": "조직도 관리",
         "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다.",
         "addTeam": "팀 추가",
+        "deleteTeam": "팀 삭제",
+        "editTeam": "팀 수정",
         "teamId": "팀 ID",
         "teamName": "팀명",
         "team": "팀",
@@ -235,6 +237,9 @@
         "emailAlreadyExists": "이미 존재하는 이메일입니다.",
         "addUserSuccess": "사용자가 추가되었습니다.",
         "addUserFailed": "사용자 추가에 실패했습니다.",
+        "addNewTeam": "신규 팀 추가",
+        "addTeamSuccess": "팀이 추가되었습니다.",
+        "addTeamFailed": "팀 추가에 실패했습니다.",
         "addNewUserExplanation": "신규 사용자를 추가하려면 이름과 이메일을 입력해 주세요. 입력된 이메일 주소로 회원가입이 자동 처리되며, 초기 비밀번호는 000000으로 설정됩니다.",
         "agent": "에이전트",
         "deleteAgentExplanation": "팀원 삭제가 아닌 영구 삭제입니다. 삭제된 에이전트는 복구할 수 없습니다. 팀원 삭제를 원하신다면 소속 팀의 + 버튼을 눌러 팀원을 수정해주세요.",
@@ -477,6 +482,8 @@
         "url": "URL",
         "description": "설명",
         "delete": "삭제",
+        "deleteUserSuccess": "사용자가 삭제되었습니다.",
+        "deleteUserFailed": "사용자 삭제에 실패했습니다.",
         "addHeader": "헤더 추가",
         "parameters": "파라미터",
         "addParameter": "파라미터 추가",
@@ -1573,7 +1580,10 @@
         "save": "저장"
     },
     "OrganizationAddDialog": {
-        "add": "추가"
+        "add": "추가",
+        "addMemberToTeam": "팀에 멤버 추가",
+        "selectTeam": "팀 선택",
+        "selectTeamFirst": "먼저 팀을 선택하세요"
     },
     "Header": {
         "tutorial": "튜토리얼",

@@ -35,7 +35,7 @@
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
     "headerMenu": {
-        "sidebar": "Sidebar",
+        "sidebar" : "Collapse/Expand Sidebar",
         "dashboard": "Dashboard",
         "todoList" : "My Task List",
         "schedule" : "Scheduler",
@@ -204,10 +204,12 @@
         "title": "System Definition"
     },
     "organizationChartDefinition": {
-        "title": "Org Chart Setup",
+        "title": "Add and Manage Organization Chart",
         "cardTitle": "Org Chart Management",
         "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'",
         "addTeam": "Add Team",
+        "deleteTeam": "Delete Team",
+        "editTeam": "Edit Team",
         "teamId": "Team ID",
         "teamName": "Team Name",
         "team": "Team",
@@ -235,6 +237,9 @@
         "emailAlreadyExists": "Email already exists.",
         "addUserSuccess": "User added successfully.",
         "addUserFailed": "Failed to add user.",
+        "addNewTeam": "Add New Team",
+        "addTeamSuccess": "Team added successfully.",
+        "addTeamFailed": "Failed to add team.",
         "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
         "agent": "Agent",
         "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
@@ -477,6 +482,8 @@
         "value": "Value",
         "description": "Description",
         "delete": "Delete",
+        "deleteUserSuccess": "User has been deleted successfully.",
+        "deleteUserFailed": "Failed to delete user.",
         "addHeader": "Add Header",
         "parameters": "Parameters",
         "addParameter": "Add Parameter",
@@ -1571,7 +1578,10 @@
         "save": "Save"
     },
     "OrganizationAddDialog": {
-        "add": "Add"
+        "add": "Add",
+        "addMemberToTeam": "Add Member to Team",
+        "selectTeam": "Select Team",
+        "selectTeamFirst": "Please select a team first"
     },
     "Header": {
         "tutorial": "Tutorial",
