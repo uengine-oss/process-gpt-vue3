@@ -351,10 +351,6 @@ export default {
     },
     methods: {
         openTeamDialog(type) {
-            console.log('팀 다이얼로그 열기:', type);
-            console.log('선택된 팀:', this.selectedTeam);
-            console.log('선택된 팀 ID:', this.selectedTeam?.id);
-            console.log('선택된 팀 이름:', this.selectedTeam?.data?.name);
             this.teamDialogType = type;
             this.teamDialog = true;
         },
@@ -362,9 +358,6 @@ export default {
             this.teamDialog = false;
         },
         handleTeamUpdate(type, editNode, newTeam) {
-            console.log('팀 업데이트 핸들러:', type);
-            console.log('editNode:', editNode);
-            console.log('newTeam:', newTeam);
             this.$emit('updateTeam', type, editNode, newTeam);
             this.closeTeamDialog();
         },

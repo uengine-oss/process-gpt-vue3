@@ -123,6 +123,11 @@ export default {
                 children: []
             };
         }
+
+        this.EventBus.on('user-deleted', this.handleUserDeleted);
+    },
+    beforeUnmount() {
+        this.EventBus.off('user-deleted', this.handleUserDeleted);
     },
     computed: {
         isMobile() {
@@ -364,6 +369,25 @@ export default {
             // AgentList 실시간 업데이트를 위한 이벤트 발생
             this.EventBus.emit('agentAdded', newAgent);
         },
+        deleteNode(obj, children) {
+            if (children && children.some(item => item.id == obj.id)) {
+                children = children.filter(item => item.id != obj.id);
+            } else {
+                children.forEach((item) => {
+                    item.children = this.deleteNode(obj, item.children);
+                })
+            }
+            return children;
+        },
+        async handleUserDeleted(userId) {
+            this.organizationChart.children = this.deleteNode({ id: userId }, this.organizationChart.children);
+            await this.updateNode();
+            
+            if (this.$refs.organizationChart) {
+                this.$refs.organizationChart.loadUserList();
+                this.$refs.organizationChart.drawTree();
+            }
+        }
     }
 }
 </script>
