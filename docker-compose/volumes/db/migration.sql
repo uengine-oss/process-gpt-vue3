@@ -330,6 +330,7 @@ ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS proc_def_id tex
 ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS activity_id text;
 ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS html text;
 ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS author_uid text;
+ALTER TABLE public.form_def_marketplace ADD COLUMN IF NOT EXISTS fields_json jsonb;
 
 -- tenant_oauth table
 ALTER TABLE public.tenant_oauth ADD COLUMN IF NOT EXISTS tenant_id text;

@@ -415,9 +415,11 @@ export default {
     watch: {
         agentInfo: {
             handler(newVal) {
-                // profile이 실제로 변경되었을 때만 처리
-                if (newVal.profile !== this.currentProfileUrl) {
-                    this.initializeImage();
+                if (newVal) {
+                    // profile이 실제로 변경되었을 때만 처리
+                    if (newVal.profile !== this.currentProfileUrl) {
+                        this.initializeImage();
+                    }
                 }
             },
             deep: true,
@@ -517,7 +519,7 @@ export default {
         },
 
         getCurrentAgentType() {
-            return this.agentInfo.agent_type || this.agentType || 'agent';
+            return this.agentInfo && this.agentInfo.agent_type ? this.agentInfo.agent_type : this.agentType || 'agent';
         },
 
         isSectionVisible(section) {

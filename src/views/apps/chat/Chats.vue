@@ -211,7 +211,6 @@
                 </v-col>
                 <v-col class="pa-0">
                     <v-card>
-                    <!-- <v-card> -->
                         <v-card-title style="height: 55px; background-color: rgb(var(--v-theme-primary), 0.15) !important; align-content: center;">
                             <v-icon small style="margin-right: 10px;">mdi-file-document</v-icon>
                             {{ $t('chats.document') }}

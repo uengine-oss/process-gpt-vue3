@@ -222,8 +222,12 @@ export default {
         modelValue: {
             deep: true,
             handler(newVal) {
-                if (newVal && newVal.agentMode) {
-                    this.activity.agentMode = newVal.agentMode.toLowerCase();
+                if (newVal) {
+                    this.activity.agentMode = /[A-Z]/.test(newVal.agentMode) 
+                            ? newVal.agentMode.toLowerCase() 
+                            : newVal.agentMode;
+                    this.activity.orchestration = newVal.orchestration;
+                    this.activity.agent = newVal.agent;
                 }
             }
         },
@@ -249,21 +253,25 @@ export default {
         },
         activity: {
             deep: true,
-            handler() {
+            handler(newVal) {
+                if (newVal && newVal.agentMode === 'none') {
+                    newVal.agent = null;
+                    newVal.orchestration = null;
+                }
                 if (!this.isExecute) {
-                    this.$emit('update:modelValue', this.activity);
+                    console.log('newVal', newVal);
+                    this.$emit('update:modelValue', newVal);
                 }
             }
         }
     },
     created() {
         if (this.modelValue) {
-            if (this.modelValue.agentMode && this.modelValue.agentMode !== '') {
-                this.activity.agentMode = this.modelValue.agentMode.toLowerCase();
-            } else {
-                this.activity.agentMode = 'none';
-                this.activity.orchestration = null;
-            }
+            this.activity.agentMode = /[A-Z]/.test(newVal.agentMode) 
+                ? newVal.agentMode.toLowerCase() 
+                : newVal.agentMode;
+            this.activity.orchestration = newVal.orchestration;
+            this.activity.agent = newVal.agent;
         } else {
             this.activity = {
                 agent: null,
@@ -281,7 +289,7 @@ export default {
                     if (!agent) {
                         agent = await this.backend.getUserById(agentId);
                     }
-                    if (agent) {
+                    if (agent && agent.id && agent.is_agent) {
                         this.selectedAgent = {
                             ...agent,
                             id: agent.id,
@@ -298,7 +306,7 @@ export default {
                 if (!agent) {
                     agent = await this.backend.getUserById(agentId);
                 }
-                if (agent) {
+                if (agent && agent.id && agent.is_agent) {
                     this.selectedAgent = {
                         ...agent,
                         id: agent.id,

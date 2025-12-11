@@ -175,10 +175,11 @@ export default {
                 // ProcessGPTBackend에 이미 있는 getAgentList() 메서드 사용
                 const backendAgentList = await backend.getAgentList();
                 
-                const agentList = [...defaultAgentList, ...backendAgentList];
+                let agentList = [...defaultAgentList, ...backendAgentList];
                 
                 // 에이전트 데이터 가공
                 if (Array.isArray(agentList)) {
+                    agentList = agentList.filter(agent => !agent.is_hidden);
                     const processedAgents = agentList.map(agent => ({
                         id: agent.id,
                         name: agent.username || agent.name,
