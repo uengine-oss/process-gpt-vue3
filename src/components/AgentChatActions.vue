@@ -159,11 +159,11 @@ export default {
                 agentMode: 'draft',
                 orchestration: this.agentInfo.agent_type === 'agent' ? 'crewai-action' : this.agentInfo.alias,
             }
+            if (this.agentInfo.agent_type) {
+                this.defaultWorkItem.worklist.orchestration = this.agentInfo.alias;
+            }
+            this.instId = `${this.agentInfo?.id}-actions`;
         }
-        if (this.agentInfo.agent_type) {
-            this.defaultWorkItem.worklist.orchestration = this.agentInfo.alias;
-        }
-        this.instId = `${this.agentInfo?.id}-actions`;
 
         // 기존 워크리스트 로드하여 탭으로 표시
         await this.loadExistingWorkItems();
