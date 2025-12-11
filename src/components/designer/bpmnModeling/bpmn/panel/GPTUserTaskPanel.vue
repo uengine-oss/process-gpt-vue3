@@ -340,6 +340,9 @@ export default {
             if (me.tempFormHtml && me.tempFormHtml != '') {
                 if (me.lastPath) {
                     if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
+                        if(me.formId == 'defaultform') {
+                            me.formId = me.element.id + '_form';
+                        }
                         localStorage.setItem(me.formId, me.tempFormHtml);
                     } else {
                         await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
