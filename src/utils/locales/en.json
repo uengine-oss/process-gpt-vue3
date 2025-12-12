@@ -2051,7 +2051,9 @@
         "errorDeletingEnvironment": "Error deleting environment",
         "errorDeletingSecret": "Error deleting secret",
         "confirmDeleteEnvironment": "Are you sure you want to delete environment \"{name}\"?",
-        "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?"
+        "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?",
+        "confirmDeleteBrowserUseSecret": "Are you sure you want to delete Browser Use secret \"{name}\"?",
+        "noBrowserUseConfig": "Browser Use configuration is not set. Click the edit button to add the configuration."
     },
     "footer": {
         "BusinessNumber": "BusinessRegistration<br>No.",
