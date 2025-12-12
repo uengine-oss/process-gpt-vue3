@@ -391,7 +391,7 @@ export default {
             return Array.from(uniqueCategories);
         },
         isSearchMode() {
-            return (this.searchResults && this.searchResults.length > 0) || this.isSearching;
+            return !!this.lastSearchedKeyword;
         }
     },
     methods: {
