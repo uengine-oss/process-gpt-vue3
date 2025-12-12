@@ -885,7 +885,7 @@ export default {
                     this.messages.push(systemMsgObj)
                 }
                 
-                me.putMessage(systemMsgObj, chatRoomId)
+                me.putMessage(systemMsgObj, this.chatRoomId)
                 
                 if(response.content){
                     me.deleteSystemMessage(response)
