@@ -77,36 +77,16 @@ export const useDefaultSetting = defineStore({
                 "alias": "visionparse",
                 "is_default": true
             },
-        ],
-        "mcpServers": {
-            "computer-use": {
-                "url": "http://computer-use:8000/mcp",
-                "type": "http",
-                "enabled": true,
-                "is_default": true
-            },
-            "claude-skills": {
-                "url": "http://claude-skills:8765/mcp",
-                "type": "http",
-                "enabled": true,
-                "is_default": true
-            }
-        }
+        ]
     }),
     actions: {
         setAgentList(agentList: any) {
             this.agentList = agentList;
-        },
-        setMcpServers(mcpServers: any) {
-            this.mcpServers = mcpServers;
         }
     },
     getters: {
         getAgentList: state => {
             return state.agentList;
-        },
-        getMcpServers: state => {
-            return state.mcpServers;
         },
         getAgentById: state => (agentId: string) => {
             return state.agentList.find(agent => agent.id === agentId) || null;

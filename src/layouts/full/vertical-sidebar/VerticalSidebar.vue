@@ -450,16 +450,16 @@ export default {
 
             if (!this.pal && !this.JMS) {
                 // 사이드바에서 완료된 인스턴스 목록 보기 버튼 
-                // this.instanceItem = [
-                //     {
-                //         title: 'definitionManagement.completedList',
-                //         icon: 'search',
-                //         BgColor: 'primary',
-                //         disable: true,
-                //         to: '/list-pages/completed',
-                //         size: 20
-                //     },
-                // ];
+                this.instanceItem = [
+                    {
+                        title: 'definitionManagement.completedList',
+                        icon: 'search',
+                        BgColor: 'primary',
+                        disable: true,
+                        to: '/list-pages/completed',
+                        size: 20
+                    },
+                ];
                 this.organizationItem = [
                     {
                         title: 'organizationChartDefinition.title',

@@ -6,6 +6,7 @@
             :close-delay="200"
             location="bottom"
             max-width="400"
+            :close-on-content-click="false"
         >
             <template v-slot:activator="{ props }">
                 <v-btn
