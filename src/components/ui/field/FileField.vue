@@ -157,7 +157,8 @@ export default {
                 this.selectedFiles = [{
                     originalFileName: this.modelValue,
                     path: this.modelValue,
-                    name: this.modelValue
+                    name: this.modelValue,
+                    fullPath: this.modelValue
                 }]
             }
         } else {
@@ -255,7 +256,7 @@ export default {
                     this.$emit('update:modelValue', { path: null, name: null });
                 } else if (res && res.path) {
                     console.log('[FileField] 파일 업로드 성공:', res.path);
-                    this.$emit('update:modelValue', { path: res.path, name: fileName });
+                    this.$emit('update:modelValue', { path: res.path, name: fileName, fullPath: res.fullPath || res.path });
                 } else {
                     console.warn('[FileField] 파일 업로드 응답이 비어있음');
                     this.$emit('update:modelValue', { path: null, name: null });

@@ -1405,9 +1405,14 @@ export default class StorageBaseSupabase {
                 return error;
             }
 
+            // Get public URL for the uploaded file
+            const publicUrl = await this.getFileUrl(data.path);
+
             return {
                 ...data,
-                original_filename: fileName
+                originalFileName: fileName,
+                publicUrl: publicUrl,
+                fullPath: publicUrl
             };
         } catch (error) {
             throw new StorageBaseError('error in uploadFile', error, arguments);
