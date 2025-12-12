@@ -272,7 +272,6 @@ export default {
     },
     created() {
         if (this.modelValue) {
-<<<<<<< HEAD
             // agentMode가 없거나 undefined/null인 경우 기본값 'none' 설정
             if (!this.modelValue.agentMode) {
                 this.activity.agentMode = 'none';
@@ -283,13 +282,6 @@ export default {
             }
             this.activity.orchestration = this.modelValue.orchestration || null;
             this.activity.agent = this.modelValue.agent || null;
-=======
-            this.activity.agentMode = /[A-Z]/.test(this.modelValue.agentMode) 
-                ? this.modelValue.agentMode.toLowerCase() 
-                : this.modelValue.agentMode;
-            this.activity.orchestration = this.modelValue.orchestration;
-            this.activity.agent = this.modelValue.agent;
->>>>>>> db0e4b2ed3afc67d25907a7b34389889d8a2df68
         } else {
             this.activity = {
                 agent: null,
