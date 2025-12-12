@@ -4,7 +4,7 @@
             <v-card flat class="mb-8 pa-1">
                 <v-card-item class="pa-0">
                     <v-row class="ma-0 pa-0 mb-4">
-                        <!-- <h5 class="text-h5">MCP Environments</h5> -->
+                        <h5 class="text-h5">{{ $t('MCPEnvSecret.mcpEnvironments') }}</h5>
                         <v-spacer></v-spacer>
                         <v-btn 
                             color="primary" 

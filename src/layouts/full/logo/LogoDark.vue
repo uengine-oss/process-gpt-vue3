@@ -1,6 +1,6 @@
 <template>
     <div class="logo">
-        <RouterLink to="/">
+        <RouterLink to="/definition-map">
             <img v-if="mode == 'ProcessGPT'" :src="logo" alt="home" 
               style="width:160px;"
             />
