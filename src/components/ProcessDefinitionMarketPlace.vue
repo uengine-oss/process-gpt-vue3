@@ -30,8 +30,7 @@
                             class="position-relative pt-0 ml-3 custom-placeholer-color"
                             :placeholder="$t('ProcessDefinitionMarketPlace.searchPlaceholder')"
                             single-line hide-details
-                            @update:model-value="onSearchChange"
-                            :loading="isSearching"
+                            @keyup.enter="onSearchChange"
                         ></v-text-field>
                     </div>
                 </v-col>
@@ -72,14 +71,30 @@
                 
                 <!-- 검색 결과가 있는 경우 -->
                 <template v-if="isSearchMode">
-                    <v-card-title class="text-h5 mt-4" v-if="!isSearching">
-                        "{{ searchKeyword }}" {{ $t('ProcessDefinitionMarketPlace.searchResultTitle') }} ({{ searchResults && searchResults.length || 0 }}{{ $t('ProcessDefinitionMarketPlace.countUnit') }})
-                    </v-card-title>
-                    <v-card-title class="text-h5 mt-4" v-else>
-                        "{{ searchKeyword }}" {{ $t('ProcessDefinitionMarketPlace.searchingTitle') }}
+                    <v-card-title class="text-h5 mt-4 pl-4">
+                        "{{ lastSearchedKeyword }}" {{ $t('ProcessDefinitionMarketPlace.searchResultTitle') }}<span v-if="!isSearching"> ({{ searchResults && searchResults.length || 0 }}{{ $t('ProcessDefinitionMarketPlace.countUnit') }})</span>
                     </v-card-title>
                     
-                    <v-row dense class="ma-0 pa-0">
+                    <!-- 검색 중 스켈레톤 카드 -->
+                    <v-row v-if="isSearching" dense class="pa-0 ma-0 pl-2 pr-2">
+                        <v-col v-for="n in 12" :key="'skeleton-search-' + n" cols="12" sm="6" md="4" class="mb-4 pa-2">
+                            <v-card variant="outlined" class="skeleton-card">
+                                <v-skeleton-loader type="image"></v-skeleton-loader>
+                                <div class="pa-2">
+                                    <v-skeleton-loader type="heading" class="mb-2"></v-skeleton-loader>
+                                    <v-skeleton-loader type="text" class="mb-4"></v-skeleton-loader>
+                                    <v-divider class="my-4"></v-divider>
+                                    <div class="d-flex align-center">
+                                        <v-skeleton-loader type="text" style="width: 100px;"></v-skeleton-loader>
+                                        <v-spacer></v-spacer>
+                                        <v-skeleton-loader type="button" class="skeleton-button-rounded"></v-skeleton-loader>
+                                    </div>
+                                </div>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                    
+                    <v-row dense class="ma-0 pa-0" v-else>
                         <v-col v-for="definition in searchResults" :key="definition.id" cols="12" sm="6" md="4" class="mb-0 pa-2 pl-4">
                             <!-- 카테고리 표시 (모든 항목 표시) -->
                             <div class="category-label">
@@ -248,7 +263,26 @@
                         {{ selectedTag }} {{ $t('ProcessDefinitionMarketPlace.relatedTemplates') }}
                     </v-card-title>
                     
-                    <v-row dense class="pa-0 ma-0">
+                    <!-- 태그 필터링 중 스켈레톤 카드 -->
+                    <v-row dense class="pa-0 ma-0 pl-2 pr-2" v-if="isLoading">
+                        <v-col v-for="n in 12" :key="'skeleton-tag-' + n" cols="12" sm="6" md="4" class="mb-4 pa-2">
+                            <v-card variant="outlined" class="skeleton-card">
+                                <v-skeleton-loader type="image"></v-skeleton-loader>
+                                <div class="pa-2">
+                                    <v-skeleton-loader type="heading" class="mb-2"></v-skeleton-loader>
+                                    <v-skeleton-loader type="text" class="mb-4"></v-skeleton-loader>
+                                    <v-divider class="my-4"></v-divider>
+                                    <div class="d-flex align-center">
+                                        <v-skeleton-loader type="text" style="width: 100px;"></v-skeleton-loader>
+                                        <v-spacer></v-spacer>
+                                        <v-skeleton-loader type="button" class="skeleton-button-rounded"></v-skeleton-loader>
+                                    </div>
+                                </div>
+                            </v-card>
+                        </v-col>
+                    </v-row>
+                    
+                    <v-row dense class="pa-0 ma-0" v-else>
                         <v-col v-for="definition in filteredDefinitions" :key="definition.id" cols="12" sm="6" md="4" class="mb-0 pa-2 pl-4">
                             <!-- 카테고리 표시 (모든 항목 표시) -->
                             <div class="category-label">
@@ -321,16 +355,22 @@ export default {
         selectedTag: 'all',
         isLoading: false,
         searchKeyword: '',
+        lastSearchedKeyword: '',
         isSearching: false,
         searchResults: [],
         searchTimeout: null,
+        currentSearchId: null,
+        allTags: [],
         offset: 0,
         limit: 12,
         hasMore: true,
         loadingMore: false
     }),
     async mounted() {
-        await this.getDefinitionList();
+        await Promise.all([
+            this.getDefinitionList(),
+            this.loadAllTags()
+        ]);
         // 데이터 로딩 완료 후 첫 번째 탭 선택
         this.$nextTick(() => {
             if (this.categories.length > 0) {
@@ -351,7 +391,7 @@ export default {
             return Array.from(uniqueCategories);
         },
         isSearchMode() {
-            return !!this.searchKeyword && typeof this.searchKeyword === 'string' && this.searchKeyword.trim() !== '';
+            return (this.searchResults && this.searchResults.length > 0) || this.isSearching;
         }
     },
     methods: {
@@ -473,18 +513,16 @@ export default {
             return '';
         },
         getAllAvailableTags() {
-            // 모든 카테고리의 정의에서 고유한 태그 추출
-            const tags = new Set();
-            this.definitionList.forEach(definition => {
-                if (definition.tags && Array.isArray(definition.tags)) {
-                    definition.tags.forEach(tag => {
-                        if (tag && tag.trim()) {
-                            tags.add(tag.trim());
-                        }
-                    });
-                }
-            });
-            return Array.from(tags);
+            // allTags 배열 반환 (전체 태그 목록)
+            return this.allTags;
+        },
+        async loadAllTags() {
+            try {
+                this.allTags = await backend.getAllMarketplaceTags();
+            } catch (error) {
+                console.error('태그 목록 로드 중 오류 발생:', error);
+                this.allTags = [];
+            }
         },
         getCategoryLabel(definition) {
             if (definition.category && definition.category.includes('/')) {
@@ -543,81 +581,103 @@ export default {
             }
         },
         // 검색 기능
-        async onSearchChange(keyword) {
+        async onSearchChange() {
+            const keyword = this.searchKeyword;
+            
             // 검색어가 비어있으면 검색 모드 해제
             if (!keyword || keyword.trim() === '') {
                 this.searchResults = [];
+                this.lastSearchedKeyword = '';
+                this.currentSearchId = null;
                 return;
             }
             
-            // 타이핑 중에는 검색 요청 지연 (디바운싱)
-            if (this.searchTimeout) {
-                clearTimeout(this.searchTimeout);
-            }
-            
+            this.lastSearchedKeyword = keyword;
             this.isSearching = true;
             
-            this.searchTimeout = setTimeout(async () => {
-                try {
-                    // 백엔드에서 검색 실행
-                    const results = await backend.listMarketplaceDefinition(keyword, true);
+            // 검색 시작 시 이전 결과 초기화
+            this.searchResults = [];
+            
+            // 현재 검색의 고유 ID 생성
+            const searchId = Date.now();
+            this.currentSearchId = searchId;
+            
+            try {
+                // 백엔드에서 검색 실행
+                const results = await backend.listMarketplaceDefinition(keyword, true);
+                
+                // 이 검색이 가장 최근 검색이 아니면 무시
+                if (this.currentSearchId !== searchId) {
+                    return;
+                }
+                
+                if (!results || !Array.isArray(results)) {
+                    this.searchResults = [];
+                    this.isSearching = false;
+                    return;
+                }
+                
+                const promises = results.map(async (definition) => {
+                    if (!definition) return null;
                     
-                    if (!results || !Array.isArray(results)) {
-                        this.searchResults = [];
-                        this.isSearching = false;
+                    let isImported = false;
+                    try {
+                        const result = await backend.getRawDefinition(definition.id);
+                        if (result) {
+                            isImported = true;
+                        }
+                    } catch (err) {
+                        console.error(`정의 불러오기 오류: ${err.message}`);
+                    }
+                    
+                    // 태그 중복 제거 및 공백 처리
+                    let tags = [];
+                    if (definition.tags) {
+                        // 쉼표로 구분된 태그를 분리하고 중복 제거
+                        const tagSet = new Set();
+                        definition.tags.split(',').forEach(tag => {
+                            const trimmedTag = tag ? tag.trim() : '';
+                            if (trimmedTag) {
+                                tagSet.add(trimmedTag);
+                            }
+                        });
+                        tags = Array.from(tagSet);
+                    }
+                    
+                    return {
+                        ...definition,
+                        tags: tags,
+                        isImported: isImported
+                    };
+                });
+                
+                try {
+                    // 모든 비동기 작업이 완료될 때까지 기다림
+                    const searchResults = await Promise.all(promises);
+                    
+                    // 처리 완료 후 다시 한번 최신 검색인지 확인
+                    if (this.currentSearchId !== searchId) {
                         return;
                     }
                     
-                    const promises = results.map(async (definition) => {
-                        if (!definition) return null;
-                        
-                        let isImported = false;
-                        try {
-                            const result = await backend.getRawDefinition(definition.id);
-                            if (result) {
-                                isImported = true;
-                            }
-                        } catch (err) {
-                            console.error(`정의 불러오기 오류: ${err.message}`);
-                        }
-                        
-                        // 태그 중복 제거 및 공백 처리
-                        let tags = [];
-                        if (definition.tags) {
-                            // 쉼표로 구분된 태그를 분리하고 중복 제거
-                            const tagSet = new Set();
-                            definition.tags.split(',').forEach(tag => {
-                                const trimmedTag = tag ? tag.trim() : '';
-                                if (trimmedTag) {
-                                    tagSet.add(trimmedTag);
-                                }
-                            });
-                            tags = Array.from(tagSet);
-                        }
-                        
-                        return {
-                            ...definition,
-                            tags: tags,
-                            isImported: isImported
-                        };
-                    });
-                    
-                    try {
-                        // 모든 비동기 작업이 완료될 때까지 기다림
-                        const searchResults = await Promise.all(promises);
-                        // null 값 제거
-                        this.searchResults = searchResults.filter(item => item !== null);
-                    } catch (err) {
-                        console.error(`검색 결과 처리 오류: ${err.message}`);
+                    // null 값 제거
+                    this.searchResults = searchResults.filter(item => item !== null);
+                } catch (err) {
+                    console.error(`검색 결과 처리 오류: ${err.message}`);
+                    if (this.currentSearchId === searchId) {
                         this.searchResults = [];
                     }
-                } catch (error) {
-                    console.error('검색 중 오류 발생:', error);
+                }
+            } catch (error) {
+                console.error('검색 중 오류 발생:', error);
+                if (this.currentSearchId === searchId) {
                     this.searchResults = [];
-                } finally {
+                }
+            } finally {
+                if (this.currentSearchId === searchId) {
                     this.isSearching = false;
                 }
-            }, 500); // 0.5초 후에 검색 실행
+            }
         },
         // 16진수 이스케이프 문자열을 base64로 변환
         hexToBase64(hexString) {
