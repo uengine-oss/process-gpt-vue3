@@ -54,23 +54,23 @@ function calculateStrokeWidthByTime(requiredTime) {
 
   // 구간별로 다른 증가율 적용
   if (seconds <= TIME_RANGES.SECOND) {
-    // 초 단위 (0~60초): 0~0.1 비율 (가장 얇게)
-    ratio = (seconds / TIME_RANGES.SECOND) * 0.1
+    // 초 단위 (0~60초): 0~0.15 비율 (가장 얇게)
+    ratio = (seconds / TIME_RANGES.SECOND) * 0.15
   } else if (seconds <= TIME_RANGES.MINUTE) {
-    // 분 단위 (1분~1시간): 0.1~0.2 비율
+    // 분 단위 (1분~1시간): 0.15~0.4 비율
     const progress = (seconds - TIME_RANGES.SECOND) / (TIME_RANGES.MINUTE - TIME_RANGES.SECOND)
-    ratio = 0.1 + progress * 0.1
+    ratio = 0.15 + progress * 0.25
   } else if (seconds <= TIME_RANGES.HOUR) {
-    // 시간 단위 (1시간~1일): 0.2~0.3 비율
+    // 시간 단위 (1시간~1일): 0.4~0.7 비율
     const progress = (seconds - TIME_RANGES.MINUTE) / (TIME_RANGES.HOUR - TIME_RANGES.MINUTE)
-    ratio = 0.2 + progress * 0.1
+    ratio = 0.4 + progress * 0.3
   } else if (seconds <= TIME_RANGES.DAY) {
-    // 일 단위 (1일~7일): 0.3~0.4 비율 (가장 굵게)
+    // 일 단위 (1일~7일): 0.7~1.0 비율 (가장 굵게)
     const progress = (seconds - TIME_RANGES.HOUR) / (TIME_RANGES.DAY - TIME_RANGES.HOUR)
-    ratio = 0.3 + progress * 0.1
+    ratio = 0.7 + progress * 0.3
   } else {
     // 7일 이상: 최대값
-    ratio = 0.5
+    ratio = 1.0
   }
 
   // 굵기 계산
@@ -393,8 +393,30 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   // 위에서 아래로 배치 (세로 정렬)
   const START_X = 400
   const START_Y = 50
-  const VERTICAL_SPACING = 150
+  const BASE_VERTICAL_SPACING = 150 // 기본 세로 간격
   const BASE_HORIZONTAL_SPACING = 200 // 기본 가로 간격을 넓게
+
+  // 각 레벨로 들어오는 엣지들의 최대 strokeWidth를 계산하여 간격 조절
+  const levelMaxStrokeWidth = new Map() // level -> max strokeWidth
+  
+  nodes.forEach(node => {
+    const level = visitOrder.get(node.id)
+    // 이 노드로 들어오는 엣지들 찾기
+    const incomingEdges = edges.filter(edge => edge.target === node.id)
+    
+    if (incomingEdges.length > 0) {
+      // 들어오는 엣지들 중 최대 strokeWidth 찾기
+      const maxStroke = Math.max(...incomingEdges.map(edge => edge.style.strokeWidth || 2))
+      
+      // 해당 레벨의 기존 최대값과 비교
+      const currentMax = levelMaxStrokeWidth.get(level) || 0
+      if (maxStroke > currentMax) {
+        levelMaxStrokeWidth.set(level, maxStroke)
+      }
+    }
+  })
+
+  console.log('레벨별 최대 선 굵기:', Object.fromEntries(levelMaxStrokeWidth))
 
   // 부모-자식 관계 맵 구축
   const parentMap = new Map() // childId -> [parentId1, parentId2, ...]
@@ -417,11 +439,39 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
     }
   })
 
+  // 레벨별 y 좌표를 동적으로 계산
+  const levelYPositions = new Map()
+  let currentY = START_Y
+  
+  const sortedOrders = Array.from(orderGroups.keys()).sort((a, b) => a - b)
+  sortedOrders.forEach((order, index) => {
+    if (index === 0) {
+      // 첫 번째 레벨은 START_Y
+      levelYPositions.set(order, currentY)
+    } else {
+      // 이전 레벨과의 간격 계산
+      const prevOrder = sortedOrders[index - 1]
+      
+      // 현재 레벨로 들어오는 엣지들의 최대 굵기
+      const maxStroke = levelMaxStrokeWidth.get(order) || 2
+      
+      // 선 굵기에 따른 간격 조절 (2px~10px -> 1.0~2.5배)
+      // strokeWidth가 2일 때: 1.0배, 10일 때: 2.5배
+      const spacingMultiplier = 1.0 + ((maxStroke - 2) / (10 - 2)) * 1.5
+      const adjustedSpacing = BASE_VERTICAL_SPACING * spacingMultiplier
+      
+      currentY = levelYPositions.get(prevOrder) + adjustedSpacing
+      levelYPositions.set(order, currentY)
+      
+      console.log(`📏 레벨 ${order}: 선 굵기 ${maxStroke.toFixed(1)}px → 간격 배율 ${spacingMultiplier.toFixed(2)}x → 실제 간격 ${adjustedSpacing.toFixed(0)}px`)
+    }
+  })
+
   Array.from(orderGroups.keys()).sort((a, b) => a - b).forEach(order => {
     const nodesInOrder = orderGroups.get(order)
-    const y = START_Y + order * VERTICAL_SPACING
+    const y = levelYPositions.get(order)
 
-    console.log(`📊 레벨 ${order}: ${nodesInOrder.length}개 노드 -`, nodesInOrder.map(n => n.data.content || n.data.label))
+    console.log(`📊 레벨 ${order}: ${nodesInOrder.length}개 노드 (y=${y}) -`, nodesInOrder.map(n => n.data.content || n.data.label))
 
     if (nodesInOrder.length === 1) {
       // 단일 노드: 부모 위치 또는 중앙에 배치

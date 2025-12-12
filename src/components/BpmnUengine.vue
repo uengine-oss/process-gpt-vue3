@@ -292,8 +292,8 @@ export default {
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
-            // 항상 세로형으로 고정
-            let isHorizontal = false;
+            // 항상 가로형으로 고정
+            let isHorizontal = true;
 
             this.isHorizontal = isHorizontal;
             

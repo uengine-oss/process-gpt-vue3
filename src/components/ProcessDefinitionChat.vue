@@ -1244,60 +1244,47 @@ export default {
                 const originalName = this.processDefinition.processDefinitionName;
                 const originalId = this.processDefinition.processDefinitionId;
                 
+                // ✅ elements가 있으면 activities/sequences로 동기화 (근본 해결)
+                if (this.processDefinition.elements && Array.isArray(this.processDefinition.elements)) {
+                    // activities 배열 동기화
+                    this.processDefinition.activities = this.processDefinition.elements.filter(el => 
+                        el && el.elementType === 'Activity'
+                    );
+                    
+                    // sequences 배열 동기화
+                    this.processDefinition.sequences = this.processDefinition.elements.filter(el => 
+                        el && el.elementType === 'Sequence'
+                    );
+                    
+                    // gateways 배열 동기화
+                    this.processDefinition.gateways = this.processDefinition.elements.filter(el => 
+                        el && el.elementType === 'Gateway'
+                    );
+                    
+                    // events 배열 동기화
+                    this.processDefinition.events = this.processDefinition.elements.filter(el => 
+                        el && el.elementType === 'Event'
+                    );
+                    
+                    console.log('✅ elements → activities/sequences 동기화 완료:', {
+                        activities: this.processDefinition.activities.length,
+                        sequences: this.processDefinition.sequences.length,
+                        gateways: this.processDefinition.gateways?.length,
+                        events: this.processDefinition.events?.length
+                    });
+                }
+                
                 const activityName = activityData.content || activityData.name;
                 let updated = false;
                 
-                // elements 구조로 처리
-                if (this.processDefinition.elements && Array.isArray(this.processDefinition.elements)) {
-                    const element = this.processDefinition.elements.find(el => 
-                        el && (el.id === activityData.id || el.name === activityName)
-                    );
-                    
-                    if (element) {
-                        // ✅ element 속성만 수정 (processDefinition 메타데이터 건드리지 않음)
-                        element.system = activityData.footer;
-                        element.description = activityData.description;
-                        element.role = activityData.header;
-                        element.issues = activityData.issues;
-                        
-                        // 데이터 속성 업데이트
-                        if (activityData.inputData !== undefined) element.inputData = activityData.inputData;
-                        if (activityData.outputData !== undefined) element.outputData = activityData.outputData;
-                        if (activityData.coreData !== undefined) element.coreData = activityData.coreData;
-                        
-                        updated = true;
-                        console.log('✅ Element 업데이트:', element.name);
-                    }
-                    
-                    // ✅ 시퀀스만 수정 (processDefinition 메타데이터 건드리지 않음)
-                    if (activityData.incomingSequenceId) {
-                        const sequence = this.processDefinition.elements.find(el => 
-                            el && el.id === activityData.incomingSequenceId
-                        );
-                        if (sequence) {
-                            sequence.requiredTime = activityData.requiredTime;
-                            console.log('✅ 들어오는 시퀀스 시간 업데이트:', sequence.id);
-                        }
-                    }
-                    
-                    if (activityData.backflowSequenceId) {
-                        const sequence = this.processDefinition.elements.find(el => 
-                            el && el.id === activityData.backflowSequenceId
-                        );
-                        if (sequence) {
-                            sequence.requiredTime = activityData.backflowRequiredTime;
-                            console.log('✅ 역행 시퀀스 시간 업데이트:', sequence.id);
-                        }
-                    }
-                }
-                // activities 구조로 처리 (구형 포맷)
-                else if (this.processDefinition.activities && Array.isArray(this.processDefinition.activities)) {
+                // activities 구조로 처리 (이제 항상 최신 상태)
+                if (this.processDefinition.activities && Array.isArray(this.processDefinition.activities)) {
                     const activity = this.processDefinition.activities.find(act => 
                         act && (act.id === activityData.id || act.name === activityName)
                     );
                     
                     if (activity) {
-                        // ✅ activity 속성만 수정
+                        // ✅ activity 속성 수정
                         activity.system = activityData.footer;
                         activity.description = activityData.description;
                         activity.role = activityData.header;
@@ -1309,21 +1296,64 @@ export default {
                         
                         updated = true;
                         console.log('✅ Activity 업데이트:', activity.name);
+                        
+                        // ✅ elements에도 동기화 (양방향 동기화)
+                        if (this.processDefinition.elements) {
+                            const element = this.processDefinition.elements.find(el => 
+                                el && el.id === activity.id
+                            );
+                            if (element) {
+                                element.system = activity.system;
+                                element.description = activity.description;
+                                element.role = activity.role;
+                                element.issues = activity.issues;
+                                element.inputData = activity.inputData;
+                                element.outputData = activity.outputData;
+                                element.coreData = activity.coreData;
+                                console.log('✅ Element도 동기화 완료');
+                            }
+                        }
                     }
                     
-                    // ✅ 시퀀스만 수정
+                    // ✅ 시퀀스 수정
                     if (activityData.incomingSequenceId && this.processDefinition.sequences) {
                         const sequence = this.processDefinition.sequences.find(seq => 
                             seq.id === activityData.incomingSequenceId
                         );
-                        if (sequence) sequence.requiredTime = activityData.requiredTime;
+                        if (sequence) {
+                            sequence.requiredTime = activityData.requiredTime;
+                            console.log('✅ 들어오는 시퀀스 시간 업데이트:', sequence.id);
+                            
+                            // ✅ elements에도 동기화
+                            if (this.processDefinition.elements) {
+                                const element = this.processDefinition.elements.find(el => 
+                                    el && el.id === sequence.id
+                                );
+                                if (element) {
+                                    element.requiredTime = sequence.requiredTime;
+                                }
+                            }
+                        }
                     }
                     
                     if (activityData.backflowSequenceId && this.processDefinition.sequences) {
                         const sequence = this.processDefinition.sequences.find(seq => 
                             seq.id === activityData.backflowSequenceId
                         );
-                        if (sequence) sequence.requiredTime = activityData.backflowRequiredTime;
+                        if (sequence) {
+                            sequence.requiredTime = activityData.backflowRequiredTime;
+                            console.log('✅ 역행 시퀀스 시간 업데이트:', sequence.id);
+                            
+                            // ✅ elements에도 동기화
+                            if (this.processDefinition.elements) {
+                                const element = this.processDefinition.elements.find(el => 
+                                    el && el.id === sequence.id
+                                );
+                                if (element) {
+                                    element.requiredTime = sequence.requiredTime;
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -1716,7 +1746,7 @@ export default {
                             }
                             
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
-                            this.bpmn = this.createBpmnXml(unknown, false); // 항상 세로형으로 생성
+                            this.bpmn = this.createBpmnXml(unknown, true); // 항상 가로형으로 생성
                             this.definitionChangeCount++;
 
                             if (!this.isConsultingMode) {
@@ -2200,7 +2230,7 @@ export default {
                                     
                                     // 6. BPMN XML 재생성
                                     try {
-                                        this.bpmn = this.createBpmnXml(this.processDefinition, false); // 항상 세로형으로 생성
+                                        this.bpmn = this.createBpmnXml(this.processDefinition, true); // 항상 가로형으로 생성
                                     } catch (error) {
                                         console.error('Error creating BPMN XML:', error);
                                         // 오류 발생 시 기본 BPMN 구조 유지
@@ -2212,7 +2242,7 @@ export default {
                                 if(this.processDefinition['activities'] && this.processDefinition['sequences']) {
                                     this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                                 }
-                                this.bpmn = this.createBpmnXml(this.processDefinition, false); // 항상 세로형으로 생성
+                                this.bpmn = this.createBpmnXml(this.processDefinition, true); // 항상 가로형으로 생성
                             }
                             this.oldProcDefId = unknown.processDefinitionId;
                             this.definitionChangeCount++;
@@ -2745,7 +2775,7 @@ export default {
                     if (!this.processDefinition) this.processDefinition = {};
                     
                     // BPMN XML 생성
-                    this.bpmn = this.createBpmnXml(processDefinition, false); // 항상 세로형으로 생성
+                    this.bpmn = this.createBpmnXml(processDefinition, true); // 항상 가로형으로 생성
                     
                     // 프로젝트 정보 설정 - 트리에서 생성한 프로세스인 경우 트리에서 정한 ID 사용
                     if (this.treeProcessLocation && this.treeProcessLocation.processDefinitionId) {
@@ -2946,7 +2976,7 @@ export default {
                 }
 
                 
-                this.bpmn = this.createBpmnXml(processDefinition, false); // 항상 세로형으로 생성
+                this.bpmn = this.createBpmnXml(processDefinition, true); // 항상 가로형으로 생성
                 
                 this.lastParsedJSON = processDefinition;
                 
@@ -2962,7 +2992,7 @@ export default {
                     
                     // BPMN XML 생성
                     if (reorderedProcess.elements && reorderedProcess.elements.length > 0) {
-                        this.bpmn = this.createBpmnXml(reorderedProcess, false); // 항상 세로형으로 생성
+                        this.bpmn = this.createBpmnXml(reorderedProcess, true); // 항상 가로형으로 생성
                         
                         // 프로젝트 정보 설정
                         if (reorderedProcess.processDefinitionName) {

@@ -792,17 +792,19 @@ export default {
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
-            // 항상 세로형으로 고정
-            let isHorizontal = false;
+            // 항상 가로형으로 고정
+            let isHorizontal = true;
             
             participant.forEach(element => {
                 const horizontal = element.di.isHorizontal;
-                // 가로형인 경우 세로형으로 변환
-                if(horizontal && element.width > element.height) {
-                    palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
-                    self.isHorizontal = false;
-                    element.di.isHorizontal = false;
-                }
+                self.isHorizontal = true;
+                element.di.isHorizontal = true;
+                // // 가로형인 경우 세로형으로 변환
+                // if(horizontal && element.width > element.height) {
+                //     palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
+                //     self.isHorizontal = false;
+                //     element.di.isHorizontal = false;
+                // }
             });
 
             self.resetZoom();

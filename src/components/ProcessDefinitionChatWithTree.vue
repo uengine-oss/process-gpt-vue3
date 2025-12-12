@@ -348,6 +348,8 @@ export default {
         selectedFlowActivity: null,
         // 속성 패널 표시 여부
         showActivityPanel: false,
+        // MutationObserver
+        treeObserver: null,
     }),
     async created() {
         // 저장된 트리 상태 불러오기
@@ -424,8 +426,13 @@ export default {
                 this.nodes[this.selectedNodeId].state.selected = true;
             }
             
-            // 트리 노드 클릭 이벤트 추가
+            // 트리 노드 클릭 이벤트 추가 (여러 시점에서)
             this.attachNodeClickEvents();
+            
+            // MutationObserver 설정 (DOM 변경 감지)
+            this.$nextTick(() => {
+                this.setupTreeObserver();
+            });
         });
     },
     updated() {
@@ -446,7 +453,10 @@ export default {
         nodes: {
             deep: true,
             handler() {
-                // DOM 조작 제거 - slot으로 대체됨
+                // nodes가 변경되면 클릭 이벤트 재등록
+                this.$nextTick(() => {
+                    this.attachNodeClickEvents();
+                });
             }
         },
         // 선택된 노드 ID 변경 감지
@@ -495,10 +505,15 @@ export default {
         isTreeViewVisible: {
             handler(newValue) {
                 if (newValue) {
-                    // 트리뷰가 다시 보일 때 클릭 이벤트 재부착
+                    // 트리뷰가 다시 보일 때 클릭 이벤트 재부착 및 Observer 재설정
                     console.log('🔄 트리뷰 다시 표시 - 클릭 이벤트 재부착');
                     this.$nextTick(() => {
                         this.attachNodeClickEvents();
+                        
+                        // Observer 재설정
+                        this.$nextTick(() => {
+                            this.setupTreeObserver();
+                        });
                     });
                 }
             }
@@ -508,6 +523,12 @@ export default {
         // 리사이즈 이벤트 리스너 제거
         document.removeEventListener('mousemove', this.handleMouseMove);
         document.removeEventListener('mouseup', this.handleMouseUp);
+        
+        // MutationObserver 해제
+        if (this.treeObserver) {
+            this.treeObserver.disconnect();
+            this.treeObserver = null;
+        }
     },
     methods: {
         /**
@@ -1004,6 +1025,9 @@ export default {
                     this.$nextTick(() => {
                         this.$nextTick(() => {
                             this.restoreTreeState();
+                            
+                            // 클릭 이벤트도 재등록
+                            this.attachNodeClickEvents();
                         });
                     });
                 }
@@ -1170,34 +1194,44 @@ export default {
         async refreshTree() {
             await this.loadProcessDefinitionMap();
             
-            // 트리 다시 로드 후 클릭 이벤트 재부착
+            // 트리 다시 로드 후 클릭 이벤트 재부착 및 Observer 재설정
             this.$nextTick(() => {
                 this.attachNodeClickEvents();
+                
+                // Observer 재설정
+                this.$nextTick(() => {
+                    this.setupTreeObserver();
+                });
             });
         },
         
         /**
-         * 트리 노드에 클릭 이벤트 추가
+         * 트리 노드에 클릭 이벤트 추가 (개선된 버전)
          */
         attachNodeClickEvents() {
             console.log('🔧 트리 노드 클릭 이벤트 추가 시작');
             
-            // 약간의 지연을 두고 DOM이 완전히 렌더링될 때까지 대기
-            setTimeout(() => {
+            // 여러 시점에서 이벤트 등록 시도
+            const tryAttach = (attempt = 1) => {
+                console.log(`📌 클릭 이벤트 등록 시도 ${attempt}회`);
+                
                 // 모든 트리 노드 찾기
                 const treeNodes = document.querySelectorAll('.process-tree .tree-node');
                 console.log('📋 찾은 트리 노드 수:', treeNodes.length);
+                
+                if (treeNodes.length === 0 && attempt < 5) {
+                    // 노드가 없으면 다시 시도 (최대 5회)
+                    setTimeout(() => tryAttach(attempt + 1), 200 * attempt);
+                    return;
+                }
+                
+                let attachedCount = 0;
                 
                 treeNodes.forEach((treeNode) => {
                     const nodeWrapper = treeNode.querySelector('.node-wrapper');
                     if (!nodeWrapper) return;
                     
-                    // 기존 리스너 제거 방지
-                    if (nodeWrapper.hasAttribute('data-click-attached')) return;
-                    
-                    nodeWrapper.setAttribute('data-click-attached', 'true');
-                    
-                    // 노드 ID 미리 확인
+                    // 노드 ID 찾기
                     let nodeId = treeNode.id || 
                                 treeNode.getAttribute('id') || 
                                 treeNode.getAttribute('data-id') ||
@@ -1217,26 +1251,85 @@ export default {
                     // 서브 프로세스만 cursor pointer 적용
                     if (nodeId && nodeId.startsWith('sub_')) {
                         nodeWrapper.style.cursor = 'pointer';
+                        
+                        // 기존 리스너가 없으면 추가 (중복 방지)
+                        if (!nodeWrapper.hasAttribute('data-click-attached')) {
+                            nodeWrapper.setAttribute('data-click-attached', 'true');
+                            
+                            // 클릭 이벤트 추가
+                            const clickHandler = (e) => {
+                                // 버튼 클릭은 제외
+                                if (e.target.closest('.node-action-btn') || e.target.closest('.node-action-buttons')) {
+                                    return;
+                                }
+                                
+                                console.log('🖱️ 노드 클릭됨:', nodeId);
+                                
+                                // 서브 프로세스 클릭 처리
+                                if (nodeId && this.nodes[nodeId]) {
+                                    this.handleNodeClick(this.nodes[nodeId]);
+                                }
+                            };
+                            
+                            nodeWrapper.addEventListener('click', clickHandler);
+                            attachedCount++;
+                        }
                     } else {
                         nodeWrapper.style.cursor = 'default';
                     }
-                    
-                    // 클릭 이벤트 추가
-                    nodeWrapper.addEventListener('click', (e) => {
-                        // 버튼 클릭은 제외
-                        if (e.target.closest('.node-action-btn') || e.target.closest('.node-action-buttons')) {
-                            return;
-                        }
-                        
-                        console.log('🖱️ 노드 클릭됨:', nodeId);
-                        
-                        // 서브 프로세스만 클릭 가능
-                        if (nodeId && this.nodes[nodeId] && nodeId.startsWith('sub_')) {
-                            this.handleNodeClick(this.nodes[nodeId]);
-                        }
-                    });
                 });
-            }, 500);
+                
+                console.log(`✅ 클릭 이벤트 ${attachedCount}개 등록 완료`);
+            };
+            
+            // 즉시 실행
+            tryAttach();
+        },
+        
+        /**
+         * MutationObserver를 사용하여 트리 DOM 변경 감지
+         */
+        setupTreeObserver() {
+            // 기존 observer가 있으면 해제
+            if (this.treeObserver) {
+                this.treeObserver.disconnect();
+            }
+            
+            const treeContainer = document.querySelector('.process-tree');
+            if (!treeContainer) {
+                console.log('⚠️ 트리 컨테이너를 찾을 수 없습니다.');
+                return;
+            }
+            
+            console.log('👀 MutationObserver 설정');
+            
+            this.treeObserver = new MutationObserver((mutations) => {
+                // 노드가 추가되거나 변경되면 클릭 이벤트 재등록
+                let shouldReattach = false;
+                
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        // 새로운 노드가 추가됨
+                        shouldReattach = true;
+                    }
+                });
+                
+                if (shouldReattach) {
+                    console.log('🔄 트리 DOM 변경 감지 - 클릭 이벤트 재등록');
+                    // 약간의 지연 후 재등록 (DOM 안정화)
+                    setTimeout(() => {
+                        this.attachNodeClickEvents();
+                    }, 100);
+                }
+            });
+            
+            // observer 시작
+            this.treeObserver.observe(treeContainer, {
+                childList: true,
+                subtree: true
+            });
+            
+            console.log('✅ MutationObserver 활성화');
         },
 
         /**

@@ -889,9 +889,16 @@ export default {
 
                         // process-level json meta
                         const processJson = getPropsJson(proc);
+                        
+                        // ✅ process.name 속성을 우선적으로 사용 (XML의 name 속성)
+                        definitionName = proc.name || null;
+                        
                         if (processJson) {
                             instanceNamePattern = processJson.instanceNamePattern ?? null;
-                            definitionName = processJson.definitionName ?? null;
+                            // processJson.definitionName은 fallback으로만 사용
+                            if (!definitionName) {
+                                definitionName = processJson.definitionName ?? null;
+                            }
                             version = processJson.version ?? null;
                             shortDescription = processJson.shortDescription ?? null;
                         }
@@ -1187,6 +1194,15 @@ export default {
                     if (!definitionName && res.definitionName) definitionName = res.definitionName;
                     if (!version && res.version) version = res.version;
                     if (!shortDescription && res.shortDescription) shortDescription = res.shortDescription;
+                }
+
+                // ✅ definitionName이 여전히 없으면 participant의 name을 사용
+                if (!definitionName && participants) {
+                    const participantArr = Array.isArray(participants) ? participants : [participants];
+                    if (participantArr.length > 0 && participantArr[0].name) {
+                        definitionName = participantArr[0].name;
+                        console.log('✅ participant.name에서 processDefinitionName 복원:', definitionName);
+                    }
                 }
 
                 // ---------- final JSON ----------

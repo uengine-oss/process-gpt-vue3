@@ -20,6 +20,10 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  showLegend: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const emit = defineEmits(['node-double-click'])
@@ -344,7 +348,7 @@ defineExpose({
       </ControlButton>
     </Controls>
 
-    <Panel position="bottom-right" class="legend-panel">
+    <Panel v-if="showLegend" position="bottom-right" class="legend-panel">
       <div class="legend-title">범례 (Legend)</div>
       
       <div class="legend-section">

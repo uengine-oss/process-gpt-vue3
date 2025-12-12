@@ -44,7 +44,7 @@
                     {{ $t('ProcessDefinitionVersionManager.download') }}
                 </v-btn>
                 <v-btn @click="changeXML" variant="text" color="primary" :disabled="loading">
-                    {{ currentSelectedVersion }} 버전으로 변경
+                    v{{ leftVersion }} 버전으로 변경
                 </v-btn>
             </div>
 
@@ -52,10 +52,28 @@
                 :style="viewMode === 'xml' ? 'height: calc(100vh - 280px);' : 'height: calc(100vh - 260px);'"
             >
                 <!-- XML 모드 -->
-                <div v-if="viewMode === 'xml'" style="height: 100%; position: relative;">
-                    <div class="version-manager-version-number" style="left: 0px; top: -32px;">버전: {{ currentSelectedVersion }}</div>
-                    <div class="version-manager-version-number" style="left: 50%; top: -32px;">버전: {{ latestVersion }}</div>
-                    <vuediff :prev="currentSelectedXML || ''" :current="currentXML || ''" mode="split" theme="light"
+                <div v-if="viewMode === 'xml'" style="height: 100%; position: relative; padding-top: 40px;">
+                    <div class="version-manager-version-select" style="left: 0px; top: 0px;">
+                        <v-select
+                            v-model="leftVersionIndex"
+                            :items="leftVersionOptions"
+                            density="compact"
+                            variant="solo"
+                            hide-details
+                            :item-props="itemProps"
+                        ></v-select>
+                    </div>
+                    <div class="version-manager-version-select" style="left: 50%; top: 0px;">
+                        <v-select
+                            v-model="rightVersionIndex"
+                            :items="rightVersionOptions"
+                            density="compact"
+                            variant="solo"
+                            hide-details
+                            :item-props="itemProps"
+                        ></v-select>
+                    </div>
+                    <vuediff :prev="leftXML || ''" :current="rightXML || ''" mode="split" theme="light"
                         class="version-manager-vuediff-box"
                         language="xml"
                         style="height: 100%;"
@@ -63,16 +81,25 @@
                 </div>
                 
                 <!-- BPMN 모드 -->
-                <div v-else-if="viewMode === 'bpmn'" style="height: 100%; display: flex; align-items: center; gap: 8px;" :class="{ 'flex-column': isMobile }">
+                <div v-else-if="viewMode === 'bpmn'" style="height: 100%; display: flex; align-items: center; gap: 8px; position: relative; padding-top: 40px;" :class="{ 'flex-column': isMobile }">
+                    <div class="version-manager-version-select" style="left: 0px; top: 0px;">
+                        <v-select
+                            v-model="leftVersionIndex"
+                            :items="leftVersionOptions"
+                            density="compact"
+                            variant="solo"
+                            hide-details
+                            :item-props="itemProps"
+                        ></v-select>
+                    </div>
                     <v-card outlined
                         style="width: 100%; position: relative;"
                         :style="{ height: isMobile ? '50%' : '100%' }"
                         elevation="10"
                     >
-                        <div class="version-manager-version-number">버전: {{ currentSelectedVersion }}</div>
                         <BpmnUengine
                             :key="key + '_left'"
-                            :bpmn="currentSelectedXML"
+                            :bpmn="leftXML"
                             :options="options"
                             :isViewMode="false"
                             :diffActivities="leftDiffActivities"
@@ -84,15 +111,24 @@
                     <div style="display: flex; align-items: center; justify-content: center;">
                         <v-icon :size="isMobile ? '24' : '48'">{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}</v-icon>
                     </div>
+                    <div class="version-manager-version-select" style="left: 50%; top: 0px;">
+                        <v-select
+                            v-model="rightVersionIndex"
+                            :items="rightVersionOptions"
+                            density="compact"
+                            variant="solo"
+                            hide-details
+                            :item-props="itemProps"
+                        ></v-select>
+                    </div>
                     <v-card outlined
                         style="width: 100%; position: relative;"
                         :style="{ height: isMobile ? '50%' : '100%' }"
                         elevation="10"
                     >
-                        <div class="version-manager-version-number">버전: {{ latestVersion }}</div>
                         <BpmnUengine
                             :key="key + '_right'"
-                            :bpmn="currentXML"
+                            :bpmn="rightXML"
                             :options="options"
                             :isViewMode="false"
                             :diffActivities="rightDiffActivities"
@@ -104,45 +140,60 @@
                 </div>
                 
                 <!-- Flow 모드 -->
-                <div v-else-if="viewMode === 'flow'" style="height: 100%; display: flex; align-items: stretch; gap: 8px; overflow: hidden;" :class="{ 'flex-column': isMobile }">
-                    <v-card outlined
-                        style="width: 100%; position: relative; overflow: hidden;"
-                        :style="{ height: isMobile ? '50%' : '100%' }"
-                        elevation="10"
-                    >
-                        <div class="version-manager-version-number">버전: {{ currentSelectedVersion }}</div>
-                        <ProcessFlowExample
-                            v-if="currentSelectedProcessDefinition"
-                            :key="key + '_flow_left'"
-                            :process-definition="currentSelectedProcessDefinition"
-                            :diff-activities="leftDiffActivities"
-                            style="height: 100%; width: 100%;"
-                        ></ProcessFlowExample>
-                    </v-card>
-                    <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                        <v-icon :size="isMobile ? '24' : '48'">{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}</v-icon>
+                <div v-else-if="viewMode === 'flow'" style="height: 100%; display: flex; align-items: stretch; gap: 8px; overflow: hidden; position: relative; padding-top: 40px;" :class="{ 'flex-column': isMobile }">
+                    <div class="version-manager-version-select" style="left: 0px; top: 0px;">
+                        <v-select
+                            v-model="leftVersionIndex"
+                            :items="leftVersionOptions"
+                            density="compact"
+                            variant="solo"
+                            hide-details
+                            :item-props="itemProps"
+                        ></v-select>
                     </div>
                     <v-card outlined
                         style="width: 100%; position: relative; overflow: hidden;"
                         :style="{ height: isMobile ? '50%' : '100%' }"
                         elevation="10"
                     >
-                        <div class="version-manager-version-number">버전: {{ latestVersion }}</div>
                         <ProcessFlowExample
-                            v-if="latestProcessDefinition"
+                            v-if="leftProcessDefinition"
+                            :key="key + '_flow_left'"
+                            :process-definition="leftProcessDefinition"
+                            :diff-activities="leftDiffActivities"
+                            :show-legend="false"
+                            style="height: 100%; width: 100%;"
+                        ></ProcessFlowExample>
+                    </v-card>
+                    <div style="display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <v-icon :size="isMobile ? '24' : '48'">{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}</v-icon>
+                    </div>
+                    <div class="version-manager-version-select" style="left: 50%; top: 0px;">
+                        <v-select
+                            v-model="rightVersionIndex"
+                            :items="rightVersionOptions"
+                            density="compact"
+                            variant="solo"
+                            hide-details
+                            :item-props="itemProps"
+                        ></v-select>
+                    </div>
+                    <v-card outlined
+                        style="width: 100%; position: relative; overflow: hidden;"
+                        :style="{ height: isMobile ? '50%' : '100%' }"
+                        elevation="10"
+                    >
+                        <ProcessFlowExample
+                            v-if="rightProcessDefinition"
                             :key="key + '_flow_right'"
-                            :process-definition="latestProcessDefinition"
+                            :process-definition="rightProcessDefinition"
                             :diff-activities="rightDiffActivities"
+                            :show-legend="false"
                             style="height: 100%; width: 100%;"
                         ></ProcessFlowExample>
                     </v-card>
                 </div>
             </v-card-text>
-            <v-card-actions class="pa-0 pt-2">
-                <v-slider v-model="currentIndex" step="1" min="0" :max="lists.length - 1" show-ticks="always"
-                    tick-size="4" @end="handleBeforeChange" :hide-details="true"
-                    style="padding: 0; margin-right: 16px; margin-left: 16px;"></v-slider>
-            </v-card-actions>
         </v-card>
     </v-dialog>
 </template>
@@ -178,12 +229,12 @@ export default {
         // view mode
         viewMode: 'bpmn', // xml, bpmn, flow
         key: 0, // update component
-        // slider
-        currentIndex: 0,
+        // version selection
+        leftVersionIndex: 0,
+        rightVersionIndex: 0,
         lists: [],
         loading: false,
         currentInfo: null,
-        currentXML: null,
         options: {
             additionalModules: [customBpmnModule]
         },
@@ -191,68 +242,89 @@ export default {
         currentVersion: null,
         currentVersionMessage: null,
 
-        lastProcessInfo: null,
+        leftProcessInfo: null,
+        rightProcessInfo: null,
         leftDiffActivities: {},
         rightDiffActivities: {},
         
         // Flow 모드용 프로세스 정의
-        currentSelectedProcessDefinition: null,
-        latestProcessDefinition: null,
+        leftProcessDefinition: null,
+        rightProcessDefinition: null,
     }),
     computed: {
-        beforeXML() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex - 1]) {
-                return this.lists[this.currentIndex - 1].xml
+        leftXML() {
+            if (this.lists.length > 0 && this.lists[this.leftVersionIndex]) {
+                return this.lists[this.leftVersionIndex].xml
             }
             return null;
         },
-        currentSelectedXML() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.currentIndex].xml
-            }
-            return null;
-        },
-        currentXML() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.lists.length - 1].xml
+        rightXML() {
+            if (this.lists.length > 0 && this.lists[this.rightVersionIndex]) {
+                return this.lists[this.rightVersionIndex].xml
             }
             return null;
         },
         isMobile() {
             return window.innerWidth <= 768;
         },
-        beforeVersion() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex - 1]) {
-                return this.lists[this.currentIndex - 1].version
+        leftVersion() {
+            if (this.lists.length > 0 && this.lists[this.leftVersionIndex]) {
+                return this.lists[this.leftVersionIndex].version
             }
             return null;
         },
-        currentSelectedVersion() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.currentIndex].version
+        rightVersion() {
+            if (this.lists.length > 0 && this.lists[this.rightVersionIndex]) {
+                return this.lists[this.rightVersionIndex].version
             }
             return null;
         },
-        latestVersion() {
-            if (this.lists.length > 0) {
-                return this.lists[this.lists.length - 1].version
-            }
-            return null;
+        versionOptions() {
+            return this.lists.map((item, index) => ({
+                title: `v${item.version}${item.message ? ' - ' + item.message : ''}`,
+                value: index
+            }));
+        },
+        leftVersionOptions() {
+            return this.lists.map((item, index) => ({
+                title: `v${item.version}${item.message ? ' - ' + item.message : ''}`,
+                value: index,
+                disabled: index === this.rightVersionIndex
+            }));
+        },
+        rightVersionOptions() {
+            return this.lists.map((item, index) => ({
+                title: `v${item.version}${item.message ? ' - ' + item.message : ''}`,
+                value: index,
+                disabled: index === this.leftVersionIndex
+            }));
         },
     },
     watch: {
         "open": function (newVal) {
             if (newVal) {
-                this.currentIndex = 0 // init
                 this.load();
             } else {
                 this.isOpen = false
             }
         },
+        async leftVersionIndex(newIndex) {
+            await this.handleVersionChange('left', newIndex);
+        },
+        async rightVersionIndex(newIndex) {
+            await this.handleVersionChange('right', newIndex);
+        },
     },
     created() {
     },
     methods: {
+        itemProps(item) {
+            return {
+                title: item.title,
+                value: item.value,
+                disabled: item.disabled
+            }
+        },
         async load() {
             var me = this
             me.loading = true
@@ -264,14 +336,29 @@ export default {
             });
             if(result && result.length > 0){
                 me.lists = result.map(item => ({ ...item, xml: null }));
-                me.currentIndex = me.lists.length - 1;
-                me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
-                await me.setCurrentInfo(me.lists[me.currentIndex].xml);
                 
-                // Flow 모드용 프로세스 정의 변환
-                me.currentSelectedProcessDefinition = await me.convertXMLToJSON(me.lists[me.currentIndex].xml);
-                me.latestProcessDefinition = JSON.parse(JSON.stringify(me.currentSelectedProcessDefinition));
-                me.lastProcessInfo = JSON.parse(JSON.stringify(me.currentSelectedProcessDefinition));
+                // 초기 로드 시 우측=최신버전, 좌측=직전버전
+                me.rightVersionIndex = me.lists.length - 1;
+                me.leftVersionIndex = me.lists.length > 1 ? me.lists.length - 2 : 0;
+                
+                // 우측(최신) 버전 로드
+                me.lists[me.rightVersionIndex].xml = await me.loadXMLOfVer(me.lists[me.rightVersionIndex].version);
+                await me.setCurrentInfo(me.lists[me.rightVersionIndex].xml);
+                
+                // 좌측(직전) 버전 로드
+                if (me.leftVersionIndex !== me.rightVersionIndex) {
+                    me.lists[me.leftVersionIndex].xml = await me.loadXMLOfVer(me.lists[me.leftVersionIndex].version);
+                }
+                
+                // 프로세스 정의 변환
+                me.rightProcessDefinition = await me.convertXMLToJSON(me.lists[me.rightVersionIndex].xml);
+                me.rightProcessInfo = JSON.parse(JSON.stringify(me.rightProcessDefinition));
+                
+                me.leftProcessDefinition = await me.convertXMLToJSON(me.lists[me.leftVersionIndex].xml);
+                me.leftProcessInfo = JSON.parse(JSON.stringify(me.leftProcessDefinition));
+                
+                // diff 계산
+                me.calculateDifferences();
                 
                 me.isOpen = true;
             } else {
@@ -282,44 +369,49 @@ export default {
             }
             me.loading = false;
         },
-        async handleBeforeChange(index) {
+        async handleVersionChange(side, index) {
             var me = this
             me.loading = true
-            if (!me.lists[index]) return;
-            if (!me.lists[index].xml) me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
-            await me.setCurrentInfo(me.lists[index].xml);
-            
-            // Flow 모드용 프로세스 정의 변환
-            me.currentSelectedProcessDefinition = await me.convertXMLToJSON(me.lists[index].xml);
-            
-            if(index == me.lists.length - 1){
-                me.lastProcessInfo = JSON.parse(JSON.stringify(me.currentInfo))
-                me.latestProcessDefinition = JSON.parse(JSON.stringify(me.currentSelectedProcessDefinition))
-                me.leftDiffActivities = {};
-                me.rightDiffActivities = {};
-            } else {    
-                if(!me.lists[me.lists.length - 1].xml) me.lists[me.lists.length - 1].xml = await me.loadXMLOfVer(me.lists[me.lists.length - 1].version)
-                if(!me.lastProcessInfo) await me.setLastVersionInfo(me.lists[me.lists.length - 1].xml);
-                
-                // 최신 버전의 프로세스 정의 변환
-                if(!me.latestProcessDefinition) me.latestProcessDefinition = await me.convertXMLToJSON(me.lists[me.lists.length - 1].xml);
-                
-                me.calculateDifferences();
+            if (!me.lists[index]) {
+                me.loading = false;
+                return;
             }
+            
+            // XML 로드 (캐시되어 있지 않은 경우)
+            if (!me.lists[index].xml) {
+                me.lists[index].xml = await me.loadXMLOfVer(me.lists[index].version)
+            }
+            
+            // 프로세스 정의 변환
+            const processDefinition = await me.convertXMLToJSON(me.lists[index].xml);
+            
+            if (side === 'left') {
+                me.leftProcessDefinition = processDefinition;
+                me.leftProcessInfo = JSON.parse(JSON.stringify(processDefinition));
+            } else {
+                me.rightProcessDefinition = processDefinition;
+                me.rightProcessInfo = JSON.parse(JSON.stringify(processDefinition));
+                // 우측이 변경되면 현재 버전 정보 업데이트
+                await me.setCurrentInfo(me.lists[index].xml);
+            }
+            
+            // diff 계산
+            me.calculateDifferences();
+            
             me.loading = false
             me.key++
         },
         changeXML() {
             this.$emit('changeXML', {
                 "id": this.process.processDefinitionId,
-                "name": this.currentSelectedVersionName,
-                "xml": this.currentSelectedXML
+                "name": this.currentVersionName,
+                "xml": this.leftXML
             });
         },
         downloadXML() {
             var me = this;
-            if (me.currentXML) {
-                const blob = new Blob([me.currentXML], { type: 'application/xml' });
+            if (me.rightXML) {
+                const blob = new Blob([me.rightXML], { type: 'application/xml' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = `${me.currentVersionName}-${me.currentVersion}.xml`;
@@ -338,11 +430,6 @@ export default {
             if(currentInfo.shortDescription){
                 me.currentVersionMessage = currentInfo.shortDescription.text;
             }
-            me.currentInfo = currentInfo;
-        },
-        async setLastVersionInfo(xml) {
-            let me = this;
-            me.lastProcessInfo = await me.convertXMLToJSON(xml);
         },
         async loadXMLOfVer(version) {
             var me = this
@@ -356,7 +443,6 @@ export default {
             let xml = null;
             if(result){
                 xml = result[0].snapshot
-                me.currentInfo = await me.convertXMLToJSON(xml);
             }
             return xml;
         },
@@ -386,83 +472,83 @@ export default {
             me.leftDiffActivities = {};
             me.rightDiffActivities = {};
             
-            if (!me.currentInfo || !me.lastProcessInfo) return;
+            if (!me.leftProcessInfo || !me.rightProcessInfo) return;
             
-            const currentActivities = me.currentInfo.activities || [];
-            const lastActivities = me.lastProcessInfo.activities || [];
-            const currentSequences = me.currentInfo.sequences || [];
-            const lastSequences = me.lastProcessInfo.sequences || [];
+            const leftActivities = me.leftProcessInfo.activities || [];
+            const rightActivities = me.rightProcessInfo.activities || [];
+            const leftSequences = me.leftProcessInfo.sequences || [];
+            const rightSequences = me.rightProcessInfo.sequences || [];
             
-            // 현재 액티비티 ID 목록
-            const currentActivityIds = currentActivities.map(act => act.id);
-            // 다음 버전 액티비티 ID 목록
-            const lastActivityIds = lastActivities.map(act => act.id);
+            // 좌측 액티비티 ID 목록
+            const leftActivityIds = leftActivities.map(act => act.id);
+            // 우측 액티비티 ID 목록
+            const rightActivityIds = rightActivities.map(act => act.id);
             
-            // 삭제된 액티비티 찾기 (현재에는 있지만 다음에는 없는 것)
-            currentActivities.forEach(activity => {
-                if (!lastActivityIds.includes(activity.id)) {
+            // 삭제된 액티비티 찾기 (좌측에는 있지만 우측에는 없는 것)
+            leftActivities.forEach(activity => {
+                if (!rightActivityIds.includes(activity.id)) {
                     me.leftDiffActivities[activity.id] = 'deleted';
                 }
             });
             
-            // 추가된 액티비티 찾기 (다음에는 있지만 현재에는 없는 것)
-            lastActivities.forEach(activity => {
-                if (!currentActivityIds.includes(activity.id)) {
+            // 추가된 액티비티 찾기 (우측에는 있지만 좌측에는 없는 것)
+            rightActivities.forEach(activity => {
+                if (!leftActivityIds.includes(activity.id)) {
                     me.rightDiffActivities[activity.id] = 'added';
                 }
             });
             
             // 수정된 액티비티 찾기 (양쪽 다 있지만 내용이 변경된 것)
-            currentActivities.forEach(currentActivity => {
-                const lastActivity = lastActivities.find(act => act.id === currentActivity.id);
-                if (lastActivity) {
+            leftActivities.forEach(leftActivity => {
+                const rightActivity = rightActivities.find(act => act.id === leftActivity.id);
+                if (rightActivity) {
                     // 속성 비교를 위해 JSON 문자열로 변환하여 비교
-                    const currentJson = JSON.stringify(currentActivity);
-                    const lastJson = JSON.stringify(lastActivity);
+                    const leftJson = JSON.stringify(leftActivity);
+                    const rightJson = JSON.stringify(rightActivity);
                     
-                    if (currentJson !== lastJson) {
-                        me.leftDiffActivities[currentActivity.id] = 'modified';
-                        me.rightDiffActivities[lastActivity.id] = 'modified';
+                    if (leftJson !== rightJson) {
+                        me.leftDiffActivities[leftActivity.id] = 'modified';
+                        me.rightDiffActivities[rightActivity.id] = 'modified';
                     }
                 }
             });
 
-            // === 연결선(Sequences) 비교 로직 추가 ===
+            // === 연결선(Sequences) 비교 로직 ===
             
-            // 현재 연결선 ID 목록 (source-target 조합으로 고유 식별)
-            const currentSequenceKeys = currentSequences.map(seq => `${seq.source}-${seq.target}`);
-            const lastSequenceKeys = lastSequences.map(seq => `${seq.source}-${seq.target}`);
+            // 좌측 연결선 ID 목록 (source-target 조합으로 고유 식별)
+            const leftSequenceKeys = leftSequences.map(seq => `${seq.source}-${seq.target}`);
+            const rightSequenceKeys = rightSequences.map(seq => `${seq.source}-${seq.target}`);
             
-            // 삭제된 연결선 찾기 (현재에는 있지만 다음에는 없는 것)
-            currentSequences.forEach(sequence => {
+            // 삭제된 연결선 찾기 (좌측에는 있지만 우측에는 없는 것)
+            leftSequences.forEach(sequence => {
                 const sequenceKey = `${sequence.source}-${sequence.target}`;
-                if (!lastSequenceKeys.includes(sequenceKey)) {
+                if (!rightSequenceKeys.includes(sequenceKey)) {
                     me.leftDiffActivities[sequence.id] = 'deleted';
                 }
             });
             
-            // 추가된 연결선 찾기 (다음에는 있지만 현재에는 없는 것)
-            lastSequences.forEach(sequence => {
+            // 추가된 연결선 찾기 (우측에는 있지만 좌측에는 없는 것)
+            rightSequences.forEach(sequence => {
                 const sequenceKey = `${sequence.source}-${sequence.target}`;
-                if (!currentSequenceKeys.includes(sequenceKey)) {
+                if (!leftSequenceKeys.includes(sequenceKey)) {
                     me.rightDiffActivities[sequence.id] = 'added';
                 }
             });
             
             // 수정된 연결선 찾기 (양쪽 다 있지만 내용이 변경된 것)
-            currentSequences.forEach(currentSequence => {
-                const sequenceKey = `${currentSequence.source}-${currentSequence.target}`;
-                const lastSequence = lastSequences.find(seq => 
+            leftSequences.forEach(leftSequence => {
+                const sequenceKey = `${leftSequence.source}-${leftSequence.target}`;
+                const rightSequence = rightSequences.find(seq => 
                     `${seq.source}-${seq.target}` === sequenceKey
                 );
-                if (lastSequence) {
+                if (rightSequence) {
                     // 속성 비교를 위해 JSON 문자열로 변환하여 비교
-                    const currentJson = JSON.stringify(currentSequence);
-                    const lastJson = JSON.stringify(lastSequence);
+                    const leftJson = JSON.stringify(leftSequence);
+                    const rightJson = JSON.stringify(rightSequence);
                     
-                    if (currentJson !== lastJson) {
-                        me.leftDiffActivities[currentSequence.id] = 'modified';
-                        me.rightDiffActivities[lastSequence.id] = 'modified';
+                    if (leftJson !== rightJson) {
+                        me.leftDiffActivities[leftSequence.id] = 'modified';
+                        me.rightDiffActivities[rightSequence.id] = 'modified';
                     }
                 }
             });
@@ -525,6 +611,46 @@ export default {
     font-weight: bold;
     z-index: 10;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.version-manager-version-select {
+    position: absolute;
+    z-index: 10;
+    width: 100px;
+}
+
+.version-manager-version-select :deep(.v-field) {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    font-size: 12px;
+    min-height: 32px;
+}
+
+.version-manager-version-select :deep(.v-field__input) {
+    padding: 4px 8px;
+    font-size: 12px;
+    min-height: 32px;
+}
+
+.version-manager-version-select :deep(.v-select__selection-text) {
+    font-size: 12px;
+}
+
+/* Disabled 항목 스타일 - 매우 명확하게 */
+.version-manager-version-select :deep(.v-list-item--disabled) {
+    background-color: gray !important;
+    opacity: 1 !important;
+}
+
+.version-manager-version-select :deep(.v-list-item--disabled .v-list-item-title) {
+    color: lightgray !important;
+    text-decoration: line-through;
+}
+
+.version-manager-version-select :deep(.v-list-item--disabled:hover) {
+    background-color: #d5d5d5 !important;
+    cursor: not-allowed !important;
 }
 
 /* 모바일에서 더 컴팩트하게 */
