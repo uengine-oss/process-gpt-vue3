@@ -3,6 +3,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
 import defaultProcessesData from './defaultProcesses.json';
+import { useDefaultSetting } from '@/stores/defaultSetting';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -2450,9 +2451,14 @@ class ProcessGPTBackend implements Backend {
                 Object.keys(options).forEach((key)=> {
                     filter[key] = options[key]
                 })
+                return await storage.list('users', filter);
             }
 
-            return await storage.list('users', filter);
+            const defaultSetting = useDefaultSetting();
+            const defaultAgents = defaultSetting.getAgentList;
+            const users = await storage.list('users', filter);
+
+            return [...defaultAgents, ...users];
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2482,7 +2488,9 @@ class ProcessGPTBackend implements Backend {
     async getAgentList() {
         try {
             const list = await storage.list('users', { match: { is_agent: true, tenant_id: window.$tenantName } });
-            return list;
+            const defaultSetting = useDefaultSetting();
+            const defaultAgents = defaultSetting.getAgentList;
+            return [...defaultAgents, ...list];
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2891,6 +2899,9 @@ class ProcessGPTBackend implements Backend {
     async uploadFile(fileName: string, file: File, options?: any) {
         try {
             let result: any = null;
+            if (!options) {
+                return await storage.uploadFile(fileName, file);
+            }
             await this.uploadFileToStorage(file, options).then(async (response) => {
                 if (response) {
                     await this.putInstanceSource({
@@ -5088,7 +5099,6 @@ class ProcessGPTBackend implements Backend {
             if (options.type == 'file') {
                 const form = new FormData();
                 form.append("file", options.file, options.file.name);
-                form.append("agent_id", options.agentInfo.id);
                 form.append("tenant_id", window.$tenantName);
                 
                 response = await axios.post('/claude-skills/skills/upload', form, {
@@ -5097,7 +5107,6 @@ class ProcessGPTBackend implements Backend {
             } else if (options.type == 'url') {
                 response = await axios.post('/claude-skills/skills/upload-from-github', {
                     url: options.url,
-                    agent_id: options.agentInfo.id,
                     tenant_id: window.$tenantName
                 }, {
                     headers: header
@@ -5105,25 +5114,7 @@ class ProcessGPTBackend implements Backend {
             }
             
             if (response.status === 200) {
-                const addedSkills = response.data.skills_added;
-                let newSkills = '';
-                if (options.agentInfo.skills) {
-                    const skills = options.agentInfo.skills.split(',');
-                    addedSkills.forEach((skill: string) => {
-                        if (!skills.includes(skill)) {
-                            skills.push(skill);
-                        }
-                    });
-                    newSkills = skills.join(',');
-                } else {
-                    newSkills = addedSkills.join(',');
-                }
-                options.agentInfo.skills = newSkills;
-                const result = await this.saveSkills(options);
-                return {
-                    skills_added: addedSkills,
-                    skills: result
-                };
+                return response.data;
             } else {
                 throw new Error(response);
             }
@@ -5137,9 +5128,6 @@ class ProcessGPTBackend implements Backend {
             const encodedSkills = encodeURIComponent(options.skillName);
             const tenantId = window.$tenantName;
             let query: string = `name=${encodedSkills}`;
-            if (options.agentInfo.id) {
-                query += `&agent_id=${options.agentInfo.id}`;
-            }
             if (tenantId) {
                 query += `&tenant_id=${tenantId}`;
             }
@@ -5147,18 +5135,10 @@ class ProcessGPTBackend implements Backend {
             if (response.status === 200) {
                 return response.data;
             } else {
-                const skills = options.agentInfo.skills.split(',');
-                skills.splice(skills.indexOf(options.skillName), 1);
-                options.agentInfo.skills = skills.join(',');
-                await this.saveSkills(options);
                 return false;
             }
         } catch (error) {
-            const skills = options.agentInfo.skills.split(',');
-            skills.splice(skills.indexOf(options.skillName), 1);
-            options.agentInfo.skills = skills.join(',');
-            await this.saveSkills(options);
-            return false;
+            throw new Error(error.detail);
         }
     }
 
@@ -5168,11 +5148,7 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.delete(`/claude-skills/skills/${encodeURIComponent(skillName)}`);
             if (response.status === 200 && response.data && response.data.skill_name) {
                 const deletedSkill = response.data.skill_name;
-                const skills = options.agentInfo.skills.split(',');
-                skills.splice(skills.indexOf(deletedSkill), 1);
-                options.agentInfo.skills = skills.join(',');
-                await this.saveSkills(options);
-                return deletedSkill;
+                return response.data;
             } else {
                 return false;
             }
@@ -5223,7 +5199,6 @@ class ProcessGPTBackend implements Backend {
             let url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
             const response = await axios.delete(url);
             if (response.status === 200) {
-                console.log(response.data);
                 return response.data;
             } else {
                 throw new Error(response.data.message);

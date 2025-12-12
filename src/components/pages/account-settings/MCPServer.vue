@@ -241,15 +241,13 @@
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import { useMcpEditorStore } from '@/stores/mcpEditor';
-import { useDefaultSetting } from '@/stores/defaultSetting';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     setup() {
         const mcpEditorStore = useMcpEditorStore();
-        const defaultSetting = useDefaultSetting();
-        return { mcpEditorStore, defaultSetting };
+        return { mcpEditorStore };
     },
     data: () => ({
         selectedToolToAdd: null,
@@ -350,8 +348,6 @@ export default {
             };
         },
         async loadData() {
-            const defaultMcpServers = this.defaultSetting.getMcpServers;
-
             const configuredData = await backend.getMCPByTenant();
             if (configuredData && configuredData.mcpServers) {
                 Object.keys(configuredData.mcpServers).forEach((key) => {
@@ -359,14 +355,14 @@ export default {
                         configuredData.mcpServers[key].enabled = true;
                     }
                 });
-                this.mcpServers = { ...defaultMcpServers, ...configuredData.mcpServers };
+                this.mcpServers = configuredData.mcpServers;
             } else if (configuredData) {
                 Object.keys(configuredData).forEach((key) => {
                     if (configuredData[key].enabled === undefined) {
                         configuredData[key].enabled = true;
                     }
                 });
-                this.mcpServers = { ...defaultMcpServers, ...configuredData };
+                this.mcpServers = configuredData;
             }
         },
         editJson(serverKey) {

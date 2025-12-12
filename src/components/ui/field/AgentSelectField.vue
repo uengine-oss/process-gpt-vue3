@@ -46,7 +46,7 @@
                 :hide-details="true"
                 :return-object="true"
                 :use-agent="true"
-                :use-multiple="false"
+                :use-multiple="true"
             ></user-select-field>
         </div>
 
@@ -234,17 +234,23 @@ export default {
         selectedAgent: {
             deep: true,
             handler(newVal) {
-                if (newVal && newVal.id) {
-                    this.agentType = newVal.agentType;
-                    this.agentAlias = newVal.alias;
-                    this.activity.agent = newVal.id;
-                    if (this.agentType === 'agent' && (this.activity.orchestration === null || this.activity.orchestration === '')) {
-                        this.activity.orchestration = 'crewai-action';
-                    } else if (this.agentType === 'pgagent') {
-                        this.activity.orchestration = this.agentAlias;
-                    } else if (this.agentType === 'a2a') {
-                        this.activity.orchestration = this.agentType;
-                    }
+                if (newVal && newVal.length > 0) {
+                    let agentIds = [];
+                    newVal.forEach(agent => {
+                        this.agentType = agent.agentType;
+                        this.agentAlias = agent.alias;
+                        if (this.agentType === 'agent' && 
+                            (this.activity.orchestration === null || this.activity.orchestration === '' || this.activity.orchestration !== 'crewai-action' || this.activity.orchestration !== 'crewai-deep-research')
+                        ) {
+                            this.activity.orchestration = 'crewai-action';
+                        } else if (this.agentType === 'pgagent') {
+                            this.activity.orchestration = this.agentAlias;
+                        } else if (this.agentType === 'a2a') {
+                            this.activity.orchestration = this.agentType;
+                        }
+                        agentIds.push(agent.id);
+                    });
+                    this.activity.agent = agentIds.join(',');
                 } else {
                     this.agentType = null;
                     this.agentAlias = null;
@@ -259,7 +265,6 @@ export default {
                     newVal.orchestration = null;
                 }
                 if (!this.isExecute) {
-                    console.log('newVal', newVal);
                     this.$emit('update:modelValue', newVal);
                 }
             }
@@ -267,11 +272,16 @@ export default {
     },
     created() {
         if (this.modelValue) {
-            this.activity.agentMode = /[A-Z]/.test(newVal.agentMode) 
-                ? newVal.agentMode.toLowerCase() 
-                : newVal.agentMode;
-            this.activity.orchestration = newVal.orchestration;
-            this.activity.agent = newVal.agent;
+            // agentMode가 없거나 undefined/null인 경우 기본값 'none' 설정
+            if (!this.modelValue.agentMode) {
+                this.activity.agentMode = 'none';
+            } else {
+                this.activity.agentMode = /[A-Z]/.test(this.modelValue.agentMode) 
+                    ? this.modelValue.agentMode.toLowerCase() 
+                    : this.modelValue.agentMode;
+            }
+            this.activity.orchestration = this.modelValue.orchestration || null;
+            this.activity.agent = this.modelValue.agent || null;
         } else {
             this.activity = {
                 agent: null,
@@ -284,22 +294,24 @@ export default {
         if (this.activity.agent && this.activity.agent !== null) {
             if (this.activity.agent.includes(',')) {
                 const agents = this.activity.agent.split(',');
+                const selectedAgents = [];
                 for (const agentId of agents) {
                     let agent = this.defaultSetting.getAgentById(agentId);
                     if (!agent) {
                         agent = await this.backend.getUserById(agentId);
                     }
                     if (agent && agent.id && agent.is_agent) {
-                        this.selectedAgent = {
+                        selectedAgents.push({
                             ...agent,
                             id: agent.id,
                             name: agent.username,
                             isAgent: agent.is_agent,
                             agentType: agent.agent_type,
                             alias: agent.alias,
-                        };
+                        });
                     }
                 }
+                this.selectedAgent = selectedAgents;
             } else {
                 const agentId = this.activity.agent;
                 let agent = this.defaultSetting.getAgentById(agentId);
@@ -307,14 +319,14 @@ export default {
                     agent = await this.backend.getUserById(agentId);
                 }
                 if (agent && agent.id && agent.is_agent) {
-                    this.selectedAgent = {
+                    this.selectedAgent = [{
                         ...agent,
                         id: agent.id,
                         name: agent.username,
                         isAgent: agent.is_agent,
                         agentType: agent.agent_type,
                         alias: agent.alias,
-                    };
+                    }];
                 }
             }
         }

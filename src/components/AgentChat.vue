@@ -8,7 +8,6 @@
                     :dmnList="dmnList"
                     :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
-                    @uploadSkills="uploadSkills"
                     @openSkillFile="openSkillFile"
                 />
             </template>
@@ -28,7 +27,6 @@
                     :dmnList="dmnList"
                     :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
-                    @uploadSkills="uploadSkills"
                     @openSkillFile="openSkillFile"
                 />
             </template>
@@ -377,37 +375,6 @@ export default {
             await this.backend.saveSkills(options);
             this.EventBus.emit('skills-updated');
         },
-
-        async uploadSkills(options) {
-            var me = this;
-            me.isSkillLoading = true;
-            options.agentInfo = me.agentInfo;
-            me.$try({
-                context: this,
-                action: async () => {
-                    const data = await this.backend.uploadSkills(options);
-                    if (data && data.skills_added && data.skills_added.length > 0) {
-                        const skills = me.agentInfo.skills.split(',');
-                        data.skills_added.forEach(skill => {
-                            if (!skills.includes(skill.id)) {
-                                skills.push(skill.id);
-                            }
-                        });
-                        me.agentInfo.skills = skills.join(',');
-                    }
-
-                    me.EventBus.emit('skills-updated');
-                    me.isSkillLoading = false;
-                },
-                onFail: () => {
-                    me.EventBus.emit('skills-updated');
-                    me.isSkillLoading = false;
-                },
-                successMsg: '스킬 업로드 완료',
-                errorMsg: '스킬 업로드 실패',
-            });
-        },
-
         async checkSkills(skillName) {
             const skill = await this.backend.checkSkills(skillName);
             if (skill && skill.exists) {
@@ -415,45 +382,6 @@ export default {
             } else {
                 return false;
             }
-        },
-
-        async openSkillFile(skill) {
-            if (!skill || !skill.includes('::')) return;
-            const [skillId, fileName] = skill.split('::');
-            let skillFile = await this.backend.getSkillFile(skillId, fileName);
-            if (!skillFile) {
-                skillFile = {
-                    skill_name: skillId,
-                    file_path: fileName,
-                    content: ''
-                }
-            }
-            this.skillFile = skillFile;
-            this.$router.push({ hash: '#skill-edit' });
-        },
-        async saveSkillFile(skillName, fileName, content) {
-            this.isSkillLoading = true;
-            try {
-                await this.backend.putSkillFile(skillName, fileName, content);
-            } catch (error) {
-                console.error('스킬 저장 실패:', error);
-            } finally {
-                this.isSkillLoading = false;
-            }
-            this.EventBus.emit('skills-updated');
-        },
-        async deleteSkillFile(skillName, fileName) {
-            this.isSkillLoading = true;
-            try {
-                await this.backend.deleteSkillFile(skillName, fileName);
-            } catch (error) {
-                console.error('스킬 삭제 실패:', error);
-            } finally {
-                this.isSkillLoading = false;
-            }
-            this.isSkillLoading = false;
-            this.skillFile = null;
-            this.EventBus.emit('skills-updated');
         },
     }
 }

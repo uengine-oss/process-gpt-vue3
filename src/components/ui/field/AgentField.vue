@@ -446,13 +446,11 @@ export default {
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         async getTools() {
-            const defaultMcpServers = this.defaultSetting.getMcpServers;
-
             const jsonData = await this.backend.getMCPByTenant();
             if (jsonData) {
-                this.mcpTools = { ...defaultMcpServers, ...jsonData.mcpServers };
+                this.mcpTools = jsonData.mcpServers;
             } else {
-                this.mcpTools = defaultMcpServers;
+                this.mcpTools = {};
             }
             const tools = Object.keys(this.mcpTools);
             this.toolList = tools;
