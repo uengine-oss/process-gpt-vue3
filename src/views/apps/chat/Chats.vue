@@ -876,9 +876,9 @@ export default {
                 // }
 
                 systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
-
+                const systemMsgObj = me.createMessageObj(systemMsg, 'system')
                 if(this.currentChatRoom.id == this.chatRoomId){
-                    const systemMsgObj = me.createMessageObj(systemMsg, 'system')
+                    
                     if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
                         this.messages.pop()
                     }
