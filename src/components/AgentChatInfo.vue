@@ -240,7 +240,6 @@
             :isLoading="isSkillLoading"
             @closeEditSkills="toggleEdit('skills')"
             @update:skillFileName="openSkillFile"
-            @uploadSkills="uploadSkills"
         />
 
         <!-- 편집 모드일 때 OrganizationEditDialog 표시 -->
@@ -586,15 +585,6 @@ export default {
             return this.parsedTools && this.parsedTools.length > 4;
         },
 
-        uploadSkills(skillsFile) {
-            this.$emit('uploadSkills', skillsFile);
-        },
-        openSkillFile(node) {
-            if (!node || !node.id || node.data.type === 'folder') {
-                return;
-            }
-            this.$emit('openSkillFile', node.id);
-        },
     }
 }
 </script>

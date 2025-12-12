@@ -39,7 +39,7 @@
                 @start-task="startTask"
                 @download-browser-agent="downloadBrowserAgent"
             /> -->
-            <div v-if="timeline.length === 0 && !isActionsMode && !isQueued">
+            <div v-if="!isInitialLoading && timeline.length === 0 && !isActionsMode && !isQueued">
                 <AgentSelectField
                     :model-value="selectedAgent"
                     :backend="backend"

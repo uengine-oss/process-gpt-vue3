@@ -8,11 +8,8 @@
             <h1 class="text-grey200" style="font-size: 40px;">{{ $t('tenantManagePage.title') }}</h1>
         </v-row>
         <v-row no-gutters justify="center">
-            <p v-if="isOwner" class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
+            <p class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
                 {{ $t('tenantManagePage.subTitle1') }}
-            </p>
-            <p v-else class="font-weight-semibold text-grey100 text-h5" style="text-align: center;">
-                {{ $t('tenantManagePage.subTitle3') }}
             </p>
         </v-row>
 
@@ -75,7 +72,7 @@
 
                             <div v-else>
                                 <!-- 일반 테넌트 버튼들 -->
-                                <div v-if="superAdmin && admin">
+                                <div v-if="tenantInfo.isOwned || tenantInfo.isAdmin">
                                     <v-tooltip text="수정" class="mr-2">
                                         <template v-slot:activator="{ props }">
                                             <v-btn @click.stop="!isNavigating ? toEditTenantPage(tenantInfo.id) : null"
@@ -273,9 +270,6 @@ export default {
         isNavigating: false,
         selectedTenantId: null,
         confirmationTenantName: '',
-
-        admin: localStorage.getItem('isAdmin') === 'true',
-        superAdmin: localStorage.getItem('role') === 'superAdmin',
     }),
     async created() {
         try {
@@ -304,60 +298,71 @@ export default {
         } else {
             try {
                 let allTenantInfos = [];
-                // 소유한 테넌트들 가져오기
-                const ownedTenants = await backend.getTenants() || [];
-                ownedTenants.forEach(tenant => {
-                    if(tenant.id !== 'process-gpt') {
-                        allTenantInfos.push({
-                            id: tenant.id,
-                            isOwned: true
-                        });
-                    }
-                });
-                
-                // 속한 모든 테넌트들 가져오기 (소유한 것 + 직원으로 속한 것)
                 const users = await backend.getUserAllTenants() || [];
-                users.forEach(user => {
-                    if(user.tenant_id && user.tenant_id !== 'process-gpt' && !allTenantInfos.some(tenant => tenant.id === user.tenant_id)) {
-                        allTenantInfos.push({
-                            id: user.tenant_id,
-                            isOwned: false
-                        });
+                allTenantInfos = users.map(user => {
+                    return {
+                        id: user.tenant_id,
+                        isOwned: user.role === 'superAdmin',
+                        isAdmin: user.is_admin
                     }
-                });
+                })
+                this.tenantInfos = allTenantInfos;
+                this.isLoading = false;
                 
-                if (allTenantInfos.length === 0) {
-                    this.tenantInfos = [];
-                    this.isOwner = false;
-                    this.isLoading = false;
-                }
-                // else if (allTenantInfos.length === 1) {
-                //     // 하나의 테넌트에만 속한 경우 바로 리다이렉션 (유저3)
-                //     const tenantId = allTenantInfos[0].id;
-                //     if (tenantId && tenantId !== 'process-gpt') {
-                //         this.toSelectedTenantPage(tenantId);
-                //     } 
-                // } 
-                else {
-                    const deletedTenants = await backend.getDeletedTenants() || [];
-                    deletedTenants.forEach(deletedTenant => {
-                        const tenantIndex = allTenantInfos.findIndex(tenant => tenant.id === deletedTenant.id);
-                        if (tenantIndex !== -1) {
-                            allTenantInfos[tenantIndex].isDeleted = true;
-                            allTenantInfos[tenantIndex].isDeletedAt = deletedTenant.deleted_at;
-                        }
-                    });
-                    // 삭제된 테넌트를 마지막으로 정렬
-                    allTenantInfos.sort((a, b) => {
-                        if (a.isDeleted && !b.isDeleted) return 1;
-                        if (!a.isDeleted && b.isDeleted) return -1;
-                        return 0;
-                    });
-                    // 여러 테넌트에 속한 경우 목록 표시 (유저1, 유저2)
-                    this.tenantInfos = allTenantInfos;
-                    this.isOwner = allTenantInfos.some(tenant => tenant.isOwned);
-                    this.isLoading = false;
-                }
+                // // 소유한 테넌트들 가져오기
+                // const ownedTenants = await backend.getTenants() || [];
+                // ownedTenants.forEach(tenant => {
+                //     if(tenant.id !== 'process-gpt') {
+                //         allTenantInfos.push({
+                //             id: tenant.id,
+                //             isOwned: true
+                //         });
+                //     }
+                // });
+                
+                // // 속한 모든 테넌트들 가져오기 (소유한 것 + 직원으로 속한 것)
+                // const users = await backend.getUserAllTenants() || [];
+                // users.forEach(user => {
+                //     if(user.tenant_id && user.tenant_id !== 'process-gpt' && !allTenantInfos.some(tenant => tenant.id === user.tenant_id)) {
+                //         allTenantInfos.push({
+                //             id: user.tenant_id,
+                //             isOwned: false
+                //         });
+                //     }
+                // });
+                
+                // if (allTenantInfos.length === 0) {
+                //     this.tenantInfos = [];
+                //     this.isOwner = false;
+                //     this.isLoading = false;
+                // }
+                // // else if (allTenantInfos.length === 1) {
+                // //     // 하나의 테넌트에만 속한 경우 바로 리다이렉션 (유저3)
+                // //     const tenantId = allTenantInfos[0].id;
+                // //     if (tenantId && tenantId !== 'process-gpt') {
+                // //         this.toSelectedTenantPage(tenantId);
+                // //     } 
+                // // } 
+                // else {
+                //     const deletedTenants = await backend.getDeletedTenants() || [];
+                //     deletedTenants.forEach(deletedTenant => {
+                //         const tenantIndex = allTenantInfos.findIndex(tenant => tenant.id === deletedTenant.id);
+                //         if (tenantIndex !== -1) {
+                //             allTenantInfos[tenantIndex].isDeleted = true;
+                //             allTenantInfos[tenantIndex].isDeletedAt = deletedTenant.deleted_at;
+                //         }
+                //     });
+                //     // 삭제된 테넌트를 마지막으로 정렬
+                //     allTenantInfos.sort((a, b) => {
+                //         if (a.isDeleted && !b.isDeleted) return 1;
+                //         if (!a.isDeleted && b.isDeleted) return -1;
+                //         return 0;
+                //     });
+                //     // 여러 테넌트에 속한 경우 목록 표시 (유저1, 유저2)
+                //     this.tenantInfos = allTenantInfos;
+                //     this.isOwner = allTenantInfos.some(tenant => tenant.isOwned);
+                //     this.isLoading = false;
+                // }
             } catch (error) {
                 console.error('Error fetching tenant list:', error);
                 this.isLoading = false;

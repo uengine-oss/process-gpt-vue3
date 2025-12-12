@@ -27,7 +27,6 @@
 <script>
 import { commonSettingInfos } from "./CommonSettingInfos.vue"
 import BackendFactory from '@/components/api/BackendFactory';
-const backend = BackendFactory.createBackend();
 
 export default {
     props: {
@@ -71,7 +70,9 @@ export default {
                 commonSettingInfos["localAlias"],
                 commonSettingInfos["localDisabled"],
                 commonSettingInfos["localReadonly"]
-            ]
+            ],
+
+            backend: null
         };
     },
 
@@ -104,6 +105,7 @@ export default {
         this.localReadonly = this.readonly === "true"
 
         // this.$emit('update:modelValue', "")
+        this.backend = BackendFactory.createBackend();
     },
 
     async mounted() {
@@ -123,7 +125,7 @@ export default {
                 // }
                 
                 console.log('[FileField] 파일 다운로드 시도:', this.modelValue.path);
-                const response = await backend.downloadFile(this.modelValue.path);
+                const response = await this.backend.downloadFile(this.modelValue.path);
                 if (response && response.error) {
                     console.warn('[FileField] 파일 다운로드 응답 에러:', response.error);
                     this.$emit('update:modelValue', { path: null, name: null });
@@ -144,7 +146,7 @@ export default {
             }
         } else if (this.modelValue && typeof this.modelValue === 'string') {
             try {
-                const response = await backend.downloadFile(this.modelValue);
+                const response = await this.backend.downloadFile(this.modelValue);
                 if (response && response.file) {
                     response.file.originalFileName = this.modelValue;
                     response.file.path = this.modelValue;
@@ -215,7 +217,7 @@ export default {
                         duplicateCount++;
                         console.log(`[FileField] 중복 파일 제외: ${newFile.name} (${newFile.size} bytes, ${newFile.type})`);
                     } else {
-                        filesToAdd.push(newFile);
+                        filesToAdd.push(newFile); 
                     }
                 });
                 
@@ -247,7 +249,7 @@ export default {
                 const file = event.target.files[0];
                 const fileName = file.name;
                 console.log('[FileField] 파일 업로드 시도:', fileName);
-                const res = await backend.uploadFile(fileName, file);
+                const res = await this.backend.uploadFile(fileName, file);
                 if (res && res.error) {
                     console.warn('[FileField] 파일 업로드 응답 에러:', res.error);
                     this.$emit('update:modelValue', { path: null, name: null });

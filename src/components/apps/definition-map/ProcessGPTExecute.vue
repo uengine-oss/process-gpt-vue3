@@ -343,7 +343,7 @@ export default {
             const agentOrch = activity.orchestration && activity.orchestration !== 'none' ? activity.orchestration : null;
             let userId = localStorage.getItem('uid');
             let username = localStorage.getItem('userName');
-            if (activity.agent && activity.agent !== 'none') {
+            if (agentMode && activity.agent && activity.agent !== 'none') {
                 let agent = this.defaultSetting.getAgentById(activity.agent);
                 if (!agent) {
                     agent = await this.backend.getUserById(activity.agent);
