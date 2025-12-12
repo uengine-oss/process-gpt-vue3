@@ -272,11 +272,16 @@ export default {
     },
     created() {
         if (this.modelValue) {
-            this.activity.agentMode = /[A-Z]/.test(this.modelValue.agentMode) 
-                ? this.modelValue.agentMode.toLowerCase() 
-                : this.modelValue.agentMode;
-            this.activity.orchestration = this.modelValue.orchestration;
-            this.activity.agent = this.modelValue.agent;
+            // agentMode가 없거나 undefined/null인 경우 기본값 'none' 설정
+            if (!this.modelValue.agentMode) {
+                this.activity.agentMode = 'none';
+            } else {
+                this.activity.agentMode = /[A-Z]/.test(this.modelValue.agentMode) 
+                    ? this.modelValue.agentMode.toLowerCase() 
+                    : this.modelValue.agentMode;
+            }
+            this.activity.orchestration = this.modelValue.orchestration || null;
+            this.activity.agent = this.modelValue.agent || null;
         } else {
             this.activity = {
                 agent: null,
