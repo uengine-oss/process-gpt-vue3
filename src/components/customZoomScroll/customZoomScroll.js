@@ -92,7 +92,8 @@ CustomZoomScroll.prototype._handleWheel = function handleWheel(event) {
   // pinch to zoom is mapped to wheel + ctrlKey = true
   // in modern browsers (!)
 
-  var isZoom = event.ctrlKey || (isMac() && event.metaKey);
+  // 마우스 휠 기본 동작을 줌으로 설정, Shift 키를 누르면 스크롤
+  var isZoom = !event.shiftKey;
 
   var isHorizontalScroll = event.shiftKey;
 

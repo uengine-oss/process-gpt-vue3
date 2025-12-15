@@ -72,7 +72,6 @@
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
-            :subProcessDialogStauts="subProcessDialogStauts"
             :processType="processType"
             :type="type"
             @add="addProcess"
@@ -102,8 +101,7 @@ export default {
         isExecutionByProject: Boolean
     },
     data: () => ({
-        type: 'major',
-        subProcessDialogStauts: false
+        type: 'major'
     }),
     methods: {
         async addProcess(newProcess) {
@@ -129,7 +127,6 @@ export default {
         openSubProcessDialog(processType) {
             this.processType = processType;
             this.processDialogStatus = true;
-            this.subProcessDialogStauts = true;
         },
         deleteProcess() {
             this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);
