@@ -152,15 +152,6 @@
                         </v-btn>
                     </p>
 
-                    <!-- Model Section (agent only) -->
-                    <div v-if="isSectionVisible('model')" class="pa-0 mb-1">
-                        <v-icon size="small" class="mr-1">mdi-robot</v-icon>
-                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.model') }}</span>
-                    </div>
-                    <p v-if="isSectionVisible('model')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo.model }}
-                    </p>
-
                     <!-- Alias Section (pgagent only; a2a alias는 기본값/숨김) -->
                     <div v-if="isSectionVisible('alias')" class="pa-0 mb-1">
                         <v-icon size="small" class="mr-1">mdi-account-box-outline</v-icon>
@@ -190,6 +181,15 @@
                     </v-chip-group>
                     <p v-else-if="isSectionVisible('skills') && !editSkills && !parsedSkills" class="text-body-2 text-medium-emphasis mb-3">
                         {{ agentInfo.skills }}
+                    </p>
+
+                    <!-- Model Section (agent only) -->
+                    <div v-if="isSectionVisible('model')" class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-robot</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.model') }}</span>
+                    </div>
+                    <p v-if="isSectionVisible('model')" class="text-body-2 text-medium-emphasis mb-3">
+                        {{ agentInfo.model }}
                     </p>
                     
                     <v-divider class="mb-4"></v-divider>
@@ -326,9 +326,7 @@ export default {
                 },
                 skills: {
                     abled: false,
-                    action: () => {
-                        this.$emit('saveSkills');
-                    }
+                    action: () => {}
                 },
                 endpoint: {
                     abled: false,

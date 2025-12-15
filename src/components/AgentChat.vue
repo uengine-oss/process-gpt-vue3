@@ -368,13 +368,6 @@ export default {
         },
 
         // skills
-        async saveSkills() {
-            const options = {
-                agentInfo: this.agentInfo,
-            }
-            await this.backend.saveSkills(options);
-            this.EventBus.emit('skills-updated');
-        },
         async checkSkills(skillName) {
             const skill = await this.backend.checkSkills(skillName);
             if (skill && skill.exists) {

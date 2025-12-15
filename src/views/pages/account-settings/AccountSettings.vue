@@ -13,8 +13,9 @@
                             <div v-if="admin">
                                 <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
                                 <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
-                                <v-tab value="MCP-Servers"> {{ $t('accountTab.mcpServers') }} </v-tab>
-                                <v-tab value="MCP-Environments"> {{ $t('accountTab.environments') }} </v-tab>
+                                <v-tab value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
+                                <v-tab value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
+                                <v-tab value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab>
                                 <v-tab value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
@@ -205,6 +206,14 @@
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
+                        <v-window-item value="Skills">
+                            <div 
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
+                                <SkillsTab />
+                            </div>
+                        </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
                         </v-window-item>
@@ -232,6 +241,7 @@ import DriveTab from '@/components/pages/account-settings/DriveTab.vue';
 import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
+import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -248,7 +258,8 @@ export default {
         DriveTab,
         MCPServerTab,
         MCPEnvSecretTab,
-        ConnectionInfoTab
+        ConnectionInfoTab,
+        SkillsTab
     },
     data() {
         return {
@@ -259,6 +270,7 @@ export default {
                 { value: 'ManageAccess', label: 'Manage Access' },
                 { value: 'Drive', label: 'Drive' },
                 { value: 'MCP', label: 'MCP Servers' },
+                { value: 'Skills', label: 'Skills' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
             ],
             admin: localStorage.getItem('isAdmin') === 'true',
