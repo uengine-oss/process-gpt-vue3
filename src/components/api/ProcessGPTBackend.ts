@@ -3377,7 +3377,7 @@ class ProcessGPTBackend implements Backend {
             }
             // 전체 목록 조회
             else {
-                const options = {
+                const options: any = {
                     select: selectColumns,
                     orderBy: 'import_count',
                     sort: 'desc',
