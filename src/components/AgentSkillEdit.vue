@@ -1,30 +1,30 @@
 <template>
     <v-card flat v-if="skillFile">
-        <v-card-title class="d-flex align-center justify-space-between">
+        <v-card-title class="d-flex align-center justify-space-between px-0">
             <div class="d-flex align-center text-h6">
-                <span>{{ skillName }}:</span>
                 <v-text-field
                     v-if="isEditable"
                     v-model="fileName"
                     class="ml-2 my-2"
                     hide-details
                     style="min-width: 300px; flex: 1;"
+                    density="compact"
                 ></v-text-field>
                 <span v-else>{{ fileName }}</span>
             </div>
-            <div class="d-flex align-center gap-2">
-                <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon>
+            <div class="d-flex align-center gap-2 mr-2">
+                <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon size="small">
                     <v-icon>{{ markdownPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                 </v-btn>
-                <v-btn @click="saveSkillFile" variant="text" icon color="primary" :loading="isLoading">
+                <v-btn @click="saveSkillFile" variant="text" icon color="primary" :loading="isLoading" size="small">
                     <v-icon>mdi-content-save</v-icon>
                 </v-btn>
-                <v-btn v-if="isEditable" @click="deleteDialog = true" variant="text" icon color="error">
+                <v-btn v-if="isEditable" @click="deleteDialog = true" variant="text" icon color="error" size="small">
                     <v-icon>mdi-delete</v-icon>
                 </v-btn>
             </div>
         </v-card-title>
-        <v-card-text class="h-100">
+        <v-card-text class="h-100 px-0">
             <!-- <v-textarea 
                 v-model="skillContent"
                 rows="19"
@@ -165,7 +165,7 @@ export default {
         handleMount(editor) {
             // Monaco Editor 마운트 후 높이 설정
             if (editor) {
-                editor.layout({ height: 200, width: editor.getLayoutInfo().width });
+                editor.layout({ height: 365, width: editor.getLayoutInfo().width });
             }
         },
         toggleMarkdownPreview() {

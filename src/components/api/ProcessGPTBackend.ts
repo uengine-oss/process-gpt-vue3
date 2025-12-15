@@ -5089,20 +5089,41 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    // agent skills
-    async saveSkills(options: any) {
+    async getTenantInfo(id: string) {
         try {
-            let newSkills = '';
-            if (options.agentInfo.skills) {
-                const skills = options.agentInfo.skills.split(',');
-                newSkills = skills.join(',');
-            }
-            await storage.putObject('users', {
-                id: options.agentInfo.id,
-                skills: newSkills,
-                tenant_id: window.$tenantName
+            const response = await storage.getObject('tenants', {
+                match: {
+                    id: id
+                }
             });
-            return newSkills;
+            if (response) {
+                return response;
+            }
+            return null;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    // skills
+    async saveSkills(skills: any) {
+        try {
+            if (!skills || skills.length === 0) {
+                return;
+            }
+            const tenantId = window.$tenantName;
+            const tenantInfo = await this.getTenantInfo(tenantId);
+            if (!tenantInfo) {
+                throw new Error('tenant not found');
+            }
+            let tenantSkills = tenantInfo.skills || [];
+            // 기존 skills와 새로운 skills를 병합하고 중복 제거
+            const mergedSkills = [...new Set([...tenantSkills, ...skills])];
+            await storage.putObject('tenants', {
+                id: tenantId,
+                skills: mergedSkills,
+            });
+            return mergedSkills;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -5132,6 +5153,10 @@ class ProcessGPTBackend implements Backend {
             }
             
             if (response.status === 200) {
+                const skillsAdded = response.data.skills_added;
+                if (skillsAdded && skillsAdded.length > 0) {
+                    await this.saveSkills(skillsAdded);
+                }
                 return response.data;
             } else {
                 throw new Error(response);

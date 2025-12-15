@@ -2,11 +2,7 @@
     <div>
         <!-- skills tools -->
         <div class="d-flex mt-1">
-            <v-btn variant="text" icon size="small" @click="$emit('closeEditSkills')">
-                <v-icon>mdi-arrow-left</v-icon>
-            </v-btn>
-
-            <div>
+            <div class="ml-2">
                 <v-btn variant="text" icon size="small" @click="toggleRepositoryUpload">
                     <v-icon>mdi-github</v-icon>
                 </v-btn>
@@ -15,7 +11,7 @@
                 </v-tooltip>
             </div>
             
-            <div>
+            <div class="ml-2">
                 <v-btn variant="text" icon size="small" @click="openSkillUpload">
                     <v-icon>mdi-folder-zip-outline</v-icon>
                 </v-btn>
@@ -25,7 +21,7 @@
                 <input type="file" ref="skillUploadInput" accept=".zip" style="display: none;" @change="handleSkillUpload">
             </div>
 
-            <div>
+            <div class="ml-2">
                 <v-btn 
                     variant="text" 
                     icon size="small" 
@@ -64,8 +60,13 @@
                 hide-details
                 :disabled="isLoading"
             ></v-text-field>
-            <v-btn variant="text" size="small" color="primary" @click="uploadRepository" :loading="isLoading && repositoryUrl !== ''">
-                추가
+            <v-btn @click="uploadSkills({ type: 'url', url: repositoryUrl })" 
+                :loading="isLoading && repositoryUrl !== ''"
+                variant="text" 
+                size="small" 
+                color="primary"
+            >
+                {{ $t('Common.add') }}
             </v-btn>
         </div>
         
@@ -175,24 +176,10 @@ export default {
     components: {
         VTreeview,
     },
-    props: {
-        agentInfo: {
-            type: Object,
-            default: () => ({})
-        },
-        agentSkills: {
-            type: Array,
-            default: () => []
-        },
-        isLoading: {
-            type: Boolean,
-            default: false
-        },
-    },
     data: () => ({
         backend: null,
-        // uploaded skills file
-        skillsFile: null,
+        skills: [],
+        
         // uploaded repository url
         showRepositoryUpload: false,
         repositoryUrl: '',
@@ -211,6 +198,8 @@ export default {
         editingNodeId: null,
         editingFolderName: '',
         originalFolderName: '',
+
+        isLoading: false,
     }),
     computed: {
         isFileNode() {
@@ -218,16 +207,17 @@ export default {
         },
     },
     watch: {
-        skillsFile: {
-            handler(newVal) {
-                this.$emit('update:skillsFile', newVal);
-            },
-            deep: true
-        },
         selectedNodeId: {
-            handler(newVal) {
+            async handler(newVal) {
                 const selectedNode = this.nodes[newVal];
-                this.$emit('update:skillFileName', selectedNode);
+                if (!selectedNode || (selectedNode.data && selectedNode.data.type !== 'file')) {
+                    return;
+                }
+                console.log(selectedNode);
+                const skillName = selectedNode.id.split('::')[0];
+                const filePath = selectedNode.data.path;
+                const skillFile = await this.backend.getSkillFile(skillName, filePath);
+                this.$emit('update:skillFile', skillFile);
             },
             deep: true
         }
@@ -236,9 +226,7 @@ export default {
         this.backend = BackendFactory.createBackend();
     },
     async mounted() {
-        if (this.agentSkills && this.agentSkills.length > 0) {
-            await this.loadSkillFiles();
-        }
+        await this.loadSkillFiles();
 
         this.EventBus.on('skills-updated', async () => {
             await this.loadSkillFiles();
@@ -275,33 +263,36 @@ export default {
                 const options = {
                     type: 'file',
                     file: files[0]
-                }
-                this.$emit('uploadSkills', options);
+                };
+                this.uploadSkills(options);
             }
         },
         toggleRepositoryUpload() {
             this.showRepositoryUpload = !this.showRepositoryUpload;
             this.repositoryUrl = '';
         },
-        uploadRepository() {
-            if (!this.repositoryUrl) {
-                return;
+        async uploadSkills(options) {
+            this.isLoading = true;
+            try {
+                const data = await this.backend.uploadSkills(options);
+                this.isLoading = false;
+                console.log(data);
+            } catch (error) {
+                console.error('스킬 업로드 실패:', error);
+                this.isLoading = false;
             }
-            const options = {
-                type: 'url',
-                url: this.repositoryUrl
-            }
-            this.$emit('uploadSkills', options);
         },
         async loadSkillFiles() {
+            const tenantInfo = await this.backend.getTenantInfo(window.$tenantName);
+            this.skills = tenantInfo.skills || [];
+
             this.nodes = {};
             this.config.roots = [];
 
-            for (const skillName of this.agentSkills) {
+            for (const skillName of this.skills) {
                 try {
                     const skillCheck = await this.backend.checkSkills({
-                        skillName: skillName,
-                        agentInfo: this.agentInfo
+                        skillName: skillName
                     });
 
                     if (!skillCheck || skillCheck.exists === false) {
@@ -449,7 +440,6 @@ export default {
             this.nodes[this.selectedNodeId].exists = false;
             const options = {
                 skillName: this.selectedNodeId,
-                agentInfo: this.agentInfo
             }
             await this.backend.deleteSkills(options);
             await this.loadSkillFiles();

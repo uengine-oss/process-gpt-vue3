@@ -57,16 +57,11 @@
                     class="mb-2"
                     rows="3"
                 ></v-textarea>
-                <v-combobox
-                    v-model="selectedSkills"
-                    :items="skills"
+                <v-textarea
+                    v-model="agent.skills"
                     :label="$t('agentField.agentSkills')"
-                    multiple
-                    chips
-                    clearable
-                    closable-chips
-                    variant="outlined"
-                ></v-combobox>
+                    rows="3"
+                ></v-textarea>
             </div>
 
             <div v-else-if="type === 'pgagent'">
@@ -124,6 +119,16 @@
                     v-model="selectedTools"
                     :items="toolList"
                     :label="$t('agentField.agentTools')"
+                    multiple
+                    chips
+                    clearable
+                    closable-chips
+                    variant="outlined"
+                ></v-combobox>
+                <v-combobox
+                    v-model="selectedSkills"
+                    :items="skills"
+                    :label="$t('agentField.agentSkills')"
                     multiple
                     chips
                     clearable
@@ -385,6 +390,7 @@ export default {
         if (!this.agent.id || this.agent.id == '') this.agent.id = this.uuid();
         if (this.type === 'agent') {
             await this.getTools();
+            await this.getSkills();
         }
         if (this.agent.model && this.agent.model.includes('/')) {
             const [prov, mod] = this.agent.model.split('/');
@@ -454,6 +460,12 @@ export default {
             }
             const tools = Object.keys(this.mcpTools);
             this.toolList = tools;
+        },
+        async getSkills() {
+            const tenantInfo = await this.backend.getTenantInfo(window.$tenantName);
+            if (tenantInfo && tenantInfo.skills) {
+                this.skills = tenantInfo.skills;
+            }
         },
         async fetchAgentData() {
             if (!this.agent.endpoint) {
