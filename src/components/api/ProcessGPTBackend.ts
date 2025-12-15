@@ -3443,6 +3443,24 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async deleteMarketplaceDefinition(definitionId: string) {
+        try {
+            const { error } = await window.$supabase
+                .from('proc_def_marketplace')
+                .delete()
+                .eq('id', definitionId);
+            
+            if (error) {
+                throw new Error(error.message);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[백엔드] deleteMarketplaceDefinition 오류:', error);
+            throw error;
+        }
+    }
+
     async putTemplateDefinition(definition: any) {
         try {
             const user = await this.getUserInfo();

@@ -131,15 +131,26 @@
                                     </v-row>
                                     <div class="text-body-1">{{ definition.description }}</div>
                                     <v-divider class="my-4"></v-divider>
-                                    <v-row class="ma-0 pa-0">
+                                    <v-row class="ma-0 pa-0 align-center">
                                         <div class="text-body-1">{{ definition.author_name }}</div>
+                                        <v-spacer></v-spacer>
+                                        <v-btn 
+                                            v-if="definition.author_uid === currentUserUid"
+                                            @click="deleteDefinition(definition)" 
+                                            color="error" 
+                                            variant="flat"
+                                            density="compact"
+                                            class="mr-2"
+                                            rounded="xl"
+                                        >
+                                            {{ $t('ProcessDefinitionMarketPlace.deleteButton') }}
+                                        </v-btn>
                                         <v-btn 
                                             :disabled="definition.isImported"
                                             @click="importDefinition(definition)" 
                                             :color="definition.isImported ? 'grey' : 'primary'" 
                                             variant="flat"
                                             density="compact"
-                                            class="ml-auto"
                                             rounded="xl"
                                         >
                                             {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
@@ -218,15 +229,26 @@
                                     </v-row>
                                     <div class="text-body-1">{{ definition.description }}</div>
                                     <v-divider class="my-4"></v-divider>
-                                    <v-row class="ma-0 pa-0">
+                                    <v-row class="ma-0 pa-0 align-center">
                                         <div class="text-body-1">{{ definition.author_name }}</div>
+                                        <v-spacer></v-spacer>
+                                        <v-btn 
+                                            v-if="definition.author_uid === currentUserUid"
+                                            @click="deleteDefinition(definition)" 
+                                            color="error" 
+                                            variant="flat"
+                                            density="compact"
+                                            class="mr-2"
+                                            rounded="xl"
+                                        >
+                                            {{ $t('ProcessDefinitionMarketPlace.deleteButton') }}
+                                        </v-btn>
                                         <v-btn 
                                             :disabled="definition.isImported"
                                             @click="importDefinition(definition)" 
                                             :color="definition.isImported ? 'grey' : 'primary'" 
                                             variant="flat"
                                             density="compact"
-                                            class="ml-auto"
                                             rounded="xl"
                                         >
                                             {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
@@ -319,15 +341,26 @@
                                     </v-row>
                                     <div class="text-body-1">{{ definition.description }}</div>
                                     <v-divider class="my-4"></v-divider>
-                                    <v-row class="ma-0 pa-0">
+                                    <v-row class="ma-0 pa-0 align-center">
                                         <div class="text-body-1">{{ definition.author_name }}</div>
+                                        <v-spacer></v-spacer>
+                                        <v-btn 
+                                            v-if="definition.author_uid === currentUserUid"
+                                            @click="deleteDefinition(definition)" 
+                                            color="error" 
+                                            variant="flat"
+                                            density="compact"
+                                            class="mr-2"
+                                            rounded="xl"
+                                        >
+                                            {{ $t('ProcessDefinitionMarketPlace.deleteButton') }}
+                                        </v-btn>
                                         <v-btn 
                                             :disabled="definition.isImported"
                                             @click="importDefinition(definition)" 
                                             :color="definition.isImported ? 'grey' : 'primary'" 
                                             variant="flat"
                                             density="compact"
-                                            class="ml-auto"
                                             rounded="xl"
                                         >
                                             {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
@@ -340,6 +373,53 @@
                 </template>
             </v-card-text>
         </div>
+        
+        <!-- 삭제 확인 다이얼로그 -->
+        <v-dialog v-model="deleteDialog" max-width="500">
+            <v-card>
+                <v-row class="ma-0 pa-4 pb-0 align-center">
+                    <v-card-title class="pa-0">
+                        {{ $t('ProcessDefinitionMarketPlace.deleteDialogTitle') }}
+                    </v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="cancelDelete"
+                        class="ml-auto" 
+                        variant="text" 
+                        density="compact"
+                        icon
+                    >
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-card-text class="pa-4">
+                    <div class="mb-4">
+                        <p class="text-body-1 mb-2">{{ $t('ProcessDefinitionMarketPlace.deleteDialogMessage', { name: definitionToDelete?.name }) }}</p>
+                        <p class="text-body-2 text-error">{{ $t('ProcessDefinitionMarketPlace.deleteDialogWarning') }}</p>
+                    </div>
+                    <div class="mb-2">
+                        <p class="text-body-2">{{ $t('ProcessDefinitionMarketPlace.deleteDialogConfirmMessage') }}</p>
+                    </div>
+                    <v-text-field
+                        v-model="deleteConfirmName"
+                        :placeholder="definitionToDelete?.name"
+                        variant="outlined"
+                        density="compact"
+                        autofocus
+                        hide-details
+                    ></v-text-field>
+                </v-card-text>
+                <v-row class="ma-0 pa-4 pr-2 pt-0">
+                    <v-spacer></v-spacer>
+                    <v-btn @click="confirmDelete" 
+                        color="error"
+                        variant="flat"
+                        class="rounded-pill"
+                        :disabled="deleteConfirmName !== definitionToDelete?.name"
+                    >{{ $t('ProcessDefinitionMarketPlace.deleteButton') }}
+                    </v-btn>
+                </v-row>
+            </v-card>
+        </v-dialog>
     </v-card>
 </template>
 
@@ -364,9 +444,17 @@ export default {
         offset: 0,
         limit: 12,
         hasMore: true,
-        loadingMore: false
+        loadingMore: false,
+        currentUserUid: null,
+        deleteDialog: false,
+        definitionToDelete: null,
+        deleteConfirmName: ''
     }),
     async mounted() {
+        // 현재 로그인한 사용자 UID 가져오기
+        const userInfo = await backend.getUserInfo();
+        this.currentUserUid = userInfo?.uid;
+        
         await Promise.all([
             this.getDefinitionList(),
             this.loadAllTags()
@@ -418,10 +506,25 @@ export default {
                 }
                 
                 const promises = list.map(async (definition) => {
-                    const result = await backend.getRawDefinition(definition.id);
                     let isImported = false;
-                    if (result) {
-                        isImported = true;
+                    try {
+                        // proc_def에서 정확히 일치하거나 UUID 패턴(_UUID)으로 추가된 항목 확인
+                        const { data } = await window.$supabase
+                            .from('proc_def')
+                            .select('id')
+                            .like('id', `${definition.id}%`)
+                            .eq('tenant_id', window.$tenantName);
+                        
+                        if (data && data.length > 0) {
+                            // 정확히 일치하거나 UUID 패턴인지 확인
+                            isImported = data.some(item => {
+                                if (item.id === definition.id) return true;
+                                // UUID 패턴: 원본ID_UUID (UUID는 하이픈 포함)
+                                return item.id.startsWith(`${definition.id}_`) && item.id.includes('-');
+                            });
+                        }
+                    } catch (err) {
+                        console.error('마켓플레이스 항목 체크 중 오류:', err.message);
                     }
                     
                     let tags = [];
@@ -479,6 +582,35 @@ export default {
                     }
                 },
                 successMsg: '추가되었습니다.'
+            });
+        },
+        deleteDefinition(definition) {
+            this.definitionToDelete = definition;
+            this.deleteConfirmName = '';
+            this.deleteDialog = true;
+        },
+        cancelDelete() {
+            this.deleteDialog = false;
+            this.definitionToDelete = null;
+            this.deleteConfirmName = '';
+        },
+        async confirmDelete() {
+            const definition = this.definitionToDelete;
+            this.deleteDialog = false;
+            
+            this.$try({
+                action: async () => {
+                    await backend.deleteMarketplaceDefinition(definition.id);
+                    // 목록에서 제거
+                    this.definitionList = this.definitionList.filter(d => d.id !== definition.id);
+                    this.searchResults = this.searchResults.filter(d => d.id !== definition.id);
+                    this.filteredDefinitions = this.filteredDefinitions.filter(d => d.id !== definition.id);
+                    
+                    // 초기화
+                    this.definitionToDelete = null;
+                    this.deleteConfirmName = '';
+                },
+                successMsg: '삭제되었습니다.'
             });
         },
         close() {
@@ -544,10 +676,25 @@ export default {
                     const serverFiltered = await backend.listMarketplaceDefinition(tag);
                     
                     const promises = serverFiltered.map(async (definition) => {
-                        const result = await backend.getRawDefinition(definition.id);
                         let isImported = false;
-                        if (result) {
-                            isImported = true;
+                        try {
+                            // proc_def에서 정확히 일치하거나 UUID 패턴(_UUID)으로 추가된 항목 확인
+                            const { data } = await window.$supabase
+                                .from('proc_def')
+                                .select('id')
+                                .like('id', `${definition.id}%`)
+                                .eq('tenant_id', window.$tenantName);
+                            
+                            if (data && data.length > 0) {
+                                // 정확히 일치하거나 UUID 패턴인지 확인
+                                isImported = data.some(item => {
+                                    if (item.id === definition.id) return true;
+                                    // UUID 패턴: 원본ID_UUID (UUID는 하이픈 포함)
+                                    return item.id.startsWith(`${definition.id}_`) && item.id.includes('-');
+                                });
+                            }
+                        } catch (err) {
+                            console.error('마켓플레이스 항목 체크 중 오류:', err.message);
                         }
                         
                         // 태그 중복 제거 및 공백 처리
@@ -622,12 +769,23 @@ export default {
                     
                     let isImported = false;
                     try {
-                        const result = await backend.getRawDefinition(definition.id);
-                        if (result) {
-                            isImported = true;
+                        // proc_def에서 정확히 일치하거나 UUID 패턴(_UUID)으로 추가된 항목 확인
+                        const { data } = await window.$supabase
+                            .from('proc_def')
+                            .select('id')
+                            .like('id', `${definition.id}%`)
+                            .eq('tenant_id', window.$tenantName);
+                        
+                        if (data && data.length > 0) {
+                            // 정확히 일치하거나 UUID 패턴인지 확인
+                            isImported = data.some(item => {
+                                if (item.id === definition.id) return true;
+                                // UUID 패턴: 원본ID_UUID (UUID는 하이픈 포함)
+                                return item.id.startsWith(`${definition.id}_`) && item.id.includes('-');
+                            });
                         }
                     } catch (err) {
-                        console.error(`정의 불러오기 오류: ${err.message}`);
+                        console.error('정의 불러오기 오류:', err.message);
                     }
                     
                     // 태그 중복 제거 및 공백 처리
