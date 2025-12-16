@@ -134,11 +134,19 @@
                 </v-card>
             </v-row>
         </div> -->
+        <div class="mt-3">
+            <KeyValueField
+                v-model="copyUengineProperties.customProperties"
+                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                :readonly="isViewMode"
+            />
+        </div>
     </div>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
+import KeyValueField from '@/components/designer/KeyValueField.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
@@ -148,11 +156,19 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean
     },
+    components: {
+        KeyValueField
+    },
     created() {
-        this.copyUengineProperties = this.uengineProperties
+        if (this.uengineProperties) {
+            this.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
+        } else {
+            this.copyUengineProperties = {};
+        }
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
+        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
     },
     data() {
         return {
