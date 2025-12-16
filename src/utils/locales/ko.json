@@ -407,7 +407,7 @@
     },
     "chat": {
         "inputMessage": "메시지 입력",
-        "definitionMapInputMessage": "무엇을 도와드릴까요?",
+        "definitionMapInputMessage": "예: 휴가 신청 프로세스 만들어줘 / 휴가 신청 프로세스 실행해줘 / 실행중인 휴가 신청의 승인 여부 알려줘",
         "lock": "저장하려면 저장 아이콘을 누르세요.",
         "unlock": "편집하려면 연필 아이콘을 누르세요.",
         "processDefinitionSave": "저장",

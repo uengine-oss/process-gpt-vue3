@@ -407,7 +407,7 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
-        "definitionMapInputMessage": "How can I help you?",
+        "definitionMapInputMessage": "e.g. Create vacation request process / Run vacation request process / Check approval status of running vacation request",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
