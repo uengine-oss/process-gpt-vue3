@@ -168,14 +168,7 @@ export default {
         async loadAgentList() {
             this.isLoading = true;
             try {
-                // 기본 에이전트 목록 추가
-                const defaultSetting = useDefaultSetting();
-                const defaultAgentList = defaultSetting.getAgentList;
-                
-                // ProcessGPTBackend에 이미 있는 getAgentList() 메서드 사용
-                const backendAgentList = await backend.getAgentList();
-                
-                let agentList = [...defaultAgentList, ...backendAgentList];
+                let agentList = await backend.getAgentList();
                 
                 // 에이전트 데이터 가공
                 if (Array.isArray(agentList)) {

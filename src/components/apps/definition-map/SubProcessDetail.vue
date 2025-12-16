@@ -172,9 +172,10 @@
             <div v-else></div>
         </v-card-text>
         <v-dialog v-model="executeDialog" persistent
-            :fullscreen="isMobile"
+            fullscreen
         >
             <process-gpt-execute v-if="mode === 'ProcessGPT'"
+                class="process-gpt-execute-component-dialog"
                 :definitionId="processDefinition.id"
                 :processDefinition="processDefinitionData"    
                 :definition="processDefinition"

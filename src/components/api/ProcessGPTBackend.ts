@@ -3387,58 +3387,158 @@ class ProcessGPTBackend implements Backend {
 
     async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false, limit?: number, offset: number = 0) {
         try {
-            const options = {
-                orderBy: 'import_count',
-                sort: 'desc',
-            }
+            const selectColumns = 'uuid, id, name, description, image, tags, author_name, author_uid, import_count, category';
             
-            const allList = await storage.list('proc_def_marketplace', options);
-            
-            if (!Array.isArray(allList)) {
-                console.error('storage.list가 배열을 반환하지 않았습니다:', allList);
-                return [];
-            }
-            
-            let list = allList;
-            
-            // 검색 기능이 활성화된 경우
+            // 검색 기능이 활성화된 경우 - DB 레벨에서 검색
             if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
-                const keyword = tagOrKeyword.toLowerCase().trim();
-                list = list.filter(item => {
-                    // 이름, 작성자, 태그 검색
-                    const nameMatch = item.name && item.name.toLowerCase().includes(keyword);
-                    const authorMatch = item.author_name && item.author_name.toLowerCase().includes(keyword);
-                    
-                    // 태그 검색
-                    let tagMatch = false;
-                    if (item.tags) {
-                        const tags = item.tags.split(',').map((t: string) => t.trim().toLowerCase());
-                        tagMatch = tags.some(tag => tag.includes(keyword));
-                    }
-                    
-                    return nameMatch || authorMatch || tagMatch;
-                });
+                const keyword = tagOrKeyword.trim();
+                const searchPattern = `%${keyword}%`;
+                
+                // Supabase를 직접 사용하여 DB 레벨에서 검색
+                let query = window.$supabase
+                    .from('proc_def_marketplace')
+                    .select(selectColumns)
+                    .or(`name.ilike.${searchPattern},author_name.ilike.${searchPattern},tags.ilike.${searchPattern}`)
+                    .order('import_count', { ascending: false });
+                
+                if (limit !== undefined) {
+                    query = query.range(offset, offset + limit - 1);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) {
+                    console.error('검색 중 오류:', error);
+                    return [];
+                }
+                
+                return data || [];
             }
-            // 태그 필터링
+            // 태그 필터링 - DB 레벨에서 필터링
             else if (tagOrKeyword && tagOrKeyword !== 'all') {
-                list = list.filter(item => {
-                    if (!item.tags) return false;
-                    const tags = item.tags.split(',').map((t: string) => t.trim());
-                    return tags.includes(tagOrKeyword);
-                });
+                const searchPattern = `%${tagOrKeyword}%`;
+                
+                let query = window.$supabase
+                    .from('proc_def_marketplace')
+                    .select(selectColumns)
+                    .ilike('tags', searchPattern)
+                    .order('import_count', { ascending: false });
+                
+                if (limit !== undefined) {
+                    query = query.range(offset, offset + limit - 1);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) {
+                    console.error('태그 필터링 중 오류:', error);
+                    return [];
+                }
+                
+                return data || [];
             }
-            
-            // 페이지네이션 적용
-            if (limit !== undefined) {
-                const start = offset;
-                const end = offset + limit;
-                return list.slice(start, end);
+            // 전체 목록 조회
+            else {
+                const options: any = {
+                    select: selectColumns,
+                    orderBy: 'import_count',
+                    sort: 'desc',
+                }
+                
+                if (limit !== undefined) {
+                    options.range = {
+                        from: offset,
+                        to: offset + limit - 1
+                    };
+                }
+                
+                const list = await storage.list('proc_def_marketplace', options);
+                
+                if (!Array.isArray(list)) {
+                    console.error('storage.list가 배열을 반환하지 않았습니다:', list);
+                    return [];
+                }
+                
+                return list;
             }
-            
-            return list;
         } catch (error) {
             console.error('❌ [백엔드] listMarketplaceDefinition 오류:', error);
             return [];
+        }
+    }
+
+    async getAllMarketplaceTags() {
+        try {
+            // Supabase를 직접 사용하여 tags 컬럼만 조회
+            const { data, error } = await window.$supabase
+                .from('proc_def_marketplace')
+                .select('tags');
+            
+            if (error) {
+                console.error('태그 목록 조회 중 오류:', error);
+                return [];
+            }
+            
+            if (!Array.isArray(data)) {
+                console.error('태그 목록이 배열이 아닙니다:', data);
+                return [];
+            }
+            
+            // 모든 태그를 수집하고 중복 제거
+            const tagsSet = new Set();
+            data.forEach(item => {
+                if (item.tags) {
+                    // 쉼표로 구분된 태그를 분리하고 중복 제거
+                    item.tags.split(',').forEach(tag => {
+                        const trimmedTag = tag ? tag.trim() : '';
+                        if (trimmedTag) {
+                            tagsSet.add(trimmedTag);
+                        }
+                    });
+                }
+            });
+            
+            return Array.from(tagsSet);
+        } catch (error) {
+            console.error('[백엔드] getAllMarketplaceTags 오류:', error);
+            return [];
+        }
+    }
+
+    async deleteMarketplaceDefinition(definitionId: string) {
+        try {
+            const { error } = await window.$supabase
+                .from('proc_def_marketplace')
+                .delete()
+                .eq('id', definitionId);
+            
+            if (error) {
+                throw new Error(error.message);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[백엔드] deleteMarketplaceDefinition 오류:', error);
+            throw error;
+        }
+    }
+
+    async getMarketplaceDefinitionBpmn(uuid: string) {
+        try {
+            const response = await storage.getObject('proc_def_marketplace', {
+                match: {
+                    uuid: uuid
+                }
+            });
+            
+            if (!response || !response.bpmn) {
+                throw new Error('BPMN 데이터를 찾을 수 없습니다.');
+            }
+            
+            return response.bpmn;
+        } catch (error) {
+            console.error('[백엔드] getMarketplaceDefinitionBpmn 오류:', error);
+            throw error;
         }
     }
 
@@ -5070,20 +5170,41 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    // agent skills
-    async saveSkills(options: any) {
+    async getTenantInfo(id: string) {
         try {
-            let newSkills = '';
-            if (options.agentInfo.skills) {
-                const skills = options.agentInfo.skills.split(',');
-                newSkills = skills.join(',');
-            }
-            await storage.putObject('users', {
-                id: options.agentInfo.id,
-                skills: newSkills,
-                tenant_id: window.$tenantName
+            const response = await storage.getObject('tenants', {
+                match: {
+                    id: id
+                }
             });
-            return newSkills;
+            if (response) {
+                return response;
+            }
+            return null;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    // skills
+    async saveSkills(skills: any) {
+        try {
+            if (!skills || skills.length === 0) {
+                return;
+            }
+            const tenantId = window.$tenantName;
+            const tenantInfo = await this.getTenantInfo(tenantId);
+            if (!tenantInfo) {
+                throw new Error('tenant not found');
+            }
+            let tenantSkills = tenantInfo.skills || [];
+            // 기존 skills와 새로운 skills를 병합하고 중복 제거
+            const mergedSkills = [...new Set([...tenantSkills, ...skills])];
+            await storage.putObject('tenants', {
+                id: tenantId,
+                skills: mergedSkills,
+            });
+            return mergedSkills;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -5113,6 +5234,10 @@ class ProcessGPTBackend implements Backend {
             }
             
             if (response.status === 200) {
+                const skillsAdded = response.data.skills_added;
+                if (skillsAdded && skillsAdded.length > 0) {
+                    await this.saveSkills(skillsAdded);
+                }
                 return response.data;
             } else {
                 throw new Error(response);

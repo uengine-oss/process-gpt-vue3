@@ -122,8 +122,10 @@
             </v-window>
         </v-card>
 
-        <v-dialog v-model="isPDMOpen" style="width: 100%; height: 100%;" persistent
-            :fullscreen="isMobile"
+        <v-dialog v-model="isPDMOpen"
+            style="width: 100%; height: 100%;"
+            persistent
+            fullscreen
         >
             <div v-if="!isShowProcess">
                 <ProcessDefinitionMap :isViewMode="true" :isExecutionByProject="true" @clickPlayBtn="clickPlayBtn" @closePDM="closePDM()"/>

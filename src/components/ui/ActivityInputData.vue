@@ -8,11 +8,11 @@
                         <v-card-title class="text-h6 cursor-pointer d-flex align-center justify-space-between pa-0 mb-2" @click="toggleExpanded">
                             <div class="d-flex align-center">
                                 {{ $t('ActivityInputData.previousInput') }}
+                                <DetailComponent
+                                    :title="$t('ActivityInputData.previousInputDescription')"
+                                    :details="previousInputDetails"
+                                />
                             </div>
-                            <DetailComponent
-                                :title="$t('ActivityInputData.previousInputDescription')"
-                                :details="previousInputDetails"
-                            />
                             <!-- <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"></v-icon> -->
                         </v-card-title>
                         <div class="text-subtitle-1 font-weight-medium mb-2">

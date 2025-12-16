@@ -2,11 +2,20 @@
     <div>
         <div class="mb-6">
             <!-- Duration -->
-            <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
+            <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
+            
+            <!-- Description -->
+            <Description v-model="activity.description" class="mb-4"></Description>
+            
             <!-- Instruction -->
-            <Instruction v-model="activity.description" class="mb-4"></Instruction>
+            <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+            
+            <v-divider class="mb-2"></v-divider>
+            
             <!-- Checkpoints -->
             <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
+            
+            <v-divider class="mb-4"></v-divider>
             
             <!-- Custom Properties -->
             <KeyValueField
@@ -21,15 +30,17 @@
 <script>
 import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
+import Description from '@/components/designer/DescriptionField.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
-    name: 'gpt-service-task-panel',
+    name: 'gpt-task-panel',
     components: {
         Instruction,
         Checkpoints,
+        Description,
         KeyValueField
     },
     props: {
@@ -46,14 +57,15 @@ export default {
     },
     data() {
         return {
-            copyUengineProperties: JSON.parse(JSON.stringify(this.uengineProperties)),
+            copyUengineProperties: this.uengineProperties ? JSON.parse(JSON.stringify(this.uengineProperties)) : {},
             copyDefinition: null,
             backend: null,
             activity: {
-                type: 'serviceTask',
+                type: 'task',
                 duration: 5,
                 attachments: [],
                 instruction: '',
+                description: '',
                 checkpoints: [''],
                 customProperties: []
             }
@@ -70,11 +82,17 @@ export default {
                 console.log('Activity not found');
             }
         }
-        me.activity.type = 'serviceTask';
+        me.activity.type = 'task';
+        
+        // Initialize customProperties from copyUengineProperties if available
+        if (me.copyUengineProperties && me.copyUengineProperties.customProperties) {
+            me.activity.customProperties = me.copyUengineProperties.customProperties;
+        }
     },
     methods: {
         beforeSave() {
             var me = this;
+            me.copyUengineProperties.customProperties = me.activity.customProperties;
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         }
     }

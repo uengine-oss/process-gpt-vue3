@@ -74,6 +74,13 @@
                 :definition="copyDefinition"
             />
         </div>
+        <div class="mt-3">
+            <KeyValueField
+                v-model="copyUengineProperties.customProperties"
+                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                :readonly="isViewMode"
+            />
+        </div>
         <div>
             <!-- <div>Return 값을 저장 할 변수</div> -->
             <!-- <v-row class="ma-0 pa-0">
@@ -117,13 +124,15 @@ import Mapper from '@/components/designer/mapper/Mapper.vue';
 import yaml from 'yamljs';
 import BackendFactory from '@/components/api/BackendFactory';
 import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
+import KeyValueField from '@/components/designer/KeyValueField.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'service-task-panel',
     components: {
         Mapper,
-        EventSynchronizationForm
+        EventSynchronizationForm,
+        KeyValueField
     },
     props: {
         uengineProperties: Object,
@@ -134,7 +143,11 @@ export default {
     },
     async created() {
         this.isLoading = true;
-        this.copyUengineProperties = this.uengineProperties;
+        if (this.uengineProperties) {
+            this.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
+        } else {
+            this.copyUengineProperties = {};
+        }
 
         if(!this.copyUengineProperties) this.copyUengineProperties = {}
         if(!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{"name": "Content-Type", "value":"application/json"}]
@@ -142,8 +155,10 @@ export default {
         if(!this.copyUengineProperties.outputMapping) this.copyUengineProperties.outputMapping = {} 
         if(!this.copyUengineProperties.outputMapping.attributes) this.copyUengineProperties.outputMapping.attributes = []
         if(!this.copyUengineProperties.outputMapping.mappingContext) this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] }        
+        if(!this.copyUengineProperties.outputMapping.mappingContext) this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] }        
         if(!this.tempOutputMapping) this.tempOutputMapping = {}
         this.tempOutputMapping.eventSynchronization = JSON.parse(JSON.stringify(this.copyUengineProperties.outputMapping)) 
+        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [{key: 'test', value: 'value'}]; 
 
        if(typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
             this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
@@ -301,8 +316,8 @@ export default {
         },
         beforeSave() {
             this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization
-            const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping } = this.copyUengineProperties;
-            this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping };
+            const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties } = this.copyUengineProperties;
+            this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties };
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
         generateAPI() {
