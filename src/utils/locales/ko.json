@@ -1,5 +1,14 @@
 {
     "message": "ko",
+    "common": {
+        "cancel": "취소",
+        "save": "저장",
+        "confirm": "확인",
+        "delete": "삭제",
+        "edit": "수정",
+        "add": "추가",
+        "close": "닫기"
+    },
     "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
     "successMsg": {
         "simulatedProcess": "Process 시뮬레이션 완료",
@@ -35,14 +44,14 @@
         "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
     },
     "headerMenu": {
-        "sidebar" : "사이드바 접기/펼치기",
-        "dashboard" : "대시보드",
-        "todoList" : "나의 업무",
-        "schedule" : "스케줄러",
-        "calendar" : "달력",
-        "layoutSetting" : "레이아웃 설정",
-        "admin" : "관리자 페이지",
-        "setting" : "설정",
+        "sidebar": "사이드바 접기/펼치기",
+        "dashboard": "대시보드",
+        "todoList": "나의 업무",
+        "schedule": "스케줄러",
+        "calendar": "달력",
+        "layoutSetting": "레이아웃 설정",
+        "admin": "관리자 페이지",
+        "setting": "설정",
         "search": "검색",
         "searchResult": "검색 결과",
         "searchKeyword": "검색하고자 하는 키워드 입력 후 엔터를 눌러주세요.",
@@ -320,7 +329,27 @@
         "marketplace": "마켓플레이스",
         "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요",
         "treeView": "트리 뷰로 보기",
-        "treeViewExplanation": "프로세스를 트리 구조로 확인하고 편집하세요"
+        "treeViewExplanation": "프로세스를 트리 구조로 확인하고 편집하세요",
+        "cardView": "카드",
+        "matrixView": "매트릭스"
+    },
+    "metricsView": {
+        "domain": "Domain",
+        "addDomain": "Domain 추가",
+        "editDomain": "Domain 수정",
+        "domainName": "Domain 이름",
+        "confirmDeleteDomain": "이 Domain을 삭제하시겠습니까?",
+        "addMegaProcess": "Mega Process 추가",
+        "editMegaProcess": "Mega Process 수정",
+        "megaProcessName": "Mega Process 이름",
+        "confirmDeleteMegaProcess": "이 Mega Process를 삭제하시겠습니까?",
+        "addProcess": "프로세스 추가",
+        "editProcess": "프로세스 수정",
+        "processName": "프로세스 이름",
+        "subProcesses": "세부 프로세스 (쉼표로 구분)",
+        "confirmDeleteProcess": "이 프로세스를 삭제하시겠습니까?",
+        "confirmRemoveProcess": "이 프로세스를 매트릭스에서 제거하시겠습니까? (실제 프로세스는 삭제되지 않습니다)",
+        "nameRequired": "이름을 입력해주세요."
     },
     "processDefinitionTree": {
         "search": "검색",

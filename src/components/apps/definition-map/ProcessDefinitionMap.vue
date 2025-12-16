@@ -34,6 +34,24 @@
                 
                 <!-- buttons -->
                 <div class="ml-auto d-flex">
+                    <!-- View Mode Toggle -->
+                    <v-btn-toggle
+                        v-if="componentName === 'DefinitionMapList' && mode === 'ProcessGPT'"
+                        v-model="viewMode"
+                        mandatory
+                        density="compact"
+                        color="primary"
+                        class="mr-4"
+                    >
+                        <v-btn value="proc_map" size="small">
+                            <v-icon start size="16">mdi-view-grid</v-icon>
+                            {{ $t('processDefinitionMap.cardView') || '카드' }}
+                        </v-btn>
+                        <v-btn value="metrics" size="small">
+                            <v-icon start size="16">mdi-table</v-icon>
+                            {{ $t('processDefinitionMap.matrixView') || '매트릭스' }}
+                        </v-btn>
+                    </v-btn-toggle>
                     <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode" >
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" icon variant="text" size="24" class="ml-2 cp-unlock" @click="openAlertDialog">
@@ -111,7 +129,8 @@
                     <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" :isAdmin="isAdmin" />
                 </div>
                 <div v-else>
-                    <DefinitionMapList :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                    <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue" :enableEdit="enableEdit" @update:value="updateMetricsValue"/>
                 </div>
             </div>
 
@@ -243,6 +262,7 @@ import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
 import Chat from '@/components/ui/Chat.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import MetricsView from './MetricsView.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -263,7 +283,8 @@ export default {
         ProcessDefinitionChat,
         ProcessDefinitionMarketPlace,
         Chat,
-        DetailComponent
+        DetailComponent,
+        MetricsView
     },
     props: {
         componentName: {
@@ -300,6 +321,12 @@ export default {
         isSimulateMode: false,
         windowWidth: window.innerWidth,
         pendingRoute: null,
+        viewMode: 'proc_map',
+        metricsValue: {
+            domains: [],
+            mega_processes: [],
+            processes: []
+        },
         usageGuideDetails: [
             { 
                 icon: 'pencil', 
@@ -428,6 +455,11 @@ export default {
             if(newVal && newVal !== oldVal) {
                 this.copyValue = JSON.parse(JSON.stringify(this.value));
             }
+        },
+        async viewMode(newVal) {
+            if (newVal === 'metrics') {
+                await this.getMetricsMap();
+            }
         }
     },
     async created() {
@@ -440,6 +472,7 @@ export default {
                     me.isAdmin = true;
                 }
                 await me.getProcessMap();
+                await me.getMetricsMap();
                 if (me.useLock) {
                     await me.checkedLock();
                 } else {
@@ -623,6 +656,13 @@ export default {
         },
         async getProcessMap() {
             this.value = await backend.getProcessDefinitionMap();
+        },
+        async getMetricsMap() {
+            this.metricsValue = await backend.getMetricsMap();
+        },
+        async updateMetricsValue(newValue) {
+            this.metricsValue = newValue;
+            await backend.putMetricsMap(newValue);
         },
         addProcess(newProcess) {
             this.value.mega_proc_list.push({
