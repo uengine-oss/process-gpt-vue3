@@ -2016,7 +2016,19 @@
     "ProcessInstanceChat": {
         "subprocessCreating": "Subprocess creating...",
         "feedback": "Is the process execution normal?",
-        "feedbackDescription": "Is the process execution normal?"
+        "feedbackDescription": "Do you want to apply the process feedback?"
+    },
+    "ProcessInstanceLog": {
+        "headers": {
+            "time": "Time",
+            "role": "Role",
+            "sender": "Sender",
+            "message": "Message"
+        },
+        "noData": "No messages yet.",
+        "streaming": "Streaming log...",
+        "unknownSender": "Unknown",
+        "systemSender": "System"
     },
     "ActivityInputData": {
         "previousInput": "Previous Activity Input",
@@ -2226,7 +2238,8 @@
     "Common": {
         "cancel": "Cancel",
         "delete": "Delete",
-        "save": "Save"
+        "save": "Save",
+        "submit": "Submit"
     },
     "AgentSkillEdit": {
         "deleteDialogTitle": "Delete Skill File",
@@ -2252,5 +2265,26 @@
         "save": "Save",
         "goodExamples": "Good Examples",
         "badExamples": "Bad Examples"
+    },
+    "ProcessFeedback": {
+        "applyTitle": "Apply Feedback",
+        "inputTitle": "Please enter your feedback",
+        "columnApply": "Apply",
+        "columnProperty": "Property",
+        "columnBefore": "Before Feedback",
+        "columnAfter": "After Feedback",
+        "noChanges": "There is no change to apply.",
+        "noContent": "No content",
+        "goodExample": "Good Examples",
+        "badExample": "Bad Examples",
+        "applyButton": "Apply",
+        "feedbackLabel": "Feedback",
+        "autoGenerate": "Auto-generate",
+        "generating": "Generating feedback automatically...",
+        "inputData": "Input Data",
+        "checkpoints": "Checkpoints",
+        "description": "Description",
+        "instruction": "Instruction",
+        "conditionExamples": "Condition Examples"
     }
 }

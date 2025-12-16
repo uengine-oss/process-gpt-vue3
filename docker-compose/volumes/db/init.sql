@@ -205,6 +205,8 @@ create table if not exists public.proc_def_version (
     message text null,
     uuid uuid not null default gen_random_uuid (),
     tenant_id text null default public.tenant_id(),
+    parent_version text null,
+    source_todolist_id uuid null,
     constraint proc_def_version_pkey primary key (uuid),
     constraint proc_def_version_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

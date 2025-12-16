@@ -4767,29 +4767,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async setFeedback(task: any, feedback: any) {
-        try {
-            const taskId = task.taskId;
-            const workItem = await storage.getObject('todolist', {
-                match: {
-                    id: taskId
-                }
-            });
-            workItem.temp_feedback = feedback;
-            await storage.putObject('todolist', workItem);
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
-
-    async submitFeedback(feedback: string, taskId: string) {
+    async saveFeedback(feedback: string, taskId: string) {
         try {
             const workItem = await storage.getObject('todolist', {
                 match: {
                     id: taskId
                 }
             });
-            workItem.status = 'SUBMITTED';
             workItem.temp_feedback = feedback;
             await storage.putObject('todolist', workItem);
         } catch (error) {
@@ -4808,17 +4792,31 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async setFeedbackDiff(diff: any, activityId: string, defId: string) {
+    async applyFeedback(diff: any, taskId: string) {
         try {
-            const process = await storage.getObject('proc_def', {
+            const workItem = await storage.getObject('todolist', {
                 match: {
-                    id: defId,
-                    tenant_id: window.$tenantName
+                    id: taskId
+                }
+            });
+            if (!workItem) {
+                throw new Error('workItem not found');
+            }
+            const defId = workItem.proc_def_id;
+            const activityId = workItem.activity_id;
+            const version = workItem.version;
+            
+            const process = await storage.getObject('proc_def_version', {
+                match: {
+                    proc_def_id: defId,
+                    tenant_id: window.$tenantName,
+                    version: version
                 }
             });
             if (!process) {
                 throw new Error('process not found');
             }
+
             const definition = process.definition;
             const activity = definition.activities.find((activity: any) => activity.id === activityId);
             if (!activity) {
@@ -4848,7 +4846,29 @@ class ProcessGPTBackend implements Backend {
                     sequence.properties = JSON.stringify(properties);
                 }
             }
-            await storage.putObject('proc_def', process);
+
+            let parentVersion: string = process.version || version;
+            if (parentVersion.includes('-')) {
+                parentVersion = parentVersion.split('-')[0];
+            }
+            const newVersion = parentVersion + '-' + Math.random().toString(36).substring(2, 15);
+            const newProcess = {
+                proc_def_id: defId,
+                version: newVersion,
+                version_tag: 'minor',
+                snapshot: process.snapshot,
+                definition: definition,
+                arcv_id: defId + '_' + newVersion,
+                parent_version: parentVersion,
+                source_todolist_id: workItem.id,
+            };
+            await storage.putObject('proc_def_version', newProcess);
+
+            // 임시 minor 버전으로 해당 워크아이템만 재실행
+            workItem.version = newVersion;
+            workItem.version_tag = 'minor';
+            workItem.status = 'SUBMITTED';
+            await storage.putObject('todolist', workItem);
         } catch (error) {
             throw new Error(error.message);
         }
@@ -5173,6 +5193,14 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.delete(`/claude-skills/skills/${encodeURIComponent(skillName)}`);
             if (response.status === 200 && response.data && response.data.skill_name) {
                 const deletedSkill = response.data.skill_name;
+                const tenantId = window.$tenantName;
+                const tenantInfo = await this.getTenantInfo(tenantId);
+                if (!tenantInfo) {
+                    throw new Error('tenant not found');
+                }
+                let tenantSkills = tenantInfo.skills || [];
+                tenantSkills = tenantSkills.filter((skill: any) => skill.name !== deletedSkill);
+                await this.saveSkills(tenantSkills);
                 return response.data;
             } else {
                 return false;
