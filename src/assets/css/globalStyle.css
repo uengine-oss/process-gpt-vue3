@@ -679,6 +679,11 @@ hr {
     max-height: calc(100vh - 420px);
     overflow-y: auto;
 }
+.marketplace-bpmn-preview-skeleton-loader .v-skeleton-loader__image {
+    height: calc(100vh - 84px) !important;
+    border-radius: 8px !important;
+}
+
 .work-item-skeleton-loader .v-skeleton-loader__image {
     height: calc(100% - 50px);
     border-radius: 8px;

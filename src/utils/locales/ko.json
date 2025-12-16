@@ -1485,11 +1485,13 @@
         "addedButton": "추가됨",
         "addButton": "추가",
         "deleteButton": "삭제",
+        "previewButton": "미리보기",
         "otherCategory": "기타",
         "deleteDialogTitle": "프로세스 삭제 확인",
         "deleteDialogMessage": "정말로 \"{name}\" 프로세스를 마켓플레이스에서 삭제하시겠습니까?",
         "deleteDialogWarning": "이 작업은 되돌릴 수 없습니다.",
         "deleteDialogConfirmMessage": "계속하려면 프로세스 이름을 정확히 입력해주세요:",
+        "previewDialogTitle": "프로세스 미리보기",
         "countUnit": "개",
         "allTemplates": "전체 템플릿"
     },

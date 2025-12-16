@@ -1485,13 +1485,15 @@
         "addedButton": "Added",
         "addButton": "Add",
         "deleteButton": "Delete",
+        "previewButton": "Preview",
         "otherCategory": "Other",
         "countUnit": "items",
         "allTemplates": "All Templates",
         "deleteDialogTitle": "Confirm Process Deletion",
         "deleteDialogMessage": "Are you sure you want to delete the \"{name}\" process from the marketplace?",
         "deleteDialogWarning": "This action cannot be undone.",
-        "deleteDialogConfirmMessage": "Please type the process name exactly to continue:"
+        "deleteDialogConfirmMessage": "Please type the process name exactly to continue:",
+        "previewDialogTitle": "Process Preview"
     },
     "ContentEditorField": {
         "contentEditor": "Content Editor",

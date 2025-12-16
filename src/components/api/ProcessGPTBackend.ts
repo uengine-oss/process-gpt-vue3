@@ -3325,7 +3325,7 @@ class ProcessGPTBackend implements Backend {
 
     async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false, limit?: number, offset: number = 0) {
         try {
-            const selectColumns = 'id, name, description, image, tags, author_name, author_uid, import_count, category';
+            const selectColumns = 'uuid, id, name, description, image, tags, author_name, author_uid, import_count, category';
             
             // 검색 기능이 활성화된 경우 - DB 레벨에서 검색
             if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
@@ -3457,6 +3457,25 @@ class ProcessGPTBackend implements Backend {
             return true;
         } catch (error) {
             console.error('[백엔드] deleteMarketplaceDefinition 오류:', error);
+            throw error;
+        }
+    }
+
+    async getMarketplaceDefinitionBpmn(uuid: string) {
+        try {
+            const response = await storage.getObject('proc_def_marketplace', {
+                match: {
+                    uuid: uuid
+                }
+            });
+            
+            if (!response || !response.bpmn) {
+                throw new Error('BPMN 데이터를 찾을 수 없습니다.');
+            }
+            
+            return response.bpmn;
+        } catch (error) {
+            console.error('[백엔드] getMarketplaceDefinitionBpmn 오류:', error);
             throw error;
         }
     }
