@@ -178,14 +178,11 @@
                     </div>
                     <v-window v-model="selectedTab"
                         class="work-item-tab-box"
-                        :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px); overflow: auto' : 'height: calc(100vh - 257px); color: black; overflow: auto'"
+                        :class="$globalState.state.isZoomed ? '.work-item-tab-process-box-full' : 'work-item-tab-process-box-empty'"
                         :touch="false"
                     >
                         <v-window-item v-if="isTabAvailable('progress')" value="progress">
-                            <div
-                                :style="$globalState.state.isZoomed ? 'height: calc(100vh - 130px);' : 'height: calc(100vh - 260px); color: black; overflow: auto'"
-
-                            >
+                            <div :class="$globalState.state.isZoomed ? 'work-item-tab-item-process-box-full' : 'work-item-tab-item-process-box-empty'">
                                 <div class="pa-0" style="height:100%;" :key="updatedDefKey">
                                     <div v-if="bpmn" style="height: 100%;">
                                         <div v-show="isBpmnLoading">
@@ -309,8 +306,10 @@
             <v-col
                 class="pa-0"
                 :cols="isMobile ? 12 : 7"
-                :class="isMobile ? 'order-first' : ''"
-                :style="isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'height: calc(100vh - 70px); overflow: auto' : 'height: calc(100vh - 190px); overflow: auto')"
+                :class="[
+                  isMobile ? 'order-first' : '',
+                  isMobile ? 'overflow: auto' : ($globalState.state.isZoomed ? 'work-item-form-box-height-full' : 'work-item-form-box-height-empty')
+                ]"
             >
                 <div v-if="currentComponent" class="work-itme-current-component" style="height: 100%;">
                     <!-- FormDefinition 분리된 영역 -->

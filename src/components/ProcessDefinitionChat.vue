@@ -206,9 +206,9 @@
                 </div>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog" max-width="80%" persistent
-            :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
-             :fullscreen="isMobile"
+        <v-dialog v-model="executeDialog"
+            persistent
+            fullscreen
         >
             <div v-if="!pal && mode === 'ProcessGPT'">
                 <process-gpt-execute :isSimulate="isSimulate" :processDefinition="processDefinition" :bpmn="bpmn" :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
