@@ -6,13 +6,13 @@
                 <span class="text-h6 ml-2">{{ $t('ProcessFeedback.applyTitle') }}</span>
             </div>
             <v-skeleton-loader
-                v-if="isLoading"
+                v-if="isGenerating || isSubmitting"
                 type="image"
                 class="mx-auto"
             ></v-skeleton-loader>
             
             <!-- 데스크톱 테이블 뷰 -->
-            <v-table v-else-if="!isLoading && !isMobile" class="diff-table">
+            <v-table v-else-if="!isGenerating && !isSubmitting && !isMobile" class="diff-table">
                 <thead>
                     <tr>
                         <th class="text-left" scope="col">{{ $t('ProcessFeedback.columnApply') }}</th>
@@ -199,7 +199,7 @@
             </v-table>
 
             <!-- 모바일 카드 뷰 -->
-            <div v-else-if="!isLoading && isMobile" class="mobile-diff-view">
+            <div v-else-if="!isGenerating && !isSubmitting && isMobile" class="mobile-diff-view">
                 <v-card
                     v-for="(item, key) in diffItems"
                     :key="`mobile-${key}`"
@@ -326,7 +326,7 @@
                 </v-card>
             </div>
 
-            <v-row v-if="!isLoading" class="ma-0 pa-0 mt-2">
+            <v-row v-if="!isGenerating && !isSubmitting" class="ma-0 pa-0 mt-2">
                 <v-spacer></v-spacer>
                 <v-btn @click="closeFeedback"
                     color="gray"
@@ -353,8 +353,8 @@
                         icon
                         variant="text" 
                         density="compact"
-                        :loading="isLoading"
-                        :disabled="isLoading || !task"
+                        :loading="isGenerating"
+                        :disabled="isGenerating || !task"
                         @click="getFeedback"
                     >
                         <Icons :icon="'magic'" :size="20" />
@@ -366,7 +366,7 @@
             </div>
             <!-- <v-list class="feedback-list">
                 <v-skeleton-loader
-                    v-if="isLoading"
+                    v-if="isGenerating"
                     type="image"
                     class="mx-auto"
                 ></v-skeleton-loader>
@@ -381,7 +381,7 @@
                     <v-list-item-title>{{ item }}</v-list-item-title>
                 </v-list-item>
                 <v-list-item
-                    v-if="!isLoading"
+                    v-if="!isGenerating"
                     :active="feedbackValue === 'etc'"
                     @click="feedbackValue = 'etc'"
                     class="feedback-item"
@@ -393,7 +393,7 @@
             <v-textarea 
                 v-model="feedbackValue"
                 :label="$t('ProcessFeedback.feedbackLabel')"
-                :disabled="isLoading"
+                :disabled="isGenerating || isSubmitting"
                 rows="3"
                 hide-details
             />
@@ -404,6 +404,7 @@
                     variant="elevated" 
                     class="rounded-pill mr-2"
                     density="compact"
+                    :disabled="isSubmitting"
                 >
                     {{ $t('Common.cancel') }}
                 </v-btn>
@@ -414,6 +415,7 @@
                     variant="elevated" 
                     class="rounded-pill"
                     density="compact"
+                    :loading="isSubmitting"
                 >
                     {{ $t('Common.submit') }}
                 </v-btn>
@@ -433,7 +435,8 @@ export default {
     },
     data() {
         return {
-            isLoading: false,
+            isGenerating: false,
+            isSubmitting: false,
             isApplyMode: false,
             feedbackValue: null,
             feedbackItems: [],
@@ -629,10 +632,10 @@ export default {
             }
         },
         async getFeedback() {
-            if (!this.task || this.isLoading) {
+            if (!this.task || this.isGenerating) {
                 return;
             }
-            this.isLoading = true;
+            this.isGenerating = true;
             this.feedbackValue = null;
             const obj = {
                 processDefinitionId: this.task.defId,
@@ -648,7 +651,7 @@ export default {
                     this.feedbackValue = '';
                 }
             } finally {
-                this.isLoading = false;
+                this.isGenerating = false;
             }
         },
         async submitFeedback() {
@@ -656,10 +659,10 @@ export default {
                 if (this.feedbackValue == 'etc') {
                     this.feedbackValue = this.feedbackText;
                 }
-                this.isLoading = true;
+                this.isSubmitting = true;
                 await backend.saveFeedback(this.feedbackValue, this.task.taskId);
                 await this.getFeedbackDiff();
-                this.isLoading = false;
+                this.isSubmitting = false;
             }
         },
         async getFeedbackDiff() {
@@ -678,8 +681,6 @@ export default {
                     }
                 }
             }
-            console.log(this.diffItems);
-            this.isLoading = false;
             if (Object.keys(this.diffItems).length > 0) {
                 this.isApplyMode = true;
             } else {
