@@ -1,7 +1,7 @@
 <template>
-    <v-card class="process-feedback ma-2" elevation="2">
-        <v-card-text v-if="isApplyMode" class="pa-4">
-            <div class="d-flex justify-start align-center mb-2">
+    <v-card class="process-feedback" flat>
+        <v-card-text v-if="isApplyMode" class="pa-1">
+            <div class="d-flex justify-start align-center mb-1">
                 <v-icon>mdi-information</v-icon>
                 <span class="text-h6 ml-2">{{ $t('ProcessFeedback.applyTitle') }}</span>
             </div>
@@ -218,7 +218,7 @@
                     
                     <v-card-text class="pt-0">
                         <!-- 반영 전 -->
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">{{ $t('ProcessFeedback.columnBefore') }}</div>
                             <div class="mobile-content-box">
                                 <div v-if="Array.isArray(item.before)">
@@ -344,8 +344,8 @@
             </v-row>
         </v-card-text>
 
-        <v-card-text v-else class="pa-3">
-            <div class="d-flex justify-start align-center mb-4">
+        <v-card-text v-else class="pa-1">
+            <div class="d-flex justify-start align-center mb-1">
                 <v-icon>mdi-information</v-icon>
                 <span class="text-h6 ml-2">{{ $t('ProcessFeedback.inputTitle') }}</span>
                 <div class="ml-auto d-flex align-center">
@@ -638,9 +638,9 @@ export default {
             this.isGenerating = true;
             this.feedbackValue = null;
             const obj = {
-                processDefinitionId: this.task.defId,
-                activityId: this.task.tracingTag,
-                taskId: this.task.taskId,
+                processDefinitionId: this.task.procDefId,
+                activityId: this.task.activityId,
+                taskId: this.task.id,
             };
             try {
                 const items = await backend.getFeedback(obj);
@@ -660,13 +660,13 @@ export default {
                     this.feedbackValue = this.feedbackText;
                 }
                 this.isSubmitting = true;
-                await backend.saveFeedback(this.feedbackValue, this.task.taskId);
+                await backend.saveFeedback(this.feedbackValue, this.task.id);
                 await this.getFeedbackDiff();
                 this.isSubmitting = false;
             }
         },
         async getFeedbackDiff() {
-            const diff = await backend.getFeedbackDiff(this.task.taskId);
+            const diff = await backend.getFeedbackDiff(this.task.id);
             if (diff && diff.modifications) {
                 for (const key in diff.modifications) {
                     if (diff.modifications[key] && diff.modifications[key].changed) {
@@ -681,6 +681,7 @@ export default {
                     }
                 }
             }
+            console.log(this.diffItems);
             if (Object.keys(this.diffItems).length > 0) {
                 this.isApplyMode = true;
             } else {
@@ -702,8 +703,8 @@ export default {
             if (this.feedbackDiff && this.feedbackDiff.inputData) {
                 this.feedbackDiff.inputData = this.feedbackDiff.inputData.map(item => item.key);
             }
-            await backend.applyFeedback(this.feedbackDiff, this.task.taskId);
-            this.closeFeedback(this.task.taskId);
+            await backend.applyFeedback(this.feedbackDiff, this.task.id);
+            this.closeFeedback(this.task.id);
         },
 
     }
@@ -712,18 +713,18 @@ export default {
 
 <style scoped>
 .feedback-list {
-    margin-bottom: 16px;
+    margin-bottom: 4px;
 }
 
 .feedback-item {
     cursor: pointer;
     border-radius: 4px;
-    margin-bottom: 4px;
-    padding: 8px 12px !important;
+    margin-bottom: 2px;
+    padding: 4px 6px !important;
 }
 
 .feedback-item:hover {
-    background-color: #f5f5f5 !important;
+    background-color: rgba(var(--v-theme-on-surface), 0.04) !important;
 }
 
 .feedback-item .v-list-item-title {
@@ -749,8 +750,8 @@ export default {
 }
 
 .diff-table td {
-    border-top: 1px solid #e0e0e0;
-    border-bottom: 1px solid #e0e0e0;
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .diff-table th:first-child,
@@ -800,16 +801,16 @@ export default {
 }
 
 .diff-word.added {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background-color: rgba(var(--v-theme-success), 0.12);
+    color: rgb(var(--v-theme-success));
+    border: 1px solid rgba(var(--v-theme-success), 0.3);
     padding: 1px 3px;
 }
 
 .diff-word.removed {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: rgba(var(--v-theme-error), 0.12);
+    color: rgb(var(--v-theme-error));
+    border: 1px solid rgba(var(--v-theme-error), 0.3);
     text-decoration: line-through;
     padding: 1px 3px;
 }
@@ -825,21 +826,21 @@ export default {
 }
 
 .gwt-divider {
-    border-top: 1px dashed #e0e0e0;
+    border-top: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));
     margin: 8px 0;
 }
 
 .gwt-card {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
+    background-color: rgba(var(--v-theme-surface-variant), 0.3);
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin-bottom: 2px;
 }
 
 .gwt-card.added {
-    background-color: #d4edda;
-    border-left: 4px solid #28a745;
+    background-color: rgba(var(--v-theme-success), 0.08);
+    border-left: 4px solid rgb(var(--v-theme-success));
 }
 
 .gwt-row {
@@ -868,13 +869,13 @@ export default {
 }
 
 .diff-list-item.added {
-    background-color: #d4edda;
-    border-left: 4px solid #28a745;
+    background-color: rgba(var(--v-theme-success), 0.08);
+    border-left: 4px solid rgb(var(--v-theme-success));
 }
 
 .diff-list-item.removed {
-    background-color: #f8d7da;
-    border-left: 4px solid #dc3545;
+    background-color: rgba(var(--v-theme-error), 0.08);
+    border-left: 4px solid rgb(var(--v-theme-error));
     text-decoration: line-through;
 }
 
@@ -891,13 +892,13 @@ export default {
 
 .diff-list-item.added .diff-icon::before {
     content: '+';
-    color: #28a745;
+    color: rgb(var(--v-theme-success));
     font-weight: bold;
 }
 
 .diff-list-item.removed .diff-icon::before {
     content: '-';
-    color: #dc3545;
+    color: rgb(var(--v-theme-error));
     font-weight: bold;
 }
 
@@ -921,11 +922,11 @@ export default {
 }
 
 .mobile-content-box {
-    background-color: #f8f9fa;
-    border-radius: 6px;
-    padding: 12px;
-    border: 1px solid #e9ecef;
-    min-height: 40px;
+    background-color: rgba(var(--v-theme-surface-variant), 0.3);
+    border-radius: 4px;
+    padding: 6px;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    min-height: 30px;
 }
 
 .mobile-diff-item {
@@ -937,15 +938,15 @@ export default {
 }
 
 .mobile-diff-item.added {
-    background-color: #d4edda;
+    background-color: rgba(var(--v-theme-success), 0.08);
     padding: 4px 8px;
-    border-left: 3px solid #28a745;
+    border-left: 3px solid rgb(var(--v-theme-success));
 }
 
 .mobile-diff-item.removed {
-    background-color: #f8d7da;
+    background-color: rgba(var(--v-theme-error), 0.08);
     padding: 4px 8px;
-    border-left: 3px solid #dc3545;
+    border-left: 3px solid rgb(var(--v-theme-error));
     text-decoration: line-through;
 }
 
@@ -962,12 +963,12 @@ export default {
 
 .mobile-diff-item.added .diff-icon-mobile::before {
     content: '+';
-    color: #28a745;
+    color: rgb(var(--v-theme-success));
 }
 
 .mobile-diff-item.removed .diff-icon-mobile::before {
     content: '-';
-    color: #dc3545;
+    color: rgb(var(--v-theme-error));
 }
 
 .mobile-diff-item.unchanged .diff-icon-mobile::before {
@@ -977,11 +978,11 @@ export default {
 /* 모바일에서 체크박스 스타일 조정 */
 @media (max-width: 600px) {
     .diff-card .v-card-title {
-        padding: 12px 16px 8px 16px !important;
+        padding: 6px 8px 4px 8px !important;
     }
     
     .diff-card .v-card-text {
-        padding: 0 16px 16px 16px !important;
+        padding: 0 8px 8px 8px !important;
     }
     
     .mobile-content-box {

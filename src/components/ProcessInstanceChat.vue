@@ -68,7 +68,7 @@
                     </div>
                 </div>
                 <!-- feedback -->
-                <div v-if="!showFeedbackInput" class="bottom-0 end-0 ml-2 mr-2">
+                <div v-if="!showFeedbackInput && !streamingText" class="bottom-0 end-0 ml-2 mr-2">
                     <span class="text-body-2">{{ $t('ProcessInstanceChat.feedback') }}</span>
                     <v-btn icon size="x-small" variant="text" color="error" @click="selectFeedback('bad')">
                         <v-icon>mdi-thumb-down</v-icon>
@@ -441,6 +441,7 @@ export default {
             }
         },
         async getTaskLog() {
+            this.showFeedbackInput = false;
             this.subscription = await backend.getTaskLog(this.runningTaskId, async (task) => {
                 if (task.log) {
                     this.streamingText = task.log;

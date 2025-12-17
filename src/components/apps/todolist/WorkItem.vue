@@ -240,7 +240,8 @@
                             <v-card elevation="10" class="pa-0">
                                 <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
                                     <div class="d-flex w-100" style="overflow: auto" :style="workHistoryHeight">
-                                        <component class="work-item-activity-box"
+                                        <component 
+                                            class="work-item-activity-box"
                                             :class="mode == 'ProcessGPT' && isMobile ? 'work-item-activity-box-mobile' : ''"
                                             :is="'work-history-' + mode"
                                             :messages="messages"
@@ -523,7 +524,7 @@ import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import AgentMonitor from '@/views/markdown/AgentMonitor.vue';
 
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
-import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
+import ProcessInstanceTable from '@/components/ProcessInstanceTable.vue';
 import customBpmnModule from '@/components/customBpmn';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import AgentFeedback from './AgentFeedback.vue';
@@ -571,7 +572,7 @@ export default {
         FormWorkItem,
         URLWorkItem,
         'work-history-uEngine': WorkItemChat,
-        'work-history-ProcessGPT': ProcessInstanceChat,
+        'work-history-ProcessGPT': ProcessInstanceTable,
         BpmnUengine,
         DynamicForm,
         FormDefinition,

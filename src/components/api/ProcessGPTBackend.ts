@@ -798,6 +798,16 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getTask(taskId: string) {
+        try {
+            const task = await storage.getObject('todolist', { key: 'id', match: { id: taskId } });
+            return this.convertKeysToCamelCase(task);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getWorkList(options?: any) {
         try {
             const filter: any = { match: {} };
