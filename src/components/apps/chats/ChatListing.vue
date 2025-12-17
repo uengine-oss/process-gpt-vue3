@@ -331,7 +331,7 @@ export default {
                 if (otherParticipant) {
                     // system chat인 경우
                     if (otherParticipant.email === "system@uengine.org") {
-                        return "Assistant";
+                        return chat.name || "Assistant";
                     } else {
                         // 일반 사용자인 경우 상대방 이름 표시
                         return otherParticipant.username || otherParticipant.email;

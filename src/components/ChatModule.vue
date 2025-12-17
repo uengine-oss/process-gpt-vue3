@@ -582,7 +582,7 @@ export default {
                 context: this,
                 action: async () => { // Changed to arrow function
                     if(!this.isVisionMode){
-                        if(!this.ProcessGPTActive){
+                        // if(!this.ProcessGPTActive){
                             if(this.messages && this.messages.length == 0){
                                 this.messages.push({
                                     role: 'system',
@@ -638,7 +638,7 @@ export default {
                                 }
                             }
                             this.afterModelCreated(response);
-                        }
+                        // }
                     }
                 },
                 onFail: () => {
@@ -665,7 +665,7 @@ export default {
             if(this.isVisionMode){
                 this.generateAgentAI(response)
             } else {
-                if(!this.ProcessGPTActive){
+                // if(!this.ProcessGPTActive){
                     if(this.messages && this.messages.length == 0){
                         this.messages.push({
                             role: 'system',
@@ -681,7 +681,7 @@ export default {
                             delete message.isLoading;
                         }
                     });
-                }
+                // }
     
                 let jsonData = response;
                 if (typeof response == 'string' && !this.isMentoMode) {

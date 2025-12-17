@@ -139,6 +139,17 @@ ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS message text;
 ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
 
+-- proc_def_version table
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS arcv_id text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS proc_def_id text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS version text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS version_tag text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS snapshot text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS definition jsonb;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS "timeStamp" timestamp without time zone DEFAULT current_timestamp;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS parent_version text null;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS source_todolist_id uuid null;
+
 -- form_def table
 ALTER TABLE public.form_def ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.form_def ADD COLUMN IF NOT EXISTS html text;
