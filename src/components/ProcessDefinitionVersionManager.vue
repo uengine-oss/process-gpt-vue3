@@ -45,7 +45,7 @@
                 <v-btn @click="downloadXML" variant="text" class="mx-2">
                     {{ $t('ProcessDefinitionVersionManager.download') }}
                 </v-btn>
-                <v-btn @click="changeXML" variant="text" color="primary" :disabled="loading">
+                <v-btn @click="changeXML" variant="text" color="primary" :disabled="isChangeButtonDisabled">
                     {{ $t('ProcessDefinitionVersionManager.changeToSelectedVersion', { version: currentSelectedVersion || '' }) }}
                 </v-btn>
             </div>
@@ -122,7 +122,7 @@
                             <div class="version-sidebar">
                                 <div class="version-sidebar-header">
                                     <span class="text-body-2 font-weight-medium">
-                                        {{ $t('ProcessDefinitionVersionManager.versionList') }} ({{ lists.length }})
+                                        {{ $t('ProcessDefinitionVersionManager.versionList') }} ({{ filteredLists.length }})
                                     </span>
                                 </div>
                                 <v-list
@@ -130,7 +130,7 @@
                                     class="version-list"
                                 >
                                     <v-list-item
-                                        v-for="(item, index) in lists"
+                                        v-for="(item, index) in filteredLists"
                                         :key="item.version || index"
                                         :active="index === currentIndex"
                                         @click="selectVersion(index)"
@@ -282,6 +282,17 @@ export default {
             // 별도의 버전 이름 정보가 없으므로 현재 프로세스 정의 이름을 그대로 사용
             return this.currentVersionName;
         },
+        isChangeButtonDisabled() {
+            // 로딩 중일 때만 비활성화
+            return this.loading;
+        },
+        filteredLists() {
+            // 최신 버전을 제외한 리스트 (최신 버전은 오른쪽에 항상 표시되므로 선택 목록에서 제외)
+            if (this.lists.length > 1) {
+                return this.lists.slice(0, -1);
+            }
+            return this.lists;
+        },
     },
     watch: {
         "open": function (newVal) {
@@ -309,7 +320,8 @@ export default {
             });
             if(result && result.length > 0){
                 me.lists = result.map(item => ({ ...item, xml: null, message: null }));
-                me.currentIndex = me.lists.length - 1;
+                // 최초 진입 시 바로 이전 버전을 선택 (버전이 1개만 있으면 0)
+                me.currentIndex = me.lists.length > 1 ? me.lists.length - 2 : 0;
                 me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
                 await me.setCurrentInfo(me.lists[me.currentIndex].xml);
                 // 최신 버전의 설명을 리스트에도 캐시
@@ -318,12 +330,31 @@ export default {
                 }
 
                 // BUGFIX: 다른 버전들도 클릭하지 않아도 설명이 보이도록, XML을 로드해서 message를 미리 채워준다.
-                for (let i = 0; i < me.lists.length - 1; i++) {
+                // 최신 버전(오른쪽)도 미리 로드
+                for (let i = 0; i < me.lists.length; i++) {
+                    if (i === me.currentIndex) continue; // 이미 로드된 현재 선택 버전은 스킵
                     const xml = await me.loadXMLOfVer(me.lists[i].version);
                     me.lists[i].xml = xml;
                     if (me.currentInfo && me.currentInfo.shortDescription && me.currentInfo.shortDescription.text) {
                         me.lists[i].message = me.currentInfo.shortDescription.text;
                     }
+                }
+
+                // 최초 진입 시 diff 계산
+                if (me.currentIndex !== me.lists.length - 1) {
+                    // 선택한 버전이 최신 버전이 아닐 때만 diff 계산
+                    // for 루프에서 currentInfo가 덮어씌워졌으므로 선택한 버전의 정보를 다시 설정
+                    await me.setCurrentInfo(me.lists[me.currentIndex].xml);
+                    await me.setLastVersionInfo(me.lists[me.lists.length - 1].xml);
+                    me.calculateDifferences();
+                    // BpmnUengineViewer 강제 재렌더링
+                    me.key++;
+                } else {
+                    // 최신 버전을 선택한 경우 diff 초기화
+                    me.lastProcessInfo = JSON.parse(JSON.stringify(me.currentInfo));
+                    me.leftDiffActivities = {};
+                    me.rightDiffActivities = {};
+                    me.key++;
                 }
 
                 me.isOpen = true;
@@ -386,7 +417,18 @@ export default {
         },
         formatVersionTime(timeStamp) {
             if (!timeStamp) return '';
-            const date = new Date(timeStamp);
+            
+            // timeStamp가 ISO 형식이 아닌 경우 (timestamp without time zone에서 온 경우)
+            // UTC로 명시적으로 처리
+            let date;
+            if (timeStamp.endsWith('Z') || timeStamp.includes('+')) {
+                // 이미 시간대 정보가 있는 ISO 형식
+                date = new Date(timeStamp);
+            } else {
+                // 시간대 정보가 없는 경우 UTC로 해석
+                date = new Date(timeStamp + 'Z');
+            }
+            
             if (isNaN(date.getTime())) {
                 return timeStamp;
             }

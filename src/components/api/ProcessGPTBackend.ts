@@ -253,6 +253,7 @@ class ProcessGPTBackend implements Backend {
                     proc_def_id: defId,
                     version: options.version,
                     version_tag: options.version_tag,
+                    timeStamp: new Date().toISOString(),
                     snapshot: xml,
                     definition: options.definition ?? procDef.definition,
                     diff: options.diff,
