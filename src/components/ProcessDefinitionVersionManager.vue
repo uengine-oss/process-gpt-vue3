@@ -34,19 +34,28 @@
                 :class="showXML ? '' : 'pb-0'"
             >
                 <div class="mx-2">
-                    <v-switch v-model="showXML" 
-                        class="version-history-switch"
-                        :label="showXML ? 'XML' : 'BPMN'"
-                        density="compact"
-                        color="primary" 
-                        hide-details
-                    ></v-switch>
+                    <v-tooltip location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                density="comfortable" @click="showXML = !showXML">
+                                <Icons :icon="'code-xml'" :color="showXML ? '#1976D2' : '#666666'"/>
+                            </v-btn>
+                        </template>
+                        <span>{{ showXML ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
+                    </v-tooltip>
                 </div>
-                <v-btn @click="downloadXML" variant="text" class="mx-2">
-                    {{ $t('ProcessDefinitionVersionManager.download') }}
+                <v-btn @click="downloadXML"
+                    color="gray"
+                    variant="flat"
+                    class="rounded-pill mr-2"
+                >{{ $t('ProcessDefinitionVersionManager.downloadVersionXML', { version: currentSelectedVersion }) }}
                 </v-btn>
-                <v-btn @click="changeXML" variant="text" color="primary" :disabled="isChangeButtonDisabled">
-                    {{ $t('ProcessDefinitionVersionManager.changeToSelectedVersion', { version: currentSelectedVersion || '' }) }}
+                <v-btn  @click="changeXML"
+                    :disabled="isChangeButtonDisabled"
+                    color="primary"
+                    variant="flat"
+                    class="rounded-pill"
+                >{{ $t('ProcessDefinitionVersionManager.changeToSelectedVersion', { version: currentSelectedVersion || '' }) }}
                 </v-btn>
             </div>
 
@@ -252,10 +261,8 @@ export default {
             return null;
         },
         currentXML() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.lists.length - 1].xml
-            }
-            return null;
+            // 최신 버전의 XML 반환
+            return this.lists[this.lists.length - 1]?.xml || null;
         },
         isMobile() {
             return window.innerWidth <= 768;
@@ -403,11 +410,14 @@ export default {
         },
         downloadXML() {
             var me = this;
-            if (me.currentXML) {
-                const blob = new Blob([me.currentXML], { type: 'application/xml' });
+            // 선택한 버전의 XML 다운로드
+            const xml = me.lists[me.currentIndex]?.xml;
+            
+            if (xml) {
+                const blob = new Blob([xml], { type: 'application/xml' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `${me.currentVersionName}-${me.currentVersion}.xml`;
+                link.download = `${me.currentVersionName}-${me.currentSelectedVersion}.xml`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);

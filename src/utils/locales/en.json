@@ -2073,6 +2073,7 @@
         "versionSummary": "Version {version} · Last modified: {time}",
         "versionItemTitle": "Version {version}",
         "download": "Download",
+        "downloadVersionXML": "Download Version {version} XML",
         "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
         "copiedToClipboard": "Copied to clipboard.",
