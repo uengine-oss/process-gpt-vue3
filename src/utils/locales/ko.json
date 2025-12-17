@@ -2106,6 +2106,7 @@
         "versionSummary": "버전 {version} · 최종 수정: {time}",
         "versionItemTitle": "버전 {version}",
         "download": "다운로드",
+        "downloadVersionXML": "{version}버전 XML 다운로드",
         "changeToVersion": "버전으로 변경",
         "noXmlData": "선택된 버전의 XML 데이터가 없습니다.",
         "copiedToClipboard": "클립보드에 복사되었습니다.",

@@ -808,36 +808,36 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
         }
       }
     },
-    'auto-layout': {
-      group: 'collaboration',
-      className: 'mdi mdi-auto-fix',
-      title: i18n.global.t('PaletteProvider.autoLayout'),
-      action: {
-        click: function(event) {
-          me.applyAutoLayout();
-        }
-      }
-    },
-    'change-orientation': {
-      group: 'collaboration',
-      className: 'mdi mdi-crop-rotate',
-      title: i18n.global.t('PaletteProvider.changeOrientation'),
-      action: {
-        click: function(event) {
-          const bpmnJS = injector;
-          const elementRegistry = bpmnJS.get('elementRegistry');
-          const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-          participant.forEach(element => {
-            const horizontal = element.di.isHorizontal;
-            if(horizontal) {
-              me.changeParticipantHorizontalToVertical(event, element);
-            } else {
-              me.changeParticipantVerticalToHorizontal(event, element);
-            }
-          });
-        }
-      }
-    }
+    // 'auto-layout': {
+    //   group: 'collaboration',
+    //   className: 'mdi mdi-auto-fix',
+    //   title: i18n.global.t('PaletteProvider.autoLayout'),
+    //   action: {
+    //     click: function(event) {
+    //       me.applyAutoLayout();
+    //     }
+    //   }
+    // },
+    // 'change-orientation': {
+    //   group: 'collaboration',
+    //   className: 'mdi mdi-crop-rotate',
+    //   title: i18n.global.t('PaletteProvider.changeOrientation'),
+    //   action: {
+    //     click: function(event) {
+    //       const bpmnJS = injector;
+    //       const elementRegistry = bpmnJS.get('elementRegistry');
+    //       const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+    //       participant.forEach(element => {
+    //         const horizontal = element.di.isHorizontal;
+    //         if(horizontal) {
+    //           me.changeParticipantHorizontalToVertical(event, element);
+    //         } else {
+    //           me.changeParticipantVerticalToHorizontal(event, element);
+    //         }
+    //       });
+    //     }
+    //   }
+    // }
     
   });
 
