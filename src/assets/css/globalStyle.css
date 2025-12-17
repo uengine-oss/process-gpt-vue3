@@ -375,6 +375,10 @@ hr {
     cursor: pointer !important;
 }
 
+.vue-bpmn-diagram-container .djs-palette .djs-palette-entries .entry {
+    width: 40px;
+}
+
 .vue-bpmn-diagram-container .djs-palette {
     width: 740px !important;
     height: 50px;
@@ -1306,15 +1310,15 @@ hr {
 }
 
 .is-sidebar-mobile {
-    display: none;
+    display: none !important;
 }
 
 @media only screen and (max-width: 1279px) {
     .is-sidebar-pc {
-        display: none;
+        display: none !important;
     }
     .is-sidebar-mobile {
-        display: block;
+        display: block !important;
     }
 
 
@@ -1508,7 +1512,7 @@ hr {
     }
 
     .leftSidebar {
-        width: 300px !important;
+        width: 350px !important;
     }
 
     .instance-card-kanban-board-box {

@@ -9,8 +9,8 @@
         <ul>
           <li><a class="nav-link" href="https://docs.process-gpt.io/" target="_blank">{{ $t('Header.tutorial') }}</a></li> 
           <!-- <li><a class="nav-link" @click.prevent="navigateToTutorial">{{ $t('Header.tutorial') }}</a></li> -->
-          <li><a class="nav-link" @click.prevent="navigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('ai3Steps')">{{ $t('Header.ai3Steps') }}</a></li>
+          <li><a class="nav-link" @click.prevent="navigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
           <li><a class="nav-link" @click.prevent="navigateToSection('download')">{{ $t('Header.download') }}</a></li>
           <!-- <li><router-link class="nav-link" to="/marketplace" @click="scrollToTop">Marketplace</router-link></li> -->
@@ -25,8 +25,8 @@
         <ul>
           <li><a href="https://docs.process-gpt.io/" target="_blank">{{ $t('Header.tutorial') }}</a></li>
           <!-- <li><a @click.prevent="navigateToTutorial">{{ $t('Header.tutorial') }}</a></li> -->
-          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('ai3Steps')">{{ $t('Header.ai3Steps') }}</a></li>
+          <li><a @click.prevent="closeMobileMenuAndNavigateToSection('works')">{{ $t('Header.works') }}</a></li>
           <li><a @click.prevent="closeMobileMenuAndNavigateToSection('movie-gallery')">{{ $t('Header.movieGallery') }}</a></li>
           <li><a class="nav-link" @click.prevent="closeMobileMenuAndNavigateToSection('download')">{{ $t('Header.download') }}</a></li>
           <!-- <li><a @click.prevent="closeMobileMenuAndNavigate('/marketplace')">{{ $t('Header.marketplace') }}</a></li> -->

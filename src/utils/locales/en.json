@@ -1608,7 +1608,7 @@
     },
     "Header": {
         "tutorial": "Tutorial",
-        "works": "How Process GPT Works?",
+        "works": "Features",
         "ai3Steps": "3 Stages of AI Transformation",
         "movieGallery": "Video Gallery",
         "download": "Download",
@@ -1649,11 +1649,8 @@
         "benefit3": "Automation of repetitive tasks and knowledge-based judgments",
         "benefit4": "Focus only on strategic decision-making and contextual judgment"
     },
-    "IntroductionSection": {
-        "title1": "ProcessGPT is the solution that implements this Agentic Process AI"
-    },
     "AI3StepsSection": {
-        "title": "MS Work Trend Index 2025: 3 Stages of AI Transformation",
+        "title": "ProcessGPT is the solution that implements this Agentic Process AI",
         "category": "Category",
         "step1": "Stage 1: Assistant Utilization",
         "step2": "Stage 2: Digital Colleague Agent",
@@ -1690,11 +1687,11 @@
     },
     "HowSection": {
         "title": "Process GPT's Core Features",
-        "subtitle1": "① Human-Agent Collaborative Task Execution",
-        "subtitle2": "② System-to-System (A2A) Automation",
-        "subtitle3": "③ Automated Process Creation",
-        "subtitle4": "④ Automated Knowledge Accumulation and Reuse",
-        "subtitle5": "⑤ Multimodal Interface",
+        "subtitle1": "1. Human-Agent Collaborative Task Execution",
+        "subtitle2": "2. System-to-System (A2A) Automation",
+        "subtitle3": "3. Automated Process Creation",
+        "subtitle4": "4. Automated Knowledge Accumulation and Reuse",
+        "subtitle5": "5. Multimodal Interface",
         "description1-1": "Agents execute operational tasks, while humans handle approvals and decisions.",
         "description1-2": "Visualizes workflows based on BPMN and automates team-level collaboration.",
         "description2-1": "Automatically connects major systems like ERP, CRM, and Groupware.",
@@ -1830,7 +1827,31 @@
         "downloadError": "An error occurred during download. Please try again later."
     },
     "CTASection": {
-        "contactButton": "Contact Us"
+        "title": "Start Process GPT Right Now",
+        "subtitle": "Experience the innovation of AI-based process management",
+        "betaTestButton": "Try Beta Test",
+        "contactButton": "Contact Us",
+        "name": "Name",
+        "email": "Email",
+        "company": "Company",
+        "position": "Position",
+        "message": "Message",
+        "namePlaceholder": "Enter your name",
+        "emailPlaceholder": "Enter your email address",
+        "companyPlaceholder": "Enter your company name or organization",
+        "positionPlaceholder": "Enter your position",
+        "messagePlaceholder": "Enter your message",
+        "policyAgreed1": "(Required),",
+        "policyAgreed2": "Agree to the Privacy Policy and Use.",
+        "policyAgreed3": "",
+        "policyError": "Please agree to the privacy policy and use.",
+        "contactSuccess": "Contact has been sent successfully.",
+        "contactError": "An error occurred during contact. Please try again later.",
+        "privacyPolicyTitle": "Privacy Policy and Use Agreement",
+        "privacyPolicyDescription1": "In order to provide a response to your inquiry, uEngine Solutions (hereinafter referred to as the \"Company\") may need to collect and use personal information in accordance with relevant laws, including the \"Personal Information Protection Act\" and your consent is required.",
+        "privacyPolicyDescription2": "The Company collects and uses only the minimum necessary personal information for purposes such as responding to product purchase or consulting inquiries, and for the use of services provided by the Company.",
+        "privacyPolicyDescription3": "The collected information will not be used for any purpose other than the delivery of services, and will be immediately destroyed once the service is completed.",
+        "privacyPolicyClose": "Close"
     },
     "DelegateTask": {
         "title": "Delegate Task",
@@ -2073,6 +2094,7 @@
         "versionSummary": "Version {version} · Last modified: {time}",
         "versionItemTitle": "Version {version}",
         "download": "Download",
+        "downloadVersionXML": "Download Version {version} XML",
         "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
         "copiedToClipboard": "Copied to clipboard.",

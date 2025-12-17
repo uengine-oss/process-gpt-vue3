@@ -1,7 +1,7 @@
 <template>
-  <section id="ai3Steps" class="ai3Steps">
+  <section id="ai3Steps" class="ai3Steps-section">
     <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center mb-12">{{ $t('AI3StepsSection.title') }}</h2>
+      <h2 class="section-title font-bold text-center mb-12">{{ $t('AI3StepsSection.title') }}</h2>
         
       <div style="max-width: 1000px; margin: 0 auto;">
         <table class="tbl-default">
@@ -54,8 +54,8 @@
       </div>
 
       <div class="text-center mb-8">
-        <p style="font-size: 1.2rem; font-weight: 600; line-height: 1.6; margin-bottom: 10px;">{{ $t('AI3StepsSection.description1') }}</p>
-        <p style="font-size: 1.2rem; font-weight: 600; line-height: 1.6;">{{ $t('AI3StepsSection.description2') }}</p>
+        <p class="description-title mb-3">{{ $t('AI3StepsSection.description1') }}</p>
+        <p class="description-title">{{ $t('AI3StepsSection.description2') }}</p>
       </div>
   </div>
   </section>
@@ -68,31 +68,14 @@ export default {
 </script>
 
 <style scoped>
-.ai3Steps {
-  padding: 80px 0;
+.ai3Steps-section {
+  padding: 80px 0 60px;
   background-color: var(--light-color);
-  /* background-color: var(--bg-color); */
-  /* padding-bottom: 20px; */
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: 50px;
-}
-
-.section-header h2 {
-  /* font-size: 2.2rem; */
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--text-color-dark);
-  margin-bottom: 15px;
-}
-
-.section-header p {
-  font-size: 1.1rem;
-  color: var(--text-color);
-  max-width: 700px;
-  margin: 0 auto;
+.section-title {
+    font-size: 1.875rem;
+    line-height: 1.6;
 }
 
 /* ==============================
@@ -100,23 +83,26 @@ export default {
    ============================== */
 .tbl-default {
     width: 100%;
-    /* text-align: center; */
     border-collapse: collapse;
     margin-bottom: 40px;
     font-size: 16px;
     line-height: 1.5;
 }
+
 .tbl-default tr {
     border-bottom: 1px solid #aaa;
 }
+
 .tbl-default tr:not(:first-child) {
     background-color: #ffffff;
 }
+
 .tbl-default td {
     border-left: 1px solid #aaa;
     padding: 5px;
     padding-left: 10px;
 }
+
 .tbl-title-md-gray {
     color: #fff;
     background-color: #6b757d ;
@@ -125,23 +111,42 @@ export default {
     border-radius: 7px;
     padding: 10px 5px;
 }
+
 .border-bottom-n {
     border-bottom: none !important;
 }
+
 .border-left-n {
     border-left: none !important;
 }
 
+.description-title {
+    font-size: 1.2rem; 
+    font-weight: 600; 
+    line-height: 1.5; 
+}
+
 @media (max-width: 768px) {
-  .section-header h2 {
-    /* font-size: 1.8rem; */
-    font-size: 30px;
+  .ai3Steps-section {
+    padding: 60px 0 40px;
   }
-  .ai3Steps {
-    padding: 80px 0 50px;
+
+  .section-title {
+      font-size: 26px;
   }
+
   .tbl-default td {
     padding-left: 5px;
+  }
+
+  .description-title {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .section-title {
+    font-size: 22px;
   }
 }
 </style>

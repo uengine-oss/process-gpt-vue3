@@ -1,12 +1,8 @@
 <template>
     <section class="necessity-section">
-      <div class="container">
+      <div class="container mx-auto px-4">
         <!-- 섹션 타이틀 -->
-        <div class="section-header">
-          <h2 class="section-title">
-            {{ $t('NecessitySection.title') }}<br>
-          </h2>
-        </div>
+        <h2 class="section-title font-bold text-center mb-12">{{ $t('NecessitySection.title') }}</h2>
 
         <!-- 인트로 및 AI 기능 설명 -->
         <div class="content-block">
@@ -32,7 +28,7 @@
 
         <!-- 문제 정의 (강조) -->
         <div class="text-center mb-8">
-          <p style="font-size: 1.2rem; font-weight: 600; line-height: 1.6; margin-bottom: 10px;">
+          <p class="problem-title">
             {{ $t('NecessitySection.problemTitle') }}
           </p>
         </div>
@@ -78,38 +74,14 @@
     padding: 80px 0;
     background-color: #ffffff;
   }
-  
-  .container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
-  
-  /* 섹션 헤더 */
-  .section-header {
-    text-align: center;
-    margin-bottom: 50px;
-  }
-  
+
   .section-title {
-    font-size: 32px;
-    font-weight: 700;
-    color: #1a1a1a;
-    line-height: 1.5;
-    margin: 0;
+    font-size: 1.875rem;
+    line-height: 1.6;
   }
-  
-  /* 콘텐츠 블록 */
+
   .content-block {
     margin-bottom: 40px;
-  }
-  
-  .intro-text {
-    font-size: 18px;
-    color: #333;
-    line-height: 1.8;
-    margin-bottom: 30px;
-    text-align: center;
   }
   
   /* AI 기능 카드 그리드 */
@@ -140,6 +112,7 @@
   }
   
   .feature-icon {
+    margin: 0 auto;
     margin-bottom: 16px;
   }
   
@@ -151,16 +124,17 @@
     line-height: 1.4;
   }
   
-  .limitation-text {
-    font-size: 17px;
-    color: #555;
-    line-height: 1.8;
-    text-align: center;
-    margin-top: 40px;
+  .problem-title {
+    font-size: 1.2rem; 
+    font-weight: 600; 
+    line-height: 1.6; 
+    margin-bottom: 10px;
   }
   
   /* Agentic Process AI 솔루션 */
   .solution-section {
+    max-width: 900px;
+    margin: 0 auto;
     margin-top: 60px;
     padding: 50px 40px;
     background: linear-gradient(135deg, #f8f9fa 0%, #e8f0fe 100%);
@@ -170,7 +144,7 @@
 
   .solution-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
   }
 
   .solution-intro {
@@ -181,18 +155,18 @@
   }
 
   .solution-title {
-    font-size: 26px;
+    font-size: 22px;
     font-weight: 700;
     color: #1976D2;
-    line-height: 1.5;
-    margin-bottom: 20px;
+    line-height: 1.4;
+    margin-bottom: 10px !important;
   }
 
   .solution-description {
     font-size: 20px;
     font-weight: 600;
     color: #1a1a1a;
-    line-height: 1.6;
+    line-height: 1.5;
   }
 
   .benefits-grid {
@@ -226,77 +200,7 @@
     margin: 0;
     line-height: 1.4;
   }
-  
-  /* 비교 이미지 */
-  .comparison-image {
-    margin: 50px 0;
-    text-align: center;
-  }
-  
-  .image-label {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1976D2;
-    margin-bottom: 20px;
-    text-align: center;
-  }
-  
-  .necessity-img {
-    width: 100%;
-    max-width: 800px;
-    height: auto;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  }
-  
-  
-  /* 프로세스 설명 */
-  .process-description {
-    font-size: 17px;
-    color: #333;
-    line-height: 1.8;
-    text-align: center;
-    margin-bottom: 30px;
-  }
-  
-  /* 챌린지 목록 */
-  .challenges {
-    margin: 30px 0;
-    padding: 0 40px;
-  }
-  
-  .challenge-item {
-    font-size: 17px;
-    color: #555;
-    line-height: 2;
-    margin: 12px 0;
-  }
-  
-  .human-burden {
-    font-size: 18px;
-    color: #333;
-    font-weight: 600;
-    line-height: 1.8;
-    text-align: center;
-    margin-top: 30px;
-  }
-  
-  /* 전환 문장 */
-  .transition-statement {
-    margin-top: 60px;
-    text-align: center;
-    padding: 40px;
-    background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
-    border-radius: 12px;
-  }
-  
-  .transition-text {
-    font-size: 24px;
-    font-weight: 700;
-    color: #ffffff;
-    margin: 0;
-  }
-  
+ 
   /* 반응형 디자인 */
   @media (max-width: 768px) {
     .necessity-section {
@@ -306,13 +210,7 @@
     .section-title {
       font-size: 26px;
     }
-    
-    .intro-text,
-    .limitation-text,
-    .process-description {
-      font-size: 16px;
-    }
-    
+
     .ai-features-grid {
       gap: 16px;
     }
@@ -324,25 +222,9 @@
     .feature-icon {
       font-size: 40px !important;
     }
-    
-    .feature-title {
-      font-size: 15px;
-    }
-    
-    .challenge-item {
-      font-size: 15px;
-    }
-    
-    .transition-text {
-      font-size: 20px;
-    }
-    
-    .challenges {
-      padding: 0 20px;
-    }
-    
-    .comparison-image {
-      margin: 40px 0;
+
+    .problem-title {
+      font-size: 1.1rem; 
     }
 
     .solution-section {
@@ -350,7 +232,7 @@
     }
 
     .solution-title {
-      font-size: 22px;
+      font-size: 20px;
     }
 
     .solution-description {
@@ -367,10 +249,6 @@
   }
   
   @media (max-width: 576px) {
-    .necessity-section {
-      padding: 40px 0;
-    }
-    
     .section-title {
       font-size: 22px;
     }
@@ -388,21 +266,9 @@
     .feature-icon {
       font-size: 36px !important;
     }
-    
-    .feature-title {
-      font-size: 14px;
-    }
-    
-    .transition-statement {
-      padding: 20px;
-    }
-    
-    .challenges {
-      padding: 0 10px;
-    }
 
     .solution-section {
-      padding: 30px 20px;
+      padding: 40px 20px;
       margin-top: 40px;
     }
 
@@ -411,7 +277,7 @@
     }
 
     .solution-title {
-      font-size: 20px;
+      font-size: 19px;
     }
 
     .solution-description {
