@@ -407,7 +407,7 @@
     },
     "chat": {
         "inputMessage": "메시지 입력",
-        "definitionMapInputMessage": "무엇을 도와드릴까요?",
+        "definitionMapInputMessage": "예: 휴가 신청 프로세스 만들어줘 / 휴가 신청 프로세스 실행해줘 / 실행중인 휴가 신청의 승인 여부 알려줘",
         "lock": "저장하려면 저장 아이콘을 누르세요.",
         "unlock": "편집하려면 연필 아이콘을 누르세요.",
         "processDefinitionSave": "저장",
@@ -1473,7 +1473,8 @@
         "category2": "카테고리2",
         "tags": "태그",
         "register": "등록",
-        "requiredField": "필수 입력 항목입니다"
+        "requiredField": "필수 입력 항목입니다",
+        "duplicateIdError": "이미 동일한 ID로 등록된 프로세스가 있습니다."
     },
     "ProcessDefinitionMarketPlace": {
         "searchPlaceholder": "프로세스 이름, 작성자, 태그 검색",
@@ -1483,7 +1484,14 @@
         "relatedTemplates": "관련 템플릿",
         "addedButton": "추가됨",
         "addButton": "추가",
+        "deleteButton": "삭제",
+        "previewButton": "미리보기",
         "otherCategory": "기타",
+        "deleteDialogTitle": "프로세스 삭제 확인",
+        "deleteDialogMessage": "정말로 \"{name}\" 프로세스를 마켓플레이스에서 삭제하시겠습니까?",
+        "deleteDialogWarning": "이 작업은 되돌릴 수 없습니다.",
+        "deleteDialogConfirmMessage": "계속하려면 프로세스 이름을 정확히 입력해주세요:",
+        "previewDialogTitle": "프로세스 미리보기",
         "countUnit": "개",
         "allTemplates": "전체 템플릿"
     },

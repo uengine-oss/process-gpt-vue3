@@ -368,7 +368,7 @@ export default {
                             }
                         }
                         me.formInfo = await backend.getFormFields(me.formDefId);
-                        me.html = me.formInfo.html;
+                        me.html = me.formInfo?.html || null;
                     }
                     if(!me.html) {
                         me.formDefId = 'defaultform'

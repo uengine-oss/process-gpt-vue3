@@ -407,7 +407,7 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
-        "definitionMapInputMessage": "How can I help you?",
+        "definitionMapInputMessage": "e.g. Create vacation request process / Run vacation request process / Check approval status of running vacation request",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
@@ -1473,7 +1473,8 @@
         "category2": "Category 2",
         "tags": "Tags",
         "register": "Register",
-        "requiredField": "This field is required"
+        "requiredField": "This field is required",
+        "duplicateIdError": "A process with the same ID already exists in the marketplace."
     },
     "ProcessDefinitionMarketPlace": {
         "searchPlaceholder": "Search by process name, author, or tag",
@@ -1483,9 +1484,16 @@
         "relatedTemplates": "Related Templates",
         "addedButton": "Added",
         "addButton": "Add",
+        "deleteButton": "Delete",
+        "previewButton": "Preview",
         "otherCategory": "Other",
         "countUnit": "items",
-        "allTemplates": "All Templates"
+        "allTemplates": "All Templates",
+        "deleteDialogTitle": "Confirm Process Deletion",
+        "deleteDialogMessage": "Are you sure you want to delete the \"{name}\" process from the marketplace?",
+        "deleteDialogWarning": "This action cannot be undone.",
+        "deleteDialogConfirmMessage": "Please type the process name exactly to continue:",
+        "previewDialogTitle": "Process Preview"
     },
     "ContentEditorField": {
         "contentEditor": "Content Editor",

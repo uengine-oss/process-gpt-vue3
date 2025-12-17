@@ -66,8 +66,12 @@
                 </div>
             </div>
         </v-card-text>
-        <v-card-actions class="d-flex justify-end">
-            <v-btn @click="addDefinition" color="primary" rounded variant="flat" :disabled="!isFormValid">
+        <v-card-actions class="d-flex justify-space-between align-center">
+            <div v-if="isDuplicateId" class="text-error text-body-2">
+                {{ $t('ProcessDefinitionMarketPlaceDialog.duplicateIdError') }}
+            </div>
+            <v-spacer v-else></v-spacer>
+            <v-btn @click="addDefinition" color="primary" rounded variant="flat" :disabled="!isFormValid || isDuplicateId">
                 {{ $t('ProcessDefinitionMarketPlaceDialog.register') }}
             </v-btn>
         </v-card-actions>
@@ -106,13 +110,15 @@ export default {
         isGeneratingImage: false,
         generator: null,
         isDragOver: false,
+        // 중복 체크
+        isDuplicateId: false,
     }),
     computed: {
         isFormValid() {
             return this.megaCategory && this.majorCategory && this.tagsArray.length > 0;
         }
     },
-    mounted() {
+    async mounted() {
         if (this.bpmn && this.processDefinition && this.processDefinition.processDefinitionId) {
             this.newDefinition = {
                 id: this.processDefinition.processDefinitionId,
@@ -128,6 +134,9 @@ export default {
             };
             this.megaCategory = '';
             this.majorCategory = '';
+            
+            // 중복 ID 체크
+            await this.checkDuplicateId();
         }
         this.generator = new ImageGenerator(this, {
             isStream: false,
@@ -165,10 +174,26 @@ export default {
             }
             return definition;
         },
+        async checkDuplicateId() {
+            if (!this.newDefinition.id) return;
+            
+            try {
+                const { data: existingItems } = await window.$supabase
+                    .from('proc_def_marketplace')
+                    .select('id')
+                    .eq('id', this.newDefinition.id);
+                
+                this.isDuplicateId = existingItems && existingItems.length > 0;
+            } catch (error) {
+                console.error('중복 ID 체크 중 오류:', error);
+                this.isDuplicateId = false;
+            }
+        },
         async addDefinition() {
             const definition = this.newDefinition.definition;
             const filteredDef = this.filterDefinition(definition);
             this.newDefinition.definition = filteredDef;
+            
             this.$try({
                 context: this,
                 action: async () => {

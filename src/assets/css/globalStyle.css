@@ -442,6 +442,50 @@ hr {
 .chat-display-block {
     display: block;
 }
+.process-gpt-execute-component-dialog .work-item-tab-item-process-box-empty {
+    height: calc(100vh - 176px);
+    overflow: auto
+}
+
+.work-item-tab-item-process-box-empty {
+    height: calc(100vh - 260px);
+    color: black;
+    overflow: auto
+}
+
+.work-item-tab-item-process-box-full {
+    height: calc(100vh - 130px);
+}
+
+.process-gpt-execute-component-dialog .work-item-tab-process-box-empty {
+    height: calc(100vh - 176px);
+    overflow: auto
+}
+
+.work-item-tab-process-box-full {
+    height: calc(100vh - 130px);
+    overflow: auto
+}
+
+.work-item-tab-process-box-empty {
+    height: calc(100vh - 257px);
+    overflow: auto
+}
+
+.process-gpt-execute-component-dialog .work-item-form-box-height-empty {
+    height: calc(100vh - 96px);
+    overflow: auto
+}
+
+.work-item-form-box-height-full {
+    height: calc(100vh - 70px);
+    overflow: auto
+}
+
+.work-item-form-box-height-empty {
+    height: calc(100vh - 190px);
+    overflow: auto
+}
 
 .border-primary {
     border: solid 3px #1976D2; /* 예시 색상, 실제 프로젝트의 primary 색상을 사용하세요 */
@@ -635,6 +679,11 @@ hr {
     max-height: calc(100vh - 420px);
     overflow-y: auto;
 }
+.marketplace-bpmn-preview-skeleton-loader .v-skeleton-loader__image {
+    height: calc(100vh - 84px) !important;
+    border-radius: 8px !important;
+}
+
 .work-item-skeleton-loader .v-skeleton-loader__image {
     height: calc(100% - 50px);
     border-radius: 8px;

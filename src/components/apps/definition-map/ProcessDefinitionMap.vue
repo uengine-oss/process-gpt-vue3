@@ -10,7 +10,7 @@
                     :definitionMapOnlyInput="true"
                     :disableChat="false"
                     :isMobile="isMobile"
-                    @sendMessage="() => {}"
+                    @sendMessage="handleMainChatMessage"
                 />
             </div>
             
@@ -243,6 +243,8 @@ import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
 import Chat from '@/components/ui/Chat.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import ChatModule from '@/components/ChatModule.vue';
+import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -255,6 +257,7 @@ var jsondiffpatch = jsondiff.create({
 });
 
 export default {
+    mixins: [ChatModule],
     components: {
         ProcessMenu,
         ViewProcessDetails,
@@ -300,6 +303,9 @@ export default {
         isSimulateMode: false,
         windowWidth: window.innerWidth,
         pendingRoute: null,
+        messages: [], // ChatModule에서 필요한 메시지 배열
+        chatRoomId: 'definition-map-main', // ChatModule에서 필요한 채팅방 ID
+        userInfo: {}, // ChatModule에서 필요한 사용자 정보
         usageGuideDetails: [
             { 
                 icon: 'pencil', 
@@ -317,7 +323,9 @@ export default {
                 icon: 'market', 
                 title: 'processDefinitionMap.usageGuide.details.3.title' 
             }
-        ]
+        ],
+        generator: null,
+        initialConsultingMessage: null
     }),
     computed: {
         useLock() {
@@ -447,6 +455,15 @@ export default {
                     me.editUser = me.userName;
                     me.enableEdit = true;
                 }
+
+                // WorkAssistantGenerator 초기화 (ChatModule 스타일)
+                me.generator = new WorkAssistantGenerator(me, {
+                    isStream: false, // 스트리밍 비활성화 (전체 응답을 받아야 intent 파싱 가능)
+                    preferredLanguage: "Korean"
+                });
+
+                // ChatModule을 위한 userInfo 설정
+                me.userInfo = await backend.getUserInfo();
             },
         });
     },
@@ -467,6 +484,23 @@ export default {
         }
     },
     methods: {
+        async handleMainChatMessage(message) {
+            const me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    if (!message || !message.text) return;
+
+                    // 즉시 chats로 이동하면서 사용자 메시지 전달
+                    me.$router.push({
+                        path: '/chats',
+                        query: {
+                            mainChatMessage: encodeURIComponent(message.text)
+                        }
+                    });
+                }
+            });
+        },
         closePDM(){
             this.$emit('closePDM')
         },

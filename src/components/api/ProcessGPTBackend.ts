@@ -611,6 +611,68 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getTodoListByInstances(instanceIds: string[]) {
+        try {
+            if (!instanceIds || instanceIds.length === 0) {
+                return {};
+            }
+
+            // todolist 조회
+            const { data: todos, error } = await window.$supabase
+                .from('todolist')
+                .select('proc_inst_id, proc_def_id, activity_id, activity_name, start_date, end_date, status, output, description, user_id, updated_at')
+                .in('proc_inst_id', instanceIds)
+                .order('start_date', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching todolist:', error);
+                return {};
+            }
+
+            // 프로세스 정의별로 그룹화하고 중복 제거
+            const result: any = {};
+
+            todos.forEach((todo: any) => {
+                const defId = todo.proc_def_id;
+                const instId = todo.proc_inst_id;
+
+                // 프로세스 정의 레벨
+                if (!result[defId]) {
+                    result[defId] = {
+                        processDefinitionId: defId,
+                        instances: {}
+                    };
+                }
+
+                // 인스턴스 레벨
+                if (!result[defId].instances[instId]) {
+                    result[defId].instances[instId] = {
+                        instanceId: instId,
+                        activities: []
+                    };
+                }
+
+                // 액티비티 추가
+                result[defId].instances[instId].activities.push({
+                    activityId: todo.activity_id,
+                    activityName: todo.activity_name,
+                    startDate: todo.start_date,
+                    endDate: todo.end_date,
+                    status: todo.status,
+                    output: todo.output,
+                    description: todo.description,
+                    userId: todo.user_id,
+                    updatedAt: todo.updated_at
+                });
+            });
+
+            return result;
+        } catch (e) {
+            console.error('Error in getTodoListByInstances:', e);
+            return {};
+        }
+    }
+
     async getInstanceByProjectId(projectId: number) {
         try {
             const list = await storage.list('bpm_proc_inst', {match: { 'project_id': projectId } });
@@ -3325,7 +3387,7 @@ class ProcessGPTBackend implements Backend {
 
     async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false, limit?: number, offset: number = 0) {
         try {
-            const selectColumns = 'id, name, description, image, tags, author_name, author_uid, import_count, category';
+            const selectColumns = 'uuid, id, name, description, image, tags, author_name, author_uid, import_count, category';
             
             // 검색 기능이 활성화된 경우 - DB 레벨에서 검색
             if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
@@ -3440,6 +3502,43 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             console.error('[백엔드] getAllMarketplaceTags 오류:', error);
             return [];
+        }
+    }
+
+    async deleteMarketplaceDefinition(definitionId: string) {
+        try {
+            const { error } = await window.$supabase
+                .from('proc_def_marketplace')
+                .delete()
+                .eq('id', definitionId);
+            
+            if (error) {
+                throw new Error(error.message);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[백엔드] deleteMarketplaceDefinition 오류:', error);
+            throw error;
+        }
+    }
+
+    async getMarketplaceDefinitionBpmn(uuid: string) {
+        try {
+            const response = await storage.getObject('proc_def_marketplace', {
+                match: {
+                    uuid: uuid
+                }
+            });
+            
+            if (!response || !response.bpmn) {
+                throw new Error('BPMN 데이터를 찾을 수 없습니다.');
+            }
+            
+            return response.bpmn;
+        } catch (error) {
+            console.error('[백엔드] getMarketplaceDefinitionBpmn 오류:', error);
+            throw error;
         }
     }
 

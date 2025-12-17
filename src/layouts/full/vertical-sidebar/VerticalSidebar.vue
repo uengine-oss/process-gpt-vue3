@@ -30,7 +30,7 @@
         expand-on-hover
         width="275"
     >
-        <v-row class="pa-5 pl-4 ma-0 is-sidebar-pc" >
+        <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc" >
             <Logo :style="logoPadding"/>
             <v-spacer></v-spacer>
             <v-tooltip v-if="!pal" :text="$t('processDefinitionMap.title')"
@@ -46,7 +46,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-        </v-row>
+        </div>
         <div class="pa-4 is-sidebar-mobile"
             :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }"
         >
