@@ -23,6 +23,12 @@ const isWidthUnder1279 = ref(window.innerWidth <= 1279);
 // 모바일 여부 (768px 이하)를 추적하는 반응형 참조
 const isMobile = ref(window.innerWidth <= 768);
 
+// 리사이즈 관련 상태
+const leftPartWidth = ref(30); // 퍼센트 단위
+const isResizing = ref(false);
+const startX = ref(0);
+const startWidth = ref(0);
+
 // 화면 크기 변경 이벤트 핸들러
 function handleResize() {
     isWidthUnder1279.value = window.innerWidth <= 1279;
@@ -125,6 +131,62 @@ const menuButtonStyle = computed(() => {
     }
     return '';
 });
+
+// 리사이즈 메서드들
+const startResize = (e: MouseEvent) => {
+    isResizing.value = true;
+    startX.value = e.clientX;
+    startWidth.value = leftPartWidth.value;
+    
+    document.addEventListener('mousemove', doResize);
+    document.addEventListener('mouseup', stopResize);
+    
+    // 드래그 중 텍스트 선택 방지
+    e.preventDefault();
+};
+
+const doResize = (e: MouseEvent) => {
+    if (!isResizing.value) return;
+    
+    const container = document.querySelector('.mainbox');
+    if (!container) return;
+    
+    const containerWidth = container.clientWidth;
+    const deltaX = e.clientX - startX.value;
+    const deltaPercent = (deltaX / containerWidth) * 100;
+    const newWidth = startWidth.value + deltaPercent;
+    
+    // 최소 20%, 최대 70%로 제한
+    if (newWidth >= 20 && newWidth <= 70) {
+        leftPartWidth.value = newWidth;
+    }
+};
+
+const stopResize = () => {
+    isResizing.value = false;
+    document.removeEventListener('mousemove', doResize);
+    document.removeEventListener('mouseup', stopResize);
+};
+
+// /chats 경로인지 확인
+const isChatPage = computed(() => {
+    return route.path === '/chats';
+});
+
+// left-part와 right-part의 동적 스타일
+const leftPartStyle = computed(() => {
+    if (isChatPage.value) {
+        return `width: ${leftPartWidth.value}%;`;
+    }
+    return 'width: 320px;'; // 기본 고정 너비
+});
+
+const rightPartStyle = computed(() => {
+    if (isChatPage.value) {
+        return `width: ${100 - leftPartWidth.value}%;`;
+    }
+    return 'width: 100%;'; // 기본 전체 너비
+});
 </script>
 
 <template>
@@ -133,14 +195,21 @@ const menuButtonStyle = computed(() => {
         :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
         style="overflow: auto;"
     >
-        <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="canvasReSize">
+        <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="isChatPage ? [canvasReSize, leftPartStyle] : canvasReSize">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
             <!-- </perfect-scrollbar> -->
         </div>
 
+        <!-- 리사이즈 핸들 (/chats 페이지에서만 표시) -->
+        <div 
+            v-if="lgAndUp && !props.isInstanceChat && !$globalState.state.isZoomed && !$globalState.state.isRightZoomed && isChatPage"
+            class="resize-handle"
+            @mousedown="startResize"
+        ></div>
+
         <!---right chat conversation -->
-        <div class="right-part">
+        <div class="right-part" :style="lgAndUp && !props.isInstanceChat && isChatPage ? rightPartStyle : ''">
             <!---Toggle Button For mobile-->
             <v-tooltip location="right">
                 <template v-slot:activator="{ props: tooltipProps }">
@@ -181,13 +250,13 @@ const menuButtonStyle = computed(() => {
 
 <style lang="scss">
 .left-part {
-    width: 320px;
     border-right: 1px solid rgb(var(--v-theme-borderColor));
     // min-height: 500px;
-    transition: 0.1s ease-in;
+    transition: width 0.1s ease-out;
     flex-shrink: 0;
     overflow: auto;
     background-color: white;
+    position: relative;
 }
 
 .v-theme--light {
@@ -202,8 +271,25 @@ const menuButtonStyle = computed(() => {
     }
 }
 
+.resize-handle {
+    width: 6px;
+    cursor: ew-resize;
+    background-color: transparent;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+
+    &:hover {
+        background-color: rgba(var(--v-theme-primary), 0.3);
+    }
+
+    &:active {
+        background-color: rgba(var(--v-theme-primary), 0.5);
+    }
+}
+
 .right-part {
-    width: 100%;
     overflow: auto;
     background: white;
     display: flex;
@@ -225,12 +311,5 @@ const menuButtonStyle = computed(() => {
     &:hover {
         opacity: 1;
     }
-}
-
-.left-part {
-    // width: 80%;
-    // min-height: 500px;
-    position: relative;
-    overflow: auto;
 }
 </style>

@@ -276,7 +276,9 @@ export default {
             try {
                 const data = await this.backend.uploadSkills(options);
                 this.isLoading = false;
-                console.log(data);
+                if (data && data.skills_added && data.skills_added.length > 0) {
+                    await this.loadSkillFiles();
+                }
             } catch (error) {
                 console.error('스킬 업로드 실패:', error);
                 this.isLoading = false;
@@ -290,6 +292,7 @@ export default {
             this.config.roots = [];
 
             for (const skillName of this.skills) {
+                let skillId = skillName;
                 try {
                     const skillCheck = await this.backend.checkSkills({
                         skillName: skillName
@@ -305,7 +308,7 @@ export default {
                         continue;
                     }
 
-                    const skillId = skill.skill_name;
+                    skillId = skill.skill_name;
                     const skillText = skillCheck.name || skillId;
                     const files = Array.isArray(skill.files) ? skill.files : [];
 
