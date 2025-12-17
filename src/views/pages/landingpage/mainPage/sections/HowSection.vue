@@ -181,7 +181,7 @@ export default {
 
 <style scoped>
 .works {
-  padding: 80px 0 40px;
+  padding: 80px 0 20px;
   background-color: var(--bg-color);
 }
 
@@ -228,14 +228,19 @@ export default {
 }
 
 .tab-text h3 {
-  max-width: 50%;
-  border-bottom: 1px solid #333;
-  padding-bottom: 15px;
   /* font-size: 1.8rem; */
   font-size: 30px;
   font-weight: 600;
   color: var(--text-color-dark);
   text-align: center;
+}
+
+.tab-text h3:after {
+  content: '';
+  display: block;
+  width: 80%;
+  padding-top: 15px;
+  border-bottom: 1px solid #333;
 }
 
 .tab-text ul {
