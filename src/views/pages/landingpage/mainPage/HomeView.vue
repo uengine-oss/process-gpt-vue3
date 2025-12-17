@@ -3,8 +3,9 @@
         <v-row class="ma-0 pa-0">
             <v-col class="ma-0 pa-0" cols="12" v-if="!showTutorial">
                 <HeroSection />
+                <NecessitySection />
+                <IntroductionSection />
                 <HowSection />
-                <AI3StepsSection />
                 <MovieGallerySection />
                 <!-- <ExtensibilitySection /> -->
                 <DownloadSection />
@@ -48,6 +49,8 @@
 
 <script>
 import HeroSection from './sections/HeroSection.vue'
+import NecessitySection from './sections/NecessitySection.vue'
+import IntroductionSection from './sections/IntroductionSection.vue'
 import HowSection from './sections/HowSection.vue'
 import TutorialMain from './tutorial/TutorialMain.vue'
 import AI3StepsSection from './sections/AI3StepsSection.vue'
@@ -71,6 +74,8 @@ export default {
     },
     components: {
         HeroSection,
+        NecessitySection,
+        IntroductionSection,
         HowSection,
         TutorialMain,
         AI3StepsSection,
