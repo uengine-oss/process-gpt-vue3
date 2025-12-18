@@ -1869,7 +1869,7 @@
         "selectAssignee": "Select Delegatee",
         "equalDelegate": "Delegatee is the same as the assignee.",
         "successMsg": "Delegated successfully.",
-        "searchUser": "Search",
+        "searchUser": "Search by name, email",
         "profile": "Profile",
         "userInfo": "User info",
         "delegateToMyself": "Delegate to myself"
@@ -2258,7 +2258,8 @@
         "cancel": "Cancel",
         "delete": "Delete",
         "save": "Save",
-        "submit": "Submit"
+        "submit": "Submit",
+        "role": "Role"
     },
     "AgentSkillEdit": {
         "deleteDialogTitle": "Delete Skill File",

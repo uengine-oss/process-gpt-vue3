@@ -1869,7 +1869,7 @@
         "selectAssignee": "위임 대상자를 선택하세요.",
         "equalDelegate": "위임 대상자와 동일한 사용자입니다.",
         "successMsg": "위임 완료되었습니다.",
-        "searchUser": "검색",
+        "searchUser": "이름, 이메일 검색",
         "profile": "프로필",
         "userInfo": "대상 정보",
         "delegateToMyself": "나에게 위임"
@@ -2258,7 +2258,8 @@
         "cancel": "취소",
         "delete": "삭제",
         "save": "저장",
-        "submit": "제출"
+        "submit": "제출",
+        "role": "역할"
     },
     "AgentSkillEdit": {
         "deleteDialogTitle": "스킬 파일 삭제",
