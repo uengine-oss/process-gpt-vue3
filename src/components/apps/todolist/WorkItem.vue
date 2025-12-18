@@ -65,7 +65,7 @@
                                         </div>
                                     </div>
                                     <v-avatar v-else size="32">
-                                        <Icons :icon="'user-circle-bold'" :size="32" />
+                                        <v-img src="/images/defaultUser.png" />
                                     </v-avatar>
                                 </div>
                             </template>
