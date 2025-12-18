@@ -12,7 +12,7 @@ hr {
 }
 
 .delegate-task-form-table .v-table__wrapper {
-    max-height: calc(100vh - 470px);
+    max-height: calc(100vh - 500px);
 }
 
 .knowledge-management-table .v-data-table .v-table__wrapper {
