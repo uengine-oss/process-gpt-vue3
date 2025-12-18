@@ -534,7 +534,6 @@ export default {
             }
 
             if(!me.tempFormHtml) {
-                me.formId = 'defaultform';
                 me.tempFormHtml = await me.backend.getRawDefinition('defaultform', { type: 'form' });
             }
             
