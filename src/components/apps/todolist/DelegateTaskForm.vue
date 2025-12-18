@@ -56,10 +56,16 @@
                                 <div v-else v-for="user in assigneeUserInfo" :key="user?.id || user?.email || Math.random()" :class="isMobile ? 'mb-3' : ''">
                                     <div v-if="user" class="d-flex align-center">
                                         <div>
-                                            <v-img v-if="user.profile" :src="user.profile" width="45px" 
-                                                class="rounded-circle img-fluid" />
+                                            <v-avatar v-if="user.profile">
+                                                <v-img :src="user.profile" width="45px" 
+                                                    class="rounded-circle img-fluid"
+                                                    @error="user.profile = null"
+                                                />
+                                            </v-avatar>
                                             <v-avatar v-else>
-                                                <Icons :icon="'user-circle-bold'" :size="50" />
+                                                <v-img src="/images/defaultUser.png" width="45px" 
+                                                    class="rounded-circle img-fluid"
+                                                />
                                             </v-avatar>
                                         </div>
                                         <div class="ml-5">
@@ -89,14 +95,19 @@
                                     >
                                         <div class="d-flex align-center">
                                             <div class="mr-2">
-                                                <v-img v-if="delegateUser.profile && delegateUser.profile.trim() !== ''" 
-                                                    :src="delegateUser.profile" 
-                                                    width="45px" 
-                                                    class="rounded-circle img-fluid"
-                                                    :key="delegateUser.id || delegateUser.email"
-                                                />
+                                                <v-avatar v-if="delegateUser.profile && delegateUser.profile.trim() !== ''">
+                                                    <v-img :src="delegateUser.profile" 
+                                                        width="45px" 
+                                                        class="rounded-circle img-fluid"
+                                                        :key="delegateUser.id || delegateUser.email"
+                                                        @error="delegateUser.profile = ''"
+                                                    />
+                                                </v-avatar>
                                                 <v-avatar v-else>
-                                                    <Icons :icon="'user-circle-bold'" :size="50" />
+                                                    <v-img src="/images/defaultUser.png" 
+                                                        width="45px" 
+                                                        class="rounded-circle img-fluid"
+                                                    />
                                                 </v-avatar>
                                             </div>
                                             <div>
@@ -133,7 +144,7 @@
                                     >
                                         <Icons :icon="'magnifer-linear'" :size="18" />
                                         <v-text-field v-model="searchText"
-                                            @input="debounceSearch"
+                                            @keyup.enter="searchUsers"
                                             @click:clear="handleClearSearch"
                                             variant="plain"
                                             density="compact"
@@ -151,8 +162,11 @@
                                             <v-avatar size="32">
                                                 <v-img v-if="item.profile" :src="item.profile" width="32px" height="32px" 
                                                     class="rounded-circle img-fluid"
+                                                    @error="item.profile = null"
                                                 />
-                                                <Icons v-else :icon="'user-circle-bold'" :size="32" />
+                                                <v-img v-else src="/images/defaultUser.png" width="32px" height="32px"
+                                                    class="rounded-circle img-fluid"
+                                                />
                                             </v-avatar>
                                         </div>
                                     </td>
@@ -218,7 +232,6 @@ export default {
             searchText: '',
             userList: [],
             isUserLoading: false,
-            searchTimeout: null,
             currentEndpoint: null, // 현재 실제 담당자 이메일
             tableHeaders: [
                 { title: this.$t('DelegateTask.profile'), key: 'profile', align: 'center', sortable: false, minWidth: '80px' },
@@ -433,14 +446,12 @@ export default {
                          // 이메일로 검색
                          const emailResults = await backend.getUserList({
                              orderBy: 'email', 
-                             range: {from: 0, to: 19},
                              like: {key: 'email', value: `%${me.searchText.trim()}%`},
                          });
                          
                          // 사용자명으로 검색
                          const usernameResults = await backend.getUserList({
                              orderBy: 'username', 
-                             range: {from: 0, to: 19},
                              like: {key: 'username', value: `%${me.searchText.trim()}%`},
                          });
                          
@@ -451,10 +462,7 @@ export default {
                          );
                          me.userList = uniqueResults;
                      } else {
-                         me.userList = await backend.getUserList({
-                             orderBy: 'email',
-                             range: {from: 0, to: 9}
-                         });
+                         me.loadInitialUsers();
                      }
                      me.isUserLoading = false;
                  }
@@ -493,12 +501,6 @@ export default {
             } finally {
                 this.isUserLoading = false;
             }
-        },
-        debounceSearch() {
-            clearTimeout(this.searchTimeout);
-            this.searchTimeout = setTimeout(() => {
-                this.searchUsers();
-            }, 500);
         },
         handleClearSearch() {
             this.searchText = '';

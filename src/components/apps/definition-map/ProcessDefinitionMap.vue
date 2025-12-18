@@ -23,6 +23,23 @@
                     <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
                     <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
                 </v-row>
+
+                <!-- 액션 버튼 -->
+                <v-btn
+                    v-for="(card, index) in actionCards"
+                    :key="index"
+                    v-show="card.show"
+                    @click="card.action"
+                    color="primary"
+                    variant="flat"
+                    density="compact"
+                    class="rounded-pill ml-2"
+                >
+                    <template v-slot:prepend>
+                        <Icons :icon="card.icon" color="white" :size="16" />
+                    </template>
+                    {{ card.title }}
+                </v-btn>
                 <DetailComponent class="ml-2"
                     :title="$t('processDefinitionMap.usageGuide.title')"
                     :details="usageGuideDetails"
@@ -115,8 +132,8 @@
                 </div>
             </div>
 
-
-            <v-row class="ma-0 pa-0">
+            <!-- 기존 하단에 있던 AI 컨설팅 및 마켓플레이스 카드 -->
+            <!-- <v-row class="ma-0 pa-0">
                 <v-col 
                     v-for="(card, index) in actionCards" 
                     :key="index"
@@ -154,7 +171,7 @@
                         </v-card-item>
                     </v-card>
                 </v-col>
-            </v-row>
+            </v-row> -->
         </v-card>
         <v-dialog v-model="openConsultingDialog"
             :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
@@ -340,16 +357,16 @@ export default {
         },
         actionCards() {
             return [
-                {
-                    show: this.componentName === 'DefinitionMapList' && this.isAdmin,
-                    icon: 'magic',
-                    title: this.$t('processDefinitionMap.consultingButton'),
-                    description: this.$t('processDefinitionMap.analyzeAndImproveProcessWithAI'),
-                    action: () => {
-                        this.openConsultingDialog = true;
-                        this.ProcessPreviewMode = false;
-                    }
-                },
+                // {
+                //     show: this.componentName === 'DefinitionMapList' && this.isAdmin,
+                //     icon: 'magic',
+                //     title: this.$t('processDefinitionMap.consultingButton'),
+                //     description: this.$t('processDefinitionMap.analyzeAndImproveProcessWithAI'),
+                //     action: () => {
+                //         this.openConsultingDialog = true;
+                //         this.ProcessPreviewMode = false;
+                //     }
+                // },
                 {
                     show: this.componentName === 'DefinitionMapList' && this.mode === 'ProcessGPT' && this.isAdmin,
                     icon: 'market',
