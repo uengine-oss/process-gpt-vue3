@@ -1,13 +1,13 @@
 <template>
   <section class="movie-gallery" id="movie-gallery">
     <div class="container mx-auto pb-12">
-      <div class="section-header">
-        <h2>{{ $t('MovieGallerySection.movieGalleryTitle') }}</h2>
-        <h3>{{ $t('MovieGallerySection.movieGallerySubtitle1') }}</h3>
-      </div>
+      
+      <h2 class="section-title font-bold text-center">{{ $t('MovieGallerySection.movieGalleryTitle') }}</h2>
+      <h3 class="section-subtitle font-bold text-center mb-12">{{ $t('MovieGallerySection.movieGallerySubtitle1') }}</h3>
+
       <div class="mb-8" style="max-width: 630px; margin: 0 auto; padding: 8px 8px 20px 8px;">
         <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-          <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+          <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
             src="https://www.youtube.com/embed/kd6_hKSQDYc" 
             frameborder="0" crolling="no" allowfullscreen="">
           </iframe>
@@ -18,7 +18,7 @@
       <div class="movie-gallery-box-3 mb-8">
         <div class="movie-gallery-item">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
               src="https://www.youtube.com/embed/B5s2z35-yMg" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
@@ -27,7 +27,7 @@
         </div>
         <div class="movie-gallery-item p-6">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
               src="https://www.youtube.com/embed/pNqZdzavOb4" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
@@ -36,7 +36,7 @@
         </div>
         <div class="movie-gallery-item p-6">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
               src="https://www.youtube.com/embed/IOhX6h9ox1Q" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
@@ -48,7 +48,7 @@
       <div class="movie-gallery-box-2 mb-8">
         <div class="movie-gallery-item p-6">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
               src="https://www.youtube.com/embed/dBNDa18JQZc" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
@@ -57,7 +57,7 @@
         </div>
         <div class="movie-gallery-item p-6">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
               src="https://www.youtube.com/embed/qYEpj1B3FmE" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
@@ -67,14 +67,14 @@
       </div>
 
       <hr class="mt-16 mb-16">
-      <div class="section-header">
-        <h2>{{ $t('MovieGallerySection.movieGalleryTitle') }}</h2>
-        <h3>{{ $t('MovieGallerySection.movieGallerySubtitle2') }}</h3>
-      </div>
+
+      <h2 class="section-title font-bold text-center">{{ $t('MovieGallerySection.movieGalleryTitle') }}</h2>
+      <h3 class="section-subtitle font-bold text-center mb-12">{{ $t('MovieGallerySection.movieGallerySubtitle2') }}</h3>
+
       <div class="movie-gallery-box-3">
         <div class="movie-gallery-item p-6">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
               src="https://www.youtube.com/embed/tVYanY4GqJE" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
@@ -83,7 +83,7 @@
         </div>
         <div class="movie-gallery-item p-6">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
               src="https://www.youtube.com/embed/2Ou30L_vNpY" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
@@ -92,7 +92,7 @@
         </div>
         <div class="movie-gallery-item p-6">
           <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
-            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
+            <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px;" 
               src="https://www.youtube.com/embed/aq1u11RNRgk" 
               frameborder="0" crolling="no" allowfullscreen="">
             </iframe>
@@ -208,58 +208,47 @@ export default {
   background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
 }
 
-.special {
+/* .special {
   padding: 80px 0;
+} */
+
+.section-title {
+  font-size: 48px;
+  line-height: 1.6;
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: 50px;
-}
-
-.section-header h2 {
-  /* font-size: 2.2rem; */
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--text-color-dark);
-}
-
-.section-header h3 {
+.section-subtitle {
   /* font-size: 1.4rem; */
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 24px;
   color: var(--text-color-dark);
   padding-top: 15px;
-}
-
-.section-header p {
-  /* font-size: 1.1rem; */
-  font-size: 17px;
-  color: var(--text-color);
-  max-width: 700px;
-  margin: 0 auto;
 }
 
 .movie-gallery-box-3 {
   display: flex; 
   justify-content: space-between;
 }
+
 .movie-gallery-box-2 {
   display: flex; 
   justify-content: center;
 }
+
 .movie-gallery-item {
   width: 32%;
   padding: 8px 8px 20px 8px;
 }
+
 .movie-gallery-box-2 > .movie-gallery-item:first-child {
   margin-right: 2%;
 }
+
 .movie-gallery-h3 {
     /* font-size: 1.25rem; */
     font-size: 20px;
     line-height: 1.75rem;
 }
+
 .movie-gallery-h3.txt-vertical-center {
   line-height: 3.3rem;
 }
@@ -273,26 +262,37 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .special {
+  .movie-gallery {
+    padding: 60px 0 20px;
+  } 
+  /* .special {
     padding: 60px 0;
+  } */
+
+  .section-title {
+    font-size: 36px;
   }
-  .section-header h2 {
-    /* font-size: 1.8rem; */
-    font-size: 30px;
+
+  .section-subtitle {
+    font-size: 18px;
   }
 
   .movie-gallery-box-3, .movie-gallery-box-2 {
     display: block;
   }
+
   .movie-gallery-item {
     width: 100%;
   }
+
   .movie-gallery-box-3 > .movie-gallery-item:first-child, .movie-gallery-box-3 > .movie-gallery-item:nth-child(2) {
     margin-bottom: 32px;
   }
+
   .movie-gallery-box-2 > .movie-gallery-item:first-child {
     margin: 0 0 32px 0;
   }
+
   .movie-gallery-h3.txt-vertical-center {
     line-height: 1.5rem;
   }

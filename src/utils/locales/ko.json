@@ -1636,7 +1636,8 @@
         "technicalReportLink": "Technical Report 보기"
     },
     "NecessitySection": {
-        "title": "지금까지의 AI 활용은 대부분 개인 생산성 도구 수준에 머물렀습니다.",
+        "title1": "지금까지의 AI 활용은",
+        "title2": "대부분 개인 생산성 도구 수준에 머물렀습니다.",
         "feature1": "문서 초안 만들기",
         "feature2": "번역하기",
         "feature3": "요약하기",
@@ -1650,7 +1651,8 @@
         "benefit4": "전략적 의사결정과 맥락 판단에만 집중"
     },
     "AI3StepsSection": {
-        "title": "ProcessGPT는 이러한 Agentic Process AI를 구현한 솔루션입니다",
+        "title1": "ProcessGPT는 이러한",
+        "title2": "Agentic Process AI를 구현한 솔루션입니다",
         "category": "구분",
         "step1": "1단계: 어시스턴트 활용",
         "step2": "2단계: 디지털 동료 에이전트",
