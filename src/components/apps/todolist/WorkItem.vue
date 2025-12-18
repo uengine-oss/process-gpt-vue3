@@ -279,12 +279,6 @@
                                 @update-work-item="updateWorkItem"
                             />
                         </v-window-item>
-                        <v-window-item v-if="isTabAvailable('agent-feedback')" value="agent-feedback" class="pa-2">
-                            <!-- 워크아이템 에이전트 학습 -->
-                            <v-card elevation="10" class="pa-4">
-                                <AgentFeedback :workItem="workItem"/>
-                            </v-card>
-                        </v-window-item>
                         <v-window-item v-for="(inFormNameTab, index) in inFormNameTabs" :key="index" :value="`form-${index}`">
                            <DynamicForm 
                                 v-if="inFormValues[index]?.html" 
@@ -527,7 +521,6 @@ import WorkItemChat from '@/components/ui/WorkItemChat.vue';
 import ProcessInstanceTable from '@/components/ProcessInstanceTable.vue';
 import customBpmnModule from '@/components/customBpmn';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
-import AgentFeedback from './AgentFeedback.vue';
 import DelegateTaskForm from '@/components/apps/todolist/DelegateTaskForm.vue';
 import exampleGenerator from '@/components/ai/WorkItemAgentGenerator.js';
 import ReworkDialog from './ReworkDialog.vue';
@@ -578,7 +571,6 @@ export default {
         FormDefinition,
         InstanceOutput,
         AgentMonitor,
-        AgentFeedback,
         DelegateTaskForm,
         ReworkDialog,
         DetailComponent,
@@ -889,7 +881,6 @@ export default {
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                         { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                     ];
                 } else if (this.bpmn && !this.isStarted && !this.isCompleted) {
                     tabs = [
@@ -897,13 +888,11 @@ export default {
                         { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
                         // { value: 'chatbot', label: this.$t('WorkItem.chatbot') },
                         { value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') }, //에이전트에 맡기기
-                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                         // { value: 'output', label: this.$t('InstanceCard.output') }, //산출물
                     ];
                 } else {
                     tabs = [
                         { value: 'chatbot', label: this.$t('WorkItem.chatbot') }, //어시스턴트
-                        { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                     ];
                 }
                 
@@ -918,7 +907,6 @@ export default {
                 return[
                     { value: 'progress', label: this.$t('WorkItem.progress') }, //프로세스
                     { value: 'history', label: this.$t('WorkItem.history') }, //액티비티
-                    { value: 'agent-feedback', label: this.$t('WorkItem.agentFeedback') }, // 에이전트 학습
                 ]
 
                 // if(this.inFormNameTabs.length > 0) {

@@ -5,7 +5,7 @@
         <h2>{{ $t('MovieGallerySection.movieGalleryTitle') }}</h2>
         <h3>{{ $t('MovieGallerySection.movieGallerySubtitle1') }}</h3>
       </div>
-      <div class="bg-white mb-8" style="max-width: 630px; margin: 0 auto; padding: 8px 8px 20px 8px;">
+      <div class="mb-8" style="max-width: 630px; margin: 0 auto; padding: 8px 8px 20px 8px;">
         <div style="position: relative; padding-bottom: 56.25%; padding-top: 0px; height: 0; overflow: hidden;">
           <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" 
             src="https://www.youtube.com/embed/kd6_hKSQDYc" 
@@ -205,6 +205,7 @@ export default {
   padding: 80px 0 40px;
   /* background-color: #1976D2; */
   /* background-color: var(--bg-color-light); */
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
 }
 
 .special {

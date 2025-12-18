@@ -1608,7 +1608,7 @@
     },
     "Header": {
         "tutorial": "튜토리얼",
-        "works": "작동 방식",
+        "works": "핵심 기능",
         "ai3Steps": "AI 전환의 3단계",
         "movieGallery": "영상 갤러리",
         "download": "다운로드",
@@ -1649,11 +1649,8 @@
         "benefit3": "반복 작업과 지식 기반 판단 자동화",
         "benefit4": "전략적 의사결정과 맥락 판단에만 집중"
     },
-    "IntroductionSection": {
-        "title1": "ProcessGPT는 이러한 Agentic Process AI를 구현한 솔루션입니다"
-    },
     "AI3StepsSection": {
-        "title": "MS Work Trend Index 2025:  AI 전환의 3단계",
+        "title": "ProcessGPT는 이러한 Agentic Process AI를 구현한 솔루션입니다",
         "category": "구분",
         "step1": "1단계: 어시스턴트 활용",
         "step2": "2단계: 디지털 동료 에이전트",
@@ -1690,11 +1687,11 @@
     },
     "HowSection": {
         "title": "Process GPT의 핵심 기능",
-        "subtitle1": "① 사람·에이전트 협업형 업무 실행",
-        "subtitle2": "② 시스템 간 연결(A2A) 자동화",
-        "subtitle3": "③ 프로세스 자동 생성",
-        "subtitle4": "④ 지식 자동 축적 및 재사용",
-        "subtitle5": "⑤ 멀티모달 인터페이스",
+        "subtitle1": "1. 사람·에이전트 협업형 업무 실행",
+        "subtitle2": "2. 시스템 간 연결(A2A) 자동화",
+        "subtitle3": "3. 프로세스 자동 생성",
+        "subtitle4": "4. 지식 자동 축적 및 재사용",
+        "subtitle5": "5. 멀티모달 인터페이스",
         "description1-1": "에이전트는 실무를 실행하고, 사람은 승인 및 결정을 담당합니다.",
         "description1-2": "BPMN 기반으로 업무 흐름을 시각화하고 팀 단위 협업을 자동화합니다.",
         "description2-1": "ERP, CRM, 그룹웨어 등 주요 시스템을 자동으로 연결합니다.",
@@ -1830,7 +1827,31 @@
         "downloadError": "다운로드 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
     },
     "CTASection": {
-        "contactButton": "문의하기"
+        "title": "지금 바로 Process GPT를 시작하세요",
+        "subtitle": "AI 기반 프로세스 관리의 혁신을 경험해보세요",
+        "betaTestButton": "베타 테스트하기",
+        "contactButton": "문의하기",
+        "name": "이름",
+        "email": "이메일",
+        "company": "회사",
+        "position": "직급",
+        "message": "문의내용",
+        "namePlaceholder": "이름을 입력해 주세요",
+        "emailPlaceholder": "답변받으실 이메일 주소를 입력해 주세요",
+        "companyPlaceholder": "회사명 또는 소속기관을 입력해 주세요",
+        "positionPlaceholder": "직급을 입력해 주세요",
+        "messagePlaceholder": "문의내용을 입력해 주세요",
+        "policyAgreed1": "(필수),",
+        "policyAgreed2": "개인정보 수집 및 이용,",
+        "policyAgreed3": "에 동의합니다.",
+        "policyError": "개인정보 수집 및 이용에 동의해주세요.",
+        "contactSuccess": "문의가 성공적으로 전송되었습니다.",
+        "contactError": "문의 전송 중 오류가 발생했습니다. 다시 시도해주세요.",
+        "privacyPolicyTitle": "개인정보 수집 및 이용 동의",
+        "privacyPolicyDescription1": "유엔진솔루션즈(이하 \"회사\")가 문의하신 내용에 대한 답변을 제공하기 위해 개인정보를 수집·이용하고자 하는 경우에는 ｢개인정보 보호법｣등 관계 법령에 따라 본인의 동의가 필요합니다.",
+        "privacyPolicyDescription2": "회사 제품 구매 및 컨설팅 문의 응답, 회사가 제공하는 서비스 이용과정을 위한 최소한의 개인정보를 수집하고 이용합니다. ",
+        "privacyPolicyDescription3": "수집된 정보는 발송 외 다른 목적으로 이용되지 않으며, 서비스가 종료될 경우 즉시 파기됩니다.",
+        "privacyPolicyClose": "닫기"
     },
     "DelegateTask": {
         "title": "위임 설정",
