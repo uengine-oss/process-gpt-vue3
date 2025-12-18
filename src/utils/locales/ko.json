@@ -2235,7 +2235,8 @@
         "cancel": "취소",
         "delete": "삭제",
         "save": "저장",
-        "submit": "제출"
+        "submit": "제출",
+        "role": "역할"
     },
     "AgentSkillEdit": {
         "deleteDialogTitle": "스킬 파일 삭제",

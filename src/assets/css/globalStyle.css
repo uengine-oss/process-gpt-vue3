@@ -11,6 +11,10 @@ hr {
     overflow: auto;
 }
 
+.delegate-task-form-table .v-table__wrapper {
+    max-height: calc(100vh - 470px);
+}
+
 .knowledge-management-table .v-data-table .v-table__wrapper {
     height: calc(100vh - 265px) !important;
     overflow: auto !important;
@@ -1510,6 +1514,8 @@ hr {
     .is-work-height {
         height: 100vh;
     }
+
+    
 
     .leftSidebar {
         width: 350px !important;

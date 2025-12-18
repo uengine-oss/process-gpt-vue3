@@ -2223,7 +2223,8 @@
         "cancel": "Cancel",
         "delete": "Delete",
         "save": "Save",
-        "submit": "Submit"
+        "submit": "Submit",
+        "role": "Role"
     },
     "AgentSkillEdit": {
         "deleteDialogTitle": "Delete Skill File",
