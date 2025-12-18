@@ -184,6 +184,27 @@ class ProcessGPTBackend implements Backend {
                 if (!fieldsJson) {
                     throw new Error("An error occurred while analyzing the form fields.");
                 }
+
+                if(defId === "defaultform") {
+                    const existingDefaultForm: any = await storage.getObject('form_def', {
+                        match: {
+                            id: defId,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+
+                    await storage.putObject('form_def', {
+                        uuid: existingDefaultForm?.uuid,
+                        id: defId,
+                        html: xml,
+                        proc_def_id: "proc_defaultform", // Not Null 조건 호환성 유지
+                        activity_id: "activity_defaultform", // Not Null 조건 호환성 유지
+                        fields_json: fieldsJson,
+                        tenant_id: window.$tenantName
+                    });
+                    return;
+                }
+                
                 var formDef: any = await storage.getObject('form_def', {
                     match: {
                         proc_def_id: options.proc_def_id,
