@@ -173,6 +173,7 @@
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ActivityInputData from '@/components/ui/ActivityInputData.vue';
 // import FormInterviewChat from './FormInterviewChat.vue';
+import ChatGenerator from '@/components/ai/FormDesignGenerator';
 
 import Instruction from '@/components/ui/Instruction.vue';
 import AudioTextarea from '@/components/ui/AudioTextarea.vue';
@@ -230,6 +231,7 @@ export default {
         }
     },
     data: () => ({
+        formInfo: null,
         html: null,
         formDefId: null,
         formData: {},
@@ -269,6 +271,11 @@ export default {
                 this.html = this.disableFormHTML(this.html);
             }
             this.EventBus.emit('html-updated', this.html);
+            
+            // HTML이 업데이트되면 chip 핸들러 다시 설정
+            this.$nextTick(() => {
+                this.setupChipClickHandlers();
+            });
         },
         formData() {
             if(this.formData) {
@@ -281,7 +288,11 @@ export default {
         this.EventBus.on('form-values-updated', (formValues) => {
             if(formValues){
                 Object.keys(formValues).forEach(function (key){
-                    me.formData[key] = formValues[key]
+                    if(typeof me.formData[key] === 'string' && formValues[key] && typeof formValues[key] != 'string') {
+                        me.formData[key] = JSON.stringify(formValues[key]);
+                    } else {
+                        me.formData[key] = formValues[key]
+                    }
                 })
             }
         });
@@ -299,6 +310,27 @@ export default {
                 }
             }
         });
+
+        
+        this.EventBus.on('form-html-updated', async (data) => {
+            if (data && Object.keys(data).length > 0) {
+                const updatedHtml = await this.updateFormHtmlWithChipValues(data);
+                // HTML 업데이트
+                if (updatedHtml !== this.html) {
+                    this.html = updatedHtml;
+                    // formInfo도 업데이트 필요시
+                    if (this.formInfo) {
+                        this.formInfo.html = updatedHtml;
+                    }
+                    
+                    // chip 클릭 이벤트 리스너 설정을 위해 nextTick 사용
+                    this.$nextTick(() => {
+                        this.setupChipClickHandlers();
+                    });
+                }
+            }
+        });
+
         await this.init();
     },
     methods: {
@@ -335,7 +367,8 @@ export default {
                                 activity_id: me.workItem?.activity?.tracingTag ? me.workItem.activity.tracingTag : null
                             }
                         }
-                        me.html = await backend.getRawDefinition(me.formDefId, options);
+                        me.formInfo = await backend.getFormFields(me.formDefId);
+                        me.html = me.formInfo?.html || null;
                     }
                     if(!me.html) {
                         me.formDefId = 'defaultform'
@@ -389,7 +422,17 @@ export default {
                 );
                 
                 if (outVariable && outVariable.valueMap) {
-                    me.formData = outVariable.valueMap;
+                    // ✅ 완전히 덮어쓰지 않고, 빈값이 아닌 값만 병합
+                    Object.keys(outVariable.valueMap).forEach(key => {
+                        const newValue = outVariable.valueMap[key];
+                        const existingValue = me.formData[key];
+                        
+                        // 기존 값이 없거나, 새 값이 유효한 경우에만 업데이트
+                        if (!existingValue || (newValue && newValue !== '')) {
+                            me.formData[key] = newValue;
+                        }
+                    });
+                    
                     if(outVariable.valueMap['user_input_text']) {
                         me.newMessage = outVariable.valueMap['user_input_text'];
                     }
@@ -398,7 +441,16 @@ export default {
                 if(me.workItem?.parameterValues){
                     const parameterValues = me.workItem.parameterValues[outFormName];
                     if(parameterValues && parameterValues.valueMap){
-                        me.formData = parameterValues.valueMap;
+                        // ✅ 완전히 덮어쓰지 않고, 빈값이 아닌 값만 병합
+                        Object.keys(parameterValues.valueMap).forEach(key => {
+                            const newValue = parameterValues.valueMap[key];
+                            const existingValue = me.formData[key];
+                            
+                            // 기존 값이 없거나, 새 값이 유효한 경우에만 업데이트
+                            if (!existingValue || (newValue && newValue !== '')) {
+                                me.formData[key] = newValue;
+                            }
+                        });
                     }
                 }
             }
@@ -710,7 +762,148 @@ export default {
         },
         backToPrevStep() {
             this.$emit('backToPrevStep');
-        }
+        },
+
+        
+        updateFormHtmlWithChipValues(data) {
+            let updatedHtml = this.html;
+            const keys = Object.keys(data);
+            
+            keys.forEach(key => {
+                const values = data[key];
+                if (Array.isArray(values) && values.length > 0) {
+                    // text-field를 찾아서 아래에 chip group 추가
+                    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    
+                    // self-closing 태그와 닫히는 태그 모두 처리
+                    const textFieldRegex = new RegExp(
+                        `(<text-field[^>]*?name=["']${escapedKey}["'][^>]*?)(\\s*/?>|>\\s*</text-field>)`,
+                        'gi'
+                    );
+                    
+                    updatedHtml = updatedHtml.replace(textFieldRegex, (match, tagContent, closing) => {
+                        // 이미 chip-group이 추가되어 있는지 확인
+                        if (match.includes('data-chip-group-added="true"')) {
+                            return match;
+                        }
+                        
+                        // chip 값들을 JSON 문자열로 변환 (HTML 속성에 저장)
+                        const chipValuesJson = JSON.stringify(values.map(val => String(val)));
+                        
+                        // 원래 태그에 data 속성 추가 (중복 방지용)
+                        let modifiedTag = tagContent;
+                        if (!modifiedTag.includes('data-chip-group-added')) {
+                            modifiedTag += ' data-chip-group-added="true"';
+                        }
+                        
+                        // hide-details 속성 추가 또는 업데이트
+                        if (!modifiedTag.includes('hide-details')) {
+                            modifiedTag += ' hide-details="true"';
+                        } else {
+                            // 이미 있으면 true로 업데이트
+                            modifiedTag = modifiedTag.replace(/hide-details=["'][^"']*["']/i, 'hide-details="true"');
+                        }
+                        
+                        // chip group을 text-field 아래에 추가
+                        // data 속성으로 값을 저장하고, 나중에 JavaScript로 렌더링
+                        const chipGroupHtml = `<div style="font-size: 12px; color: #666; margin-top: 4px;">선택 옵션: </div><div class="text-field-chip-group" data-field-name="${escapedKey}" data-chip-values='${chipValuesJson.replace(/'/g, '&#39;')}' style="margin-bottom: 16px;"></div>`;
+                        
+                        // 원래 태그가 self-closing이었는지 확인
+                        const isSelfClosing = closing.trim() === '/>' || closing.trim().startsWith('/>');
+                        if (isSelfClosing) {
+                            return `${modifiedTag} />${chipGroupHtml}`;
+                        } else {
+                            return `${modifiedTag}></text-field>${chipGroupHtml}`;
+                        }
+                    });
+                }
+            });
+            return updatedHtml;
+        },
+
+        // Chip 클릭 핸들러 설정
+        setupChipClickHandlers() {
+            var me = this;
+            
+            // DynamicForm의 DOM에서 chip group 컨테이너 찾기
+            const dynamicFormEl = this.$refs.dynamicForm?.$el;
+            if (!dynamicFormEl) {
+                // 약간의 지연 후 다시 시도
+                setTimeout(() => {
+                    me.setupChipClickHandlers();
+                }, 100);
+                return;
+            }
+            
+            const chipGroups = dynamicFormEl.querySelectorAll('.text-field-chip-group[data-chip-values]');
+            
+            chipGroups.forEach(chipGroup => {
+                // 이미 설정된 경우 스킵
+                if (chipGroup.hasAttribute('data-handlers-setup')) {
+                    return;
+                }
+                
+                const fieldName = chipGroup.getAttribute('data-field-name');
+                const chipValuesJson = chipGroup.getAttribute('data-chip-values');
+                
+                if (!fieldName || !chipValuesJson) {
+                    return;
+                }
+                
+                try {
+                    const chipValues = JSON.parse(chipValuesJson);
+                    
+                    // 기존 내용 제거
+                    chipGroup.innerHTML = '';
+                    
+                    // chip container 생성
+                    const chipContainer = document.createElement('div');
+                    chipContainer.className = 'd-flex flex-wrap gap-2';
+                    chipContainer.style.marginTop = '8px';
+                    
+                    // 현재 필드 값 확인
+                    const currentValue = me.formData[fieldName] || '';
+                    
+                    // 각 chip을 일반 버튼으로 생성 (chip 스타일 적용)
+                    chipValues.forEach((value) => {
+                        const chipButton = document.createElement('button');
+                        chipButton.type = 'button';
+                        chipButton.className = 'field-chip-button';
+                        chipButton.textContent = value;
+                        chipButton.setAttribute('data-field-name', fieldName);
+                        chipButton.setAttribute('data-field-value', value);
+                        
+                        // 현재 값과 일치하면 active 클래스 추가
+                        if (String(currentValue) === String(value)) {
+                            chipButton.classList.add('active');
+                        }
+                        
+                        // 클릭 이벤트 추가
+                        chipButton.addEventListener('click', function() {
+                            const field = this.getAttribute('data-field-name');
+                            const value = this.getAttribute('data-field-value');
+                            
+                            // formData 업데이트
+                            me.formData[field] = value;
+                            
+                            // 선택된 chip 스타일 업데이트
+                            const container = this.parentElement;
+                            container.querySelectorAll('.field-chip-button').forEach(btn => {
+                                btn.classList.remove('active');
+                            });
+                            this.classList.add('active');
+                        });
+                        
+                        chipContainer.appendChild(chipButton);
+                    });
+                    
+                    chipGroup.appendChild(chipContainer);
+                    chipGroup.setAttribute('data-handlers-setup', 'true');
+                } catch (error) {
+                    console.error('Chip values 파싱 오류:', error);
+                }
+            });
+        },
     }
 };
 </script>
@@ -718,6 +911,29 @@ export default {
 <style>
 .form-work-item-mobile {
     display: none;
+}
+
+/* Chip 버튼 스타일 */
+.field-chip-button {
+    padding: 4px 12px;
+    border: 1px solid rgb(var(--v-theme-primary));
+    border-radius: 16px;
+    background-color: transparent;
+    color: rgb(var(--v-theme-primary));
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 400;
+    margin: 4px;
+}
+
+.field-chip-button:hover {
+    background-color: rgba(var(--v-theme-primary), 0.08);
+}
+
+.field-chip-button.active {
+    background-color: rgb(var(--v-theme-primary));
+    color: white;
 }
 
 @keyframes bounce-horizontal {

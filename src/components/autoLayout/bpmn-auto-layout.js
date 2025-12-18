@@ -246,6 +246,330 @@
         );
       }
       
+      // Boundary 이벤트가 어느 노드의 어느 변에, 어느 비율로 붙어있는지 사전 캡처
+      function captureBoundaryAttachments(elements) {
+        const map = new Map();
+
+        elements.forEach(el => {
+          if (!el.businessObject || el.businessObject.$type !== 'bpmn:BoundaryEvent') return;
+
+          // host는 우선 shape.host를 사용, 없으면 attachedToRef로 검색
+          let host = el.host;
+          if (!host && el.businessObject.attachedToRef) {
+            const hostBoId = el.businessObject.attachedToRef.id;
+            host = elements.find(e => e.businessObject && e.businessObject.id === hostBoId);
+          }
+          if (!host) return;
+
+          if (typeof host.x !== 'number' || typeof host.y !== 'number') return;
+
+          const bw = el.width || 36;
+          const bh = el.height || 36;
+
+          const centerX = el.x + bw / 2;
+          const centerY = el.y + bh / 2;
+
+          const hostLeft = host.x;
+          const hostRight = host.x + host.width;
+          const hostTop = host.y;
+          const hostBottom = host.y + host.height;
+
+          // 네 변까지의 거리 계산
+          const dLeft = Math.abs(centerX - hostLeft);
+          const dRight = Math.abs(centerX - hostRight);
+          const dTop = Math.abs(centerY - hostTop);
+          const dBottom = Math.abs(centerY - hostBottom);
+
+          let side = 'left';
+          let min = dLeft;
+
+          if (dRight < min) {
+            min = dRight;
+            side = 'right';
+          }
+          if (dTop < min) {
+            min = dTop;
+            side = 'top';
+          }
+          if (dBottom < min) {
+            min = dBottom;
+            side = 'bottom';
+          }
+
+          let t = 0.5;
+          const hostWidth = host.width || 100;
+          const hostHeight = host.height || 80;
+
+          if ((side === 'left' || side === 'right') && hostHeight > 0) {
+            t = (centerY - hostTop) / hostHeight;
+          } else if ((side === 'top' || side === 'bottom') && hostWidth > 0) {
+            t = (centerX - hostLeft) / hostWidth;
+          }
+
+          // 0~1 범위로 클램프
+          t = Math.min(1, Math.max(0, t));
+
+          // Boundary에 붙어있는 라벨의 상대 위치(center 기준)도 같이 저장
+          const labels = [];
+          if (el.labels && el.labels.length > 0) {
+            el.labels.forEach(label => {
+              if (!label || typeof label.x !== 'number' || typeof label.y !== 'number') return;
+              const lw = label.width || 0;
+              const lh = label.height || 0;
+              const labelCenterX = label.x + lw / 2;
+              const labelCenterY = label.y + lh / 2;
+              labels.push({
+                labelId: label.id,
+                dx: labelCenterX - centerX,
+                dy: labelCenterY - centerY,
+                width: lw,
+                height: lh,
+              });
+            });
+          }
+
+          map.set(el.id, {
+            boundaryId: el.id,
+            hostId: host.id,
+            side,
+            t,
+            labels,
+          });
+        });
+
+        return map;
+      }
+
+      // 주어진 포인트가 요소의 어느 변에 붙어있는지, 그리고 그 변을 따라 어느 비율에 있는지 계산
+      function getElementAttachmentFromPoint(point, element) {
+        if (
+          !point ||
+          !element ||
+          typeof element.x !== 'number' ||
+          typeof element.y !== 'number' ||
+          typeof element.width !== 'number' ||
+          typeof element.height !== 'number'
+        ) {
+          return null;
+        }
+
+        const left = element.x;
+        const right = element.x + element.width;
+        const top = element.y;
+        const bottom = element.y + element.height;
+
+        const centerX = point.x;
+        const centerY = point.y;
+
+        const dLeft = Math.abs(centerX - left);
+        const dRight = Math.abs(centerX - right);
+        const dTop = Math.abs(centerY - top);
+        const dBottom = Math.abs(centerY - bottom);
+
+        let side = 'left';
+        let min = dLeft;
+
+        if (dRight < min) {
+          min = dRight;
+          side = 'right';
+        }
+        if (dTop < min) {
+          min = dTop;
+          side = 'top';
+        }
+        if (dBottom < min) {
+          min = dBottom;
+          side = 'bottom';
+        }
+
+        let t = 0.5;
+
+        if ((side === 'left' || side === 'right') && element.height > 0) {
+          t = (centerY - top) / element.height;
+        } else if ((side === 'top' || side === 'bottom') && element.width > 0) {
+          t = (centerX - left) / element.width;
+        }
+
+        t = Math.min(1, Math.max(0, t));
+
+        return { side, t };
+      }
+
+      // Boundary와 연결된 SequenceFlow의 양 끝이 어떤 변에 어떤 비율로 붙어 있었는지,
+      // 그리고 중간 꺾임(waypoint)들이 전체 경로 박스 안에서 어느 위치(비율)에 있었는지 사전 캡처
+      function captureBoundaryFlowEndpoints(elements) {
+        const map = new Map();
+
+        elements.forEach(el => {
+          if (
+            !el.businessObject ||
+            el.businessObject.$type !== 'bpmn:SequenceFlow' ||
+            !el.waypoints ||
+            !Array.isArray(el.waypoints) ||
+            el.waypoints.length < 2
+          ) {
+            return;
+          }
+
+          const source = el.source;
+          const target = el.target;
+
+          const isSourceBoundary =
+            source &&
+            source.businessObject &&
+            source.businessObject.$type === 'bpmn:BoundaryEvent';
+
+          const isTargetBoundary =
+            target &&
+            target.businessObject &&
+            target.businessObject.$type === 'bpmn:BoundaryEvent';
+
+          if (!isSourceBoundary && !isTargetBoundary) {
+            return;
+          }
+
+          const startPoint = el.waypoints[0];
+          const endPoint = el.waypoints[el.waypoints.length - 1];
+
+          const sourceAttach = getElementAttachmentFromPoint(startPoint, source);
+          const targetAttach = getElementAttachmentFromPoint(endPoint, target);
+
+           // 꺾이는 중간 포인트들을 전체 경로 박스 기준 비율로 저장
+           const innerPoints = el.waypoints.slice(1, el.waypoints.length - 1);
+
+           let minX = Math.min(startPoint.x, endPoint.x);
+           let maxX = Math.max(startPoint.x, endPoint.x);
+           let minY = Math.min(startPoint.y, endPoint.y);
+           let maxY = Math.max(startPoint.y, endPoint.y);
+
+           innerPoints.forEach(p => {
+             if (typeof p.x === 'number' && typeof p.y === 'number') {
+               if (p.x < minX) minX = p.x;
+               if (p.x > maxX) maxX = p.x;
+               if (p.y < minY) minY = p.y;
+               if (p.y > maxY) maxY = p.y;
+             }
+           });
+
+           const width = maxX - minX || 1;
+           const height = maxY - minY || 1;
+
+           const innerNormalized = innerPoints.map(p => ({
+             nx: (p.x - minX) / width,
+             ny: (p.y - minY) / height,
+           }));
+
+          map.set(el.id, {
+            source: sourceAttach,
+            target: targetAttach,
+            inner: innerNormalized,
+          });
+        });
+
+        return map;
+      }
+
+      // 캡처된 정보를 바탕으로, 최종 레이아웃 이후 boundary 위치를 보정
+      function applyBoundaryAttachments(attachments, elements, modeling) {
+        if (!attachments || attachments.size === 0) return;
+
+        attachments.forEach(info => {
+          const boundary = elements.find(e => e.id === info.boundaryId);
+          const host = elements.find(e => e.id === info.hostId);
+
+          if (
+            !boundary ||
+            !host ||
+            typeof host.x !== 'number' ||
+            typeof host.y !== 'number' ||
+            typeof host.width !== 'number' ||
+            typeof host.height !== 'number'
+          ) {
+            return;
+          }
+
+          const bw = boundary.width || 36;
+          const bh = boundary.height || 36;
+
+          const hostLeft = host.x;
+          const hostRight = host.x + host.width;
+          const hostTop = host.y;
+          const hostBottom = host.y + host.height;
+
+          let centerX = hostLeft + host.width / 2;
+          let centerY = hostTop + host.height / 2;
+
+          const t = typeof info.t === 'number' ? info.t : 0.5;
+
+          if (info.side === 'left') {
+            centerX = hostLeft;
+            centerY = hostTop + host.height * t;
+          } else if (info.side === 'right') {
+            centerX = hostRight;
+            centerY = hostTop + host.height * t;
+          } else if (info.side === 'top') {
+            centerX = hostLeft + host.width * t;
+            centerY = hostTop;
+          } else if (info.side === 'bottom') {
+            centerX = hostLeft + host.width * t;
+            centerY = hostBottom;
+          }
+
+          const newX = centerX - bw / 2;
+          const newY = centerY - bh / 2;
+
+          const dx = newX - boundary.x;
+          const dy = newY - boundary.y;
+
+          // Boundary 자체 위치 보정
+          if (Math.abs(dx) >= 0.5 || Math.abs(dy) >= 0.5) {
+            try {
+              modeling.moveShape(boundary, { x: dx, y: dy });
+            } catch (err) {
+              console.warn(`Boundary ${boundary.id} 최종 위치 보정 중 오류:`, err);
+            }
+          }
+
+          // Boundary에 붙어있던 라벨들의 상대 위치도 함께 복원
+          const labelsInfo = info.labels || [];
+          const boundaryCenterX = centerX;
+          const boundaryCenterY = centerY;
+
+          labelsInfo.forEach(li => {
+            const labelEl = elements.find(e => e.id === li.labelId);
+            if (!labelEl || typeof labelEl.x !== 'number' || typeof labelEl.y !== 'number') {
+              return;
+            }
+
+            const lw = labelEl.width || li.width || 0;
+            const lh = labelEl.height || li.height || 0;
+
+            const newLabelCenterX = boundaryCenterX + li.dx;
+            const newLabelCenterY = boundaryCenterY + li.dy;
+
+            const labelNewX = newLabelCenterX - lw / 2;
+            const labelNewY = newLabelCenterY - lh / 2;
+
+            const ldx = labelNewX - labelEl.x;
+            const ldy = labelNewY - labelEl.y;
+
+            if (Math.abs(ldx) < 0.5 && Math.abs(ldy) < 0.5) {
+              return;
+            }
+
+            try {
+              modeling.moveShape(labelEl, { x: ldx, y: ldy });
+            } catch (err) {
+              console.warn(`Boundary 라벨 ${labelEl.id} 위치 보정 중 오류:`, err);
+            }
+          });
+        });
+      }
+
+      // 레이아웃 전에 boundary 부착 정보 및 boundary 플로우 endpoint 정보 캡처
+      const boundaryAttachments = captureBoundaryAttachments(elements);
+      const boundaryFlowEndpoints = captureBoundaryFlowEndpoints(elements);
+
       // 확장된 Sugiyama 레이아웃 적용
       const layout = new EnhancedSugiyamaLayout(graph, horizontal);
       layout.run();
@@ -255,6 +579,46 @@
       const modeling = bpmnModeler.get('modeling');
       const connectionDocking = bpmnModeler.get('connectionDocking');
       
+      // 노드의 테두리(모서리가 아닌 가장자리 포함)에 가장 가까운 점으로 스냅시키는 헬퍼
+      function snapPointToElementCorner(point, element) {
+        if (!point || !element || typeof element.x !== 'number' || typeof element.y !== 'number') {
+          return;
+        }
+
+        const left = element.x;
+        const right = element.x + element.width;
+        const top = element.y;
+        const bottom = element.y + element.height;
+
+        // 포인트의 x/y를 요소 범위로 클램프
+        const clampedX = Math.min(Math.max(point.x, left), right);
+        const clampedY = Math.min(Math.max(point.y, top), bottom);
+
+        // 네 개의 변 위에서 후보 점 생성 (좌/우/상/하 변의 가장 가까운 점)
+        const candidates = [
+          { x: left,  y: clampedY },  // 왼쪽 변
+          { x: right, y: clampedY },  // 오른쪽 변
+          { x: clampedX, y: top },    // 위쪽 변
+          { x: clampedX, y: bottom }, // 아래쪽 변
+        ];
+
+        let best = candidates[0];
+        let bestDist = Infinity;
+
+        candidates.forEach(c => {
+          const dx = c.x - point.x;
+          const dy = c.y - point.y;
+          const dist = dx * dx + dy * dy;
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = c;
+          }
+        });
+
+        point.x = best.x;
+        point.y = best.y;
+      }
+
       // 계산된 위치로 요소 이동
       graph.nodes.forEach(node => {
         const element = nodeMap[node.id];
@@ -302,6 +666,20 @@
                   x: dx,
                   y: dy
                 });
+
+                // 경계 이벤트(바운더리 이벤트)가 붙어 있으면 같이 이동
+                if (elementToMove.attachers && elementToMove.attachers.length > 0) {
+                  elementToMove.attachers.forEach(attacher => {
+                    if (attacher && typeof attacher.x === 'number') {
+                      try {
+                        // 경계 이벤트 자체 이동
+                        modeling.moveShape(attacher, { x: dx, y: dy });
+                      } catch (attErr) {
+                        console.warn(`경계 이벤트 ${attacher.id} 이동 중 오류:`, attErr);
+                      }
+                    }
+                  });
+                }
                 
                 // 라벨 요소가 있는 경우 함께 이동
                 if (element.labels && element.labels.length > 0) {
@@ -412,8 +790,160 @@
         }
       });
 
+      // 레이아웃이 모두 끝난 후 boundary 위치를 최종적으로 보정
+      applyBoundaryAttachments(boundaryAttachments, elements, modeling);
+
       // waypoints 적용 함수 호출
       applyGraphWaypointsToBpmnModeler(graph, bpmnModeler);
+
+      // 모든 시퀀스 플로우에 대해 bpmn-js 기본 레이아웃을 한 번 더 적용하여
+      // 복잡한 이동 이후 연결선을 "리셋"하듯 정리하되,
+      // boundary 이벤트와 연결된 플로우는 제외한다.
+      const sequenceFlows = elements.filter(el => {
+        // 실제 연결선(Connection)만 대상으로 하고, 라벨 등은 제외
+        if (
+          !el.businessObject ||
+          el.businessObject.$type !== 'bpmn:SequenceFlow' ||
+          !el.waypoints || !Array.isArray(el.waypoints)
+        ) {
+          return false;
+        }
+
+        const source = el.source;
+        const target = el.target;
+
+        const isSourceBoundary =
+          source &&
+          source.businessObject &&
+          source.businessObject.$type === 'bpmn:BoundaryEvent';
+
+        const isTargetBoundary =
+          target &&
+          target.businessObject &&
+          target.businessObject.$type === 'bpmn:BoundaryEvent';
+
+        // boundary와 연결된 시퀀스 플로우는 여기서는 제외 (별도 처리)
+        return !isSourceBoundary && !isTargetBoundary;
+      });
+
+      sequenceFlows.forEach(flow => {
+        try {
+          modeling.layoutConnection(flow);
+        } catch (e) {
+          console.warn('시퀀스 플로우 레이아웃 재적용 실패:', flow.id, e);
+        }
+      });
+
+      // boundary 이벤트와 연결된 시퀀스 플로우는 모든 레이아웃이 끝난 "마지막 타이밍"에 별도로 재계산
+      const boundaryFlows = elements.filter(el => {
+        if (
+          !el.businessObject ||
+          el.businessObject.$type !== 'bpmn:SequenceFlow' ||
+          !el.waypoints || !Array.isArray(el.waypoints)
+        ) {
+          return false;
+        }
+
+        const source = el.source;
+        const target = el.target;
+
+        const isSourceBoundary =
+          source &&
+          source.businessObject &&
+          source.businessObject.$type === 'bpmn:BoundaryEvent';
+
+        const isTargetBoundary =
+          target &&
+          target.businessObject &&
+          target.businessObject.$type === 'bpmn:BoundaryEvent';
+
+        return isSourceBoundary || isTargetBoundary;
+      });
+
+      boundaryFlows.forEach(flow => {
+        try {
+          const source = flow.source;
+          const target = flow.target;
+          const endpointInfo = boundaryFlowEndpoints.get(flow.id) || {};
+          const innerInfo = endpointInfo.inner || [];
+
+          if (
+            !source || !target ||
+            typeof source.x !== 'number' ||
+            typeof source.y !== 'number' ||
+            typeof source.width !== 'number' ||
+            typeof source.height !== 'number' ||
+            typeof target.x !== 'number' ||
+            typeof target.y !== 'number' ||
+            typeof target.width !== 'number' ||
+            typeof target.height !== 'number'
+          ) {
+            return;
+          }
+
+          // 시작점/끝점: "이전에 붙어있던 변 + 비율" 정보를 우선 사용
+          function computeEndpoint(element, attachInfo) {
+            const centerFallback = {
+              x: element.x + element.width / 2,
+              y: element.y + element.height / 2,
+            };
+
+            if (!attachInfo || !attachInfo.side) {
+              const p = { ...centerFallback };
+              snapPointToElementCorner(p, element);
+              return p;
+            }
+
+            const side = attachInfo.side;
+            const t = typeof attachInfo.t === 'number'
+              ? Math.min(1, Math.max(0, attachInfo.t))
+              : 0.5;
+
+            let cx = element.x + element.width / 2;
+            let cy = element.y + element.height / 2;
+
+            if (side === 'left') {
+              cx = element.x;
+              cy = element.y + element.height * t;
+            } else if (side === 'right') {
+              cx = element.x + element.width;
+              cy = element.y + element.height * t;
+            } else if (side === 'top') {
+              cx = element.x + element.width * t;
+              cy = element.y;
+            } else if (side === 'bottom') {
+              cx = element.x + element.width * t;
+              cy = element.y + element.height;
+            }
+
+            return { x: cx, y: cy };
+          }
+
+          const start = computeEndpoint(source, endpointInfo.source);
+          const end = computeEndpoint(target, endpointInfo.target);
+
+          // 예전 경로의 꺾임(inner waypoint)들을 start/end 기준 박스 안에서 같은 비율 위치로 복원
+          let minX = Math.min(start.x, end.x);
+          let maxX = Math.max(start.x, end.x);
+          let minY = Math.min(start.y, end.y);
+          let maxY = Math.max(start.y, end.y);
+
+          const width = maxX - minX || 1;
+          const height = maxY - minY || 1;
+
+          const restoredInner = innerInfo.map(p => ({
+            x: minX + p.nx * width,
+            y: minY + p.ny * height,
+          }));
+
+          const newWaypoints = [start, ...restoredInner, end];
+
+          modeling.updateWaypoints(flow, newWaypoints);
+        } catch (e) {
+          console.warn('Boundary 시퀀스 플로우 레이아웃 재적용 실패:', flow.id, e);
+        }
+      });
+
     } catch (error) {
       console.error('자동 레이아웃 적용 중 오류가 발생했습니다:', error);
       throw error;

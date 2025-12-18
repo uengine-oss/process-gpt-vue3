@@ -29,17 +29,40 @@
             />
 
             <!-- 빈 상태 -->
-            <EmptyState 
+            <!-- <EmptyState 
                 v-if="!isInitialLoading && timeline.length === 0 && !isActionsMode"
                 :is-queued="isQueued"
                 :orchestration-options="orchestrationOptions"
                 :selected-orchestration-method="selectedOrchestrationMethod"
                 :show-download-button="showDownloadButton"
-                :isA2A="isA2A"
                 @select-orchestration-method="selectOrchestrationMethod"
                 @start-task="startTask"
                 @download-browser-agent="downloadBrowserAgent"
-            />
+            /> -->
+            <div v-if="!isInitialLoading && timeline.length === 0 && !isActionsMode && !isQueued">
+                <AgentSelectField
+                    :model-value="selectedAgent"
+                    :backend="backend"
+                    :is-execute="true"
+                    @update:model-value="updateWorkItem"
+                />
+            </div>
+            
+            <div v-if="timeline.length === 0" class="empty-state">
+                <div v-if="isQueued">
+                    <div v-for="(char, index) in $t('agentMonitor.workQueued')" :key="index" 
+                        :style="{ animationDelay: `${index * 0.1}s` }"
+                        class="thinking-char"
+                    >{{ char === ' ' ? '\u00A0' : char }}
+                    </div>
+                    <p>{{ $t('agentMonitor.workStarted') }}</p>
+                </div>
+                <div v-else>
+                    <h3>{{ $t('agentMonitor.noWorkInProgress') }}</h3>
+                    <p>{{ $t('agentMonitor.workStarted') }}</p>
+                </div>
+            </div>
+
             <!-- 로딩 상태 -->
             <div v-if="isLoading" class="feedback-loading">
                 <div class="loading-spinner"></div>
@@ -61,7 +84,7 @@
                 @stopMessage="stopTask"
             >
                 <template #custom-input-tools>
-                    <div v-if="!isA2A" class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
+                    <div v-if="isGeneralAgent" class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
                         <div class="dropdown-trigger">
                             <span class="dropdown-label">{{ ($t('agentMonitor.researchMethod')) }}: {{ selectedOrchestrationLabel }}</span>
                         </div>
@@ -111,9 +134,9 @@ import BrowserAgent from '@/components/BrowserAgent.vue'
 import Chat from '@/components/ui/Chat.vue'
 import EventTimeline from '@/components/ui/EventTimeline.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import AgentSelectField from '@/components/ui/field/AgentSelectField.vue'
 
 import BackendFactory from '@/components/api/BackendFactory'
-const backend = BackendFactory.createBackend()
 
 export default {
     mixins: [ChatModule],
@@ -121,7 +144,8 @@ export default {
         Chat,
         BrowserAgent,
         EventTimeline,
-        EmptyState
+        EmptyState,
+        AgentSelectField
     },
     props: {
         html: {
@@ -139,10 +163,16 @@ export default {
         howToUseInfo: {
             type: Object,
             default: null
+        },
+        selectedAgentType: {
+            type: String,
+            default: null
         }
     },
     data() {
         return {
+            backend: null,
+
             events: [],
             channel: null,
             slideIndexes: {},
@@ -199,67 +229,6 @@ export default {
                         ]
                     }
                 },
-                {
-                    titleKey: 'AgentSelectInfo.orchestration.openaiDeepResearch.title',
-                    value: 'openai-deep-research',
-                    label: this.$t('AgentSelectInfo.orchestration.openaiDeepResearch.title'),
-                    startLabel: 'OpenAI Deep Research',
-                    icon: 'playoff',
-                    descKey: 'AgentSelectInfo.orchestration.openaiDeepResearch.description',
-                    costKey: 'AgentSelectInfo.cost.high',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.title',
-                        details: [
-                            { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.0.title' },
-                            { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.1.title' },
-                            { title: 'AgentSelectInfo.orchestration.openaiDeepResearch.detailDesc.details.2.title' }
-                        ]
-                    }
-                },
-                {
-                    titleKey: 'AgentSelectInfo.orchestration.langchainReact.title',
-                    value: 'langchain-react',
-                    label: this.$t('AgentSelectInfo.orchestration.langchainReact.title'),
-                    startLabel: 'LangChain Research',
-                    icon: 'playoff',
-                    descKey: 'AgentSelectInfo.orchestration.langchainReact.description',
-                    costKey: 'AgentSelectInfo.cost.medium',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.title',
-                        details: [
-                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.0.title' },
-                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.1.title' },
-                            { title: 'AgentSelectInfo.orchestration.langchainReact.detailDesc.details.2.title' }
-                        ]
-                    }
-                },
-                { 
-                    titleKey: 'AgentSelectInfo.orchestration.browserAutomationAgent.title',
-                    value: 'browser-automation-agent', 
-                    label: this.$t('AgentSelectInfo.orchestration.browserAutomationAgent.title'), 
-                    startLabel: 'Browser Automation Agent', 
-                    icon: 'browser',
-                    descKey: 'AgentSelectInfo.orchestration.browserAutomationAgent.description',
-                    costKey: 'AgentSelectInfo.cost.low',
-                    detailDesc: {
-                        title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.title',
-                        details: [
-                            { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.0.title' },
-                            { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.1.title' },
-                            { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.2.title' },
-                            { title: 'AgentSelectInfo.orchestration.browserAutomationAgent.detailDesc.details.3.title' }
-                        ]
-                    }
-                },
-                {
-                    titleKey: 'AgentSelectInfo.orchestration.visionParse.title',
-                    value: 'visionparse',
-                    label: this.$t('AgentSelectInfo.orchestration.visionParse.title'),
-                    startLabel: 'Vision Parse',
-                    icon: 'add-media-image',
-                    descKey: 'AgentSelectInfo.orchestration.visionParse.description',
-                    costKey: 'AgentSelectInfo.cost.high',
-                }
             ],
 
             todolistChannel: null,
@@ -267,6 +236,12 @@ export default {
             showBrowserIframe: false,
             browserIframeUrl: '',
             browserDialog: false,
+
+            selectedAgent: {
+                agent: '',
+                agentMode: 'draft',
+                orchestration: null,
+            },
         }
     },
     computed: {
@@ -288,14 +263,14 @@ export default {
                     humanRespondedJobIds.add(jobId)
                     humanResponseByJobId[jobId] = e
                 } else if (event_type === 'task_started') {
-                    console.log('[AgentMonitor] task_started 이벤트:', {
-                        jobId,
-                        data,
-                        task_description: data?.task_description,
-                        goal: data?.goal,
-                        name: data?.name,
-                        role: data?.role
-                    })
+                    // console.log('[AgentMonitor] task_started 이벤트:', {
+                    //     jobId,
+                    //     data,
+                    //     task_description: data?.task_description,
+                    //     goal: data?.goal,
+                    //     name: data?.name,
+                    //     role: data?.role
+                    // })
                     taskMap.set(jobId, {
                         id,
                         jobId,
@@ -312,7 +287,7 @@ export default {
                         isHumanAsked: false,
                         taskDescription: data?.task_description || null
                     })
-                    console.log('[AgentMonitor] 생성된 task 객체:', taskMap.get(jobId))
+                    // console.log('[AgentMonitor] 생성된 task 객체:', taskMap.get(jobId))
                 } else if (event_type === 'task_completed' && taskMap.has(jobId)) {
                     const task = taskMap.get(jobId)
                     task.isCompleted = true
@@ -368,6 +343,25 @@ export default {
                         humanResponse: response,
                         eventRow: e
                     })
+                } else if (event_type === 'human_checked') {
+                    const content = data.data;
+                    taskMap.set(jobId, {
+                        id,
+                        jobId,
+                        goal: data?.goal || 'Task',
+                        name: data?.name || '',
+                        role: data?.role || 'Agent',
+                        crewType: crew_type || 'default',
+                        startTime: timestamp,
+                        isCompleted: true,
+                        outputRaw: data || null,
+                        content: content || null,
+                        isCrewCompleted: false,
+                        agentProfile: data?.agent_profile,
+                        isHumanAsked: false,
+                        taskDescription: data?.message || null
+                    })
+                    this.handleHumanCheckedEvent(e);
                 }
             })
             
@@ -400,14 +394,14 @@ export default {
                 .slice()
                 .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
                 .forEach(e => {
-                    const { event_type, data, job_id, id } = e
+                    const { event_type, data, job_id, id, crew_type } = e
                     const jobId = job_id || data?.job_id || id
                     if (!usageMap[jobId]) usageMap[jobId] = []
 
                     if (event_type === 'tool_usage_started') {
                         usageMap[jobId].push({
-                            tool_name: data.tool_name,
-                            query: data.query,
+                            tool_name: data.tool_name || crew_type,
+                            query: data.query || null,
                             info: null,
                             status: 'searching'
                         })
@@ -417,22 +411,29 @@ export default {
                         for (let i = list.length - 1; i >= 0; i--) {
                             if (list[i].tool_name === data.tool_name && list[i].status === 'searching') {
                                 list[i].status = 'done'
-                                list[i].info = data.info
+                                list[i].info = data.info || data.message || null
                                 break
                             }
                         }
+                    } else if (event_type === 'task_working') {
+                        usageMap[jobId].push({
+                            tool_name: crew_type,
+                            query: data.query || null,
+                            info: data.info || data.message || null,
+                            status: 'done'
+                        })
                     }
                 })
             return usageMap
         },
         isQueued() {
-            // 유효한 orchestration 값 목록 생성
-            const validOrchs = this.orchestrationOptions.map(o => o.value)
+            // 유효한 orchestration 값이 있는지 확인
+            const validOrch = this.todoStatus && this.todoStatus.agent_orch !== null && this.todoStatus.agent_orch !== '';
             // 시작 직후(첫 이벤트 이전)에도 대기 문구가 뜨도록 hasReceivedEvent 조건 제거
             return this.todoStatus &&
                 this.todoStatus.status === 'IN_PROGRESS' &&
-                (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') &&
-                validOrchs.includes(this.todoStatus.agent_orch)
+                (this.todoStatus.agent_mode === 'DRAFT' || this.todoStatus.agent_mode === 'COMPLETE') && 
+                validOrch;
         },
         timeline() {
             const taskItems = this.tasks.map(task => ({ type: 'task', time: task.startTime, payload: task }));
@@ -447,12 +448,18 @@ export default {
             const selectedOption = this.orchestrationOptions.find(option => option.value === this.selectedOrchestrationMethod);
             return selectedOption ? selectedOption.label : this.$t('agentMonitor.researchMethod');
         },
-        isA2A() {
-            return this.selectedOrchestrationMethod === 'a2a';
+        isGeneralAgent() {
+            if (this.selectedAgent) {
+                return this.selectedAgent.orchestration === 'crewai-action' || this.selectedAgent.orchestration === 'crewai-deep-research';
+            }
+            return false;
         },
         // 에이전트가 진행 중이거나 대기열에 있는 상태
         isAgentBusy() {
             return this.isQueued || this.timeline.length > 0 || this.isLoading;
+        },
+        isDraftBrowserUseMode() {
+            return this.todoStatus && this.todoStatus.draft && this.todoStatus.agent_orch === 'browser-automation-agent' && this.todoStatus.agent_mode === 'DRAFT' && this.todoStatus.draft_status === 'COMPLETED';
         }
     },
     watch: {
@@ -473,6 +480,14 @@ export default {
                 await this.fetchTodoStatus()
                 this.cleanup()
                 this.setupRealtimeSubscription(newVal.worklist.taskId)
+
+                if (newVal && !this.selectedAgentType) {
+                    this.selectedAgent = {
+                        agent: newVal.worklist.endpoint || "",
+                        agentMode: newVal.worklist.agentMode.toLowerCase() || "none",
+                        orchestration: newVal.worklist.orchestration || null
+                    };
+                }
             },
         }
     },
@@ -738,8 +753,33 @@ export default {
                 ? (task.content ?? this.resolvePrimaryValue(original, 'text'))
                 : original;
             const normalized = this.normalizeFormValues(payloadForSubmit);
-            console.log('[AgentMonitor] submitTask!!', normalized);
+            // console.log('[AgentMonitor] submitTask!!', normalized);
             this.EventBus.emit('form-values-updated', normalized);
+        },
+
+        /**
+         * event_type 이 'human_checked' 인 이벤트를 받아서
+         * 폼 HTML 업데이트에 사용할 원본 data 를 그대로 EventBus 로 전달한다.
+         * 실제 HTML 변경/데이터 가공은 수신 측(예: FormWorkItem)에서 처리.
+         */
+        handleHumanCheckedEvent(row) {
+            console.log('handleHumanCheckedEvent', row);
+            if (!row || row.event_type !== 'human_checked') return;
+
+            let payload = row.data;
+            // data 가 문자열이면 JSON 파싱을 시도하고, 실패해도 그대로 사용
+            if (typeof payload === 'string') {
+                try {
+                    payload = JSON.parse(payload);
+                } catch (e) {
+                    // ignore parse error, use raw string
+                }
+            }
+            const jsonData = payload.data;
+            const ambiguousValues = jsonData.ambiguous_values;
+            if (ambiguousValues) {
+                this.EventBus.emit('form-html-updated', ambiguousValues);
+            }
         },
 
         normalizeFormValues(payload) {
@@ -777,29 +817,39 @@ export default {
                     .from('events')
                     .select('*')
                     .eq('todo_id', taskId)
-                    .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked', 'human_response', 'error'])
+                    .in('event_type', ['task_started', 'task_completed', 'crew_completed', 'tool_usage_started', 'tool_usage_finished', 'human_asked', 'human_response', 'error', 'human_checked', 'task_working'])
                     .order('timestamp', { ascending: true });
 
                 if (error) throw error;
                 
                 if (data) {
+                    // timestamp가 같을 때 task_started가 task_completed보다 먼저 오도록 정렬
+                    data.sort((a, b) => {
+                        const timeCompare = new Date(a.timestamp) - new Date(b.timestamp);
+                        if (timeCompare !== 0) return timeCompare;
+                        
+                        // timestamp가 같으면 event_type으로 정렬 (task_started < task_completed)
+                        if (a.event_type === 'task_started' && b.event_type === 'task_completed') return -1;
+                        if (a.event_type === 'task_completed' && b.event_type === 'task_started') return 1;
+                        return 0;
+                    });
                     // final_report_merge가 포함된 job_id에 대한 상세 로그 (DB에서 가져온 데이터)
                     data.forEach(row => {
                         if (row.job_id && row.job_id.includes('final_report_merge')) {
-                            console.log('[DB Load] final_report_merge 이벤트:', row);
+                            // console.log('[DB Load] final_report_merge 이벤트:', row);
                         }
                     });
                     
                     // task_started 이벤트의 task_description 확인
                     data.forEach(row => {
                         if (row.event_type === 'task_started') {
-                            console.log('[DB Load] task_started 이벤트 (초기 로드):', {
-                                id: row.id,
-                                job_id: row.job_id,
-                                data: row.data,
-                                task_description: row.data?.task_description,
-                                goal: row.data?.goal
-                            });
+                            // console.log('[DB Load] task_started 이벤트 (초기 로드):', {
+                            //     id: row.id,
+                            //     job_id: row.job_id,
+                            //     data: row.data,
+                            //     task_description: row.data?.task_description,
+                            //     goal: row.data?.goal
+                            // });
                         }
                     });
                     
@@ -819,11 +869,13 @@ export default {
             try {
                 const validEventTypes = [
                     'task_started',
+                    'task_working',
                     'task_completed',
                     'crew_completed',
                     'tool_usage_started',
                     'tool_usage_finished',
                     'human_asked',
+                    'human_checked',
                     'error'
                 ];
 
@@ -841,8 +893,7 @@ export default {
                         }
 
                         const isValidEvent = !this.events.some(e => e.id === id) && validEventTypes.includes(event_type) && todoId === taskId;
-                        // console.log('todostatus', this.todoStatus);
-
+                        
                         if (isValidEvent) {
                             // === task_completed인 경우 data 없을 때 fallback 재조회 ===
                             if (event_type === 'task_completed' && (!row.data || Object.keys(row.data).length === 0)) {
@@ -929,6 +980,12 @@ export default {
             // 중복 방지는 isValidEvent에서 이미 처리
             this.events = [...this.events, row];
 
+            // 사람이 결과를 검토해 준 이벤트인 경우: 폼 HTML 업데이트용 이벤트만 발생시키고 종료
+            if (row.event_type === 'human_checked') {
+                this.handleHumanCheckedEvent(row);
+                return;
+            }
+
             if (row.event_type !== 'task_completed') return;
 
             const jobId = row.job_id || row.id;
@@ -938,11 +995,11 @@ export default {
                 if (task && task.isCompleted) {
                     // browser-use 작업은 폼 업데이트 하지 않음
                     if (task.crewType === 'browser-use') {
-                        console.log('[AgentMonitor] browser-use 작업 완료 (폼 업데이트 스킵)', task);
+                        // console.log('[AgentMonitor] browser-use 작업 완료 (폼 업데이트 스킵)', task);
                         return;
                     }
                     
-                    console.log('[AgentMonitor] submitTask 감지', task);
+                    // console.log('[AgentMonitor] submitTask 감지', task);
                     this.submitTask(task);
                 }
             });
@@ -970,7 +1027,7 @@ export default {
                 console.log('[HUMAN CONFIRM] sending response', eventPayload)
                 this.events = [...this.events, { ...eventPayload, timestamp: new Date().toISOString() }]
                 // REST upsert에는 PK(id)가 필요하므로 id를 명시적으로 생성
-                await backend.putEvent(eventPayload);
+                await this.backend.putEvent(eventPayload);
                 
                 // 응답 후 입력값 초기화 (Vue3에서는 $delete 없음)
                 delete this.humanQueryAnswers[task.id]
@@ -999,7 +1056,7 @@ export default {
                 console.log('[HUMAN REJECT] sending response', eventPayload)
                 this.events = [...this.events, { ...eventPayload, timestamp: new Date().toISOString() }]
                 // REST upsert에는 PK(id)가 필요하므로 id를 명시적으로 생성
-                await backend.putEvent(eventPayload);
+                await this.backend.putEvent(eventPayload);
                 
                 // 응답 후 입력값 초기화 (Vue3에서는 $delete 없음)
                 delete this.humanQueryAnswers[task.id]
@@ -1031,23 +1088,7 @@ export default {
         // ========================================
         // 🚀 작업 실행 관련 메서드들
         // ========================================
-        async startTask() {
-            // Browser Use 특별 처리
-            if (this.selectedOrchestrationMethod === 'browser-automation-agent') {
-                // try {
-                //     const workItemList = await backend.getWorkListByInstId(this.workItem.worklist.instId);
-                //     if (workItemList) {
-                //         this.doneWorkItemList = workItemList
-                //             .filter(item => item.status === 'DONE' && item.task?.content)
-                //             .map(item => ({ name: item.name, output: item.task.content }));
-                //     }
-                //     this.openBrowserAgent = true;
-                // } catch (error) {
-                //     this.handleError(error, 'Browser Agent 준비 중 오류가 발생했습니다');
-                // }
-                // return;
-            }
-
+        async startTask(newVal) {
             const taskId = this.validateTaskId();
             if (!taskId) return;
 
@@ -1055,8 +1096,7 @@ export default {
                 // isLoading은 첫 이벤트 수신 후 상태 동기화 결과로 결정
                 
                 // agent_mode 처리
-                const currentAgentMode = this.todoStatus?.agent_mode;
-                const agentMode = ['DRAFT', 'COMPLETE'].includes(currentAgentMode) ? currentAgentMode : 'DRAFT';
+                const agentMode = ['DRAFT', 'COMPLETE'].includes(newVal.agentMode) ? newVal.agentMode : 'DRAFT';
                 const agentOrch = this.selectedOrchestrationMethod;
                 
                 this.todoStatus = { 
@@ -1066,7 +1106,8 @@ export default {
                     agent_orch: agentOrch 
                 };
 
-                await backend.putWorkItem(taskId, { 
+                await this.backend.putWorkItem(taskId, { 
+                    user_id: newVal.agent || this.todoStatus.user_id,
                     agent_mode: agentMode, 
                     status: 'IN_PROGRESS',
                     agent_orch: agentOrch
@@ -1076,19 +1117,25 @@ export default {
             }
         },
         async fetchTodoStatus() {
+            var me = this;
             const taskId = this.validateTaskId();
             if (!taskId) return;
 
             try {
                 const { data, error } = await window.$supabase
                     .from('todolist')
-                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer')
+                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft')
                     .eq('id', taskId)
                     .single();
 
                 if (error) throw error;
 
                 this.todoStatus = data;
+                if(this.isDraftBrowserUseMode) {
+                    Object.values(data.draft).forEach(function draftData(draft) {
+                        me.EventBus.emit('form-values-updated', draft); 
+                    });
+                }
                 this.isLoading = ['STARTED', 'FB_REQUESTED'].includes(data.draft_status);
                 this.isCancelled = data.draft_status === 'CANCELLED';
 
@@ -1165,7 +1212,7 @@ export default {
             if (!taskId) return;
 
             try {
-                await backend.putWorkItem(taskId, { draft_status: 'CANCELLED' });
+                await this.backend.putWorkItem(taskId, { draft_status: 'CANCELLED' });
                 this.isCancelled = true;
                 this.isLoading = false;
                 if (this.todoStatus) this.todoStatus.draft_status = 'CANCELLED';
@@ -1181,14 +1228,14 @@ export default {
 
             if (this.isActionsMode) {
                 if (this.todoStatus.status === 'NEW') {
-                    await backend.putWorkItem(taskId, {
+                    await this.backend.putWorkItem(taskId, {
                         status: 'IN_PROGRESS',
                         description: content.text,
                         query: content.text,
                     });
                     this.isLoading = true;
                     this.chatMessages.push({ time: new Date().toISOString(), content: content.text });
-                    this.$emit('update:new-tab-title', content.text);
+                    this.$emit('update:new-tab-title', content.text, taskId);
                     return;
                 }
             }
@@ -1201,7 +1248,7 @@ export default {
                 const updatedFeedback = [...existingFeedback, { time: now, content: text }];
                 const agentOrch = this.selectedOrchestrationMethod || this.todoStatus.agent_orch;
 
-                await backend.putWorkItem(taskId, {
+                await this.backend.putWorkItem(taskId, {
                     feedback: updatedFeedback,
                     draft_status: 'FB_REQUESTED',
                     status: 'IN_PROGRESS',
@@ -1254,7 +1301,7 @@ export default {
         // 🎯 오케스트레이션 방식 관련 메서드들
         // ========================================
         selectOrchestrationMethod(value) {
-            this.selectedOrchestrationMethod = value;
+            this.selectedOrchestrationMethod = value.orchestration;
         },
 
 
@@ -1270,6 +1317,40 @@ export default {
         handleBrowserUseCompleted(data) {
             // WorkItem 컴포넌트로 이벤트 전달
             this.$emit('browser-use-completed', data);
+        },
+
+
+        async updateWorkItem(newVal) {
+            const oldVal = {
+                agent: this.workItem.worklist.agent,
+                agentMode: this.workItem.worklist.agentMode,
+                orchestration: this.workItem.worklist.orchestration
+            }
+            let changed = false;
+            
+            // oldVal과 newVal 비교
+            if (newVal) {
+                if (oldVal.agent !== newVal.agent ||
+                    oldVal.agentMode !== newVal.agentMode ||
+                    oldVal.orchestration !== newVal.orchestration) {
+                    changed = true;
+                }
+            }
+
+            if (!changed) return;
+
+            if (newVal && newVal.agentMode) {
+                if (newVal.agentMode === 'none') return;
+                if (newVal.agentMode === 'default') {
+                    this.$emit('before-generate-example', null);
+                    return;
+                } else {
+                    newVal.agentMode = newVal.agentMode.toUpperCase();
+                }
+            }
+            this.selectedAgent = newVal;
+            this.selectOrchestrationMethod(newVal);
+            await this.startTask(newVal);
         },
     },
     async created() {
@@ -1293,6 +1374,11 @@ export default {
         if (this.workItem && this.workItem.worklist) {
             this.selectedOrchestrationMethod = this.workItem.worklist.orchestration || 'crewai-action';
         }
+
+        if (this.selectedAgentType) {
+            this.selectedAgent = this.selectedAgentType;
+        }
+
     },
     beforeUnmount() {
         this.cleanup()
@@ -1571,4 +1657,31 @@ export default {
     border: none;
     background: white;
 }
+
+.empty-state {
+    text-align: center;
+    padding: 0px;
+    background: white;
+    margin-top: 12px;
+    overflow: auto;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.empty-state h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d2129;
+    margin: 0 0 8px 0;
+}
+
+.empty-state p {
+    font-size: 14px;
+    color: #606770;
+    margin: 0;
+}
+
 </style>

@@ -1,6 +1,6 @@
 <template>
     <v-card elevation="10">
-        <AppBaseCard :customMenuName="agentInfo.username">
+        <AppBaseCard>
             <template v-slot:leftpart="{ closeDrawer }">
                 <AgentChatInfo 
                     :agentInfo="agentInfo" 
@@ -8,7 +8,6 @@
                     :dmnList="dmnList"
                     :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
-                    @uploadSkills="uploadSkills"
                     @openSkillFile="openSkillFile"
                 />
             </template>
@@ -28,7 +27,6 @@
                     :dmnList="dmnList"
                     :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
-                    @uploadSkills="uploadSkills"
                     @openSkillFile="openSkillFile"
                 />
             </template>
@@ -53,6 +51,8 @@ import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
+import { useDefaultSetting } from '@/stores/defaultSetting';
+
 export default {
     mixins: [AgentCrudMixin],
     components: {
@@ -66,20 +66,22 @@ export default {
         AgentSkillEdit,
     },
     data: () => ({
+        defaultSetting: useDefaultSetting(),
         agentInfo: {
             id: '',
             profile: '/images/chat-icon.png',
             username: 'Agent',
             goal: '',
-            agent_type: 'agent',
+            agent_type: '',
             skills: '',
             tools: '',
             persona: '',
             endpoint: '',
             description: '',
             model: '',
+            is_default: false,
         },
-        activeTab: '',
+        activeTab: 'actions',
 
         // knowledge management
         knowledges: [],
@@ -134,7 +136,10 @@ export default {
                 
                 // agent ID가 변경된 경우에만 agentInfo와 init 호출
                 if (newRoute.params.id !== oldRoute.params.id) {
-                    this.agentInfo = await this.backend.getUserById(newRoute.params.id);
+                    this.agentInfo = this.defaultSetting.getAgentById(newRoute.params.id);
+                    if (!this.agentInfo) {
+                        this.agentInfo = await this.backend.getUserById(newRoute.params.id);
+                    }
                     await this.init();
                 }
             },
@@ -156,6 +161,14 @@ export default {
                     await handler.activate();
                 }
             }
+        },
+        'agentInfo.agent_type': {
+            handler(newVal, oldVal) {
+                // agent_type이 변경되면 탭 핸들러 재구성
+                if (newVal !== oldVal) {
+                    this.setupTabHandlers();
+                }
+            }
         }
     },
     created() {
@@ -165,7 +178,13 @@ export default {
         this.setupTabHandlers();
     },
     async mounted() {
-        this.agentInfo = await this.backend.getUserById(this.id);
+        this.agentInfo = this.defaultSetting.getAgentById(this.id);
+        if (!this.agentInfo) {
+            this.agentInfo = await this.backend.getUserById(this.id);
+        }
+        // agentInfo 로드 후 탭 핸들러 재구성
+        this.setupTabHandlers();
+        this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
         await this.init();
 
         this.EventBus.on('dmn-saved', async (data) => {
@@ -181,11 +200,16 @@ export default {
     methods: {
         /**
          * 각 탭의 동작을 정의
+         * tabList를 기반으로 노출되는 탭만 핸들러에 포함
          */
         setupTabHandlers() {
-            this.tabHandlers = {
+            const agentType = this.agentInfo?.agent_type || 'agent';
+            const handlers = {};
+
+            // tabList에 따라 조건부로 탭 핸들러 구성
+            if (agentType === 'agent') {
                 // 학습 모드
-                'learning': {
+                handlers['learning'] = {
                     component: 'AgentChatLearning',
                     props: (vm) => ({}),
                     events: (vm) => ({
@@ -194,10 +218,10 @@ export default {
                     activate: async () => {
                         this.selectedDmnId = null;
                     }
-                },
+                };
 
                 // 질문 모드
-                'question': {
+                handlers['question'] = {
                     component: 'AgentChatQuestion',
                     props: (vm) => ({}),
                     events: (vm) => ({
@@ -206,22 +230,10 @@ export default {
                     activate: async () => {
                         this.selectedDmnId = null;
                     }
-                },
-
-                // 액션 모드
-                'actions': {
-                    component: 'AgentChatActions',
-                    props: (vm) => ({
-                        agentInfo: vm.agentInfo
-                    }),
-                    events: () => ({}),
-                    activate: async () => {
-                        this.selectedDmnId = null;
-                    }
-                },
+                };
 
                 // 지식 관리
-                'knowledge': {
+                handlers['knowledge'] = {
                     component: 'AgentKnowledgeManagement',
                     props: (vm) => ({
                         knowledges: vm.knowledges,
@@ -234,10 +246,10 @@ export default {
                         this.selectedDmnId = null;
                         await this.getKnowledge();
                     }
-                },
+                };
 
-                // 비즈니스 규칙 학습
-                'dmn-modeling': {
+                // 비즈니스 규칙 학습 (agent일 때만)
+                handlers['dmn-modeling'] = {
                     component: 'BusinessRuleLearning',
                     props: (vm) => ({
                         ownerInfo: vm.agentInfo,
@@ -245,24 +257,22 @@ export default {
                     }),
                     events: () => ({}),
                     activate: () => {}
-                },
+                };
+            }
 
-                // 스킬 편집
-                'skill-edit': {
-                    component: 'AgentSkillEdit',
-                    props: (vm) => ({
-                        skillFile: vm.skillFile,
-                        isLoading: vm.isSkillLoading
-                    }),
-                    events: (vm) => ({
-                        saveSkillFile: vm.saveSkillFile,
-                        deleteSkillFile: vm.deleteSkillFile,
-                    }),
-                    activate: () => {
-                        this.isSkillLoading = false;
-                    }
-                },
+            // 액션 모드 (모든 agent_type에 공통)
+            handlers['actions'] = {
+                component: 'AgentChatActions',
+                props: (vm) => ({
+                    agentInfo: vm.agentInfo
+                }),
+                events: () => ({}),
+                activate: async () => {
+                    this.selectedDmnId = null;
+                }
             };
+
+            this.tabHandlers = handlers;
         },
 
         async init() {
@@ -284,7 +294,7 @@ export default {
                         selectedTab = hashTab;
                     } else {
                         // 해시가 없거나 유효하지 않으면 기본 탭
-                        selectedTab = this.agentInfo.agent_type == 'a2a' ? 'actions' : 'learning';
+                        selectedTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
                         // 기본 탭으로 설정할 때는 해시도 업데이트 (router.push 사용)
                         this.$router.push({ hash: '#' + selectedTab });
                     }
@@ -358,44 +368,6 @@ export default {
         },
 
         // skills
-        async saveSkills() {
-            const options = {
-                agentInfo: this.agentInfo,
-            }
-            await this.backend.saveSkills(options);
-            this.EventBus.emit('skills-updated');
-        },
-
-        async uploadSkills(options) {
-            var me = this;
-            me.isSkillLoading = true;
-            options.agentInfo = me.agentInfo;
-            me.$try({
-                context: this,
-                action: async () => {
-                    const data = await this.backend.uploadSkills(options);
-                    if (data && data.skills_added && data.skills_added.length > 0) {
-                        const skills = me.agentInfo.skills.split(',');
-                        data.skills_added.forEach(skill => {
-                            if (!skills.includes(skill.id)) {
-                                skills.push(skill.id);
-                            }
-                        });
-                        me.agentInfo.skills = skills.join(',');
-                    }
-
-                    me.EventBus.emit('skills-updated');
-                    me.isSkillLoading = false;
-                },
-                onFail: () => {
-                    me.EventBus.emit('skills-updated');
-                    me.isSkillLoading = false;
-                },
-                successMsg: '스킬 업로드 완료',
-                errorMsg: '스킬 업로드 실패',
-            });
-        },
-
         async checkSkills(skillName) {
             const skill = await this.backend.checkSkills(skillName);
             if (skill && skill.exists) {
@@ -403,45 +375,6 @@ export default {
             } else {
                 return false;
             }
-        },
-
-        async openSkillFile(skill) {
-            if (!skill || !skill.includes('::')) return;
-            const [skillId, fileName] = skill.split('::');
-            let skillFile = await this.backend.getSkillFile(skillId, fileName);
-            if (!skillFile) {
-                skillFile = {
-                    skill_name: skillId,
-                    file_path: fileName,
-                    content: ''
-                }
-            }
-            this.skillFile = skillFile;
-            this.$router.push({ hash: '#skill-edit' });
-        },
-        async saveSkillFile(skillName, fileName, content) {
-            this.isSkillLoading = true;
-            try {
-                await this.backend.putSkillFile(skillName, fileName, content);
-            } catch (error) {
-                console.error('스킬 저장 실패:', error);
-            } finally {
-                this.isSkillLoading = false;
-            }
-            this.EventBus.emit('skills-updated');
-        },
-        async deleteSkillFile(skillName, fileName) {
-            this.isSkillLoading = true;
-            try {
-                await this.backend.deleteSkillFile(skillName, fileName);
-            } catch (error) {
-                console.error('스킬 삭제 실패:', error);
-            } finally {
-                this.isSkillLoading = false;
-            }
-            this.isSkillLoading = false;
-            this.skillFile = null;
-            this.EventBus.emit('skills-updated');
         },
     }
 }

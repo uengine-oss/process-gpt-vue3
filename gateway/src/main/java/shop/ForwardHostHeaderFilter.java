@@ -28,8 +28,9 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
 
     private static final Logger logger = LoggerFactory.getLogger(ForwardHostHeaderFilter.class);
 
-    private static final String SECRET_KEY = Optional.ofNullable(System.getenv("SECRET_KEY"))
-            .orElse("orfXPeAYQy47qP3x7/M6zCMacfyGTQwNwEikQx6WWfy4xsvITZqm9JJGA0roLB+Qb3Jt1/ZGZsSc7FAhuTeQpg==");
+    private static final String SECRET_KEY = Optional.ofNullable(
+            System.getProperty("SECRET_KEY") != null ? System.getProperty("SECRET_KEY") : System.getenv("SECRET_KEY"))
+            .orElse("super-secret-jwt-token-with-at-least-32-characters-long");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -48,7 +49,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
         String subdomain = extractSubdomain(originalHost);
 
         List<String> protectedPaths = Arrays.asList(
-                "/completion/(?!set-tenant|complete|vision-complete|invite-user).*",
+                "/completion/(?!set-tenant|complete|vision-complete|invite-user|set-initial-info).*",
                 "/autonomous/.*",
                 "/memento/.*",
                 "/mcp/.*");

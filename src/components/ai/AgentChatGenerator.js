@@ -20,7 +20,6 @@ export default class AgentChatGenerator extends AIGenerator {
         try {
             const data = {
                 text: this.message,
-                type: "mem0",
                 chat_room_id: this.chatRoomId,
                 options: this.options
             }

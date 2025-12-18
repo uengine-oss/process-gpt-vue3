@@ -36,6 +36,26 @@
                                 </v-btn>
                             </template>
                         </v-tooltip> -->
+                        <!-- 자동 레이아웃 버튼 -->
+                        <v-tooltip v-if="!isViewMode" :text="$t('PaletteProvider.autoLayout')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="applyAutoLayout" v-bind="props" class="btn-auto-layout"
+                                    icon variant="text"
+                                >
+                                    <v-icon class="mdi mdi-auto-fix" size="24"></v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                        <!-- 방향 변경 버튼 -->
+                        <v-tooltip v-if="!isViewMode" :text="$t('PaletteProvider.changeOrientation')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn @click="changeOrientation" v-bind="props" class="btn-change-orientation"
+                                    icon variant="text"
+                                >
+                                    <v-icon class="mdi mdi-crop-rotate" size="24"></v-icon>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
                         <!-- 프로세스 변수 추가 버튼 -->
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
                             <template v-slot:activator="{ props }">
@@ -60,7 +80,7 @@
                     <div v-show="isBpmnLoading">
                         <v-skeleton-loader
                             type="image"
-                            class="mx-auto work-item-skeleton-loader"
+                            class="mx-auto process-definition-skeleton-loader"
                         ></v-skeleton-loader>
                     </div>
                     <div v-if="isXmlMode" style="height: calc(100% - 50px); margin-top: 50px; overflow: auto; padding: 10px">
@@ -353,6 +373,7 @@ export default {
         ],
         taskStatus: null,
         isBpmnLoading: false,
+        bpmnLoadingTimer: null,
 
         // preview
         isPreviewMode: false,
@@ -361,6 +382,7 @@ export default {
         currentActivities: [],
         validationList: {},
         // definitionPath: null
+        options: {},
 
         bpmnKey: 0,
     }),
@@ -543,6 +565,44 @@ export default {
         },
         onBpmnLoadEnd() {
             this.isBpmnLoading = false;
+        },
+        applyAutoLayout() {
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            
+            if (modeler) {
+                try {
+                    const paletteProvider = modeler.get('paletteProvider');
+                    if (paletteProvider && paletteProvider.applyAutoLayout) {
+                        paletteProvider.applyAutoLayout();
+                    }
+                } catch (error) {
+                    console.error('자동 레이아웃 적용 실패:', error);
+                }
+            }
+        },
+        changeOrientation() {
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            
+            if (modeler) {
+                try {
+                    const paletteProvider = modeler.get('paletteProvider');
+                    const elementRegistry = modeler.get('elementRegistry');
+                    const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+                    
+                    participant.forEach(element => {
+                        const horizontal = element.di.isHorizontal;
+                        if (horizontal) {
+                            paletteProvider.changeParticipantHorizontalToVertical(null, element);
+                        } else {
+                            paletteProvider.changeParticipantVerticalToHorizontal(null, element);
+                        }
+                    });
+                } catch (error) {
+                    console.error('방향 변경 실패:', error);
+                }
+            }
         },
         updateCurrentStep(){
             this.closePanel();

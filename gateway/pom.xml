@@ -49,6 +49,12 @@
             <artifactId>jaxb-core</artifactId>
             <version>2.3.0.1</version>
         </dependency>
+        <!-- Dotenv for loading .env file in local development -->
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>2.2.4</version>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>

@@ -1065,6 +1065,11 @@ export default {
                     task.instruction = '' //`${activity.name} instruction`;
                     task.process = activity.process;
                     task.attachedEvents = activity.attachedEvents || null;
+                    task.agent = '';
+                    task.agentMode = '';
+                    task.orchestration = '';
+                    task.attachments = [];
+                    task.inputData = [];
                     task.tool = 'formHandler:defaultform';
 
                     task.role = normalizeRole(resolveRole(activity.id, lanesForRole, parentLanes));
@@ -1079,6 +1084,7 @@ export default {
                         task.description = propsJson.description || task.description;
                         task.instruction = propsJson.instruction || task.instruction;
                         task.checkpoints = propsJson.checkpoints || task.checkpoints;
+                        task.agent = propsJson.agent || task.agent;
                         task.agentMode = propsJson.agentMode || task.agentMode;
                         task.orchestration = propsJson.orchestration || task.orchestration;
                         task.attachments = propsJson.attachments || task.attachments;

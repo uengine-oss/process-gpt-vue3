@@ -8,6 +8,10 @@
                         <v-card-title class="text-h6 cursor-pointer d-flex align-center justify-space-between pa-0 mb-2" @click="toggleExpanded">
                             <div class="d-flex align-center">
                                 {{ $t('ActivityInputData.previousInput') }}
+                                <DetailComponent
+                                    :title="$t('ActivityInputData.previousInputDescription')"
+                                    :details="previousInputDetails"
+                                />
                             </div>
                             <!-- <v-icon :icon="expanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"></v-icon> -->
                         </v-card-title>
@@ -15,10 +19,6 @@
                             <v-icon class="mr-2" size="small">mdi-form-select</v-icon>
                             {{ getActivityName(field.formId) }}
                         </div>
-                        <DetailComponent
-                            :title="$t('ActivityInputData.previousInputDescription')"
-                            :details="previousInputDetails"
-                        />
                     </div>
                     <v-spacer></v-spacer>
                     <div

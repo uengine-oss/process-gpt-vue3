@@ -19,12 +19,21 @@
                     :organizationChart="organizationChart"
                 />
             </v-card>
+            
+            <!-- Custom Properties -->
+            <KeyValueField
+                v-model="copyUengineProperties.customProperties"
+                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                :readonly="isViewMode"
+                class="mt-4"
+            ></KeyValueField>
         </div>
     </div>
 </template>
 <script>
 import GenerateScriptPanel from './GenerateScriptPanel.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import KeyValueField from '@/components/designer/KeyValueField.vue';
 
 export default {
     name: 'gpt-script-task-panel',
@@ -37,7 +46,8 @@ export default {
         element: Object
     },
     components: {
-        GenerateScriptPanel
+        GenerateScriptPanel,
+        KeyValueField
     },
     data() {
         return {
@@ -47,6 +57,9 @@ export default {
             activity: null,
             organizationChart: null,
         };
+    },
+    created() {
+        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
     },
     watch: {
         activity: {

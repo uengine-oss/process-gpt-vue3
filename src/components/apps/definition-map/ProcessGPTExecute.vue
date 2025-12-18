@@ -43,6 +43,7 @@
                                 :item-value="'id'"
                                 :hide-details="true"
                                 :use-agent="true"
+                                :use-multiple="true"
                             ></user-select-field>
                         </div>
                     </div>
@@ -106,7 +107,15 @@ import InstanceSource from '@/components/apps/todolist/InstanceSource.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
+import { useDefaultSetting } from '@/stores/defaultSetting';
+
 export default {
+    setup() {
+        const defaultSetting = useDefaultSetting();
+        return {
+            defaultSetting
+        }
+    },
     components: {
         AppBaseCard,
         WorkItem,
@@ -283,7 +292,6 @@ export default {
                     const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
                     return regex.test(uuid);
                 }
-                let activities = me.processDefinition.activities.filter((activity) => activity.agentMode && activity.agentMode != 'none');
                 const roles = me.processDefinition.roles;
                 let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
@@ -331,10 +339,24 @@ export default {
             if (!activity) return;
             var me = this;
             const query = `[Description]\n${activity.description}\n\n[Instruction]\n${activity.instruction}`;
+            const agentMode = activity.agentMode && activity.agentMode !== 'none' ? activity.agentMode.toUpperCase() : null;
+            const agentOrch = activity.orchestration && activity.orchestration !== 'none' ? activity.orchestration : null;
+            let userId = localStorage.getItem('uid');
+            let username = localStorage.getItem('userName');
+            if (agentMode && activity.agent && activity.agent !== 'none') {
+                let agent = this.defaultSetting.getAgentById(activity.agent);
+                if (!agent) {
+                    agent = await this.backend.getUserById(activity.agent);
+                }
+                if (agent) {
+                    userId = agent.id;
+                    username = agent.username;
+                }
+            }
             const newWorkItem = {
                 id: me.uuid(),
-                user_id: localStorage.getItem('uid'),
-                username: localStorage.getItem('userName'),
+                user_id: userId,
+                username: username,
                 proc_inst_id: me.instId,
                 root_proc_inst_id: me.instId,
                 proc_def_id: me.processDefinition.processDefinitionId,
@@ -347,6 +369,8 @@ export default {
                 duration: activity.duration || 0,
                 start_date: new Date().toISOString(),
                 due_date: new Date(new Date().getTime() + activity.duration * 60 * 1000).toISOString(),
+                agent_mode: agentMode || null,
+                agent_orch: agentOrch || null
             }
             await backend.putWorkItem(newWorkItem.id, newWorkItem);
             return newWorkItem;

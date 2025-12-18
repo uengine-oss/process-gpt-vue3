@@ -17,7 +17,7 @@
         "reworkRequested": "Rework has been requested."
     },
     "errorMsg": {
-        "isBackendConnected" : "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
+        "isBackendConnected": "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
         "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
@@ -35,19 +35,21 @@
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
     "headerMenu": {
-        "sidebar": "Sidebar",
+        "sidebar" : "Collapse/Expand Sidebar",
         "dashboard": "Dashboard",
-        "todoList" : "My Task List",
-        "schedule" : "Scheduler",
+        "todoList": "My Task List",
+        "schedule": "Scheduler",
         "calendar": "Calendar",
         "layoutSetting": "Layout Setting",
-        "admin" : "Admin Page",
-        "setting" : "Setting",
+        "admin": "Admin Page",
+        "setting": "Setting",
         "search": "Search",
         "searchResult": "Search Result",
         "searchKeyword": "Enter the keyword you want to search for and press enter.",
+        "searching": "Searching",
         "noSearchResult": "No search results found.",
-        "pricing" : "Pricing Information"
+        "agent": "Agent",
+        "pricing": "Pricing Information"
     },
     "DashboardTodoList": {
         "todo": "My Task List",
@@ -194,7 +196,7 @@
         "title": "Complete Instance"
     },
     "definitionManagement": {
-        "title": "Definition Management",
+        "title": "Process",
         "upload": "Upload definition list",
         "release": "Definition Export",
         "defaultForm": "Default Form Management",
@@ -204,10 +206,12 @@
         "title": "System Definition"
     },
     "organizationChartDefinition": {
-        "title": "Org Chart Setup",
+        "title": "Add and Manage Organization Chart",
         "cardTitle": "Org Chart Management",
         "organizationChartExplanation": "Manage the organization chart interactively.\nYou can register, modify, and delete teams (departments), roles, and employees.\nFor example, you can issue commands like: 'Register the development and management teams, and add Mr. Hong Gil-dong as a new employee to the management team. His role is a developer. The team leader of the management team is Team Leader Amuge.'",
         "addTeam": "Add Team",
+        "deleteTeam": "Delete Team",
+        "editTeam": "Edit Team",
         "teamId": "Team ID",
         "teamName": "Team Name",
         "team": "Team",
@@ -225,6 +229,7 @@
         "addNewUser": "Add New User(Team Member)",
         "addNewAgent": "Add New Agent",
         "addNewA2A": "Add A2A Agent",
+        "addNewPGAgent": "Add ProcessGPT Agent",
         "userName": "Name",
         "userEmail": "Email",
         "idRequired": "Please enter your ID.",
@@ -234,10 +239,15 @@
         "emailAlreadyExists": "Email already exists.",
         "addUserSuccess": "User added successfully.",
         "addUserFailed": "Failed to add user.",
+        "addNewTeam": "Add New Team",
+        "addTeamSuccess": "Team added successfully.",
+        "addTeamFailed": "Failed to add team.",
         "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
         "agent": "Agent",
         "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
-        "oauth": "OAuth Settings"
+        "oauth": "OAuth Settings",
+        "aliasRequired": "Please enter your alias.",
+        "aliasAlreadyExists": "Alias already exists."
     },
     "agentField": {
         "agentId": "Agent ID",
@@ -250,7 +260,8 @@
         "agentTools": "Tools",
         "agentSkills": "Skills",
         "aiProvider": "AI Provider",
-        "aiModel": "AI Model"
+        "aiModel": "AI Model",
+        "alias": "Alias"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -289,8 +300,8 @@
         "editingUser": "is editing.",
         "checkIn": "Check In",
         "checkOut": "Check Out",
-        "saveCheckIn": "Save and Check In",
-        "cancelCheckIn": "Cancel and Check In",
+        "saveCheckIn": "Save",
+        "cancelCheckIn": "Do not save",
         "confirm": "Confirm",
         "close": "Close",
         "cancel": "Cancel",
@@ -300,7 +311,7 @@
         "closeConsultingInPreview": "Are you sure you want to end the consultation without saving?\nYou can save by clicking the lock button on the right.\n\nDo you want to end the consultation?",
         "checkInDBError": "DB connection is lost. Download the modified data and save it, then contact the administrator.",
         "checkOutDBError": "DB connection is lost. Contact the administrator.",
-        "checkInMessage": "Do you want to save the modified content or lock it?",
+        "checkInMessage": "Are you sure you want to exit editing? \nIf you do not save, the modified content will not be applied.",
         "checkOutMessage": "Do you want to modify the process definition map?",
         "forcedCheckOutMessage": "Currently, {name} is editing. If you proceed with editing, the content modified by {name} will be damaged and not saved. \nDo you want to proceed with editing?",
         "settingPermission": "Setting Permission",
@@ -396,7 +407,7 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
-        "definitionMapInputMessage": "How can I help you?",
+        "definitionMapInputMessage": "e.g. Create vacation request process / Run vacation request process / Check approval status of running vacation request",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
@@ -456,8 +467,8 @@
         "edit": "Edit",
         "cancel": "Cancel",
         "close": "Close",
-        "dataSource": "dataSource",
-        "dataSourceConnection": "dataSource Connection",
+        "dataSource": "DataSource",
+        "dataSourceConnection": "DataSource Connection",
         "experimentalFeature": "Experimental Feature",
         "experimentalFeatureExplanationOn": "Automatically connect external DataSource when scanning forms",
         "experimentalFeatureExplanationOff": "Do not use DataSource connection when scanning forms",
@@ -473,6 +484,11 @@
         "value": "Value",
         "description": "Description",
         "delete": "Delete",
+        "deleteUserSuccess": "User '{name}' has been deleted successfully.",
+        "deleteUserFailed": "Failed to delete user '{name}'.",
+        "confirmDeleteTitle": "Confirm User Deletion",
+        "confirmDeleteMessage": "Are you sure you want to delete '{name}'?",
+        "confirmDeleteInstruction": "Please type the user name to confirm:",
         "addHeader": "Add Header",
         "parameters": "Parameters",
         "addParameter": "Add Parameter",
@@ -495,10 +511,12 @@
         "admin": "Admin",
         "add": "Add",
         "addMCPServer": "Add New MCP Server",
-        "addEnvironment": "Add Environment",
-        "editEnvironment": "Edit Environment",
-        "addSecret": "Add Secret",
-        "editSecret": "Edit Secret",
+        "addEnvironment": "Add",
+        "editEnvironment": "Edit",
+        "addSecret": "Add",
+        "editSecret": "Edit",
+        "addBrowserUseSecret": "Add",
+        "editBrowserUseSecret": "Edit",
         "mcpServers": "MCP Servers",
         "mcpEnvironments": "MCP Environments",
         "environments": "Environments",
@@ -506,7 +524,8 @@
         "indicatesRequiredField": "*Environment variable configuration is required.",
         "billing": "Billing",
         "confirmDeleteConnectionTitle": "Delete Connection Info",
-        "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?"
+        "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?",
+        "skills": "Skills"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -640,7 +659,15 @@
         "selectForm": "Select Form to Reference",
         "noFormSelected": "Sel  ect a form to reference",
         "instruction": "Instruction",
-        "scriptVariable": "Variables used in the script must be defined in the process variables."
+        "scriptVariable": "Variables used in the script must be defined in the process variables.",
+        "customProperties": "Custom Properties"
+    },
+    "KeyValueField": {
+        "add": "Add",
+        "key": "Key",
+        "value": "Value",
+        "noItems": "No items registered.",
+        "duplicateKey": "Duplicate Key."
     },
     "PDFPreviewer": {
         "saveDocument": "Save PDF",
@@ -691,9 +718,9 @@
         "duplicateWarning": "This ID is already in use. To overwrite the existing process, check the box and save.",
         "regenerateNameTooltip": "Get New Name Suggestion",
         "regenerateIdTooltip": "Get New ID Suggestion",
-        "helpIntro": "You can configure version management and optimization options when saving the process.\n\nMain Features:",
-        "helpVersionToggle": "• Version Toggle: If checked, saves by incrementing the version by one step; if unchecked, saves to the current version\n  e.g., 0.1 → 1.0 (checked), 0.1 → 0.2 (unchecked)",
-        "helpOptimize": "• Definition Optimization: When checked, AI automatically analyzes and configures the input data required for each task (activity) in the process\n  - Automatically connects data flow between tasks\n  - Intelligently recommends required information for each task\n  - Automates data linkage without manual configuration",
+        "helpIntro": "In this dialog, you can save the process while configuring the version, description, and optimization options.\n\nEach save is recorded as a separate version; existing versions remain unchanged.",
+        "helpVersionToggle": "• Version Tag (minor / major):\n  - minor: Increases the decimal part of the current version by 1. e.g., 1.3 → 1.4\n    * Typically used as an \"intermediate\" or working save before promoting to a major version, while you are still iterating on the process.\n  - major: Increases the integer part by 1 and resets the decimal to 0. e.g., 1.3 → 2.0\n    * Used for versions that are actually applied/released to users and treated as the main production version.\n  The next version number is automatically calculated from the selected tag and used when saving.",
+        "helpOptimize": "• Process Definition Optimization: When enabled, AI analyzes the process definition at save time and automatically refines the input data (reference information) and data flow for each activity.\n  - Checks and connects data flow between activities\n  - Recommends missing or unnecessary fields to improve definition quality\n  - Automates repetitive manual tuning so you can model faster.",
         "generatingDiff": "Analyzing process changes..."
     },
     "FormDefinitionPanel": {
@@ -881,11 +908,11 @@
         "operationReferenceTitle": "An operation reference is a reference that designates the operation to be performed to process a specific message.",
         "operationReferenceSubTitle": "It defines the actions or business logic that should be executed when the message arrives. In BPMN, an operation reference helps clarify the content of the message and the task it triggers. \nFor example, a specific operation reference may perform a database update or call an external service upon receiving the message."
     },
-    "DetailComponent" : {
+    "DetailComponent": {
         "details": "Details",
         "allDetails": "View full description"
     },
-    "SendTaskPanel" : {
+    "SendTaskPanel": {
         "generation": "Generation",
         "return": "Variable to store the return value",
         "methodTypeDescriptionTitle": "Set the method (GET, POST, PUT, PATCH) to use when sending an API request and the server's endpoint URL to process the request.",
@@ -894,7 +921,7 @@
         "message": "Send Email",
         "send": "Send Rest API"
     },
-    "ScriptTaskPanel" : {
+    "ScriptTaskPanel": {
         "return": "Variable to store the return value",
         "scriptDescriptionTitle": "Script Task enables the execution of micro-level configurations or actions that are difficult to handle solely through process configuration by directly setting activities using JavaScript or Java.",
         "returnTitle": "The dropdown menu displays a list of variable names registered in the process variables. \nUsers can select the desired variable from this list."
@@ -922,23 +949,23 @@
         "gatewayDescriptionSubTitle3": "Event-based gateway: It can only proceed to the next task when a specific event occurs.",
         "gatewayDescriptionSubTitle4": "Complex Gateway (Not Implemented): Users can add arbitrary conditions to select the next task."
     },
-    "SystemList" : {
-        "addDialogTitle" : "Add System",
+    "SystemList": {
+        "addDialogTitle": "Add System",
         "editDialogTitle": "Edit System",
-        "name" : "Name",
-        "description" : "Description",
-        "apiUrl" : "API URL",
-        "add" : "Add",
-        "edit" : "Edit"
+        "name": "Name",
+        "description": "Description",
+        "apiUrl": "API URL",
+        "add": "Add",
+        "edit": "Edit"
     },
-    "System" : {
-        "description" : "Description",
-        "edit" : "Edit",
+    "System": {
+        "description": "Description",
+        "edit": "Edit",
         "delete": "Delete",
-        "confirmDeleteTitle" : "Delete System Definition",
-        "confirmDeleteText" : "Are you sure you want to delete?"
+        "confirmDeleteTitle": "Delete System Definition",
+        "confirmDeleteText": "Are you sure you want to delete?"
     },
-    "PaletteProvider" : {
+    "PaletteProvider": {
         "undoCmdZ": "Undo (Cmd + Z)",
         "undoCtrlZ": "Undo (Ctrl + Z)",
         "RedoCmdShiftZ": "Redo (Cmd + Shift + Z)",
@@ -1091,7 +1118,8 @@
         "runningResearchMethod": "Running Research Method",
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
         "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
-        "runAgain": "Run Again"
+        "runAgain": "Run Again",
+        "select": "Select"
     },
     "AgentSelectInfo": {
         "orcation": "Agent Research Method",
@@ -1445,7 +1473,8 @@
         "category2": "Category 2",
         "tags": "Tags",
         "register": "Register",
-        "requiredField": "This field is required"
+        "requiredField": "This field is required",
+        "duplicateIdError": "A process with the same ID already exists in the marketplace."
     },
     "ProcessDefinitionMarketPlace": {
         "searchPlaceholder": "Search by process name, author, or tag",
@@ -1455,9 +1484,16 @@
         "relatedTemplates": "Related Templates",
         "addedButton": "Added",
         "addButton": "Add",
+        "deleteButton": "Delete",
+        "previewButton": "Preview",
         "otherCategory": "Other",
         "countUnit": "items",
-        "allTemplates": "All Templates"
+        "allTemplates": "All Templates",
+        "deleteDialogTitle": "Confirm Process Deletion",
+        "deleteDialogMessage": "Are you sure you want to delete the \"{name}\" process from the marketplace?",
+        "deleteDialogWarning": "This action cannot be undone.",
+        "deleteDialogConfirmMessage": "Please type the process name exactly to continue:",
+        "previewDialogTitle": "Process Preview"
     },
     "ContentEditorField": {
         "contentEditor": "Content Editor",
@@ -1565,11 +1601,14 @@
         "save": "Save"
     },
     "OrganizationAddDialog": {
-        "add": "Add"
+        "add": "Add",
+        "addMemberToTeam": "Add Member to Team",
+        "selectTeam": "Select Team",
+        "selectTeamFirst": "Please select a team first"
     },
     "Header": {
         "tutorial": "Tutorial",
-        "works": "How Process GPT Works?",
+        "works": "Features",
         "ai3Steps": "3 Stages of AI Transformation",
         "movieGallery": "Video Gallery",
         "download": "Download",
@@ -1589,16 +1628,29 @@
         "card4Description": "The results of execution are structured as knowledge based on Ontology, and applied to the next agent execution, making the process more refined."
     },
     "HeroSection": {
-        "title1": "Define your business processes, and Process GPT will execute them.",
-        "title2": "",
-        "description1": "Elite agents tailored to strategic goals create work drafts and automate them. If agents make mistakes, teach them. Processes and knowledge will improve automatically.",
-        "betaTestButton": "Try Beta Test",
-        "galleryButton": "View Gallery",
-        "educationButton": "View Education Course",
+        "title1": "Define your business processes.",
+        "title2": "Process GPT handles the execution.",
+        "description1": "AI agents organize and execute workflows aligned with your strategic goals. Humans intervene only for necessary decisions, and the process continues automatically.",
+        "betaTestButton": "Start Beta Test",
+        "educationButton": "View Training Courses",
         "technicalReportLink": "View Technical Report"
     },
+    "NecessitySection": {
+        "title": "Until now, AI utilization has mostly been limited to individual productivity tools.",
+        "feature1": "Draft Documents",
+        "feature2": "Translate",
+        "feature3": "Summarize",
+        "feature4": "Search Automation",
+        "problemTitle": "These functions are useful for individuals, but they have little impact on the organization's overall End-to-End Process.",
+        "solutionTitle": "Now, Agentic Process AI that understands and executes the entire workflow is",
+        "solutionDescription": "necessary for the automation of an organization's End-to-End processes.",
+        "benefit1": "Automated execution from document creation to system integration",
+        "benefit2": "Implementation of a hybrid organization with humans and AI agents",
+        "benefit3": "Automation of repetitive tasks and knowledge-based judgments",
+        "benefit4": "Focus only on strategic decision-making and contextual judgment"
+    },
     "AI3StepsSection": {
-        "title": "MS Work Trend Index 2025: 3 Stages of AI Transformation",
+        "title": "ProcessGPT is the solution that implements this Agentic Process AI",
         "category": "Category",
         "step1": "Stage 1: Assistant Utilization",
         "step2": "Stage 2: Digital Colleague Agent",
@@ -1624,8 +1676,8 @@
         "technology1": "Generative AI + <b>MCP</b><br>(e.g. Copilot, ChatGPT)",
         "technology2": "Multi-agent, <b>Agentic BPM, A2A</b> communication<br>(e.g. AgentSpace, Orchestrate)",
         "technology3": "Autonomous agent network (<b>Agentic Mesh</b>) + governance<br>(e.g. Palantir AIP)",
-        "description1": "In the 'Agent Boss' system, AI executes repetitive tasks, and humans focus on strategy and supervision, forming a collaborative agent system.",
-        "description2": "This matches the 3-stage transition model of MS Work Trend Index 2025, greatly improving work efficiency through role-based collaboration and execution automation within the organization."
+        "description1": "It corresponds to the final stage of the 3-stage AI transformation presented by Microsoft, where AI executes repetitive tasks in the 'Agent Boss' system and humans focus on strategy and supervision.",
+        "description2": "This implements role-based collaboration and execution automation within the organization, greatly improving work efficiency."
     },
     "DemoSection": {
         "title": "AI-based Business Process Innovation",
@@ -1634,31 +1686,26 @@
         "diagramImg": "diagram-en.png"
     },
     "HowSection": {
-        "title": "How Process GPT Works?",
-        "subtitle": "Various business tasks, now Process-GPT executes them",
-        "subtitle1": "1. Agent Declaration",
-        "subtitle2": "2. Process Creation",
-        "subtitle3": "3. Process Execution",
-        "subtitle4": "4. Improvement",
-        "subtitle5": "5. A2A Call & Service Exposure",
-        "description1-1": "Register and manage general agents and A2A agents.",
-        "description1-2": "Assign personas and roles to each agent.",
-        "description1-3": "Manage documents and data based on ontology to use for learning and execution.",
-        "description1-4": "Configure necessary tools and permissions to automate tasks and system integrations.",
-        "description2-1": "When you enter your goal, tasks, forms, and checkpoints are automatically defined.",
-        "description2-2": "The roles of humans and agents are declared in the work chart.",
-        "description2-3": "Interpret Open API specifications and process data to propose MCP·A2A integration methods.",
-        "description2-4": "Include input forms and approval procedures to configure, and you can edit in natural language or BPMN.",
-        "description3-1": "Create a Crew with registered agents to execute autonomously.",
-        "description3-2": "ERP, email, collaboration tools are processed automatically through MCP, and the results of task execution are reflected in the system or output as necessary documents (e.g., documents, reports).",
-        "description3-3": "Processes and agents are exposed as A2A services to allow external calls.",
-        "description3-4": "Provide an execution-centered environment that can use internal search·office tools.",
-        "description3-5": "Mobile supports voice·image input, desktop supports text input to ensure task continuity anywhere.",
-        "description4-1": "Accumulate execution data as a feedback loop.",
-        "description4-2": "Agents improve performance through repeated execution.",
-        "description4-3": "Improved knowledge is reflected in the ontology and used for process and task design.",
-        "description4-4": "People can add new knowledge·rules to retrain agents.",
-        "description4-5": "Organizations gradually improve their operational environment based on data."
+        "title": "Process GPT's Core Features",
+        "subtitle1": "1. Human-Agent Collaborative Task Execution",
+        "subtitle2": "2. System-to-System (A2A) Automation",
+        "subtitle3": "3. Automated Process Creation",
+        "subtitle4": "4. Automated Knowledge Accumulation and Reuse",
+        "subtitle5": "5. Multimodal Interface",
+        "description1-1": "Agents execute operational tasks, while humans handle approvals and decisions.",
+        "description1-2": "Visualizes workflows based on BPMN and automates team-level collaboration.",
+        "description2-1": "Automatically connects major systems like ERP, CRM, and Groupware.",
+        "description2-2": "Automates repetitive tasks such as data querying, input, and document attachment.",
+        "description2-3": "Integrates with external APIs and MCP tools to control internal and external system screens.",
+        "description3-1": "BPMN processes are automatically modeled when tasks are described in natural language.",
+        "description3-2": "Automatically inserts human approval and review steps.",
+        "description3-3": "Automatically configures workflows by department and role.",
+        "description4-1": "AI continuously learns while performing tasks.",
+        "description4-2": "Automatically enhances rules, metadata, and ontologies for use in generating work manuals and rulebooks.",
+        "description4-3": "Continuously improves processes through human feedback.",
+        "description5-1": "Supports both web-based MCP (browser/desktop) and mobile app environments to accommodate diverse user work settings.",
+        "description5-2": "Provides precision process design UI for office workers, and voice/image-based mobile interface for field and sales personnel.",
+        "description5-3": "By providing multi-interface options based on work environment, it ensures consistent user experience and work continuity regardless of location or device."
     },
     "ConsultingSection": {
         "title": "Process Consulting AI and Management",
@@ -1711,18 +1758,6 @@
         "processExample1Title": "Order Processing Process with ERP System Integration",
         "processExample2Title": "Sales Proposal Writing Process Using Browser Use Function",
         "processExample3Title": "VIP Customized Newsletter Automation Process",
-        "coreDistinctionTitle": "Core Differentiators of Process GPT",
-        "coreDistinctionDescription": "Unlike existing AI agent systems, Process GPT provides an innovative approach that automatically identifies and implements business processes. Users can define and execute complex business processes through natural language conversation alone without coding knowledge.",
-        "feature1Title": "No Coding Knowledge Required",
-        "feature1Description": "General users can provide feedback on process flow appropriateness without programming concepts, and AI internally defines BPMN-based processes.",
-        "feature2Title": "Self-learning and Improvement",
-        "feature2Description": "When business process instances occur, processes are automatically improved through user feedback, enabling continuous development.",
-        "feature3Title": "Process Consulting Service",
-        "feature3Description": "Derives business processes through conversation with users, collects feedback through automatic tours, and establishes processes.",
-        "feature4Title": "Automated Agent Deployment",
-        "feature4Description": "Automatically identifies agents needed for processes, maps them to BPMN SwimLanes (work roles), and automatically generates prompts.",
-        "feature5Title": "BPMN-based Standard Process Notation",
-        "feature5Description": "Implements industry-standard compliant processes utilizing business process notation accumulated over about 20 years.",
         "tabTitle1": "Define Processes through Conversation",
         "tabDescription1": "Process definition generation and visualization through generative AI are possible. After generation, administrators can make detailed modifications, and detailed modifications can also be described in natural language.",
         "tabItem1_1": "Process definition through generative AI",
@@ -1818,7 +1853,7 @@
         "privacyPolicyDescription3": "The collected information will not be used for any purpose other than the delivery of services, and will be immediately destroyed once the service is completed.",
         "privacyPolicyClose": "Close"
     },
-     "DelegateTask": {
+    "DelegateTask": {
         "title": "Delegate Task",
         "delegate": "Delegate",
         "close": "Close",
@@ -1985,7 +2020,19 @@
     "ProcessInstanceChat": {
         "subprocessCreating": "Subprocess creating...",
         "feedback": "Is the process execution normal?",
-        "feedbackDescription": "Is the process execution normal?"
+        "feedbackDescription": "Do you want to apply the process feedback?"
+    },
+    "ProcessInstanceLog": {
+        "headers": {
+            "time": "Time",
+            "role": "Role",
+            "sender": "Sender",
+            "message": "Message"
+        },
+        "noData": "No messages yet.",
+        "streaming": "Streaming log...",
+        "unknownSender": "Unknown",
+        "systemSender": "System"
     },
     "ActivityInputData": {
         "previousInput": "Previous Activity Input",
@@ -1995,7 +2042,9 @@
         "searchMCPServers": "Search MCP Servers"
     },
     "MCPEnvSecret": {
+        "mcpEnvironments": "MCP Environments",
         "mcpSecrets": "MCP Secrets",
+        "browserUseSecrets": "Browser Use Secrets",
         "type": "Type",
         "environmentName": "Environment Name",
         "secretName": "Secret Name",
@@ -2018,7 +2067,9 @@
         "errorDeletingEnvironment": "Error deleting environment",
         "errorDeletingSecret": "Error deleting secret",
         "confirmDeleteEnvironment": "Are you sure you want to delete environment \"{name}\"?",
-        "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?"
+        "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?",
+        "confirmDeleteBrowserUseSecret": "Are you sure you want to delete Browser Use secret \"{name}\"?",
+        "noBrowserUseConfig": "Browser Use configuration is not set. Click the edit button to add the configuration."
     },
     "footer": {
         "BusinessNumber": "BusinessRegistration<br>No.",
@@ -2036,7 +2087,14 @@
         "noVersionsAvailable": "No other saved versions available",
         "versionManagement": "Version Management",
         "description": "Description:",
+        "versionList": "Version List",
+        "changeToSelectedVersion": "Change to version {version}",
+        "versionLabel": "Version List",
+        "versionWithColon": "Version: {version}",
+        "versionSummary": "Version {version} · Last modified: {time}",
+        "versionItemTitle": "Version {version}",
         "download": "Download",
+        "downloadVersionXML": "Download Version {version} XML",
         "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
         "copiedToClipboard": "Copied to clipboard.",
@@ -2057,7 +2115,11 @@
         "labels": {
             "goal": "Goal",
             "persona": "Persona",
-            "tools": "Tools"
+            "tools": "Tools",
+            "description": "Description",
+            "endpoint": "Endpoint",
+            "model": "Model",
+            "alias": "Alias"
         },
         "fallback": {
             "goal": "Agent goal is not configured yet."
@@ -2160,7 +2222,8 @@
         "persona": "Persona",
         "tools": "Tools & Skills",
         "knowledge": "Knowledge Ontology",
-        "achievements": "Achievements & Badges"
+        "achievements": "Achievements & Badges",
+        "settings": "Settings"
     },
     "Gantt": {
         "description": "Description",
@@ -2180,7 +2243,9 @@
     "Common": {
         "cancel": "Cancel",
         "delete": "Delete",
-        "save": "Save"
+        "save": "Save",
+        "submit": "Submit",
+        "role": "Role"
     },
     "AgentSkillEdit": {
         "deleteDialogTitle": "Delete Skill File",
@@ -2206,5 +2271,26 @@
         "save": "Save",
         "goodExamples": "Good Examples",
         "badExamples": "Bad Examples"
+    },
+    "ProcessFeedback": {
+        "applyTitle": "Apply Feedback",
+        "inputTitle": "Please enter your feedback",
+        "columnApply": "Apply",
+        "columnProperty": "Property",
+        "columnBefore": "Before Feedback",
+        "columnAfter": "After Feedback",
+        "noChanges": "There is no change to apply.",
+        "noContent": "No content",
+        "goodExample": "Good Examples",
+        "badExample": "Bad Examples",
+        "applyButton": "Apply",
+        "feedbackLabel": "Feedback",
+        "autoGenerate": "Auto-generate",
+        "generating": "Generating feedback automatically...",
+        "inputData": "Input Data",
+        "checkpoints": "Checkpoints",
+        "description": "Description",
+        "instruction": "Instruction",
+        "conditionExamples": "Condition Examples"
     }
 }

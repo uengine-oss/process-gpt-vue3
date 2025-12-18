@@ -3,6 +3,7 @@ import StorageBaseFactory from '@/utils/StorageBaseFactory';
 const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
 import defaultProcessesData from './defaultProcesses.json';
+import { useDefaultSetting } from '@/stores/defaultSetting';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -236,6 +237,9 @@ class ProcessGPTBackend implements Backend {
                         tenant_id: window.$tenantName
                     }
                 }
+                if(!putObj.id || putObj.id == 'defaultform' || putObj.id == null || putObj.id == '') {
+                    putObj.id = `${putObj.proc_def_id}_${putObj.activity_id?.toLowerCase()}_form`
+                }
                 await storage.putObject('form_def', putObj);
                 return
             }
@@ -270,6 +274,7 @@ class ProcessGPTBackend implements Backend {
                     proc_def_id: defId,
                     version: options.version,
                     version_tag: options.version_tag,
+                    timeStamp: new Date().toISOString(),
                     snapshot: xml,
                     definition: options.definition ?? procDef.definition,
                     diff: options.diff,
@@ -628,6 +633,68 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async getTodoListByInstances(instanceIds: string[]) {
+        try {
+            if (!instanceIds || instanceIds.length === 0) {
+                return {};
+            }
+
+            // todolist 조회
+            const { data: todos, error } = await window.$supabase
+                .from('todolist')
+                .select('proc_inst_id, proc_def_id, activity_id, activity_name, start_date, end_date, status, output, description, user_id, updated_at')
+                .in('proc_inst_id', instanceIds)
+                .order('start_date', { ascending: true });
+
+            if (error) {
+                console.error('Error fetching todolist:', error);
+                return {};
+            }
+
+            // 프로세스 정의별로 그룹화하고 중복 제거
+            const result: any = {};
+
+            todos.forEach((todo: any) => {
+                const defId = todo.proc_def_id;
+                const instId = todo.proc_inst_id;
+
+                // 프로세스 정의 레벨
+                if (!result[defId]) {
+                    result[defId] = {
+                        processDefinitionId: defId,
+                        instances: {}
+                    };
+                }
+
+                // 인스턴스 레벨
+                if (!result[defId].instances[instId]) {
+                    result[defId].instances[instId] = {
+                        instanceId: instId,
+                        activities: []
+                    };
+                }
+
+                // 액티비티 추가
+                result[defId].instances[instId].activities.push({
+                    activityId: todo.activity_id,
+                    activityName: todo.activity_name,
+                    startDate: todo.start_date,
+                    endDate: todo.end_date,
+                    status: todo.status,
+                    output: todo.output,
+                    description: todo.description,
+                    userId: todo.user_id,
+                    updatedAt: todo.updated_at
+                });
+            });
+
+            return result;
+        } catch (e) {
+            console.error('Error in getTodoListByInstances:', e);
+            return {};
+        }
+    }
+
     async getInstanceByProjectId(projectId: number) {
         try {
             const list = await storage.list('bpm_proc_inst', {match: { 'project_id': projectId } });
@@ -730,6 +797,7 @@ class ProcessGPTBackend implements Backend {
                     output: workitem.output || "",
                     log: workitem.log || "",
                     orchestration: workitem.agent_orch || "",
+                    agentMode: workitem.agent_mode || "",
                     version_tag: workitem.version_tag || null,
                     version: workitem.version || null,
                 },
@@ -749,6 +817,16 @@ class ProcessGPTBackend implements Backend {
         } catch (e) {
             //@ts-ignore
             throw new Error(e.message);
+        }
+    }
+
+    async getTask(taskId: string) {
+        try {
+            const task = await storage.getObject('todolist', { key: 'id', match: { id: taskId } });
+            return this.convertKeysToCamelCase(task);
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
         }
     }
 
@@ -899,7 +977,6 @@ class ProcessGPTBackend implements Backend {
         try {
             await storage.delete(`todolist/${taskId}`, { key: 'id' });
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -913,7 +990,6 @@ class ProcessGPTBackend implements Backend {
             }
             return null;
         } catch (error) {
-            
             //@ts-ignore
             throw new Error(error.message);
         }
@@ -1144,6 +1220,7 @@ class ProcessGPTBackend implements Backend {
      */
     async getProcessDefinitionMap() {
         try {
+            const isPal = window.$pal;
             const options = {
                 match: {
                     key: 'proc_map',
@@ -1163,13 +1240,17 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
-                const usePermissions = await this.checkUsePermissions();
-                const role = localStorage.getItem('role');
-                if (role == 'superAdmin' || !usePermissions) {
-                    return procMap.value;
+                if (isPal) {
+                    const usePermissions = await this.checkUsePermissions();
+                    const role = localStorage.getItem('role');
+                    if (role == 'superAdmin' || !usePermissions) {
+                        return procMap.value;
+                    } else {
+                        const filteredMap = await this.filterProcDefMap(procMap.value);
+                        return filteredMap;
+                    }
                 } else {
-                    const filteredMap = await this.filterProcDefMap(procMap.value);
-                    return filteredMap;
+                    return procMap.value;
                 }
             }
             return {};
@@ -1182,6 +1263,7 @@ class ProcessGPTBackend implements Backend {
 
     async putProcessDefinitionMap(editedMap: any) {
         try {
+            const isPal = window.$pal;
             const options = {
                 match: {
                     key: 'proc_map',
@@ -1191,7 +1273,7 @@ class ProcessGPTBackend implements Backend {
             const procMapId = await storage.getString('configuration', options);
             let updatedProcMap: any = null;
             const role = localStorage.getItem('role');
-            if (role !== 'superAdmin') {
+            if (role !== 'superAdmin' && isPal) {
                 const existingProcMap = await storage.getObject('configuration', options);
                 const usePermissions = await this.checkUsePermissions();
                 if (usePermissions) {
@@ -2294,16 +2376,23 @@ class ProcessGPTBackend implements Backend {
         try {
             let results: any[] = [];
 
-            const dbPromise = storage.search(keyword);
+            const dbPromise = storage.search ? storage.search(keyword) : Promise.resolve([]);
             const vectorPromise = this.searchVector(keyword);
+            const agentPromise = this.searchAgents(keyword);
 
             results.push({
                 type: 'loading',
                 header: '유사한 결과 검색 중...',
                 list: []
             });
+            
             const dbResult = await dbPromise;
             results = [...results, ...dbResult];
+            
+            const agentResult = await agentPromise;
+            if (agentResult) {
+                results.push(agentResult);
+            }
             
             if (callback) {
                 callback(results);
@@ -2377,6 +2466,38 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async searchAgents(keyword: string) {
+        try {
+            const agentList = await this.getAgentList();
+            const lowerKeyword = keyword.toLowerCase();
+            
+            const filteredAgents = agentList.filter((agent: any) => {
+                const name = agent.username || agent.name || '';
+                const role = agent.role || '';
+                return name.toLowerCase().includes(lowerKeyword) || 
+                       role.toLowerCase().includes(lowerKeyword);
+            });
+
+            if (filteredAgents.length > 0) {
+                return {
+                    type: 'agent',
+                    header: 'headerMenu.agent',
+                    list: filteredAgents.map((agent: any) => ({
+                        title: agent.username || agent.name,
+                        href: `/agent-chat/${agent.id}`,
+                        matches: [agent.role || ''],
+                        img: agent.profile || agent.img
+                    }))
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Agent search error:', error);
+            return null;
+        }
+    }
+
     async getDeletedTenants() {
         try {
             const tenants = await storage.list('tenants', {
@@ -2424,9 +2545,14 @@ class ProcessGPTBackend implements Backend {
                 Object.keys(options).forEach((key)=> {
                     filter[key] = options[key]
                 })
+                return await storage.list('users', filter);
             }
 
-            return await storage.list('users', filter);
+            const defaultSetting = useDefaultSetting();
+            const defaultAgents = defaultSetting.getAgentList;
+            const users = await storage.list('users', filter);
+
+            return [...defaultAgents, ...users];
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2456,7 +2582,9 @@ class ProcessGPTBackend implements Backend {
     async getAgentList() {
         try {
             const list = await storage.list('users', { match: { is_agent: true, tenant_id: window.$tenantName } });
-            return list;
+            const defaultSetting = useDefaultSetting();
+            const defaultAgents = defaultSetting.getAgentList;
+            return [...defaultAgents, ...list];
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2467,7 +2595,8 @@ class ProcessGPTBackend implements Backend {
         try {
             const options = {
                 match: {
-                    id: agentId
+                    id: agentId,
+                    is_agent: true
                 }
             }
             const agent = await storage.getObject('users', options);
@@ -2493,8 +2622,9 @@ class ProcessGPTBackend implements Backend {
                 skills: newAgent.skills,
                 model: newAgent.model,
                 tenant_id: window.$tenantName,
-                is_agent: true,
-                agent_type: newAgent.endpoint === '' ? null : 'a2a'
+                is_agent: newAgent.isAgent,
+                agent_type: newAgent.type,
+                alias: newAgent.alias
             }
             await storage.putObject('users', putObj);
         } catch (error) {
@@ -2509,6 +2639,25 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    async checkAgentAlias(alias: string, id: string) {
+        try {
+            const options = {
+                match: {
+                    alias: alias,
+                    tenant_id: window.$tenantName
+                }
+            }
+            const existingAgent = await storage.getObject('users', options);
+            if (existingAgent && existingAgent.id !== id) {
+                return { error: true, message: 'Alias already exists' };
+            }
+            return { error: false, message: 'Alias is available' };
+        } catch (error) {
+            //@ts-ignore
+            return { error: true, message: error.message };
         }
     }
 
@@ -2844,6 +2993,9 @@ class ProcessGPTBackend implements Backend {
     async uploadFile(fileName: string, file: File, options?: any) {
         try {
             let result: any = null;
+            if (!options) {
+                return await storage.uploadFile(fileName, file);
+            }
             await this.uploadFileToStorage(file, options).then(async (response) => {
                 if (response) {
                     await this.putInstanceSource({
@@ -3265,44 +3417,160 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false) {
+    async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false, limit?: number, offset: number = 0) {
         try {
-            const options = {
-                orderBy: 'import_count',
-                sort: 'desc',
-            }
-            const list = await storage.list('proc_def_marketplace', options);
+            const selectColumns = 'uuid, id, name, description, image, tags, author_name, author_uid, import_count, category';
             
-            // 검색 기능이 활성화된 경우
+            // 검색 기능이 활성화된 경우 - DB 레벨에서 검색
             if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
-                const keyword = tagOrKeyword.toLowerCase().trim();
-                return list.filter(item => {
-                    // 이름, 작성자, 태그 검색
-                    const nameMatch = item.name && item.name.toLowerCase().includes(keyword);
-                    const authorMatch = item.author_name && item.author_name.toLowerCase().includes(keyword);
-                    
-                    // 태그 검색
-                    let tagMatch = false;
-                    if (item.tags) {
-                        const tags = item.tags.split(',').map((t: string) => t.trim().toLowerCase());
-                        tagMatch = tags.some(tag => tag.includes(keyword));
-                    }
-                    
-                    return nameMatch || authorMatch || tagMatch;
-                });
+                const keyword = tagOrKeyword.trim();
+                const searchPattern = `%${keyword}%`;
+                
+                // Supabase를 직접 사용하여 DB 레벨에서 검색
+                let query = window.$supabase
+                    .from('proc_def_marketplace')
+                    .select(selectColumns)
+                    .or(`name.ilike.${searchPattern},author_name.ilike.${searchPattern},tags.ilike.${searchPattern}`)
+                    .order('import_count', { ascending: false });
+                
+                if (limit !== undefined) {
+                    query = query.range(offset, offset + limit - 1);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) {
+                    console.error('검색 중 오류:', error);
+                    return [];
+                }
+                
+                return data || [];
             }
-            // 태그 필터링
+            // 태그 필터링 - DB 레벨에서 필터링
             else if (tagOrKeyword && tagOrKeyword !== 'all') {
-                return list.filter(item => {
-                    if (!item.tags) return false;
-                    const tags = item.tags.split(',').map((t: string) => t.trim());
-                    return tags.includes(tagOrKeyword);
-                });
+                const searchPattern = `%${tagOrKeyword}%`;
+                
+                let query = window.$supabase
+                    .from('proc_def_marketplace')
+                    .select(selectColumns)
+                    .ilike('tags', searchPattern)
+                    .order('import_count', { ascending: false });
+                
+                if (limit !== undefined) {
+                    query = query.range(offset, offset + limit - 1);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) {
+                    console.error('태그 필터링 중 오류:', error);
+                    return [];
+                }
+                
+                return data || [];
+            }
+            // 전체 목록 조회
+            else {
+                const options: any = {
+                    select: selectColumns,
+                    orderBy: 'import_count',
+                    sort: 'desc',
+                }
+                
+                if (limit !== undefined) {
+                    options.range = {
+                        from: offset,
+                        to: offset + limit - 1
+                    };
+                }
+                
+                const list = await storage.list('proc_def_marketplace', options);
+                
+                if (!Array.isArray(list)) {
+                    console.error('storage.list가 배열을 반환하지 않았습니다:', list);
+                    return [];
+                }
+                
+                return list;
+            }
+        } catch (error) {
+            console.error('❌ [백엔드] listMarketplaceDefinition 오류:', error);
+            return [];
+        }
+    }
+
+    async getAllMarketplaceTags() {
+        try {
+            // Supabase를 직접 사용하여 tags 컬럼만 조회
+            const { data, error } = await window.$supabase
+                .from('proc_def_marketplace')
+                .select('tags');
+            
+            if (error) {
+                console.error('태그 목록 조회 중 오류:', error);
+                return [];
             }
             
-            return list;
+            if (!Array.isArray(data)) {
+                console.error('태그 목록이 배열이 아닙니다:', data);
+                return [];
+            }
+            
+            // 모든 태그를 수집하고 중복 제거
+            const tagsSet = new Set();
+            data.forEach(item => {
+                if (item.tags) {
+                    // 쉼표로 구분된 태그를 분리하고 중복 제거
+                    item.tags.split(',').forEach(tag => {
+                        const trimmedTag = tag ? tag.trim() : '';
+                        if (trimmedTag) {
+                            tagsSet.add(trimmedTag);
+                        }
+                    });
+                }
+            });
+            
+            return Array.from(tagsSet);
         } catch (error) {
-            throw new Error(error.message);
+            console.error('[백엔드] getAllMarketplaceTags 오류:', error);
+            return [];
+        }
+    }
+
+    async deleteMarketplaceDefinition(definitionId: string) {
+        try {
+            const { error } = await window.$supabase
+                .from('proc_def_marketplace')
+                .delete()
+                .eq('id', definitionId);
+            
+            if (error) {
+                throw new Error(error.message);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[백엔드] deleteMarketplaceDefinition 오류:', error);
+            throw error;
+        }
+    }
+
+    async getMarketplaceDefinitionBpmn(uuid: string) {
+        try {
+            const response = await storage.getObject('proc_def_marketplace', {
+                match: {
+                    uuid: uuid
+                }
+            });
+            
+            if (!response || !response.bpmn) {
+                throw new Error('BPMN 데이터를 찾을 수 없습니다.');
+            }
+            
+            return response.bpmn;
+        } catch (error) {
+            console.error('[백엔드] getMarketplaceDefinitionBpmn 오류:', error);
+            throw error;
         }
     }
 
@@ -4630,29 +4898,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async setFeedback(task: any, feedback: any) {
-        try {
-            const taskId = task.taskId;
-            const workItem = await storage.getObject('todolist', {
-                match: {
-                    id: taskId
-                }
-            });
-            workItem.temp_feedback = feedback;
-            await storage.putObject('todolist', workItem);
-        } catch (error) {
-            throw new Error(error.message);
-        }
-    }
-
-    async submitFeedback(feedback: string, taskId: string) {
+    async saveFeedback(feedback: string, taskId: string) {
         try {
             const workItem = await storage.getObject('todolist', {
                 match: {
                     id: taskId
                 }
             });
-            workItem.status = 'SUBMITTED';
             workItem.temp_feedback = feedback;
             await storage.putObject('todolist', workItem);
         } catch (error) {
@@ -4671,17 +4923,31 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async setFeedbackDiff(diff: any, activityId: string, defId: string) {
+    async applyFeedback(diff: any, taskId: string) {
         try {
-            const process = await storage.getObject('proc_def', {
+            const workItem = await storage.getObject('todolist', {
                 match: {
-                    id: defId,
-                    tenant_id: window.$tenantName
+                    id: taskId
+                }
+            });
+            if (!workItem) {
+                throw new Error('workItem not found');
+            }
+            const defId = workItem.proc_def_id;
+            const activityId = workItem.activity_id;
+            const version = workItem.version;
+            
+            const process = await storage.getObject('proc_def_version', {
+                match: {
+                    proc_def_id: defId,
+                    tenant_id: window.$tenantName,
+                    version: version
                 }
             });
             if (!process) {
                 throw new Error('process not found');
             }
+
             const definition = process.definition;
             const activity = definition.activities.find((activity: any) => activity.id === activityId);
             if (!activity) {
@@ -4711,7 +4977,29 @@ class ProcessGPTBackend implements Backend {
                     sequence.properties = JSON.stringify(properties);
                 }
             }
-            await storage.putObject('proc_def', process);
+
+            let parentVersion: string = process.version || version;
+            if (parentVersion.includes('-')) {
+                parentVersion = parentVersion.split('-')[0];
+            }
+            const newVersion = parentVersion + '-' + Math.random().toString(36).substring(2, 15);
+            const newProcess = {
+                proc_def_id: defId,
+                version: newVersion,
+                version_tag: 'minor',
+                snapshot: process.snapshot,
+                definition: definition,
+                arcv_id: defId + '_' + newVersion,
+                parent_version: parentVersion,
+                source_todolist_id: workItem.id,
+            };
+            await storage.putObject('proc_def_version', newProcess);
+
+            // 임시 minor 버전으로 해당 워크아이템만 재실행
+            workItem.version = newVersion;
+            workItem.version_tag = 'minor';
+            workItem.status = 'SUBMITTED';
+            await storage.putObject('todolist', workItem);
         } catch (error) {
             throw new Error(error.message);
         }
@@ -4934,20 +5222,41 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    // agent skills
-    async saveSkills(options: any) {
+    async getTenantInfo(id: string) {
         try {
-            let newSkills = '';
-            if (options.agentInfo.skills) {
-                const skills = options.agentInfo.skills.split(',');
-                newSkills = skills.join(',');
-            }
-            await storage.putObject('users', {
-                id: options.agentInfo.id,
-                skills: newSkills,
-                tenant_id: window.$tenantName
+            const response = await storage.getObject('tenants', {
+                match: {
+                    id: id
+                }
             });
-            return newSkills;
+            if (response) {
+                return response;
+            }
+            return null;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    // skills
+    async saveSkills(skills: any) {
+        try {
+            if (!skills || skills.length === 0) {
+                return;
+            }
+            const tenantId = window.$tenantName;
+            const tenantInfo = await this.getTenantInfo(tenantId);
+            if (!tenantInfo) {
+                throw new Error('tenant not found');
+            }
+            let tenantSkills = tenantInfo.skills || [];
+            // 기존 skills와 새로운 skills를 병합하고 중복 제거
+            const mergedSkills = [...new Set([...tenantSkills, ...skills])];
+            await storage.putObject('tenants', {
+                id: tenantId,
+                skills: mergedSkills,
+            });
+            return mergedSkills;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -4962,7 +5271,6 @@ class ProcessGPTBackend implements Backend {
             if (options.type == 'file') {
                 const form = new FormData();
                 form.append("file", options.file, options.file.name);
-                form.append("agent_id", options.agentInfo.id);
                 form.append("tenant_id", window.$tenantName);
                 
                 response = await axios.post('/claude-skills/skills/upload', form, {
@@ -4971,7 +5279,6 @@ class ProcessGPTBackend implements Backend {
             } else if (options.type == 'url') {
                 response = await axios.post('/claude-skills/skills/upload-from-github', {
                     url: options.url,
-                    agent_id: options.agentInfo.id,
                     tenant_id: window.$tenantName
                 }, {
                     headers: header
@@ -4979,25 +5286,11 @@ class ProcessGPTBackend implements Backend {
             }
             
             if (response.status === 200) {
-                const addedSkills = response.data.skills_added;
-                let newSkills = '';
-                if (options.agentInfo.skills) {
-                    const skills = options.agentInfo.skills.split(',');
-                    addedSkills.forEach((skill: string) => {
-                        if (!skills.includes(skill)) {
-                            skills.push(skill);
-                        }
-                    });
-                    newSkills = skills.join(',');
-                } else {
-                    newSkills = addedSkills.join(',');
+                const skillsAdded = response.data.skills_added;
+                if (skillsAdded && skillsAdded.length > 0) {
+                    await this.saveSkills(skillsAdded);
                 }
-                options.agentInfo.skills = newSkills;
-                const result = await this.saveSkills(options);
-                return {
-                    skills_added: addedSkills,
-                    skills: result
-                };
+                return response.data;
             } else {
                 throw new Error(response);
             }
@@ -5011,9 +5304,6 @@ class ProcessGPTBackend implements Backend {
             const encodedSkills = encodeURIComponent(options.skillName);
             const tenantId = window.$tenantName;
             let query: string = `name=${encodedSkills}`;
-            if (options.agentInfo.id) {
-                query += `&agent_id=${options.agentInfo.id}`;
-            }
             if (tenantId) {
                 query += `&tenant_id=${tenantId}`;
             }
@@ -5021,18 +5311,10 @@ class ProcessGPTBackend implements Backend {
             if (response.status === 200) {
                 return response.data;
             } else {
-                const skills = options.agentInfo.skills.split(',');
-                skills.splice(skills.indexOf(options.skillName), 1);
-                options.agentInfo.skills = skills.join(',');
-                await this.saveSkills(options);
                 return false;
             }
         } catch (error) {
-            const skills = options.agentInfo.skills.split(',');
-            skills.splice(skills.indexOf(options.skillName), 1);
-            options.agentInfo.skills = skills.join(',');
-            await this.saveSkills(options);
-            return false;
+            throw new Error(error.detail);
         }
     }
 
@@ -5042,11 +5324,15 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.delete(`/claude-skills/skills/${encodeURIComponent(skillName)}`);
             if (response.status === 200 && response.data && response.data.skill_name) {
                 const deletedSkill = response.data.skill_name;
-                const skills = options.agentInfo.skills.split(',');
-                skills.splice(skills.indexOf(deletedSkill), 1);
-                options.agentInfo.skills = skills.join(',');
-                await this.saveSkills(options);
-                return deletedSkill;
+                const tenantId = window.$tenantName;
+                const tenantInfo = await this.getTenantInfo(tenantId);
+                if (!tenantInfo) {
+                    throw new Error('tenant not found');
+                }
+                let tenantSkills = tenantInfo.skills || [];
+                tenantSkills = tenantSkills.filter((skill: any) => skill.name !== deletedSkill);
+                await this.saveSkills(tenantSkills);
+                return response.data;
             } else {
                 return false;
             }
@@ -5097,7 +5383,6 @@ class ProcessGPTBackend implements Backend {
             let url = `/claude-skills/skills/${encodeURIComponent(skillName)}/files/${encodeURIComponent(fileName)}`;
             const response = await axios.delete(url);
             if (response.status === 200) {
-                console.log(response.data);
                 return response.data;
             } else {
                 throw new Error(response.data.message);

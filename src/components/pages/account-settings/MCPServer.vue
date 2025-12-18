@@ -42,7 +42,13 @@
 
                                 <template v-slot:append>
                                     <div class="d-flex align-center">
-                                        <v-btn icon="mdi-pencil" variant="text" size="small" class="mr-2" @click.stop="editJson(key)"></v-btn>
+                                        <v-btn 
+                                            :icon="isDefaultServer(key) ? 'mdi-eye' : 'mdi-pencil'" 
+                                            variant="text" 
+                                            size="small" 
+                                            class="mr-2" 
+                                            @click.stop="editJson(key)"
+                                        ></v-btn>
                                         <v-switch
                                             :model-value="server.enabled"
                                             color="primary"
@@ -80,7 +86,7 @@
                     <vue-monaco-editor
                         v-model:value="mcpJsonText"
                         language="json"
-                        :options="monacoEditorOptions"
+                        :options="getEditorOptions()"
                         @mount="handleMount"
                     />
                     <!-- <v-textarea 
@@ -93,7 +99,8 @@
                 </div>
 
                 <div class="d-flex justify-space-between pb-2">
-                    <v-btn v-if="editingKey"
+                    <v-btn 
+                        v-if="editingKey && !isEditingDefaultServer"
                         class=" mr-2" 
                         color="error" 
                         variant="flat" 
@@ -104,7 +111,15 @@
                     </v-btn>
                     <div class="d-flex align-center ml-auto">
                         <v-btn color="grey" variant="flat" rounded class="mr-2" @click="closeEdit">{{ $t('accountTab.cancel') }}</v-btn>
-                        <v-btn color="primary" variant="flat" rounded @click="saveServerChanges" :loading="saving">{{ $t('accountTab.save') }}</v-btn>
+                        <v-btn 
+                            v-if="!isEditingDefaultServer"
+                            color="primary" 
+                            variant="flat" 
+                            rounded 
+                            @click="saveServerChanges" 
+                            :loading="saving"
+                        >{{ $t('accountTab.save') }}
+                        </v-btn>
                     </div>
                 </div>
             </div>
@@ -166,7 +181,7 @@
                     v-if="editingKey"
                     v-model:value="mcpJsonText"
                     language="json"
-                    :options="monacoEditorOptions"
+                    :options="getEditorOptions()"
                     @mount="handleMount"
                 />
                 <vue-monaco-editor
@@ -197,7 +212,8 @@
             <!-- 하단 버튼 -->
             <div class="pa-4 pt-0">
                 <div class="d-flex align-center ml-auto">
-                    <v-btn v-if="editingKey"
+                    <v-btn 
+                        v-if="editingKey && !isEditingDefaultServer"
                         class=" mr-2" 
                         color="error" 
                         variant="flat" 
@@ -206,7 +222,9 @@
                         :loading="saving || adding"
                     >{{ $t('accountTab.delete') }}
                     </v-btn>
-                    <v-btn @click="editingKey ? saveServerChanges : saveNewMCP" 
+                    <v-btn 
+                        v-if="!editingKey || !isEditingDefaultServer"
+                        @click="editingKey ? saveServerChanges : saveNewMCP" 
                         class="ml-auto"
                         color="primary" 
                         variant="flat" 
@@ -241,7 +259,8 @@ export default {
         monacoEditorOptions: {
             automaticLayout: true,
             formatOnType: true,
-            formatOnPaste: true
+            formatOnPaste: true,
+            readOnly: false
         }
     }),
     computed: {
@@ -301,6 +320,15 @@ export default {
             });
             
             return filtered;
+        },
+        isDefaultServer() {
+            return (key) => {
+                const server = this.mcpServers[key];
+                return server && server.is_default === true;
+            };
+        },
+        isEditingDefaultServer() {
+            return this.editingKey && this.isDefaultServer(this.editingKey);
         }
     },
     async mounted() {
@@ -313,9 +341,11 @@ export default {
                 editor.layout({ height: 380, width: editor.getLayoutInfo().width });
             }
         },
-        async getMCPLists() {
-            const mcpLists = await backend.getMCPLists();
-            this.mcpLists = mcpLists;
+        getEditorOptions() {
+            return {
+                ...this.monacoEditorOptions,
+                readOnly: this.isEditingDefaultServer
+            };
         },
         async loadData() {
             const configuredData = await backend.getMCPByTenant();
@@ -339,9 +369,17 @@ export default {
             this.isAddMode = false;
             this.editingKey = serverKey;
             const server = this.mcpServers[serverKey];
+            
+            // 기본 서버인 경우 is_default 속성 제외
+            let serverData = { ...server };
+            if (this.isDefaultServer(serverKey)) {
+                const { is_default, ...serverWithoutDefault } = serverData;
+                serverData = serverWithoutDefault;
+            }
+            
             const jsonData = {
                 mcpServers: {
-                    [serverKey]: server
+                    [serverKey]: serverData
                 }
             };
             this.mcpJsonText = JSON.stringify(jsonData, null, 4);
@@ -370,6 +408,7 @@ export default {
         async toggleServer(key, value) {
             try {
                 this.mcpServers[key].enabled = !value;
+                // 기본 서버의 enabled 상태만 저장 (나머지는 그대로 유지)
                 const dataToSave = {
                     mcpServers: this.mcpServers
                 };
@@ -381,6 +420,12 @@ export default {
         },
         async saveServerChanges() {
             if (!this.editingKey) return;
+            
+            // 기본 서버는 수정 불가능
+            if (this.isDefaultServer(this.editingKey)) {
+                console.warn('기본 서버는 수정할 수 없습니다.');
+                return;
+            }
 
             this.saving = true;
             try {
@@ -439,6 +484,12 @@ export default {
         },
         async deleteServer() {
             if (!this.editingKey) return;
+            
+            // 기본 서버는 삭제 불가능
+            if (this.isDefaultServer(this.editingKey)) {
+                console.warn('기본 서버는 삭제할 수 없습니다.');
+                return;
+            }
 
             try {
                 const updatedServers = { ...this.mcpServers };

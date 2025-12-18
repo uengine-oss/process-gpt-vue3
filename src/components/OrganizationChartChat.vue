@@ -1,5 +1,5 @@
 <template>
-    <v-col cols="12" md="12" class="pa-0">
+    <!-- <v-col cols="12" md="12" class="pa-0">
         <v-card elevation="10" 
             class="is-work-height"
         >
@@ -16,7 +16,7 @@
 
         <v-dialog 
             v-model="addDialog" 
-            :max-width="isMobile ? '100vw' : 500"
+            :max-width="isMobile ? '100vw' : 800"
             :fullscreen="isMobile"
         >
             <OrganizationAddDialog
@@ -27,21 +27,21 @@
                 @closeDialog="closeAddDialog"
             ></OrganizationAddDialog>
         </v-dialog>
-    </v-col>
+    </v-col> -->
 
     <!-- 기존 좌측 chat UI와 함께 동작하던 부분 다시 주석을 풀어 사용할 때 #apexTreeWrapper > svg 전체 검색 후 globalStyle.css의 768px(모바일 사이즈) 부분의 주석도 함께 풀어 사용 -->
-    <!-- <v-card elevation="10">
+    <v-card elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart>
-                <Chat :name="$t(chatInfo.title)"
-                    :messages="messages"
-                    :chatInfo="chatInfo"
-                    :userInfo="userInfo" 
-                    :disableChat="disableChat"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                ></Chat>
+                <OrganizationAddDialog
+                    :teamInfo="editNode"
+                    :userList="userList"
+                    :organizationChart="organizationChart"
+                    @addUser="addUser"
+                    @addAgent="addAgent"
+                    @closeDialog="closeAddDialog"
+                    @updateTeam="updateTeam"
+                ></OrganizationAddDialog>
             </template>
 
             <template v-slot:rightpart>
@@ -56,31 +56,18 @@
             </template>
 
             <template v-slot:mobileLeftContent>
-                <Chat :name="$t(chatInfo.title)"
-                    :messages="messages"
-                    :chatInfo="chatInfo"
-                    :userInfo="userInfo" 
-                    :disableChat="disableChat"
-                    @sendMessage="beforeSendMessage"
-                    @sendEditedMessage="sendEditedMessage"
-                    @stopMessage="stopMessage"
-                ></Chat>
+                <OrganizationAddDialog
+                    :teamInfo="editNode"
+                    :userList="userList"
+                    :organizationChart="organizationChart"
+                    @addUser="addUser"
+                    @addAgent="addAgent"
+                    @closeDialog="closeAddDialog"
+                    @updateTeam="updateTeam"
+                ></OrganizationAddDialog>
             </template>
         </AppBaseCard>
-        <v-dialog 
-            v-model="addDialog" 
-            :max-width="isMobile ? '100vw' : 500"
-            :fullscreen="isMobile"
-        >
-            <OrganizationAddDialog
-                :teamInfo="editNode"
-                :userList="userList"
-                @addUser="addUser"
-                @addAgent="addAgent"
-                @closeDialog="closeAddDialog"
-            ></OrganizationAddDialog>
-        </v-dialog>
-    </v-card> -->
+    </v-card>
 </template>
 
 <script>
@@ -136,6 +123,11 @@ export default {
                 children: []
             };
         }
+
+        this.EventBus.on('user-deleted', this.handleUserDeleted);
+    },
+    beforeUnmount() {
+        this.EventBus.off('user-deleted', this.handleUserDeleted);
     },
     computed: {
         isMobile() {
@@ -315,6 +307,33 @@ export default {
             }
             await this.putObject("configuration", putObj);
         },
+        async updateTeam(type, editNode, newTeam) {
+            console.log('OrganizationChartChat - updateTeam 호출');
+            console.log('type:', type);
+            console.log('editNode:', editNode);
+            console.log('newTeam:', newTeam);
+            
+            if (type == 'add') {
+                this.organizationChart.children.push({
+                    id: newTeam.id,
+                    data: newTeam,
+                    children: []
+                });
+            } else if (type == 'delete') {
+                this.organizationChart.children = this.organizationChart.children.filter(child => child.id !== editNode.id);
+            } else if (type == 'edit') {
+                console.log('팀 수정 전 organizationChart.children:', JSON.parse(JSON.stringify(this.organizationChart.children)));
+                const teamIndex = this.organizationChart.children.findIndex(team => team.id === editNode.id);
+                console.log('수정할 팀 인덱스:', teamIndex);
+                if (teamIndex !== -1) {
+                    console.log('수정 전 팀 데이터:', JSON.parse(JSON.stringify(this.organizationChart.children[teamIndex])));
+                    this.organizationChart.children[teamIndex].data = { ...editNode.data, ...newTeam };
+                    console.log('수정 후 팀 데이터:', JSON.parse(JSON.stringify(this.organizationChart.children[teamIndex])));
+                }
+            }
+            await this.updateNode();
+            this.$refs.organizationChart.drawTree();
+        },
 
         // dialog 관련
         openAddDialog(value) {
@@ -324,7 +343,8 @@ export default {
         closeAddDialog() {
             this.addDialog = false;
         },
-        async addUser(addUserList, newUser) {
+        async addUser(selectedTeam, addUserList, newUser) {
+            this.editNode = selectedTeam;
             if (newUser) {
                 await this.createNewUser(newUser);
             }
@@ -334,7 +354,8 @@ export default {
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
         },
-        async addAgent(newAgent) {
+        async addAgent(selectedTeam, newAgent) {
+            this.editNode = selectedTeam;
             const agent = {
                 id: newAgent.id,
                 name: newAgent.name,
@@ -348,6 +369,25 @@ export default {
             // AgentList 실시간 업데이트를 위한 이벤트 발생
             this.EventBus.emit('agentAdded', newAgent);
         },
+        deleteNode(obj, children) {
+            if (children && children.some(item => item.id == obj.id)) {
+                children = children.filter(item => item.id != obj.id);
+            } else {
+                children.forEach((item) => {
+                    item.children = this.deleteNode(obj, item.children);
+                })
+            }
+            return children;
+        },
+        async handleUserDeleted(userId) {
+            this.organizationChart.children = this.deleteNode({ id: userId }, this.organizationChart.children);
+            await this.updateNode();
+            
+            if (this.$refs.organizationChart) {
+                this.$refs.organizationChart.loadUserList();
+                this.$refs.organizationChart.drawTree();
+            }
+        }
     }
 }
 </script>

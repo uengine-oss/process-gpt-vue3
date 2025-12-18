@@ -72,7 +72,6 @@
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
-            :subProcessDialogStauts="subProcessDialogStauts"
             :processType="processType"
             :type="type"
             @add="addProcess"
@@ -102,11 +101,19 @@ export default {
         isExecutionByProject: Boolean
     },
     data: () => ({
-        type: 'major',
-        subProcessDialogStauts: false
+        type: 'major'
     }),
     methods: {
         async addProcess(newProcess) {
+            // 같은 레벨에 동일한 이름이 있는지 검증
+            const isDuplicate = this.value.sub_proc_list.some(
+                item => item.name.toLowerCase() === newProcess.name.toLowerCase()
+            );
+            if (isDuplicate) {
+                alert(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
+                return;
+            }
+            
             if (!newProcess.id) {
                 newProcess.id = `${this.parent.name}_${newProcess.name}`;
             }
@@ -120,7 +127,6 @@ export default {
         openSubProcessDialog(processType) {
             this.processType = processType;
             this.processDialogStatus = true;
-            this.subProcessDialogStauts = true;
         },
         deleteProcess() {
             this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);

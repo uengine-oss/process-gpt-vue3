@@ -108,6 +108,13 @@
             </v-row>
             <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
         </div>
+        <div class="mt-3">
+            <KeyValueField
+                v-model="copyUengineProperties.customProperties"
+                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                :readonly="isViewMode"
+            />
+        </div>
 
         <v-dialog
             v-model="isOpenFieldMapper"
@@ -134,6 +141,7 @@
 import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
+import KeyValueField from '@/components/designer/KeyValueField.vue';
 import yaml from 'yamljs';
 
 export default {
@@ -146,14 +154,17 @@ export default {
         element: Object
     },
     components: {
-        Mapper
+        Mapper,
+        KeyValueField
     },
-    created() {},
+    created() {
+        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
+    },
     data() {
         return {
             formMapperJson: '',
             methodList: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
-            copyUengineProperties: this.uengineProperties,
+            copyUengineProperties: this.uengineProperties ? JSON.parse(JSON.stringify(this.uengineProperties)) : {},
             name: '',
             checkpoints: [],
             editCheckpoint: false,

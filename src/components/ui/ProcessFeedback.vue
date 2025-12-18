@@ -1,31 +1,31 @@
 <template>
-    <v-card class="process-feedback" elevation="2">
-        <v-card-text v-if="isAcceptMode" class="pa-4">
-            <div class="d-flex justify-start align-center mb-2">
+    <v-card class="process-feedback" flat>
+        <v-card-text v-if="isApplyMode" class="pa-1">
+            <div class="d-flex justify-start align-center mb-1">
                 <v-icon>mdi-information</v-icon>
-                <span class="text-h6 ml-2">피드백 반영</span>
+                <span class="text-h6 ml-2">{{ $t('ProcessFeedback.applyTitle') }}</span>
             </div>
             <v-skeleton-loader
-                v-if="isLoading"
+                v-if="isGenerating || isSubmitting"
                 type="image"
                 class="mx-auto"
             ></v-skeleton-loader>
             
             <!-- 데스크톱 테이블 뷰 -->
-            <v-table v-else-if="!isLoading && !isMobile" class="diff-table">
+            <v-table v-else-if="!isGenerating && !isSubmitting && !isMobile" class="diff-table">
                 <thead>
                     <tr>
-                        <th class="text-left" scope="col">반영 여부</th>
-                        <th class="text-left" scope="col">속성</th>
-                        <th class="text-left" scope="col">피드백 반영 전</th>
-                        <th class="text-left" scope="col">피드백 반영 후</th>
+                        <th class="text-left" scope="col">{{ $t('ProcessFeedback.columnApply') }}</th>
+                        <th class="text-left" scope="col">{{ $t('ProcessFeedback.columnProperty') }}</th>
+                        <th class="text-left" scope="col">{{ $t('ProcessFeedback.columnBefore') }}</th>
+                        <th class="text-left" scope="col">{{ $t('ProcessFeedback.columnAfter') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-if="Object.keys(diffItems).length === 0">
                         <td colspan="4" class="text-center px-0">
                             <v-icon class="mr-2">mdi-information</v-icon>
-                            반영 할 내용이 없습니다.
+                            {{ $t('ProcessFeedback.noChanges') }}
                         </td>
                     </tr>
                     <tr v-for="(item, key) in diffItems" :key="key">
@@ -59,7 +59,7 @@
                             <div v-else-if="typeof item.before === 'object'">
                                 <template v-if="key === 'conditionExamples'">
                                     <div class="pa-2">
-                                        <div class="gwt-section-title">좋은 예시</div>
+                                        <div class="gwt-section-title">{{ $t('ProcessFeedback.goodExample') }}</div>
                                         <div v-if="item.before && item.before.good_example && item.before.good_example.length > 0">
                                             <div v-for="(ex, gi) in item.before.good_example" :key="`${key}-before-good-${gi}`" class="gwt-card">
                                                 <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text">{{ ex.given }}</span></div>
@@ -67,9 +67,9 @@
                                                 <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text">{{ ex.then }}</span></div>
                                             </div>
                                         </div>
-                                        <div v-else class="text-grey text-body-2">내용 없음</div>
+                                        <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                         <div class="gwt-divider"></div>
-                                        <div class="gwt-section-title">나쁜 예시</div>
+                                        <div class="gwt-section-title">{{ $t('ProcessFeedback.badExample') }}</div>
                                         <div v-if="item.before && item.before.bad_example && item.before.bad_example.length > 0">
                                             <div v-for="(ex, bi) in item.before.bad_example" :key="`${key}-before-bad-${bi}`" class="gwt-card">
                                                 <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text">{{ ex.given }}</span></div>
@@ -77,7 +77,7 @@
                                                 <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text">{{ ex.then }}</span></div>
                                             </div>
                                         </div>
-                                        <div v-else class="text-grey text-body-2">내용 없음</div>
+                                        <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                     </div>
                                 </template>
                                 <template v-else>
@@ -125,7 +125,7 @@
                             <div v-else-if="typeof item.after === 'object'">
                                 <template v-if="key === 'conditionExamples'">
                                     <div class="pa-2">
-                                        <div class="gwt-section-title">좋은 예시</div>
+                                        <div class="gwt-section-title">{{ $t('ProcessFeedback.goodExample') }}</div>
                                         <div v-if="item.after && item.after.good_example">
                                             <div v-for="(ex, gi) in calculateGwtArrayDiff(item.before && item.before.good_example, item.after.good_example)" :key="`${key}-after-good-${gi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
                                                 <div class="gwt-row">
@@ -148,9 +148,9 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div v-else class="text-grey text-body-2">내용 없음</div>
+                                        <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                         <div class="gwt-divider"></div>
-                                        <div class="gwt-section-title">나쁜 예시</div>
+                                        <div class="gwt-section-title">{{ $t('ProcessFeedback.badExample') }}</div>
                                         <div v-if="item.after && item.after.bad_example">
                                             <div v-for="(ex, bi) in calculateGwtArrayDiff(item.before && item.before.bad_example, item.after.bad_example)" :key="`${key}-after-bad-${bi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
                                                 <div class="gwt-row">
@@ -173,7 +173,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div v-else class="text-grey text-body-2">내용 없음</div>
+                                        <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                     </div>
                                 </template>
                                 <template v-else>
@@ -199,7 +199,7 @@
             </v-table>
 
             <!-- 모바일 카드 뷰 -->
-            <div v-else-if="!isLoading && isMobile" class="mobile-diff-view">
+            <div v-else-if="!isGenerating && !isSubmitting && isMobile" class="mobile-diff-view">
                 <v-card
                     v-for="(item, key) in diffItems"
                     :key="`mobile-${key}`"
@@ -218,11 +218,11 @@
                     
                     <v-card-text class="pt-0">
                         <!-- 반영 전 -->
-                        <div class="mb-3">
-                            <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">피드백 반영 전</div>
+                        <div class="mb-2">
+                            <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">{{ $t('ProcessFeedback.columnBefore') }}</div>
                             <div class="mobile-content-box">
                                 <div v-if="Array.isArray(item.before)">
-                                    <div v-if="item.before.length === 0" class="text-grey text-body-2">내용 없음</div>
+                                    <div v-if="item.before.length === 0" class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                     <div v-else>
                                         <div
                                             v-for="(listItem, index) in item.before"
@@ -239,14 +239,14 @@
                                     </div>
                                 </div>
                                 <div v-else>
-                                    <div class="text-body-2">{{ item.before || '내용 없음' }}</div>
+                                    <div class="text-body-2">{{ item.before || $t('ProcessFeedback.noContent') }}</div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- 반영 후 -->
                         <div>
-                            <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">피드백 반영 후</div>
+                            <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">{{ $t('ProcessFeedback.columnAfter') }}</div>
                             <div class="mobile-content-box">
                                 <div v-if="Array.isArray(item.after)">
                                     <template v-if="diffItems[key] && diffItems[key].changed">
@@ -262,7 +262,7 @@
                                     </template>
                                     <template v-else>
                                         <!-- 기본 배열 표시 -->
-                                        <div v-if="item.after.length === 0" class="text-grey text-body-2">내용 없음</div>
+                                        <div v-if="item.after.length === 0" class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                         <div v-else>
                                             <div
                                                 v-for="(listItem, index) in item.after"
@@ -282,7 +282,7 @@
                                 <div v-else>
                                     <template v-if="key === 'conditionExamples'">
                                         <div class="text-body-2">
-                                            <div class="gwt-section-title">좋은 예시</div>
+                                            <div class="gwt-section-title">{{ $t('ProcessFeedback.goodExample') }}</div>
                                             <div v-if="item.after && item.after.good_example">
                                                 <div v-for="(ex, gi) in calculateGwtArrayDiff(item.before && item.before.good_example, item.after.good_example)" :key="`${key}-m-after-good-${gi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
                                                     <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text"><span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span></span></div>
@@ -290,9 +290,9 @@
                                                     <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text"><span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span></span></div>
                                                 </div>
                                             </div>
-                                            <div v-else class="text-grey text-body-2">내용 없음</div>
+                                            <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                             <div class="gwt-divider"></div>
-                                            <div class="gwt-section-title">나쁜 예시</div>
+                                            <div class="gwt-section-title">{{ $t('ProcessFeedback.badExample') }}</div>
                                             <div v-if="item.after && item.after.bad_example">
                                                 <div v-for="(ex, bi) in calculateGwtArrayDiff(item.before && item.before.bad_example, item.after.bad_example)" :key="`${key}-m-after-bad-${bi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
                                                     <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text"><span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span></span></div>
@@ -300,7 +300,7 @@
                                                     <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text"><span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span></span></div>
                                                 </div>
                                             </div>
-                                            <div v-else class="text-grey text-body-2">내용 없음</div>
+                                            <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                         </div>
                                     </template>
                                     <template v-else>
@@ -316,7 +316,7 @@
                                         </template>
                                         <template v-else>
                                             <!-- 기본 문자열 표시 -->
-                                            <div class="text-body-2">{{ item.after || '내용 없음' }}</div>
+                                            <div class="text-body-2">{{ item.after || $t('ProcessFeedback.noContent') }}</div>
                                         </template>
                                     </template>
                                 </div>
@@ -326,33 +326,47 @@
                 </v-card>
             </div>
 
-            <v-row v-if="!isLoading" class="ma-0 pa-0 mt-2">
+            <v-row v-if="!isGenerating && !isSubmitting" class="ma-0 pa-0 mt-2">
                 <v-spacer></v-spacer>
                 <v-btn @click="closeFeedback"
                     color="gray"
                     variant="elevated" 
                     class="rounded-pill mr-2"
                     density="compact"
-                >취소</v-btn>
-                <v-btn @click="setFeedbackDiff"
+                >{{ $t('Common.cancel') }}</v-btn>
+                <v-btn @click="saveFeedbackDiff"
                     :disabled="!hasSelectedItems"
                     color="primary"
                     variant="elevated" 
                     class="rounded-pill"
                     density="compact"
-                >반영</v-btn>
+                >{{ $t('ProcessFeedback.applyButton') }}</v-btn>
             </v-row>
         </v-card-text>
 
-        <v-card-text v-else class="pa-3">
-            <div class="d-flex justify-start align-center mb-2">
+        <v-card-text v-else class="pa-1">
+            <div class="d-flex justify-start align-center mb-1">
                 <v-icon>mdi-information</v-icon>
-                <span class="text-h6 ml-2">피드백을 선택해주세요</span>
+                <span class="text-h6 ml-2">{{ $t('ProcessFeedback.inputTitle') }}</span>
+                <div class="ml-auto d-flex align-center">
+                    <v-btn 
+                        icon
+                        variant="text" 
+                        density="compact"
+                        :loading="isGenerating"
+                        :disabled="isGenerating || !task"
+                        @click="getFeedback"
+                    >
+                        <Icons :icon="'magic'" :size="20" />
+                    </v-btn>
+                    <v-tooltip activator="parent" location="left">
+                        <span>{{ $t('ProcessFeedback.autoGenerate') }}</span>
+                    </v-tooltip>
+                </div>
             </div>
-            
-            <v-list class="feedback-list">
+            <!-- <v-list class="feedback-list">
                 <v-skeleton-loader
-                    v-if="isLoading"
+                    v-if="isGenerating"
                     type="image"
                     class="mx-auto"
                 ></v-skeleton-loader>
@@ -367,37 +381,45 @@
                     <v-list-item-title>{{ item }}</v-list-item-title>
                 </v-list-item>
                 <v-list-item
-                    v-if="!isLoading"
+                    v-if="!isGenerating"
                     :active="feedbackValue === 'etc'"
                     @click="feedbackValue = 'etc'"
                     class="feedback-item"
                 >
                     <v-list-item-title>기타 입력</v-list-item-title>
                 </v-list-item>
-            </v-list>
+            </v-list> -->
 
             <v-textarea 
-                v-if="feedbackValue == 'etc'"
-                v-model="feedbackText"
-                label="기타"
+                v-model="feedbackValue"
+                :label="$t('ProcessFeedback.feedbackLabel')"
+                :disabled="isGenerating || isSubmitting"
                 rows="3"
+                hide-details
             />
-            <v-row class="ma-0 pa-0">
-                <v-spacer></v-spacer>
-                <v-btn @click="closeFeedback"
+            <div class="d-flex justify-end align-center mt-4">
+                <v-btn 
+                    @click="closeFeedback"
                     color="gray"
                     variant="elevated" 
                     class="rounded-pill mr-2"
                     density="compact"
-                >취소</v-btn>
-                <v-btn @click="submitFeedback"
+                    :disabled="isSubmitting"
+                >
+                    {{ $t('Common.cancel') }}
+                </v-btn>
+                <v-btn 
+                    @click="submitFeedback"
                     :disabled="!feedbackValue"
                     color="primary"
                     variant="elevated" 
                     class="rounded-pill"
                     density="compact"
-                >제출</v-btn>
-            </v-row>
+                    :loading="isSubmitting"
+                >
+                    {{ $t('Common.submit') }}
+                </v-btn>
+            </div>
         </v-card-text>
     </v-card>
 </template>
@@ -410,68 +432,61 @@ export default {
     props: {
         lastMessage: Object,
         task: Object,
-        isAcceptMode: Boolean,
     },
-    data: () => ({
-        isLoading: false,
-        feedbackValue: null,
-        feedbackItems: [],
-        feedbackText: '',
+    data() {
+        return {
+            isGenerating: false,
+            isSubmitting: false,
+            isApplyMode: false,
+            feedbackValue: null,
+            feedbackItems: [],
+            feedbackText: '',
 
-        diffItems: {
-            inputData: {
-                title: '입력 데이터',
-                before: [],
-                after: [],
-                accepted: true,
-                changed: false
+            diffItems: {
+                inputData: {
+                    title: this.$t('ProcessFeedback.inputData'),
+                    before: [],
+                    after: [],
+                    accepted: true,
+                    changed: false
+                },
+                checkpoints: {
+                    title: this.$t('ProcessFeedback.checkpoints'),
+                    before: [],
+                    after: [],
+                    accepted: true,
+                    changed: false
+                },
+                description: {
+                    title: this.$t('ProcessFeedback.description'),
+                    before: '',
+                    after: '',
+                    accepted: true,
+                    changed: false
+                },
+                instruction: {
+                    title: this.$t('ProcessFeedback.instruction'),
+                    before: '',
+                    after: '',
+                    accepted: true,
+                    changed: false
+                },
+                conditionExamples: {
+                    title: this.$t('ProcessFeedback.conditionExamples'),
+                    before: {},
+                    after: {},
+                    accepted: true,
+                    changed: false,
+                    sequenceId: ''
+                }
             },
-            checkpoints: {
-                title: '체크포인트',
-                before: [],
-                after: [],
-                accepted: true,
-                changed: false
-            },
-            description: {
-                title: '설명',
-                before: '',
-                after: '',
-                accepted: true,
-                changed: false
-            },
-            instruction: {
-                title: '지시사항',
-                before: '',
-                after: '',
-                accepted: true,
-                changed: false
-            },
-            conditionExamples: {
-                title: '조건 예시',
-                before: {},
-                after: {},
-                accepted: true,
-                changed: false,
-                sequenceId: ''
+            feedbackDiff: {
+                inputData: [],
+                checkpoints: [],
+                description: '',
+                instruction: '',
+                conditionExamples: {}
             }
-        },
-        feedbackDiff: {
-            inputData: [],
-            checkpoints: [],
-            description: '',
-            instruction: '',
-            conditionExamples: {}
-        }
-    }),
-    async mounted() {
-        if (this.task && !this.isAcceptMode) {
-            this.isLoading = true;
-            this.feedbackValue = 'etc';
-            await this.getFeedback();
-        } else if (this.task && this.isAcceptMode) {
-            this.isLoading = true;
-            await this.getFeedbackDiff();
         }
     },
     computed: {
@@ -481,6 +496,9 @@ export default {
         hasSelectedItems() {
             return Object.values(this.diffItems).some(item => item.accepted);
         },
+    },
+    mounted() {
+        this.isApplyMode = false;
     },
     methods: {
         // Diff UI 관련 메서드들
@@ -606,34 +624,49 @@ export default {
             });
         },
         
+        closeFeedback(taskId = null) {
+            if (taskId) {
+                this.$emit('closeFeedback', taskId);
+            } else {
+                this.$emit('closeFeedback');
+            }
+        },
         async getFeedback() {
+            if (!this.task || this.isGenerating) {
+                return;
+            }
+            this.isGenerating = true;
+            this.feedbackValue = null;
             const obj = {
-                processDefinitionId: this.task.defId,
-                activityId: this.task.tracingTag,
-                taskId: this.task.taskId,
+                processDefinitionId: this.task.procDefId,
+                activityId: this.task.activityId,
+                taskId: this.task.id,
+            };
+            try {
+                const items = await backend.getFeedback(obj);
+                if (items && items.length > 0) {
+                    // this.feedbackItems = items;
+                    this.feedbackValue = items[0];
+                } else {
+                    this.feedbackValue = '';
+                }
+            } finally {
+                this.isGenerating = false;
             }
-            const items = await backend.getFeedback(obj);
-            if (items) {
-                this.feedbackItems = items;
-            }
-            this.feedbackValue = '';
-            this.isLoading = false;
         },
         async submitFeedback() {
             if (this.feedbackValue) {
                 if (this.feedbackValue == 'etc') {
                     this.feedbackValue = this.feedbackText;
                 }
-                await backend.submitFeedback(this.feedbackValue, this.task.taskId);
-                this.$emit('submitFeedback', this.task.taskId);
+                this.isSubmitting = true;
+                await backend.saveFeedback(this.feedbackValue, this.task.id);
+                await this.getFeedbackDiff();
+                this.isSubmitting = false;
             }
         },
-        closeFeedback() {
-            this.$emit('closeFeedback');
-        },
         async getFeedbackDiff() {
-            const diff = await backend.getFeedbackDiff(this.task.taskId);
-            // console.log('피드백 diff 데이터:', diff);
+            const diff = await backend.getFeedbackDiff(this.task.id);
             if (diff && diff.modifications) {
                 for (const key in diff.modifications) {
                     if (diff.modifications[key] && diff.modifications[key].changed) {
@@ -649,9 +682,13 @@ export default {
                 }
             }
             console.log(this.diffItems);
-            this.isLoading = false;
+            if (Object.keys(this.diffItems).length > 0) {
+                this.isApplyMode = true;
+            } else {
+                this.closeFeedback();
+            }
         },
-        async setFeedbackDiff() {
+        async saveFeedbackDiff() {
             if (!this.task || !this.diffItems || this.diffItems.length == 0) {
                 return;
             }
@@ -666,8 +703,8 @@ export default {
             if (this.feedbackDiff && this.feedbackDiff.inputData) {
                 this.feedbackDiff.inputData = this.feedbackDiff.inputData.map(item => item.key);
             }
-            await backend.setFeedbackDiff(this.feedbackDiff, this.task.tracingTag, this.task.defId);
-            this.closeFeedback();
+            await backend.applyFeedback(this.feedbackDiff, this.task.id);
+            this.closeFeedback(this.task.id);
         },
 
     }
@@ -676,18 +713,18 @@ export default {
 
 <style scoped>
 .feedback-list {
-    margin-bottom: 16px;
+    margin-bottom: 4px;
 }
 
 .feedback-item {
     cursor: pointer;
     border-radius: 4px;
-    margin-bottom: 4px;
-    padding: 8px 12px !important;
+    margin-bottom: 2px;
+    padding: 4px 6px !important;
 }
 
 .feedback-item:hover {
-    background-color: #f5f5f5 !important;
+    background-color: rgba(var(--v-theme-on-surface), 0.04) !important;
 }
 
 .feedback-item .v-list-item-title {
@@ -713,8 +750,8 @@ export default {
 }
 
 .diff-table td {
-    border-top: 1px solid #e0e0e0;
-    border-bottom: 1px solid #e0e0e0;
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .diff-table th:first-child,
@@ -764,16 +801,16 @@ export default {
 }
 
 .diff-word.added {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+    background-color: rgba(var(--v-theme-success), 0.12);
+    color: rgb(var(--v-theme-success));
+    border: 1px solid rgba(var(--v-theme-success), 0.3);
     padding: 1px 3px;
 }
 
 .diff-word.removed {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: rgba(var(--v-theme-error), 0.12);
+    color: rgb(var(--v-theme-error));
+    border: 1px solid rgba(var(--v-theme-error), 0.3);
     text-decoration: line-through;
     padding: 1px 3px;
 }
@@ -789,21 +826,21 @@ export default {
 }
 
 .gwt-divider {
-    border-top: 1px dashed #e0e0e0;
+    border-top: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));
     margin: 8px 0;
 }
 
 .gwt-card {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
-    padding: 8px 10px;
-    margin-bottom: 6px;
+    background-color: rgba(var(--v-theme-surface-variant), 0.3);
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin-bottom: 2px;
 }
 
 .gwt-card.added {
-    background-color: #d4edda;
-    border-left: 4px solid #28a745;
+    background-color: rgba(var(--v-theme-success), 0.08);
+    border-left: 4px solid rgb(var(--v-theme-success));
 }
 
 .gwt-row {
@@ -832,13 +869,13 @@ export default {
 }
 
 .diff-list-item.added {
-    background-color: #d4edda;
-    border-left: 4px solid #28a745;
+    background-color: rgba(var(--v-theme-success), 0.08);
+    border-left: 4px solid rgb(var(--v-theme-success));
 }
 
 .diff-list-item.removed {
-    background-color: #f8d7da;
-    border-left: 4px solid #dc3545;
+    background-color: rgba(var(--v-theme-error), 0.08);
+    border-left: 4px solid rgb(var(--v-theme-error));
     text-decoration: line-through;
 }
 
@@ -855,13 +892,13 @@ export default {
 
 .diff-list-item.added .diff-icon::before {
     content: '+';
-    color: #28a745;
+    color: rgb(var(--v-theme-success));
     font-weight: bold;
 }
 
 .diff-list-item.removed .diff-icon::before {
     content: '-';
-    color: #dc3545;
+    color: rgb(var(--v-theme-error));
     font-weight: bold;
 }
 
@@ -885,11 +922,11 @@ export default {
 }
 
 .mobile-content-box {
-    background-color: #f8f9fa;
-    border-radius: 6px;
-    padding: 12px;
-    border: 1px solid #e9ecef;
-    min-height: 40px;
+    background-color: rgba(var(--v-theme-surface-variant), 0.3);
+    border-radius: 4px;
+    padding: 6px;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    min-height: 30px;
 }
 
 .mobile-diff-item {
@@ -901,15 +938,15 @@ export default {
 }
 
 .mobile-diff-item.added {
-    background-color: #d4edda;
+    background-color: rgba(var(--v-theme-success), 0.08);
     padding: 4px 8px;
-    border-left: 3px solid #28a745;
+    border-left: 3px solid rgb(var(--v-theme-success));
 }
 
 .mobile-diff-item.removed {
-    background-color: #f8d7da;
+    background-color: rgba(var(--v-theme-error), 0.08);
     padding: 4px 8px;
-    border-left: 3px solid #dc3545;
+    border-left: 3px solid rgb(var(--v-theme-error));
     text-decoration: line-through;
 }
 
@@ -926,12 +963,12 @@ export default {
 
 .mobile-diff-item.added .diff-icon-mobile::before {
     content: '+';
-    color: #28a745;
+    color: rgb(var(--v-theme-success));
 }
 
 .mobile-diff-item.removed .diff-icon-mobile::before {
     content: '-';
-    color: #dc3545;
+    color: rgb(var(--v-theme-error));
 }
 
 .mobile-diff-item.unchanged .diff-icon-mobile::before {
@@ -941,11 +978,11 @@ export default {
 /* 모바일에서 체크박스 스타일 조정 */
 @media (max-width: 600px) {
     .diff-card .v-card-title {
-        padding: 12px 16px 8px 16px !important;
+        padding: 6px 8px 4px 8px !important;
     }
     
     .diff-card .v-card-text {
-        padding: 0 16px 16px 16px !important;
+        padding: 0 8px 8px 8px !important;
     }
     
     .mobile-content-box {

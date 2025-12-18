@@ -91,6 +91,7 @@
                 </div>
             </v-row>
         </div>
+
     </div>
 </template>
 
@@ -179,7 +180,10 @@ export default {
             resizeTimeout: null,
             panStart: { x: 0, y: 0 },
             pinchStartZoom: 1,
-            laneAssignments: []
+            laneAssignments: [],
+            // 최초 로딩 시 포커싱할 태스크 ID 목록
+            focusedTaskIds: [],
+            initialFocusDone: false
         };
     },
     computed: {
@@ -450,6 +454,12 @@ export default {
                 };
                 zoomScroll.scaleOffset = bbox.scale;
                 zoomScroll.resetMovedDistance();
+
+                // resetZoom까지 모두 끝난 뒤, 최초 1회만 포커싱 수행
+                if (!self.initialFocusDone && self.focusedTaskIds && self.focusedTaskIds.length > 0) {
+                    self.focusOnTasks(self.focusedTaskIds);
+                    self.initialFocusDone = true;
+                }
             } catch (error) {
                 // 에러 발생 시 조용히 무시 (중요하지 않은 UI 동작이므로)
             }
@@ -719,6 +729,9 @@ export default {
             
             if(val) {
                 try {
+                    // 포커싱 대상이 될 태스크 ID들을 임시로 수집
+                    const focusIds = [];
+
                     // 현재 러닝 상태인 태스크들을 먼저 파악
                     const currentRunningTasks = [];
                     Object.keys(val).forEach((task) => {
@@ -742,7 +755,7 @@ export default {
                         }
                     });
 
-                    // 태스크 상태별 처리
+                    // 태스크 상태별 처리 및 포커싱 대상 수집
                     Object.keys(val).forEach((task) => {
                         let taskStatus = val[task];
                         
@@ -751,9 +764,11 @@ export default {
                                 canvas.addMarker(task, 'completed');
                             } else if(taskStatus == 'Running') {
                                 canvas.addMarker(task, 'running');
+                                focusIds.push(task);
                                 
-                                // 러닝 상태인 태스크에서 나가는 연결선에 애니메이션 적용
                                 const taskElement = elementRegistry.get(task);
+
+                                // 러닝 상태인 태스크에서 나가는 연결선에 애니메이션 적용
                                 if (taskElement && taskElement.businessObject.outgoing  && this.lineAnimation) {
                                     taskElement.businessObject.outgoing.forEach((flow) => {
                                         try {
@@ -775,7 +790,22 @@ export default {
                                                 const targetRef = flow.targetRef;
                                                 if (targetRef && targetRef.id) {
                                                     canvas.addMarker(targetRef.id, 'running');
+                                                    focusIds.push(targetRef.id);
                                                 }
+                                            }
+                                        } catch (e) {
+                                            // 개별 flow 처리 실패 시 계속 진행
+                                        }
+                                    });
+                                }
+
+                                // 러닝 상태인 태스크로 들어오는 이전 Completed 태스크도 포커싱 목록에 포함
+                                if (taskElement && taskElement.businessObject.incoming && Array.isArray(taskElement.businessObject.incoming)) {
+                                    taskElement.businessObject.incoming.forEach((flow) => {
+                                        try {
+                                            const sourceRef = flow.sourceRef;
+                                            if (sourceRef && sourceRef.id && val[sourceRef.id] === 'Completed') {
+                                                focusIds.push(sourceRef.id);
                                             }
                                         } catch (e) {
                                             // 개별 flow 처리 실패 시 계속 진행
@@ -791,9 +821,73 @@ export default {
                             console.warn(`태스크 ${task} 상태 처리 중 오류:`, e);
                         }
                     });
+
+                    // 포커싱 대상 태스크 ID를 중복 제거하여 저장
+                    self.focusedTaskIds = Array.from(new Set(focusIds));
                 } catch (error) {
                     console.error('setTaskStatus error:', error);
                 }
+            }
+        },
+        /**
+         * 포커싱 대상 태스크들의 중간 지점으로 뷰를 이동
+         * 최초 로딩 시 한 번만 호출되도록 initialFocusDone 플래그로 제어
+         */
+        focusOnTasks(taskIds = []) {
+            try {
+                if (!taskIds || taskIds.length === 0) return;
+
+                const canvas = this.bpmnViewer.get('canvas');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                if (!canvas || !elementRegistry) return;
+
+                const elements = taskIds
+                    .map(id => elementRegistry.get(id))
+                    .filter(el => el && el.x != null && el.y != null && el.width != null && el.height != null);
+
+                if (elements.length === 0) return;
+
+                // 모든 대상 태스크들의 bounding box 계산
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                elements.forEach(el => {
+                    const x1 = el.x;
+                    const y1 = el.y;
+                    const x2 = el.x + el.width;
+                    const y2 = el.y + el.height;
+                    if (x1 < minX) minX = x1;
+                    if (y1 < minY) minY = y1;
+                    if (x2 > maxX) maxX = x2;
+                    if (y2 > maxY) maxY = y2;
+                });
+
+                if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+                    return;
+                }
+
+                const targetCenterX = (minX + maxX) / 2;
+                const targetCenterY = (minY + maxY) / 2;
+
+                const viewbox = canvas.viewbox();
+                if (!viewbox || !Number.isFinite(viewbox.width) || !Number.isFinite(viewbox.height)) {
+                    return;
+                }
+
+                // 선택된 태스크들이 화면 중앙에 오도록 하면서, 기존 대비 2배 확대
+                const scaleFactor = 2;
+                const newWidth = viewbox.width / scaleFactor;
+                const newHeight = viewbox.height / scaleFactor;
+
+                const newViewbox = Object.assign({}, viewbox, {
+                    width: newWidth,
+                    height: newHeight,
+                    x: targetCenterX - newWidth / 2,
+                    y: targetCenterY - newHeight / 2
+                });
+
+                canvas.viewbox(newViewbox);
+            } catch (e) {
+                // 포커싱 실패 시에는 조용히 무시
+                console.warn('focusOnTasks error:', e);
             }
         },
         fetchDiagram(url) {
@@ -1112,6 +1206,7 @@ svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
 .participant-item:hover {
     background-color: rgba(0, 0, 0, 0.03);
 }
+
 
 @media (max-width: 768px) {
 }

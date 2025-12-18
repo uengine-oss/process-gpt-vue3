@@ -1,11 +1,9 @@
 <template>
-  <div class="pdf-previewer" v-html="formattedHtml" style="height: 600px;">
-  </div>
-  <v-card-actions>
-    <v-spacer></v-spacer>
-    <v-btn color="primary" text @click="saveDocument()">{{ $t('PDFPreviewer.saveDocument') }}</v-btn>
-    <v-btn color="error" text @click="closeDialog()">{{ $t('PDFPreviewer.close') }}</v-btn>
-  </v-card-actions>
+  <div
+    class="pdf-previewer"
+    v-html="formattedHtml"
+    style="width: 100%; box-sizing: border-box;"
+  ></div>
   <div v-if="loading" class="overlay" style="background-color: rgba(0, 0, 0, 0.5); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;">
     <div style="background-color: white; padding: 20px; border-radius: 10px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%;">
       <div style="text-align: center; margin-bottom: 20px;">
@@ -75,11 +73,25 @@ export default {
             parent.removeChild(attachmentContainer);
         }
 
+        // PDF 추출 시 아이콘 폰트(mdi-check)가 깨지는 문제 방지:
+        // 체크포인트의 체크 아이콘을 폰트 의존도가 낮은 문자(✔)로 치환
+        const checkIcons = tempDiv.querySelectorAll('.v-icon.mdi-check, .v-icon.mdi-checkbox-marked');
+        checkIcons.forEach(icon => {
+            const span = document.createElement('span');
+            span.textContent = '✔';
+            span.style.marginRight = '4px';
+            span.style.fontSize = '14px';
+            // 항상 테마 primary 색상으로 출력
+            span.style.color = 'rgb(var(--v-theme-primary))';
+            icon.parentNode.replaceChild(span, icon);
+        });
+
         tempDiv.querySelectorAll('button').forEach(button => button.remove());
         const html = tempDiv.innerHTML;
         this.formattedHtml = html;
         console.log(this.formattedHtml);
     },
+    // 부모에서 $refs를 통해 호출할 수 있도록 public 메서드로 유지
     async saveDocument() {
       this.loading = true;
       this.progress = 0;
@@ -89,14 +101,21 @@ export default {
                 return;
             }
 
-            const tempContainer = document.getElementsByClassName("pdf-previewer")[0];
-            const containerWidth = tempContainer.offsetWidth || 800;
-            const containerHeight = tempContainer.offsetHeight || 1120;
+            // 🔹 기본 스타일 자체가 전체 내용을 보여주도록 설정되어 있으므로,
+            //     현재 미리보기 DOM 그대로를 캡처
+            const preview = document.getElementsByClassName("pdf-previewer")[0];
+            if (!preview) {
+                console.error("🚨 pdf-previewer 엘리먼트를 찾을 수 없습니다.");
+                this.loading = false;
+                return;
+            }
 
-            console.log(`📏 변환 영역 크기: ${containerWidth}px x ${containerHeight}px`);
+            const containerWidth = preview.scrollWidth || preview.clientWidth || 800;
+            const containerHeight = preview.scrollHeight || preview.clientHeight || 1120;
 
+            console.log(`📏 전체 변환 영역 크기: ${containerWidth}px x ${containerHeight}px`);
 
-            const dataUrl = await toPng(tempContainer, {
+            const dataUrl = await toPng(preview, {
                 quality: 1.0, // 🔥 품질 최적화
                 cacheBust: true, // 캐시 문제 방지
                 backgroundColor: "white",
@@ -152,9 +171,6 @@ export default {
             this.loading = false;
             this.progress = 0;
         }
-    },
-    closeDialog() {
-        this.$emit('closeDialog');
     }
   }
 };

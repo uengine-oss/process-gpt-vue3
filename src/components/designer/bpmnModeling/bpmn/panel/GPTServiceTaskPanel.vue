@@ -7,12 +7,21 @@
             <Instruction v-model="activity.description" class="mb-4"></Instruction>
             <!-- Checkpoints -->
             <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4"></Checkpoints>
+            
+            <!-- Custom Properties -->
+            <KeyValueField
+                v-model="activity.customProperties"
+                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                :readonly="isViewMode"
+                class="mb-4"
+            ></KeyValueField>
         </div>
     </div>
 </template>
 <script>
 import Instruction from '@/components/designer/InstructionField.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
+import KeyValueField from '@/components/designer/KeyValueField.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
@@ -20,7 +29,8 @@ export default {
     name: 'gpt-service-task-panel',
     components: {
         Instruction,
-        Checkpoints
+        Checkpoints,
+        KeyValueField
     },
     props: {
         uengineProperties: Object,
@@ -44,7 +54,8 @@ export default {
                 duration: 5,
                 attachments: [],
                 instruction: '',
-                checkpoints: ['']
+                checkpoints: [''],
+                customProperties: []
             }
         }
     },
@@ -53,7 +64,7 @@ export default {
         if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
             const activity = me.processDefinition.activities.find(activity => activity.id === me.element.id);
             if (activity) {
-                me.activity = activity;
+                me.activity = { ...me.activity, ...activity };
                 console.log(me.activity);
             } else {
                 console.log('Activity not found');

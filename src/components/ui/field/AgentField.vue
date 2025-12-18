@@ -1,9 +1,9 @@
 <template>
     <div>
-        <!-- 편집 모드가 아니고 A2A 타입이 아닐 때만 생성 기능 표시 -->
+        <!-- 편집 모드가 아니고 A2A, PGAGENT 타입이 아닐 때만 생성 기능 표시 -->
         <UserInputGenerator
             class="agent-field-User-input-generator pb-2"
-            v-if="!isEdit && type !== 'a2a'"
+            v-if="!isEdit && type !== 'a2a' && type !== 'pgagent'"
             :teamInfo="teamInfo"
             :type="type"
             :reset="resetGenerator"
@@ -13,8 +13,8 @@
             @generation-finished="onGenerationFinished"
         />
         
-        <!-- 생성 중일 때 스켈레톤 표시 (A2A 타입이 아닐 때만) -->
-        <div v-if="isGenerating && !isEdit && type !== 'a2a'" class="agent-field-skeleton">
+        <!-- 생성 중일 때 스켈레톤 표시 (A2A, PGAGENT 타입이 아닐 때만) -->
+        <div v-if="isGenerating && !isEdit && type !== 'a2a' && type !== 'pgagent'" class="agent-field-skeleton">
             <v-skeleton-loader
                 type="image"
                 class="mx-auto"
@@ -57,16 +57,39 @@
                     class="mb-2"
                     rows="3"
                 ></v-textarea>
-                <v-combobox
-                    v-model="selectedSkills"
-                    :items="skills"
+                <v-textarea
+                    v-model="agent.skills"
                     :label="$t('agentField.agentSkills')"
-                    multiple
-                    chips
-                    clearable
-                    closable-chips
-                    variant="outlined"
-                ></v-combobox>
+                    rows="3"
+                ></v-textarea>
+            </div>
+
+            <div v-else-if="type === 'pgagent'">
+                <v-text-field 
+                    v-model="agent.name" 
+                    :label="$t('agentField.agentName')" 
+                    :rules="nameRules"
+                    class="mb-2"
+                ></v-text-field>
+                <v-text-field 
+                    v-model="agent.alias" 
+                    :label="$t('agentField.alias')" 
+                    :rules="aliasRules"
+                    @blur="checkAlias(agent.id)"
+                    class="mb-2"
+                ></v-text-field>
+                <v-textarea
+                    v-model="agent.description" 
+                    :label="$t('agentField.agentDescription')"
+                    class="mb-2"
+                    rows="3"
+                ></v-textarea>
+                <v-textarea
+                    v-model="agent.skills" 
+                    :label="$t('agentField.agentSkills')"
+                    class="mb-2"
+                    rows="3"
+                ></v-textarea>
             </div>
 
             <div v-else>
@@ -96,6 +119,16 @@
                     v-model="selectedTools"
                     :items="toolList"
                     :label="$t('agentField.agentTools')"
+                    multiple
+                    chips
+                    clearable
+                    closable-chips
+                    variant="outlined"
+                ></v-combobox>
+                <v-combobox
+                    v-model="selectedSkills"
+                    :items="skills"
+                    :label="$t('agentField.agentSkills')"
                     multiple
                     chips
                     clearable
@@ -144,6 +177,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import ProfileField from '@/components/ui/field/ProfileField.vue';
 import UserInputGenerator from '@/components/ui/UserInputGenerator.vue';
+import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
     components: {
@@ -163,7 +197,9 @@ export default {
                 endpoint: '',
                 description: '',
                 skills: '',
-                model: ''
+                model: '',
+                alias: '',
+                tools: ''
             })
         },
         teamInfo: {
@@ -196,6 +232,7 @@ export default {
     },
     data() {
         return {
+            backend: null,
             agent: {
                 id: '',
                 name: '',
@@ -205,9 +242,11 @@ export default {
                 isAgent: true,
                 endpoint: '',
                 img: '',
+                alias: '',
                 description: '',
                 skills: '',
-                model: ''
+                model: '',
+                tools: ''
             },
             mcpTools: {},
             toolList: [],
@@ -275,13 +314,22 @@ export default {
                 ]
             },
             selectedProvider: '',
-            selectedModel: ''
+            selectedModel: '',
+            aliasRules: [
+                (value) => !!value || this.$t('organizationChartDefinition.aliasRequired'),
+            ]
+        }
+    },
+    setup() {
+        const defaultSetting = useDefaultSetting();
+        return {
+            defaultSetting
         }
     },
     computed: {
         showDetailFields() {
-            // A2A 타입일 때는 바로 필드를 표시
-            if (this.type === 'a2a') {
+            // A2A, PGAGENT 타입일 때는 바로 필드를 표시
+            if (this.type === 'a2a' || this.type === 'pgagent') {
                 return true;
             }
             // 일반 agent 타입일 때는 기존 로직 사용
@@ -332,6 +380,8 @@ export default {
         }
     },
     async mounted() {
+        this.backend = BackendFactory.createBackend();
+
         if (this.modelValue && this.modelValue.isAgent) {
             this.agent = this.modelValue;
             if (this.agent.tools) this.selectedTools = this.agent.tools.split(',');
@@ -340,6 +390,7 @@ export default {
         if (!this.agent.id || this.agent.id == '') this.agent.id = this.uuid();
         if (this.type === 'agent') {
             await this.getTools();
+            await this.getSkills();
         }
         if (this.agent.model && this.agent.model.includes('/')) {
             const [prov, mod] = this.agent.model.split('/');
@@ -372,9 +423,10 @@ export default {
                     if (generatedData.tools) {
                         this.selectedTools = generatedData.tools.split(',').map(tool => tool.trim());
                     }
-                } else if (this.type === 'a2a') {
+                } else if (this.type === 'a2a' || this.type === 'pgagent') {
                     if (generatedData.id) this.agent.id = generatedData.id;
                     if (generatedData.name) this.agent.name = generatedData.name;
+                    if (generatedData.alias) this.agent.alias = generatedData.alias;
                     if (generatedData.description) this.agent.description = generatedData.description;
                     
                     if (generatedData.skills) {
@@ -400,15 +452,19 @@ export default {
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         async getTools() {
-            const backend = BackendFactory.createBackend();
-            const jsonData = await backend.getMCPByTenant();
+            const jsonData = await this.backend.getMCPByTenant();
             if (jsonData) {
                 this.mcpTools = jsonData.mcpServers;
-                const tools = Object.keys(jsonData.mcpServers);
-                this.toolList = tools;
             } else {
-                alert('MCP 설정이 없습니다.');
-                this.$router.push('/account-settings');
+                this.mcpTools = {};
+            }
+            const tools = Object.keys(this.mcpTools);
+            this.toolList = tools;
+        },
+        async getSkills() {
+            const tenantInfo = await this.backend.getTenantInfo(window.$tenantName);
+            if (tenantInfo && tenantInfo.skills) {
+                this.skills = tenantInfo.skills;
             }
         },
         async fetchAgentData() {
@@ -419,14 +475,10 @@ export default {
 
             this.isLoading = true;
             try {
-                const backend = BackendFactory.createBackend();
-                const data = await backend.fetchAgentData(this.agent.endpoint);
-                console.log(data);
-
+                const data = await this.backend.fetchAgentData(this.agent.endpoint);
                 if (data.name) this.agent.name = data.name;
                 if (data.description) this.agent.description = data.description;
                 if (data.skills) this.selectedSkills = data.skills.map(skill => skill.id);
-                console.log(this.selectedSkills);
 
             } catch (error) {
                 console.error('Error fetching agent data:', error);
@@ -440,6 +492,18 @@ export default {
         onProviderChange(value) {
             const models = this.getModelsForProvider(value);
             this.selectedModel = models.length ? models[0].key : '';
+        },
+        async checkAlias(id) {
+            this.aliasRules = [
+                (value) => !!value || this.$t('organizationChartDefinition.aliasRequired'),
+                async (value) => {
+                    if (value) {
+                        const data = await this.backend.checkAgentAlias(value, id);
+                        return data.error ? this.$t('organizationChartDefinition.aliasAlreadyExists') : true;
+                    }
+                    return true;
+                }
+            ];
         }
     }
 }

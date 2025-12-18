@@ -22,7 +22,7 @@
                     <div>ID: {{ item.instId }}</div>
                     <div>{{ $t('filterConfigLabel.startDate') }}: {{ formatDateTime(item.startDate) }}</div>
                     <div>{{ $t('filterConfigLabel.endDate') }}: {{ formatDateTime(item.endDate) }}</div>
-                    <div>{{ $t('filterConfigLabel.dueDate') }}: {{ formatDateTime(item.dueDate) }}</div>
+                    <!-- <div>{{ $t('filterConfigLabel.dueDate') }}: {{ formatDateTime(item.dueDate) }}</div> -->
                     
                     <!-- 참여자 정보 표시 -->
                     <div v-if="getParticipantsForItem(item).length > 0" class="mt-2">

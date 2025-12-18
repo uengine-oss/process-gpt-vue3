@@ -206,9 +206,9 @@
                 </div>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog" max-width="80%" persistent
-            :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
-             :fullscreen="isMobile"
+        <v-dialog v-model="executeDialog"
+            persistent
+            fullscreen
         >
             <div v-if="!pal && mode === 'ProcessGPT'">
                 <process-gpt-execute :isSimulate="isSimulate" :processDefinition="processDefinition" :bpmn="bpmn" :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
@@ -489,30 +489,39 @@ export default {
             return this.isConsultingMode ? 10 : 3;
         },
     },
+    async beforeRouteUpdate(to, from, next) {
+        await this.handleRouteChangeConfirmation(to, from, next, 'update');
+    },
     async beforeRouteLeave(to, from, next) {
-        if (this.bpmn && this.bpmn.length > 0) {
-            if (this.useLock && this.lock) {
-                next();
-            }
-            const store = useBpmnStore();
-            const modeler = store.getModeler;
-            const xmlObj = await modeler.saveXML({ format: true, preamble: true });
-
-            if (from.path === '/definitions/chat' && xmlObj && xmlObj.xml && !this.isViewMode) {
-            const answer = window.confirm(this.$t('changePath'));
-                if (answer) {
+        await this.handleRouteChangeConfirmation(to, from, next, 'leave');
+    },
+    methods: {
+        async handleRouteChangeConfirmation(to, from, next, type) {
+            if (this.bpmn && this.bpmn.length > 0) {
+                if (this.useLock && this.lock) {
                     next();
+                    return;
+                }
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
+                const xmlObj = await modeler.saveXML({ format: true, preamble: true });
+                
+                const shouldConfirm = xmlObj && xmlObj.xml && !this.isViewMode;
+
+                if (shouldConfirm) {
+                    const answer = window.confirm(this.$t('changePath'));
+                    if (answer) {
+                        next();
+                    } else {
+                        next(false);
+                    }
                 } else {
-                    next(false);
+                    next();
                 }
             } else {
                 next();
             }
-        } else {
-            next();
-        }
-    },
-    methods: {
+        },
         async addTeamMembers(teamMemberData){
             const selectedTeamInfo = teamMemberData.selectedTeamInfo;
             const selectedTeamMembers = teamMemberData.selectedTeamMembers;
@@ -1158,6 +1167,9 @@ export default {
                 }
             }
         },
+        afterModelStopped(response) {
+            console.log(response);
+        },
         async afterModelCreated(response) {
             let jsonProcess;
             try {
@@ -1167,7 +1179,7 @@ export default {
                     } catch(e){
                         try {
                             jsonProcess = partialParse(response);
-                            if(jsonProcess && Object.keys(jsonProcess).length !== 0){
+                            if(!jsonProcess || Object.keys(jsonProcess).length === 0){
                                 jsonProcess = partialParse(response + '"');
                             }
                         } catch(e){
