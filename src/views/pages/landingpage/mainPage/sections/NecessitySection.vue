@@ -2,7 +2,8 @@
     <section class="necessity-section">
       <div class="container mx-auto px-4">
         <!-- 섹션 타이틀 -->
-        <h2 class="section-title font-bold text-center mb-12">{{ $t('NecessitySection.title') }}</h2>
+        <h2 class="section-title font-bold text-center">{{ $t('NecessitySection.title1') }}</h2>
+        <h2 class="section-title font-bold text-center mb-12">{{ $t('NecessitySection.title2') }}</h2>
 
         <!-- 인트로 및 AI 기능 설명 -->
         <div class="content-block">
@@ -76,8 +77,8 @@
   }
 
   .section-title {
-    font-size: 1.875rem;
-    line-height: 1.6;
+    font-size: 48px;
+    line-height: 1.3;
   }
 
   .content-block {
@@ -125,7 +126,7 @@
   }
   
   .problem-title {
-    font-size: 1.2rem; 
+    font-size: 20px; 
     font-weight: 600; 
     line-height: 1.6; 
     margin-bottom: 10px;
@@ -147,15 +148,8 @@
     margin-bottom: 30px;
   }
 
-  .solution-intro {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1976D2;
-    margin-bottom: 12px;
-  }
-
   .solution-title {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     color: #1976D2;
     line-height: 1.4;
@@ -208,7 +202,7 @@
     }
     
     .section-title {
-      font-size: 26px;
+      font-size: 32px;
     }
 
     .ai-features-grid {
@@ -224,11 +218,12 @@
     }
 
     .problem-title {
-      font-size: 1.1rem; 
+      font-size: 18px; 
     }
 
     .solution-section {
-      padding: 35px 25px;
+      padding: 40px 20px;
+      margin-top: 40px;
     }
 
     .solution-title {
@@ -236,7 +231,7 @@
     }
 
     .solution-description {
-      font-size: 18px;
+      font-size: 16px;
     }
 
     .benefits-grid {
@@ -249,10 +244,6 @@
   }
   
   @media (max-width: 576px) {
-    .section-title {
-      font-size: 22px;
-    }
-    
     .ai-features-grid {
       grid-template-columns: 1fr;
       gap: 12px;
@@ -267,34 +258,9 @@
       font-size: 36px !important;
     }
 
-    .solution-section {
-      padding: 40px 20px;
-      margin-top: 40px;
-    }
-
-    .solution-intro {
-      font-size: 16px;
-    }
-
-    .solution-title {
-      font-size: 19px;
-    }
-
-    .solution-description {
-      font-size: 17px;
-    }
-
     .benefits-grid {
       grid-template-columns: 1fr;
       gap: 10px;
-    }
-
-    .benefit-item {
-      padding: 12px;
-    }
-
-    .benefit-item p {
-      font-size: 14px;
     }
   }
   </style>

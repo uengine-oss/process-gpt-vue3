@@ -1,10 +1,8 @@
 <template>
   <section id="works" class="works">
-    <div class="container">
-      <div class="section-header">
-        <h2>{{ $t('HowSection.title') }}</h2>
-      </div>
-      
+    <div class="container mx-auto px-4">
+      <h2 class="section-title font-bold text-center mb-12">{{ $t('HowSection.title') }}</h2>
+
       <div>
 
         <!-- 1 사람·에이전트 협업형 업무 실행 -->
@@ -185,25 +183,9 @@ export default {
   background-color: var(--bg-color);
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: 50px;
-}
-
-.section-header h2 {
-  /* font-size: 2.2rem; */
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--text-color-dark);
-  margin-bottom: 15px;
-}
-
-.section-header p {
-  /* font-size: 1.1rem; */
-  font-size: 17px;
-  color: var(--text-color);
-  max-width: 700px;
-  margin: 0 auto;
+.section-title {
+  font-size: 48px;
+  line-height: 1.3;
 }
 
 .tab-wrap {
@@ -228,7 +210,6 @@ export default {
 }
 
 .tab-text h3 {
-  /* font-size: 1.8rem; */
   font-size: 30px;
   font-weight: 600;
   color: var(--text-color-dark);
@@ -238,7 +219,7 @@ export default {
 .tab-text h3:after {
   content: '';
   display: block;
-  width: 80%;
+  width: 98%;
   padding-top: 15px;
   border-bottom: 1px solid #333;
 }
@@ -253,7 +234,6 @@ export default {
   margin-bottom: 10px;
   color: var(--text-color);
   font-weight: 600;
-  /* font-size: 1.15rem; */
   font-size: 19px;
   line-height: 1.6;
 }
@@ -268,18 +248,12 @@ export default {
   border: 10px solid #efefef;
 }
 
-.tab-image img, .modal-image img {
+.tab-image img {
   width: 100%;
   height: auto;
-  /* border-radius: 8px; */
+  border-radius: 8px;
   /* box-shadow: 0 5px 15px var(--shadow-color); */
   transition: transform 0.3s ease;
-}
-
-.modal-image {
-  max-width: 800px;
-  min-width: 300px;
-  /* margin: 0 auto; */
 }
 
 @media (max-width: 768px) {
@@ -287,9 +261,8 @@ export default {
     padding: 60px 0 20px;
   }
   
-  .section-header h2 {
-    /* font-size: 1.8rem; */
-    font-size: 30px;
+  .section-title {
+    font-size: 32px;
   }
 
   .tab-wrap {
@@ -298,15 +271,15 @@ export default {
   }
   
   .tab-text h3 {
-    /* font-size: 1.4rem; */
-    max-width: 70%;
-    font-size: 26px;
-    color: var(--text-color-dark);
+    font-size: 24px;
+  }
+
+  .tab-text h3:after {
+    width: 100%;
   }
 
   .tab-text ul li {
     margin-bottom: 7px;
-    /* font-size: 1rem; */
     font-size: 18px;
     line-height: 1.5;
   }
@@ -314,7 +287,7 @@ export default {
 
 @media (max-width: 376px){
   .tab-text h3 {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .tab-text ul li {

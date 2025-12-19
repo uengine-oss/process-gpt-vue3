@@ -1636,7 +1636,8 @@
         "technicalReportLink": "View Technical Report"
     },
     "NecessitySection": {
-        "title": "Until now, AI utilization has mostly been limited to individual productivity tools.",
+        "title1": "Until now, AI utilization has mostly been limited",
+        "title2": "to individual productivity tools.",
         "feature1": "Draft Documents",
         "feature2": "Translate",
         "feature3": "Summarize",
@@ -1650,7 +1651,8 @@
         "benefit4": "Focus only on strategic decision-making and contextual judgment"
     },
     "AI3StepsSection": {
-        "title": "ProcessGPT is the solution that implements this Agentic Process AI",
+        "title1": "ProcessGPT is the solution",
+        "title2": "that implements this Agentic Process AI",
         "category": "Category",
         "step1": "Stage 1: Assistant Utilization",
         "step2": "Stage 2: Digital Colleague Agent",
@@ -1964,6 +1966,8 @@
         "toolUsageComplete": "completed",
         "toolUsageInProgress": "in progress",
         "tool": "tool",
+        "parsingDocument": "Document parsing in progress...",
+        "parsingFailed": "Parsing failed",
         "approved": "Approved",
         "rejected": "Rejected",
         "processed": "Processed",
@@ -2036,7 +2040,9 @@
     },
     "ActivityInputData": {
         "previousInput": "Previous Activity Input",
-        "previousInputDescription": "This shows the input provided for the previous activity. Please refer to it as you proceed with the current work."
+        "previousInputDescription": "This shows the input provided for the previous activity. Please refer to it as you proceed with the current work.",
+        "previousInputDetailTitle": "What is the previous activity input history?",
+        "previousInputDetail": "In a BPM process, this displays the form data entered by the worker in the previous step.\n\nBy referring to this information, you can more clearly understand the progress of the current process.\n\nExample: In an approval request → review → approval process, if you are at the 'review' step,\nthe data that was entered during the 'approval request' step will be shown."
     },
     "MCPServer": {
         "searchMCPServers": "Search MCP Servers"
@@ -2048,11 +2054,14 @@
         "type": "Type",
         "environmentName": "Environment Name",
         "secretName": "Secret Name",
+        "browserUseSecretName": "Browser Use Secret Name",
         "nameRequired": "Name is required",
         "loadingEnvironments": "Loading Environments...",
         "loadingSecrets": "Loading Secrets...",
+        "loadingBrowserUseSecrets": "Loading Browser Use Secrets...",
         "environment": "Environment",
         "secret": "Secret",
+        "browserUse": "Browser Use",
         "name": "Name",
         "data": "Data",
         "actions": "Actions",
@@ -2060,12 +2069,17 @@
         "environmentUpdated": "Environment updated successfully",
         "secretCreated": "Secret created successfully",
         "secretUpdated": "Secret updated successfully",
+        "browserUseSecretCreated": "Browser Use secret created successfully",
+        "browserUseSecretUpdated": "Browser Use secret updated successfully",
         "environmentDeleted": "Environment deleted successfully",
         "secretDeleted": "Secret deleted successfully",
+        "browserUseSecretDeleted": "Browser Use secret deleted successfully",
         "errorSavingEnvironment": "Error saving environment",
         "errorSavingSecret": "Error saving secret",
+        "errorSavingBrowserUseSecret": "Error saving Browser Use secret",
         "errorDeletingEnvironment": "Error deleting environment",
         "errorDeletingSecret": "Error deleting secret",
+        "errorDeletingBrowserUseSecret": "Error deleting Browser Use secret",
         "confirmDeleteEnvironment": "Are you sure you want to delete environment \"{name}\"?",
         "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?",
         "confirmDeleteBrowserUseSecret": "Are you sure you want to delete Browser Use secret \"{name}\"?",

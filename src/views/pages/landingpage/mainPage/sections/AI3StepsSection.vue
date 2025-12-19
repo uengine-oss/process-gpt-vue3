@@ -1,7 +1,8 @@
 <template>
   <section id="ai3Steps" class="ai3Steps-section">
     <div class="container mx-auto px-4">
-      <h2 class="section-title font-bold text-center mb-12">{{ $t('AI3StepsSection.title') }}</h2>
+      <h2 class="section-title font-bold text-center">{{ $t('AI3StepsSection.title1') }}</h2>
+      <h2 class="section-title font-bold text-center mb-12">{{ $t('AI3StepsSection.title2') }}</h2>
         
       <div style="max-width: 1000px; margin: 0 auto;">
         <table class="tbl-default">
@@ -74,8 +75,8 @@ export default {
 }
 
 .section-title {
-    font-size: 1.875rem;
-    line-height: 1.6;
+    font-size: 48px;
+    line-height: 1.3;
 }
 
 /* ==============================
@@ -121,7 +122,7 @@ export default {
 }
 
 .description-title {
-    font-size: 1.2rem; 
+    font-size: 20px; 
     font-weight: 600; 
     line-height: 1.5; 
 }
@@ -132,7 +133,7 @@ export default {
   }
 
   .section-title {
-      font-size: 26px;
+      font-size: 32px;
   }
 
   .tbl-default td {
@@ -140,13 +141,7 @@ export default {
   }
 
   .description-title {
-    font-size: 1.1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .section-title {
-    font-size: 22px;
+    font-size: 18px;
   }
 }
 </style>
