@@ -63,4 +63,15 @@ package-lock.json
 acebase/package-lock.json
 
 .vscode/tasks.json
+
+# 환경 변수 파일 (계정 정보 포함)
 .env
+.env.local
+.env.*.local
+.env.playwright
+
+# Playwright 테스트 결과 및 캐시
+playwright/.auth/
+playwright/playwright-report/
+playwright/test-results/
+playwright/.cache/
