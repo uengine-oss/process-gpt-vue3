@@ -297,4 +297,10 @@ export default {
     line-height: 1.5rem;
   }
 }
+
+@media (max-width: 576px) {
+  .section-title {
+      font-size: 28px;
+  }
+}
 </style>

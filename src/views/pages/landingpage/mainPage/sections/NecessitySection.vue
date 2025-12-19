@@ -43,19 +43,19 @@
 
           <div class="benefits-grid">
             <div class="benefit-item">
-              <v-icon color="#1976D2" size="32">mdi-check-circle</v-icon>
+              <v-icon class="benefit-icon" color="#1976D2" size="32">mdi-check-circle</v-icon>
               <p>{{ $t('NecessitySection.benefit1') }}</p>
             </div>
             <div class="benefit-item">
-              <v-icon color="#1976D2" size="32">mdi-check-circle</v-icon>
+              <v-icon class="benefit-icon" color="#1976D2" size="32">mdi-check-circle</v-icon>
               <p>{{ $t('NecessitySection.benefit2') }}</p>
             </div>
             <div class="benefit-item">
-              <v-icon color="#1976D2" size="32">mdi-check-circle</v-icon>
+              <v-icon class="benefit-icon" color="#1976D2" size="32">mdi-check-circle</v-icon>
               <p>{{ $t('NecessitySection.benefit3') }}</p>
             </div>
             <div class="benefit-item">
-              <v-icon color="#1976D2" size="32">mdi-check-circle</v-icon>
+              <v-icon class="benefit-icon" color="#1976D2" size="32">mdi-check-circle</v-icon>
               <p>{{ $t('NecessitySection.benefit4') }}</p>
             </div>
           </div>
@@ -157,7 +157,7 @@
   }
 
   .solution-description {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 600;
     color: #1a1a1a;
     line-height: 1.5;
@@ -222,7 +222,7 @@
     }
 
     .solution-section {
-      padding: 40px 20px;
+      padding: 40px 20px 50px;
       margin-top: 40px;
     }
 
@@ -231,7 +231,7 @@
     }
 
     .solution-description {
-      font-size: 16px;
+      font-size: 18px;
     }
 
     .benefits-grid {
@@ -241,9 +241,17 @@
     .benefit-item p {
       font-size: 14px;
     }
+
+    .benefit-icon {
+      font-size: 28px !important;
+    }
   }
   
   @media (max-width: 576px) {
+    .section-title {
+      font-size: 28px;
+    }
+
     .ai-features-grid {
       grid-template-columns: 1fr;
       gap: 12px;
@@ -261,6 +269,10 @@
     .benefits-grid {
       grid-template-columns: 1fr;
       gap: 10px;
+    }
+
+    .benefit-icon {
+      font-size: 24px !important;
     }
   }
   </style>

@@ -285,6 +285,12 @@ export default {
   }
 }
 
+@media (max-width: 576px) {
+  .section-title {
+      font-size: 28px;
+  }
+}
+
 @media (max-width: 376px){
   .tab-text h3 {
     font-size: 20px;
