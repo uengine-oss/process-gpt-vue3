@@ -3,8 +3,6 @@ name: process-gpt-build-and-deploy
 on:
   push:
     branches:
-      - main
-      - ktds
       - skt
 
 jobs:
