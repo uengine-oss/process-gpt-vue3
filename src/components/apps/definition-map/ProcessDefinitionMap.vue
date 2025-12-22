@@ -703,7 +703,7 @@ export default {
         },
         capturePng() {
             var node = document.getElementById('processMap');
-            domtoimage.toPng(node)
+            domtoimage.toPng(node, { bgcolor: 'white' })
                 .then(function (dataUrl) {
                     const link = document.createElement('a');
                     // Set the link's href to the data URL of the PNG image
