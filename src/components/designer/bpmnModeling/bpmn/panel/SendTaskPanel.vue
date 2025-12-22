@@ -248,6 +248,7 @@ export default {
                 delete this.copyUengineProperties.toRole;
                 delete this.copyUengineProperties.fromRole;
             }
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         generateAPI() {
             this.$try({

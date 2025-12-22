@@ -88,6 +88,7 @@ export default {
     methods: {
         beforeSave() {
             this.activity.pythonCode = this.copyUengineProperties.script;
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
         }
     }
 };

@@ -106,6 +106,7 @@ import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/Valid
 import PDFPreviewer from '@/components/PDFPreviewer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 
+import BusinessRuleTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/BusinessRuleTaskPanel.vue';
 
 export default {
     name: 'bpmn-property-panel',
@@ -163,7 +164,8 @@ export default {
     },
     components: {
         ValidationField,
-        PDFPreviewer
+        PDFPreviewer,
+        BusinessRuleTaskPanel
     },
     data() {
         return {
@@ -312,9 +314,9 @@ export default {
                 this.$emit('close');
                 return;
             }
+
             if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
                 await this.$refs.panelComponent.beforeSave();
-                console.log(this.uengineProperties)
             }
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
@@ -370,26 +372,31 @@ export default {
                 }
             }
 
-            if (elementCopyDeep.extensionElements && elementCopyDeep.extensionElements.values) {
-                elementCopyDeep.extensionElements.values[0].json = json;
-                // variables 업데이트
-                elementCopyDeep.extensionElements.values[0].variables = variables;
-            } else {
-                // uengine:Properties 생성
-                const uengineProps = bpmnFactory.create('uengine:Properties', {
-                    json: json,
-                    variables: variables
-                });
-                
-                elementCopyDeep.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', {
-                    values: [uengineProps]
-                });
+            // ExtensionElements 처리
+            let extensionElements = task.businessObject.extensionElements;
+            let values = [];
+
+            if (extensionElements && extensionElements.values) {
+                // 기존 값들 중 uengine:Properties가 아닌 것들은 유지
+                values = extensionElements.values.filter(value => value.$type !== 'uengine:Properties');
             }
+
+            // 새로운 uengine:Properties 생성
+            const uengineProps = bpmnFactory.create('uengine:Properties', {
+                json: json,
+                variables: variables
+            });
+            values.push(uengineProps);
+
+            // 새로운 ExtensionElements 생성
+            const newExtensionElements = bpmnFactory.create('bpmn:ExtensionElements', {
+                values: values
+            });
 
             if (this.elementCopy.text) elementCopyDeep.text = this.text;
 
             modeling.updateProperties(task, {
-                extensionElements: elementCopyDeep.extensionElements
+                extensionElements: newExtensionElements
             });
 
             this.$emit('close');

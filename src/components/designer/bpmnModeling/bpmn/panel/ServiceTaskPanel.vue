@@ -318,7 +318,7 @@ export default {
             this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization
             const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties } = this.copyUengineProperties;
             this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties };
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         generateAPI() {
             this.$try({
