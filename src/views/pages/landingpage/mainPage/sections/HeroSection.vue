@@ -120,7 +120,7 @@ export default {
 
 .hero h1 {
   /* font-size: 2.5rem; */
-  font-size: 48px;
+  font-size: 46px;
   font-weight: 700;
   color: var(--text-color-dark);
   line-height: 1.2;
@@ -205,7 +205,7 @@ export default {
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
   .hero {
     padding: 100px 0 40px;
   }
@@ -226,6 +226,12 @@ export default {
   .btn {
     width: 100%;
     text-align: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero h1 {
+    font-size: 28px;
   }
 }
 </style>
