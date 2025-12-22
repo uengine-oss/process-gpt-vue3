@@ -331,7 +331,8 @@
         "treeView": "트리 뷰로 보기",
         "treeViewExplanation": "프로세스를 트리 구조로 확인하고 편집하세요",
         "cardView": "카드",
-        "matrixView": "매트릭스"
+        "matrixView": "매트릭스",
+        "duplicateName": "동일한 이름의 프로세스가 이미 존재합니다."
     },
     "metricsView": {
         "domain": "Domain",

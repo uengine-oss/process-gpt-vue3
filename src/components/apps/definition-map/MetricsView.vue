@@ -2,6 +2,20 @@
     <div class="pa-5">
         <!-- Matrix Table -->
         <v-card elevation="3" class="overflow-x-auto">
+            <v-snackbar
+                v-model="snackbar.show"
+                :color="snackbar.color"
+                :timeout="snackbar.timeout"
+                location="top"
+            >
+                {{ snackbar.text }}
+                <template v-slot:actions>
+                    <v-btn variant="text" @click="snackbar.show = false">
+                        {{ $t('common.close') || 'Close' }}
+                    </v-btn>
+                </template>
+            </v-snackbar>
+
             <v-table density="comfortable" class="metrics-table">
                 <thead>
                     <tr>
@@ -288,6 +302,12 @@ export default {
                 show: false,
                 parentProcess: null,
                 selectedProcess: null
+            },
+            snackbar: {
+                show: false,
+                text: '',
+                color: 'error',
+                timeout: 3000
             }
         };
     },
@@ -446,7 +466,9 @@ export default {
                 );
                 
                 if (isDuplicate) {
-                    alert(this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.');
+                    this.snackbar.text = this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.';
+                    this.snackbar.color = 'error';
+                    this.snackbar.show = true;
                     return;
                 }
                 
@@ -473,7 +495,9 @@ export default {
         },
         saveDialog() {
             if (!this.dialog.name.trim()) {
-                alert(this.$t('metricsView.nameRequired'));
+                this.snackbar.text = this.$t('metricsView.nameRequired');
+                this.snackbar.color = 'warning';
+                this.snackbar.show = true;
                 return;
             }
 

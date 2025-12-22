@@ -99,7 +99,7 @@ export default {
                 item => item.name.toLowerCase() === newProcess.name.toLowerCase()
             );
             if (isDuplicate) {
-                alert(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
+                this.$toast.error(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
                 return;
             }
             

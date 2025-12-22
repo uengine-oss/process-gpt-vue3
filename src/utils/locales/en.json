@@ -35,7 +35,7 @@
         "subTitle": "Process definition, organizational chart management, To-Do management, process execution, process monitoring, process analysis."
     },
     "headerMenu": {
-        "sidebar" : "Collapse/Expand Sidebar",
+        "sidebar": "Collapse/Expand Sidebar",
         "dashboard": "Dashboard",
         "todoList": "My Task List",
         "schedule": "Scheduler",
@@ -320,7 +320,8 @@
         "marketplace": "Marketplace",
         "marketplaceExplanation": "Find a business process template",
         "treeView": "View as Tree",
-        "treeViewExplanation": "View and edit processes in a tree structure"
+        "treeViewExplanation": "View and edit processes in a tree structure",
+        "duplicateName": "Duplicate process name exists."
     },
     "processDefinitionTree": {
         "search": "Search",
