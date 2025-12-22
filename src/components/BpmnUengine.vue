@@ -130,6 +130,15 @@ export default {
             panStart: { x: 0, y: 0 },
             pinchStartZoom: 1,
             isHorizontal: false,
+            // Playwright 테스트용 클래스 카운터
+            playwrightClassCounters: {
+                task: 0,
+                lane: 0,
+                gateway: 0,
+                event: 0,
+                sequenceflow: 0,
+                participant: 0
+            }
         };
     },
     computed: {
@@ -284,6 +293,80 @@ export default {
             }
             self.$emit('changeElement', self.bpmnXML);
         },
+        addTestClassToElement(element, canvas) {
+            // 개별 요소에 Playwright 테스트 클래스 추가
+            const gfx = canvas.getGraphics(element);
+            if (!gfx) return;
+
+            let testClass = '';
+            let elementType = element.type;
+            let categoryType = '';
+
+            // 타입별 클래스 매핑
+            if (elementType.includes('Task') || elementType === 'bpmn:CallActivity') {
+                categoryType = 'task';
+                testClass = `playwright-task-${this.playwrightClassCounters.task}`;
+                this.playwrightClassCounters.task++;
+            } else if (elementType === 'bpmn:Lane') {
+                categoryType = 'lane';
+                testClass = `playwright-lane-${this.playwrightClassCounters.lane}`;
+                this.playwrightClassCounters.lane++;
+            } else if (elementType.includes('Gateway')) {
+                categoryType = 'gateway';
+                testClass = `playwright-gateway-${this.playwrightClassCounters.gateway}`;
+                this.playwrightClassCounters.gateway++;
+            } else if (elementType.includes('Event')) {
+                categoryType = 'event';
+                testClass = `playwright-event-${this.playwrightClassCounters.event}`;
+                this.playwrightClassCounters.event++;
+            } else if (elementType === 'bpmn:SequenceFlow') {
+                categoryType = 'sequenceflow';
+                testClass = `playwright-sequenceflow-${this.playwrightClassCounters.sequenceflow}`;
+                this.playwrightClassCounters.sequenceflow++;
+            } else if (elementType === 'bpmn:Participant') {
+                categoryType = 'participant';
+                testClass = `playwright-participant-${this.playwrightClassCounters.participant}`;
+                this.playwrightClassCounters.participant++;
+            }
+
+            if (testClass) {
+                // 메인 그래픽 요소에 클래스 추가
+                gfx.classList.add(testClass);
+                
+                // 레인과 참가자의 경우 모든 .djs-hit 영역에도 클래스 추가
+                if (categoryType === 'lane' || categoryType === 'participant') {
+                    const hitAreas = gfx.querySelectorAll('.djs-hit');
+                    hitAreas.forEach(hitArea => {
+                        hitArea.classList.add(testClass);
+                        if (element.businessObject && element.businessObject.name) {
+                            hitArea.setAttribute('data-test-name', element.businessObject.name);
+                        }
+                    });
+                }
+                
+                // 요소 이름이 있으면 data 속성으로도 추가
+                if (element.businessObject && element.businessObject.name) {
+                    gfx.setAttribute('data-test-name', element.businessObject.name);
+                }
+            }
+        },
+        addTestClassesToElements(canvas, elementRegistry) {
+            // 모든 요소에 Playwright 테스트 클래스 추가 (초기 로드 시)
+            // 카운터 초기화
+            this.playwrightClassCounters = {
+                task: 0,
+                lane: 0,
+                gateway: 0,
+                event: 0,
+                sequenceflow: 0,
+                participant: 0
+            };
+
+            const allElements = elementRegistry.getAll();
+            allElements.forEach(element => {
+                this.addTestClassToElement(element, canvas);
+            });
+        },
         changeOrientation() {
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
@@ -376,6 +459,10 @@ export default {
 
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
+                
+                // Playwright 테스트용 고유 클래스 추가
+                self.addTestClassesToElements(canvas, elementRegistry);
+                
                 var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
 
                 if (allPools.length > 1) {
@@ -492,6 +579,27 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
+            });
+            
+            // 사용자가 수동으로 요소를 추가할 때 클래스 추가
+            eventBus.on('shape.added', function(event) {
+                const element = event.element;
+                const canvas = self.bpmnViewer.get('canvas');
+                
+                // 실시간으로 추가되는 요소에 클래스 추가
+                setTimeout(() => {
+                    self.addTestClassToElement(element, canvas);
+                }, 100);
+            });
+            
+            // 연결(시퀀스 플로우)이 추가될 때도 클래스 추가
+            eventBus.on('connection.added', function(event) {
+                const element = event.element;
+                const canvas = self.bpmnViewer.get('canvas');
+                
+                setTimeout(() => {
+                    self.addTestClassToElement(element, canvas);
+                }, 100);
             });
         },
         initializeViewer() {
