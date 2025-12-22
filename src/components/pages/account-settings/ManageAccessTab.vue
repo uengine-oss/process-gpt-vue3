@@ -44,6 +44,9 @@
                             <div class="ml-5">
                                 <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ item.name }}</h4>
                                 <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ item.email }}</div>
+                                <div v-if="item.teamName" class="text-caption mt-1">
+                                    {{ $t('accountTab.affiliatedTeam') }} : {{ item.teamName }}
+                                </div>
                             </div>
                         </div>
                         <div v-if="editable" class="d-flex align-center">
@@ -200,6 +203,7 @@ export default {
         deleteDialog: false,
         deleteTargetUser: null,
         confirmName: '',
+        organizationChart: null,
     }),
     computed: {
         isAdmin() {
@@ -219,11 +223,53 @@ export default {
     },
     created() {
         this.getUserList();
+        this.getOrganizationChart();
     },
     methods: {
         closeInviteUserCard(userList) {
             this.users = [...this.users, ...userList];
             this.openInviteUserCard = false;
+        },
+        async getOrganizationChart() {
+            const orgData = await backend.getData('configuration', { match: { key: 'organization' } });
+            if (orgData && orgData.value && orgData.value.chart) {
+                this.organizationChart = orgData.value.chart;
+                this.updateUserTeamInfo();
+            }
+        },
+        findUserTeamInOrganization(userId, node = null, teamName = null) {
+            const searchNode = node || this.organizationChart;
+            if (!searchNode) return null;
+            
+            if (searchNode.data && searchNode.data.isTeam) {
+                teamName = searchNode.data.name;
+            }
+            
+            if (searchNode.children && searchNode.children.length > 0) {
+                for (const child of searchNode.children) {
+                    if (child.id === userId || (child.data && child.data.id === userId)) {
+                        return teamName;
+                    }
+                    
+                    const foundTeam = this.findUserTeamInOrganization(userId, child, teamName);
+                    if (foundTeam) {
+                        return foundTeam;
+                    }
+                }
+            }
+            
+            return null;
+        },
+        updateUserTeamInfo() {
+            if (!this.organizationChart) return;
+            
+            this.users = this.users.map(user => {
+                const teamName = this.findUserTeamInOrganization(user.id);
+                return {
+                    ...user,
+                    teamName: teamName || null
+                };
+            });
         },
         async getUserList() {
             this.users  = await backend.getUserList();
@@ -236,6 +282,10 @@ export default {
                     is_admin: user.is_admin
                 };
             });
+            
+            if (this.organizationChart) {
+                this.updateUserTeamInfo();
+            }
         },
         async updateUser(user) {
             const userInfo = {

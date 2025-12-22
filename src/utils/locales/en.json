@@ -525,7 +525,8 @@
         "billing": "Billing",
         "confirmDeleteConnectionTitle": "Delete Connection Info",
         "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?",
-        "skills": "Skills"
+        "skills": "Skills",
+        "affiliatedTeam": "Affiliated Team"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",

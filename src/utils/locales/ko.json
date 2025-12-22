@@ -525,7 +525,8 @@
         "billing": "청구",
         "confirmDeleteConnectionTitle": "접속 정보 삭제",
         "confirmDeleteConnectionText": "\"{name}\"을(를) 삭제하시겠습니까?",
-        "skills": "스킬"
+        "skills": "스킬",
+        "affiliatedTeam": "소속 팀"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
