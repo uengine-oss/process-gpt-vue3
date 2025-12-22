@@ -199,6 +199,7 @@
                         variant="outlined"
                         density="compact"
                         autofocus
+                        @keyup.enter="saveDialog"
                     ></v-text-field>
                 </v-card-text>
                 <v-card-actions>
