@@ -85,7 +85,7 @@
                         <!-- 저장 관련 버튼  -->
                         <div class="mr-4 d-flex">
                             <!-- 파일업로드 아이콘 -->
-                            <v-tooltip v-if="fullPath != 'definition-map'" location="bottom">
+                            <v-tooltip v-if="fullPath != 'definition-map' && !Pal" location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                         density="comfortable" @click="triggerFileInput">
@@ -139,13 +139,13 @@
                                     <div v-bind="props" style="display: inline-block;">
                                         <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
                                             density="comfortable" @click="toggleVerMangerDialog"
-                                            :disabled="lock"    
+                                            :disabled="isHistoryButtonDisabled"    
                                         >
                                             <HistoryIcon size="24" />
                                         </v-btn>
                                     </div>
                                 </template>
-                                <span>{{ lock ? $t('chat.historyDisabled') : $t('chat.history') }}</span>
+                                <span>{{ historyTooltipText }}</span>
                             </v-tooltip>
                             <!-- xml보기 아이콘 -->
                             <v-tooltip location="bottom">
@@ -234,11 +234,13 @@ export default {
             processName: "",
             expandedTexts: {
                 title: false
-            }
+            },
+            hasVersionsToCompare: true
         }
     },
-    created() {
+    async created() {
         this.processName = this.modelValue
+        await this.checkVersionsAvailability()
     },
     watch: {
         modelValue(newVal) {
@@ -246,6 +248,9 @@ export default {
         },
         processName(newVal) {
             this.$emit('update:modelValue', newVal);
+        },
+        fullPath() {
+            this.checkVersionsAvailability()
         }
     },
     computed: {
@@ -275,7 +280,7 @@ export default {
             // } else {
             //     return false;
             // }
-            return true
+            return !this.Pal
         },
         useExecute() {
             if (this.mode == 'ProcessGPT') {
@@ -292,6 +297,18 @@ export default {
         isMobile() {
             return window.innerWidth <= 768;
         },
+        isHistoryButtonDisabled() {
+            return this.lock || !this.hasVersionsToCompare;
+        },
+        historyTooltipText() {
+            if (this.lock) {
+                return this.$t('chat.historyDisabled');
+            } else if (!this.hasVersionsToCompare) {
+                return this.$t('ProcessDefinitionVersionManager.noVersionsAvailable');
+            } else {
+                return this.$t('chat.history');
+            }
+        }
     },
     methods: {
         executeProcess() {
@@ -348,6 +365,29 @@ export default {
             
             const isExpanded = this.expandedTexts[textType];
             return isExpanded ? text : this.getTruncatedText(text, maxLength);
+        },
+        async checkVersionsAvailability() {
+            if (!this.fullPath || this.fullPath === 'chat' || this.fullPath === 'definition-map') {
+                this.hasVersionsToCompare = true;
+                return;
+            }
+            
+            try {
+                const BackendFactory = (await import('@/components/api/BackendFactory')).default;
+                const backend = BackendFactory.createBackend();
+                
+                const result = await backend.getDefinitionVersions(this.fullPath, {
+                    key: 'version',
+                    sort: 'asc',
+                    orderBy: 'timeStamp',
+                    type: 'bpmn'
+                });
+                
+                // 버전이 2개 이상이어야 비교 가능
+                this.hasVersionsToCompare = result && result.length > 1;
+            } catch (error) {
+                this.hasVersionsToCompare = true;
+            }
         }
     }
 };

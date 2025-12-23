@@ -94,6 +94,14 @@ export default {
         useMultiple: {
             type: Boolean,
             default: true
+        },
+        onlyAgent: {
+            type: Boolean,
+            default: false
+        },
+        isExecute: {
+            type: Boolean,
+            default: false
         }
     },
 
@@ -167,7 +175,6 @@ export default {
     },
     async mounted() {
         this.backend = BackendFactory.createBackend();
-
         this.userList = await this.backend.getUserList();
 
         if(this.useAgent) {
@@ -176,37 +183,31 @@ export default {
             const defaultAgentList = defaultSetting.getAgentList;
             this.userList = [...defaultAgentList, ...this.userList];
 
-            if (this.useMultiple) {
-                this.usersToSelect = this.userList.map(agent => {
-                    return {
-                        id: agent.id,
-                        username: agent.username,
-                        email: agent.email,
-                        goal: agent.goal,
-                        description: agent.description,
-                        isAgent: agent.is_agent,
-                        agentType: agent.agent_type,
-                        alias: agent.alias,
-                    };
-                });
-            } else {
+            if (this.onlyAgent) {
                 const agentList = this.userList.filter(member => member.is_agent);
-                this.usersToSelect = agentList.map(agent => {
-                    return {
-                        id: agent.id,
-                        username: agent.username,
-                        email: agent.email,
-                        goal: agent.goal,
-                        description: agent.description,
-                        isAgent: agent.is_agent,
-                        agentType: agent.agent_type,
-                        alias: agent.alias,
-                    };
-                });
+                this.userList = agentList;
+
+                if (!this.isExecute) {
+                    this.userList = this.userList.filter(member => member.alias !== 'default');
+                }
             }
         } else {
-            this.usersToSelect = this.userList.filter(member => !member.is_agent);
+            const normalUserList = this.userList.filter(member => !member.is_agent)
+            this.userList = normalUserList;
         }
+
+        this.usersToSelect = this.userList.map(member => {
+            return {
+                id: member.id,
+                username: member.username,
+                email: member.email,
+                goal: member.goal,
+                description: member.description,
+                isAgent: member.is_agent,
+                agentType: member.agent_type,
+                alias: member.alias,
+            };
+        });
     },
 
     methods: {

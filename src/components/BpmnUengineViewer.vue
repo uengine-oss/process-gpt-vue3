@@ -873,7 +873,7 @@ export default {
                 }
 
                 // 선택된 태스크들이 화면 중앙에 오도록 하면서, 기존 대비 2배 확대
-                const scaleFactor = 2;
+                const scaleFactor = 1.2;
                 const newWidth = viewbox.width / scaleFactor;
                 const newHeight = viewbox.height / scaleFactor;
 

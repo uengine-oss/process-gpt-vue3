@@ -228,6 +228,14 @@ export default {
         activityIndex: {
             type: Number,
             default: 0
+        },
+        deployDefinitionId: {
+            type: String,
+            default: ''
+        },
+        deployVersion: {
+            type: String,
+            default: ''
         }
     },
     data: () => ({
@@ -334,6 +342,39 @@ export default {
         await this.init();
     },
     methods: {
+        injectDeployTargetToBpmnField() {
+            if (!this.deployDefinitionId || !this.html) return;
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(this.html, 'text/html');
+                const nodes = Array.from(doc.querySelectorAll('bpmn-uengine-field'));
+                if (nodes.length === 0) return;
+                // 우선순위:
+                // 1) name="definition_id"
+                // 2) bpmn-uengine-field가 1개면 그 name
+                // 3) alias에 "요청"이 포함된 필드 (요청 프로세스 등)
+                let target = nodes.find(n => (n.getAttribute('name') || '') === 'definition_id');
+                if (!target && nodes.length === 1) target = nodes[0];
+                if (!target) {
+                    target = nodes.find(n => ((n.getAttribute('alias') || '') + '').includes('요청')) || nodes[0];
+                }
+                const fieldName = (target.getAttribute('name') || '').trim();
+                if (!fieldName) return;
+                const current = this.formData ? this.formData[fieldName] : undefined;
+                const existingBpmn =
+                    (current && typeof current === 'object' && (current.bpmn || current.xml)) ||
+                    (typeof current === 'string' ? current : undefined);
+                if (!this.formData) this.formData = {};
+                this.formData[fieldName] = {
+                    definition_id: this.deployDefinitionId,
+                    version: this.deployVersion || undefined,
+                    ...(existingBpmn ? { bpmn: existingBpmn } : {})
+                };
+            } catch (e) {
+                // eslint-disable-next-line no-console
+                console.warn('[FormWorkItem] injectDeployTargetToBpmnField failed:', e);
+            }
+        },
         async init() {
             var me = this;
             me.$try({
@@ -401,6 +442,9 @@ export default {
                     } else {
                         await me.loadInputData()
                     }
+
+                    // 반영 요청 등에서, 대상 프로세스 정보를 폼 내 bpmn-uengine-field에 주입
+                    me.injectDeployTargetToBpmnField();
                     
                     me.isInitialized = true;
                 }

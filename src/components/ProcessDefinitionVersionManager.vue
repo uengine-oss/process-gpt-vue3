@@ -4,7 +4,7 @@
     >
         <v-card flat>
             <v-card-title class="d-flex pa-4 pb-0">
-                 <h5 class="text-h5" :class="{ 'text-truncate': isMobile }" :style="{ maxWidth: isMobile ? '280px' : 'none' }">{{ currentVersionName }}</h5>
+                 <h5 class="text-h5" :class="{ 'text-truncate': isMobile }" :style="{ maxWidth: isMobile ? '280px' : 'none' }">버전 히스토리 - {{ currentVersionName }}</h5>
                 <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
                     style="margin-left: 5px;"
                 ></v-progress-circular>
@@ -12,41 +12,34 @@
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-card-title>
-            <div class="pa-4 pt-0 pb-0"
-                style="height: 10vh;
-                overflow: auto;"
-            >
-                <v-alert density="compact"
-                    variant="tonal"
-                    color="gray"
-                >
-                    <template v-slot:title>
-                        <span style="color: black;">{{ $t('ProcessDefinitionVersionManager.description') }}</span>
-                    </template>
-                    <div v-if="currentVersionMessage"
-                        class="text-body-1 text-gray mt-1"
-                    >{{ currentVersionMessage }}
-                    </div>
-                </v-alert>
-            </div>
-
             <div class="d-flex pa-4 pt-2 align-center"
                 :class="showXML ? '' : 'pb-0'"
             >
                 <div class="mx-2">
-                    <v-switch v-model="showXML" 
-                        class="version-history-switch"
-                        :label="showXML ? 'XML' : 'BPMN'"
-                        density="compact"
-                        color="primary" 
-                        hide-details
-                    ></v-switch>
+                    <v-tooltip location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                density="comfortable" @click="showXML = !showXML">
+                                <Icons :icon="'code-xml'" :color="showXML ? '#1976D2' : '#666666'"/>
+                            </v-btn>
+                        </template>
+                        <span>{{ showXML ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
+                    </v-tooltip>
                 </div>
-                <v-btn @click="downloadXML" variant="text" class="mx-2">
-                    {{ $t('ProcessDefinitionVersionManager.download') }}
+                <v-btn @click="downloadXML"
+                    color="gray"
+                    variant="flat"
+                    class="rounded-pill mr-2"
+                >{{ $t('ProcessDefinitionVersionManager.downloadVersionXML', { version: currentSelectedVersion }) }}
                 </v-btn>
-                <v-btn @click="changeXML" variant="text" color="primary" :disabled="loading">
-                    {{ $t('ProcessDefinitionVersionManager.changeToSelectedVersion', { version: currentSelectedVersion || '' }) }}
+                <v-btn
+                    v-if="!viewerMode"
+                    @click="changeXML"
+                    :disabled="isChangeButtonDisabled"
+                    color="primary"
+                    variant="flat"
+                    class="rounded-pill"
+                >{{ $t('ProcessDefinitionVersionManager.changeToSelectedVersion', { version: currentSelectedVersion || '' }) }}
                 </v-btn>
             </div>
 
@@ -61,9 +54,9 @@
                                 {{ $t('ProcessDefinitionVersionManager.versionWithColon', { version: currentSelectedVersion || '' }) }}
                             </div>
                             <div class="version-manager-version-number" style="left: 50%; top: -32px;">
-                                {{ $t('ProcessDefinitionVersionManager.versionWithColon', { version: latestVersion || '' }) }}
+                                {{ $t('ProcessDefinitionVersionManager.versionWithColon', { version: rightVersion || '' }) }}
                             </div>
-                            <vuediff :prev="currentSelectedXML || ''" :current="currentXML || ''" mode="split" theme="light"
+                            <vuediff :prev="currentSelectedXML || ''" :current="rightXML || ''" mode="split" theme="light"
                                 class="version-manager-vuediff-box"
                                 language="xml"
                                 style="height: 100%;"
@@ -76,8 +69,26 @@
                                     :style="{ height: isMobile ? '50%' : '100%' }"
                                     elevation="10"
                                 >
-                                    <div class="version-manager-version-number">
-                                        {{ $t('ProcessDefinitionVersionManager.versionWithColon', { version: currentSelectedVersion || '' }) }}
+                                    <!-- 현재 선택된 버전 레이블 + 반영 요청 버튼 (viewerMode에서는 버튼 숨김) -->
+                                    <div class="version-manager-version-header">
+                                        <div class="version-manager-version-pill">
+                                            {{ $t('ProcessDefinitionVersionManager.versionWithColon', { version: currentSelectedVersion || '' }) }}
+                                        </div>
+                                        <div
+                                            v-if="!viewerMode"
+                                            class="version-manager-deploy-btn"
+                                            @click="onClickRequestDeployment"
+                                        >
+                                            반영 요청
+                                        </div>
+                                    </div>
+                                    <div v-if="currentVersionMessage" 
+                                        class="version-manager-description"
+                                        :class="{ 'expanded': leftDescExpanded }"
+                                        @click="leftDescExpanded = !leftDescExpanded"
+                                    >
+                                        <span class="desc-text">{{ currentVersionMessage }}</span>
+                                        <v-icon size="14" class="desc-icon">{{ leftDescExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                                     </div>
                                     <BpmnUengine
                                         :key="key + '_left'"
@@ -98,12 +109,26 @@
                                     :style="{ height: isMobile ? '50%' : '100%' }"
                                     elevation="10"
                                 >
-                                    <div class="version-manager-version-number">
-                                        {{ $t('ProcessDefinitionVersionManager.versionWithColon', { version: latestVersion || '' }) }}
+                                    <!-- 최신 버전 레이블 + 반영 버전 표시 -->
+                                    <div class="version-manager-version-header">
+                                        <div class="version-manager-version-pill">
+                                            {{ $t('ProcessDefinitionVersionManager.versionWithColon', { version: rightVersion || '' }) }}
+                                        </div>
+                                        <div class="version-manager-production-label">
+                                            반영 버전
+                                        </div>
+                                    </div>
+                                    <div v-if="rightVersionMessage" 
+                                        class="version-manager-description"
+                                        :class="{ 'expanded': rightDescExpanded }"
+                                        @click="rightDescExpanded = !rightDescExpanded"
+                                    >
+                                        <span class="desc-text">{{ rightVersionMessage }}</span>
+                                        <v-icon size="14" class="desc-icon">{{ rightDescExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                                     </div>
                                     <BpmnUengine
                                         :key="key + '_right'"
-                                        :bpmn="currentXML"
+                                        :bpmn="rightXML"
                                         :options="options"
                                         :isViewMode="false"
                                         :diffActivities="rightDiffActivities"
@@ -122,7 +147,7 @@
                             <div class="version-sidebar">
                                 <div class="version-sidebar-header">
                                     <span class="text-body-2 font-weight-medium">
-                                        {{ $t('ProcessDefinitionVersionManager.versionList') }} ({{ lists.length }})
+                                        {{ $t('ProcessDefinitionVersionManager.versionList') }} ({{ filteredLists.length }})
                                     </span>
                                 </div>
                                 <v-list
@@ -130,7 +155,7 @@
                                     class="version-list"
                                 >
                                     <v-list-item
-                                        v-for="(item, index) in lists"
+                                        v-for="(item, index) in filteredLists"
                                         :key="item.version || index"
                                         :active="index === currentIndex"
                                         @click="selectVersion(index)"
@@ -186,6 +211,26 @@
                 </div>
             </v-card-text>
         </v-card>
+
+        <!-- 반영 요청 실행 다이얼로그 -->
+        <v-dialog
+            v-model="executeDialog"
+            max-width="80%"
+            persistent
+            :fullscreen="isMobile"
+        >
+            <process-gpt-execute
+                :isSimulate="'false'"
+                :processDefinition="processForExecute"
+                :definition_id="process?.processDefinitionId || process?.id || ''"
+                :deployDefinitionId="process?.processDefinitionId || process?.id || ''"
+                :deployVersion="currentSelectedVersion || ''"
+                :bpmn="deployRequestBpmn"
+                definitionId="process_deploy_request"
+                :skipAutoLoad="true"
+                @close="executeDialog = false"
+            />
+        </v-dialog>
     </v-dialog>
 </template>
 
@@ -197,6 +242,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import customBpmnModule from '@/components/customBpmn';
 const backend = BackendFactory.createBackend();
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
+import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 
 // import 'vue-diff/dist/index.css';
 export default {
@@ -205,11 +251,35 @@ export default {
     components: {
         Icon,
         BpmnUengine,
+        'process-gpt-execute': ProcessGPTExecute,
     },
     props: {
         open: Boolean,
         process: Object,
-        type: String
+        type: String,
+        // 뷰어 모드: 버전 변경 버튼(선택 버전으로 변경)은 숨기고 조회 전용으로 사용
+        viewerMode: {
+            type: Boolean,
+            default: false,
+        },
+        // 기준 버전(예: '3.4')을 넘기면, 동일한 메이저 버전(앞자리)이 일치하는 히스토리만 리스트에 노출
+        versionScope: {
+            type: String,
+            default: '',
+        },
+        // 실행 다이얼로그에 넘겨줄 정보들
+        bpmn: {
+            type: String,
+            default: '',
+        },
+        definitionId: {
+            type: String,
+            default: '',
+        },
+        isSimulate: {
+            type: String,
+            default: 'false',
+        },
     },
     data: () => ({
         basePath: 'proc_def_version',
@@ -223,7 +293,6 @@ export default {
         lists: [],
         loading: false,
         currentInfo: null,
-        currentXML: null,
         options: {
             additionalModules: [customBpmnModule]
         },
@@ -237,6 +306,21 @@ export default {
 
         // 왼쪽 버전 리스트 접기/펼치기
         versionListExpanded: true,
+
+        // 설명 펼치기 상태
+        leftDescExpanded: false,
+        rightDescExpanded: false,
+
+        // 반영 요청용 실행 다이얼로그
+        executeDialog: false,
+        // 반영 요청 프로세스(definitions/process_deploy_request) 실행용 정의 / BPMN
+        processForExecute: null,
+        deployRequestBpmn: null,
+
+        // PAL 모드에서만 (backend.getProdVersion 존재 시) 조회해서 표시할 반영 버전
+        prodVersion: '',
+        // prodVersion이 최신 버전이 아닐 때, 오른쪽에 표시할 XML override
+        rightXMLOverride: null,
     }),
     computed: {
         beforeXML() {
@@ -252,10 +336,8 @@ export default {
             return null;
         },
         currentXML() {
-            if (this.lists.length > 0 && this.lists[this.currentIndex]) {
-                return this.lists[this.lists.length - 1].xml
-            }
-            return null;
+            // 최신 버전의 XML 반환
+            return this.lists[this.lists.length - 1]?.xml || null;
         },
         isMobile() {
             return window.innerWidth <= 768;
@@ -278,9 +360,44 @@ export default {
             }
             return null;
         },
+        latestVersionMessage() {
+            if (this.lists.length > 0 && this.lists[this.lists.length - 1]) {
+                return this.lists[this.lists.length - 1].message || '';
+            }
+            return '';
+        },
+        effectiveProdVersion() {
+            if (!this.prodVersion) return '';
+            const pv = String(this.prodVersion);
+            const exists = (this.lists || []).some((it) => String(it?.version || '') === pv);
+            return exists ? pv : '';
+        },
+        rightVersion() {
+            return this.effectiveProdVersion || this.latestVersion || null;
+        },
+        rightVersionMessage() {
+            if (!this.rightVersion) return '';
+            const found = (this.lists || []).find((it) => it && it.version === this.rightVersion);
+            return (found && (found.message || '')) || '';
+        },
+        rightXML() {
+            if (!this.rightVersion) return null;
+            if (!this.effectiveProdVersion || this.rightVersion === this.latestVersion) {
+                return this.currentXML;
+            }
+            return this.rightXMLOverride || this.currentXML;
+        },
         currentSelectedVersionName() {
-            // 별도의 버전 이름 정보가 없으므로 현재 프로세스 정의 이름을 그대로 사용
             return this.currentVersionName;
+        },
+        isChangeButtonDisabled() {
+            return this.loading;
+        },
+        filteredLists() {
+            if (this.lists.length > 1) {
+                return this.lists.slice(0, -1);
+            }
+            return this.lists;
         },
     },
     watch: {
@@ -296,9 +413,109 @@ export default {
     created() {
     },
     methods: {
+        debugProd() {
+            try {
+                // eslint-disable-next-line no-console
+                console.log('[VersionManager] prodVersion=', this.prodVersion,
+                    'effectiveProdVersion=', this.effectiveProdVersion,
+                    'latestVersion=', this.latestVersion,
+                    'rightVersion=', this.rightVersion,
+                    'currentXML=', this.currentXML ? `[len=${String(this.currentXML).length}]` : null,
+                    'latestXML=', (this.lists && this.lists.length > 0 && this.lists[this.lists.length - 1]?.xml)
+                        ? `[len=${String(this.lists[this.lists.length - 1].xml).length}]`
+                        : null,
+                    'lists=', (this.lists || []).map((it) => it?.version)
+                );
+            } catch (e) {
+                // ignore
+            }
+        },
+        async loadLatestSnapshotFallback() {
+            try {
+                const defId = this.process?.processDefinitionId || this.process?.id;
+                if (!defId) return null;
+                const result = await backend.getDefinitionVersions(defId, {
+                    key: 'snapshot, version, timeStamp',
+                    orderBy: 'timeStamp',
+                    sort: 'desc',
+                    size: 1,
+                    type: this.type,
+                });
+                const row = result && result[0] ? result[0] : null;
+                return row && row.snapshot ? row.snapshot : null;
+            } catch (e) {
+                return null;
+            }
+        },
+        async loadProdVersionIfSupported() {
+            try {
+                const defId = this.process?.processDefinitionId || this.process?.id;
+                if (!defId) return;
+                const fn = (backend && backend.getProdVersion) ? backend.getProdVersion : null;
+                if (typeof fn !== 'function') return; // 메서드가 있을 경우에만 동작
+                const v = await fn.call(backend, defId);
+                this.prodVersion = v || '';
+                this.debugProd();
+            } catch (e) {
+                this.prodVersion = '';
+                this.debugProd();
+            }
+        },
+        async loadRightXMLIfNeeded() {
+            try {
+                this.rightXMLOverride = null;
+                // prod_version이 없거나, 현재 로딩된 목록에 존재하지 않으면(필터/권한/데이터 이슈) 최신 버전으로 폴백
+                if (!this.effectiveProdVersion) return;
+                if (this.effectiveProdVersion === this.latestVersion) return;
+                const xml = await this.loadXMLOfVer(this.effectiveProdVersion);
+                this.rightXMLOverride = xml || null;
+                this.debugProd();
+            } catch (e) {
+                this.rightXMLOverride = null;
+                this.debugProd();
+            }
+        },
+        async onClickRequestDeployment() {
+            // 반영 요청 전용 프로세스(definitions/process_deploy_request)의
+            // definition(JSON)과 bpmn을 조회
+            const defId = 'process_deploy_request';
+            try {
+                const exec = await backend.getSimulationDefinition(defId);
+
+                let definition = exec && exec.definition ? exec.definition : null;
+                // definition 컬럼이 비어있으면 BPMN을 JSON으로 변환해서 사용
+                if (!definition && exec && exec.bpmn) {
+                    definition = await this.convertXMLToJSON(exec.bpmn);
+                }
+
+                if (definition) {
+                    this.processForExecute = definition;
+                    this.deployRequestBpmn = exec.bpmn || null;
+                } else {
+                    // 조회 실패 시 최소한 ID/Name만 전달
+                    this.processForExecute = {
+                        processDefinitionId: defId,
+                        processDefinitionName: 'process_deploy_request',
+                    };
+                    this.deployRequestBpmn = null;
+                }
+            } catch (e) {
+                // 실패 시에도 다이얼로그는 열되, 내부에서 기본 동작에 맡김
+                this.processForExecute = {
+                    processDefinitionId: defId,
+                    processDefinitionName: 'process_deploy_request',
+                };
+                this.deployRequestBpmn = null;
+            }
+
+            this.executeDialog = true;
+        },
         async load() {
             var me = this
             me.loading = true
+            me.prodVersion = ''
+            me.rightXMLOverride = null
+            await me.loadProdVersionIfSupported()
             let result = await backend.getDefinitionVersions(me.process.processDefinitionId, {
                 // message 는 백엔드에서 직접 내려오지 않을 수 있으므로
                 // 여기서는 기본 메타 정보만 받고, 실제 설명 텍스트는 XML(shortDescription)에서 추출한다.
@@ -307,10 +524,23 @@ export default {
                 orderBy: 'timeStamp',
                 type: me.type
             });
+            // versionScope 가 있는 경우: 동일 메이저 버전(앞자리)이 일치하는 것만 필터링
+            if (me.versionScope) {
+                const scopeMajor = String(me.versionScope).split('.')[0];
+                result = (result || []).filter((item) => {
+                    const itemMajor = String(item.version || '').split('.')[0];
+                    return scopeMajor && itemMajor === scopeMajor;
+                });
+            }
             if(result && result.length > 0){
                 me.lists = result.map(item => ({ ...item, xml: null, message: null }));
                 me.currentIndex = me.lists.length - 1;
+                // 최신 버전 XML 로드(실패 시 최신 snapshot fallback)
                 me.lists[me.currentIndex].xml = await me.loadXMLOfVer(me.lists[me.currentIndex].version);
+                if (!me.lists[me.currentIndex].xml) {
+                    const fallbackXml = await me.loadLatestSnapshotFallback();
+                    if (fallbackXml) me.lists[me.currentIndex].xml = fallbackXml;
+                }
                 await me.setCurrentInfo(me.lists[me.currentIndex].xml);
                 // 최신 버전의 설명을 리스트에도 캐시
                 if (me.currentInfo && me.currentInfo.shortDescription && me.currentInfo.shortDescription.text) {
@@ -326,7 +556,11 @@ export default {
                     }
                 }
 
+                // prodVersion이 존재하면 오른쪽 표시 XML을 해당 버전으로 덮어쓰기
+                await me.loadRightXMLIfNeeded();
+
                 me.isOpen = true;
+                me.debugProd();
             } else {
                 me.$try({
                     action: async () => {},
@@ -350,12 +584,19 @@ export default {
                 me.leftDiffActivities = {};
                 me.rightDiffActivities = {};
             } else {    
-                if(!me.lists[me.lists.length - 1].xml) me.lists[me.lists.length - 1].xml = await me.loadXMLOfVer(me.lists[me.lists.length - 1].version)
+                if(!me.lists[me.lists.length - 1].xml) {
+                    me.lists[me.lists.length - 1].xml = await me.loadXMLOfVer(me.lists[me.lists.length - 1].version)
+                    if (!me.lists[me.lists.length - 1].xml) {
+                        const fallbackXml = await me.loadLatestSnapshotFallback();
+                        if (fallbackXml) me.lists[me.lists.length - 1].xml = fallbackXml;
+                    }
+                }
                 if(!me.lastProcessInfo) await me.setLastVersionInfo(me.lists[me.lists.length - 1].xml);
                 me.calculateDifferences();
             }
             me.loading = false
             me.key++
+            me.debugProd();
         },
         selectVersion(index) {
             // 버전 선택 시 항상 해당 버전으로 전환하고 리스트를 닫음
@@ -372,11 +613,14 @@ export default {
         },
         downloadXML() {
             var me = this;
-            if (me.currentXML) {
-                const blob = new Blob([me.currentXML], { type: 'application/xml' });
+            // 선택한 버전의 XML 다운로드
+            const xml = me.lists[me.currentIndex]?.xml;
+            
+            if (xml) {
+                const blob = new Blob([xml], { type: 'application/xml' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `${me.currentVersionName}-${me.currentVersion}.xml`;
+                link.download = `${me.currentVersionName}-${me.currentSelectedVersion}.xml`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -614,6 +858,90 @@ export default {
     font-weight: bold;
     z-index: 10;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.version-manager-version-header {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.version-manager-version-pill {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.version-manager-deploy-btn {
+    cursor: pointer;
+    background-color: #1976d2;
+    color: #ffffff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.version-manager-production-label {
+    background-color: #4caf50;
+    color: #ffffff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.version-manager-description {
+    position: absolute;
+    left: 16px;
+    top: 44px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #666;
+    max-width: calc(100% - 100px);
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.version-manager-description .desc-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.version-manager-description .desc-icon {
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.version-manager-description:hover {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.version-manager-description.expanded {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.version-manager-description.expanded .desc-text {
+    white-space: normal;
 }
 
 .version-list-desc-inline {

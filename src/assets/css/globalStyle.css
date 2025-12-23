@@ -11,6 +11,10 @@ hr {
     overflow: auto;
 }
 
+.delegate-task-form-table .v-table__wrapper {
+    max-height: calc(100vh - 500px);
+}
+
 .knowledge-management-table .v-data-table .v-table__wrapper {
     height: calc(100vh - 265px) !important;
     overflow: auto !important;
@@ -373,6 +377,10 @@ hr {
 .djs-palette .djs-palette-entries .group .entry:hover {
     color: rgb(var(--v-theme-primary)) !important;
     cursor: pointer !important;
+}
+
+.vue-bpmn-diagram-container .djs-palette .djs-palette-entries .entry {
+    width: 40px;
 }
 
 .vue-bpmn-diagram-container .djs-palette {
@@ -1306,15 +1314,15 @@ hr {
 }
 
 .is-sidebar-mobile {
-    display: none;
+    display: none !important;
 }
 
 @media only screen and (max-width: 1279px) {
     .is-sidebar-pc {
-        display: none;
+        display: none !important;
     }
     .is-sidebar-mobile {
-        display: block;
+        display: block !important;
     }
 
 
@@ -1507,8 +1515,10 @@ hr {
         height: 100vh;
     }
 
+    
+
     .leftSidebar {
-        width: 300px !important;
+        width: 350px !important;
     }
 
     .instance-card-kanban-board-box {

@@ -161,6 +161,7 @@
                 <v-divider></v-divider>
                 <v-card-text class="pa-0">
                     <v-window v-model="tab">
+                        <!-- Account: 계정 설정 탭 (accountTab.accountSetting) -->
                         <v-window-item value="Account">
                             <div 
                                 style="overflow: auto;"
@@ -169,6 +170,8 @@
                                 <AccountTab />
                             </div>
                         </v-window-item>
+                        
+                        <!-- ManageAccess: 사용자 관리 탭 (accountTab.manageAccess) -->
                         <v-window-item value="ManageAccess">
                             <div 
                                 style="overflow: auto;"
@@ -177,6 +180,8 @@
                                 <ManageAccessTab :editable="superAdmin" />
                             </div>
                         </v-window-item>
+                        
+                        <!-- Drive: 구글 드라이브 설정 탭 (accountTab.drive) -->
                         <v-window-item value="Drive">
                             <div 
                                 style="overflow: auto;"
@@ -185,6 +190,8 @@
                                 <DriveTab />
                             </div>
                         </v-window-item>
+                        
+                        <!-- ConnectionInfo: 데이터소스 탭 (accountTab.dataSource) -->
                         <v-window-item value="ConnectionInfo">
                             <div 
                                 style="overflow: auto;"
@@ -193,11 +200,15 @@
                                 <ConnectionInfoTab />
                             </div>
                         </v-window-item>
+                        
+                        <!-- MCP-Servers: MCP 서버 탭 (accountTab.mcpServers) -->
                         <v-window-item value="MCP-Servers">
                             <div>
                                 <MCPServerTab />
                             </div>
                         </v-window-item>
+                        
+                        <!-- MCP-Environments: 환경변수 탭 (accountTab.environments) -->
                         <v-window-item value="MCP-Environments">
                             <div 
                                 style="overflow: auto;"
@@ -206,6 +217,8 @@
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
+                        
+                        <!-- Skills: 스킬 탭 (accountTab.skills) -->
                         <v-window-item value="Skills">
                             <div 
                                 style="overflow: auto;"
@@ -214,6 +227,7 @@
                                 <SkillsTab />
                             </div>
                         </v-window-item>
+                        
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
                         </v-window-item>

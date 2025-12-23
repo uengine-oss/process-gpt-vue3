@@ -178,14 +178,23 @@ const leftPartStyle = computed(() => {
     if (isChatPage.value) {
         return `width: ${leftPartWidth.value}%;`;
     }
+    
+    const path = route.path;
+    // /definitions/:id, /dmn/:id 같은 BPMN 편집 페이지에서는 width 지정 안 함
+    if (/^\/definitions\//.test(path) || /^\/dmn\//.test(path)) {
+        return '';
+    }
+    
     return 'width: 320px;'; // 기본 고정 너비
 });
 
 const rightPartStyle = computed(() => {
-    if (isChatPage.value) {
+    // /chats 페이지 + lgAndUp + !isInstanceChat: 리사이즈 가능한 퍼센트 너비
+    if (isChatPage.value && lgAndUp.value && !props.isInstanceChat) {
         return `width: ${100 - leftPartWidth.value}%;`;
     }
-    return 'width: 100%;'; // 기본 전체 너비
+    // 그 외 모든 경우: 남은 공간 차지
+    return 'flex: 1;';
 });
 </script>
 
@@ -195,7 +204,7 @@ const rightPartStyle = computed(() => {
         :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
         style="overflow: auto;"
     >
-        <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="isChatPage ? [canvasReSize, leftPartStyle] : canvasReSize">
+        <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="[canvasReSize, leftPartStyle]">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
             <!-- </perfect-scrollbar> -->
@@ -209,7 +218,7 @@ const rightPartStyle = computed(() => {
         ></div>
 
         <!---right chat conversation -->
-        <div class="right-part" :style="lgAndUp && !props.isInstanceChat && isChatPage ? rightPartStyle : ''">
+        <div class="right-part" :style="rightPartStyle">
             <!---Toggle Button For mobile-->
             <v-tooltip location="right">
                 <template v-slot:activator="{ props: tooltipProps }">

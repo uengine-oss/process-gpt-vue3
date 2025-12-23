@@ -47,6 +47,8 @@
                 :return-object="true"
                 :use-agent="true"
                 :use-multiple="true"
+                :only-agent="true"
+                :is-execute="isExecute"
             ></user-select-field>
         </div>
 
