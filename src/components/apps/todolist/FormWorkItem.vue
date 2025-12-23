@@ -341,8 +341,16 @@ export default {
                 action: async () => {
                     // 안전한 formDefId 설정
                     try {
-                        const tool = me.workItem?.worklist?.tool;
-                        me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
+                        if(me.processDefinition 
+                        && me.processDefinition.processDefinitionId
+                        && me.workItem
+                        && me.workItem.activity
+                        && me.workItem.activity.tracingTag) {
+                            me.formDefId = `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
+                        } else {
+                            const tool = me.workItem?.worklist?.tool;
+                            me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
+                        }
                     } catch (error) {
                         console.warn('formDefId 설정 중 오류:', error);
                         me.formDefId = null;

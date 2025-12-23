@@ -167,6 +167,11 @@ export default {
         selectedAgentType: {
             type: String,
             default: null
+        },
+        // 자동 전송 메시지 (메인 채팅에서 전달)
+        autoMessage: {
+            type: String,
+            default: null
         }
     },
     data() {
@@ -488,6 +493,14 @@ export default {
                         orchestration: newVal.worklist.orchestration || null
                     };
                 }
+                
+                // autoMessage가 있고 상태가 NEW이면 자동 전송
+                if (this.autoMessage && this.todoStatus && this.todoStatus.status === 'NEW') {
+                    this.$nextTick(() => {
+                        this.submitChat({ text: this.autoMessage });
+                        this.$emit('auto-message-sent');
+                    });
+                }
             },
         }
     },
@@ -754,6 +767,14 @@ export default {
                 : original;
             const normalized = this.normalizeFormValues(payloadForSubmit);
             // console.log('[AgentMonitor] submitTask!!', normalized);
+            
+            // 의도 분석 결과 감지 및 emit (work 필드가 있는 경우)
+            if (normalized && normalized.work) {
+                console.log('[AgentMonitor] 의도 분석 결과 감지:', normalized);
+                this.$emit('intent-detected', normalized);
+                this.EventBus.emit('agent-intent-result', normalized);
+            }
+            
             this.EventBus.emit('form-values-updated', normalized);
         },
 
@@ -957,6 +978,7 @@ export default {
                                 
                                 // 브라우저 자동화 에이전트 iframe 처리
                                 if (row.agent_orch === 'browser-automation-agent' && row.consumer) {
+                                    processgpt-browser-server-0
                                     this.browserIframeUrl = `https://${window.$tenantName}.process-gpt.io/vnc/${row.consumer}/vnc.html`;
                                     this.showBrowserIframe = true;
                                 } else if (row.agent_orch === 'browser-automation-agent' && !row.consumer) {

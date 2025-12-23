@@ -1,16 +1,20 @@
 <template>
-    <div>
-        <v-card elevation="10" :style="!$globalState.state.isZoomed ? '' : 'height:100vh;'"
-            class="is-work-height"
-            style="overflow: auto;"
+    <div class="definition-map-wrapper">
+        <!-- 좌측: 정의체계도 -->
+        <v-card elevation="10" :style="[
+            !$globalState.state.isZoomed ? '' : 'height:100vh;',
+            showFullScreenChat ? `width: calc(100% - ${chatPanelWidth}px)` : 'width: 100%'
+        ]"
+            class="is-work-height definition-map-card"
+            style="overflow: auto; flex-shrink: 0;"
         >
-            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
-                <Chat 
-                    :showDetailInfo="true"
-                    :definitionMapOnlyInput="true"
-                    :disableChat="false"
-                    :isMobile="isMobile"
-                    @sendMessage="handleMainChatMessage"
+            <!-- 메인 채팅 입력 UI -->
+            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
+                <MainChatInput 
+                    :agentInfo="mainChatAgentInfo"
+                    :userId="userInfo.uid || userInfo.id"
+                    @submit="handleMainChatSubmit"
+                    @open-history="handleOpenHistory"
                 />
             </div>
             
@@ -156,6 +160,50 @@
                 </v-col>
             </v-row>
         </v-card>
+
+        <!-- Resizer -->
+        <div 
+            v-if="showFullScreenChat"
+            class="chat-resizer"
+            @mousedown="startResize"
+        >
+            <div class="resizer-handle"></div>
+        </div>
+
+        <!-- 우측: 채팅 패널 -->
+        <v-card 
+            v-if="showFullScreenChat"
+            elevation="10"
+            class="is-work-height chat-panel-card"
+            :style="{ width: chatPanelWidth + 'px' }"
+        >
+            <!-- 채팅 헤더 -->
+            <div class="chat-panel-header">
+                <div class="header-left">
+                    <v-icon color="primary" class="mr-2">mdi-robot-outline</v-icon>
+                    <span class="header-title">AI 어시스턴트</span>
+                </div>
+                <v-btn
+                    icon
+                    variant="text"
+                    size="small"
+                    @click="closeChatPanel"
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </div>
+
+            <!-- 채팅 컨텐츠 -->
+            <div class="chat-panel-content">
+                <AgentChatActions
+                    ref="agentChatActions"
+                    :agentInfo="mainChatAgentInfo"
+                    :initialMessage="pendingChatMessage?.text"
+                    @intent-detected="handleIntentDetected"
+                />
+            </div>
+        </v-card>
+
         <v-dialog v-model="openConsultingDialog"
             :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
             :fullscreen="isMobile"
@@ -243,6 +291,9 @@ import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
 import Chat from '@/components/ui/Chat.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import MainChatInput from '@/components/MainChatInput.vue';
+import FullScreenChatDialog from '@/components/FullScreenChatDialog.vue';
+import AgentChatActions from '@/components/AgentChatActions.vue';
 import ChatModule from '@/components/ChatModule.vue';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 
@@ -266,7 +317,10 @@ export default {
         ProcessDefinitionChat,
         ProcessDefinitionMarketPlace,
         Chat,
-        DetailComponent
+        DetailComponent,
+        MainChatInput,
+        FullScreenChatDialog,
+        AgentChatActions
     },
     props: {
         componentName: {
@@ -325,7 +379,31 @@ export default {
             }
         ],
         generator: null,
-        initialConsultingMessage: null
+        initialConsultingMessage: null,
+        showFullScreenChat: false,
+        pendingChatMessage: null,
+        chatPanelWidth: 500,
+        isResizing: false,
+        mainChatAgentInfo: {
+            id: "0e9a546b-9ae0-48ef-1e9e-f0e95d5bc028",
+            username: "업무 지원 에이전트",
+            profile: "/images/chat-icon.png",
+            email: null,
+            is_admin: false,
+            role: "프로세스 생성과 실행, 질문 의도 분석 및 답변 제공을 통해 지원팀의 업무 효율을 높이는 에이전트",
+            tenant_id: "uengine",
+            device_token: null,
+            goal: "지원팀 내 요청되는 프로세스의 90% 이상을 신속하게 생성 및 실행하고, 질문 의도를 정확히 분석하여 95% 이상의 정확도로 적합한 답변을 제공한다.",
+            persona: "꼼꼼하고 친절하며, 팀원들과의 소통을 중시하는 협력적인 성격입니다. 항상 명확하고 이해하기 쉬운 언어로 응답하며, 복잡한 요청도 체계적으로 분석해 해결책을 제시합니다. 신뢰할 수 있는 지원 전문가로서, 긴급 상황에도 침착하게 대응하고 팀원들의 부담을 최소화하는 데 집중합니다. 언제든 피드백을 환영하며 지속적으로 업무 방식 개선을 추구합니다.",
+            endpoint: "",
+            description: "",
+            tools: "work-assistant",
+            skills: null,
+            is_agent: true,
+            model: "anthropic/claude-opus-4-5",
+            agent_type: "agent",
+            alias: ""
+        }
     }),
     computed: {
         useLock() {
@@ -484,6 +562,55 @@ export default {
         }
     },
     methods: {
+        // 메인 채팅 입력 처리
+        handleMainChatSubmit(message) {
+            if (!message || !message.text) return;
+            
+            // 전체 화면 채팅 다이얼로그 열기
+            this.pendingChatMessage = message;
+            this.showFullScreenChat = true;
+        },
+
+        // 히스토리 항목 열기 (AgentChatActions가 히스토리 자체 관리)
+        handleOpenHistory() {
+            this.pendingChatMessage = null;
+            this.showFullScreenChat = true;
+        },
+
+        // 채팅 패널 닫기
+        closeChatPanel() {
+            this.showFullScreenChat = false;
+            this.pendingChatMessage = null;
+        },
+
+        // 의도 분석 결과 처리
+        handleIntentDetected(result) {
+            console.log('[ProcessDefinitionMap] 의도 분석 결과:', result);
+        },
+
+        // 채팅 패널 리사이즈
+        startResize(e) {
+            this.isResizing = true;
+            const startX = e.clientX;
+            const startWidth = this.chatPanelWidth;
+
+            const onMouseMove = (e) => {
+                if (!this.isResizing) return;
+                const delta = startX - e.clientX;
+                const newWidth = Math.max(350, Math.min(800, startWidth + delta));
+                this.chatPanelWidth = newWidth;
+            };
+
+            const onMouseUp = () => {
+                this.isResizing = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        },
+
         async handleMainChatMessage(message) {
             const me = this;
             me.$try({
@@ -873,9 +1000,82 @@ export default {
 </script>
 
 <style scoped>
+/* 전체 레이아웃 */
+.definition-map-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.definition-map-card {
+    flex: 1;
+    min-width: 0;
+    transition: width 0.2s ease;
+}
+
+/* 채팅 리사이저 */
+.chat-resizer {
+    width: 6px;
+    background: #e2e8f0;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+}
+
+.chat-resizer:hover {
+    background: #cbd5e1;
+}
+
+.resizer-handle {
+    width: 2px;
+    height: 40px;
+    background: #94a3b8;
+    border-radius: 2px;
+}
+
+/* 채팅 패널 */
+.chat-panel-card {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.chat-panel-header .header-left {
+    display: flex;
+    align-items: center;
+}
+
+.chat-panel-header .header-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.chat-panel-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 .alert-message {
     white-space: pre-line;
 }
+
 .consulting-card {
     cursor: pointer;
     transition: transform 0.2s;
