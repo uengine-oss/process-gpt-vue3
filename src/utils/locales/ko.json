@@ -317,6 +317,7 @@
         "settingPermission": "권한 설정",
         "isReadable": "열람",
         "isWritable": "개정",
+        "isDeployable": "배포",
         "marketplace": "마켓플레이스",
         "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요",
         "treeView": "트리 뷰로 보기",
@@ -2103,7 +2104,7 @@
         "versionManagement": "버전 관리",
         "description": "설명:",
         "versionList": "버전 목록",
-        "changeToSelectedVersion": "{version} 버전으로 변경",
+        "changeToSelectedVersion": "{version} 버전으로 편집",
         "versionLabel": "버전 목록",
         "versionWithColon": "버전: {version}",
         "versionSummary": "버전 {version} · 최종 수정: {time}",
@@ -2116,6 +2117,11 @@
         "relativeJustNow": "방금",
         "relativeMinutesAgo": "{minutes}분 전",
         "relativeHoursAgo": "{hours}시간 전"
+    },
+    "BpmnUengineField": {
+        "newProcess": "신규",
+        "processSelectLabel": "Process",
+        "versionSelectLabel": "Version"
     },
     "AgentList": {
         "title": "에이전트 목록",

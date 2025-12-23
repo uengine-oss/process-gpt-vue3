@@ -122,6 +122,7 @@ ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS id text;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS name text;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS definition jsonb;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS bpmn text;
+ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS prod_version text;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS isdeleted boolean DEFAULT false;
@@ -319,6 +320,7 @@ ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS proc_def_id text;
 ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS proc_def_ids jsonb;
 ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS readable boolean DEFAULT false;
 ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS writable boolean DEFAULT false;
+ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS deployable boolean DEFAULT false;
 
 -- proc_def_marketplace table
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();

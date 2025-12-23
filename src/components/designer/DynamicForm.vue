@@ -14,6 +14,7 @@
  *    user-select-field: Read(["id1", "id2"]) 와 같이 선택된 유저 ID 값들을 담은 리스트) / Write(Read와 동일)
  *    report-field: Read(마크다운 형식의 컨텐츠) / Write(마크다운 형식의 텍스트)
  *    slide-field: Read(슬라이드 형식의 컨텐츠) / Write(슬라이드 형식의 텍스트)
+ *    bpmn-uengine-field: Read(BPMN XML 문자열) / Write(BPMN XML 문자열)
  */
 import { h } from 'vue';
 import TextField from '@/components/ui/field/TextField.vue';
@@ -30,6 +31,7 @@ import RowLayoutItemHead from '@/components/ui/field/RowLayoutItemHead.vue';
 import CodeField from '@/components/ui/field/CodeField.vue';
 import ReportField from '@/components/ui/field/ReportField.vue';
 import SlideField from '@/components/ui/field/SlideField.vue';
+import BpmnUengineField from '@/components/ui/field/BpmnUengineField.vue';
 
 export default {
   props: {
@@ -135,7 +137,7 @@ export default {
         const parser = new DOMParser();
         const doc = parser.parseFromString(targetHTML, 'text/html');
 
-        const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field, boolean-field, textarea-field, user-select-field, report-field, slide-field');
+        const fields = doc.querySelectorAll('text-field, select-field, checkbox-field, radio-field, file-field, boolean-field, textarea-field, user-select-field, report-field, slide-field, bpmn-uengine-field');
 
         fields.forEach(field => {
           field.setAttribute('readonly', 'true');
@@ -172,6 +174,7 @@ export default {
         TextField,
         ReportField,
         SlideField,
+        BpmnUengineField,
         SelectField,
         CheckboxField,
         RadioField,

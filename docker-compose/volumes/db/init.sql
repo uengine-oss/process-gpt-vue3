@@ -170,6 +170,7 @@ create table if not exists public.proc_def (
     name text null,
     definition jsonb null,
     bpmn text null,
+    prod_version text null,
     uuid uuid not null default gen_random_uuid (),
     tenant_id text null default public.tenant_id(),
     isdeleted boolean not null default false,
@@ -367,6 +368,7 @@ create table if not exists public.user_permissions (
     proc_def_ids jsonb not null,
     readable boolean not null default false,
     writable boolean not null default false,
+    deployable boolean not null default false,
     constraint user_permissions_pkey primary key (id)
 ) tablespace pg_default;
 

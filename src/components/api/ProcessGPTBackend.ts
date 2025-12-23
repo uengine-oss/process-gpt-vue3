@@ -498,7 +498,33 @@ class ProcessGPTBackend implements Backend {
 
             defId = defId.toLowerCase();
 
-            // 1) proc_def_version 중 major 태그 대상 조회
+            const procDef = await storage.getObject('proc_def', {
+                match: { id: defId },
+            });
+            if (!procDef) return null;
+
+            const prodVersion = (procDef as any).prod_version || (procDef as any).prodVersion;
+            if (prodVersion) {
+                try {
+                    const prodRow = await storage.getObject('proc_def_version', {
+                        match: {
+                            proc_def_id: defId,
+                            version: String(prodVersion),
+                        }
+                    });
+                    if (prodRow && (prodRow as any).snapshot) {
+                        return {
+                            definition: (prodRow as any).definition,
+                            bpmn: (prodRow as any).snapshot,
+                            version: (prodRow as any).version,
+                            version_tag: (prodRow as any).version_tag || 'major',
+                        };
+                    }
+                } catch (e) {
+                    // ignore and fallback
+                }
+            }
+
             let versions: any[] = [];
             try {
                 versions = await storage.list('proc_def_version', {
@@ -512,7 +538,6 @@ class ProcessGPTBackend implements Backend {
             }
 
             if (versions && versions.length > 0) {
-                // 문자열 버전(X.Y)을 숫자로 해석해서 가장 큰 값 선택
                 versions.sort((a: any, b: any) => {
                     const va = parseFloat(a.version || '0') || 0;
                     const vb = parseFloat(b.version || '0') || 0;
@@ -529,12 +554,6 @@ class ProcessGPTBackend implements Backend {
             }
 
             // 2) major 버전이 없으면 proc_def의 현재 정의 사용
-            const procDef = await storage.getObject('proc_def', {
-                match: { id: defId },
-            });
-
-            if (!procDef) return null;
-
             return {
                 definition: procDef.definition,
                 bpmn: procDef.bpmn,
@@ -806,6 +825,8 @@ class ProcessGPTBackend implements Backend {
                     tracingTag: workitem.activity_id || '',
                     parameters: parameters || [],
                     outParameterContext: outParameterContext || {},
+                    // tool은 WorkItem UI에서 분기 처리에 사용됨 (urlHandler/formHandler 등)
+                    tool: (activityInfo && (activityInfo as any).tool) ? (activityInfo as any).tool : (workitem.tool || ""),
                     instruction: activityInfo && activityInfo.instruction ? activityInfo.instruction : "",
                     checkpoints: activityInfo && activityInfo.checkpoints ? activityInfo.checkpoints : [],
                     pythonCode: activityInfo && activityInfo.pythonCode ? activityInfo.pythonCode : "",
@@ -1668,7 +1689,7 @@ class ProcessGPTBackend implements Backend {
         const fieldTags = [
             'text-field', 'select-field', 'checkbox-field', 'radio-field', 
             'file-field', 'label-field', 'boolean-field', 'textarea-field', 
-            'user-select-field', 'report-field', 'slide-field'
+            'user-select-field', 'report-field', 'slide-field', 'bpmn-uengine-field'
         ];
     
         fieldTags.forEach(tag => {
