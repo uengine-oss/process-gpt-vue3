@@ -98,6 +98,10 @@ export default {
         onlyAgent: {
             type: Boolean,
             default: false
+        },
+        isExecute: {
+            type: Boolean,
+            default: false
         }
     },
 
@@ -182,6 +186,10 @@ export default {
             if (this.onlyAgent) {
                 const agentList = this.userList.filter(member => member.is_agent);
                 this.userList = agentList;
+
+                if (!this.isExecute) {
+                    this.userList = this.userList.filter(member => member.alias !== 'default');
+                }
             }
         } else {
             const normalUserList = this.userList.filter(member => !member.is_agent)

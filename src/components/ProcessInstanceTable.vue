@@ -144,7 +144,8 @@
                                                 <ProcessFeedback
                                                     :lastMessage="item.systemMessage || item.userMessage"
                                                     :task="getRowFeedbackState(item.id).task"
-                                                    @closeFeedback="closeRowFeedback(item.id)"
+                                                    @closeFeedback="closeRowFeedback(item)"
+                                                    @applyFeedback="applyRowFeedback"
                                                 />
                                             </div>
                                         </div>
@@ -778,7 +779,6 @@ export default {
         },
         async cancelAppliedFeedback() {
             if (this.lastMessage && this.lastMessage.jsonContent) {
-                this.lastMessage.jsonContent.appliedFeedback = false;
                 await this.backend.updateInstanceChat(
                     this.chatRoomId,
                     this.lastMessage,
@@ -823,14 +823,47 @@ export default {
                 };
             }
         },
-        async closeRowFeedback(rowId, taskId = null) {
-            if (taskId) {
-                this.runningTaskId = taskId;
-                await this.getTaskLog();
+        closeRowFeedback(item) {
+            this.rowFeedbackStates[item.id] = {
+                showInput: false,
+                task: null,
+            };
+        },
+        async applyRowFeedback(task) {
+            if (!task) {
+                return;
             }
-            if (this.rowFeedbackStates[rowId]) {
-                this.rowFeedbackStates[rowId].showInput = false;
-            }
+
+            // 피드백 입력 닫기
+            Object.keys(this.rowFeedbackStates).forEach(rowId => {
+                if (this.rowFeedbackStates[rowId].task && this.rowFeedbackStates[rowId].task.id === task.id) {
+                    this.rowFeedbackStates[rowId].showInput = false;
+                    const index = this.expandedRows.findIndex(row => row === rowId);
+                    if (index > -1) {
+                        this.expandedRows.splice(index, 1);
+                    }
+                }
+            });
+
+            // 임시 SUBMITTED 상태의 user message 생성
+            const tempMessage = {
+                uuid: `temp-feedback-${task.id}-${Date.now()}`,
+                role: 'user',
+                activityId: task.activityId,
+                timeStamp: new Date().toISOString(),
+                name: this.$t("ProcessInstanceLog.system"),
+                email: null,
+                profile: null,
+                workitemId: task.id,
+                content: this.$t("ProcessFeedback.feedbackApplied"),
+                jsonContent: null,
+                thread_id: this.threadId || null,
+            };
+
+            this.internalMessages.push(tempMessage);
+
+            this.runningTaskId = task.id;
+            await this.getTaskLog();
         },
         toggleRow(event, { item }) {
             const index = this.expandedRows.findIndex(row => row === item.id);
