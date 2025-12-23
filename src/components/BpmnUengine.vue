@@ -1,7 +1,13 @@
 <template>
-    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal }" v-hammer:pan="onPan" v-hammer:pinch="onPinch"> 
+    <div
+        ref="container"
+        class="vue-bpmn-diagram-container"
+        :class="{ 'view-mode': isViewMode, 'not-pal': !isPal, 'mini-preview': isPreviewMode }"
+        v-hammer:pan="onPan"
+        v-hammer:pinch="onPinch"
+    > 
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
-        <div v-if="isViewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
+        <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
@@ -97,6 +103,10 @@ export default {
         isAIGenerated: {
             type: Boolean
         },
+        registerToStore: {
+            type: Boolean,
+            default: true
+        },
         onLoadStart: {
             type: Function,
             default: () => {
@@ -172,6 +182,18 @@ export default {
         // }
     },
     watch: {
+        bpmn: {
+            async handler(newVal) {
+                try {
+                    const xml = newVal || this.diagramXML;
+                    if (!xml || !this.bpmnViewer) return;
+                    await this.bpmnViewer.importXML(xml);
+                } catch (e) {
+                    // eslint-disable-next-line no-console
+                    console.error('[BpmnUengine] bpmn prop 변경시 import 실패:', e);
+                }
+            }
+        },
         isViewMode(val) {
             this.initializeViewer();
         },
@@ -697,8 +719,10 @@ export default {
                 self.bpmnViewer = markRaw(new BpmnModeler(_options));
             }
             
-            self.bpmnStore = useBpmnStore();
-            self.bpmnStore.setModeler(self.bpmnViewer);
+            if (self.registerToStore) {
+                self.bpmnStore = useBpmnStore();
+                self.bpmnStore.setModeler(self.bpmnViewer);
+            }
         },
         extendUEngineProperties(businessObject) {
             let self = this;
@@ -1089,6 +1113,13 @@ export default {
     z-index: 10;
 }
 .view-mode .djs-palette {
+  display: none !important;
+}
+
+.mini-preview .bjs-powered-by,
+.mini-preview .djs-palette,
+.mini-preview .djs-context-pad,
+.mini-preview .djs-overlay-container {
   display: none !important;
 }
 </style>

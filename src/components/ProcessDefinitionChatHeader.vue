@@ -85,7 +85,7 @@
                         <!-- 저장 관련 버튼  -->
                         <div class="mr-4 d-flex">
                             <!-- 파일업로드 아이콘 -->
-                            <v-tooltip v-if="fullPath != 'definition-map'" location="bottom">
+                            <v-tooltip v-if="fullPath != 'definition-map' && !Pal" location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                         density="comfortable" @click="triggerFileInput">
@@ -280,7 +280,7 @@ export default {
             // } else {
             //     return false;
             // }
-            return true
+            return !this.Pal
         },
         useExecute() {
             if (this.mode == 'ProcessGPT') {

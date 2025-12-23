@@ -317,6 +317,7 @@
         "settingPermission": "Setting Permission",
         "isReadable": "Readable",
         "isWritable": "Writable",
+        "isDeployable": "Deployable",
         "marketplace": "Marketplace",
         "marketplaceExplanation": "Find a business process template",
         "treeView": "View as Tree",
@@ -2085,6 +2086,11 @@
         "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?",
         "confirmDeleteBrowserUseSecret": "Are you sure you want to delete Browser Use secret \"{name}\"?",
         "noBrowserUseConfig": "Browser Use configuration is not set. Click the edit button to add the configuration."
+    },
+    "BpmnUengineField": {
+        "newProcess": "New",
+        "processSelectLabel": "Process",
+        "versionSelectLabel": "Version"
     },
     "footer": {
         "BusinessNumber": "BusinessRegistration<br>No.",

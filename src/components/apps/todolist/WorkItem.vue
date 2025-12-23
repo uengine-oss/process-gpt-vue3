@@ -329,6 +329,8 @@
                             :currentActivities="currentActivities"
                             :isOwnWorkItem="isOwnWorkItem"
                             :activityIndex="activityIndex"
+                            :deployDefinitionId="deployDefinitionId"
+                            :deployVersion="deployVersion"
                             @loadInputData="loadInputData"
                             @updateCurrentActivities="updateCurrentActivities"
                             @close="close"
@@ -558,6 +560,14 @@ export default {
             type: Boolean,
             default: false
         },
+        deployDefinitionId: {
+            type: String,
+            default: '',
+        },
+        deployVersion: {
+            type: String,
+            default: '',
+        },
     },
     components: {
         // ProcessDefinition,
@@ -747,16 +757,31 @@ export default {
         });
         this.EventBus.on('html-updated', (newHtml) => {
             this.html = newHtml
+            // 현재 폼(html/formData)에 반영 대상(definition/version) 주입
+            // formData가 아직 없을 수 있으므로, formData-updated에서도 한 번 더 시도함
+            this.injectDeployTargetToBpmnField(this.html, this.formData);
             if(this.isSimulate == 'true' && !this.generator) {
                 this.beforeGenerateExample();
             }
         });
         this.EventBus.on('formData-updated', (newformData) => {
             this.formData = newformData
+            // 현재 폼(html/formData)에 반영 대상(definition/version) 주입
+            this.injectDeployTargetToBpmnField(this.html, this.formData);
         });
         this.EventBus.on('form-data-loaded', (formData) => {
             this.inFormNameTabs = formData.inFormNameTabs;
             this.inFormValues = formData.inFormValues;
+            // ref/in-parameter 폼들도 로드된 시점에 주입 (ProcessGPT 모드에서는 loadRefForm을 안 타는 경우가 있어 여기서 처리)
+            try {
+                (this.inFormValues || []).forEach((item) => {
+                    if (item && item.html && item.formData) {
+                        this.injectDeployTargetToBpmnField(item.html, item.formData);
+                    }
+                });
+            } catch (e) {
+                // ignore
+            }
         });
         window.addEventListener('resize', this.handleResize);
     },
@@ -806,7 +831,7 @@ export default {
             return false;
         },
         isOwnWorkItem() {
-            if (this.isStarted || this.isSimulate == 'true') {
+            if (this.isStarted || this.isSimulate == 'true' || this.pal) {
                 return true;
             }
             const currentUserId = localStorage.getItem('uid');
@@ -998,6 +1023,31 @@ export default {
                 return 'error';
             }
             return 'grey';
+        },
+        injectDeployTargetToBpmnField(formHtml, formData) {
+            if (!this.deployDefinitionId || !formHtml || !formData) return;
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(formHtml, 'text/html');
+                const nodes = Array.from(doc.querySelectorAll('bpmn-uengine-field'));
+                if (nodes.length === 0) return;
+                let target = nodes.find(n => (n.getAttribute('name') || '') === 'definition_id');
+                if (!target && nodes.length === 1) target = nodes[0];
+                if (!target) {
+                    target = nodes.find(n => ((n.getAttribute('alias') || '') + '').includes('요청')) || nodes[0];
+                }
+                const fieldName = (target.getAttribute('name') || '').trim();
+                if (!fieldName) return;
+                const current = formData[fieldName];
+                formData[fieldName] = {
+                    ...(typeof current === 'object' && current ? current : {}),
+                    definition_id: this.deployDefinitionId,
+                    version: this.deployVersion || undefined
+                };
+            } catch (e) {
+                // eslint-disable-next-line no-console
+                console.warn('[WorkItem] injectDeployTargetToBpmnField failed:', e);
+            }
         },
         onBpmnLoadStart() {
             this.isBpmnLoading = true;
@@ -1619,7 +1669,8 @@ export default {
                     if (me.mode == 'ProcessGPT' && !me.pal) {
                         me.currentComponent = 'FormWorkItem';
                     } else {
-                        me.currentComponent = me.workItem.activity.tool.includes('urlHandler') ? 'URLWorkItem' : (me.workItem.activity.tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
+                        const tool = (me.workItem && me.workItem.activity && me.workItem.activity.tool) ? me.workItem.activity.tool : '';
+                        me.currentComponent = tool.includes('urlHandler') ? 'URLWorkItem' : (tool.includes('formHandler') ? 'FormWorkItem' : 'DefaultWorkItem');
                     }
 
                     me.updatedDefKey++;
@@ -1635,7 +1686,12 @@ export default {
                 refForms.forEach((refForm) => {
                     const tabName = `${me.$t('WorkItem.previous')} (${refForm.name}) ${me.$t('WorkItem.inputForm')}`;
                     me.inFormNameTabs.push(tabName);
-                    me.inFormValues.push({'html': refForm.html, 'formData': refForm.formData});
+                    //me.inFormValues.push({'html': refForm.html, 'formData': refForm.formData});
+
+					const formData = refForm.formData || {};
+                    me.injectDeployTargetToBpmnField(refForm.html, formData);
+
+                    me.inFormValues.push({'html': refForm.html, 'formData': formData});
                     me.selectedTab = `form-0`;
                 });
                 return;
@@ -1656,13 +1712,23 @@ export default {
                     const itemPromises = variable.map(async (item, idx) => {
                         const form = await this.backend.getRawDefinition(item.formDefId, { type: 'form' });
                         me.inFormNameTabs.push(item.subProcessLabel || `${formName}-${idx + 1}`);
-                        me.inFormValues.push({'html': form, 'formData': item.valueMap});
+                        //me.inFormValues.push({'html': form, 'formData': item.valueMap});
+                        
+                         const formData = item.valueMap || {};
+                        me.injectDeployTargetToBpmnField(form, formData);
+
+                        me.inFormValues.push({'html': form, 'formData': formData});
                     });
                     await Promise.all(itemPromises);
                 } else if(variable) {
                     const form = await this.backend.getRawDefinition(variable.formDefId, { type: 'form' });
                     me.inFormNameTabs.push(variable.subProcessLabel || formName);
-                    me.inFormValues.push({'html': form, 'formData': variable.valueMap});
+                    //me.inFormValues.push({'html': form, 'formData': variable.valueMap});
+
+                    const formData = variable.valueMap || {};
+                    me.injectDeployTargetToBpmnField(form, formData);
+
+                    me.inFormValues.push({'html': form, 'formData': formData});
                 }
             });
             

@@ -88,6 +88,9 @@
                     :process="processDefinition"
                     :open="verMangerDialog"
                     :type="'bpmn'"
+                    :bpmn="bpmn"
+                    :definitionId="fullPath"
+                    :isSimulate="isSimulate"
                     @close="toggleVerMangerDialog"
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
@@ -294,6 +297,10 @@ export default {
     },
     props: {
         chatMode: {
+            type: String,
+            default: ""
+        },
+        definitionId: {
             type: String,
             default: ""
         },
