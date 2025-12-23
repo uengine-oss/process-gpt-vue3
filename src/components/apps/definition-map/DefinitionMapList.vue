@@ -7,7 +7,7 @@
                     cols="12" md="3" sm="6"
                     :min-width="200"
                 >
-                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains"/>
                 </v-col>
                 <!-- 실제 카드가 들어가야 할 위치 -->
                 <v-col class="cursor-pointer" cols="12" md="3" sm="3">
@@ -40,7 +40,7 @@
         </draggable>
         <v-row v-else>
             <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="3" sm="6">
-                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains"/>
             </v-col>
         </v-row>
         <v-dialog v-model="permissionDialogStatus" max-width="500" persistent>
@@ -70,7 +70,8 @@ export default {
     props: {
         value: Object,
         enableEdit: Boolean,
-        isExecutionByProject: Boolean
+        isExecutionByProject: Boolean,
+        domains: Array
     },
     data: () => ({
         processType: '',

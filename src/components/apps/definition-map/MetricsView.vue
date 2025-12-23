@@ -558,8 +558,9 @@ export default {
 </script>
 
 <style scoped>
-.metrics-table {
-    border-collapse: collapse;
+.metrics-table th,
+.metrics-table td {
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
 }
 
 .domain-header {
@@ -567,13 +568,10 @@ export default {
     color: white;
     font-weight: 700;
     font-size: 1rem;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
 }
 
 .mega-header {
     background-color: rgb(var(--v-theme-primary), 0.15);
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
     font-weight: 700;
 }
 
@@ -584,20 +582,15 @@ export default {
 
 .add-column-header {
     background-color: rgba(0, 0, 0, 0.02);
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
 }
 
 .domain-row {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .domain-cell {
-    background-color: rgb(var(--v-theme-primary), 0.08);
+    background-color: rgb(var(--v-theme-primary), 0.05);
     font-weight: 600;
     vertical-align: middle;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-    border-right: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .domain-cell-text {
@@ -606,16 +599,12 @@ export default {
 }
 
 .process-cell {
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     vertical-align: top;
     padding: 8px !important;
     min-height: 80px;
 }
 
 .add-column-cell {
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     background-color: rgba(0, 0, 0, 0.02);
 }
 

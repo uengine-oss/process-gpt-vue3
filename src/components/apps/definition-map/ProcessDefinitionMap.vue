@@ -129,7 +129,7 @@
                     <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" :isAdmin="isAdmin" />
                 </div>
                 <div v-else>
-                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue.domains"/>
                     <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue" :enableEdit="enableEdit" @update:value="updateMetricsValue"/>
                 </div>
             </div>
@@ -460,6 +460,9 @@ export default {
             if (newVal === 'metrics') {
                 await this.syncCardToMetrics();
                 await this.getMetricsMap();
+            } else if (newVal === 'proc_map') {
+                await this.syncMetricsToCard();
+                await this.getProcessMap();
             }
         }
     },
@@ -516,59 +519,100 @@ export default {
                 this.metricsValue.domains.push(accessDomain);
             }
 
+            // Rebuild mega_processes and processes to handle deletions
+            const newMegaProcesses = [];
+            const newProcesses = [];
+
             // 2. Sync Mega Processes
-            this.value.mega_proc_list.forEach(mega => {
-                let metricMega = this.metricsValue.mega_processes.find(m => m.name === mega.name);
-                if (!metricMega) {
-                    metricMega = {
-                        id: mega.id, // Use same ID if possible, or generate new
-                        name: mega.name,
-                        order: this.metricsValue.mega_processes.length + 1
-                    };
-                    this.metricsValue.mega_processes.push(metricMega);
-                }
+            this.value.mega_proc_list.forEach((mega, megaIndex) => {
+                const metricMega = {
+                    id: mega.id,
+                    name: mega.name,
+                    order: megaIndex + 1
+                };
+                newMegaProcesses.push(metricMega);
 
                 // 3. Sync Major Processes (as Processes in Metric View)
                 if (mega.major_proc_list) {
                     mega.major_proc_list.forEach(major => {
-                        // Check if process exists for this domain and mega process
-                        let metricProc = this.metricsValue.processes.find(p => 
-                            p.name === major.name && 
-                            p.domain_id === accessDomain.id && 
-                            p.mega_process_id === metricMega.id
-                        );
-
-                        if (!metricProc) {
-                            metricProc = {
-                                id: major.id,
-                                name: major.name,
-                                domain_id: accessDomain.id,
-                                mega_process_id: metricMega.id,
-                                sub_proc_list: []
+                        let targetDomainName = major.domain || 'Access';
+                        let targetDomain = this.metricsValue.domains.find(d => d.name === targetDomainName);
+                        
+                        if (!targetDomain) {
+                            const newId = targetDomainName.toLowerCase().replace(/[/.]/g, '_');
+                            targetDomain = {
+                                id: newId,
+                                name: targetDomainName,
+                                order: this.metricsValue.domains.length + 1
                             };
-                            this.metricsValue.processes.push(metricProc);
+                            this.metricsValue.domains.push(targetDomain);
                         }
+
+                        const metricProc = {
+                            id: major.id,
+                            name: major.name,
+                            domain_id: targetDomain.id,
+                            mega_process_id: metricMega.id,
+                            sub_proc_list: []
+                        };
 
                         // 4. Sync Sub Processes
                         if (major.sub_proc_list) {
-                            if (!metricProc.sub_proc_list) metricProc.sub_proc_list = [];
-                            
                             major.sub_proc_list.forEach(sub => {
-                                const subExists = metricProc.sub_proc_list.some(s => s.id === sub.id);
-                                if (!subExists) {
-                                    metricProc.sub_proc_list.push({
-                                        id: sub.id,
-                                        name: sub.name
-                                    });
-                                }
+                                metricProc.sub_proc_list.push({
+                                    id: sub.id,
+                                    name: sub.name
+                                });
                             });
                         }
+                        newProcesses.push(metricProc);
                     });
                 }
             });
 
+            this.metricsValue.mega_processes = newMegaProcesses;
+            this.metricsValue.processes = newProcesses;
+
             // Save updated metrics map
             await backend.putMetricsMap(this.metricsValue);
+        },
+        async syncMetricsToCard() {
+            if (!this.metricsValue || !this.metricsValue.mega_processes) return;
+
+            const newMegaProcList = [];
+
+            // 1. Sync Mega Processes
+            this.metricsValue.mega_processes.forEach(metricMega => {
+                const cardMega = {
+                    id: metricMega.id,
+                    name: metricMega.name,
+                    major_proc_list: []
+                };
+
+                // 2. Sync Processes (as Major Processes in Card View)
+                const relatedProcesses = this.metricsValue.processes.filter(p => p.mega_process_id === metricMega.id);
+                
+                relatedProcesses.forEach(metricProc => {
+                    // Find domain name for this process
+                    const domain = this.metricsValue.domains.find(d => d.id === metricProc.domain_id);
+                    const domainName = domain ? domain.name : null;
+
+                    const cardMajor = {
+                        id: metricProc.id,
+                        name: metricProc.name,
+                        domain: domainName, // Preserve domain
+                        sub_proc_list: metricProc.sub_proc_list || []
+                    };
+                    cardMega.major_proc_list.push(cardMajor);
+                });
+
+                newMegaProcList.push(cardMega);
+            });
+
+            this.value.mega_proc_list = newMegaProcList;
+
+            // Save updated process map
+            await backend.putProcessDefinitionMap(this.value);
         },
         closePDM(){
             this.$emit('closePDM')
@@ -818,6 +862,11 @@ export default {
             await backend.deleteUserPermission({ user_id: userId, proc_def_id: process.id });
         },
         async saveProcess() {
+            if (this.viewMode === 'metrics') {
+                await this.syncMetricsToCard();
+            } else {
+                await this.syncCardToMetrics();
+            }
             await backend.putProcessDefinitionMap(this.value);
             await this.getProcessMap();
             this.closeAlertDialog();

@@ -74,6 +74,7 @@
             :processDialogStatus="processDialogStatus"
             :processType="processType"
             :type="type"
+            :domains="domains"
             @add="addProcess"
             @closeProcessDialog="closeProcessDialog"
             style="margin-top:20px !important;"
@@ -98,7 +99,8 @@ export default {
         value: Object,
         parent: Object,
         enableEdit: Boolean,
-        isExecutionByProject: Boolean
+        isExecutionByProject: Boolean,
+        domains: Array
     },
     data: () => ({
         type: 'mega',
@@ -121,6 +123,7 @@ export default {
             const process = {
                 id: id,
                 name: newProcess.name,
+                domain: newProcess.domain,
                 sub_proc_list: [],
             }
             this.value.major_proc_list.push(process);
@@ -133,6 +136,13 @@ export default {
         },
         clickPlayBtn(value){
             this.$emit('clickPlayBtn', value)
+        },
+        editProcess(process) {
+            const index = this.value.major_proc_list.findIndex(item => item.id === process.id);
+            if (index > -1) {
+                this.value.major_proc_list[index].name = process.name;
+                this.value.major_proc_list[index].domain = process.domain;
+            }
         }
     },
 }

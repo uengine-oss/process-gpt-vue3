@@ -5,8 +5,16 @@
         >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0">
-                    <v-col :cols="enableEdit ? '7' : '12'" class="ma-0 pa-0 text-left">
-                        <div>{{ value.name }}</div>
+                    <v-col :cols="enableEdit ? '7' : '12'" class="ma-0 pa-0 text-left d-flex align-center flex-nowrap" style="min-width: 0;">
+                        <v-chip v-if="value.domain"
+                            color="primary"
+                            size="x-small"
+                            class="mr-2 font-weight-bold flex-shrink-0"
+                            label
+                        >
+                            {{ value.domain }}
+                        </v-chip>
+                        <div class="text-truncate font-weight-bold" style="font-size: 0.9rem;">{{ value.name }}</div>
                     </v-col>
                     <v-col :cols="enableEdit ? '5' : ''" class="ma-0 pa-0 text-right">
                         <div class="ml-auto add-major-process">

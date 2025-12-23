@@ -1,20 +1,18 @@
 <template>
-    <div v-if="enableEdit">
-        <div v-if="processType === 'add'">
-            <v-row justify="end" class="ma-0 pa-0">
+    <div v-if="enableEdit" class="pa-1">
+        <v-card variant="outlined" class="pa-4" style="border: 2px solid rgba(var(--v-theme-primary), 0.3); border-radius: 12px; background-color: rgba(var(--v-theme-primary), 0.02);">
+            <v-row justify="end" class="ma-0 pa-0 mb-2">
                 <v-spacer></v-spacer>
-                <v-tooltip :text="$t('processDialog.close')">
-                    <template v-slot:activator="{ props }">
-                        <v-btn @click="closeDialog()"
-                            icon v-bind="props"
-                            density="compact"
-                            size="small"
-                        >
-                            <Icons :icon="'close'"  :width="12" :height="12" />
-                        </v-btn>
-                    </template>
-                </v-tooltip>
+                <v-btn @click="closeDialog()"
+                    icon
+                    variant="text"
+                    density="compact"
+                    size="small"
+                >
+                    <v-icon size="18">mdi-close</v-icon>
+                </v-btn>
             </v-row>
+            
             <v-row class="ma-0 pa-0">
                 <v-col cols="12" class="ma-0 pa-0">
                     <ProcessDefinitionDisplay
@@ -28,56 +26,48 @@
                         }"
                     ></ProcessDefinitionDisplay>
                     
+                    <v-combobox
+                        v-if="addType == 'major'"
+                        v-model="newProcess.domain"
+                        :items="domainNames"
+                        :label="$t('metricsView.domain') || '도메인'"
+                        variant="outlined"
+                        class="mb-4"
+                        density="comfortable"
+                        hide-details="auto"
+                        color="primary"
+                        :placeholder="$t('processDialog.selectOrEnterDomain') || '도메인을 선택하거나 입력하세요'"
+                    ></v-combobox>
+
                     <v-text-field
                         v-if="addType != 'sub' || isNewDef"
                         class="cp-process-id"
                         v-model="newProcess.name"
-                        :label="$i18n.locale === 'ko' ? `${addType.toUpperCase()} 프로세스 추가` : `Add ${addType.toUpperCase()} Process`"
+                        variant="outlined"
+                        color="primary"
+                        density="comfortable"
+                        :label="$i18n.locale === 'ko' ? (processType === 'add' ? `${addType.toUpperCase()} 프로세스 추가` : `${addType.toUpperCase()} 프로세스 수정`) : (processType === 'add' ? `Add ${addType.toUpperCase()} Process` : `Edit ${addType.toUpperCase()} Process`)"
                         autofocus
-                        @keypress.enter="addProcess()"
+                        @keypress.enter="processType === 'add' ? addProcess() : updateProcess()"
                         @click.stop
                     ></v-text-field>
                 </v-col>
             </v-row>
 
-            <v-row v-if="addType == 'sub'" class="ma-0 pa-4 pt-0 pr-2">
+            <v-row class="ma-0 pa-0 mt-4">
                 <v-spacer></v-spacer>
-                <v-btn @click="addProcess()"
-                    :disabled="isNewDef ? newProcess.id == '' && newProcess.name == '' : false"
+                <v-btn 
+                    @click="processType === 'add' ? addProcess() : updateProcess()"
+                    :disabled="isNewDef ? newProcess.id == '' && newProcess.name == '' : (addType == 'sub' ? !newProcess.id : !newProcess.name)"
                     color="primary"
                     variant="flat"
-                    class="rounded-pill"
+                    class="rounded-pill px-6"
                     size="small"
-                >{{ $t('organizationChartDefinition.save') }}
+                >
+                    {{ $t('common.save') || '저장' }}
                 </v-btn>
             </v-row>
-        </div>
-        <v-row v-if="processType === 'update'" justify="end" class="ma-0 pa-0">
-            <v-spacer></v-spacer>
-            <v-tooltip :text="$t('processDialog.Close')">
-                <template v-slot:activator="{ props }">
-                    <v-btn @click.stop="closeDialog()"
-                        icon v-bind="props"
-                        density="compact"
-                        size="small"
-                    >
-                        <Icons :icon="'close'"  :width="12" :height="12" />
-                    </v-btn>
-                </template>
-            </v-tooltip>
-            <v-col cols="12"  class="ma-0 pa-0">
-                <div max-width="500">
-                    <v-text-field
-                        class="delete-input-details"
-                        v-model="newProcess.name"
-                        autofocus
-                        :label="$t('processDialog.editProcess')"
-                        @keypress.enter="updateProcess"
-                        @click.stop
-                    ></v-text-field>
-                </div>
-            </v-col>
-        </v-row>
+        </v-card>
     </div>
 </template>
 
@@ -93,12 +83,14 @@ export default {
         enableEdit: Boolean,
         type: String,
         processDialogStatus: Boolean,
-        processType: String
+        processType: String,
+        domains: Array
     },
     data: () => ({
         newProcess: {
             id: '',
             name: '',
+            domain: ''
         },
         isNewDef: false
     }),
@@ -107,9 +99,14 @@ export default {
             if(this.processType == 'update') {
                 this.newProcess.id = this.process.id;
                 this.newProcess.name = this.process.name;
+                this.newProcess.domain = this.process.domain;
             }
     },
     computed: {
+        domainNames() {
+            if (!this.domains) return [];
+            return this.domains.map(d => d.name);
+        },
         addType() {
             if (this.type == 'map') {
                 return "mega";
@@ -165,6 +162,7 @@ export default {
                     this.closeDialog();
                 }
                 this.newProcess.name = '';
+                this.newProcess.domain = '';
             }
         },
         updateProcess() {
