@@ -200,46 +200,36 @@
             </v-card>
         </v-dialog>
         <v-dialog v-model="alertDialog" max-width="500" persistent>
-            <v-card class="pa-0">
-                <v-row class="ma-0 pa-4 pb-0 flex-start">
-                    <v-card-title class="pa-0 alert-message">
-                        {{ alertMessage }}
-                    </v-card-title>
+            <v-card class="pa-2" style="border-radius: 16px;">
+                <v-card-title class="d-flex align-center pa-2 pb-0">
                     <v-spacer></v-spacer>
-                    <v-tooltip :text="(userName && userName === editUser) ? $t('processDefinitionMap.close') : $t('processDefinitionMap.cancel')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn @click="alertDialog = false"
-                                v-bind="props"
-                                class="ml-auto" 
-                                variant="text" 
-                                density="compact"
-                                icon
-                            >
-                                <v-icon>mdi-close</v-icon>
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
-                </v-row>
-                <v-row  class="ma-0 pa-4">
+                    <v-btn @click="alertDialog = false"
+                        variant="text" 
+                        density="compact"
+                        icon
+                    >
+                        <v-icon size="20">mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+
+                <v-card-text class="pa-4 pt-0 text-body-1 alert-message" style="line-height: 1.6;">
+                    {{ alertMessage }}
+                </v-card-text>
+
+                <v-card-actions class="pa-4 pt-0">
                     <v-spacer></v-spacer>
-                    <!-- <v-btn @click="alertDialog = false"
-                        class="mr-1"
-                        color="gray"
-                        rounded 
-                        variant="flat" 
-                    >{{ (userName && userName === editUser) ? $t('processDefinitionMap.close') : $t('processDefinitionMap.cancel') }}
-                    </v-btn> -->
                     <div v-for="(btn, index) in actionButtons" :key="index">
                         <v-btn v-if="btn.show" 
                             @click="btn.action"
                             :class="btn.class + (index > 0 ? ' ml-2' : '')" 
                             :color="btn.color ? btn.color : 'gray'"
                             rounded 
-                            variant="flat" 
+                            variant="flat"
+                            class="px-6"
                         >{{ btn.text }}
                         </v-btn>
                     </div>
-                </v-row>
+                </v-card-actions>
             </v-card>
         </v-dialog>
 
