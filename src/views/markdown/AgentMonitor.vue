@@ -978,7 +978,6 @@ export default {
                                 
                                 // 브라우저 자동화 에이전트 iframe 처리
                                 if (row.agent_orch === 'browser-automation-agent' && row.consumer) {
-                                    processgpt-browser-server-0
                                     this.browserIframeUrl = `https://${window.$tenantName}.process-gpt.io/vnc/${row.consumer}/vnc.html`;
                                     this.showBrowserIframe = true;
                                 } else if (row.agent_orch === 'browser-automation-agent' && !row.consumer) {

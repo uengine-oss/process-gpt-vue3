@@ -8,15 +8,24 @@
             class="is-work-height definition-map-card"
             style="overflow: auto; flex-shrink: 0;"
         >
+            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
+                <Chat 
+                    :showDetailInfo="true"
+                    :definitionMapOnlyInput="true"
+                    :disableChat="false"
+                    :isMobile="isMobile"
+                    @sendMessage="handleMainChatMessage"
+                />
+            </div>
             <!-- 메인 채팅 입력 UI -->
-            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
+            <!-- <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
                 <MainChatInput 
                     :agentInfo="mainChatAgentInfo"
                     :userId="userInfo.uid || userInfo.id"
                     @submit="handleMainChatSubmit"
                     @open-history="handleOpenHistory"
                 />
-            </div>
+            </div> -->
             
             <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"
                 style="position: sticky; top: 0; z-index:2; background-color:white"
