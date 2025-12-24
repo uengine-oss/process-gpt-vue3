@@ -22,13 +22,13 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-if="Object.keys(diffItems).length === 0">
-                        <td colspan="4" class="text-center px-0">
+                    <tr v-if="!hasChanges">
+                        <td colspan="4" class="text-center px-0 py-4">
                             <v-icon class="mr-2">mdi-information</v-icon>
                             {{ $t('ProcessFeedback.noChanges') }}
                         </td>
                     </tr>
-                    <tr v-for="(item, key) in diffItems" :key="key">
+                    <tr v-for="(item, key) in diffItems" :key="key" v-if="hasChanges">
                         <td class="text-center">
                             <v-checkbox v-model="item.accepted"
                                 hide-details
@@ -201,7 +201,19 @@
             <!-- 모바일 카드 뷰 -->
             <div v-else-if="!isGenerating && !isSubmitting && isMobile" class="mobile-diff-view">
                 <v-card
+                    v-if="!hasChanges"
+                    class="mb-2"
+                    elevation="1"
+                    variant="outlined"
+                >
+                    <v-card-text class="text-center py-4">
+                        <v-icon class="mr-2">mdi-information</v-icon>
+                        {{ $t('ProcessFeedback.noChanges') }}
+                    </v-card-text>
+                </v-card>
+                <v-card
                     v-for="(item, key) in diffItems"
+                    v-if="hasChanges && item.changed"
                     :key="`mobile-${key}`"
                     :class="['mb-2', { 'card-selected': item.accepted }]"
                     elevation="1"
@@ -328,26 +340,29 @@
 
             <v-row v-if="!isGenerating && !isSubmitting" class="ma-0 pa-0 mt-2">
                 <v-spacer></v-spacer>
-                <v-btn @click="closeFeedback"
+                <v-btn
+                    @click="closeFeedback"
                     color="gray"
                     variant="elevated" 
-                    class="rounded-pill mr-2"
+                    class="rounded-pill"
                     density="compact"
                 >{{ $t('Common.cancel') }}</v-btn>
-                <v-btn @click="saveFeedbackDiff"
+                <v-btn 
+                    v-if="hasChanges"
+                    @click="saveFeedbackDiff"
                     :disabled="!hasSelectedItems"
                     color="primary"
                     variant="elevated" 
-                    class="rounded-pill"
+                    class="rounded-pill ml-2"
                     density="compact"
                 >{{ $t('ProcessFeedback.applyButton') }}</v-btn>
             </v-row>
         </v-card-text>
 
         <v-card-text v-else class="pa-1">
-            <div class="d-flex justify-start align-center mb-1">
-                <v-icon>mdi-information</v-icon>
-                <span class="text-h6 ml-2">{{ $t('ProcessFeedback.inputTitle') }}</span>
+            <div class="d-flex justify-start align-center mb-2">
+                <v-icon size="small">mdi-information-outline</v-icon>
+                <span class="text-body-1 font-weight-bold ml-2">{{ $t('ProcessFeedback.inputTitle') }}</span>
                 <div class="ml-auto d-flex align-center">
                     <v-btn 
                         icon
@@ -364,31 +379,6 @@
                     </v-tooltip>
                 </div>
             </div>
-            <!-- <v-list class="feedback-list">
-                <v-skeleton-loader
-                    v-if="isGenerating"
-                    type="image"
-                    class="mx-auto"
-                ></v-skeleton-loader>
-                <v-list-item
-                    v-else
-                    v-for="(item, index) in feedbackItems"
-                    :key="'feedback-'+index"
-                    :active="feedbackValue === item"
-                    @click="feedbackValue = item"
-                    class="feedback-item"
-                >
-                    <v-list-item-title>{{ item }}</v-list-item-title>
-                </v-list-item>
-                <v-list-item
-                    v-if="!isGenerating"
-                    :active="feedbackValue === 'etc'"
-                    @click="feedbackValue = 'etc'"
-                    class="feedback-item"
-                >
-                    <v-list-item-title>기타 입력</v-list-item-title>
-                </v-list-item>
-            </v-list> -->
 
             <v-textarea 
                 v-model="feedbackValue"
@@ -495,6 +485,9 @@ export default {
         },
         hasSelectedItems() {
             return Object.values(this.diffItems).some(item => item.accepted);
+        },
+        hasChanges() {
+            return Object.keys(this.diffItems).length > 0 && Object.values(this.diffItems).some(item => item.changed);
         },
     },
     mounted() {
@@ -624,13 +617,10 @@ export default {
             });
         },
         
-        closeFeedback(taskId = null) {
-            if (taskId) {
-                this.$emit('closeFeedback', taskId);
-            } else {
-                this.$emit('closeFeedback');
-            }
+        closeFeedback() {
+            this.$emit('closeFeedback');
         },
+        
         async getFeedback() {
             if (!this.task || this.isGenerating) {
                 return;
@@ -692,6 +682,8 @@ export default {
             if (!this.task || !this.diffItems || this.diffItems.length == 0) {
                 return;
             }
+            this.$emit('applyFeedback', this.task);
+
             Object.keys(this.diffItems).forEach(key => {
                 if (this.diffItems[key].accepted) {
                     this.feedbackDiff[key] = this.diffItems[key].after;
@@ -704,7 +696,6 @@ export default {
                 this.feedbackDiff.inputData = this.feedbackDiff.inputData.map(item => item.key);
             }
             await backend.applyFeedback(this.feedbackDiff, this.task.id);
-            this.closeFeedback(this.task.id);
         },
 
     }
@@ -831,7 +822,6 @@ export default {
 }
 
 .gwt-card {
-    background-color: rgba(var(--v-theme-surface-variant), 0.3);
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 4px;
     padding: 4px 6px;

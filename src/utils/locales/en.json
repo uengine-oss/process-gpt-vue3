@@ -2293,6 +2293,41 @@
         "goodExamples": "Good Examples",
         "badExamples": "Bad Examples"
     },
+    "mainChat": {
+        "placeholder": "How can I help you? Try asking to create, execute, or search processes.",
+        "examples": {
+            "createProcess": "Create a vacation request process",
+            "executeProcess": "Create a business trip request",
+            "checkResult": "Show my vacation request status",
+            "askQuestion": "Show me our company's organization chart"
+        },
+        "intentAnalysis": "Analyzing your request...",
+        "createMode": {
+            "title": "Process Creation",
+            "description": "Design new processes through AI conversation."
+        },
+        "executeMode": {
+            "title": "Process Execution",
+            "description": "Execute the selected process."
+        },
+        "queryMode": {
+            "title": "Information Query",
+            "description": "Searching for the requested information."
+        },
+        "history": {
+            "title": "Chat History",
+            "loading": "Loading...",
+            "empty": "No previous conversations"
+        }
+    },
+    "fullScreenChat": {
+        "title": "AI Assistant",
+        "newChat": "New Chat",
+        "close": "Close",
+        "analyzing": "Analyzing...",
+        "executeProcess": "Execute Process",
+        "goToDefinition": "Go to Process Editor"
+    },
     "ProcessFeedback": {
         "applyTitle": "Apply Feedback",
         "inputTitle": "Please enter your feedback",
