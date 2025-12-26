@@ -126,7 +126,7 @@ create table if not exists public.users (
     email text null,
     is_admin boolean not null default false,
     role text null,
-    tenant_id text not null 'process-gpt',
+    tenant_id text not null,
     device_token text null,
     goal text null,
     persona text null,
@@ -2611,7 +2611,7 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 -- 익명(anon) 역할에 실행 권한 부여
 GRANT EXECUTE ON FUNCTION public.fetch_pending_task(text, text, integer) TO anon;
-GRANT EXECUTE ON FUNCTION public.fetch_pending_task_dev(text, text, integer, text) TO anon;
+-- GRANT EXECUTE ON FUNCTION public.fetch_pending_task_dev(text, text, integer, text) TO anon;
 
 
 CREATE TABLE env (
