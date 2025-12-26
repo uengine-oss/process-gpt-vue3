@@ -387,7 +387,7 @@ export default {
                         && me.workItem
                         && me.workItem.activity
                         && me.workItem.activity.tracingTag) {
-                            me.formDefId = `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
+                            me.formDefId = `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag.toLowerCase()}_form`;
                         } else {
                             const tool = me.workItem?.worklist?.tool;
                             me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
