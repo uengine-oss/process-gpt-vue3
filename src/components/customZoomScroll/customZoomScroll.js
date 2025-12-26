@@ -33,6 +33,21 @@ export default function CustomZoomScroll(config, eventBus, canvas) {
     canvas.movedDistance = {x:-100, y:0};
   }
 
+  // 배포 환경에서 preventDefault가 동작하도록 passive: false로 wheel 이벤트 재등록
+  var self = this;
+  var container = canvas._container;
+  
+  if (container) {
+    var handleWheelWithPassiveFalse = function(event) {
+      self._handleWheel(event);
+    };
+    
+    // 부모 클래스가 등록한 이벤트를 제거하고 passive: false로 재등록
+    setTimeout(function() {
+      container.addEventListener('wheel', handleWheelWithPassiveFalse, { passive: false, capture: true });
+    }, 0);
+  }
+
 }
 
 CustomZoomScroll.$inject = [
