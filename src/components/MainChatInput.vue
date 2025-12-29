@@ -32,8 +32,9 @@
                 </template>
                 
                 <!-- 히스토리 드롭다운 -->
-                <v-card class="history-dropdown" min-width="280" max-width="320">
+                <v-card class="history-dropdown" min-width="320" max-width="380">
                     <v-card-title class="history-dropdown-title pa-3 pb-2">
+                        <v-icon size="18" class="mr-2">mdi-chat-outline</v-icon>
                         <span>{{ $t('mainChat.history.title') }}</span>
                     </v-card-title>
                     <v-divider></v-divider>
@@ -44,32 +45,53 @@
                     </div>
                     
                     <div v-else-if="chatHistory.length === 0" class="history-empty pa-4 text-center">
-                        <v-icon size="32" color="grey-lighten-1">mdi-chat-outline</v-icon>
+                        <v-icon size="40" color="grey-lighten-1">mdi-chat-outline</v-icon>
                         <p class="text-caption text-grey mt-2 mb-0">{{ $t('mainChat.history.empty') }}</p>
                     </div>
                     
-                    <v-list v-else density="compact" class="pa-0">
-                        <v-list-item
-                            v-for="item in chatHistory"
-                            :key="item.taskId"
-                            @click="openHistoryItem(item)"
-                            class="history-list-item"
-                        >
-                            <template v-slot:prepend>
-                                <v-icon size="18" :color="getStatusColor(item.status)">
-                                    {{ getStatusIcon(item.status) }}
-                                </v-icon>
-                            </template>
-                            <v-list-item-title class="history-item-title">
-                                {{ item.title }}
-                            </v-list-item-title>
-                            <template v-slot:append>
-                                <span class="history-item-date text-caption text-grey">
-                                    {{ formatDate(item.updatedAt) }}
-                                </span>
-                            </template>
-                        </v-list-item>
-                    </v-list>
+                    <div v-else class="history-list-container">
+                        <v-list density="compact" class="pa-0">
+                            <v-list-item
+                                v-for="room in displayedHistory"
+                                :key="room.id"
+                                @click="openHistoryItem(room)"
+                                class="history-list-item"
+                            >
+                                <template v-slot:prepend>
+                                    <v-avatar size="36" color="grey-lighten-3">
+                                        <v-icon size="20" color="primary">mdi-robot-outline</v-icon>
+                                    </v-avatar>
+                                </template>
+                                <v-list-item-title class="history-item-title">
+                                    {{ room.name || '새 대화' }}
+                                </v-list-item-title>
+                                <v-list-item-subtitle class="history-item-subtitle">
+                                    {{ truncateMessage(room.message?.msg) }}
+                                </v-list-item-subtitle>
+                                <template v-slot:append>
+                                    <span class="history-item-date text-caption text-grey">
+                                        {{ formatDate(room.message?.createdAt) }}
+                                    </span>
+                                </template>
+                            </v-list-item>
+                        </v-list>
+                        
+                        <!-- 더보기 버튼 -->
+                        <div v-if="hasMoreHistory" class="more-history-container">
+                            <v-divider></v-divider>
+                            <v-btn
+                                variant="text"
+                                color="primary"
+                                block
+                                size="small"
+                                class="more-history-btn"
+                                @click="showAllHistory"
+                            >
+                                <v-icon size="16" class="mr-1">mdi-chevron-down</v-icon>
+                                {{ $t('mainChat.history.showMore') || '더보기' }} ({{ remainingCount }}개)
+                            </v-btn>
+                        </div>
+                    </div>
                 </v-card>
             </v-menu>
         </div>
@@ -128,6 +150,10 @@ export default {
             showHistory: false,
             isLoadingHistory: false,
             chatHistory: [],
+            totalHistoryCount: 0,
+            displayLimit: 10,
+            showAll: false,
+            userInfo: null,
             examples: [
                 {
                     icon: 'mdi-plus-circle-outline',
@@ -153,17 +179,30 @@ export default {
         };
     },
     computed: {
-        // AgentChatActions와 동일한 instId 사용
-        instId() {
-            return this.agentInfo ? `${this.agentInfo.id}-actions` : null;
+        displayedHistory() {
+            if (this.showAll) {
+                return this.chatHistory;
+            }
+            return this.chatHistory.slice(0, this.displayLimit);
+        },
+        hasMoreHistory() {
+            return !this.showAll && this.chatHistory.length > this.displayLimit;
+        },
+        remainingCount() {
+            return this.chatHistory.length - this.displayLimit;
         }
     },
     watch: {
         showHistory(val) {
             if (val) {
+                this.showAll = false;
                 this.loadHistory();
             }
         }
+    },
+    async mounted() {
+        // 사용자 정보 로드
+        this.userInfo = await backend.getUserInfo();
     },
     methods: {
         selectExample(example) {
@@ -184,89 +223,88 @@ export default {
             this.isFocused = false;
         },
         async loadHistory() {
-            if (!this.instId) return;
+            if (!this.userInfo) {
+                this.userInfo = await backend.getUserInfo();
+            }
             
             this.isLoadingHistory = true;
             try {
-                // AgentChatActions.vue의 loadExistingWorkItems와 동일한 방식
-                let worklist = await backend.getWorkListByInstId(this.instId);
-                if (worklist && worklist.length > 0) {
-                    // 최신순 정렬
-                    worklist = worklist.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                // chat_rooms 테이블에서 채팅방 목록 조회
+                const rooms = await backend.getChatRoomList('chat_rooms');
+                
+                if (rooms && rooms.length > 0) {
+                    // 내가 참여 중이고, System과의 1:1 채팅방만 필터링
+                    const myRooms = rooms.filter(room => {
+                        if (!room.participants || room.participants.length !== 2) return false;
+                        
+                        const hasSystem = room.participants.some(p => 
+                            p.id === 'system_id' || p.email === 'system@uengine.org'
+                        );
+                        const hasMe = room.participants.some(p => 
+                            p.email === this.userInfo.email
+                        );
+                        
+                        return hasSystem && hasMe;
+                    });
                     
-                    this.chatHistory = [];
-                    for (const workItemRef of worklist) {
-                        const workItem = await backend.getWorkItem(workItemRef.taskId);
-                        if (workItem) {
-                            const title = workItem.activity?.name || 
-                                         workItem.worklist?.description || 
-                                         workItem.worklist?.query || 
-                                         '새 대화';
-                            
-                            this.chatHistory.push({
-                                taskId: workItemRef.taskId,
-                                title: title.length > 25 ? title.substring(0, 25) + '...' : title,
-                                status: workItem.worklist?.status,
-                                updatedAt: workItem.worklist?.updatedAt || workItemRef.updatedAt,
-                                workItem: workItem
-                            });
-                        }
-                    }
+                    // message.createdAt 기준 최신순 정렬
+                    this.chatHistory = myRooms.sort((a, b) => {
+                        const timeA = a.message?.createdAt || 0;
+                        const timeB = b.message?.createdAt || 0;
+                        return timeB - timeA;
+                    });
+                    
+                    this.totalHistoryCount = this.chatHistory.length;
                 } else {
                     this.chatHistory = [];
+                    this.totalHistoryCount = 0;
                 }
             } catch (error) {
                 console.error('히스토리 로드 오류:', error);
                 this.chatHistory = [];
+                this.totalHistoryCount = 0;
             } finally {
                 this.isLoadingHistory = false;
             }
         },
-        openHistoryItem(item) {
+        showAllHistory() {
+            this.showAll = true;
+        },
+        openHistoryItem(room) {
             this.showHistory = false;
-            this.$emit('open-history', item);
+            this.$emit('open-history', room);
         },
-        getStatusIcon(status) {
-            switch (status) {
-                case 'COMPLETED':
-                case 'DONE':
-                    return 'mdi-check-circle';
-                case 'IN_PROGRESS':
-                    return 'mdi-progress-clock';
-                case 'ERROR':
-                case 'FAILED':
-                    return 'mdi-alert-circle';
-                default:
-                    return 'mdi-message-text-outline';
-            }
+        truncateMessage(msg) {
+            if (!msg) return '';
+            if (msg === 'NEW') return '새 대화';
+            const maxLength = 30;
+            return msg.length > maxLength ? msg.substring(0, maxLength) + '...' : msg;
         },
-        getStatusColor(status) {
-            switch (status) {
-                case 'COMPLETED':
-                case 'DONE':
-                    return 'success';
-                case 'IN_PROGRESS':
-                    return 'primary';
-                case 'ERROR':
-                case 'FAILED':
-                    return 'error';
-                default:
-                    return 'grey';
-            }
-        },
-        formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
+        formatDate(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
             const now = new Date();
             const diff = now - date;
             
+            // 1분 미만
+            if (diff < 60 * 1000) {
+                return '방금';
+            }
+            // 1시간 미만
+            if (diff < 60 * 60 * 1000) {
+                const minutes = Math.floor(diff / (60 * 1000));
+                return `${minutes}분 전`;
+            }
+            // 24시간 미만
             if (diff < 24 * 60 * 60 * 1000) {
                 return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
             }
+            // 7일 미만
             if (diff < 7 * 24 * 60 * 60 * 1000) {
                 const days = Math.floor(diff / (24 * 60 * 60 * 1000));
                 return `${days}일 전`;
             }
+            // 그 외
             return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
         }
     }
@@ -287,6 +325,7 @@ export default {
     margin-left: auto;
     color: #64748b;
     transition: all 0.2s ease;
+    position: relative;
 }
 
 .history-btn:hover,
@@ -295,9 +334,13 @@ export default {
     background: rgba(var(--v-theme-primary), 0.1);
 }
 
+.history-badge {
+    font-size: 10px;
+}
+
 /* 히스토리 드롭다운 */
 .history-dropdown {
-    max-height: 350px;
+    max-height: 450px;
     overflow: hidden;
 }
 
@@ -305,6 +348,8 @@ export default {
     font-size: 14px;
     font-weight: 600;
     color: #1e293b;
+    display: flex;
+    align-items: center;
 }
 
 .history-loading,
@@ -314,11 +359,18 @@ export default {
     align-items: center;
     justify-content: center;
     color: #64748b;
+    min-height: 100px;
+}
+
+.history-list-container {
+    max-height: 350px;
+    overflow-y: auto;
 }
 
 .history-list-item {
     cursor: pointer;
     border-bottom: 1px solid #f1f5f9;
+    padding: 12px 16px !important;
 }
 
 .history-list-item:last-child {
@@ -331,16 +383,37 @@ export default {
 
 .history-item-title {
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     color: #1e293b;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+.history-item-subtitle {
+    font-size: 12px;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 2px;
+}
+
 .history-item-date {
     font-size: 11px;
     white-space: nowrap;
+    color: #94a3b8;
+}
+
+.more-history-container {
+    position: sticky;
+    bottom: 0;
+    background: white;
+}
+
+.more-history-btn {
+    text-transform: none;
+    font-size: 13px;
 }
 
 /* 예시 문구들 */

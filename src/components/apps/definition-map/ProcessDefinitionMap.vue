@@ -1,15 +1,17 @@
 <template>
     <div class="definition-map-wrapper">
         <!-- 좌측: 정의체계도 -->
-        <v-card elevation="10" :style="[
+        <v-card 
+            v-show="!showFullScreenChat"
+            elevation="10" :style="[
             !$globalState.state.isZoomed ? '' : 'height:100vh;',
-            showFullScreenChat ? `width: calc(100% - ${chatPanelWidth}px)` : 'width: 100%'
+            'width: 100%'
         ]"
             class="is-work-height definition-map-card"
             style="overflow: auto; flex-shrink: 0;"
         >
             <!-- 메인 채팅 입력 UI -->
-            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
+            <!-- <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <Chat 
                     :showDetailInfo="true"
                     :definitionMapOnlyInput="true"
@@ -17,15 +19,15 @@
                     :isMobile="isMobile"
                     @sendMessage="handleMainChatMessage"
                 />
-            </div>
-            <!-- <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
+            </div> -->
+            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
                 <MainChatInput 
                     :agentInfo="mainChatAgentInfo"
                     :userId="userInfo.uid || userInfo.id"
                     @submit="handleMainChatSubmit"
                     @open-history="handleOpenHistory"
                 />
-            </div> -->
+            </div>
             
             <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"
                 style="position: sticky; top: 0; z-index:2; background-color:white"
@@ -187,21 +189,12 @@
             </v-row> -->
         </v-card>
 
-        <!-- Resizer -->
-        <div 
-            v-if="showFullScreenChat"
-            class="chat-resizer"
-            @mousedown="startResize"
-        >
-            <div class="resizer-handle"></div>
-        </div>
-
-        <!-- 우측: 채팅 패널 -->
+        <!-- 전체 화면: 채팅 패널 -->
         <v-card 
             v-if="showFullScreenChat"
             elevation="10"
             class="is-work-height chat-panel-card"
-            :style="{ width: chatPanelWidth + 'px' }"
+            style="width: 100%"
         >
             <!-- 채팅 헤더 -->
             <div class="chat-panel-header">
@@ -221,11 +214,12 @@
 
             <!-- 채팅 컨텐츠 -->
             <div class="chat-panel-content">
-                <AgentChatActions
-                    ref="agentChatActions"
-                    :agentInfo="mainChatAgentInfo"
+                <WorkAssistantChatPanel
+                    ref="workAssistantChatPanel"
                     :initialMessage="pendingChatMessage?.text"
-                    @intent-detected="handleIntentDetected"
+                    :userInfo="userInfo"
+                    :openHistoryRoom="pendingHistoryRoom"
+                    @response-parsed="handleAgentResponse"
                 />
             </div>
         </v-card>
@@ -320,6 +314,7 @@ import DetailComponent from '@/components/ui-components/details/DetailComponent.
 import MainChatInput from '@/components/MainChatInput.vue';
 import FullScreenChatDialog from '@/components/FullScreenChatDialog.vue';
 import AgentChatActions from '@/components/AgentChatActions.vue';
+import WorkAssistantChatPanel from '@/components/WorkAssistantChatPanel.vue';
 import ChatModule from '@/components/ChatModule.vue';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 
@@ -346,7 +341,8 @@ export default {
         DetailComponent,
         MainChatInput,
         FullScreenChatDialog,
-        AgentChatActions
+        AgentChatActions,
+        WorkAssistantChatPanel
     },
     props: {
         componentName: {
@@ -408,6 +404,7 @@ export default {
         initialConsultingMessage: null,
         showFullScreenChat: false,
         pendingChatMessage: null,
+        pendingHistoryRoom: null,
         chatPanelWidth: 500,
         isResizing: false,
         mainChatAgentInfo: {
@@ -597,9 +594,10 @@ export default {
             this.showFullScreenChat = true;
         },
 
-        // 히스토리 항목 열기 (AgentChatActions가 히스토리 자체 관리)
-        handleOpenHistory() {
+        // 히스토리 항목 열기
+        handleOpenHistory(room) {
             this.pendingChatMessage = null;
+            this.pendingHistoryRoom = room;
             this.showFullScreenChat = true;
         },
 
@@ -607,11 +605,46 @@ export default {
         closeChatPanel() {
             this.showFullScreenChat = false;
             this.pendingChatMessage = null;
+            this.pendingHistoryRoom = null;
         },
 
         // 의도 분석 결과 처리
         handleIntentDetected(result) {
             console.log('[ProcessDefinitionMap] 의도 분석 결과:', result);
+        },
+
+        // 에이전트 응답 처리
+        handleAgentResponse(response) {
+            console.log('[ProcessDefinitionMap] 에이전트 응답:', response);
+            
+            if (!response || !response.action) return;
+            
+            switch (response.action) {
+                case 'process_created':
+                    // 프로세스 생성 요청 - WorkAssistantChatPanel에서 직접 컨설팅 모드로 전환됨
+                    // 별도 처리 불필요
+                    break;
+                    
+                case 'process_executed':
+                    // 프로세스 실행 완료 - 인스턴스 업데이트 알림
+                    this.EventBus.emit('instances-updated');
+                    break;
+                    
+                case 'query_result':
+                    // 조회 결과 - 필요 시 추가 처리
+                    break;
+                    
+                case 'organization_info':
+                    // 조직도 정보 - 필요 시 추가 처리
+                    break;
+                    
+                case 'error':
+                    // 오류 처리
+                    console.error('에이전트 오류:', response.message);
+                    break;
+            }
+            
+            this.$emit('agent-response', response);
         },
 
         // 채팅 패널 리사이즈

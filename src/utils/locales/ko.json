@@ -2318,7 +2318,8 @@
         "history": {
             "title": "대화 히스토리",
             "loading": "불러오는 중...",
-            "empty": "이전 대화가 없습니다"
+            "empty": "이전 대화가 없습니다",
+            "showMore": "더보기"
         }
     },
     "fullScreenChat": {
