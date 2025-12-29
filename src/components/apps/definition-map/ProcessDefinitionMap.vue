@@ -8,6 +8,7 @@
             class="is-work-height definition-map-card"
             style="overflow: auto; flex-shrink: 0;"
         >
+            <!-- 메인 채팅 입력 UI -->
             <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <Chat 
                     :showDetailInfo="true"
@@ -17,7 +18,6 @@
                     @sendMessage="handleMainChatMessage"
                 />
             </div>
-            <!-- 메인 채팅 입력 UI -->
             <!-- <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
                 <MainChatInput 
                     :agentInfo="mainChatAgentInfo"
