@@ -154,6 +154,7 @@ export default {
     methods: {
         async reloadAllTodoList() {
             const userId = localStorage.getItem('uid');
+            const mode = window.$mode;
             
             // 각 status별로 현재까지 로드된 데이터만 다시 불러오기
             const reloadPromises = this.todolist.map(async (column) => {
@@ -186,7 +187,12 @@ export default {
                 
                 // 컬럼 tasks 업데이트
                 column.tasks = worklist.filter(item => {
-                    if (status === 'IN_PROGRESS' && (item.status === 'IN_PROGRESS' || item.status === 'SUBMITTED')) {
+                    // uEngine 모드에서는 Worklist 상태 'NEW'를 진행중으로 분류(InstanceTodo.vue와 동일)
+                    if (status === 'IN_PROGRESS' && (
+                        item.status === 'IN_PROGRESS' ||
+                        item.status === 'SUBMITTED' ||
+                        (mode === 'uEngine' && (item.status === 'NEW' || item.status === 'Running'))
+                    )) {
                         return true;
                     } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
                         return true;
@@ -222,6 +228,7 @@ export default {
         },
         async loadWorkListByStatus(status) {
             const me = this;
+            const mode = window.$mode;
             
             // 로딩 시작
             me.loading[status] = true;
@@ -266,7 +273,12 @@ export default {
                 worklist.forEach(function(item) {
                     // 상태별 매칭 (IN_PROGRESS는 SUBMITTED도 포함)
                     let shouldAdd = false;
-                    if (status === 'IN_PROGRESS' && (item.status === 'IN_PROGRESS' || item.status === 'SUBMITTED')) {
+                    // uEngine 모드에서는 Worklist 상태 'NEW'를 진행중으로 분류(InstanceTodo.vue와 동일)
+                    if (status === 'IN_PROGRESS' && (
+                        item.status === 'IN_PROGRESS' ||
+                        item.status === 'SUBMITTED' ||
+                        (mode === 'uEngine' && (item.status === 'NEW' || item.status === 'Running'))
+                    )) {
                         shouldAdd = true;
                     } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
                         shouldAdd = true;

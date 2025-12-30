@@ -1,6 +1,32 @@
 <template>
     <v-card class="dry-run-process-card" style="width: 100%; height: 100%">
-        <v-card-title class="dry-run-process-card-title"> {{ $t('successMsg.runningTheProcess') }} </v-card-title>
+        <v-row :class="isMobile ? 'ma-0 pa-4 pb-0 flex-column align-start' : 'ma-0 pa-4 pb-0 align-center'">
+            <div class="dry-run-process-card-title">
+                {{ $t('successMsg.runningTheProcess') }}
+            </div>
+            <v-spacer v-if="!isMobile"></v-spacer>
+            <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
+                <v-btn
+                    @click="closeDialog"
+                    rounded
+                    density="compact"
+                    style="background-color: #808080; color: white;"
+                >
+                    닫기
+                </v-btn>
+            </div>
+            <div v-else>
+                <v-btn
+                    @click="closeDialog"
+                    class="ml-auto"
+                    variant="text"
+                    density="compact"
+                    icon
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </div>
+        </v-row>
         <v-card-text class="dry-run-process-card-text">
             <div v-if="dryRunWorkItem">
                 <WorkItem :definitionId="definitionId" :is-simulate="isSimulate" :isDryRun="true" :dryRunWorkItem="dryRunWorkItem" @close="closeDialog"></WorkItem>
@@ -41,7 +67,8 @@ export default {
         backend: null,
         dryRunWorkItem: undefined,
         userName: '',
-        roleMappings: []
+        roleMappings: [],
+        isMobile: window.innerWidth <= 768
     }),
     created() {
         let me = this;
@@ -54,7 +81,16 @@ export default {
         });
         me.dryRun();
     },
+    mounted() {
+        window.addEventListener('resize', this.checkIfMobile);
+    },
+    beforeUnmount() {
+        window.removeEventListener('resize', this.checkIfMobile);
+    },
     methods: {
+        checkIfMobile() {
+            this.isMobile = window.innerWidth <= 768;
+        },
         dryRun(){
             var me = this;
             me.$try({

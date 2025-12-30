@@ -1049,8 +1049,11 @@ export default {
                 this.$emit('changeElement', xmlObj.xml);
             });
         },
-        handleError() {
+        handleError(err) {
+            // BpmnUengine.vue에서 import 실패 시 error 이벤트로 전달되는 에러를 받는다.
+            // 여기서 err 미정의로 크래시 나면 로딩이 영원히 끝나지 않을 수 있음.
             console.error('failed to show diagram', err);
+            this.onBpmnLoadEnd();
         },
         handleShown() {
             console.log('diagram shown');

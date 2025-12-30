@@ -10,8 +10,7 @@
             class="is-work-height definition-map-card"
             style="overflow: auto; flex-shrink: 0;"
         >
-            <!-- 메인 채팅 입력 UI -->
-            <!-- <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
+            <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <Chat 
                     :showDetailInfo="true"
                     :definitionMapOnlyInput="true"
@@ -19,8 +18,8 @@
                     :isMobile="isMobile"
                     @sendMessage="handleMainChatMessage"
                 />
-            </div> -->
-            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
+            </div>
+            <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
                 <MainChatInput 
                     :agentInfo="mainChatAgentInfo"
                     :userId="userInfo.uid || userInfo.id"
@@ -95,7 +94,13 @@
 
                     <v-tooltip location="bottom" v-if="!useLock">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" @click="saveProcess()">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                size="24"
+                                @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
+                            >
                                 <Icons :icon="'save'" />
                             </v-btn>
                         </template>
@@ -224,7 +229,7 @@
             </div>
         </v-card>
 
-        <v-dialog v-model="openConsultingDialog"
+         <v-dialog v-if="mode !== 'uEngine'" v-model="openConsultingDialog"
             :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
             :fullscreen="isMobile"
             :scrim="isSimulateMode ? false : true" persistent
@@ -292,6 +297,42 @@
             </v-card>
         </v-dialog>
 
+        <v-dialog v-model="saveConfirmDialog" max-width="520" persistent>
+            <v-card class="pa-0">
+                <v-row class="ma-0 pa-4 pb-0 flex-start">
+                    <v-card-title class="pa-0 alert-message">
+                        {{ saveConfirmMessage }}
+                    </v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeSaveConfirmDialog()" icon variant="text" density="compact">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-row class="ma-0 pa-4">
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        :disabled="saveConfirmSaving"
+                        rounded
+                        variant="flat"
+                        color="gray"
+                        @click="closeSaveConfirmDialog()"
+                    >
+                        {{ $t('processDefinitionMap.cancel') }}
+                    </v-btn>
+                    <v-btn
+                        class="ml-2"
+                        :loading="saveConfirmSaving"
+                        :disabled="saveConfirmSaving"
+                        rounded
+                        variant="flat"
+                        color="primary"
+                        @click="confirmSaveProcess()"
+                    >
+                        {{ $t('processDefinitionMap.save') }}
+                    </v-btn>
+                </v-row>
+            </v-card>
+        </v-dialog>
         <v-dialog v-model="openMarketplaceDialog" 
             persistent
             fullscreen
@@ -371,6 +412,9 @@ export default {
         alertType: '',
         alertDialog: false,
         alertMessage: '',
+        saveConfirmDialog: false,
+        saveConfirmSaving: false,
+        saveConfirmMessage: '저장하시겠습니까?',
         isAdmin: false,
         versionHistory: [],
         openConsultingDialog: false,
@@ -585,6 +629,44 @@ export default {
         }
     },
     methods: {
+        openSaveConfirmDialog() {
+            // uEngine 모드에서 저장 버튼 클릭 시 한번 더 확인
+            this.saveConfirmMessage = '저장하시겠습니까?';
+            this.saveConfirmDialog = true;
+        },
+        closeSaveConfirmDialog() {
+            if (this.saveConfirmSaving) return;
+            this.saveConfirmDialog = false;
+        },
+        async confirmSaveProcess() {
+            if (this.saveConfirmSaving) return;
+            this.saveConfirmSaving = true;
+            try {
+                await this.saveProcess();
+                this.saveConfirmDialog = false;
+            } finally {
+                this.saveConfirmSaving = false;
+            }
+        },
+        normalizeProcessMap(processMap) {
+            // backend에서 null/undefined 또는 부분 구조로 내려오는 경우에도 UI가 기본 형태로 렌더링되도록 보정
+            const base = (processMap && typeof processMap === 'object') ? processMap : {};
+            const megaList = Array.isArray(base.mega_proc_list) ? base.mega_proc_list : [];
+
+            return {
+                ...base,
+                mega_proc_list: megaList.map((megaProc) => {
+                    const majorList = Array.isArray(megaProc?.major_proc_list) ? megaProc.major_proc_list : [];
+                    return {
+                        ...megaProc,
+                        major_proc_list: majorList.map((majorProc) => ({
+                            ...majorProc,
+                            sub_proc_list: Array.isArray(majorProc?.sub_proc_list) ? majorProc.sub_proc_list : []
+                        }))
+                    };
+                })
+            };
+        },
         // 메인 채팅 입력 처리
         handleMainChatSubmit(message) {
             if (!message || !message.text) return;
@@ -842,7 +924,8 @@ export default {
             this.$router.push(`/definition-map`);
         },
         async getProcessMap() {
-            this.value = await backend.getProcessDefinitionMap();
+            const res = await backend.getProcessDefinitionMap();
+            this.value = this.normalizeProcessMap(res);
         },
         addProcess(newProcess) {
             this.value.mega_proc_list.push({
@@ -928,7 +1011,7 @@ export default {
             await backend.deleteUserPermission({ user_id: userId, proc_def_id: process.id });
         },
         async saveProcess() {
-            await backend.putProcessDefinitionMap(this.value);
+            await backend.putProcessDefinitionMap(this.normalizeProcessMap(this.value));
             await this.getProcessMap();
             this.closeAlertDialog();
         },
