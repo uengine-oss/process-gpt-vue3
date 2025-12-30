@@ -10,7 +10,7 @@
             class="is-work-height definition-map-card"
             style="overflow: auto; flex-shrink: 0;"
         >
-            <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
+            <!-- <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <Chat 
                     :showDetailInfo="true"
                     :definitionMapOnlyInput="true"
@@ -18,7 +18,7 @@
                     :isMobile="isMobile"
                     @sendMessage="handleMainChatMessage"
                 />
-            </div>
+            </div> -->
             <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
                 <MainChatInput 
                     :agentInfo="mainChatAgentInfo"
