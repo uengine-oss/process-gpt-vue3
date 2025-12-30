@@ -85,11 +85,19 @@ function calculateStrokeWidthByTime(requiredTime) {
 
 /**
  * 프로세스 정의를 Vue Flow 형식으로 변환
+ * @param {Object} processDefinition - 프로세스 정의 객체
+ * @param {Object} flowLayout - 저장된 노드 위치 정보 (선택적)
  */
-export function convertProcessDefinitionToVueFlow(processDefinition) {
+export function convertProcessDefinitionToVueFlow(processDefinition, flowLayout = null) {
   try {
     if (!processDefinition) {
       return { nodes: [], edges: [] }
+    }
+
+    // flowLayout이 있으면 저장된 위치 사용 여부 표시
+    const hasStoredLayout = flowLayout && Object.keys(flowLayout).length > 0
+    if (hasStoredLayout) {
+      console.log('📍 저장된 Flow 레이아웃 감지:', Object.keys(flowLayout).length, '개 노드')
     }
 
     const nodes = []
@@ -261,7 +269,8 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
     console.log(`✅ 변환 완료: 노드 ${nodes.length}개, 엣지 ${edges.length}개`)
 
     // 레이아웃 적용 (역행 정보 포함)
-    layoutNodesInSequenceOrder(nodes, edges, sequences)
+    // flowLayout이 있으면 저장된 위치 사용, 없으면 자동 계산
+    layoutNodesInSequenceOrder(nodes, edges, sequences, flowLayout)
 
     return { nodes, edges }
   } catch (error) {
@@ -272,11 +281,46 @@ export function convertProcessDefinitionToVueFlow(processDefinition) {
 
 /**
  * 시퀀스 순서대로 노드를 세로로 배치
+ * @param {Array} nodes - 노드 배열
+ * @param {Array} edges - 엣지 배열
+ * @param {Array} sequences - 시퀀스 배열
+ * @param {Object} flowLayout - 저장된 위치 정보 (선택적)
  */
-function layoutNodesInSequenceOrder(nodes, edges, sequences) {
+function layoutNodesInSequenceOrder(nodes, edges, sequences, flowLayout = null) {
   if (!nodes.length) return
 
   console.log('=== 레이아웃 시작 ===')
+
+  // 저장된 위치 정보가 있으면 먼저 적용
+  const hasStoredLayout = flowLayout && Object.keys(flowLayout).length > 0
+  if (hasStoredLayout) {
+    console.log('📍 저장된 레이아웃 적용 중...')
+    let appliedCount = 0
+    
+    nodes.forEach(node => {
+      // node.data.id (원본 액티비티 ID) 또는 node.id (이벤트/게이트웨이)로 저장된 위치 찾기
+      // getNodesPositions()와 동일한 로직 사용
+      const originalId = node.data?.id || node.id
+      if (originalId && flowLayout[originalId]) {
+        node.position.x = flowLayout[originalId].x
+        node.position.y = flowLayout[originalId].y
+        appliedCount++
+        console.log(`  ✓ ${originalId}: x=${node.position.x}, y=${node.position.y}`)
+      }
+    })
+    
+    console.log(`📍 저장된 위치 적용 완료: ${appliedCount}/${nodes.length}개 노드`)
+    
+    // 모든 노드에 저장된 위치가 있으면 자동 레이아웃 스킵
+    if (appliedCount === nodes.length) {
+      console.log('✅ 모든 노드에 저장된 위치 적용됨 - 자동 레이아웃 스킵')
+      // 역행 엣지 스타일만 적용하고 종료
+      applyBackflowEdgeStyles(nodes, edges, sequences)
+      return
+    }
+    
+    console.log('⚠️ 일부 노드에만 저장된 위치가 있음 - 자동 레이아웃으로 나머지 노드 배치')
+  }
 
   // 노드 맵
   const nodeMap = new Map()
@@ -555,4 +599,123 @@ function layoutNodesInSequenceOrder(nodes, edges, sequences) {
   })
 
   console.log('=== 레이아웃 완료 ===')
+}
+
+/**
+ * 역행 엣지 스타일 적용 (저장된 레이아웃 사용 시)
+ * @param {Array} nodes - 노드 배열
+ * @param {Array} edges - 엣지 배열
+ * @param {Array} sequences - 시퀀스 배열
+ */
+function applyBackflowEdgeStyles(nodes, edges, sequences) {
+  console.log('🎨 역행 엣지 스타일 적용...')
+
+  // 노드 맵 생성
+  const nodeMap = new Map()
+  nodes.forEach(node => nodeMap.set(node.id, node))
+
+  // 엣지 ID로 원본 시퀀스를 찾기 위한 맵
+  const edgeToSequenceMap = new Map()
+  edges.forEach((edge, index) => {
+    const seqId = edge.id.replace('edge_', '')
+    const sequence = sequences.find(seq => seq.id === seqId) || sequences[index]
+    if (sequence) {
+      edgeToSequenceMap.set(edge.id, sequence)
+    }
+  })
+
+  // 인접 리스트 및 방문 순서 계산
+  const adjacencyList = new Map()
+  const inDegree = new Map()
+
+  nodes.forEach(node => {
+    adjacencyList.set(node.id, [])
+    inDegree.set(node.id, 0)
+  })
+
+  edges.forEach(edge => {
+    adjacencyList.get(edge.source).push(edge.target)
+    inDegree.set(edge.target, inDegree.get(edge.target) + 1)
+  })
+
+  // 시작 노드 찾기
+  let startNodes = nodes.filter(n =>
+    n.type === 'event' &&
+    n.data.type === 'start-event-node' &&
+    inDegree.get(n.id) === 0
+  )
+
+  if (startNodes.length === 0) {
+    startNodes = nodes.filter(n => inDegree.get(n.id) === 0)
+  }
+
+  // 방문 순서 계산 (BFS)
+  const visitOrder = new Map()
+  const visited = new Set()
+  let currentLevel = [startNodes.map(n => n.id)]
+  let levelNumber = 0
+
+  startNodes.forEach(node => {
+    visitOrder.set(node.id, levelNumber)
+    visited.add(node.id)
+  })
+
+  while (currentLevel[levelNumber] && currentLevel[levelNumber].length > 0) {
+    const nextLevel = []
+
+    currentLevel[levelNumber].forEach(currentId => {
+      const neighbors = adjacencyList.get(currentId) || []
+
+      neighbors.forEach(neighborId => {
+        if (!visited.has(neighborId)) {
+          const allParents = edges
+            .filter(e => e.target === neighborId)
+            .map(e => e.source)
+
+          const allParentsVisited = allParents.every(parentId => visited.has(parentId))
+
+          if (allParentsVisited) {
+            visitOrder.set(neighborId, levelNumber + 1)
+            visited.add(neighborId)
+            nextLevel.push(neighborId)
+          }
+        }
+      })
+    })
+
+    if (nextLevel.length > 0) {
+      levelNumber++
+      currentLevel[levelNumber] = [...new Set(nextLevel)]
+    } else {
+      break
+    }
+  }
+
+  nodes.forEach(node => {
+    if (!visitOrder.has(node.id)) {
+      levelNumber++
+      visitOrder.set(node.id, levelNumber)
+    }
+  })
+
+  // 역행 엣지 스타일 적용
+  edges.forEach(edge => {
+    const sourceOrder = visitOrder.get(edge.source)
+    const targetOrder = visitOrder.get(edge.target)
+
+    if (sourceOrder > targetOrder) {
+      edge.style.stroke = '#ff0000'
+      edge.markerEnd.color = '#ff0000'
+      edge.sourceHandle = 'right-source'
+      edge.targetHandle = 'right'
+
+      const sequence = edgeToSequenceMap.get(edge.id)
+      const sourceNode = nodeMap.get(edge.source)
+      if (sourceNode && sequence) {
+        sourceNode.data.backflowSequenceId = sequence.id
+        sourceNode.data.backflowRequiredTime = sequence.requiredTime || ''
+        console.log(`🔴 역행: ${edge.source} -> ${edge.target}`)
+      }
+    }
+  })
 }

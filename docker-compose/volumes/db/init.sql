@@ -168,6 +168,7 @@ create table if not exists public.proc_def (
     isdeleted boolean not null default false,
     owner text null,
     type text null,
+    flow_layout jsonb null,
     constraint proc_def_pkey primary key (uuid),
     constraint proc_def_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

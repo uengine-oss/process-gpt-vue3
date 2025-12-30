@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick, watch, computed } from 'vue'
+import { ref, nextTick, watch } from 'vue'
 import { VueFlow, Panel } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
@@ -20,26 +20,16 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
-  showLegend: {
-    type: Boolean,
-    default: true,
+  flowLayout: {
+    type: Object,
+    default: null,
   },
 })
 
-const emit = defineEmits(['node-double-click'])
+// 범례 표시 상태 (토글 가능)
+const showLegend = ref(false)
 
-// processDefinition이 있으면 변환, 없으면 초기 데이터 사용
-const flowData = computed(() => {
-  try {
-    if (props.processDefinition) {
-      return convertProcessDefinitionToVueFlow(props.processDefinition)
-    }
-    // return { nodes: initialNodes, edges: initialEdges }
-  } catch (error) {
-    console.error('❌ flowData 계산 오류:', error)
-    // return { nodes: initialNodes, edges: initialEdges }
-  }
-})
+const emit = defineEmits(['node-double-click', 'nodes-position-changed'])
 
 const nodes = ref([])
 const edges = ref([])
@@ -47,34 +37,60 @@ const dark = ref(false)
 const vueFlowRef = ref(null)
 const highlightedNodeId = ref(null) // 검색으로 강조된 노드 ID
 const globalLabelMode = ref(false) // false: Time, true: Input/Output
+const isInitialized = ref(false) // 초기화 여부 플래그
+const currentProcessDefinitionId = ref(null) // 현재 로드된 프로세스 ID 추적
 
-// flowData가 변경될 때마다 nodes와 edges 업데이트
+// processDefinition이 변경될 때만 nodes와 edges 업데이트 (flowLayout 변경은 무시)
 watch(
-  flowData,
-  (newData) => {
+  () => props.processDefinition,
+  (newProcessDefinition) => {
     try {
-      if (!newData?.nodes || !newData?.edges) {
+      if (!newProcessDefinition) {
+        console.warn('⚠️ processDefinition이 없습니다')
+        return
+      }
+
+      const newId = newProcessDefinition.processDefinitionId
+      
+      // 같은 프로세스면 재계산하지 않음 (저장 시 재계산 방지)
+      if (isInitialized.value && currentProcessDefinitionId.value === newId) {
+        console.log('📍 같은 프로세스 - 노드 재계산 스킵')
+        return
+      }
+
+      console.log(`🔄 프로세스 변경 감지: ${currentProcessDefinitionId.value} -> ${newId}`)
+      const isFirstLoad = !isInitialized.value
+      const isProcessChanged = currentProcessDefinitionId.value !== null && currentProcessDefinitionId.value !== newId
+      currentProcessDefinitionId.value = newId
+
+      // processDefinition을 Vue Flow 형식으로 변환
+      const newFlowData = convertProcessDefinitionToVueFlow(newProcessDefinition, props.flowLayout)
+      
+      if (!newFlowData?.nodes || !newFlowData?.edges) {
         console.warn('⚠️ 유효하지 않은 flowData')
         return
       }
 
       // 깊은 복사
-      nodes.value = JSON.parse(JSON.stringify(newData.nodes))
-      edges.value = JSON.parse(JSON.stringify(newData.edges))
+      nodes.value = JSON.parse(JSON.stringify(newFlowData.nodes))
+      edges.value = JSON.parse(JSON.stringify(newFlowData.edges))
       
       // diffActivities가 있으면 노드에 적용
       applyDiffToNodes()
 
       console.log(`✅ Vue Flow 업데이트: 노드 ${nodes.value.length}개, 엣지 ${edges.value.length}개`)
 
-      // fitView 호출
-      nextTick(() => {
+      // 첫 로드 또는 프로세스 변경 시 fitView 호출
+      if (isFirstLoad || isProcessChanged) {
+        isInitialized.value = true
         nextTick(() => {
-          if (vueFlowRef.value?.fitView) {
-            vueFlowRef.value.fitView({ padding: 0.2, duration: 200 })
-          }
+          nextTick(() => {
+            if (vueFlowRef.value?.fitView) {
+              vueFlowRef.value.fitView({ padding: 0.2, duration: 200 })
+            }
+          })
         })
-      })
+      }
     } catch (error) {
       console.error('❌ watch 오류:', error)
     }
@@ -87,6 +103,36 @@ watch(
   () => props.diffActivities,
   () => {
     applyDiffToNodes()
+  },
+  { deep: true }
+)
+
+// flowLayout이 변경되면 현재 노드에 위치 적용 (다른 프로세스에서 돌아올 때)
+watch(
+  () => props.flowLayout,
+  (newFlowLayout) => {
+    if (!newFlowLayout || Object.keys(newFlowLayout).length === 0) {
+      return
+    }
+    
+    // 노드가 없으면 스킵
+    if (!nodes.value || nodes.value.length === 0) {
+      return
+    }
+    
+    console.log('📍 flowLayout 변경 감지 - 노드 위치 업데이트')
+    let appliedCount = 0
+    
+    nodes.value.forEach(node => {
+      const originalId = node.data?.id || node.id
+      if (originalId && newFlowLayout[originalId]) {
+        node.position.x = newFlowLayout[originalId].x
+        node.position.y = newFlowLayout[originalId].y
+        appliedCount++
+      }
+    })
+    
+    console.log(`📍 위치 업데이트 완료: ${appliedCount}/${nodes.value.length}개 노드`)
   },
   { deep: true }
 )
@@ -211,6 +257,43 @@ function handleNodeDoubleClick({ node }) {
   emit('node-double-click', node.data)
 }
 
+// 노드 드래그 종료 핸들러 - 위치 변경 감지
+function handleNodeDragStop({ node }) {
+  console.log('📍 노드 드래그 종료:', node.id, node.position)
+  // 위치 변경 이벤트 emit
+  emitNodesPositionChanged()
+}
+
+// 모든 노드의 현재 위치 정보를 수집하여 emit
+function emitNodesPositionChanged() {
+  const positions = {}
+  nodes.value.forEach(node => {
+    // node.data.id (원본 액티비티 ID)를 키로 사용
+    const originalId = node.data?.id || node.id
+    positions[originalId] = {
+      x: node.position.x,
+      y: node.position.y,
+      nodeId: node.id, // Vue Flow 노드 ID도 저장
+    }
+  })
+  console.log('📦 노드 위치 정보 수집:', positions)
+  emit('nodes-position-changed', positions)
+}
+
+// 현재 노드 위치 정보를 반환하는 메서드 (외부 호출용)
+function getNodesPositions() {
+  const positions = {}
+  nodes.value.forEach(node => {
+    const originalId = node.data?.id || node.id
+    positions[originalId] = {
+      x: node.position.x,
+      y: node.position.y,
+      nodeId: node.id,
+    }
+  })
+  return positions
+}
+
 // 엣지 클릭 핸들러
 function handleEdgeClick(event) {
   console.log('🖱️ 엣지 클릭 (ProcessFlowExample):', event)
@@ -234,6 +317,12 @@ function toggleGlobalLabelMode() {
   })
   
   console.log(`🔄 전체 엣지 라벨 모드 변경: ${globalLabelMode.value ? 'Input/Output' : 'Time'}`)
+}
+
+// 범례 표시 토글
+function toggleLegend() {
+  showLegend.value = !showLegend.value
+  console.log(`🔄 범례 표시: ${showLegend.value ? 'ON' : 'OFF'}`)
 }
 
 // 액티비티 검색 및 포커스
@@ -310,15 +399,16 @@ function searchAndFocusActivity(activityName) {
 
 // 외부에서 호출 가능하도록 expose
 defineExpose({
-  searchAndFocusActivity
+  searchAndFocusActivity,
+  getNodesPositions,
 })
 </script>
 
 <template>
   <VueFlow
     ref="vueFlowRef"
-    :nodes="nodes"
-    :edges="edges"
+    v-model:nodes="nodes"
+    v-model:edges="edges"
     :node-types="nodeTypes"
     :edge-types="edgeTypes"
     :class="{ dark }"
@@ -330,6 +420,7 @@ defineExpose({
     @connect="handleConnect"
     @node-double-click="handleNodeDoubleClick"
     @edge-click="handleEdgeClick"
+    @node-drag-stop="handleNodeDragStop"
   >
     <Background pattern-color="#aaa" :gap="16" />
     <Controls position="top-left">
@@ -346,9 +437,12 @@ defineExpose({
       <ControlButton title="Toggle Edge Labels (Time <-> In/Out)" @click="toggleGlobalLabelMode">
         <Icon name="exchange" />
       </ControlButton>
+      <ControlButton :title="showLegend ? '범례 숨기기' : '범례 보기'" @click="toggleLegend">
+        <Icon name="legend" />
+      </ControlButton>
     </Controls>
 
-    <Panel v-if="showLegend" position="bottom-right" class="legend-panel">
+    <Panel v-if="showLegend" position="top-left" class="legend-panel" style="margin-left: 50px;">
       <div class="legend-title">범례 (Legend)</div>
       
       <div class="legend-section">

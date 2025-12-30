@@ -42,292 +42,354 @@
                 </div>
             </div>
         </v-card>
-        <AppBaseCard v-else>
-            <template v-slot:leftpart>
-                <div style="position: relative; width: 100%; height: 100%;">
-                    <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
-                        {{ projectName }}
-                    </h5>
-                    <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
-                    <process-definition
-                        ref="definitionComponent"
-                        class="process-definition-resize"
-                        :bpmn="bpmn"
-                        :isAIGenerated="isAIGenerated"
-                        :processDefinition="processDefinition"
-                        :key="definitionChangeCount"
-                        :isViewMode="isViewMode"
-                        :isXmlMode="isXmlMode"
-                        :definitionPath="fullPath"
-                        :definitionChat="this"
-                        :isAdmin="isAdmin"
-                        :generateFormTask="generateFormTask"
-                        :isPreviewPDFDialog="isPreviewPDFDialog"
-                        @closePDFDialog="isPreviewPDFDialog = false"
-                        @update="updateDefinition"
-                        @changeBpmn="changeBpmn"
-                        @changeElement="changeElement"
-                        @onLoaded="onLoadBpmn()"
-                        @update:processVariables="(val) => (processVariables = val)"
-                        @update:isAIGenerated="isAIGenerated = false"
-                    ></process-definition>
-                    
-                    <!-- Flow 오버레이 (leftpart에만 표시) -->
-                    <transition name="fade">
-                        <div v-if="showFlowOverlay && currentProcessDefinitionForFlow && !isXmlMode" 
-                             class="flow-overlay-leftpart">
-                            <div class="flow-content">
-                                <div :style="{ width: showActivityPanel ? '70%' : '100%', height: '100%', transition: 'width 0.3s' }">
-                                    <ProcessFlowExample 
-                                        ref="processFlowExample"
-                                        :process-definition="currentProcessDefinitionForFlow"
-                                        @node-double-click="handleFlowNodeDoubleClick"
-                                    />
-                                </div>
-                                
-                                <!-- 속성 편집 패널 -->
-                                <v-slide-x-reverse-transition>
-                                    <div v-if="showActivityPanel && selectedFlowActivity" 
-                                         class="activity-panel pa-4">
-                                        <div class="d-flex align-center mb-4">
-                                            <h3 class="text-h6">액티비티 속성</h3>
-                                            <v-spacer></v-spacer>
-                                            <v-btn 
-                                                color="primary"
-                                                variant="flat" 
-                                                size="small"
-                                                @click="saveActivity"
-                                            >
-                                                <v-icon class="mr-1">mdi-content-save</v-icon>
-                                                저장
-                                            </v-btn>
-                                        </div>
-                                        
-                                        <v-card variant="outlined" class="mb-3">
-                                            <v-card-text>
-                                                <div class="mb-3">
-                                                    <div class="text-caption text-grey mb-1">액티비티명</div>
-                                                    <div class="text-body-1 font-weight-medium">{{ selectedFlowActivity.content || selectedFlowActivity.name }}</div>
-                                                </div>
-                                                
-                                                <v-text-field
-                                                    :model-value="selectedFlowActivity.header || selectedFlowActivity.role"
-                                                    label="역할/담당"
-                                                    variant="outlined"
-                                                    density="compact"
-                                                    hide-details
-                                                    class="mb-3"
-                                                    readonly
-                                                ></v-text-field>
-                                                
-                                                <v-text-field
-                                                    v-model="selectedFlowActivity.footer"
-                                                    label="시스템/도구"
-                                                    variant="outlined"
-                                                    density="compact"
-                                                    hide-details
-                                                    class="mb-3"
-                                                ></v-text-field>
-                                                
-                                                <v-text-field
-                                                    v-model="selectedFlowActivity.requiredTime"
-                                                    label="소요시간 (들어오는 화살표)"
-                                                    variant="outlined"
-                                                    density="compact"
-                                                    hide-details
-                                                    class="mb-3"
-                                                    placeholder="예: 55s, 1m, 2h"
-                                                ></v-text-field>
-                                                
-                                                <v-text-field
-                                                    v-if="selectedFlowActivity.backflowSequenceId"
-                                                    v-model="selectedFlowActivity.backflowRequiredTime"
-                                                    label="역행 소요시간 (빨간 화살표)"
-                                                    variant="outlined"
-                                                    density="compact"
-                                                    hide-details
-                                                    class="mb-3"
-                                                    placeholder="예: 160s, 5m, 1h"
-                                                >
-                                                    <template v-slot:prepend-inner>
-                                                        <v-icon color="error" size="small">mdi-arrow-u-left-top</v-icon>
-                                                    </template>
-                                                </v-text-field>
-                                                
-                                                <v-textarea
-                                                    v-model="selectedFlowActivity.description"
-                                                    label="설명"
-                                                    variant="outlined"
-                                                    density="compact"
-                                                    hide-details
-                                                    rows="3"
-                                                    class="mb-3"
-                                                ></v-textarea>
-                                                
-                                                <v-textarea
-                                                    v-model="selectedFlowActivity.issues"
-                                                    label="이슈"
-                                                    variant="outlined"
-                                                    density="compact"
-                                                    hide-details
-                                                    rows="3"
-                                                    placeholder="이슈 사항을 입력하세요"
-                                                    class="mb-3"
-                                                >
-                                                </v-textarea>
-                                            </v-card-text>
-                                        </v-card>
-                                        
-                                        <!-- <div class="d-flex">
-                                            <v-btn
-                                                color="primary"
-                                                variant="flat"
-                                                block
-                                                @click="closeAndSave"
-                                            >
-                                                <v-icon class="mr-1">mdi-close</v-icon>
-                                                닫기
-                                            </v-btn>
-                                        </div> -->
+        <div v-else :class="{ 'chat-collapsed': isChatCollapsed }">
+            <AppBaseCard>
+                <template v-slot:leftpart>
+                    <div style="position: relative; width: 100%; height: 100%;">
+                        <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
+                            {{ projectName }}
+                        </h5>
+                        
+                        <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
+                        <process-definition
+                            ref="definitionComponent"
+                            class="process-definition-resize"
+                            :bpmn="bpmn"
+                            :isAIGenerated="isAIGenerated"
+                            :processDefinition="processDefinition"
+                            :key="definitionChangeCount"
+                            :isViewMode="isViewMode"
+                            :isXmlMode="isXmlMode"
+                            :definitionPath="fullPath"
+                            :definitionChat="this"
+                            :isAdmin="isAdmin"
+                            :generateFormTask="generateFormTask"
+                            :isPreviewPDFDialog="isPreviewPDFDialog"
+                            @closePDFDialog="isPreviewPDFDialog = false"
+                            @update="updateDefinition"
+                            @changeBpmn="changeBpmn"
+                            @changeElement="changeElement"
+                            @onLoaded="onLoadBpmn()"
+                            @update:processVariables="(val) => (processVariables = val)"
+                            @update:isAIGenerated="isAIGenerated = false"
+                        ></process-definition>
+                        
+                        <!-- Flow 오버레이 (leftpart에만 표시) -->
+                        <transition name="fade">
+                            <div v-if="showFlowOverlay && currentProcessDefinitionForFlow && !isXmlMode" 
+                                class="flow-overlay-leftpart">
+                                <div class="flow-content">
+                                    <div :style="{ width: showActivityPanel ? '70%' : '100%', height: '100%', transition: 'width 0.3s' }">
+                                        <ProcessFlowExample 
+                                            ref="processFlowExample"
+                                            :process-definition="currentProcessDefinitionForFlow"
+                                            :flow-layout="flowLayout"
+                                            @node-double-click="handleFlowNodeDoubleClick"
+                                            @nodes-position-changed="handleNodesPositionChanged"
+                                        />
                                     </div>
-                                </v-slide-x-reverse-transition>
+                                    
+                                    <!-- 속성 편집 패널 -->
+                                    <v-slide-x-reverse-transition>
+                                        <div v-if="showActivityPanel && selectedFlowActivity" 
+                                            class="activity-panel pa-4">
+                                            <div class="d-flex align-center mb-4">
+                                                <h3 class="text-h6">액티비티 속성</h3>
+                                                <v-spacer></v-spacer>
+                                                <v-btn 
+                                                    color="primary"
+                                                    variant="flat" 
+                                                    size="small"
+                                                    @click="saveActivity"
+                                                >
+                                                    <v-icon class="mr-1">mdi-content-save</v-icon>
+                                                    저장
+                                                </v-btn>
+                                                <v-btn 
+                                                    variant="text" 
+                                                    icon
+                                                    size="small"
+                                                    @click="$emit('closeActivityPanel')"
+                                                >
+                                                    <v-icon>mdi-close</v-icon>
+                                                </v-btn>
+                                            </div>
+                                            
+                                            <v-card variant="outlined" class="mb-3">
+                                                <v-card-text>
+                                                    <div class="mb-3">
+                                                        <div class="text-caption text-grey mb-1">액티비티명</div>
+                                                        <div class="text-body-1 font-weight-medium">{{ selectedFlowActivity.content || selectedFlowActivity.name }}</div>
+                                                    </div>
+                                                    
+                                                    <v-text-field
+                                                        :model-value="selectedFlowActivity.header || selectedFlowActivity.role"
+                                                        label="역할/담당"
+                                                        variant="outlined"
+                                                        density="compact"
+                                                        hide-details
+                                                        class="mb-3"
+                                                        readonly
+                                                    ></v-text-field>
+                                                    
+                                                    <v-text-field
+                                                        v-model="selectedFlowActivity.footer"
+                                                        label="시스템/도구"
+                                                        variant="outlined"
+                                                        density="compact"
+                                                        hide-details
+                                                        class="mb-3"
+                                                    ></v-text-field>
+                                                    
+                                                    <v-text-field
+                                                        v-model="selectedFlowActivity.requiredTime"
+                                                        label="소요시간 (들어오는 화살표)"
+                                                        variant="outlined"
+                                                        density="compact"
+                                                        hide-details
+                                                        class="mb-3"
+                                                        placeholder="예: 55s, 1m, 2h"
+                                                    ></v-text-field>
+                                                    
+                                                    <v-text-field
+                                                        v-if="selectedFlowActivity.backflowSequenceId"
+                                                        v-model="selectedFlowActivity.backflowRequiredTime"
+                                                        label="역행 소요시간 (빨간 화살표)"
+                                                        variant="outlined"
+                                                        density="compact"
+                                                        hide-details
+                                                        class="mb-3"
+                                                        placeholder="예: 160s, 5m, 1h"
+                                                    >
+                                                        <template v-slot:prepend-inner>
+                                                            <v-icon color="error" size="small">mdi-arrow-u-left-top</v-icon>
+                                                        </template>
+                                                    </v-text-field>
+                                                    
+                                                    <v-text-field
+                                                        :model-value="selectedFlowActivity.description ? (selectedFlowActivity.description.length > 50 ? selectedFlowActivity.description.substring(0, 50) + '...' : selectedFlowActivity.description) : ''"
+                                                        label="설명"
+                                                        variant="outlined"
+                                                        density="compact"
+                                                        hide-details
+                                                        class="mb-3 clickable-field"
+                                                        readonly
+                                                        @click="openTextEditorDialog('description', '설명', selectedFlowActivity.description)"
+                                                    >
+                                                        <template v-slot:append-inner>
+                                                            <v-icon size="small" color="grey">mdi-pencil</v-icon>
+                                                        </template>
+                                                    </v-text-field>
+                                                    
+                                                    <v-text-field
+                                                        :model-value="selectedFlowActivity.issues ? (selectedFlowActivity.issues.length > 50 ? selectedFlowActivity.issues.substring(0, 50) + '...' : selectedFlowActivity.issues) : ''"
+                                                        label="이슈"
+                                                        variant="outlined"
+                                                        density="compact"
+                                                        hide-details
+                                                        class="mb-3 clickable-field"
+                                                        placeholder="이슈 사항을 입력하세요"
+                                                        readonly
+                                                        @click="openTextEditorDialog('issues', '이슈', selectedFlowActivity.issues)"
+                                                    >
+                                                        <template v-slot:append-inner>
+                                                            <v-icon size="small" color="grey">mdi-pencil</v-icon>
+                                                        </template>
+                                                    </v-text-field>
+                                                </v-card-text>
+                                            </v-card>
+                                        </div>
+                                    </v-slide-x-reverse-transition>
+                                    
+                                    <!-- 텍스트 에디터 다이얼로그 -->
+                                    <v-dialog v-model="textEditorDialog" max-width="700" persistent>
+                                        <v-card>
+                                            <v-card-title class="d-flex align-center pa-4">
+                                                <span>{{ textEditorTitle }}</span>
+                                                <v-spacer></v-spacer>
+                                                <v-btn icon variant="text" @click="closeTextEditorDialog">
+                                                    <v-icon>mdi-close</v-icon>
+                                                </v-btn>
+                                            </v-card-title>
+                                            <v-divider></v-divider>
+                                            <v-card-text class="pa-4">
+                                                <v-textarea
+                                                    v-model="textEditorContent"
+                                                    :label="textEditorTitle"
+                                                    variant="outlined"
+                                                    rows="12"
+                                                    auto-grow
+                                                    hide-details
+                                                    autofocus
+                                                ></v-textarea>
+                                            </v-card-text>
+                                            <v-divider></v-divider>
+                                            <v-card-actions class="pa-4">
+                                                <v-spacer></v-spacer>
+                                                <v-btn 
+                                                    variant="outlined" 
+                                                    @click="closeTextEditorDialog"
+                                                >
+                                                    취소
+                                                </v-btn>
+                                                <v-btn 
+                                                    color="primary" 
+                                                    variant="flat"
+                                                    @click="saveTextEditorContent"
+                                                >
+                                                    <v-icon class="mr-1">mdi-check</v-icon>
+                                                    적용
+                                                </v-btn>
+                                            </v-card-actions>
+                                        </v-card>
+                                    </v-dialog>
+                                </div>
                             </div>
-                        </div>
-                    </transition>
-                </div>
-                <process-definition-version-dialog
-                    :process="processDefinition"
-                    :open="versionDialog"
-                    :definitionPath="fullPath"
-                    :processName="projectName"
-                    :type="'bpmn'"
-                    :useOptimize="useOptimize"
-                    @update:useOptimize="useOptimize = $event"
-                    @close="toggleVersionDialog"
-                    @save="beforeSaveDefinition"
-                ></process-definition-version-dialog>
-                <ProcessDefinitionVersionManager
-                    :process="processDefinition"
-                    :open="verMangerDialog"
-                    :type="'bpmn'"
-                    @close="toggleVerMangerDialog"
-                    @changeXML="changeXML"
-                ></ProcessDefinitionVersionManager>
-                <v-dialog v-model="deleteDialog" max-width="500">
-                    <v-card class="pa-0">
-                        <v-row class="ma-0 pa-4 pb-0 align-center">
-                            <v-card-title class="pa-0">
-                                {{ $t('processDefinition.deleteProcessMessage') }}
-                            </v-card-title>
-                            <v-spacer></v-spacer>
-                            <v-btn @click="deleteDialog = false"
-                                class="ml-auto" 
-                                variant="text" 
-                                density="compact"
-                                icon
-                            >
-                                <v-icon>mdi-close</v-icon>
-                            </v-btn>
-                        </v-row>
-                        <v-row class="ma-0 pa-4">
-                            <v-spacer></v-spacer>
-                            <v-btn @click="deleteProcess"
-                                color="error" 
-                                rounded 
-                                variant="flat" 
-                            >
-                                {{ $t('processDefinition.delete') }}
-                            </v-btn>
-                        </v-row>
-                    </v-card>
-                </v-dialog>
-                <v-dialog v-model="restoreDialog" max-width="500">
-                    <v-card class="pa-4">
-                        <v-row class="ma-0 pa-0 mb-8">
-                            <v-card-text class="ma-0 pa-0" style="font-size:24px;">
-                                {{ $t('processDefinition.restoreProcessMessage') }}
-                            </v-card-text>
-                            <v-spacer></v-spacer>
-                            <v-btn @click="restoreDialog = false" icon variant="text" density="comfortable"
-                                style="margin-top:-8px;"
-                            >
-                                <Icons :icon="'close'" :size="16" />
-                            </v-btn>
-                        </v-row>
-                        <v-row class="ma-0 pa-0">
-                            <v-spacer></v-spacer>
-                            <v-btn color="error" rounded variant="flat" @click="restoreProcess">{{ $t('processDefinition.restore') }}</v-btn>
-                        </v-row>
-                    </v-card>
-                </v-dialog>
-            </template>
-            <template v-slot:rightpart>
-                <div v-if="isAdmin" class="process-consulting-ai-second-screen no-scrollbar">
-                    <Chat
-                        :prompt="prompt"
-                        :name="projectName"
-                        :messages="messages"
-                        :chatInfo="chatInfo"
-                        :userInfo="userInfo"
-                        :allUserList="allUserList"
-                        :lock="lock"
-                        :disableChat="disableChat"
-                        :chatRoomId="chatRoomId"
-                        @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage"
-                        @addTeam="addTeam"
-                        @addTeamMembers="addTeamMembers"
+                        </transition>
+                    </div>
+                    <process-definition-version-dialog
+                        :process="processDefinition"
+                        :open="versionDialog"
+                        :definitionPath="fullPath"
+                        :processName="projectName"
+                        :type="'bpmn'"
+                        :useOptimize="useOptimize"
+                        @update:useOptimize="useOptimize = $event"
+                        @close="toggleVersionDialog"
+                        @save="beforeSaveDefinition"
+                    ></process-definition-version-dialog>
+                    <ProcessDefinitionVersionManager
+                        :process="processDefinition"
+                        :open="verMangerDialog"
+                        :type="'bpmn'"
+                        @close="toggleVerMangerDialog"
+                        @changeXML="changeXML"
+                    ></ProcessDefinitionVersionManager>
+                    <v-dialog v-model="deleteDialog" max-width="500">
+                        <v-card class="pa-0">
+                            <v-row class="ma-0 pa-4 pb-0 align-center">
+                                <v-card-title class="pa-0">
+                                    {{ $t('processDefinition.deleteProcessMessage') }}
+                                </v-card-title>
+                                <v-spacer></v-spacer>
+                                <v-btn @click="deleteDialog = false"
+                                    class="ml-auto" 
+                                    variant="text" 
+                                    density="compact"
+                                    icon
+                                >
+                                    <v-icon>mdi-close</v-icon>
+                                </v-btn>
+                            </v-row>
+                            <v-row class="ma-0 pa-4">
+                                <v-spacer></v-spacer>
+                                <v-btn @click="deleteProcess"
+                                    color="error" 
+                                    rounded 
+                                    variant="flat" 
+                                >
+                                    {{ $t('processDefinition.delete') }}
+                                </v-btn>
+                            </v-row>
+                        </v-card>
+                    </v-dialog>
+                    <v-dialog v-model="restoreDialog" max-width="500">
+                        <v-card class="pa-4">
+                            <v-row class="ma-0 pa-0 mb-8">
+                                <v-card-text class="ma-0 pa-0" style="font-size:24px;">
+                                    {{ $t('processDefinition.restoreProcessMessage') }}
+                                </v-card-text>
+                                <v-spacer></v-spacer>
+                                <v-btn @click="restoreDialog = false" icon variant="text" density="comfortable"
+                                    style="margin-top:-8px;"
+                                >
+                                    <Icons :icon="'close'" :size="16" />
+                                </v-btn>
+                            </v-row>
+                            <v-row class="ma-0 pa-0">
+                                <v-spacer></v-spacer>
+                                <v-btn color="error" rounded variant="flat" @click="restoreProcess">{{ $t('processDefinition.restore') }}</v-btn>
+                            </v-row>
+                        </v-card>
+                    </v-dialog>
+                    
+                    <!-- 채팅창 접기/펴기 탭 버튼 (leftpart 오른쪽 끝에 위치) -->
+                    <div 
+                        class="chat-collapse-tab"
+                        @click="isChatCollapsed = !isChatCollapsed"
+                        :title="isChatCollapsed ? '채팅창 펼치기' : '채팅창 접기'"
                     >
-                        <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
-                                :isEditable="isEditable"
-                                :chatMode="chatMode"
-                                :isDeleted="isDefinitionDeleted"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
-                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @beforeRestore="beforeRestore" @savePDF="savePDF"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
-                        </template>
-                    </Chat>
-                </div>
-            </template>
+                        <v-icon size="18">{{ isChatCollapsed ? 'mdi-chevron-left' : 'mdi-chevron-right' }}</v-icon>
+                    </div>
+                </template>
+                <template v-slot:rightpart>
+                    <div v-if="isAdmin && !isChatCollapsed" class="process-consulting-ai-second-screen no-scrollbar chat-content">
+                            <Chat
+                                :prompt="prompt"
+                                :name="projectName"
+                                :messages="messages"
+                                :chatInfo="chatInfo"
+                                :userInfo="userInfo"
+                                :allUserList="allUserList"
+                                :lock="lock"
+                                :disableChat="disableChat"
+                                :chatRoomId="chatRoomId"
+                                @sendMessage="beforeSendMessage"
+                                @sendEditedMessage="sendEditedMessage"
+                                @stopMessage="stopMessage"
+                                @addTeam="addTeam"
+                                @addTeamMembers="addTeamMembers"
+                            >
+                                <template v-slot:custom-title>
+                                    <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
+                                        :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                                        :isEditable="isEditable"
+                                        :chatMode="chatMode"
+                                        :isDeleted="isDefinitionDeleted"
+                                        @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                        @executeProcess="executeProcess" @executeSimulate="executeSimulate"
+                                        @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                        @beforeRestore="beforeRestore" @savePDF="savePDF"
+                                        @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                                </template>
+                            </Chat>
+                    </div>
+                </template>
 
-            <template v-slot:mobileLeftContent>
-                <div class="process-consulting-ai-third-screen">
-                    <Chat
-                        v-if="isAdmin"
-                        :prompt="prompt"
-                        :name="projectName"
-                        :messages="messages"
-                        :chatInfo="chatInfo"
-                        :userInfo="userInfo"
-                        :allUserList="allUserList"
-                        :lock="lock"
-                        :disableChat="disableChat"
-                        :chatRoomId="chatRoomId"
-                        @sendMessage="beforeSendMessage"
-                        @sendEditedMessage="sendEditedMessage"
-                        @stopMessage="stopMessage"
-                        @addTeam="addTeam"
-                        @addTeamMembers="addTeamMembers"
-                    >
-                        <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
-                                :isEditable="isEditable"
-                                :chatMode="chatMode"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
-                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
-                        </template>
-                    </Chat>
-                </div>
-            </template>
-        </AppBaseCard>
+                <template v-slot:mobileLeftContent>
+                    <div class="process-consulting-ai-third-screen">
+                        <Chat
+                            v-if="isAdmin"
+                            :prompt="prompt"
+                            :name="projectName"
+                            :messages="messages"
+                            :chatInfo="chatInfo"
+                            :userInfo="userInfo"
+                            :allUserList="allUserList"
+                            :lock="lock"
+                            :disableChat="disableChat"
+                            :chatRoomId="chatRoomId"
+                            @sendMessage="beforeSendMessage"
+                            @sendEditedMessage="sendEditedMessage"
+                            @stopMessage="stopMessage"
+                            @addTeam="addTeam"
+                            @addTeamMembers="addTeamMembers"
+                        >
+                            <template v-slot:custom-title>
+                                <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
+                                    :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                                    :isEditable="isEditable"
+                                    :chatMode="chatMode"
+                                    @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                    @executeProcess="executeProcess" @executeSimulate="executeSimulate"
+                                    @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                    @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                            </template>
+                        </Chat>
+                    </div>
+                </template>
+            </AppBaseCard>
+        </div>
         <v-dialog v-model="executeDialog" max-width="80%" persistent
             :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
              :fullscreen="isMobile"
@@ -490,6 +552,16 @@ export default {
         lastParsedJSON: null,
         isRetry: false,
         retryCount: 0,
+        // 텍스트 에디터 다이얼로그
+        textEditorDialog: false,
+        textEditorField: '',
+        textEditorTitle: '',
+        textEditorContent: '',
+        // 채팅창 접힘 상태
+        isChatCollapsed: false,
+        // Flow 레이아웃 (노드 위치 정보)
+        flowLayout: null,
+        flowLayoutChanged: false, // 위치 변경 여부 추적
     }),
     async created() {
         $try(async () => {
@@ -704,10 +776,50 @@ export default {
     },
     methods: {
         /**
+         * 텍스트 에디터 다이얼로그 열기
+         */
+        openTextEditorDialog(field, title, content) {
+            this.textEditorField = field;
+            this.textEditorTitle = title;
+            this.textEditorContent = content || '';
+            this.textEditorDialog = true;
+        },
+        
+        /**
+         * 텍스트 에디터 다이얼로그 닫기
+         */
+        closeTextEditorDialog() {
+            this.textEditorDialog = false;
+            this.textEditorField = '';
+            this.textEditorTitle = '';
+            this.textEditorContent = '';
+        },
+        
+        /**
+         * 텍스트 에디터 내용 저장
+         */
+        saveTextEditorContent() {
+            if (this.selectedFlowActivity && this.textEditorField) {
+                this.selectedFlowActivity[this.textEditorField] = this.textEditorContent;
+            }
+            this.closeTextEditorDialog();
+        },
+        
+        /**
          * Flow 노드 더블클릭 핸들러 (부모로 이벤트 전달)
          */
         handleFlowNodeDoubleClick(nodeData) {
             this.$emit('node-double-click', nodeData);
+        },
+        
+        /**
+         * Flow 노드 위치 변경 핸들러
+         * @param {Object} positions - 노드 위치 정보 객체
+         */
+        handleNodesPositionChanged(positions) {
+            console.log('📍 노드 위치 변경 감지:', Object.keys(positions).length, '개 노드');
+            this.flowLayout = positions;
+            this.flowLayoutChanged = true;
         },
         
         /**
@@ -948,6 +1060,15 @@ export default {
             }
             if(window.$pal){
                 await this.beforeSavePALUserTasks(info);
+            }
+            
+            // Flow 레이아웃 저장 (ProcessFlowExample ref에서 현재 위치 가져오기)
+            if (this.$refs.processFlowExample && typeof this.$refs.processFlowExample.getNodesPositions === 'function') {
+                info.flow_layout = this.$refs.processFlowExample.getNodesPositions();
+                console.log('📍 저장할 Flow 레이아웃:', Object.keys(info.flow_layout || {}).length, '개 노드');
+            } else if (this.flowLayout) {
+                // ref가 없으면 저장된 flowLayout 사용
+                info.flow_layout = this.flowLayout;
             }
             
             // 엑셀 파일이 업로드되어 있으면 Supabase Storage에 저장
@@ -1454,16 +1575,25 @@ export default {
                 }
                 
                 // 5. 백엔드 저장
+                // Flow 레이아웃 수집 (ProcessFlowExample ref에서 현재 위치 가져오기)
+                let currentFlowLayout = this.flowLayout;
+                if (this.$refs.processFlowExample && typeof this.$refs.processFlowExample.getNodesPositions === 'function') {
+                    currentFlowLayout = this.$refs.processFlowExample.getNodesPositions();
+                    console.log('📍 현재 Flow 레이아웃 수집:', Object.keys(currentFlowLayout || {}).length, '개 노드');
+                }
+                
                 const info = {
                     name: this.processDefinition.processDefinitionName,
                     type: "bpmn",
-                    definition: this.processDefinition
+                    definition: this.processDefinition,
+                    flow_layout: currentFlowLayout || null, // Flow 레이아웃 저장
                 };
                 
                 console.log('💾 저장할 정보:', {
                     processDefinitionName: info.name,
                     processDefinitionId: this.processDefinition.processDefinitionId,
-                    elementsCount: this.processDefinition.elements?.length || 0
+                    elementsCount: this.processDefinition.elements?.length || 0,
+                    hasFlowLayout: !!info.flow_layout
                 });
                 
                 // ✅ processDefinitionName이 null이면 저장 중단
@@ -1521,6 +1651,11 @@ export default {
                             me.processDefinition.processDefinitionName = value.name;
                             me.projectName = value.name ? value.name : me.processDefinition.processDefinitionName;
                             me.oldProcDefId = me.processDefinition.processDefinitionId;
+                            // Flow 레이아웃 불러오기
+                            if (value.flow_layout) {
+                                me.flowLayout = value.flow_layout;
+                                console.log('📍 저장된 Flow 레이아웃 로드:', Object.keys(me.flowLayout).length, '개 노드');
+                            }
                             me.afterLoadBpmn();
                         } else {
                             me.processDefinition.processDefinitionId = fullPath;
@@ -3104,7 +3239,10 @@ export default {
 
 :deep(.left-part) {
     width: 75%;
-    /* Apply specific width */
+}
+
+.chat-collapsed :deep(.left-part) {
+    width: 98.5%;
 }
 
 .user-left-part :deep(.left-part) {
@@ -3169,6 +3307,53 @@ export default {
 
 .activity-panel::-webkit-scrollbar-thumb:hover {
     background: #a0a0a0;
+}
+
+/* 채팅창 접기/펴기 탭 버튼 (leftpart 오른쪽 끝에 위치) */
+.chat-collapse-tab {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 50px;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 100;
+}
+
+.chat-collapse-tab:hover {
+    background: #eeeeee;
+}
+
+.chat-collapse-tab:active {
+    background: #e0e0e0;
+}
+
+/* 채팅 콘텐츠 영역 */
+.chat-content {
+    flex: 1;
+    overflow: auto;
+}
+
+/* 클릭 가능한 필드 스타일 */
+.clickable-field {
+    cursor: pointer;
+}
+
+.clickable-field :deep(.v-field) {
+    cursor: pointer;
+}
+
+.clickable-field:hover :deep(.v-field) {
+    background-color: rgba(0, 0, 0, 0.04);
 }
 
 /* Fade 트랜지션 */

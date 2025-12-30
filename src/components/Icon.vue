@@ -43,6 +43,12 @@
     <template v-else-if="name === 'exchange'">
       <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
     </template>
+    <template v-else-if="name === 'legend'">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <line x1="14" y1="6" x2="21" y2="6" />
+      <line x1="14" y1="17" x2="21" y2="17" />
+    </template>
   </svg>
 </template>
 

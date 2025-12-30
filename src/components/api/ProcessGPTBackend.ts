@@ -241,6 +241,7 @@ class ProcessGPTBackend implements Backend {
             if (options.definition) procDef.definition = options.definition;
             if (options.owner) procDef.owner = options.owner;
             if (options.type) procDef.type = options.type;
+            if (options.flow_layout !== undefined) procDef.flow_layout = options.flow_layout;
             await storage.putObject('proc_def', procDef);
 
             if (options.version) {

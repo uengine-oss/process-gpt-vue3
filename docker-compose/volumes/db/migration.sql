@@ -126,6 +126,7 @@ ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT publ
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS isdeleted boolean DEFAULT false;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS owner text;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS type text;
+ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS flow_layout jsonb;
 
 -- proc_def_arcv table
 ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS arcv_id text;

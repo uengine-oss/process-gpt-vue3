@@ -49,6 +49,7 @@
                                 <span 
                                     :class="{ 'selected-indicator': node.state?.selected }" 
                                     class="node-indicator"
+                                    :data-node-id="node.id"
                                 ></span>
                             </template>
                             
@@ -158,7 +159,7 @@
                             </v-btn>
                             <v-btn 
                                 @click="toggleFlowView"
-                                :color="showFlowOverlay ? 'primary' : 'grey'"
+                                color="grey"
                                 variant="flat"
                                 class="rounded-pill"
                                 density="compact"
@@ -1231,22 +1232,24 @@ export default {
                     const nodeWrapper = treeNode.querySelector('.node-wrapper');
                     if (!nodeWrapper) return;
                     
-                    // 노드 ID 찾기
-                    let nodeId = treeNode.id || 
+                    // 노드 ID 찾기 - data-node-id 속성 우선 사용
+                    let nodeId = null;
+                    
+                    // 1. node-indicator의 data-node-id 속성 확인 (가장 정확함)
+                    const nodeIndicator = nodeWrapper.querySelector('.node-indicator[data-node-id]');
+                    if (nodeIndicator) {
+                        nodeId = nodeIndicator.getAttribute('data-node-id');
+                    }
+                    
+                    // 2. 트리 노드 자체의 ID 속성 확인
+                    if (!nodeId) {
+                        nodeId = treeNode.id || 
                                 treeNode.getAttribute('id') || 
                                 treeNode.getAttribute('data-id') ||
                                 treeNode.dataset.id;
-                    
-                    if (!nodeId) {
-                        const inputWrapper = nodeWrapper.querySelector('.input-wrapper');
-                        const nodeText = inputWrapper ? inputWrapper.textContent.trim() : '';
-                        for (const [id, node] of Object.entries(this.nodes)) {
-                            if (node.text === nodeText) {
-                                nodeId = id;
-                                break;
-                            }
-                        }
                     }
+                    
+                    // 3. 텍스트 기반 매칭은 사용하지 않음 (중복 이름 문제 방지)
                     
                     // 서브 프로세스만 cursor pointer 적용
                     if (nodeId && nodeId.startsWith('sub_')) {

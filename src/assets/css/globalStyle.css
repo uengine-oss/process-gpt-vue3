@@ -423,8 +423,9 @@ hr {
 .chat-display-none {
     display: none;
     height: 100vh !important;
-    width:100%;
+    width: 100%;
 }
+
 .chat-display-block {
     display: block;
 }
