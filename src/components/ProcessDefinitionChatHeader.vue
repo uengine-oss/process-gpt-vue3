@@ -44,7 +44,7 @@
                         </div>
 
                         <!-- 삭제 아이콘 -->
-                        <div v-if="chatMode != 'consulting' && fullPath != 'chat'" class="ml-4 flex-shrink-0  align-start">
+                        <div v-if="chatMode != 'consulting' && fullPath != 'chat'" class="playwright-chat-header-delete-icon ml-4 flex-shrink-0  align-start">
                             <v-tooltip v-if="isDeleted" location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"

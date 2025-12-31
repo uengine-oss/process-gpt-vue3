@@ -803,7 +803,8 @@ export default {
                     me.EventBus.emit('definitions-updated');
                     me.EventBus.emit('instances-updated');
                     me.$router.push('/definitions/chat');
-                }
+                },
+                successMsg: this.$t('successMsg.delete')
             });
         },
         async restoreProcess() {
