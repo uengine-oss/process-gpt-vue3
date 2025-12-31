@@ -391,7 +391,8 @@ export default {
                     this.$try({
                         context: this,
                         action: async () => {
-                            this.datasourceSchema = await backend.extractDatasourceSchema();
+                            const schema = await backend.extractDatasourceSchema();
+                            this.datasourceSchema = Array.isArray(schema) ? schema : [];
                             this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
                         },
                         errorMsg: '데이터소스 스키마 연동 실패'

@@ -12,7 +12,7 @@
                 <div class="pa-0">
                     <v-row class="ma-0 pa-0" style="width: 100%;">
                         <v-col class="pa-0 d-flex align-center" cols="9">
-                            <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ task.name }}</span>
+                            <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ displayTitle }}</span>
                             <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{ reworkCount }}</v-chip>
                             <v-chip v-if="task.status === 'SUBMITTED'" class="ml-1" size="small" color="success" variant="flat" density="comfortable">
                                 제출됨
@@ -229,6 +229,14 @@ export default {
         }
     },
     computed: {
+        displayTitle() {
+            // 모드별 필드 우선순위:
+            // - uEngine(worklist): title
+            // - ProcessGPT(worklist): name
+            const mode = window.$mode;
+            if (mode === 'ProcessGPT') return this.task?.name || this.task?.title || '';
+            return this.task?.title || this.task?.name || '';
+        },
         mode() {
             return window.$mode;
         },

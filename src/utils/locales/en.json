@@ -2317,7 +2317,8 @@
         "history": {
             "title": "Chat History",
             "loading": "Loading...",
-            "empty": "No previous conversations"
+            "empty": "No previous conversations",
+            "showMore": "Show more"
         }
     },
     "fullScreenChat": {

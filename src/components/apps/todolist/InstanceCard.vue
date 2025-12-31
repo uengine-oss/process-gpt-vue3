@@ -550,12 +550,18 @@ export default {
                 result = result.concat(updatedWorklist);
             }
             me.tasks = result;
-            let dependencies = await backend.getTaskDependencyByInstId(me.id)
+            const rawDependencies = await backend.getTaskDependencyByInstId(me.id);
+            const dependencies = Array.isArray(rawDependencies) ? rawDependencies : [];
+            if (!Array.isArray(rawDependencies) && rawDependencies != null) {
+                console.warn(
+                    `[InstanceCard] getTaskDependencyByInstId returned non-array. skipping as empty array.`,
+                    rawDependencies
+                );
+            }
             me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
-            // 칸반 컬럼 업데이트
             me.columns.forEach(column => {
                 if(column.id == 'IN_PROGRESS') {
-                    column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS');
+                    column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS' || task.status === 'NEW' || task.status === 'Running');
                 } else {
                     column.tasks = me.tasks.filter(task => task.status === column.id);
                 }
