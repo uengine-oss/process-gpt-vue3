@@ -1307,7 +1307,35 @@ export default {
             // BPMN이 변경되면 processDefinition도 업데이트
             if (newVal) {
                 try {
+                    // ✅ 변환 전에 메타데이터 백업 (excel_template_url 등)
+                    const metadataBackup = {
+                        excel_template_url: this.processDefinition?.excel_template_url,
+                        processDefinitionId: this.processDefinition?.processDefinitionId,
+                        processDefinitionName: this.processDefinition?.processDefinitionName,
+                        shortDescription: this.processDefinition?.shortDescription,
+                        version: this.processDefinition?.version
+                    };
+                    
                     this.processDefinition = await this.convertXMLToJSON(newVal);
+                    
+                    // ✅ 변환 후 메타데이터 복원 (변환 결과에 없는 경우만)
+                    if (metadataBackup.excel_template_url && !this.processDefinition.excel_template_url) {
+                        this.processDefinition.excel_template_url = metadataBackup.excel_template_url;
+                        console.log('✅ excel_template_url 복원됨:', metadataBackup.excel_template_url);
+                    }
+                    if (metadataBackup.processDefinitionId && !this.processDefinition.processDefinitionId) {
+                        this.processDefinition.processDefinitionId = metadataBackup.processDefinitionId;
+                    }
+                    if (metadataBackup.processDefinitionName && !this.processDefinition.processDefinitionName) {
+                        this.processDefinition.processDefinitionName = metadataBackup.processDefinitionName;
+                    }
+                    if (metadataBackup.shortDescription && !this.processDefinition.shortDescription) {
+                        this.processDefinition.shortDescription = metadataBackup.shortDescription;
+                    }
+                    if (metadataBackup.version && !this.processDefinition.version) {
+                        this.processDefinition.version = metadataBackup.version;
+                    }
+                    
                     console.log('🔄 BPMN 변경으로 processDefinition 업데이트:', this.processDefinition);
                 } catch (error) {
                     console.error('❌ BPMN to JSON 변환 오류:', error);
