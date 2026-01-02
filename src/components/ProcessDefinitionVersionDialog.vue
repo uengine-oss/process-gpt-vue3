@@ -73,14 +73,14 @@
                             ></v-textarea>
                         </div>
                     </div>
-                    <div v-if="mode == 'ProcessGPT' && !isPal">
+                    <!-- <div v-if="mode == 'ProcessGPT' && !isPal">
                         <v-checkbox
                             v-model="checkOptimize"
                             :label="$t('ProcessDefinitionVersionDialog.optimize')"
                             hide-details
                             color="primary"
                         ></v-checkbox>
-                    </div>
+                    </div> -->
                 </v-card-text>
                 <v-row class="ma-0 pa-4 pt-0">
                     <v-spacer></v-spacer>
