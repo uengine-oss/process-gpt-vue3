@@ -371,6 +371,11 @@ const MainRoutes = {
             name: 'API Test',
             path: '/api/test',
             component: () => import('@/components/TestPage.vue')
+        },
+        {
+            name: 'TaskCatalogAdmin',
+            path: '/admin/task-catalog',
+            component: () => import('@/components/admin/TaskCatalogAdmin.vue')
         }
     ]
 };

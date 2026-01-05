@@ -3,7 +3,7 @@
         <draggable v-if="enableEdit" class="v-row dragArea list-group" :list="value.mega_proc_list" :animation="200"
             ghost-class="ghost-card" group="megaProcess" :draggable="'.draggable-item'">
             <transition-group>
-                <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
+                <v-col v-for="item in filteredValue.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
                     cols="12" md="3" sm="6"
                     :min-width="200"
                 >
@@ -39,7 +39,7 @@
             </transition-group>
         </draggable>
         <v-row v-else>
-            <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="3" sm="6">
+            <v-col v-for="item in filteredValue.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="3" sm="6">
                 <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains"/>
             </v-col>
         </v-row>
@@ -71,7 +71,27 @@ export default {
         value: Object,
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
-        domains: Array
+        domains: Array,
+        selectedDomain: String
+    },
+    computed: {
+        filteredValue() {
+            if (!this.selectedDomain) return this.value;
+
+            const newValue = JSON.parse(JSON.stringify(this.value));
+            newValue.mega_proc_list.forEach(mega => {
+                if (mega.major_proc_list) {
+                    mega.major_proc_list = mega.major_proc_list.filter(major => {
+                        // If selectedDomain is 'Access', also show processes with no domain
+                        if (this.selectedDomain === 'Access') {
+                            return !major.domain || major.domain === 'Access';
+                        }
+                        return major.domain === this.selectedDomain;
+                    });
+                }
+            });
+            return newValue;
+        }
     },
     data: () => ({
         processType: '',

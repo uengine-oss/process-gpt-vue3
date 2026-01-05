@@ -3612,6 +3612,41 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async duplicateLocalProcess(sourceId: string, newName: string, bpmn: string, definition?: any): Promise<{ success: boolean; newId: string }> {
+        try {
+            // Generate new ID from name
+            let newId = newName.replace(/[/.]/g, '_').replace(/\s+/g, '_');
+
+            // Check if ID already exists
+            const existing = await storage.getObject('proc_def', { match: { id: newId } });
+            if (existing) {
+                // Append timestamp to make unique
+                newId = `${newId}_${Date.now()}`;
+            }
+
+            // Create new process definition
+            const newProcDef = {
+                id: newId,
+                name: newName,
+                bpmn: bpmn,
+                definition: definition || null,
+                owner: null,
+                type: 'bpmn',
+                isdeleted: false
+            };
+
+            await storage.putObject('proc_def', newProcDef);
+
+            return {
+                success: true,
+                newId: newId
+            };
+        } catch (error) {
+            console.error('Failed to duplicate local process:', error);
+            throw new Error(error.message);
+        }
+    }
+
     async getTaskLog(taskId: string, callback: (payload: any) => void) {
         try {
             const channelName = `todolist_${taskId}_${Date.now()}`;
@@ -5303,6 +5338,189 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             throw new Error(error.detail);
         }
+    }
+
+    // ============================================
+    // Task Catalog API
+    // ============================================
+
+    async getTaskSystems() {
+        const storage = StorageBaseFactory.getStorage();
+        const options = {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'name'
+        };
+        const result = await storage.list('task_systems', options);
+        return result || [];
+    }
+
+    async saveTaskSystem(system: any) {
+        const storage = StorageBaseFactory.getStorage();
+        const data = {
+            ...system,
+            id: system.id || this.uuid(),
+            tenant_id: window.$tenantName
+        };
+        await storage.putObject('task_systems', data, {
+            onConflict: 'id'
+        });
+        return data;
+    }
+
+    async deleteTaskSystem(id: string) {
+        const storage = StorageBaseFactory.getStorage();
+        await storage.delete('task_systems', {
+            match: { id: id }
+        });
+    }
+
+    async getTaskCatalogList(options?: any) {
+        const storage = StorageBaseFactory.getStorage();
+        const queryOptions: any = {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'display_name'
+        };
+        if (options?.taskType) {
+            queryOptions.match.task_type = options.taskType;
+        }
+        if (options?.systemName) {
+            queryOptions.match.system_name = options.systemName;
+        }
+        if (options?.search) {
+            queryOptions.like = { display_name: `%${options.search}%` };
+        }
+        const result = await storage.list('task_catalog', queryOptions);
+        return result || [];
+    }
+
+    async getTaskCatalog(id: string) {
+        const storage = StorageBaseFactory.getStorage();
+        const result = await storage.getObject('task_catalog', {
+            match: { id: id }
+        });
+        return result;
+    }
+
+    async saveTaskCatalog(item: any) {
+        const storage = StorageBaseFactory.getStorage();
+        const systemName = item.system_name || item.systemName;
+        const displayName = `${item.name} [${systemName}]`;
+        const data = {
+            ...item,
+            id: item.id || this.uuid(),
+            system_name: systemName,
+            display_name: displayName,
+            tenant_id: window.$tenantName,
+            updated_at: new Date().toISOString()
+        };
+        // Remove the camelCase version if present
+        delete data.systemName;
+        if (!item.id) {
+            data.created_at = new Date().toISOString();
+        }
+        await storage.putObject('task_catalog', data, {
+            onConflict: 'id'
+        });
+        return data;
+    }
+
+    async deleteTaskCatalog(id: string) {
+        const storage = StorageBaseFactory.getStorage();
+        await storage.delete('task_catalog', {
+            match: { id: id }
+        });
+    }
+
+    async getPropertySchemas(taskType?: string) {
+        const storage = StorageBaseFactory.getStorage();
+        const queryOptions: any = {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'display_order'
+        };
+        if (taskType) {
+            queryOptions.match.task_type = taskType;
+        }
+        const result = await storage.list('task_property_schema', queryOptions);
+        return result || [];
+    }
+
+    async savePropertySchema(schema: any) {
+        const storage = StorageBaseFactory.getStorage();
+        const data = {
+            ...schema,
+            id: schema.id || this.uuid(),
+            tenant_id: window.$tenantName
+        };
+        await storage.putObject('task_property_schema', data, {
+            onConflict: 'id'
+        });
+        return data;
+    }
+
+    async deletePropertySchema(id: string) {
+        const storage = StorageBaseFactory.getStorage();
+        await storage.delete('task_property_schema', {
+            match: { id: id }
+        });
+    }
+
+    async getPaletteSettings() {
+        const storage = StorageBaseFactory.getStorage();
+        const result = await storage.getObject('configuration', {
+            match: { key: 'palette_settings', tenant_id: window.$tenantName }
+        });
+        if (result && result.value) {
+            return result.value;
+        }
+        // Default settings
+        return {
+            visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask']
+        };
+    }
+
+    async savePaletteSettings(settings: any) {
+        const storage = StorageBaseFactory.getStorage();
+        const existingId = await storage.getString('configuration', {
+            match: { key: 'palette_settings', tenant_id: window.$tenantName },
+            column: 'uuid'
+        });
+        const data = {
+            uuid: existingId || this.uuid(),
+            key: 'palette_settings',
+            value: settings,
+            tenant_id: window.$tenantName
+        };
+        await storage.putObject('configuration', data, {
+            onConflict: 'uuid'
+        });
+        return settings;
+    }
+
+    // ============================================
+    // Palette Task Types API
+    // ============================================
+
+    async getPaletteTaskTypes() {
+        const storage = StorageBaseFactory.getStorage();
+        const options = {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'display_order'
+        };
+        const result = await storage.list('palette_task_types', options);
+        return result || [];
+    }
+
+    async updatePaletteTaskType(id: string, isEnabled: boolean) {
+        const { data, error } = await window.$supabase
+            .from('palette_task_types')
+            .update({ is_enabled: isEnabled })
+            .eq('id', id)
+            .select();
+
+        if (error) {
+            throw new Error(error.message);
+        }
+        return data?.[0] || { id, is_enabled: isEnabled };
     }
 }
 

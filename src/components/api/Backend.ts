@@ -112,6 +112,27 @@ export interface Backend {
     updateSecretByTenant(data: any): Promise<any>;
     updateBrowserUseSecretByTenant(data: any): Promise<any>;
     getMCPLists(): Promise<any>;
+
+    // Task Catalog API
+    getTaskSystems(): Promise<any>;
+    saveTaskSystem(system: any): Promise<any>;
+    deleteTaskSystem(id: string): Promise<any>;
+
+    getTaskCatalogList(options?: any): Promise<any>;
+    getTaskCatalog(id: string): Promise<any>;
+    saveTaskCatalog(item: any): Promise<any>;
+    deleteTaskCatalog(id: string): Promise<any>;
+
+    getPropertySchemas(taskType?: string): Promise<any>;
+    savePropertySchema(schema: any): Promise<any>;
+    deletePropertySchema(id: string): Promise<any>;
+
+    getPaletteSettings(): Promise<any>;
+    savePaletteSettings(settings: any): Promise<any>;
+
+    // Palette Task Types API
+    getPaletteTaskTypes(): Promise<any>;
+    updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any>;
 }
 
 // export type { Backend }

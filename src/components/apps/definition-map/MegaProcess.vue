@@ -1,25 +1,23 @@
 <template>
     <div class="w-100 mega-hover">
-        <v-card class="align-center pa-3 mb-3 cp-mega" elevation="10" style="border-radius: 10px !important; background-color: rgba(var(--v-theme-primary), 0.2);"
-            @click="goProcess(value.name, 'mega')">
+        <v-card class="align-center pa-3 mb-3 cp-mega" elevation="10" style="border-radius: 10px !important; background-color: rgba(var(--v-theme-primary), 0.2);">
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
-                <v-row class="ma-0 pa-0">
-                    <v-col :cols="enableEdit ? '7' : '12'" class="ma-0 pa-0 text-left">
-                        <div>{{ value.name }}</div>
+                <v-row class="ma-0 pa-0 align-center">
+                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1" style="min-width: 0;">
+                        <div class="text-truncate cursor-pointer" @click="goProcess(value.name, 'mega')">{{ value.name }}</div>
                     </v-col>
-                    <v-col :cols="enableEdit ? '5' : ''" class="ma-0 pa-0">
-                        <div class="ml-auto add-major-process text-right">
-                            <ProcessMenu
-                                class="mega-proc-btn"
-                                :size="20"
-                                :type="type"
-                                :process="value"
-                                :enableEdit="enableEdit"
-                                @delete="deleteProcess"
-                                @editProcessdialog="editProcessdialog"
-                                @setPermission="openPermissionDialog(value)"
-                            />
-                        </div>
+                    <v-col cols="auto" class="ma-0 pa-0">
+                        <ProcessMenu
+                            class="mega-proc-btn"
+                            :size="20"
+                            :type="type"
+                            :process="value"
+                            :enableEdit="enableEdit"
+                            @add="openProcessDialog('add')"
+                            @delete="deleteProcess"
+                            @editProcessdialog="editProcessdialog"
+                            @setPermission="openPermissionDialog(value)"
+                        />
                     </v-col>
                 </v-row>
             </h6>
@@ -52,23 +50,8 @@
                 <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
             </div>
         </div>
-        <v-card v-if="!processDialogStatus && enableEdit" 
-            @click="openProcessDialog('add')"
-            class="cp-add-mega pa-2 add-major-card"
-            elevation="9" variant="outlined"
-            color="primary"
-            style="display: flex;
-                justify-content: center;
-                align-items: center;
-                border-radius: 10px !important;
-                height:34px;"
-        >
-            <v-row class="pa-0 ma-0 definitionMap-add-card">
-                <PlusIcon class="cp-add-major" size="20" stroke-width="2" />
-                <div>&nbsp;{{ $t('processDefinitionMap.addMajor') }}</div>
-            </v-row>
-        </v-card>
-        <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'add'"
+        <!-- Add Major Process Dialog (shown when + button is clicked) -->
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add'"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -143,7 +126,7 @@ export default {
                 this.value.major_proc_list[index].name = process.name;
                 this.value.major_proc_list[index].domain = process.domain;
             }
-        }
+        },
     },
 }
 </script>
@@ -151,18 +134,5 @@ export default {
 <style>
 .mega-proc-btn button {
     color:black;
-}
-.add-major-card {
-    display: none !important;
-}
-
-.mega-hover:hover .add-major-card {
-    display: flex !important;
-}
-
-@media only screen and (max-width: 700px) {
-    .add-major-card {
-        display: flex !important;
-    }
 }
 </style>

@@ -19,6 +19,9 @@
                                 <v-tab value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
+                                <v-tab value="TaskCatalog">
+                                    <v-icon class="mr-2" size="20">mdi-folder-cog</v-icon> {{ $t('accountTab.taskCatalog') }}
+                                </v-tab>
                             </div>
                             <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
@@ -120,6 +123,15 @@
                             >
                                 <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
                             </v-btn>
+                            <v-btn
+                                variant="text"
+                                color="default"
+                                size="small"
+                                @click="tab = 'TaskCatalog'"
+                                :class="{ 'selected-tab': tab === 'TaskCatalog' }"
+                            >
+                                <v-icon class="mr-2" size="16">mdi-folder-cog</v-icon>{{ $t('accountTab.taskCatalog') }}
+                            </v-btn>
                         </template>
 
                         <v-btn
@@ -207,11 +219,19 @@
                             </div>
                         </v-window-item>
                         <v-window-item value="Skills">
-                            <div 
+                            <div
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
                             >
                                 <SkillsTab />
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="TaskCatalog">
+                            <div
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
+                                <TaskCatalogAdmin />
                             </div>
                         </v-window-item>
                         <!-- <v-window-item value="Notification">
@@ -242,6 +262,7 @@ import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
+import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -259,7 +280,8 @@ export default {
         MCPServerTab,
         MCPEnvSecretTab,
         ConnectionInfoTab,
-        SkillsTab
+        SkillsTab,
+        TaskCatalogAdmin
     },
     data() {
         return {

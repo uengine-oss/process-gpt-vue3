@@ -129,10 +129,101 @@
                     <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" :isAdmin="isAdmin" />
                 </div>
                 <div v-else>
-                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue.domains"/>
+                    <div v-if="viewMode === 'proc_map' && metricsValue.domains && metricsValue.domains.length > 0" 
+                        class="px-6 py-3 d-flex align-center glass-tab-container"
+                    >
+                        <v-tabs
+                            v-model="selectedDomain"
+                            color="primary"
+                            align-tabs="start"
+                            hide-slider
+                            class="premium-tabs"
+                        >
+                            <!-- 전체 탭 -->
+                            <v-tab
+                                :value="null"
+                                class="premium-tab mr-2"
+                                rounded="lg"
+                                variant="flat"
+                            >
+                                <div class="d-flex align-center">
+                                    <span class="tab-text">{{ $t('processDefinitionMap.allDomains') || '전체' }}</span>
+                                </div>
+                            </v-tab>
+                            <v-tab
+                                v-for="domain in metricsValue.domains"
+                                :key="domain.id"
+                                :value="domain.name"
+                                class="premium-tab mr-2"
+                                rounded="lg"
+                                variant="flat"
+                            >
+                                <v-badge
+                                        v-if="getDomainProcessCount(domain.id) > 0"
+                                        :content="getDomainProcessCount(domain.id)"
+                                        color="primary"
+                                        inline
+                                        class="ml-2 tab-badge"
+                                ></v-badge>
+                                <div class="d-flex align-center">
+                                    <span class="tab-text">{{ domain.name }}</span>
+                                </div>
+                            </v-tab>
+                        </v-tabs>
+                        <v-btn
+                            v-if="enableEdit"
+                            icon
+                            variant="tonal"
+                            size="36"
+                            color="primary"
+                            class="ml-4 add-domain-btn"
+                            @click="domainDialog.show = true"
+                        >
+                            <v-icon size="20">mdi-plus</v-icon>
+                        </v-btn>
+                    </div>
+                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue.domains" :selectedDomain="selectedDomain"/>
                     <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue" :enableEdit="enableEdit" @update:value="updateMetricsValue"/>
                 </div>
             </div>
+
+            <!-- Domain Add Dialog -->
+            <v-dialog v-model="domainDialog.show" max-width="400">
+                <v-card class="pa-4 rounded-lg">
+                    <v-card-title class="px-0 pt-0 text-h6 font-weight-bold">
+                        {{ $t('metricsView.addDomain') || '도메인 추가' }}
+                    </v-card-title>
+                    <v-text-field
+                        v-model="domainDialog.name"
+                        :label="$t('metricsView.domainName') || '도메인 명'"
+                        variant="outlined"
+                        density="comfortable"
+                        hide-details
+                        class="mt-2"
+                        @keyup.enter="addDomain"
+                        autofocus
+                    ></v-text-field>
+                    <v-card-actions class="px-0 pb-0 mt-4">
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            variant="text"
+                            @click="domainDialog.show = false"
+                            class="rounded-pill"
+                        >
+                            {{ $t('common.cancel') || '취소' }}
+                        </v-btn>
+                        <v-btn
+                            color="primary"
+                            variant="flat"
+                            @click="addDomain"
+                            :disabled="!domainDialog.name.trim()"
+                            class="rounded-pill px-6"
+                        >
+                            {{ $t('common.save') || '저장' }}
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
 
 
             <v-row class="ma-0 pa-0">
@@ -312,6 +403,11 @@ export default {
         windowWidth: window.innerWidth,
         pendingRoute: null,
         viewMode: 'proc_map',
+        selectedDomain: null,
+        domainDialog: {
+            show: false,
+            name: ''
+        },
         metricsValue: {
             domains: [],
             mega_processes: [],
@@ -467,6 +563,7 @@ export default {
                 }
                 await me.getProcessMap();
                 await me.getMetricsMap();
+                // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
                 if (me.useLock) {
                     await me.checkedLock();
                 } else {
@@ -526,6 +623,7 @@ export default {
                 if (mega.major_proc_list) {
                     mega.major_proc_list.forEach(major => {
                         let targetDomainName = major.domain || 'Access';
+                        major.domain = targetDomainName; // Update card data with default domain
                         let targetDomain = this.metricsValue.domains.find(d => d.name === targetDomainName);
                         
                         if (!targetDomain) {
@@ -590,7 +688,7 @@ export default {
                     const cardMajor = {
                         id: metricProc.id,
                         name: metricProc.name,
-                        domain: domainName, // Preserve domain
+                        domain: domainName,
                         sub_proc_list: metricProc.sub_proc_list || []
                     };
                     cardMega.major_proc_list.push(cardMajor);
@@ -763,9 +861,11 @@ export default {
         },
         async getMetricsMap() {
             this.metricsValue = await backend.getMetricsMap();
+            // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
         },
         async updateMetricsValue(newValue) {
             this.metricsValue = newValue;
+            // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
             await backend.putMetricsMap(newValue);
         },
         addProcess(newProcess) {
@@ -774,6 +874,37 @@ export default {
                 name: newProcess.name,
                 major_proc_list: [],
             });
+        },
+        async addDomain() {
+            const trimmedName = this.domainDialog.name.trim();
+            if (!trimmedName) return;
+
+            // Duplicate check
+            const isDuplicate = this.metricsValue.domains.some(d => d.name.toLowerCase() === trimmedName.toLowerCase());
+            if (isDuplicate) {
+                alert(this.$t('processDefinitionMap.duplicateName') || '동일한 이름이 이미 존재합니다.');
+                return;
+            }
+
+            const newId = trimmedName.toLowerCase().replace(/[/.]/g, '_');
+            const newOrder = this.metricsValue.domains.length + 1;
+
+            this.metricsValue.domains.push({
+                id: newId,
+                name: trimmedName,
+                order: newOrder
+            });
+
+            await backend.putMetricsMap(this.metricsValue);
+            this.selectedDomain = trimmedName;
+            this.domainDialog.show = false;
+            this.domainDialog.name = '';
+        },
+        getDomainProcessCount(domainId) {
+            if (!this.metricsValue || !this.metricsValue.processes) return 0;
+            return this.metricsValue.processes
+                .filter(p => p.domain_id === domainId)
+                .reduce((sum, p) => sum + (p.sub_proc_list ? p.sub_proc_list.length : 0), 0);
         },
         updatePermissionsFromDiff(diff) {
             var me = this;
@@ -986,6 +1117,77 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.glass-tab-container {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 60px; /* Adjust based on header height */
+    z-index: 1;
+}
+
+.premium-tabs :deep(.v-slide-group__content) {
+    padding: 6px 0;
+}
+
+.premium-tab {
+    text-transform: none !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    color: #444 !important;
+    background: transparent !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 1px solid transparent !important;
+    height: 40px !important;
+    min-width: 100px !important;
+}
+
+.premium-tab:hover {
+    background: rgba(var(--v-theme-primary), 0.04) !important;
+    transform: translateY(-1px);
+}
+
+.premium-tab.v-tab--selected {
+    background: linear-gradient(135deg, rgb(var(--v-theme-primary)), #6366f1) !important;
+    color: white !important;
+    box-shadow: 0 8px 20px rgba(var(--v-theme-primary), 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.tab-text {
+    font-size: 0.95rem;
+}
+
+.tab-badge :deep(.v-badge__wrapper) {
+    font-size: 0.7rem !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    padding: 0 4px !important;
+}
+
+.premium-tab.v-tab--selected .tab-badge :deep(.v-badge__badge) {
+    background: white !important;
+    color: rgb(var(--v-theme-primary)) !important;
+}
+
+.add-domain-btn {
+    transition: all 0.3s ease;
+    background: rgba(var(--v-theme-primary), 0.08) !important;
+}
+
+.add-domain-btn:hover {
+    background: rgb(var(--v-theme-primary)) !important;
+    color: white !important;
+    transform: rotate(90deg) scale(1.1);
+}
+
+.border-b {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+</style>
 
 <style scoped>
 .alert-message {

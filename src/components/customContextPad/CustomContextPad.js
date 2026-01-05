@@ -373,12 +373,12 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
   }
   if (actions['append.append-task']) {
     const newAction = appendAction(
-      'bpmn:UserTask',
+      'bpmn:ManualTask',
       actions['append.append-task'].className,
       i18n.global.t('customContextPad.task'),
       {}
     );
-  
+
     actions['append.append-task'].action = newAction.action;
   }
   if (actions['append.intermediate-event']) {

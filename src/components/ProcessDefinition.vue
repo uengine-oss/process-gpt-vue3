@@ -96,6 +96,18 @@
                         :onLoadEnd="onBpmnLoadEnd"
                             style="height: 100%"
                         ></BpmnuEngine>
+                        <!-- Task Catalog Section for drag & drop -->
+                        <TaskCatalogSection
+                            v-if="!isViewMode"
+                            :bpmnModeler="$refs.bpmnVue?.bpmnViewer"
+                            class="task-catalog-floating-panel"
+                        />
+                        <!-- Save to Catalog Dialog -->
+                        <SaveToCatalogDialog
+                            v-model="saveToCatalogDialogOpen"
+                            :element="element"
+                            @saved="onSavedToCatalog"
+                        />
                     </template>
                     
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
@@ -113,6 +125,7 @@
                         ref="bpmnPropertyPanel"
                         :element="element"
                         @close="closePanel"
+                        @saveToCatalog="openSaveToCatalog"
                         :roles="roles"
                         :process-variables="processVariables"
                         :key="element.id"
@@ -137,6 +150,7 @@
                         ref="bpmnPropertyPanel"
                         :element="element"
                         @close="closePanel"
+                        @saveToCatalog="openSaveToCatalog"
                         :roles="roles"
                         :process-variables="processVariables"
                         :key="element.id"
@@ -286,6 +300,8 @@ import XmlViewer from 'vue3-xml-viewer'
 import XMLEditor from './ui/XMLEditor.vue';
 
 import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
+import TaskCatalogSection from '@/components/designer/TaskCatalogSection.vue'
+import SaveToCatalogDialog from '@/components/designer/SaveToCatalogDialog.vue'
 import BackendFactory from "@/components/api/BackendFactory";
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
@@ -302,6 +318,8 @@ export default {
         VDataTable,
         // ProcessExecuteDialog,
         InstanceNamePatternForm,
+        TaskCatalogSection,
+        SaveToCatalogDialog,
         'process-gpt-execute': ProcessGPTExecute,
         XmlViewer,
         XMLEditor,
@@ -365,6 +383,9 @@ export default {
         options: {},
 
         bpmnKey: 0,
+
+        // Task Catalog
+        saveToCatalogDialogOpen: false,
     }),
     computed: {
         mode() {
@@ -540,6 +561,16 @@ export default {
         // this.processVariables = this.copyProcessDefinition.data
     },
     methods: {
+        openSaveToCatalog() {
+            const type = this.element?.$type || '';
+            if (this.element && (type.includes('Task') || type.includes('Activity'))) {
+                this.saveToCatalogDialogOpen = true;
+            }
+        },
+        onSavedToCatalog(catalogItem) {
+            // Optionally update the BPMN element with catalog reference
+            console.log('Saved to catalog:', catalogItem);
+        },
         onBpmnLoadStart() {
             this.isBpmnLoading = true;
         },
@@ -1115,5 +1146,17 @@ export default {
     .btn-zoom {
         order: 1;
     }
+}
+
+/* Task Catalog Floating Panel */
+.task-catalog-floating-panel {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 10;
+    background: white;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px 8px 0 0;
 }
 </style>

@@ -150,12 +150,21 @@
                             <!-- xml보기 아이콘 -->
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
                                         density="comfortable" @click="showXmlMode">
                                         <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
                                     </v-btn>
                                 </template>
                                 <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
+                            </v-tooltip>
+                            <!-- 색상 규칙 설정 아이콘 -->
+                            <v-tooltip location="bottom" :text="$t('colorRules.title')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        density="comfortable" @click="showColorSettingsDialog = true">
+                                        <v-icon>mdi-palette-outline</v-icon>
+                                    </v-btn>
+                                </template>
                             </v-tooltip>
                         </div>
                         
@@ -198,10 +207,23 @@
                         <div class="mr-4 d-flex" v-if="bpmn && useMarketplace">
                             <v-tooltip location="bottom" :text="$t('ProcessDefinitionChatHeader.addMarketplace')">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
                                         density="comfortable" @click="openMarketplaceDialog"
                                     >
                                         <Icons :icon="'addMarketplace'" style="margin-top: 4px;" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </div>
+
+                        <!-- 프로세스 복제 -->
+                        <div class="mr-4 d-flex" v-if="bpmn && fullPath != 'chat'">
+                            <v-tooltip location="bottom" :text="$t('ProcessDefinitionChatHeader.duplicateProcess')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
+                                        density="comfortable" @click="duplicateProcess"
+                                    >
+                                        <v-icon>mdi-content-copy</v-icon>
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -212,11 +234,21 @@
 
             <v-divider class="ma-0" />
         </div>
+
+        <!-- Color Rules Settings Dialog -->
+        <v-dialog v-model="showColorSettingsDialog" max-width="700">
+            <BpmnColorRulesSettings @close="showColorSettingsDialog = false" />
+        </v-dialog>
     </div>
 </template>
 
 <script>
+import BpmnColorRulesSettings from '@/components/settings/BpmnColorRulesSettings.vue';
+
 export default {
+    components: {
+        BpmnColorRulesSettings
+    },
     props: {
         modelValue: String,
         bpmn: String,
@@ -234,7 +266,8 @@ export default {
             processName: "",
             expandedTexts: {
                 title: false
-            }
+            },
+            showColorSettingsDialog: false
         }
     },
     created() {
@@ -330,6 +363,9 @@ export default {
         },
         openMarketplaceDialog() {
             this.$emit('toggleMarketplaceDialog', true);
+        },
+        duplicateProcess() {
+            this.$emit('duplicateProcess');
         },
         getTruncatedText(text, maxLength) {
             if (!text || text.length <= maxLength) {

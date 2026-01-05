@@ -15,7 +15,69 @@ import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil';
 
 const HIGH_PRIORITY = 1500,
-  TASK_BORDER_RADIUS = 10;
+  TASK_BORDER_RADIUS = 10,
+  COLOR_RULES_STORAGE_KEY = 'bpmn_color_rules';
+
+// Get color from rules stored in localStorage
+function getColorFromRules(element) {
+  try {
+    const savedSettings = localStorage.getItem(COLOR_RULES_STORAGE_KEY);
+    if (!savedSettings) return null;
+
+    const settings = JSON.parse(savedSettings);
+    const rules = settings.rules || [];
+    const defaultColor = settings.defaultColor || '#fdf2d0';
+
+    // Get element type
+    const elementType = element.businessObject?.$type;
+    if (!elementType) return { fillColor: defaultColor };
+
+    // Get duration from extension elements
+    let duration = null;
+    const extensionElements = element.businessObject?.extensionElements;
+    if (extensionElements?.values) {
+      const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
+      if (uengineProps?.json) {
+        try {
+          const parsed = JSON.parse(uengineProps.json);
+          if (parsed.duration !== undefined) {
+            duration = Number(parsed.duration);
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    // Sort rules by priority
+    const sortedRules = [...rules]
+      .filter(r => r.enabled)
+      .sort((a, b) => a.priority - b.priority);
+
+    // Check lead time rules first
+    for (const rule of sortedRules.filter(r => r.type === 'leadTime')) {
+      if (duration !== null) {
+        const min = rule.minDuration ?? 0;
+        const max = rule.maxDuration ?? Infinity;
+        if (duration >= min && duration < max) {
+          return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
+        }
+      }
+    }
+
+    // Then check task type rules
+    for (const rule of sortedRules.filter(r => r.type === 'taskType')) {
+      if (rule.taskTypes?.includes(elementType)) {
+        return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
+      }
+    }
+
+    return { fillColor: defaultColor };
+  } catch (e) {
+    console.warn('Failed to get color from rules:', e);
+    return null;
+  }
+}
 
 
 export default class CustomBpmnRenderer extends BaseRenderer {
@@ -180,9 +242,58 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
     var strokeColor = 'none';
 
-    const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, strokeColor);
+    // Priority 1: Check for individual task color in extension elements
+    let fillColor = null;
+    let customStrokeColor = 'none';
+    let hasIndividualColor = false;
+
+    const extensionElements = element.businessObject?.extensionElements;
+    if (extensionElements && extensionElements.values) {
+      const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
+      if (uengineProps && uengineProps.json) {
+        try {
+          const props = JSON.parse(uengineProps.json);
+          if (props.taskColor) {
+            fillColor = props.taskColor;
+            hasIndividualColor = true;
+          }
+          if (props.taskStrokeColor) {
+            customStrokeColor = props.taskStrokeColor;
+          }
+        } catch (e) {
+          // Ignore JSON parse errors
+        }
+      }
+    }
+
+    // Also check direct businessObject properties as fallback for individual color
+    if (element.businessObject?.fillColor) {
+      fillColor = element.businessObject.fillColor;
+      hasIndividualColor = true;
+    }
+    if (element.businessObject?.strokeColor) {
+      customStrokeColor = element.businessObject.strokeColor;
+    }
+
+    // Priority 2: If no individual color, apply color rules
+    if (!hasIndividualColor) {
+      const ruleColor = getColorFromRules(element);
+      if (ruleColor) {
+        fillColor = ruleColor.fillColor;
+        if (ruleColor.strokeColor) {
+          customStrokeColor = ruleColor.strokeColor;
+        }
+      }
+    }
+
+    // Priority 3: Fallback to default color
+    if (!fillColor) {
+      fillColor = '#fdf2d0';
+    }
+
+    const borderRect = drawBorderRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, customStrokeColor);
     prependTo(borderRect, parentNode);
-    const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, 'none', '#fdf2d0', shape.style);
+    const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, 'none', fillColor, shape.style);
     prependTo(rect, parentNode);
     svgRemove(shape);
   }

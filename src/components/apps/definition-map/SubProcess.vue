@@ -35,6 +35,7 @@
                         @editProcessdialog="editProcessdialog"
                         @modeling="editProcessModel"
                         @setPermission="openPermissionDialog(value)"
+                        @duplicate="duplicateProcess"
                     />
                 </div>
             </v-row>
@@ -111,6 +112,28 @@ export default {
         },
         clickPlayBtn(){
             this.$emit('clickPlayBtn', this.value)
+        },
+        duplicateProcess(process) {
+            // Generate unique name with copy suffix
+            let baseName = process.name;
+            let newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'})`;
+            let counter = 1;
+
+            // Check for duplicate names
+            while (this.parent.sub_proc_list.some(item => item.name === newName)) {
+                newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'} ${counter++})`;
+            }
+
+            // Create new process with unique ID
+            const newProcess = {
+                id: `${this.parent.name}_${newName}`.replace(/[/.]/g, '_').replace(/\s+/g, '_'),
+                name: newName
+            };
+
+            // Add to parent's sub_proc_list
+            this.parent.sub_proc_list.push(newProcess);
+
+            this.$toast.success(this.$t('ProcessMenu.duplicateSuccess') || '프로세스가 복사되었습니다.');
         }
     },
 }

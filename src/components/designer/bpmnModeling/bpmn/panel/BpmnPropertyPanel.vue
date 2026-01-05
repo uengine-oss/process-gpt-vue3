@@ -39,6 +39,14 @@
                 </v-menu>
             </div>
             <v-spacer></v-spacer>
+            <v-tooltip v-if="!isViewMode && isTaskElement" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="$emit('saveToCatalog')" icon variant="text" density="comfortable" class="panel-close-btn">
+                        <v-icon>mdi-folder-plus</v-icon>
+                    </v-btn>
+                </template>
+                <span>{{ $t('taskCatalog.saveToCatalog') || 'Save to Catalog' }}</span>
+            </v-tooltip>
             <v-btn v-if="!isViewMode" @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
                 <v-icon>mdi-content-save</v-icon>
             </v-btn>
@@ -110,6 +118,7 @@ import BusinessRuleTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel
 
 export default {
     name: 'bpmn-property-panel',
+    emits: ['close', 'addUengineVariable', 'saveToCatalog'],
     props: {
         element: Object,
         processDefinition: Object,
@@ -253,6 +262,10 @@ export default {
                 type = 'gateway';
             }
             return type + '-panel';
+        },
+        isTaskElement() {
+            const type = this.element?.$type || '';
+            return type.includes('Task') || type.includes('Activity');
         }
         // inputData() {
         //     let params = this.uengineProperties.parameters;

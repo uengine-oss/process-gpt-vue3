@@ -74,10 +74,21 @@
                 :definition="copyDefinition"
             />
         </div>
+        <!-- Schema-based Properties -->
+        <div class="mt-4">
+            <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
+            <SchemaBasedProperties
+                task-type="bpmn:ServiceTask"
+                v-model="copyUengineProperties.schemaProperties"
+                :readonly="isViewMode"
+                @update:model-value="onSchemaPropertiesUpdate"
+            />
+        </div>
+
         <div class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
-                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 정의 속성'"
                 :readonly="isViewMode"
             />
         </div>
@@ -125,6 +136,7 @@ import yaml from 'yamljs';
 import BackendFactory from '@/components/api/BackendFactory';
 import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
+import SchemaBasedProperties from './SchemaBasedProperties.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
@@ -132,7 +144,8 @@ export default {
     components: {
         Mapper,
         EventSynchronizationForm,
-        KeyValueField
+        KeyValueField,
+        SchemaBasedProperties
     },
     props: {
         uengineProperties: Object,
@@ -158,7 +171,8 @@ export default {
         if(!this.copyUengineProperties.outputMapping.mappingContext) this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] }        
         if(!this.tempOutputMapping) this.tempOutputMapping = {}
         this.tempOutputMapping.eventSynchronization = JSON.parse(JSON.stringify(this.copyUengineProperties.outputMapping)) 
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [{key: 'test', value: 'value'}]; 
+        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [{key: 'test', value: 'value'}];
+        if(!this.copyUengineProperties.schemaProperties) this.copyUengineProperties.schemaProperties = {};
 
        if(typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
             this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
@@ -224,7 +238,7 @@ export default {
                     title: 'BpmnPropertyPanel.mapperDescriptionSubTitle2',
                     image: "EventSynchronizationFomVariablesHowToUse.gif"
                 },
-            ],
+            ]
         };
     },
     async mounted() {
@@ -238,7 +252,7 @@ export default {
             }));
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        
+
         let def = this.bpmnModeler.getDefinitions();
         let target = null;
         def.rootElements.forEach((element) => {
@@ -316,8 +330,12 @@ export default {
         },
         beforeSave() {
             this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization
-            const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties } = this.copyUengineProperties;
-            this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties };
+            const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties, schemaProperties } = this.copyUengineProperties;
+            this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties, schemaProperties };
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        onSchemaPropertiesUpdate(properties) {
+            this.copyUengineProperties.schemaProperties = properties;
             this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         generateAPI() {
@@ -422,7 +440,7 @@ export default {
 
             // 매치된 결과가 없으면 null 반환
             return null;
-        }
+        },
     }
 };
 </script>

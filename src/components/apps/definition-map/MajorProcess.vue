@@ -1,33 +1,24 @@
 <template>
     <div class="mb-3 major-hover">
         <v-card class="align-center pa-2 pr-2 pl-2 cp-major" elevation="10"
-            style="border-radius: 10px !important; margin-bottom:5px; border: 4px solid rgba(var(--v-theme-primary), 0.2);" @click="goProcess(parent.name, 'mega')"
+            style="border-radius: 10px !important; margin-bottom:5px; border: 4px solid rgba(var(--v-theme-primary), 0.2);"
         >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
-                <v-row class="ma-0 pa-0">
-                    <v-col :cols="enableEdit ? '7' : '12'" class="ma-0 pa-0 text-left d-flex align-center flex-nowrap" style="min-width: 0;">
-                        <v-chip v-if="value.domain"
-                            color="primary"
-                            size="x-small"
-                            class="mr-2 font-weight-bold flex-shrink-0"
-                            label
-                        >
-                            {{ value.domain }}
-                        </v-chip>
-                        <div class="text-truncate font-weight-bold" style="font-size: 0.9rem;">{{ value.name }}</div>
+                <v-row class="ma-0 pa-0 align-center">
+                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1" style="min-width: 0;">
+                        <div class="text-truncate font-weight-bold cursor-pointer" style="font-size: 0.9rem;" @click="goProcess(parent.name, 'mega')">{{ value.name }}</div>
                     </v-col>
-                    <v-col :cols="enableEdit ? '5' : ''" class="ma-0 pa-0 text-right">
-                        <div class="ml-auto add-major-process">
-                            <ProcessMenu
-                                :size="14"
-                                :type="type"
-                                :process="value"
-                                :enableEdit="enableEdit"
-                                @delete="deleteProcess"
-                                @editProcessdialog="editProcessdialog"
-                                @setPermission="openPermissionDialog(value)"
-                            />
-                        </div>
+                    <v-col cols="auto" class="ma-0 pa-0">
+                        <ProcessMenu
+                            :size="14"
+                            :type="type"
+                            :process="value"
+                            :enableEdit="enableEdit"
+                            @add="openSubProcessDialog('add')"
+                            @delete="deleteProcess"
+                            @editProcessdialog="editProcessdialog"
+                            @setPermission="openPermissionDialog(value)"
+                        />
                     </v-col>
                 </v-row>
             </h6>
@@ -60,23 +51,8 @@
                 <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
             </div>
         </div>
-        <v-card v-if="!processDialogStatus && enableEdit" 
-            @click="openSubProcessDialog('add')"
-            class="add-sub-card"
-            elevation="9" variant="outlined"
-            color="primary"
-            style="display: flex;
-                justify-content: center;
-                align-items: center;
-                border-radius: 10px !important;
-                height:26px;"
-        >
-            <v-row class="pa-0 ma-0 definitionMap-add-card">
-                <PlusIcon class="cp-add-sub" size="20" stroke-width="2" />
-                <div>&nbsp;{{ $t('processDefinitionMap.addSub') }}</div>
-            </v-row>
-        </v-card>
-        <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'add'"
+        <!-- Add Sub Process Dialog (shown when + button is clicked) -->
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add'"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -144,23 +120,10 @@ export default {
         },
         clickPlayBtn(value){
             this.$emit('clickPlayBtn', value)
-        }
+        },
     },
 }
 </script>
 
 <style>
-.add-sub-card {
-    display: none !important;
-}
-
-.major-hover:hover .add-sub-card {
-    display: flex !important;
-}
-
-@media only screen and (max-width: 700px) {
-    .add-sub-card {
-        display: flex !important;
-    }
-}
 </style>

@@ -4,10 +4,24 @@
         style="overflow: auto;"
         class="is-work-height"
     >
-        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center" 
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center"
             :style="isMobile ? 'display: block !important;' : ''"
         >
             <div class="d-flex">
+                <!-- Back button for subprocess navigation -->
+                <v-btn
+                    v-if="subProcessBreadCrumb.length > 0 || selectedProc.major"
+                    @click="goBack"
+                    variant="text"
+                    size="small"
+                    class="mr-2"
+                    icon
+                >
+                    <v-icon>mdi-arrow-left</v-icon>
+                    <v-tooltip activator="parent" location="bottom">
+                        {{ $t('subProcessDetail.backToParent') || 'Back' }}
+                    </v-tooltip>
+                </v-btn>
                 <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis"
                     @click="goProcess()">
                     <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
@@ -286,6 +300,22 @@ export default {
         goHistory(idx) {
             this.updateBpmn(this.subProcessBreadCrumb[idx].xml);
             this.removeHistoryAfterIndex(idx)
+        },
+        goBack() {
+            // Navigate back to previous subprocess or main process
+            if (this.subProcessBreadCrumb.length > 1) {
+                // Go to previous subprocess
+                const prevIdx = this.subProcessBreadCrumb.length - 2;
+                this.updateBpmn(this.subProcessBreadCrumb[prevIdx].xml);
+                this.subProcessBreadCrumb.pop();
+            } else if (this.subProcessBreadCrumb.length === 1) {
+                // Go back to main process
+                this.init(this.$route.params);
+                this.subProcessBreadCrumb = [];
+            } else if (this.selectedProc.major) {
+                // Go back to Definition Map (when accessed from Definition Map)
+                this.goProcess();
+            }
         },
         removeHistoryAfterIndex(index) {
             if (index < 0 || index >= this.subProcessBreadCrumb.length) {

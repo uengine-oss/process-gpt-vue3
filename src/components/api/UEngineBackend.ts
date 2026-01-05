@@ -1043,6 +1043,67 @@ class UEngineBackend implements Backend {
         return null;
     }
 
+    // ============================================
+    // Task Catalog API (Process-GPT Mode only)
+    // ============================================
+
+    async getTaskSystems(): Promise<any> {
+        console.warn("getTaskSystems is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async saveTaskSystem(system: any): Promise<any> {
+        console.warn("saveTaskSystem is not implemented - only use Process-GPT Mode");
+        return system;
+    }
+
+    async deleteTaskSystem(id: string): Promise<void> {
+        console.warn("deleteTaskSystem is not implemented - only use Process-GPT Mode");
+    }
+
+    async getTaskCatalogList(options?: any): Promise<any> {
+        console.warn("getTaskCatalogList is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async getTaskCatalog(id: string): Promise<any> {
+        console.warn("getTaskCatalog is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async saveTaskCatalog(item: any): Promise<any> {
+        console.warn("saveTaskCatalog is not implemented - only use Process-GPT Mode");
+        return item;
+    }
+
+    async deleteTaskCatalog(id: string): Promise<void> {
+        console.warn("deleteTaskCatalog is not implemented - only use Process-GPT Mode");
+    }
+
+    async getPropertySchemas(taskType?: string): Promise<any> {
+        console.warn("getPropertySchemas is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async savePropertySchema(schema: any): Promise<any> {
+        console.warn("savePropertySchema is not implemented - only use Process-GPT Mode");
+        return schema;
+    }
+
+    async deletePropertySchema(id: string): Promise<void> {
+        console.warn("deletePropertySchema is not implemented - only use Process-GPT Mode");
+    }
+
+    async getPaletteSettings(): Promise<any> {
+        console.warn("getPaletteSettings is not implemented - only use Process-GPT Mode");
+        return { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+    }
+
+    async savePaletteSettings(settings: any): Promise<any> {
+        console.warn("savePaletteSettings is not implemented - only use Process-GPT Mode");
+        return settings;
+    }
+
 }
 
 export default UEngineBackend;

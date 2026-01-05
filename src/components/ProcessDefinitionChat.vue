@@ -167,7 +167,7 @@
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
                                 @beforeRestore="beforeRestore" @savePDF="savePDF"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess" />
                         </template>
                     </Chat>
                 </div>
@@ -200,7 +200,7 @@
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess" />
                         </template>
                     </Chat>
                 </div>
@@ -222,8 +222,55 @@
         <v-dialog v-model="marketplaceDialog" max-width="400" persistent
             :fullscreen="isMobile"
         >
-            <process-definition-market-place-dialog :processDefinition="processDefinition" 
+            <process-definition-market-place-dialog :processDefinition="processDefinition"
                 :bpmn="bpmn" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+        </v-dialog>
+
+        <!-- BPMN Validation Dialog -->
+        <v-dialog v-model="validationDialog" max-width="600" persistent>
+            <v-card>
+                <v-card-title class="d-flex align-center">
+                    <v-icon class="mr-2" color="warning">mdi-alert-circle</v-icon>
+                    {{ $t('validation.title') }}
+                </v-card-title>
+                <v-card-text>
+                    <p class="mb-4">{{ $t('validation.warningMessage') }}</p>
+                    <v-list density="compact">
+                        <v-list-item
+                            v-for="(item, index) in validationResults"
+                            :key="index"
+                            :class="item.level === 'error' ? 'text-error' : 'text-warning'"
+                        >
+                            <template v-slot:prepend>
+                                <v-icon
+                                    :color="item.level === 'error' ? 'error' : 'warning'"
+                                    size="small"
+                                >
+                                    {{ item.level === 'error' ? 'mdi-close-circle' : 'mdi-alert' }}
+                                </v-icon>
+                            </template>
+                            <v-list-item-title>{{ item.message }}</v-list-item-title>
+                            <v-list-item-subtitle v-if="item.elementName">
+                                {{ item.elementName }}
+                            </v-list-item-subtitle>
+                        </v-list-item>
+                    </v-list>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="validationDialog = false">
+                        {{ $t('common.cancel') }}
+                    </v-btn>
+                    <v-btn
+                        color="warning"
+                        variant="flat"
+                        @click="saveIgnoringValidation"
+                        :disabled="hasValidationErrors"
+                    >
+                        {{ $t('validation.saveAnyway') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
         </v-dialog>
     </v-card>
 </template>
@@ -329,6 +376,10 @@ export default {
         isPreviewPDFDialog: false,
         marketplaceDialog: false,
         isAIGenerated: false,
+        // Validation
+        validationDialog: false,
+        validationResults: [],
+        pendingSaveInfo: null,
         organizationChart: [],
         strategy: null,
         isHorizontal: false,
@@ -487,6 +538,9 @@ export default {
         maxRetryCount() {
             // 컨설팅 모드: 최대 10번, 일반 모드: 최대 3번
             return this.isConsultingMode ? 10 : 3;
+        },
+        hasValidationErrors() {
+            return this.validationResults.some(item => item.level === 'error');
         },
     },
     async beforeRouteUpdate(to, from, next) {
@@ -688,6 +742,48 @@ export default {
         toggleMarketplaceDialog(value) {
             this.marketplaceDialog = value;
         },
+        async duplicateProcess() {
+            try {
+                // Generate unique name with copy suffix
+                const baseName = this.projectName;
+                let newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'})`;
+
+                // Get current BPMN XML from modeler (most up-to-date)
+                let currentBpmn = this.bpmn;
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
+                if (modeler) {
+                    try {
+                        const { xml } = await modeler.saveXML({ format: true });
+                        currentBpmn = xml;
+                    } catch (e) {
+                        console.warn('Could not get XML from modeler, using stored BPMN');
+                    }
+                }
+
+                // Save duplicated process to database
+                const result = await backend.duplicateLocalProcess(
+                    this.fullPath?.replace('.bpmn', '') || '',
+                    newName,
+                    currentBpmn,
+                    this.processDefinition
+                );
+
+                if (result.success) {
+                    // Navigate to the new process (without BPMN in URL)
+                    this.$router.push({
+                        path: `/definitions/${result.newId}`,
+                    });
+
+                    this.$toast.success(this.$t('ProcessMenu.duplicateSuccess') || '프로세스가 복사되었습니다.');
+                } else {
+                    throw new Error('Duplication failed');
+                }
+            } catch (error) {
+                console.error('Failed to duplicate process:', error);
+                this.$toast.error(this.$t('ProcessMenu.duplicateFailed') || '프로세스 복사에 실패했습니다.');
+            }
+        },
         executeProcess() {
             this.isSimulate = 'false'
             this.executeDialog = !this.executeDialog;
@@ -733,7 +829,143 @@ export default {
             if(window.$pal){
                 await this.beforeSavePALUserTasks(info);
             }
+
+            // Run BPMN validation before save
+            const validationResults = await this.validateBpmn();
+            if (validationResults.length > 0) {
+                this.validationResults = validationResults;
+                this.pendingSaveInfo = info;
+                this.validationDialog = true;
+                return;
+            }
+
             this.saveDefinition(info);
+        },
+        async validateBpmn() {
+            const results = [];
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+
+            if (!modeler) return results;
+
+            try {
+                const elementRegistry = modeler.get('elementRegistry');
+                const elements = elementRegistry.getAll();
+
+                let hasStartEvent = false;
+                let hasEndEvent = false;
+                const connectedElements = new Set();
+                const gateways = [];
+                const tasks = [];
+
+                // Analyze elements
+                elements.forEach(element => {
+                    const type = element.type;
+
+                    if (type === 'bpmn:StartEvent') {
+                        hasStartEvent = true;
+                    }
+                    if (type === 'bpmn:EndEvent') {
+                        hasEndEvent = true;
+                    }
+                    if (type?.includes('Gateway')) {
+                        gateways.push(element);
+                    }
+                    if (type?.includes('Task')) {
+                        tasks.push(element);
+                    }
+
+                    // Track connected elements
+                    if (element.incoming) {
+                        element.incoming.forEach(conn => {
+                            if (conn.source) connectedElements.add(conn.source.id);
+                        });
+                    }
+                    if (element.outgoing) {
+                        element.outgoing.forEach(conn => {
+                            if (conn.target) connectedElements.add(conn.target.id);
+                        });
+                    }
+                });
+
+                // Check for start event
+                if (!hasStartEvent) {
+                    results.push({
+                        level: 'error',
+                        message: this.$t('validation.noStartEvent'),
+                        elementName: null
+                    });
+                }
+
+                // Check for end event
+                if (!hasEndEvent) {
+                    results.push({
+                        level: 'error',
+                        message: this.$t('validation.noEndEvent'),
+                        elementName: null
+                    });
+                }
+
+                // Check for unconnected tasks
+                tasks.forEach(task => {
+                    const hasIncoming = task.incoming && task.incoming.length > 0;
+                    const hasOutgoing = task.outgoing && task.outgoing.length > 0;
+
+                    if (!hasIncoming && !hasOutgoing) {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.unconnectedElement'),
+                            elementName: task.businessObject?.name || task.id
+                        });
+                    } else if (!hasIncoming) {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.noIncomingConnection'),
+                            elementName: task.businessObject?.name || task.id
+                        });
+                    } else if (!hasOutgoing) {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.noOutgoingConnection'),
+                            elementName: task.businessObject?.name || task.id
+                        });
+                    }
+                });
+
+                // Check gateways
+                gateways.forEach(gateway => {
+                    const outgoing = gateway.outgoing || [];
+                    const incoming = gateway.incoming || [];
+
+                    if (outgoing.length < 2 && gateway.type !== 'bpmn:EventBasedGateway') {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.gatewayNeedsBranches'),
+                            elementName: gateway.businessObject?.name || gateway.id
+                        });
+                    }
+
+                    if (incoming.length === 0) {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.noIncomingConnection'),
+                            elementName: gateway.businessObject?.name || gateway.id
+                        });
+                    }
+                });
+
+            } catch (error) {
+                console.error('Validation error:', error);
+            }
+
+            return results;
+        },
+        saveIgnoringValidation() {
+            this.validationDialog = false;
+            if (this.pendingSaveInfo) {
+                this.saveDefinition(this.pendingSaveInfo);
+                this.pendingSaveInfo = null;
+            }
         },
         async beforeSavePALUserTasks(info) {
             var me = this;
