@@ -1516,7 +1516,6 @@ export default {
     ],
     data() {
         return {
-            loggedInterventionMessages: new Set(), // 로그를 이미 출력한 메시지 추적
             workIcons: {
                 "ScheduleQuery" : "calendar-line-duotone", // 달력 아이콘
                 "ScheduleRegistration" : "calendar-line-duotone", // 달력 아이콘
@@ -1973,7 +1972,7 @@ export default {
             this.processAnalysisResult = null;
             
             try {
-                const response = await axios.post('/completion/chat/analyze-for-process', {
+                const response = await axios.post('/langchain-chat/process/analyze', {
                     chat_room_id: this.chatRoomId
                 });
                 
@@ -1997,7 +1996,7 @@ export default {
             
             try {
                 // 1. 채팅 이력 가져오기
-                const historyResponse = await axios.post('/completion/chat/get-chat-history', {
+                const historyResponse = await axios.post('/langchain-chat/process/chat-history', {
                     chat_room_id: this.chatRoomId
                 });
                 
@@ -2169,7 +2168,7 @@ export default {
                 const bpmnXml = this.createBpmnXml(jsonProcess, true); // isHorizontal = true
                 
                 // 6. 백엔드에 저장
-                const saveResponse = await axios.post('/completion/chat/save-process', {
+                const saveResponse = await axios.post('/langchain-chat/process/save', {
                     process_definition: jsonProcess,
                     bpmn_xml: bpmnXml
                 });
@@ -2616,26 +2615,10 @@ export default {
         isWaitingForLLMResponse(message, index) {
             // 개입 정보가 있고 should_intervene이 true인 경우만 확인
             if (message.jsonContent && message.jsonContent.intervention) {
-                // 디버깅: 메시지 정보 확인 (should_intervene이 true일 때만 로그)
-                if (message.jsonContent.intervention.should_intervene) {
-                    const logKey = `${message.id || message.uuid || index}`;
-                    if (!this.loggedInterventionMessages.has(logKey)) {
-                        this.loggedInterventionMessages.add(logKey);
-                        console.log(`🔍 [isWaitingForLLMResponse] 메시지 ${index} 체크:`, {
-                            messageId: message.id || message.uuid,
-                            hasIntervention: !!message.jsonContent.intervention,
-                            should_intervene: message.jsonContent.intervention.should_intervene,
-                            status: message.jsonContent.intervention.status,
-                            messageContent: message.content?.substring(0, 50),
-                            fullJsonContent: JSON.stringify(message.jsonContent)
-                        });
-                    }
-                }
                 const intervention = message.jsonContent.intervention;
                 
                 // 개입이 통과되지 않은 경우는 false
                 if (!intervention.should_intervene) {
-                    console.log(`❌ [isWaitingForLLMResponse] should_intervene이 false 또는 없음`);
                     return false;
                 }
                 
@@ -2643,13 +2626,11 @@ export default {
                 
                 // completed 상태면 LLM 응답이 완료된 것이므로 false
                 if (status === 'completed') {
-                    console.log(`✅ [isWaitingForLLMResponse] status가 completed - 응답 완료`);
                     return false;
                 }
                 
                 // checking 또는 intervening 상태면 대기 중
                 if (status === 'checking' || status === 'intervening') {
-                    console.log(`⏳ [isWaitingForLLMResponse] status가 ${status} - 대기 중`);
                     return true;
                 }
                 
@@ -2657,31 +2638,21 @@ export default {
                 // 다음 메시지 확인
                 const nextMessage = index < this.filteredMessages.length - 1 ? this.filteredMessages[index + 1] : null;
                 
-                console.log(`🔍 [isWaitingForLLMResponse] 다음 메시지 확인:`, {
-                    hasNextMessage: !!nextMessage,
-                    nextRole: nextMessage?.role,
-                    nextContent: nextMessage?.content?.substring(0, 50)
-                });
-                
                 // 다음 메시지가 없거나, system/agent role의 답변이 아직 없는 경우
                 if (!nextMessage || (nextMessage.role !== 'system' && nextMessage.role !== 'agent')) {
-                    console.log(`⏳ [isWaitingForLLMResponse] 다음 메시지가 없거나 system/agent 아님 - 대기 중`);
                     return true;
                 }
                 
                 // 다음 메시지가 system/agent이지만 내용이 비어있거나 로딩 중인 경우
                 if ((nextMessage.role === 'system' || nextMessage.role === 'agent') && 
                     (!nextMessage.content || nextMessage.content.trim() === '' || nextMessage.isLoading)) {
-                    console.log(`⏳ [isWaitingForLLMResponse] 다음 메시지 내용이 비어있음 - 대기 중`);
                     return true;
                 }
                 
                 // 다음 메시지가 system/agent이고 내용이 있으면 응답 완료
-                console.log(`✅ [isWaitingForLLMResponse] 다음 메시지가 system/agent이고 내용 있음 - 응답 완료`);
                 return false;
             }
             
-            console.log(`❌ [isWaitingForLLMResponse] intervention 정보 없음`);
             return false;
         },
         // 클립보드에서 이미지 붙여넣기 처리 함수

@@ -995,27 +995,14 @@ export default {
         async handleAgentIntervention(text, chatRoomId, userId) {
             // 에이전트 개입 로직을 비동기로 처리
             try {
-                const response = await axios.post('/completion/chat/message', {
+                const response = await axios.post('/langchain-chat/intervention', {
                     text: text,
                     chat_room_id: chatRoomId,
                     user_id: userId
                 });
                 
-                // 디버깅 정보 출력 (콘솔만)
-                console.group('🤖 에이전트 개입 디버그 정보');
-                console.log('📝 사용자 메시지:', text);
-                console.log('💬 채팅방 ID:', chatRoomId);
-                console.log('📊 응답 데이터:', response.data);
-                
                 if (response.data && response.data.intervention) {
                     const intervention = response.data.intervention;
-                    console.log('✅ 개입 여부:', intervention.should_intervene ? '개입함' : '개입 안함');
-                    console.log('📌 선택된 에이전트:', intervention.selected_agent_id || '없음');
-                    console.log('💭 개입 이유:', intervention.reason || '없음');
-                    
-                    if (intervention.agent_response) {
-                        console.log('🤖 에이전트 응답:', intervention.agent_response);
-                    }
                     
                     // 개입 정보를 사용자 메시지에 즉시 반영
                     // 방금 추가한 사용자 메시지를 찾아서 jsonContent 업데이트
@@ -1044,27 +1031,8 @@ export default {
                             selected_agent_id: intervention.selected_agent_id || null,
                             agent_name: intervention.agent_response?.agent_name || null
                         };
-                        
-                        console.log('✅ 사용자 메시지 업데이트 완료:', {
-                            messageContent: userMessage.content?.substring(0, 50),
-                            should_intervene: userMessage.jsonContent.intervention.should_intervene,
-                            status: userMessage.jsonContent.intervention.status,
-                            fullMessage: userMessage
-                        });
-                    } else {
-                        console.warn('⚠️ 사용자 메시지를 찾을 수 없음:', {
-                            searchText: text.substring(0, 50),
-                            messagesCount: this.messages.length,
-                            lastMessages: this.messages.slice(-3).map(m => ({
-                                content: m.content?.substring(0, 30),
-                                email: m.email
-                            }))
-                        });
                     }
-                } else {
-                    console.log('⚠️ 개입 정보 없음');
                 }
-                console.groupEnd();
                 
                 // Supabase 실시간 구독이 이미 설정되어 있으므로, getMessages를 호출할 필요 없음
                 // 백엔드에서 메시지가 저장되면 실시간 구독을 통해 자동으로 messages 배열에 추가됨
