@@ -31,7 +31,7 @@
                     variant="text"
                     size="small"
                     class="add-tab-btn"
-                    @click="addNewTab"
+                    @click="addNewTab()"
                 >
                     <v-icon>mdi-plus</v-icon>
                 </v-btn>
@@ -286,7 +286,7 @@ export default {
             }
             this.hoveredTabIndex = null;
         },
-        async addNewTab(autoMessage = null) {
+        async addNewTab(autoMessage) {
             try {
                 const tabId = this.uuid();
                 const tabTitle = `새 대화 ${this.tabCounter++}`;
@@ -296,7 +296,7 @@ export default {
                     id: tabId,
                     title: tabTitle,
                     workItemId: null,
-                    autoMessage: autoMessage // 자동 전송 메시지
+                    autoMessage: autoMessage || null // 자동 전송 메시지
                 });
                 
                 // 새 탭으로 전환

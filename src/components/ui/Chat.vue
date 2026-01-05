@@ -715,29 +715,13 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
-                    <div v-if="!definitionMapOnlyInput" style="position:relative; z-index: 9999;">
-                        <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
+                    <div v-if="!definitionMapOnlyInput" style="position:relative; z-index: 9999; margin-bottom: 10px;">
+                        <v-row class="pa-0 ma-0">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                <!-- <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
-                                            style="width:30px; height:30px;" :disabled="disableChat">
-                                            <Icons :icon="'document'" :size="20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip> -->
-                                <!-- <v-tooltip v-if="isMobile" :text="$t('chat.camera')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                            <Icons :icon="'camera'" :size="20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip> -->
                                 <v-tooltip :text="$t('chat.addImage')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            style="width:30px; height:30px;" :disabled="disableChat">
                                             <Icons :icon="'add-media-image'" :size="20" />
                                         </v-btn>
                                     </template>
@@ -756,7 +740,7 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && (agentInfo && !agentInfo.isRunning)"
+                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting' || type == 'monitor') && (agentInfo && !agentInfo.isRunning)"
                                     ref="uploadForm" @submit.prevent="openChatMenu(); submitFile()"
                                     style="height:30px;"
                                     class="chat-selected-file"
@@ -1726,20 +1710,15 @@ export default {
             var me = this
             if (!me.file) return;
             const fileName = me.file[0].name;
-            const fileObj = {
-                chat_room_id: me.chatRoomId,
-                user_name: me.userInfo.name
-            }
-            backend.uploadFile(fileName, me.file[0], fileObj).then((response) => {
+            backend.uploadFile(fileName, me.file[0]).then((response) => {
                 me.$try({
                     action: async () => {
-                        console.log(response);
+                        me.$emit('uploadedFile', response);
                         this.file = null
                     },
                     successMsg: '파일 업로드가 완료되었습니다.'
                 })
             });
-            
             // me.$try({
             //     action: async () => {
             //         if (!me.file) return;

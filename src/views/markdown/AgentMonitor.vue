@@ -77,11 +77,12 @@
                 :messages="chatMessages"
                 :agentInfo="{ isRunning: isLoading, isConnection: false }"
                 :disableChat="isLoading"
-                type="chats"
                 :userInfo="{ name: '', email: '' }"
                 :chatRoomId="getTaskIdFromWorkItem()"
+                type="monitor"
                 @sendMessage="submitChat"
                 @stopMessage="stopTask"
+                @uploadedFile="handleUploadedFile"
             >
                 <template #custom-input-tools>
                     <div v-if="isGeneralAgent" class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
@@ -1145,7 +1146,7 @@ export default {
             try {
                 const { data, error } = await window.$supabase
                     .from('todolist')
-                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft')
+                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft, query')
                     .eq('id', taskId)
                     .single();
 
@@ -1294,6 +1295,21 @@ export default {
                 });
             } catch (error) {
                 this.handleError(error, '채팅 전송 중 오류가 발생했습니다');
+            }
+        },
+        async handleUploadedFile(response) {
+            if (response && response.publicUrl) {
+                var me = this;
+                const taskId = this.validateTaskId();
+                if (!taskId) return;
+
+                const query = me.todoStatus.query;
+                const responseStr = JSON.stringify(response);
+                const newQuery = query ? `${query}\n\n[InputData]\n${responseStr}` : `[InputData]\n${responseStr}`;
+
+                await this.backend.putWorkItem(taskId, {
+                    query: newQuery
+                });
             }
         },
         // ========================================
