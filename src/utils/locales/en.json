@@ -111,6 +111,7 @@
     },
     "chats": {
         "title": "Chats",
+        "groupChat": "Group Chat",
         "document": "Work Instructions",
         "assignTask": "Assign Task",
         "requestCancelled": "{name}'s request has been cancelled.",
@@ -1006,7 +1007,9 @@
         "deleteChatRoom": "Delete Chat Room",
         "confirmDeleteChatRoom": "Are you sure you want to delete this chat room?",
         "enterChatRoomName": "Please enter a chat room name.",
-        "selectAtLeastOneParticipant": "Please select at least one participant."
+        "selectAtLeastOneParticipant": "Please select at least one participant.",
+        "createGroupChat": "Create Group Chat",
+        "newChatRoom": "New Chat Room"
     },
     "userListing": {
         "search": "User search",

@@ -1,7 +1,28 @@
 <template>
     <v-sheet>
-        <div class="px-6 pt-3">
-            <v-row class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0"
+        <div class="px-6 pt-3" :style="enableGroupChat ? 'width: 100%; box-sizing: border-box;' : ''">
+            <div v-if="enableGroupChat" class="d-flex align-center" style="gap: 8px; width: 100%; box-sizing: border-box;">
+                <div class="d-flex align-center border border-borderColor header-search rounded-pill px-5"
+                    style="flex: 1 1 0; min-width: 0; max-width: 100%;"
+                >
+                    <Icons :icon="'magnifer-linear'" :size="22" style="flex-shrink: 0;" />
+                    <v-text-field v-model="searchValue" variant="plain" density="compact"
+                        class="position-relative pt-0 ml-3 custom-placeholer-color" :placeholder="$t('chatListing.search')"
+                        single-line hide-details style="flex: 1; min-width: 0;"
+                    ></v-text-field>
+                </div>
+                <v-btn @click="openDialog"
+                    density="comfortable" 
+                    icon
+                    color="primary"
+                    variant="flat"
+                    style="flex-shrink: 0;"
+                >
+                    <v-icon>mdi-chat-plus</v-icon>
+                    <v-tooltip activator="parent" location="bottom">{{ $t('chatListing.createGroupChat') || '단톡방 만들기' }}</v-tooltip>
+                </v-btn>
+            </div>
+            <v-row v-else class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0"
                 style="min-width:100%;"
             >
                 <Icons :icon="'magnifer-linear'" :size="22" />
@@ -58,7 +79,10 @@
                 </v-btn>
             </v-row>
             <v-card-text class="ma-0 pa-0 pb-2 pt-4">
-                <v-text-field :label="$t('chatListing.chatRoomName')" v-model="inputObj.name" :rules="nameRules"></v-text-field>
+                <v-text-field :label="$t('chatListing.chatRoomName')" v-model="inputObj.name" :rules="nameRules" 
+                    :hint="enableGroupChat ? '비워두면 자동으로 생성됩니다' : undefined" 
+                    :persistent-hint="enableGroupChat"
+                ></v-text-field>
                 <v-autocomplete v-model="inputObj.participants" :items="userList" chips closable-chips
                     color="blue-grey-lighten-2" item-title="username" :item-value="item => item" multiple :label="$t('chatListing.selectParticipants')"
                     small-chips :item-avatar="'image'" :rules="participantsRules">
@@ -141,7 +165,7 @@
                                 </template>
                                 <template v-else>
                                     <!-- 참가자가 여러 명이며 본인을 제외한 경우 -->
-                                    <div v-for="(participant, index) in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)"
+                                    <div v-for="participant in chat.participants.filter(participant => participant.email !== userInfo.email).slice(0, 4)"
                                         :key="participant.id" style="width: 50%; height: 50%; position: relative;">
                                         <img :src="getProfile(participant)" :alt="participant.username"
                                             style="width: 100%; height: 100%; object-fit: cover;" />
@@ -221,7 +245,11 @@ export default {
         userList: Array,
         userInfo: Object,
         chatRoomId: String,
-        closeDrawer: Function
+        closeDrawer: Function,
+        enableGroupChat: {
+            type: Boolean,
+            default: false
+        }
     },
     emits: ['chat-selected', 'create-chat-room', 'delete-chat-room'],
     data() {
@@ -251,9 +279,15 @@ export default {
             return this.chatRoomList;
         },
         nameRules() {
-            return [
-                v => !!v || this.$t('chatListing.enterChatRoomName'),
-            ];
+            if (this.enableGroupChat) {
+                // 그룹채팅: 이름은 선택사항 (자동 생성 가능)
+                return [];
+            } else {
+                // 일반 채팅: 이름은 필수
+                return [
+                    v => !!v || this.$t('chatListing.enterChatRoomName'),
+                ];
+            }
         },
         participantsRules() {
             return [
@@ -383,12 +417,42 @@ export default {
             }
         },
         confirmDialog() {
-            if (!this.inputObj.name || !this.inputObj.participants.length) {
-                console.log('Invalid input');
+            if (!this.inputObj.participants || this.inputObj.participants.length === 0) {
+                console.log('Invalid input: 최소 1명의 참가자가 필요합니다.');
                 return;
             }
+            
+            if (this.enableGroupChat) {
+                // 그룹채팅: 채팅방 이름이 없고 참가자가 2명 이상이면 자동 생성
+                if (!this.inputObj.name && this.inputObj.participants.length >= 2) {
+                    const participantNames = this.inputObj.participants
+                        .map(p => p.username || p.email)
+                        .slice(0, 3); // 최대 3명까지만 표시
+                    this.inputObj.name = participantNames.join(', ');
+                    if (this.inputObj.participants.length > 3) {
+                        this.inputObj.name += ` 외 ${this.inputObj.participants.length - 3}명`;
+                    }
+                } else if (!this.inputObj.name && this.inputObj.participants.length === 1) {
+                    // 참가자가 1명인 경우 그 사람 이름 사용
+                    this.inputObj.name = this.inputObj.participants[0].username || this.inputObj.participants[0].email;
+                }
+            } else {
+                // 일반 채팅: 이름 필수
+                if (!this.inputObj.name) {
+                    console.log('Invalid input');
+                    return;
+                }
+            }
+            
+            // chat_type 설정: enableGroupChat이 true이면 'group', 아니면 'single'
+            this.inputObj.chat_type = this.enableGroupChat ? 'group' : 'single';
+            
             this.$emit('create-chat-room', this.inputObj);
             this.dialog = false;
+            this.inputObj = {
+                name: '',
+                participants: []
+            };
         },
         openDialog() {
             this.inputObj = {

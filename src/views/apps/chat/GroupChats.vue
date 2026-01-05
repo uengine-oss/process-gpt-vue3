@@ -13,8 +13,8 @@
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
-                    <v-tabs-items v-model="activeTab">
-                        <v-tab-item v-if="activeTab == 0">
+                    <v-window v-model="activeTab">
+                        <v-window-item :value="0">
                             <!-- <ChatProfile style="margin-bottom: -15px;" /> -->
                             <!-- <v-divider class="my-2"></v-divider> -->
                             <UserListing 
@@ -22,27 +22,29 @@
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
-                        </v-tab-item>
-                        <v-tab-item v-if="activeTab == 1">
+                        </v-window-item>
+                        <v-window-item :value="1">
                             <ChatListing 
                                 :chatRoomList="filteredChatRoomList" 
                                 :userList="userList" 
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
                                 :closeDrawer="closeDrawer"
+                                :enableGroupChat="true"
                                 @chat-selected="chatRoomSelected" 
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
-                        </v-tab-item>
-                    </v-tabs-items>
+                        </v-window-item>
+                    </v-window>
                 </div>
             </template>
             <template v-slot:rightpart>
                 <div :key="chatRenderKey"
                     class="chat-info-view-wrapper-chats"
                 >
-                    <Chat
+                    <GroupChat
+                        ref="chatTempRef"
                         :messages="messages"
                         :userInfo="userInfo"
                         :userList="userList"
@@ -53,7 +55,7 @@
                         :isSystemChat="isSystemChat"
                         :chatRoomId="chatRoomId"
                         :newMessageInfo="newMessageInfo"
-                        :participantUsers="participantUsers"
+                        :participantUsers="computedParticipantUsers"
                         @requestDraftAgent="requestDraftAgent"
                         @requestFile="requestFile"
                         @beforeReply="beforeReply"
@@ -85,7 +87,7 @@
                                 </div>
                             </div>
                         </template>
-                    </Chat>
+                    </GroupChat>
                 </div>
             </template>
 
@@ -101,8 +103,8 @@
                             {{ $t('chat.chatRoom') }}
                         </v-tab>
                     </v-tabs>
-                    <v-tabs-items v-model="activeTab">
-                        <v-tab-item v-if="activeTab == 0">
+                    <v-window v-model="activeTab">
+                        <v-window-item :value="0">
                             <!-- <ChatProfile style="margin-bottom: -15px;" /> -->
                             <!-- <v-divider class="my-2"></v-divider> -->
                             <UserListing 
@@ -110,20 +112,21 @@
                                 @selectedUser="selectedUser"
                                 @startChat="startChat"
                             />
-                        </v-tab-item>
-                        <v-tab-item v-if="activeTab == 1">
+                        </v-window-item>
+                        <v-window-item :value="1">
                             <ChatListing 
                                 :chatRoomList="filteredChatRoomList" 
                                 :userList="userList" 
                                 :userInfo="userInfo"
                                 :chatRoomId="chatRoomId"
                                 :closeDrawer="closeDrawer"
+                                :enableGroupChat="true"
                                 @chat-selected="chatRoomSelected" 
                                 @create-chat-room="createChatRoom"
                                 @delete-chat-room="deleteChatRoom"
                             />
-                        </v-tab-item>
-                    </v-tabs-items>
+                        </v-window-item>
+                    </v-window>
                 </div>
             </template>
         </AppBaseCard>
@@ -236,16 +239,16 @@ import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import UserListing from '@/components/apps/chats/UserListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
-import Chat from "@/components/ui/Chat.vue";
+import GroupChat from "@/components/ui/GroupChat.vue";
 import axios from 'axios';
 import partialParse from "partial-json-parser";
 
 
 export default {
     mixins: [ChatModule],
-    name: 'Chats',
+    name: 'GroupChats',
     components: {
-        Chat,
+        GroupChat,
         AppBaseCard,
         ChatListing,
         UserListing,
@@ -271,7 +274,7 @@ export default {
             type: Object,
             default: null
         },
-        participantUsers: {
+        participantUsersProp: {
             type: Array,
             default: () => []
         }
@@ -308,12 +311,27 @@ export default {
     }),
     computed: {
         filteredChatRoomList() {
-            // 일반 채팅: chat_type이 'single'이거나 없는 채팅방만 필터링 (기존 데이터 호환성)
-            const singleChatRooms = this.chatRoomList.filter(room => 
-                !room.chat_type || room.chat_type === 'single'
+            // 그룹채팅: chat_type이 'group'인 채팅방만 필터링
+            const groupChatRooms = this.chatRoomList.filter(room => 
+                room.chat_type === 'group'
             );
-            return singleChatRooms.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
+            return groupChatRooms.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
         },
+        computedParticipantUsers() {
+            // prop으로 받은 participantUsersProp이 있으면 사용, 없으면 currentChatRoom의 participants 사용
+            if (this.participantUsersProp && this.participantUsersProp.length > 0) {
+                return this.participantUsersProp;
+            }
+            if (this.currentChatRoom && this.currentChatRoom.participants) {
+                return this.currentChatRoom.participants.map(participant => ({
+                    id: participant.id,
+                    email: participant.email,
+                    username: participant.username || participant.email,
+                    profile: participant.profile || '/images/defaultUser.png'
+                }));
+            }
+            return [];
+        }
     },
     watch: {
         currentChatRoom: {
@@ -366,7 +384,7 @@ export default {
         if (this.$route.query.openWorkOrder === 'true') {
             this.startWorkOrder();
             // query parameter 제거
-            this.$router.replace({ path: '/chats' });
+            this.$router.replace({ path: '/chats-temp' });
         }
         
         if (this.currentChatRoom && this.currentChatRoom.id) {
@@ -387,6 +405,22 @@ export default {
         this.EventBus.emit('chat-room-unselected');
     },
     methods: {
+        restoreInputFocus() {
+            // GroupChat 컴포넌트의 입력 필드에 포커스 복원
+            if (this.$refs.chatTempRef) {
+                // GroupChat 컴포넌트의 입력 필드(textarea) 찾기
+                const textarea = this.$refs.chatTempRef.$el?.querySelector('textarea.message-input-box, textarea.cp-chat');
+                if (textarea) {
+                    // 약간의 지연을 두고 포커스 설정 (리렌더링 완료 후)
+                    setTimeout(() => {
+                        textarea.focus();
+                        // 커서를 텍스트 끝으로 이동
+                        const length = textarea.value.length;
+                        textarea.setSelectionRange(length, length);
+                    }, 50);
+                }
+            }
+        },
         toggleAttachments() {
             this.isAttachmentsOpen = !this.isAttachmentsOpen;
         },
@@ -537,14 +571,73 @@ export default {
         },
         async getChatRoomList(){
             var me = this
-            let chatRooms = await me.backend.getChatRoomList(`chat_rooms`)
+            
+            // RLS 정책 문제 해결: 직접 Supabase 쿼리 사용
+            // 참가자 목록에 현재 사용자가 있는 채팅방도 가져오기 위해 여러 방법 시도
+            const currentUserEmail = me.userInfo.email;
+            const userTenantId = me.userInfo.tenant_id || 'localhost';
+            
+            let chatRooms = [];
+            try {
+                // 방법 1: tenant_id로 필터링 시도
+                const { data: data1, error: error1 } = await window.$supabase
+                    .from('chat_rooms')
+                    .select('*')
+                    .eq('tenant_id', userTenantId);
+                
+                if (!error1 && data1) {
+                    chatRooms = data1;
+                }
+                
+                // 방법 2: 참가자 목록에 현재 사용자가 있는 채팅방도 추가로 가져오기
+                // JSONB 쿼리로 participants 배열에서 email 검색
+                const { data: data2, error: error2 } = await window.$supabase
+                    .from('chat_rooms')
+                    .select('*')
+                    .contains('participants', JSON.stringify([{ email: currentUserEmail }]));
+                
+                if (!error2 && data2) {
+                    // 중복 제거
+                    const existingIds = new Set(chatRooms.map(r => r.id));
+                    const newRooms = data2.filter(r => !existingIds.has(r.id));
+                    chatRooms = [...chatRooms, ...newRooms];
+                }
+                
+            } catch (e) {
+                // 폴백: 기존 방법 사용
+                chatRooms = await me.backend.getChatRoomList(`chat_rooms`) || [];
+            }
+            
             if (chatRooms) {
                 me.myChatRoomIds = []
+                me.chatRoomList = [] // 초기화
+                
                 chatRooms.forEach(function (chatRoom) {
-                    let existUserInfo = chatRoom.participants.find(x => x.email === me.userInfo.email)
+                    // participants가 배열인지 확인
+                    if (!chatRoom.participants || !Array.isArray(chatRoom.participants)) {
+                        return;
+                    }
+                    
+                    // email 비교 (대소문자 무시, trim 처리)
+                    const currentUserEmail = (me.userInfo.email || '').toLowerCase().trim();
+                    
+                    let existUserInfo = chatRoom.participants.find(participant => {
+                        if (!participant || !participant.email) {
+                            return false;
+                        }
+                        const participantEmail = (participant.email || '').toLowerCase().trim();
+                        return participantEmail === currentUserEmail;
+                    });
+                    
                     if(existUserInfo){
+                        // 참가자 정보가 없거나 불완전한 경우 보완
+                        if (existUserInfo.isExistUnReadMessage === undefined) {
+                            existUserInfo.isExistUnReadMessage = false;
+                        }
+                        
                         me.chatRoomList.push(chatRoom)
                         me.myChatRoomIds.push(chatRoom.id)
+                        
                         if(existUserInfo.isExistUnReadMessage){
                             window.dispatchEvent(new CustomEvent('update-notification-badge', {
                                 detail: { type: 'chat', value: true, id: chatRoom.id }
@@ -552,7 +645,8 @@ export default {
                         }
                     }
                 });
-                // 필터링된 일반 채팅방이 있으면 첫 번째 채팅방 선택
+                
+                // 필터링된 그룹채팅방이 있으면 첫 번째 채팅방 선택
                 if(me.filteredChatRoomList.length > 0){
                     me.currentChatRoom = me.filteredChatRoomList[0];
                     me.chatRoomSelected(me.currentChatRoom)
@@ -590,44 +684,207 @@ export default {
                 this.messages = []
             }
         },
-        createChatRoom(chatRoomInfo){
+        async createChatRoom(chatRoomInfo){
+            // 기존 채팅방 수정인지 확인
+            const isEditMode = chatRoomInfo.id && this.chatRoomList.find(room => room.id === chatRoomInfo.id);
+            
             if(!chatRoomInfo.id){
                 chatRoomInfo.id = this.uuid();
             }
-            // chatRoomInfo.participants.forEach(participant => {
-            //     delete participant.profile;
-            // });
-            if(!chatRoomInfo.participants.find(p => p.email === this.userInfo.email)){
-                let userInfo = {
-                    "id": this.userInfo.uid,
-                    "username": this.userInfo.name,
-                    "email": this.userInfo.email,
-                }
-                chatRoomInfo.participants.push(userInfo)
-            }
-            // chat_type이 없으면 기본값 'single'로 설정
-            if(!chatRoomInfo.chat_type){
-                chatRoomInfo.chat_type = 'single';
-            }
-            let currentTimestamp = Date.now()
-            chatRoomInfo.message = {
-                "msg": "NEW",
-                "type": "text",
-                "createdAt": currentTimestamp
-            }
-            this.chatRoomList.push(chatRoomInfo)
-            // } 
-            // else {
-            //     let index = this.chatRoomList.findIndex(room => room.id === chatRoomInfo.id);
-            //     if(index !== -1) {
-            //         this.chatRoomList.splice(index, 1, chatRoomInfo);
-            //     }
-            // }
             
-            this.putObject(`chat_rooms`, chatRoomInfo);
-            this.chatRoomSelected(chatRoomInfo)
-            this.myChatRoomIds.push(chatRoomInfo.id);
-            this.setWatchChatList(this.myChatRoomIds);
+            // 참가자 정보 정규화: userList에서 정확한 정보 가져오기
+            const normalizedParticipants = [];
+            const addedParticipantIds = new Set(); // 중복 체크용
+            
+            chatRoomInfo.participants.forEach(participant => {
+                // 참가자 ID 추출 (id 또는 email 기반)
+                const participantId = participant.id || participant.email;
+                
+                // 이미 추가된 참가자인지 확인 (중복 방지)
+                if (addedParticipantIds.has(participantId)) {
+                    console.warn('중복된 참가자 건너뛰기:', participant.username || participant.email || participant.id);
+                    return;
+                }
+                
+                // userList에서 정확한 사용자 정보 찾기
+                // 에이전트의 경우 email이 null일 수 있으므로 id로 먼저 비교
+                const userFromList = this.userList.find(u => {
+                    // ID로 먼저 비교 (에이전트의 경우 email이 null일 수 있음)
+                    if (u.id === participant.id) {
+                        return true;
+                    }
+                    // email이 있는 경우 email로 비교
+                    if (participant.email && u.email && u.email === participant.email) {
+                        return true;
+                    }
+                    // uid로도 비교 시도
+                    if (u.uid === participant.id) {
+                        return true;
+                    }
+                    return false;
+                });
+                
+                if (userFromList) {
+                    const normalizedId = userFromList.id || userFromList.uid;
+                    // 중복 체크
+                    if (addedParticipantIds.has(normalizedId)) {
+                        console.warn('중복된 참가자 건너뛰기 (userList에서 찾은 경우):', userFromList.username || userFromList.email || normalizedId);
+                        return;
+                    }
+                    
+                    normalizedParticipants.push({
+                        id: normalizedId,
+                        username: userFromList.username || userFromList.name,
+                        email: userFromList.email,
+                        is_admin: userFromList.is_admin || false,
+                        notifications: userFromList.notifications || null,
+                        profile: userFromList.profile || null,
+                        isExistUnReadMessage: false // 초기 상태
+                    });
+                    addedParticipantIds.add(normalizedId);
+                } else {
+                    // userList에 없으면 원본 정보 사용 (시스템 사용자 등)
+                    // 중복 체크
+                    if (addedParticipantIds.has(participantId)) {
+                        console.warn('중복된 참가자 건너뛰기 (원본 정보 사용):', participant.username || participant.email || participant.id);
+                        return;
+                    }
+                    
+                    normalizedParticipants.push({
+                        id: participant.id,
+                        username: participant.username || participant.name,
+                        email: participant.email,
+                        is_admin: participant.is_admin || false,
+                        notifications: participant.notifications || null,
+                        profile: participant.profile || null,
+                        isExistUnReadMessage: false
+                    });
+                    addedParticipantIds.add(participantId);
+                }
+            });
+            
+            // 현재 사용자가 참가자 목록에 없으면 추가
+            const currentUserId = this.userInfo.uid || this.userInfo.id;
+            const currentUserEmail = this.userInfo.email;
+            const isCurrentUserAdded = normalizedParticipants.some(p => 
+                (p.id === currentUserId) || 
+                (currentUserEmail && p.email === currentUserEmail)
+            );
+            
+            if(!isCurrentUserAdded){
+                normalizedParticipants.push({
+                    id: currentUserId,
+                    username: this.userInfo.name,
+                    email: currentUserEmail,
+                    is_admin: this.userInfo.is_admin || false,
+                    notifications: this.userInfo.notifications || null,
+                    profile: this.userInfo.profile || null,
+                    isExistUnReadMessage: false
+                });
+                addedParticipantIds.add(currentUserId);
+            }
+            
+            chatRoomInfo.participants = normalizedParticipants;
+            
+            // tenant_id 설정 (RLS 정책을 통과하기 위해 필수)
+            // users 테이블에서 가져온 현재 사용자의 tenant_id 사용
+            if (!chatRoomInfo.tenant_id) {
+                chatRoomInfo.tenant_id = this.userInfo.tenant_id || window.$tenantName || 'localhost';
+            }
+            
+            // 채팅방 이름이 없으면 자동 생성 (단톡방인 경우)
+            if(!chatRoomInfo.name && chatRoomInfo.participants.length > 2) {
+                // 현재 사용자를 제외한 참가자들의 이름으로 채팅방 이름 생성
+                const otherParticipants = chatRoomInfo.participants
+                    .filter(p => p.email !== this.userInfo.email)
+                    .map(p => p.username || p.email);
+                chatRoomInfo.name = otherParticipants.join(', ');
+            } else if(!chatRoomInfo.name && chatRoomInfo.participants.length === 2) {
+                // 1:1 채팅인 경우 상대방 이름 사용
+                const otherParticipant = chatRoomInfo.participants.find(p => p.email !== this.userInfo.email);
+                if(otherParticipant) {
+                    chatRoomInfo.name = otherParticipant.username || otherParticipant.email;
+                }
+            }
+            
+            if (isEditMode) {
+                // 기존 채팅방 수정
+                const index = this.chatRoomList.findIndex(room => room.id === chatRoomInfo.id);
+                if (index !== -1) {
+                    // 메시지는 유지
+                    if (!chatRoomInfo.message) {
+                        chatRoomInfo.message = this.chatRoomList[index].message;
+                    }
+                    // 기존 참가자들의 읽음 상태 유지
+                    chatRoomInfo.participants.forEach(newParticipant => {
+                        const existingParticipant = this.chatRoomList[index].participants.find(
+                            p => p.email === newParticipant.email
+                        );
+                        if (existingParticipant && existingParticipant.isExistUnReadMessage !== undefined) {
+                            newParticipant.isExistUnReadMessage = existingParticipant.isExistUnReadMessage;
+                        }
+                    });
+                    this.chatRoomList.splice(index, 1, chatRoomInfo);
+                    this.putObject(`chat_rooms`, chatRoomInfo);
+                    // 현재 선택된 채팅방이면 업데이트
+                    if (this.currentChatRoom && this.currentChatRoom.id === chatRoomInfo.id) {
+                        this.currentChatRoom = chatRoomInfo;
+                    }
+                }
+            } else {
+                // 새 채팅방 생성
+                // chat_type이 없으면 기본값 'group'으로 설정 (그룹채팅 페이지이므로)
+                if(!chatRoomInfo.chat_type){
+                    chatRoomInfo.chat_type = 'group';
+                }
+                let currentTimestamp = Date.now()
+                chatRoomInfo.message = {
+                    "msg": "NEW",
+                    "type": "text",
+                    "createdAt": currentTimestamp
+                }
+                
+                // 모든 참가자에게 초기 읽지 않음 상태 설정 (생성자는 제외)
+                chatRoomInfo.participants.forEach(participant => {
+                    if (participant.email !== this.userInfo.email) {
+                        participant.isExistUnReadMessage = true; // 다른 참가자들은 읽지 않음
+                    } else {
+                        participant.isExistUnReadMessage = false; // 생성자는 읽음
+                    }
+                });
+                
+                // 중복 체크: 같은 참가자들로 구성된 채팅방이 이미 있는지 확인 (1:1 채팅만)
+                if (chatRoomInfo.participants.length === 2) {
+                    const existingRoom = this.chatRoomList.find(room => {
+                        if(room.participants.length !== chatRoomInfo.participants.length) {
+                            return false;
+                        }
+                        const roomEmails = room.participants.map(p => p.email).sort();
+                        const newRoomEmails = chatRoomInfo.participants.map(p => p.email).sort();
+                        return JSON.stringify(roomEmails) === JSON.stringify(newRoomEmails);
+                    });
+                    
+                    if(existingRoom) {
+                        // 이미 존재하는 채팅방이면 해당 채팅방 선택
+                        this.chatRoomSelected(existingRoom);
+                        return;
+                    }
+                }
+                
+                this.chatRoomList.push(chatRoomInfo)
+                
+                // DB에 저장 (에러 처리 추가)
+                try {
+                    await this.putObject(`chat_rooms`, chatRoomInfo);
+                } catch (error) {
+                    // 저장 실패해도 로컬에서는 사용 가능하도록 함
+                    // 하지만 다른 사용자에게는 보이지 않음
+                }
+                
+                this.chatRoomSelected(chatRoomInfo)
+                this.myChatRoomIds.push(chatRoomInfo.id);
+                this.setWatchChatList(this.myChatRoomIds);
+            }
         },
         setReadMessage(idx){
             if(idx !== -1) {
@@ -705,14 +962,129 @@ export default {
         },
         async beforeSendMessage(newMessage) {
             if (newMessage && (newMessage.text != '' || (newMessage.images && newMessage.images.length > 0) || newMessage.image != null)) {
-                this.putMessage(this.createMessageObj(newMessage))
+                // 사용자 메시지를 먼저 화면에 표시 (즉시 반응)
+                const userMessageObj = this.createMessageObj(newMessage);
+                // messages 배열에 즉시 추가하여 화면에 표시
+                // putMessage는 호출하지 않음 - 백엔드에서 저장하므로 중복 방지
+                this.messages.push(userMessageObj);
                 newMessage.callType = 'chats'
-                this.sendMessage(newMessage);
+                
+                // 텍스트 메시지인 경우 에이전트 개입 로직을 비동기로 처리
+                if (newMessage.text && this.currentChatRoom && this.currentChatRoom.id) {
+                    // 에이전트 개입 로직을 비동기로 처리 (await 제거)
+                    // 사용자 메시지는 이미 화면에 표시되었으므로 백그라운드에서 처리
+                    this.handleAgentIntervention(newMessage.text, this.currentChatRoom.id, this.userInfo.email).catch(error => {
+                        console.error('❌ 에이전트 개입 처리 실패:', error);
+                        console.error('에러 상세:', error.response?.data || error.message);
+                        // 실패 시 기존 로직 사용
+                        this.sendMessage(newMessage);
+                    });
+                } else {
+                    // 이미지만 있거나 텍스트가 없으면 기존 로직 사용
+                    // 이 경우에는 putMessage를 호출해야 함 (백엔드 개입 로직이 없으므로)
+                    this.putMessage(userMessageObj);
+                    this.sendMessage(newMessage);
+                }
                 
                 // saveAccessPage 에러 무시 (Promise rejection 처리)
                 this.backend.saveAccessPage(this.userInfo.email, 'chat:' + this.currentChatRoom.id).catch(e => {
                     console.warn('saveAccessPage 실패:', e);
                 });
+            }
+        },
+        async handleAgentIntervention(text, chatRoomId, userId) {
+            // 에이전트 개입 로직을 비동기로 처리
+            try {
+                const response = await axios.post('/completion/chat/message', {
+                    text: text,
+                    chat_room_id: chatRoomId,
+                    user_id: userId
+                });
+                
+                // 디버깅 정보 출력 (콘솔만)
+                console.group('🤖 에이전트 개입 디버그 정보');
+                console.log('📝 사용자 메시지:', text);
+                console.log('💬 채팅방 ID:', chatRoomId);
+                console.log('📊 응답 데이터:', response.data);
+                
+                if (response.data && response.data.intervention) {
+                    const intervention = response.data.intervention;
+                    console.log('✅ 개입 여부:', intervention.should_intervene ? '개입함' : '개입 안함');
+                    console.log('📌 선택된 에이전트:', intervention.selected_agent_id || '없음');
+                    console.log('💭 개입 이유:', intervention.reason || '없음');
+                    
+                    if (intervention.agent_response) {
+                        console.log('🤖 에이전트 응답:', intervention.agent_response);
+                    }
+                    
+                    // 개입 정보를 사용자 메시지에 즉시 반영
+                    // 방금 추가한 사용자 메시지를 찾아서 jsonContent 업데이트
+                    // 가장 최근에 추가된 사용자 메시지를 찾음 (내림차순으로 검색)
+                    let userMessage = null;
+                    for (let i = this.messages.length - 1; i >= 0; i--) {
+                        const msg = this.messages[i];
+                        if (msg.content === text && 
+                            msg.email === this.userInfo.email) {
+                            userMessage = msg;
+                            break;
+                        }
+                    }
+                    
+                    if (userMessage) {
+                        // jsonContent가 없으면 생성 (Vue 3는 반응성이 자동 처리됨)
+                        if (!userMessage.jsonContent) {
+                            userMessage.jsonContent = {};
+                        }
+                        
+                        // 개입 정보 업데이트 (Vue 3는 직접 할당해도 반응성 유지)
+                        userMessage.jsonContent.intervention = {
+                            should_intervene: intervention.should_intervene || false,
+                            status: intervention.should_intervene ? 'intervening' : 'not_intervening',
+                            reason: intervention.reason || '',
+                            selected_agent_id: intervention.selected_agent_id || null,
+                            agent_name: intervention.agent_response?.agent_name || null
+                        };
+                        
+                        console.log('✅ 사용자 메시지 업데이트 완료:', {
+                            messageContent: userMessage.content?.substring(0, 50),
+                            should_intervene: userMessage.jsonContent.intervention.should_intervene,
+                            status: userMessage.jsonContent.intervention.status,
+                            fullMessage: userMessage
+                        });
+                    } else {
+                        console.warn('⚠️ 사용자 메시지를 찾을 수 없음:', {
+                            searchText: text.substring(0, 50),
+                            messagesCount: this.messages.length,
+                            lastMessages: this.messages.slice(-3).map(m => ({
+                                content: m.content?.substring(0, 30),
+                                email: m.email
+                            }))
+                        });
+                    }
+                } else {
+                    console.log('⚠️ 개입 정보 없음');
+                }
+                console.groupEnd();
+                
+                // Supabase 실시간 구독이 이미 설정되어 있으므로, getMessages를 호출할 필요 없음
+                // 백엔드에서 메시지가 저장되면 실시간 구독을 통해 자동으로 messages 배열에 추가됨
+                // getMessages를 호출하면 messages 배열이 초기화되면서 리프레시가 발생하여 입력 필드 포커스가 사라짐
+                
+                // 에이전트 개입 여부와 관계없이 실시간 구독이 메시지를 자동으로 처리함
+                // 사용자 메시지는 이미 messages.push로 추가되었고,
+                // 에이전트 응답은 백엔드에서 저장되면 실시간 구독을 통해 자동으로 추가됨
+                
+                // 단, 사용자가 보낸 메시지가 실시간 구독으로 중복 추가될 수 있으므로 확인
+                // 실시간 구독의 중복 체크 로직이 있지만, 사용자 메시지는 email로 필터링됨
+                // (175줄: if (data.new.messages.email != me.userInfo.email))
+                // 따라서 사용자 메시지는 실시간 구독으로 추가되지 않음
+                
+                // 에이전트 응답만 실시간 구독으로 추가되므로, 별도 처리 불필요
+            } catch (error) {
+                console.error('❌ 에이전트 개입 처리 실패:', error);
+                console.error('에러 상세:', error.response?.data || error.message);
+                // 실패 시에도 LLM 채팅을 실행하지 않음 (에이전트 개입 시스템이 동작하지 않을 때)
+                // 사용자 메시지는 이미 화면에 표시되었으므로 그대로 둠
             }
         },
         async handleExecuteProcessRequest(executeData) {
@@ -1223,7 +1595,7 @@ export default {
                     await me.sendMessage({ text: messageText });
                     
                     // query parameter 제거
-                    me.$router.replace({ path: '/chats' });
+                    me.$router.replace({ path: '/chats-temp' });
                 }
             });
         },
@@ -1486,6 +1858,90 @@ export default {
             }
 
         },
+        // setWatchChatList 오버라이드: 그룹채팅 전용 intervention 처리 추가
+        async setWatchChatList(chatRoomIds) {
+            var me = this;
+            me.userInfo = await this.backend.getUserInfo();
+           
+            await this.backend.watchChats((data) => {
+                if(data && data.new){
+                    if(data.eventType == "DELETE"){
+                        let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);
+                        if (messageIndex !== -1) {
+                            me.messages.splice(messageIndex, 1);
+                        }
+                    } else {
+                        if (!me.currentChatRoom && me.chatRoomId) {
+                            me.currentChatRoom = {
+                                id: me.chatRoomId
+                            }
+                        }
+                        
+                        // UPDATE 이벤트인 경우: 사용자 메시지의 intervention 정보 업데이트 처리 (그룹채팅 전용)
+                        if (data.eventType == "UPDATE" && data.new.messages.email === me.userInfo.email) {
+                            if (data.new.id == me.currentChatRoom.id) {
+                                // 해당 메시지를 찾아서 jsonContent 업데이트
+                                const messageIndex = me.messages.findIndex(msg => 
+                                    msg.uuid === data.new.uuid || 
+                                    (msg.content === data.new.messages.content && 
+                                     msg.email === data.new.messages.email &&
+                                     Math.abs(msg.timeStamp - data.new.messages.timeStamp) < 5000)
+                                );
+                                
+                                if (messageIndex !== -1) {
+                                    // jsonContent.intervention이 있으면 업데이트
+                                    if (data.new.messages.jsonContent && data.new.messages.jsonContent.intervention) {
+                                        if (!me.messages[messageIndex].jsonContent) {
+                                            me.messages[messageIndex].jsonContent = {};
+                                        }
+                                        me.messages[messageIndex].jsonContent.intervention = data.new.messages.jsonContent.intervention;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (data.new.messages.email != me.userInfo.email) {
+                            if(data.new.id == me.currentChatRoom.id){
+                                if ((me.messages && me.messages.length > 0) 
+                                && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
+                                && (me.messages[me.messages.length - 1].content == 'AI 생성중...' || me.messages[me.messages.length - 1].content == '테이블 생성 중...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
+                                ) {
+                                    me.messages[me.messages.length - 1] = data.new.messages
+                                    me.messages[me.messages.length - 1].isLoading = false
+                                    me.EventBus.emit('instances-updated');
+                                } else {
+                                    // 중복 메시지 체크: uuid 또는 내용+시간으로 확인
+                                    const isDuplicate = me.messages.some(msg => 
+                                        (data.new.uuid && msg.uuid === data.new.uuid) ||
+                                        (msg.content === data.new.messages.content && 
+                                         msg.role === data.new.messages.role && 
+                                         Math.abs(msg.timeStamp - data.new.messages.timeStamp) < 1000)
+                                    );
+                                    
+                                    if (!isDuplicate) {
+                                        me.messages.push(data.new.messages)
+                                    }
+                                }
+                                me.newMessageInfo = data.new.messages
+                            }
+                            
+                            let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
+                            if(idx != -1){
+                                me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
+                                me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
+    
+                                if(me.chatRoomList[idx].id != me.currentChatRoom.id){
+                                    const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
+                                    participantWithEmail.isExistUnReadMessage = true
+                                }
+                            }
+                        }
+                    }
+                }
+            }, {
+                filter: `id=in.(${chatRoomIds.join(',')})`
+            });
+        },
     }
 }
 </script>
@@ -1505,3 +1961,4 @@ export default {
     background-color: white;
 }
 </style>
+

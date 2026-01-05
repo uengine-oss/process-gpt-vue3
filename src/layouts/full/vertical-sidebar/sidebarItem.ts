@@ -37,6 +37,12 @@ const sidebarItem: menu[] = [
         to: "/chats",
     },
     {
+        title: "chats.groupChat",
+        icon: 'users-group-rounded-line-duotone',
+        BgColor: 'primary',
+        to: "/chats/group",
+    },
+    {
         title: "Proposals",
         icon: 'chat-round-unread-line-duotone',
         BgColor: 'primary',

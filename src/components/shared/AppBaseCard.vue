@@ -168,9 +168,9 @@ const stopResize = () => {
     document.removeEventListener('mouseup', stopResize);
 };
 
-// /chats 경로인지 확인
+// /chats 경로인지 확인 (일반 채팅 및 그룹채팅 포함)
 const isChatPage = computed(() => {
-    return route.path === '/chats';
+    return route.path === '/chats' || route.path === '/chats/group';
 });
 
 // left-part와 right-part의 동적 스타일

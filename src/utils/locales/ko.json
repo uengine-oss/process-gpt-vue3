@@ -111,6 +111,7 @@
     },
     "chats": {
         "title": "채팅",
+        "groupChat": "그룹채팅",
         "document": "업무 지시",
         "assignTask": "업무 지시하기",
         "requestCancelled": "{name}님의 요청이 취소되었습니다.",
@@ -1006,7 +1007,9 @@
         "deleteChatRoom": "채팅방 삭제",
         "confirmDeleteChatRoom": "채팅방을 삭제하시겠습니까?",
         "enterChatRoomName": "채팅방 이름을 입력해주세요.",
-        "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요."
+        "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요.",
+        "createGroupChat": "그룹 채팅 생성",
+        "newChatRoom": "새 채팅방"
     },
     "userListing": {
         "search": "검색",
