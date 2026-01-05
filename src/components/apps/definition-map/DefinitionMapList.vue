@@ -6,8 +6,9 @@
                 <v-col v-for="item in filteredValue.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
                     cols="12" md="3" sm="6"
                     :min-width="200"
+                    v-show="!visibleMegaIds || visibleMegaIds.has(item.id)"
                 >
-                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains"/>
+                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain"/>
                 </v-col>
                 <!-- 실제 카드가 들어가야 할 위치 -->
                 <v-col class="cursor-pointer" cols="12" md="3" sm="3">
@@ -39,8 +40,10 @@
             </transition-group>
         </draggable>
         <v-row v-else>
-            <v-col v-for="item in filteredValue.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="3" sm="6">
-                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains"/>
+            <v-col v-for="item in filteredValue.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="3" sm="6"
+                v-show="!visibleMegaIds || visibleMegaIds.has(item.id)"
+            >
+                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain"/>
             </v-col>
         </v-row>
         <v-dialog v-model="permissionDialogStatus" max-width="500" persistent>
@@ -75,22 +78,29 @@ export default {
         selectedDomain: String
     },
     computed: {
+        // Just return original value - filtering is done in MegaProcess
         filteredValue() {
-            if (!this.selectedDomain) return this.value;
+            return this.value;
+        },
+        // Compute which mega processes have visible major processes for the selected domain
+        visibleMegaIds() {
+            if (!this.selectedDomain || !this.value.mega_proc_list) return null;
 
-            const newValue = JSON.parse(JSON.stringify(this.value));
-            newValue.mega_proc_list.forEach(mega => {
+            const visibleIds = new Set();
+            this.value.mega_proc_list.forEach(mega => {
                 if (mega.major_proc_list) {
-                    mega.major_proc_list = mega.major_proc_list.filter(major => {
-                        // If selectedDomain is 'Access', also show processes with no domain
+                    const hasVisibleMajor = mega.major_proc_list.some(major => {
                         if (this.selectedDomain === 'Access') {
                             return !major.domain || major.domain === 'Access';
                         }
                         return major.domain === this.selectedDomain;
                     });
+                    if (hasVisibleMajor) {
+                        visibleIds.add(mega.id);
+                    }
                 }
             });
-            return newValue;
+            return visibleIds;
         }
     },
     data: () => ({

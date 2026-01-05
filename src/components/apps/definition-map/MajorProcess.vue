@@ -97,16 +97,27 @@ export default {
                 this.$toast.error(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
                 return;
             }
-            
-            if (!newProcess.id) {
-                newProcess.id = `${this.parent.name}_${newProcess.name}`;
+
+            // Use provided ID or generate one (for existing process selection)
+            let processId = newProcess.id;
+            if (!processId) {
+                // Fallback: generate ID from parent and name (for legacy/existing selection)
+                processId = `${this.parent.name}_${newProcess.name}`
+                    .toLowerCase()
+                    .replace(/[^a-z0-9_]/g, '_')
+                    .replace(/_+/g, '_');
             }
-            newProcess.id = newProcess.id.replace(/[/.]/g, '_');
-           
+
             this.value.sub_proc_list.push({
-                id: newProcess.id,
+                id: processId,
                 name: newProcess.name
             });
+
+            // Navigate to process editor if this is a newly created process
+            if (newProcess.isNew) {
+                const url = `/definitions/chat?id=${processId}&name=${encodeURIComponent(newProcess.name)}&modeling=true`;
+                window.open(url, '_blank');
+            }
         },
         openSubProcessDialog(processType) {
             this.processType = processType;

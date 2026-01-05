@@ -2217,8 +2217,16 @@
         "processDefinition": "프로세스 정의",
         "newProcessDefinition": "새로운 프로세스 정의 추가",
         "processName": "프로세스명",
+        "processId": "프로세스 ID",
         "save": "저장",
-        "close": "닫기"
+        "close": "닫기",
+        "selectExisting": "기존 프로세스 선택",
+        "createNew": "새로 생성",
+        "idHint": "영문 소문자로 시작, 소문자/숫자/언더스코어(_)만 사용",
+        "idRequired": "ID는 필수입니다.",
+        "idInvalid": "영문 소문자로 시작, 소문자/숫자/언더스코어만 허용",
+        "generateIdTooltip": "AI로 ID 추천받기",
+        "generatingId": "ID 생성 중..."
     },
     "ProcessMenu": {
         "setPermission": "권한 설정",

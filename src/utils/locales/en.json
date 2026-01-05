@@ -2187,8 +2187,16 @@
         "processDefinition": "Process Definition",
         "newProcessDefinition": "New Process Definition",
         "processName": "Process Name",
+        "processId": "Process ID",
         "save": "Save",
-        "close": "Close"
+        "close": "Close",
+        "selectExisting": "Select Existing",
+        "createNew": "Create New",
+        "idHint": "Start with lowercase letter, only lowercase/numbers/underscores allowed",
+        "idRequired": "ID is required.",
+        "idInvalid": "Must start with lowercase letter, only lowercase/numbers/underscores allowed",
+        "generateIdTooltip": "Get AI ID suggestion",
+        "generatingId": "Generating ID..."
     },
     "ProcessMenu": {
         "setPermission": "Set Permission",

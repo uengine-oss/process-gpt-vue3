@@ -33,20 +33,20 @@
         </v-card>
         
         <draggable v-if="enableEdit"
-            class="dragArea list-group" 
-            :list="value.major_proc_list" 
-            :animation="200" 
+            class="dragArea list-group"
+            :list="value.major_proc_list"
+            :animation="200"
             ghost-class="ghost-card"
             group="majorProcess"
         >
             <transition-group>
-                <div v-for="item in value.major_proc_list" :key="item.id" class="cursor-pointer">
+                <div v-for="item in filteredMajorProcList" :key="item.id" class="cursor-pointer">
                     <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
-            <div v-for="item in value.major_proc_list" :key="item.id">
+            <div v-for="item in filteredMajorProcList" :key="item.id">
                 <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
             </div>
         </div>
@@ -58,6 +58,7 @@
             :processType="processType"
             :type="type"
             :domains="domains"
+            :defaultDomain="selectedDomain"
             @add="addProcess"
             @closeProcessDialog="closeProcessDialog"
             style="margin-top:20px !important;"
@@ -83,12 +84,26 @@ export default {
         parent: Object,
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
-        domains: Array
+        domains: Array,
+        selectedDomain: String
     },
     data: () => ({
         type: 'mega',
         hover: false,
     }),
+    computed: {
+        filteredMajorProcList() {
+            if (!this.selectedDomain || !this.value.major_proc_list) {
+                return this.value.major_proc_list || [];
+            }
+            return this.value.major_proc_list.filter(major => {
+                if (this.selectedDomain === 'Access') {
+                    return !major.domain || major.domain === 'Access';
+                }
+                return major.domain === this.selectedDomain;
+            });
+        }
+    },
     created() {
     },
     methods:{
