@@ -144,8 +144,8 @@
                 </v-col>
 
 
-                <!-- 에이전트 타이틀 + 목록 -->
-                <div class="mb-4">
+                <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
+                <div v-if="mode !== 'uEngine'" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}

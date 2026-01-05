@@ -84,6 +84,12 @@ export default defineConfig({
             '/langchain-chat': {
                 target: 'http://127.0.0.1:8000',
                 changeOrigin: true
+            },
+            // Work Assistant Agent API
+            '/agent': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/agent/, '')
             }
         }
     },

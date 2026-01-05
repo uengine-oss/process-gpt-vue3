@@ -40,7 +40,7 @@
                         <v-list-subheader class="text-caption">
                             {{ category.header.includes('.') ? $t(category.header) : category.header }}
                         </v-list-subheader>
-                        <v-list-item v-for="(item, index) in category.list" :key="index" :to="item.href" class="px-5 py-2">
+                        <v-list-item v-for="(item, index) in category.list" :key="index" :to="item.href" class="px-5 py-2" @click="searchMenuOpen = false">
                             <template v-if="item.img" v-slot:prepend>
                                 <v-avatar size="32" class="mr-3">
                                     <v-img :src="item.img" :alt="item.title" cover></v-img>
@@ -102,12 +102,17 @@ export default {
             this.searching = true;
             this.searchResult = [];
 
-            await backend.search(this.searchKeyword, (updated) => {
-                this.searchResult = updated;
-            });
-            
-            this.searching = false;
-            this.hasSearched = true;
+            try {
+                await backend.search(this.searchKeyword, (updated) => {
+                    this.searchResult = updated;
+                });
+            } catch (e) {
+                console.error('검색 중 에러 발생:', e);
+                this.searchResult = [];
+            } finally {
+                this.searching = false;
+                this.hasSearched = true;
+            }
         },
         summarize(text) {
             if (text && text.length > 0) {

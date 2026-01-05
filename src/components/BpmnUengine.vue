@@ -171,26 +171,60 @@ export default {
         this.canvasContainer = document.getElementById('canvas-container');
         this.initializeViewer();
         this.setDiagramEvent();
-        if (this.bpmn) {
+        if (typeof this.bpmn === 'string' && this.bpmn.trim().length > 0) {
             this.diagramXML = this.bpmn;
-        } else {
-            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <uengine:ProcessVariables id="ProcessVariables_1"> <uengine:ProcessVariable key="variable1" value="value1"/> <uengine:ProcessVariable key="variable2" value="value2"/> </uengine:ProcessVariables> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>'
+        } else if (!this.diagramXML) {
+            this.diagramXML =
+                `<?xml version="1.0" encoding="UTF-8"?>\n` +
+                `<bpmn:definitions ` +
+                `xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ` +
+                `xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" ` +
+                `xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" ` +
+                `xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" ` +
+                `xmlns:di="http://www.omg.org/spec/DD/20100524/DI" ` +
+                `xmlns:uengine="http://uengine" ` +
+                `id="Definitions_1" ` +
+                `targetNamespace="http://bpmn.io/schema/bpmn">\n` +
+                `  <bpmn:process id="Process_1" isExecutable="true" />\n` +
+                `  <bpmndi:BPMNDiagram id="BPMNDiagram_1">\n` +
+                `    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />\n` +
+                `  </bpmndi:BPMNDiagram>\n` +
+                `</bpmn:definitions>`;
         }
-        // if (this.mode == 'uEngine') {
-        this.bpmnViewer.importXML(this.diagramXML);
+        Promise.resolve()
+            .then(() => this.bpmnViewer.importXML(this.diagramXML))
+            .catch((e) => {
+                console.error('[BpmnUengine] 초기 import 실패:', e);
+                this.$emit('error', e);
+            })
+            .finally(() => {
+                try {
+                    this.onLoadEnd();
+                } catch (_) {
+                }
+            });
         this.initResizeObserver();
-        // }
     },
     watch: {
-        bpmn: {
+       bpmn: {
             async handler(newVal) {
+                if(this.registerToStore) {
+                    return;
+                }
                 try {
-                    const xml = newVal || this.diagramXML;
-                    if (!xml || !this.bpmnViewer) return;
-                    await this.bpmnViewer.importXML(xml);
+                    if (typeof newVal !== 'string' || newVal.trim().length === 0) return;
+                    if (!this.bpmnViewer) return;
+                    this.onLoadStart();
+                    this.diagramXML = newVal;
+                    await this.bpmnViewer.importXML(newVal);
                 } catch (e) {
-                    // eslint-disable-next-line no-console
                     console.error('[BpmnUengine] bpmn prop 변경시 import 실패:', e);
+                    this.$emit('error', e);
+                } finally {
+                    try {
+                        this.onLoadEnd();
+                    } catch (_) {
+                    }
                 }
             }
         },

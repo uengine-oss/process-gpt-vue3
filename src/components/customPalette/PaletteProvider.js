@@ -212,6 +212,14 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
     }
 
     const childElements = element.children || [];
+    // Phase(PhaseContainer)가 포함된 경우 회전을 조용히 막는다. (PaletteProvider copy.js 참고)
+    const parentChildren = (element.parent && element.parent.children) || [];
+    const hasPhaseContainer = parentChildren.some(child => child && child.type === 'phase:PhaseContainer');
+    if (hasPhaseContainer) {
+      console.warn(`${logPrefix} phase:PhaseContainer 가 존재하여 회전을 중단합니다.`);
+      onLoadEnd();
+      return;
+    }
     let isSubprocessImported = false;
     // 서브프로세스가 있으면 깨지는 문제가 있어 서브프로세스가 있을 경우에는 임시 비활성화
     childElements.forEach(child => {
@@ -426,6 +434,14 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
     }
 
     const childElements = element.children || [];
+    // Phase(PhaseContainer)가 포함된 경우 회전을 조용히 막는다. (PaletteProvider copy.js 참고)
+    const parentChildren = (element.parent && element.parent.children) || [];
+    const hasPhaseContainer = parentChildren.some(child => child && child.type === 'phase:PhaseContainer');
+    if (hasPhaseContainer) {
+      console.warn(`${logPrefix} phase:PhaseContainer 가 존재하여 회전을 중단합니다.`);
+      onLoadEnd();
+      return;
+    }
     let isSubprocessImported = false;
     // 서브프로세스가 있으면 깨지는 문제가 있어 서브프로세스가 있을 경우에는 임시 비활성화
     childElements.forEach(child => {

@@ -52,6 +52,7 @@ public class ForwardHostHeaderFilter implements GlobalFilter, Ordered {
                 "/completion/(?!set-tenant|complete|vision-complete|invite-user|set-initial-info).*",
                 "/autonomous/.*",
                 "/memento/.*",
+                "/agent/.*",
                 "/mcp/.*");
 
         boolean requiresAuth = false;

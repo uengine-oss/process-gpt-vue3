@@ -148,6 +148,16 @@ spring:
                       - RewritePath=/voice/?(?<segment>.*), /$\{segment}
                   order: 40
 
+                # Work Assistant Agent 서비스 (SSE 스트리밍 지원)
+                - id: agent
+                  uri: http://work-assistant-agent-service:8000
+                  predicates:
+                      - Path=/agent/**
+                  filters:
+                      - RewritePath=/agent/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
+                  order: 45
+
                 # VNC 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
                 - id: vnc-0-dev
                   uri: http://vnc-0.dev.svc.cluster.local:6080
