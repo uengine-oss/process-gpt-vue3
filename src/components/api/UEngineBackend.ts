@@ -1104,6 +1104,16 @@ class UEngineBackend implements Backend {
         return settings;
     }
 
+    async getPaletteTaskTypes(): Promise<any> {
+        console.warn("getPaletteTaskTypes is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any> {
+        console.warn("updatePaletteTaskType is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
 }
 
 export default UEngineBackend;
