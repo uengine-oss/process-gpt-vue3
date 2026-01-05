@@ -138,7 +138,7 @@
 import { defineComponent, ref, computed, onMounted } from 'vue';
 import { useColorRulesStore } from '@/stores/colorRules';
 import ColorRuleDialog from './ColorRuleDialog.vue';
-import draggable from 'vuedraggable';
+import { VueDraggableNext as draggable } from 'vue-draggable-next';
 
 export default defineComponent({
     name: 'BpmnColorRulesSettings',
