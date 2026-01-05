@@ -102,12 +102,17 @@ export default {
             this.searching = true;
             this.searchResult = [];
 
-            await backend.search(this.searchKeyword, (updated) => {
-                this.searchResult = updated;
-            });
-            
-            this.searching = false;
-            this.hasSearched = true;
+            try {
+                await backend.search(this.searchKeyword, (updated) => {
+                    this.searchResult = updated;
+                });
+            } catch (e) {
+                console.error('검색 중 에러 발생:', e);
+                this.searchResult = [];
+            } finally {
+                this.searching = false;
+                this.hasSearched = true;
+            }
         },
         summarize(text) {
             if (text && text.length > 0) {
