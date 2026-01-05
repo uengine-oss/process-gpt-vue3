@@ -1250,10 +1250,14 @@ export default {
 
             if (this.isActionsMode) {
                 if (this.todoStatus.status === 'NEW') {
+                    let query = content.text;
+                    if (this.todoStatus.query && this.todoStatus.query.trim() !== '') {
+                        query = this.todoStatus.query + '\n\n' + content.text;
+                    }
                     await this.backend.putWorkItem(taskId, {
                         status: 'IN_PROGRESS',
                         description: content.text,
-                        query: content.text,
+                        query: query,
                     });
                     this.isLoading = true;
                     this.chatMessages.push({ time: new Date().toISOString(), content: content.text });
