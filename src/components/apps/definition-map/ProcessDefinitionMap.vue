@@ -1280,13 +1280,12 @@ export default {
 
 <style scoped>
 .glass-tab-container {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: #ffffff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     position: sticky;
     top: 60px; /* Adjust based on header height */
-    z-index: 1;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .premium-tabs :deep(.v-slide-group__content) {
@@ -1302,8 +1301,22 @@ export default {
     transition: all 0.2s ease !important;
     border: none !important;
     height: 36px !important;
-    min-width: 80px !important;
+    min-width: auto !important;
+    max-width: 200px !important;
     padding: 0 14px !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+}
+
+.premium-tab .d-flex {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.premium-tab .tab-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
 }
 
 .premium-tab:not(.domain-colored-tab):hover {
