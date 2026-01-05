@@ -66,7 +66,7 @@
                 size="small" 
                 color="primary"
             >
-                {{ $t('Common.add') }}
+                {{ $t('common.add') }}
             </v-btn>
         </div>
         
@@ -156,10 +156,10 @@
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn @click="showDeleteDialog = false" variant="flat" color="error" rounded>
-                        {{ $t('Common.cancel') }}
+                        {{ $t('common.cancel') }}
                     </v-btn>
                     <v-btn @click="deleteSkills" variant="flat" color="primary" rounded>
-                        {{ $t('Common.delete') }}
+                        {{ $t('common.delete') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>

@@ -13,6 +13,7 @@
                             :type="type"
                             :process="value"
                             :enableEdit="enableEdit"
+                            :selectedDomain="selectedDomain"
                             @add="openProcessDialog('add')"
                             @delete="deleteProcess"
                             @editProcessdialog="editProcessdialog"
@@ -41,17 +42,17 @@
         >
             <transition-group>
                 <div v-for="item in filteredMajorProcList" :key="item.id" class="cursor-pointer">
-                    <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                    <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :selectedDomain="selectedDomain" :domains="domains"/>
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
             <div v-for="item in filteredMajorProcList" :key="item.id">
-                <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :selectedDomain="selectedDomain" :domains="domains"/>
             </div>
         </div>
-        <!-- Add Major Process Dialog (shown when + button is clicked) -->
-        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add'"
+        <!-- Add Major Process Dialog: 특정 도메인 탭에서만 표시 -->
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && selectedDomain"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"

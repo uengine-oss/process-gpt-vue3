@@ -1,14 +1,5 @@
 {
     "message": "ko",
-    "common": {
-        "cancel": "취소",
-        "save": "저장",
-        "confirm": "확인",
-        "delete": "삭제",
-        "edit": "수정",
-        "add": "추가",
-        "close": "닫기"
-    },
     "validation": {
         "title": "BPMN 검증 결과",
         "warningMessage": "프로세스 정의에 다음 문제가 발견되었습니다:",
@@ -344,7 +335,8 @@
         "cardView": "카드",
         "matrixView": "매트릭스",
         "duplicateName": "동일한 이름의 프로세스가 이미 존재합니다.",
-        "allDomains": "전체"
+        "allDomains": "전체",
+        "selectColor": "색상 선택"
     },
     "metricsView": {
         "domain": "Domain",
@@ -2310,11 +2302,7 @@
         "duration": "기간",
         "assignees": "담당자"
     },
-    "Common": {
-        "cancel": "취소",
-        "delete": "삭제",
-        "save": "저장"
-    },
+
     "AgentSkillEdit": {
         "deleteDialogTitle": "스킬 파일 삭제",
         "deleteDialogMessage": "스킬 파일을 삭제하시겠습니까? 삭제된 스킬 파일은 복구할 수 없습니다."
@@ -2368,11 +2356,12 @@
     "common": {
         "cancel": "취소",
         "save": "저장",
-        "close": "닫기",
         "confirm": "확인",
         "delete": "삭제",
         "edit": "수정",
-        "add": "추가"
+        "add": "추가",
+        "close": "닫기",
+        "reset": "초기화"
     },
     "taskCatalog": {
         "title": "Task 카탈로그 관리",

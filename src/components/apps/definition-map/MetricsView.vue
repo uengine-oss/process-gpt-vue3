@@ -68,23 +68,23 @@
                 </thead>
                 <tbody>
                     <tr v-for="domain in value.domains" :key="domain.id" class="domain-row">
-                        <td class="domain-cell text-center">
+                        <td class="domain-cell text-center" :style="getDomainCellStyle(domain)">
                             <div class="d-flex align-center justify-center">
                                 <span class="domain-cell-text">{{ domain.name }}</span>
-                                <v-btn 
+                                <v-btn
                                     v-if="enableEdit"
-                                    icon 
-                                    variant="text" 
-                                    size="x-small" 
+                                    icon
+                                    variant="text"
+                                    size="x-small"
                                     class="ml-1"
                                     @click="editDomain(domain)"
                                 >
                                     <v-icon size="14">mdi-pencil</v-icon>
                                 </v-btn>
-                                <v-btn 
+                                <v-btn
                                     v-if="enableEdit"
-                                    icon 
-                                    variant="text" 
+                                    icon
+                                    variant="text"
                                     size="x-small"
                                     color="error"
                                     @click="deleteDomain(domain)"
@@ -207,14 +207,38 @@
             <v-card>
                 <v-card-title>{{ dialog.title }}</v-card-title>
                 <v-card-text>
-                    <v-text-field 
-                        v-model="dialog.name" 
+                    <v-text-field
+                        v-model="dialog.name"
                         :label="dialog.label"
                         variant="outlined"
                         density="compact"
                         autofocus
                         @keyup.enter="saveDialog"
                     ></v-text-field>
+
+                    <!-- Domain 색상 선택 (Domain 타입일 때만) -->
+                    <div v-if="dialog.type === 'domain'" class="mt-4">
+                        <div class="text-subtitle-2 mb-2">{{ $t('processDefinitionMap.selectColor') || '색상 선택' }}</div>
+                        <div class="d-flex flex-wrap" style="gap: 8px;">
+                            <div
+                                v-for="color in domainColors"
+                                :key="color"
+                                class="color-option"
+                                :class="{ 'color-selected': dialog.color === color }"
+                                :style="{ backgroundColor: color }"
+                                @click="dialog.color = color"
+                            ></div>
+                        </div>
+                        <v-btn
+                            v-if="dialog.color"
+                            variant="text"
+                            size="small"
+                            class="mt-2"
+                            @click="dialog.color = null"
+                        >
+                            {{ $t('common.reset') || '초기화' }}
+                        </v-btn>
+                    </div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -294,6 +318,7 @@ export default {
                 title: '',
                 label: '',
                 name: '',
+                color: null, // Domain color
                 editItem: null,
                 domainId: null,
                 megaProcessId: null
@@ -308,12 +333,54 @@ export default {
                 text: '',
                 color: 'error',
                 timeout: 3000
-            }
+            },
+            domainColors: [
+                '#E53935', '#D81B60', '#8E24AA', '#5E35B1',
+                '#3949AB', '#1E88E5', '#00ACC1', '#00897B',
+                '#43A047', '#7CB342', '#FB8C00', '#6D4C41',
+            ]
         };
     },
     methods: {
         generateId() {
             return Math.random().toString(36).substring(2, 15);
+        },
+        getContrastTextColor(hexColor) {
+            if (!hexColor) return '#333333';
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.5 ? '#333333' : '#FFFFFF';
+        },
+        getPastelColor(hexColor) {
+            if (!hexColor) return null;
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            // 흰색과 혼합하여 파스텔톤 생성 (85% 흰색 + 15% 원래 색상)
+            const mixRatio = 0.15;
+            const newR = Math.round(255 * (1 - mixRatio) + r * mixRatio);
+            const newG = Math.round(255 * (1 - mixRatio) + g * mixRatio);
+            const newB = Math.round(255 * (1 - mixRatio) + b * mixRatio);
+            return `rgb(${newR}, ${newG}, ${newB})`;
+        },
+        getDomainCellStyle(domain) {
+            if (!domain.color) return {};
+            return {
+                backgroundColor: this.getPastelColor(domain.color),
+                borderLeft: `4px solid ${domain.color}`
+            };
+        },
+        updateDomainColor(domain, color) {
+            const newValue = JSON.parse(JSON.stringify(this.value));
+            const targetDomain = newValue.domains.find(d => d.id === domain.id);
+            if (targetDomain) {
+                targetDomain.color = color;
+                this.$emit('update:value', newValue);
+            }
         },
         getProcesses(domainId, megaProcessId) {
             if (!this.value.processes) return [];
@@ -345,6 +412,7 @@ export default {
                 title: this.$t('metricsView.addDomain'),
                 label: this.$t('metricsView.domainName'),
                 name: '',
+                color: null,
                 editItem: null,
                 domainId: null,
                 megaProcessId: null
@@ -358,6 +426,7 @@ export default {
                 title: this.$t('metricsView.editDomain'),
                 label: this.$t('metricsView.domainName'),
                 name: domain.name,
+                color: domain.color || null,
                 editItem: domain,
                 domainId: null,
                 megaProcessId: null
@@ -511,12 +580,14 @@ export default {
                     newValue.domains.push({
                         id: newId,
                         name: trimmedName,
+                        color: this.dialog.color,
                         order: newOrder
                     });
                 } else {
                     const domain = newValue.domains.find(d => d.id === this.dialog.editItem.id);
                     if (domain) {
                         domain.name = trimmedName;
+                        domain.color = this.dialog.color;
                     }
                 }
             } else if (this.dialog.type === 'megaProcess') {
@@ -661,5 +732,39 @@ export default {
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+/* Domain color picker styles */
+.domain-color-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s ease;
+}
+
+.domain-color-dot:hover {
+    transform: scale(1.15);
+}
+
+.color-option {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: 2px solid transparent;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.color-option.color-selected {
+    border-color: #333;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
 }
 </style>

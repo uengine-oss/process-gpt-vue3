@@ -275,8 +275,7 @@ export default {
                 // For mega/major processes
                 if (this.newProcess.name) {
                     this.$emit("add", this.newProcess);
-                    this.newProcess.name = '';
-                    this.newProcess.domain = '';
+                    this.closeDialog();
                 }
             }
         },

@@ -142,12 +142,18 @@
                             <!-- 전체 탭 -->
                             <v-tab
                                 :value="null"
-                                class="premium-tab mr-2"
+                                class="premium-tab all-tab mr-2"
                                 rounded="lg"
                                 variant="flat"
                             >
                                 <div class="d-flex align-center">
                                     <span class="tab-text">{{ $t('processDefinitionMap.allDomains') || '전체' }}</span>
+                                    <span
+                                        v-if="getTotalProcessCount() > 0"
+                                        class="domain-count-badge ml-2"
+                                    >
+                                        {{ getTotalProcessCount() }}
+                                    </span>
                                 </div>
                             </v-tab>
                             <v-tab
@@ -155,18 +161,39 @@
                                 :key="domain.id"
                                 :value="domain.name"
                                 class="premium-tab mr-2"
+                                :class="{ 'domain-colored-tab': domain.color && selectedDomain === domain.name }"
+                                :style="getTabStyle(domain)"
                                 rounded="lg"
                                 variant="flat"
                             >
-                                <v-badge
-                                        v-if="getDomainProcessCount(domain.id) > 0"
-                                        :content="getDomainProcessCount(domain.id)"
-                                        color="primary"
-                                        inline
-                                        class="ml-2 tab-badge"
-                                ></v-badge>
                                 <div class="d-flex align-center">
                                     <span class="tab-text">{{ domain.name }}</span>
+                                    <span
+                                        v-if="getDomainProcessCount(domain.id) > 0"
+                                        class="domain-count-badge ml-2"
+                                    >
+                                        {{ getDomainProcessCount(domain.id) }}
+                                    </span>
+                                    <!-- 편집 모드일 때 수정/삭제 버튼 -->
+                                    <div v-if="enableEdit && selectedDomain === domain.name" class="domain-actions ml-2">
+                                        <v-btn
+                                            icon
+                                            variant="text"
+                                            size="x-small"
+                                            @click.stop="editDomain(domain)"
+                                        >
+                                            <v-icon size="14">mdi-pencil</v-icon>
+                                        </v-btn>
+                                        <v-btn
+                                            icon
+                                            variant="text"
+                                            size="x-small"
+                                            color="error"
+                                            @click.stop="deleteDomain(domain)"
+                                        >
+                                            <v-icon size="14">mdi-delete</v-icon>
+                                        </v-btn>
+                                    </div>
                                 </div>
                             </v-tab>
                         </v-tabs>
@@ -177,7 +204,7 @@
                             size="36"
                             color="primary"
                             class="ml-4 add-domain-btn"
-                            @click="domainDialog.show = true"
+                            @click="openDomainDialog('add')"
                         >
                             <v-icon size="20">mdi-plus</v-icon>
                         </v-btn>
@@ -187,11 +214,11 @@
                 </div>
             </div>
 
-            <!-- Domain Add Dialog -->
+            <!-- Domain Add/Edit Dialog -->
             <v-dialog v-model="domainDialog.show" max-width="400">
                 <v-card class="pa-4 rounded-lg">
                     <v-card-title class="px-0 pt-0 text-h6 font-weight-bold">
-                        {{ $t('metricsView.addDomain') || '도메인 추가' }}
+                        {{ domainDialog.mode === 'edit' ? ($t('metricsView.editDomain') || '도메인 수정') : ($t('metricsView.addDomain') || '도메인 추가') }}
                     </v-card-title>
                     <v-text-field
                         v-model="domainDialog.name"
@@ -200,9 +227,34 @@
                         density="comfortable"
                         hide-details
                         class="mt-2"
-                        @keyup.enter="addDomain"
+                        @keyup.enter="saveDomain"
                         autofocus
                     ></v-text-field>
+
+                    <!-- 색상 선택 -->
+                    <div class="mt-4">
+                        <div class="text-subtitle-2 mb-2">{{ $t('processDefinitionMap.selectColor') || '색상 선택' }}</div>
+                        <div class="d-flex flex-wrap" style="gap: 8px;">
+                            <div
+                                v-for="color in domainColors"
+                                :key="color"
+                                class="color-option"
+                                :class="{ 'color-selected': domainDialog.color === color }"
+                                :style="{ backgroundColor: color }"
+                                @click="domainDialog.color = color"
+                            ></div>
+                        </div>
+                        <v-btn
+                            v-if="domainDialog.color"
+                            variant="text"
+                            size="small"
+                            class="mt-2"
+                            @click="domainDialog.color = null"
+                        >
+                            {{ $t('common.reset') || '초기화' }}
+                        </v-btn>
+                    </div>
+
                     <v-card-actions class="px-0 pb-0 mt-4">
                         <v-spacer></v-spacer>
                         <v-btn
@@ -215,7 +267,7 @@
                         <v-btn
                             color="primary"
                             variant="flat"
-                            @click="addDomain"
+                            @click="saveDomain"
                             :disabled="!domainDialog.name.trim()"
                             class="rounded-pill px-6"
                         >
@@ -406,8 +458,26 @@ export default {
         selectedDomain: null,
         domainDialog: {
             show: false,
-            name: ''
+            mode: 'add', // 'add' or 'edit'
+            name: '',
+            color: null,
+            editItem: null
         },
+        colorPickerDomain: null,
+        domainColors: [
+            '#E53935', // Red
+            '#D81B60', // Pink
+            '#8E24AA', // Purple
+            '#5E35B1', // Deep Purple
+            '#3949AB', // Indigo
+            '#1E88E5', // Blue
+            '#00ACC1', // Cyan
+            '#00897B', // Teal
+            '#43A047', // Green
+            '#7CB342', // Light Green
+            '#FB8C00', // Orange
+            '#6D4C41', // Brown
+        ],
         metricsValue: {
             domains: [],
             mega_processes: [],
@@ -875,36 +945,126 @@ export default {
                 major_proc_list: [],
             });
         },
-        async addDomain() {
-            const trimmedName = this.domainDialog.name.trim();
-            if (!trimmedName) return;
-
-            // Duplicate check
-            const isDuplicate = this.metricsValue.domains.some(d => d.name.toLowerCase() === trimmedName.toLowerCase());
-            if (isDuplicate) {
-                alert(this.$t('processDefinitionMap.duplicateName') || '동일한 이름이 이미 존재합니다.');
+        openDomainDialog(mode, domain = null) {
+            this.domainDialog = {
+                show: true,
+                mode: mode,
+                name: domain ? domain.name : '',
+                color: domain ? domain.color || null : null,
+                editItem: domain
+            };
+        },
+        editDomain(domain) {
+            this.openDomainDialog('edit', domain);
+        },
+        async deleteDomain(domain) {
+            if (!confirm(this.$t('metricsView.confirmDeleteDomain') || '이 도메인을 삭제하시겠습니까?')) {
                 return;
             }
 
-            const newId = trimmedName.toLowerCase().replace(/[/.]/g, '_');
-            const newOrder = this.metricsValue.domains.length + 1;
-
-            this.metricsValue.domains.push({
-                id: newId,
-                name: trimmedName,
-                order: newOrder
-            });
+            this.metricsValue.domains = this.metricsValue.domains.filter(d => d.id !== domain.id);
+            this.metricsValue.processes = this.metricsValue.processes.filter(p => p.domain_id !== domain.id);
 
             await backend.putMetricsMap(this.metricsValue);
-            this.selectedDomain = trimmedName;
+            this.selectedDomain = null;
+        },
+        async saveDomain() {
+            const trimmedName = this.domainDialog.name.trim();
+            if (!trimmedName) return;
+
+            if (this.domainDialog.mode === 'add') {
+                // Duplicate check
+                const isDuplicate = this.metricsValue.domains.some(d => d.name.toLowerCase() === trimmedName.toLowerCase());
+                if (isDuplicate) {
+                    alert(this.$t('processDefinitionMap.duplicateName') || '동일한 이름이 이미 존재합니다.');
+                    return;
+                }
+
+                const newId = trimmedName.toLowerCase().replace(/[/.]/g, '_');
+                const newOrder = this.metricsValue.domains.length + 1;
+
+                this.metricsValue.domains.push({
+                    id: newId,
+                    name: trimmedName,
+                    color: this.domainDialog.color,
+                    order: newOrder
+                });
+
+                this.selectedDomain = trimmedName;
+            } else {
+                // Edit mode
+                const domain = this.metricsValue.domains.find(d => d.id === this.domainDialog.editItem.id);
+                if (domain) {
+                    domain.name = trimmedName;
+                    domain.color = this.domainDialog.color;
+                    if (this.selectedDomain === this.domainDialog.editItem.name) {
+                        this.selectedDomain = trimmedName;
+                    }
+                }
+            }
+
+            await backend.putMetricsMap(this.metricsValue);
             this.domainDialog.show = false;
-            this.domainDialog.name = '';
         },
         getDomainProcessCount(domainId) {
             if (!this.metricsValue || !this.metricsValue.processes) return 0;
             return this.metricsValue.processes
                 .filter(p => p.domain_id === domainId)
                 .reduce((sum, p) => sum + (p.sub_proc_list ? p.sub_proc_list.length : 0), 0);
+        },
+        getTotalProcessCount() {
+            if (!this.metricsValue || !this.metricsValue.processes) return 0;
+            return this.metricsValue.processes
+                .reduce((sum, p) => sum + (p.sub_proc_list ? p.sub_proc_list.length : 0), 0);
+        },
+        getDomainColor(domainName) {
+            if (!domainName || !this.metricsValue.domains) return null;
+            const domain = this.metricsValue.domains.find(d => d.name === domainName);
+            return domain?.color || null;
+        },
+        getContrastTextColor(hexColor) {
+            if (!hexColor) return '#000000';
+            // Remove # if present
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            // Calculate relative luminance
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.5 ? '#000000' : '#FFFFFF';
+        },
+        async updateDomainColor(domain, color) {
+            domain.color = color;
+            this.colorPickerDomain = null;
+            await backend.putMetricsMap(this.metricsValue);
+        },
+        getTabStyle(domain) {
+            if (!domain || !domain.color) return {};
+            // 활성화된 탭만 도메인 색상 적용
+            const isSelected = this.selectedDomain === domain.name;
+            if (!isSelected) return {};
+
+            const textColor = this.getContrastTextColor(domain.color);
+            return {
+                '--domain-color': domain.color,
+                '--domain-text-color': textColor,
+                '--badge-bg': textColor === '#FFFFFF' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)'
+            };
+        },
+        getBadgeStyle(domain) {
+            // 도메인 색상이 있으면 그에 맞는 대비색
+            if (domain?.color) {
+                const textColor = this.getContrastTextColor(domain.color);
+                return {
+                    backgroundColor: textColor === '#FFFFFF' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
+                    color: textColor
+                };
+            }
+            // 색상 없는 도메인: 어두운 텍스트
+            return {
+                backgroundColor: 'rgba(0,0,0,0.1)',
+                color: '#555'
+            };
         },
         updatePermissionsFromDiff(diff) {
             var me = this;
@@ -1135,42 +1295,83 @@ export default {
 
 .premium-tab {
     text-transform: none !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.02em !important;
-    color: #444 !important;
-    background: transparent !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    border: 1px solid transparent !important;
-    height: 40px !important;
-    min-width: 100px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
+    color: #555 !important;
+    background: rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease !important;
+    border: none !important;
+    height: 36px !important;
+    min-width: 80px !important;
+    padding: 0 14px !important;
 }
 
-.premium-tab:hover {
-    background: rgba(var(--v-theme-primary), 0.04) !important;
-    transform: translateY(-1px);
+.premium-tab:not(.domain-colored-tab):hover {
+    background: rgba(0, 0, 0, 0.08) !important;
 }
 
-.premium-tab.v-tab--selected {
+/* 전체 탭 - 활성화 시 그라데이션 */
+.premium-tab.all-tab.v-tab--selected {
     background: linear-gradient(135deg, rgb(var(--v-theme-primary)), #6366f1) !important;
     color: white !important;
-    box-shadow: 0 8px 20px rgba(var(--v-theme-primary), 0.25) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 색상 없는 도메인 탭 - 활성화 시 */
+.premium-tab.v-tab--selected:not(.domain-colored-tab):not(.all-tab) {
+    background: rgb(var(--v-theme-primary)) !important;
+    color: white !important;
+}
+
+/* 색상 있는 도메인 탭 - CSS 변수로 배경색 적용 */
+.premium-tab.domain-colored-tab {
+    background: var(--domain-color) !important;
+    color: var(--domain-text-color) !important;
+}
+
+.premium-tab.domain-colored-tab:hover {
+    filter: brightness(0.92);
 }
 
 .tab-text {
-    font-size: 0.95rem;
+    font-size: 0.875rem;
 }
 
-.tab-badge :deep(.v-badge__wrapper) {
-    font-size: 0.7rem !important;
-    height: 18px !important;
-    min-width: 18px !important;
-    padding: 0 4px !important;
+/* 커스텀 카운트 배지 */
+.domain-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    color: inherit;
 }
 
-.premium-tab.v-tab--selected .tab-badge :deep(.v-badge__badge) {
-    background: white !important;
-    color: rgb(var(--v-theme-primary)) !important;
+/* 비활성 탭 배지 기본 스타일 */
+.premium-tab .domain-count-badge {
+    background-color: rgba(0,0,0,0.1);
+    color: #555;
+}
+
+/* 전체 탭 활성화 시 배지 흰색 */
+.premium-tab.all-tab.v-tab--selected .domain-count-badge {
+    background-color: rgba(255,255,255,0.25) !important;
+    color: #fff !important;
+}
+
+/* 색상 없는 도메인 탭 활성화 시 배지 */
+.premium-tab.v-tab--selected:not(.domain-colored-tab):not(.all-tab) .domain-count-badge {
+    background-color: rgba(255,255,255,0.25) !important;
+    color: #fff !important;
+}
+
+/* 색상 있는 도메인 탭 배지 - CSS 변수 사용 */
+.premium-tab.domain-colored-tab .domain-count-badge {
+    background-color: var(--badge-bg) !important;
+    color: var(--domain-text-color) !important;
 }
 
 .add-domain-btn {
@@ -1186,6 +1387,48 @@ export default {
 
 .border-b {
     border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Domain color styles */
+.domain-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1.5px solid;
+    flex-shrink: 0;
+}
+
+.domain-color-dot:hover {
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.color-option {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.color-option.color-selected {
+    border-color: #333;
+    transform: scale(1.05);
+    box-shadow: 0 0 0 2px white, 0 0 0 4px #333;
+}
+
+.domain-actions {
+    display: flex;
+    gap: 2px;
 }
 </style>
 

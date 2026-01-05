@@ -54,10 +54,10 @@
             <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn @click="deleteDialog = false" variant="flat" color="error" rounded>
-                    {{ $t('Common.cancel') }}
+                    {{ $t('common.cancel') }}
                 </v-btn>
                 <v-btn @click="deleteSkillFile" variant="flat" color="primary" rounded>
-                    {{ $t('Common.delete') }}
+                    {{ $t('common.delete') }}
                 </v-btn>
             </v-card-actions>
 

@@ -10,8 +10,8 @@
                 >
                     <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain"/>
                 </v-col>
-                <!-- 실제 카드가 들어가야 할 위치 -->
-                <v-col class="cursor-pointer" cols="12" md="3" sm="3">
+                <!-- MegaProcess 추가 카드: 특정 도메인 탭에서만 표시 -->
+                <v-col v-if="selectedDomain" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
                     <v-card v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
                         class="cp-add-mega"
@@ -82,25 +82,11 @@ export default {
         filteredValue() {
             return this.value;
         },
-        // Compute which mega processes have visible major processes for the selected domain
+        // metrics 구조 상 모든 Domain은 같은 MegaProcess를 가지고 있어야함
+        // 모든 MegaProcess를 항상 표시
         visibleMegaIds() {
-            if (!this.selectedDomain || !this.value.mega_proc_list) return null;
-
-            const visibleIds = new Set();
-            this.value.mega_proc_list.forEach(mega => {
-                if (mega.major_proc_list) {
-                    const hasVisibleMajor = mega.major_proc_list.some(major => {
-                        if (this.selectedDomain === 'Access') {
-                            return !major.domain || major.domain === 'Access';
-                        }
-                        return major.domain === this.selectedDomain;
-                    });
-                    if (hasVisibleMajor) {
-                        visibleIds.add(mega.id);
-                    }
-                }
-            });
-            return visibleIds;
+            // 항상 null 반환하여 모든 MegaProcess 표시
+            return null;
         }
     },
     data: () => ({

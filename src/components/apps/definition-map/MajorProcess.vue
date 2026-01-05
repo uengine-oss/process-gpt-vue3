@@ -5,7 +5,17 @@
         >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0 align-center">
-                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1" style="min-width: 0;">
+                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1 d-flex align-center" style="min-width: 0;">
+                        <!-- 전체 탭에서 도메인 표시 (이름 왼쪽) -->
+                        <v-chip v-if="!selectedDomain && value.domain"
+                            size="x-small"
+                            :style="domainColor ? { backgroundColor: domainColor, color: domainTextColor } : {}"
+                            :color="domainColor ? undefined : 'primary'"
+                            :variant="domainColor ? 'flat' : 'tonal'"
+                            class="mr-2 flex-shrink-0"
+                        >
+                            {{ value.domain }}
+                        </v-chip>
                         <div class="text-truncate font-weight-bold cursor-pointer" style="font-size: 0.9rem;" @click="goProcess(parent.name, 'mega')">{{ value.name }}</div>
                     </v-col>
                     <v-col cols="auto" class="ma-0 pa-0">
@@ -14,6 +24,7 @@
                             :type="type"
                             :process="value"
                             :enableEdit="enableEdit"
+                            :selectedDomain="selectedDomain"
                             @add="openSubProcessDialog('add')"
                             @delete="deleteProcess"
                             @editProcessdialog="editProcessdialog"
@@ -51,8 +62,8 @@
                 <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
             </div>
         </div>
-        <!-- Add Sub Process Dialog (shown when + button is clicked) -->
-        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add'"
+        <!-- Add Sub Process Dialog: 특정 도메인 탭에서만 표시 -->
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && selectedDomain"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -82,11 +93,29 @@ export default {
         value: Object,
         parent: Object,
         enableEdit: Boolean,
-        isExecutionByProject: Boolean
+        isExecutionByProject: Boolean,
+        selectedDomain: String,
+        domains: Array
     },
     data: () => ({
         type: 'major'
     }),
+    computed: {
+        domainColor() {
+            if (!this.value.domain || !this.domains) return null;
+            const domain = this.domains.find(d => d.name === this.value.domain);
+            return domain?.color || null;
+        },
+        domainTextColor() {
+            if (!this.domainColor) return '#000000';
+            const hex = this.domainColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.5 ? '#000000' : '#FFFFFF';
+        }
+    },
     methods: {
         async addProcess(newProcess) {
             // 같은 레벨에 동일한 이름이 있는지 검증

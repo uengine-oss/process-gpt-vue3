@@ -3,11 +3,12 @@
     "common": {
         "cancel": "Cancel",
         "save": "Save",
+        "close": "Close",
         "confirm": "Confirm",
         "delete": "Delete",
         "edit": "Edit",
         "add": "Add",
-        "close": "Close"
+        "reset": "Reset"
     },
     "validation": {
         "title": "BPMN Validation Results",
@@ -344,7 +345,8 @@
         "duplicateName": "Duplicate process name exists.",
         "cardView": "Card",
         "matrixView": "Matrix",
-        "allDomains": "All"
+        "allDomains": "All",
+        "selectColor": "Select Color"
     },
     "processDefinitionTree": {
         "search": "Search",
@@ -2280,11 +2282,6 @@
         "duration": "Duration",
         "assignees": "Assignees"
     },
-    "Common": {
-        "cancel": "Cancel",
-        "delete": "Delete",
-        "save": "Save"
-    },
     "AgentSkillEdit": {
         "deleteDialogTitle": "Delete Skill File",
         "deleteDialogMessage": "Are you sure you want to delete this skill file? Deleted skill files cannot be recovered."
@@ -2334,15 +2331,6 @@
         "noStroke": "No Stroke",
         "enabled": "Enabled",
         "noRules": "No color rules defined. Add rules to automatically apply colors based on task type or lead time."
-    },
-    "common": {
-        "cancel": "Cancel",
-        "save": "Save",
-        "close": "Close",
-        "confirm": "Confirm",
-        "delete": "Delete",
-        "edit": "Edit",
-        "add": "Add"
     },
     "taskCatalog": {
         "title": "Task Catalog Management",
