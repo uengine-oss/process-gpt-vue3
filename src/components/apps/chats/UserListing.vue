@@ -74,7 +74,7 @@ export default {
         filteredUsers() {
             return this.userList.filter((user) => {
                 const searchLower = this.searchValue.toLowerCase();
-                return user.username.toLowerCase().includes(searchLower) || user.email.toLowerCase().includes(searchLower);
+                return user.username && user.username.toLowerCase().includes(searchLower) || user.email && user.email.toLowerCase().includes(searchLower);
             });
         }
     },
