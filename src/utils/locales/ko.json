@@ -2444,5 +2444,30 @@
         "sectionName": "섹션명",
         "layoutPreview": "레이아웃 미리보기",
         "layoutPreviewTitle": "패널 레이아웃 미리보기"
+    },
+    "fteInput": {
+        "title": "FTE 입력",
+        "guide": "FTE 입력 가이드",
+        "description": "※ 개인 판단 비중 또는 시간×반복×인원으로 입력하세요. 저장 시 입력 로그가 기록됩니다.",
+        "period": "적용 기간(YYYYMM)",
+        "subject": "저장 주체",
+        "subjectType": "주체 타입",
+        "subjectId": "주체 ID",
+        "inputMode": "입력 모드",
+        "directPercent": "직접 비중(%)",
+        "timeCalculation": "시간×반복×인원",
+        "percentLabel": "비중 (%)",
+        "repeatCycle": "반복 주기",
+        "repeatCount": "주기 내 반복(회)",
+        "hoursPerTime": "1회 소요시간(시간)",
+        "peopleCount": "동시 인원(명)",
+        "timesPerYear": "회/년",
+        "people": "명",
+        "memo": "메모(선택)",
+        "memoPlaceholder": "예: 23년 평균 기준, 상반기 2회 증가 예상 등",
+        "daily": "일간",
+        "weekly": "주간",
+        "monthly": "월간",
+        "yearly": "연간"
     }
 }

@@ -2413,5 +2413,30 @@
         "sectionName": "Section Name",
         "layoutPreview": "Layout Preview",
         "layoutPreviewTitle": "Panel Layout Preview"
+    },
+    "fteInput": {
+        "title": "FTE Input",
+        "guide": "FTE Input Guide",
+        "description": "※ Enter as direct percentage or time×repeat×people. Input log will be recorded on save.",
+        "period": "Period (YYYYMM)",
+        "subject": "Subject",
+        "subjectType": "Subject Type",
+        "subjectId": "Subject ID",
+        "inputMode": "Input Mode",
+        "directPercent": "Direct Percentage (%)",
+        "timeCalculation": "Time×Repeat×People",
+        "percentLabel": "Percentage (%)",
+        "repeatCycle": "Repeat Cycle",
+        "repeatCount": "Repeats per Cycle",
+        "hoursPerTime": "Hours per Time",
+        "peopleCount": "Number of People",
+        "timesPerYear": " times/year",
+        "people": " people",
+        "memo": "Memo (Optional)",
+        "memoPlaceholder": "e.g., Based on 2023 average, expected 2 increases in H1, etc.",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "yearly": "Yearly"
     }
 }
