@@ -202,7 +202,7 @@ export default {
         if (this.bpmn) {
             this.diagramXML = this.bpmn;
         } else {
-            // Default BPMN with Swimlane and StartEvent -> ManualTask -> EndEvent
+            // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
             this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
   <bpmn:collaboration id="Collaboration_1">

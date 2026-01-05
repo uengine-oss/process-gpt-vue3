@@ -124,9 +124,19 @@ export default {
                 newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'} ${counter++})`;
             }
 
+            // Generate unique ID based on original ID with _duplicate suffix
+            let baseId = process.id;
+            let newId = `${baseId}_duplicate`;
+            let idCounter = 1;
+
+            // Check for duplicate IDs
+            while (this.parent.sub_proc_list.some(item => item.id === newId)) {
+                newId = `${baseId}_duplicate${idCounter++}`;
+            }
+
             // Create new process with unique ID
             const newProcess = {
-                id: `${this.parent.name}_${newName}`.replace(/[/.]/g, '_').replace(/\s+/g, '_'),
+                id: newId,
                 name: newName
             };
 
