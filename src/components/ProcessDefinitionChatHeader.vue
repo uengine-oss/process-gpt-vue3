@@ -4,66 +4,68 @@
             <div class="align-right gap-3 justify-space-between" 
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
-                <v-row class="ma-0 pa-0 align-end"
+                <v-row class="ma-0 pa-0 align-center"
                     style="min-height: 48px;"
                 >
-                    <div style="width: 91%;" class="mb-2">
-                        <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center"
-                        >
-                            <v-text-field v-if="isEditableTitle" v-model="processName"
-                                :label="$t('ProcessDefinitionChatHeader.processDefinitionName')" variant="underlined" hide-details class="pa-0 ma-0"
-                            ></v-text-field>
-                            <div v-else>
-                                <v-tooltip location="bottom">
-                                    <template v-slot:activator="{ props }">
-                                        <h5 
-                                            v-bind="props"
-                                            :class="['text-h5', 'mb-n1', { 'process-title-truncate': !expandedTexts.title }]"
-                                            style="white-space: normal; word-break: break-word;"
-                                        >
-                                            {{ getDisplayText(modelValue, 'title', 24) }}
-                                            <v-btn
-                                                v-if="shouldShowToggleButton(modelValue, 24)"
-                                                @click="toggleTextExpansion('title')"
-                                                variant="text"
-                                                size="small"
-                                                color="primary"
-                                                class="pa-0 text-caption ml-1"
-                                                style="min-width: auto; height: auto; vertical-align: baseline;"
+                    <div class="d-flex justify-space-between align-start flex-grow-1 mb-2">
+                        <div style="flex: 1; min-width: 0;" class="d-flex align-center">
+                            <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center flex-grow-1"
+                            >
+                                <v-text-field v-if="isEditableTitle" v-model="processName"
+                                    :label="$t('ProcessDefinitionChatHeader.processDefinitionName')" variant="underlined" hide-details class="pa-0 ma-0"
+                                ></v-text-field>
+                                <div v-else>
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <h5
+                                                v-bind="props"
+                                                :class="['text-h5', 'mb-n1', { 'process-title-truncate': !expandedTexts.title }]"
+                                                style="white-space: normal; word-break: break-word;"
                                             >
-                                                {{ expandedTexts.title ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
-                                            </v-btn>
-                                        </h5>
-                                    </template>
-                                    <span>{{ modelValue }}</span>
-                                </v-tooltip>
+                                                {{ getDisplayText(modelValue, 'title', 24) }}
+                                                <v-btn
+                                                    v-if="shouldShowToggleButton(modelValue, 24)"
+                                                    @click="toggleTextExpansion('title')"
+                                                    variant="text"
+                                                    size="small"
+                                                    color="primary"
+                                                    class="pa-0 text-caption ml-1"
+                                                    style="min-width: auto; height: auto; vertical-align: baseline;"
+                                                >
+                                                    {{ expandedTexts.title ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                                                </v-btn>
+                                            </h5>
+                                        </template>
+                                        <span>{{ modelValue }}</span>
+                                    </v-tooltip>
+                                </div>
                             </div>
+                            <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                         </div>
-                        <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
-                    </div>
 
-                    <!-- 삭제 아이콘 -->
-                    <div v-if="chatMode != 'consulting' && fullPath != 'chat'" class="ml-2" style="width: 5%;">
-                        <v-tooltip v-if="isDeleted" location="bottom">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                    density="comfortable" @click="beforeRestore"
-                                >   
-                                <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('processDefinition.restoreProcess') }}</span>
-                        </v-tooltip>
-                        <v-tooltip v-else location="bottom">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                    density="comfortable" @click="beforeDelete"
-                                >
-                                    <TrashIcon size="24" style="color:#FB977D"/>
-                                </v-btn>
-                            </template>
-                            <span>{{ $t('processDefinition.deleteProcess') }}</span>
-                        </v-tooltip>
+                        <!-- 삭제 아이콘 -->
+                        <div v-if="chatMode != 'consulting' && fullPath != 'chat'" class="playwright-chat-header-delete-icon ml-4 flex-shrink-0  align-start">
+                            <v-tooltip v-if="isDeleted" location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
+                                        density="comfortable" @click="beforeRestore"
+                                    >
+                                    <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('processDefinition.restoreProcess') }}</span>
+                            </v-tooltip>
+                            <v-tooltip v-else location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
+                                        density="comfortable" @click="beforeDelete"
+                                    >
+                                        <TrashIcon size="24" style="color:#FB977D"/>
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('processDefinition.deleteProcess') }}</span>
+                            </v-tooltip>
+                        </div>
                     </div>
                 </v-row>
                 
