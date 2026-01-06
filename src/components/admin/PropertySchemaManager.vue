@@ -1,11 +1,14 @@
 <template>
-    <v-card-text>
-        <v-alert type="info" variant="tonal" class="mb-4">
-            {{ $t('taskCatalog.schemasDescription') }}
-        </v-alert>
+    <div class="settings-container">
+        <!-- Info Banner -->
+        <div class="info-banner">
+            <v-icon size="18" color="primary">mdi-information-outline</v-icon>
+            <span>{{ $t('taskCatalog.schemasDescription') }}</span>
+        </div>
 
-        <v-row class="mb-4">
-            <v-col cols="12" md="6">
+        <!-- Filter Row -->
+        <div class="filter-row">
+            <div class="filter-select-wrapper">
                 <v-select
                     v-model="selectedTaskType"
                     :items="availableTaskTypes"
@@ -13,28 +16,32 @@
                     item-title="label"
                     item-value="value"
                     clearable
-                />
-            </v-col>
-            <v-col cols="12" md="6" class="d-flex align-center justify-end" style="gap: 8px;">
-                <v-btn
                     variant="outlined"
-                    :color="showLayoutPreview ? 'primary' : 'grey'"
+                    density="compact"
+                    hide-details
+                    class="flat-select"
+                />
+            </div>
+            <div class="filter-actions">
+                <button
+                    class="preview-btn"
+                    :class="{ active: showLayoutPreview }"
                     @click="showLayoutPreview = !showLayoutPreview"
                     :disabled="!selectedTaskType || filteredSchemas.length === 0"
                 >
-                    <v-icon start>mdi-eye</v-icon>
+                    <v-icon size="16">mdi-eye</v-icon>
                     {{ $t('taskCatalog.layoutPreview') }}
-                </v-btn>
-                <v-btn
-                    color="primary"
+                </button>
+                <button
+                    class="add-btn"
                     @click="openDialog()"
                     :disabled="!selectedTaskType"
                 >
-                    <v-icon start>mdi-plus</v-icon>
+                    <v-icon size="16">mdi-plus</v-icon>
                     {{ $t('taskCatalog.addProperty') }}
-                </v-btn>
-            </v-col>
-        </v-row>
+                </button>
+            </div>
+        </div>
 
         <!-- Layout Preview Section -->
         <v-expand-transition>
@@ -92,53 +99,54 @@
             </div>
         </v-expand-transition>
 
-        <v-data-table
-            :headers="headers"
-            :items="filteredSchemas"
-            :loading="loading"
-            class="elevation-1"
-        >
-            <template v-slot:item.is_mandatory="{ item }">
-                <v-chip
-                    :color="item.is_mandatory ? 'error' : 'grey'"
-                    size="small"
-                >
-                    {{ item.is_mandatory ? $t('taskCatalog.mandatory') : $t('taskCatalog.optional') }}
-                </v-chip>
-            </template>
-
-            <template v-slot:item.property_type="{ item }">
-                <v-chip size="small" variant="outlined">
-                    {{ item.property_type }}
-                </v-chip>
-            </template>
-
-            <template v-slot:item.actions="{ item }">
-                <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    @click="openDialog(item)"
-                >
-                    <v-icon>mdi-pencil</v-icon>
-                </v-btn>
-                <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    color="error"
-                    @click="confirmDelete(item)"
-                >
-                    <v-icon>mdi-delete</v-icon>
-                </v-btn>
-            </template>
-
-            <template v-slot:no-data>
-                <v-alert type="info" variant="tonal">
-                    {{ selectedTaskType ? $t('taskCatalog.noSchemas') : $t('taskCatalog.selectTaskTypeFirst') }}
-                </v-alert>
-            </template>
-        </v-data-table>
+        <!-- Flat Table -->
+        <div class="flat-table-container">
+            <table class="flat-table">
+                <thead>
+                    <tr>
+                        <th>{{ $t('taskCatalog.propertyKey') }}</th>
+                        <th>{{ $t('taskCatalog.propertyLabel') }}</th>
+                        <th>{{ $t('taskCatalog.propertyType') }}</th>
+                        <th>{{ $t('taskCatalog.mandatory') }}</th>
+                        <th>{{ $t('taskCatalog.order') }}</th>
+                        <th style="width: 100px; text-align: right;">{{ $t('taskCatalog.actions') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-if="loading">
+                        <td colspan="6" class="loading-cell">
+                            <v-progress-circular indeterminate size="24" color="primary" />
+                        </td>
+                    </tr>
+                    <tr v-else-if="filteredSchemas.length === 0">
+                        <td colspan="6" class="empty-cell">
+                            {{ selectedTaskType ? $t('taskCatalog.noSchemas') : $t('taskCatalog.selectTaskTypeFirst') }}
+                        </td>
+                    </tr>
+                    <tr v-else v-for="item in filteredSchemas" :key="item.id">
+                        <td class="key-cell">{{ item.property_key }}</td>
+                        <td>{{ item.property_label }}</td>
+                        <td>
+                            <span class="type-badge">{{ item.property_type }}</span>
+                        </td>
+                        <td>
+                            <span class="mandatory-badge" :class="item.is_mandatory ? 'required' : 'optional'">
+                                {{ item.is_mandatory ? $t('taskCatalog.mandatory') : $t('taskCatalog.optional') }}
+                            </span>
+                        </td>
+                        <td class="order-cell">{{ item.display_order }}</td>
+                        <td class="actions-cell">
+                            <button class="action-btn action-edit" @click="openDialog(item)">
+                                <v-icon size="16">mdi-pencil</v-icon>
+                            </button>
+                            <button class="action-btn action-delete" @click="confirmDelete(item)">
+                                <v-icon size="16">mdi-delete</v-icon>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
         <!-- Add/Edit Dialog -->
         <PropertySchemaDialog
@@ -177,7 +185,7 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-    </v-card-text>
+    </div>
 </template>
 
 <script>
@@ -316,22 +324,119 @@ export default defineComponent({
 </script>
 
 <style scoped>
+.settings-container {
+    padding: 24px;
+}
+
+/* Info Banner */
+.info-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #1e40af;
+}
+
+/* Filter Row */
+.filter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+}
+
+.filter-select-wrapper {
+    flex: 1;
+    max-width: 300px;
+}
+
+.flat-select :deep(.v-field) {
+    border-radius: 6px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.preview-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #ffffff;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.preview-btn:hover:not(:disabled) {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.preview-btn.active {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+
+.preview-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.add-btn:hover:not(:disabled) {
+    background: #2563eb;
+}
+
+.add-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Layout Preview */
 .layout-preview-container {
-    background: #fafafa;
+    background: #f9fafb;
     border-radius: 8px;
     padding: 16px;
 }
 
-.section-header {
+.layout-section-header {
     font-size: 14px;
     font-weight: 600;
-    color: #7c4dff;
+    color: #3b82f6;
     margin: 16px 0 12px 0;
     padding-bottom: 4px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.section-header:first-child {
+.layout-section-header:first-child {
     margin-top: 0;
 }
 
@@ -345,13 +450,13 @@ export default defineComponent({
 
 .field-label {
     font-size: 12px;
-    color: #7c4dff;
+    color: #3b82f6;
     margin-bottom: 4px;
     font-weight: 500;
 }
 
 .mandatory-indicator {
-    color: #f44336;
+    color: #ef4444;
     margin-left: 2px;
 }
 
@@ -363,11 +468,11 @@ export default defineComponent({
 .mock-select,
 .mock-textarea {
     background: white;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #e5e7eb;
     border-radius: 4px;
     padding: 8px 12px;
     font-size: 13px;
-    color: #666;
+    color: #6b7280;
 }
 
 .mock-textarea {
@@ -383,7 +488,7 @@ export default defineComponent({
 .mock-switch {
     width: 40px;
     height: 20px;
-    background: #e0e0e0;
+    background: #e5e7eb;
     border-radius: 10px;
     position: relative;
 }
@@ -397,6 +502,135 @@ export default defineComponent({
     border-radius: 50%;
     top: 2px;
     left: 2px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Flat Table */
+.flat-table-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.flat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.flat-table thead {
+    background: #f9fafb;
+}
+
+.flat-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.flat-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #4b5563;
+}
+
+.flat-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.flat-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.key-cell {
+    font-family: monospace;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.order-cell {
+    color: #9ca3af;
+    text-align: center;
+}
+
+.actions-cell {
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.loading-cell,
+.empty-cell {
+    text-align: center;
+    padding: 40px 16px !important;
+    color: #9ca3af;
+}
+
+/* Badges */
+.type-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.mandatory-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.mandatory-badge.required {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.mandatory-badge.optional {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Action Buttons */
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.action-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.action-edit {
+    color: #6b7280;
+}
+
+.action-edit:hover {
+    color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.action-delete {
+    color: #9ca3af;
+}
+
+.action-delete:hover {
+    color: #ef4444;
+    background-color: #fef2f2;
 }
 </style>

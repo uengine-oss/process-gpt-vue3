@@ -1049,14 +1049,59 @@ export default {
             }
         },
         applyFontSize() {
-            // Apply font size to all label text elements
+            // Apply font size to all label text elements while maintaining center position
             const container = this.$refs.container;
-            if (container) {
-                const labels = container.querySelectorAll('.djs-label text, .djs-element text tspan');
-                labels.forEach(label => {
-                    label.style.fontSize = this.labelFontSize + 'px';
+            if (!container) return;
+
+            // Handle internal labels (inside tasks, events, etc.)
+            const internalTexts = container.querySelectorAll('.djs-element .djs-visual text');
+            internalTexts.forEach(textEl => {
+                const parentGroup = textEl.closest('.djs-element');
+                if (!parentGroup) return;
+
+                // Get the shape dimensions from the rect/polygon in the visual
+                const rect = parentGroup.querySelector('.djs-visual rect');
+                const polygon = parentGroup.querySelector('.djs-visual polygon');
+
+                let shapeWidth = 0;
+                if (rect) {
+                    shapeWidth = parseFloat(rect.getAttribute('width')) || 0;
+                } else if (polygon) {
+                    // For gateway (diamond shape)
+                    const bbox = polygon.getBBox();
+                    shapeWidth = bbox.width;
+                }
+
+                if (shapeWidth > 0) {
+                    const centerX = shapeWidth / 2;
+
+                    // Apply font size
+                    textEl.style.fontSize = this.labelFontSize + 'px';
+
+                    // Set text-anchor to middle and position at center
+                    textEl.setAttribute('text-anchor', 'middle');
+                    textEl.setAttribute('x', centerX);
+
+                    // Update all tspan elements
+                    const tspans = textEl.querySelectorAll('tspan');
+                    tspans.forEach(tspan => {
+                        tspan.style.fontSize = this.labelFontSize + 'px';
+                        tspan.setAttribute('x', centerX);
+                    });
+                }
+            });
+
+            // Handle external labels (sequence flow labels, etc.)
+            const externalLabels = container.querySelectorAll('.djs-label text');
+            externalLabels.forEach(textEl => {
+                // Just change font size for external labels, keep their position
+                textEl.style.fontSize = this.labelFontSize + 'px';
+
+                const tspans = textEl.querySelectorAll('tspan');
+                tspans.forEach(tspan => {
+                    tspan.style.fontSize = this.labelFontSize + 'px';
                 });
-            }
+            });
         },
         initResizeObserver() {
             const container = this.$refs.container;
@@ -1408,9 +1453,4 @@ export default {
   margin: 0 4px;
 }
 
-/* Apply custom font size to BPMN labels using CSS variable */
-#canvas-container .djs-label text,
-#canvas-container .djs-element text tspan {
-  font-size: var(--label-font-size, 12px) !important;
-}
 </style>

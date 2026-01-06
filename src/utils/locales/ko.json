@@ -560,7 +560,7 @@
         "confirmDeleteConnectionTitle": "접속 정보 삭제",
         "confirmDeleteConnectionText": "\"{name}\"을(를) 삭제하시겠습니까?",
         "skills": "스킬",
-        "taskCatalog": "Task 카탈로그",
+        "taskCatalog": "Task 설정",
         "tenantManage": "테넌트 관리"
     },
     "loginPage": {
@@ -2430,7 +2430,7 @@
         "actions": "작업",
         "required": "필수 항목입니다.",
         "invalidKey": "영문자, 숫자, 언더스코어만 사용 가능합니다.",
-        "pnaSelector": "Task Catalog",
+        "pnaSelector": "PNA Selector",
         "l2Select": "L2 선택",
         "l3Select": "L3 선택",
         "l4Select": "L4 선택",

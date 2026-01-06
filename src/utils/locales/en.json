@@ -2399,7 +2399,7 @@
         "actions": "Actions",
         "required": "This field is required.",
         "invalidKey": "Only letters, numbers, and underscores are allowed.",
-        "pnaSelector": "Task Catalog",
+        "pnaSelector": "PNA Selector",
         "l2Select": "Select L2",
         "l3Select": "Select L3",
         "l4Select": "Select L4",

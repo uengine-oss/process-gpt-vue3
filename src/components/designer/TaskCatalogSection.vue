@@ -4,7 +4,7 @@
         <div class="catalog-header" @click="isCollapsed = !isCollapsed">
             <div class="header-left">
                 <v-icon size="18" color="primary">mdi-folder-star</v-icon>
-                <span class="header-title">Task Catalog</span>
+                <span class="header-title">PNA Selector</span>
                 <v-chip v-if="filteredItems.length > 0" size="x-small" color="primary" variant="tonal" class="count-badge">
                     {{ filteredItems.length }}
                 </v-chip>

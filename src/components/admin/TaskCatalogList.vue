@@ -55,49 +55,38 @@
                 md="4"
                 lg="3"
             >
-                <v-card
+                <div
                     class="task-card"
-                    :class="{ draggable: true }"
                     draggable="true"
                     @dragstart="onDragStart($event, item)"
                 >
-                    <v-card-title class="d-flex align-center">
-                        <v-icon class="mr-2" size="small">
-                            {{ getTaskTypeIcon(item.task_type) }}
-                        </v-icon>
-                        <span class="text-truncate">{{ item.name }}</span>
-                    </v-card-title>
+                    <div class="task-card-header">
+                        <div class="task-icon" :style="{ backgroundColor: getTaskTypeColor(item.task_type) }">
+                            <v-icon size="18" color="white">
+                                {{ getTaskTypeIcon(item.task_type) }}
+                            </v-icon>
+                        </div>
+                        <span class="task-name">{{ item.name }}</span>
+                    </div>
 
-                    <v-card-subtitle>
-                        <v-chip size="x-small" class="mr-1">{{ item.system_name }}</v-chip>
-                        <v-chip size="x-small" variant="outlined">{{ getTaskTypeLabel(item.task_type) }}</v-chip>
-                    </v-card-subtitle>
+                    <div class="task-tags">
+                        <span class="tag tag-system">{{ item.system_name }}</span>
+                        <span class="tag tag-type">{{ getTaskTypeLabel(item.task_type) }}</span>
+                    </div>
 
-                    <v-card-text v-if="item.description" class="text-body-2">
+                    <div v-if="item.description" class="task-description">
                         {{ item.description }}
-                    </v-card-text>
+                    </div>
 
-                    <v-card-actions>
-                        <v-spacer />
-                        <v-btn
-                            icon
-                            size="small"
-                            variant="text"
-                            @click="openDialog(item)"
-                        >
-                            <v-icon>mdi-pencil</v-icon>
-                        </v-btn>
-                        <v-btn
-                            icon
-                            size="small"
-                            variant="text"
-                            color="error"
-                            @click="confirmDelete(item)"
-                        >
-                            <v-icon>mdi-delete</v-icon>
-                        </v-btn>
-                    </v-card-actions>
-                </v-card>
+                    <div class="task-actions">
+                        <button class="action-btn action-edit" @click="openDialog(item)">
+                            <v-icon size="16">mdi-pencil</v-icon>
+                        </button>
+                        <button class="action-btn action-delete" @click="confirmDelete(item)">
+                            <v-icon size="16">mdi-delete</v-icon>
+                        </button>
+                    </div>
+                </div>
             </v-col>
         </v-row>
 
@@ -229,6 +218,20 @@ export default defineComponent({
             return icons[taskType] || 'mdi-checkbox-blank';
         };
 
+        const getTaskTypeColor = (taskType) => {
+            const colors = {
+                'bpmn:ManualTask': '#FF9800',
+                'bpmn:UserTask': '#2196F3',
+                'bpmn:ServiceTask': '#4CAF50',
+                'bpmn:ScriptTask': '#9C27B0',
+                'bpmn:BusinessRuleTask': '#795548',
+                'bpmn:SendTask': '#00BCD4',
+                'bpmn:ReceiveTask': '#607D8B',
+                'bpmn:Task': '#9E9E9E'
+            };
+            return colors[taskType] || '#9E9E9E';
+        };
+
         const getTaskTypeLabel = (taskType) => {
             const type = AVAILABLE_TASK_TYPES.find(t => t.value === taskType);
             if (type) {
@@ -283,6 +286,7 @@ export default defineComponent({
             editingItem,
             deletingItem,
             getTaskTypeIcon,
+            getTaskTypeColor,
             getTaskTypeLabel,
             openDialog,
             onItemSaved,
@@ -295,17 +299,141 @@ export default defineComponent({
 </script>
 
 <style scoped>
+/* Task Card - Flat Design */
 .task-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
     cursor: grab;
-    transition: all 0.2s;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    position: relative;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
 }
 
 .task-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    border-color: #3b82f6;
+    background-color: #fafbfc;
 }
 
-.task-card.draggable:active {
+.task-card:active {
     cursor: grabbing;
+}
+
+/* Card Header */
+.task-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.task-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.task-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Tags */
+.task-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.tag-system {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+}
+
+.tag-type {
+    background-color: #eff6ff;
+    color: #3b82f6;
+    border: 1px solid #dbeafe;
+}
+
+/* Description */
+.task-description {
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.4;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Actions */
+.task-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid #f3f4f6;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease;
+}
+
+.action-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.action-edit {
+    color: #6b7280;
+}
+
+.action-edit:hover {
+    color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.action-delete {
+    color: #9ca3af;
+}
+
+.action-delete:hover {
+    color: #ef4444;
+    background-color: #fef2f2;
 }
 </style>

@@ -252,12 +252,40 @@
             </v-card>
         </v-dialog>
 
-        <!-- Sub Process Selector Dialog (select from saved processes) -->
+        <!-- Sub Process Selector Dialog (select from saved processes or create new) -->
         <v-dialog v-model="subProcessDialog.show" max-width="500" persistent>
-            <v-card>
-                <v-card-title>{{ $t('processDefinitionMap.addSub') }}</v-card-title>
-                <v-card-text>
+            <v-card class="pa-4" style="border-radius: 12px;">
+                <v-card-title class="px-0 pt-0 d-flex align-center">
+                    {{ $t('processDefinitionMap.addSub') }}
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeSubProcessDialog" icon variant="text" density="compact" size="small">
+                        <v-icon size="18">mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="px-0">
+                    <!-- Toggle: Select Existing vs Create New -->
+                    <v-btn-toggle
+                        v-model="subProcessDialog.isNewDef"
+                        mandatory
+                        density="compact"
+                        color="primary"
+                        variant="outlined"
+                        divided
+                        class="w-100 mb-4"
+                    >
+                        <v-btn :value="false" class="flex-grow-1" size="small">
+                            <v-icon start size="16">mdi-file-search</v-icon>
+                            {{ $t('processDialog.selectExisting') }}
+                        </v-btn>
+                        <v-btn :value="true" class="flex-grow-1" size="small">
+                            <v-icon start size="16">mdi-plus</v-icon>
+                            {{ $t('processDialog.createNew') }}
+                        </v-btn>
+                    </v-btn-toggle>
+
+                    <!-- Select Existing Mode -->
                     <ProcessDefinitionDisplay
+                        v-if="!subProcessDialog.isNewDef"
                         v-model="subProcessDialog.selectedProcess"
                         :file-extensions="['.bpmn']"
                         :options="{
@@ -266,17 +294,69 @@
                             hideDetails: true
                         }"
                     ></ProcessDefinitionDisplay>
+
+                    <!-- Create New Mode -->
+                    <div v-else>
+                        <v-text-field
+                            v-model="subProcessDialog.newProcessName"
+                            variant="outlined"
+                            color="primary"
+                            density="comfortable"
+                            :label="$t('processDialog.processName') || '프로세스 이름'"
+                            autofocus
+                            hide-details="auto"
+                            @keypress.enter="addSelectedSubProcess"
+                        ></v-text-field>
+
+                        <v-text-field
+                            v-model="subProcessDialog.newProcessId"
+                            variant="outlined"
+                            color="primary"
+                            density="comfortable"
+                            :rules="idRules"
+                            :hint="$t('processDialog.idHint') || '영문 소문자, 숫자, 언더스코어(_)만 사용'"
+                            persistent-hint
+                            class="mt-3"
+                            :loading="subProcessDialog.isGeneratingId"
+                        >
+                            <template v-slot:label>
+                                <span v-if="!subProcessDialog.isGeneratingId">{{ $t('processDialog.processId') || 'Process ID' }}</span>
+                                <span v-else class="d-flex align-center">
+                                    <v-progress-circular indeterminate size="14" width="2" class="mr-2" />
+                                    {{ $t('processDialog.generatingId') || 'ID 생성 중...' }}
+                                </span>
+                            </template>
+                            <template v-slot:append-inner>
+                                <v-tooltip location="top">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-bind="props"
+                                            @click="generateIdFromName"
+                                            icon
+                                            size="x-small"
+                                            variant="text"
+                                            :disabled="!subProcessDialog.newProcessName || subProcessDialog.isGeneratingId"
+                                        >
+                                            <v-icon size="18">mdi-auto-fix</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('processDialog.generateIdTooltip') || 'AI로 ID 추천받기' }}</span>
+                                </v-tooltip>
+                            </template>
+                        </v-text-field>
+                    </div>
                 </v-card-text>
-                <v-card-actions>
+                <v-card-actions class="px-0 pb-0">
                     <v-spacer></v-spacer>
-                    <v-btn variant="text" @click="subProcessDialog.show = false">
+                    <v-btn variant="text" @click="closeSubProcessDialog" class="rounded-pill">
                         {{ $t('common.cancel') }}
                     </v-btn>
-                    <v-btn 
-                        color="primary" 
-                        variant="flat" 
+                    <v-btn
+                        color="primary"
+                        variant="flat"
                         @click="addSelectedSubProcess"
-                        :disabled="!subProcessDialog.selectedProcess || !subProcessDialog.selectedProcess.id"
+                        :disabled="isSubProcessSaveDisabled"
+                        class="rounded-pill px-6"
                     >
                         {{ $t('common.save') }}
                     </v-btn>
@@ -288,6 +368,7 @@
 
 <script>
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
+import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
 
 export default {
     name: 'MetricsView',
@@ -326,8 +407,16 @@ export default {
             subProcessDialog: {
                 show: false,
                 parentProcess: null,
-                selectedProcess: null
+                selectedProcess: null,
+                isNewDef: false,
+                newProcessName: '',
+                newProcessId: '',
+                isGeneratingId: false,
+                previousSuggestions: []
             },
+            idGenerator: null,
+            regenerateIdOnly: true,
+            bpmnProcessInfo: '',
             snackbar: {
                 show: false,
                 text: '',
@@ -341,7 +430,29 @@ export default {
             ]
         };
     },
+    computed: {
+        isSubProcessSaveDisabled() {
+            if (this.subProcessDialog.isNewDef) {
+                // Create new mode: need name and valid id
+                return !this.subProcessDialog.newProcessName ||
+                       !this.subProcessDialog.newProcessId ||
+                       !this.isValidId(this.subProcessDialog.newProcessId);
+            } else {
+                // Select existing mode: need id from selection
+                return !this.subProcessDialog.selectedProcess || !this.subProcessDialog.selectedProcess.id;
+            }
+        },
+        idRules() {
+            return [
+                v => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
+                v => /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
+            ];
+        }
+    },
     methods: {
+        isValidId(id) {
+            return /^[a-z][a-z0-9_]*$/.test(id);
+        },
         generateId() {
             return Math.random().toString(36).substring(2, 15);
         },
@@ -508,48 +619,171 @@ export default {
                 this.$emit('update:value', newValue);
             }
         },
-        // Sub Process methods - using ProcessDefinitionDisplay selector
+        // Sub Process methods - using ProcessDefinitionDisplay selector or create new
         openSubProcessSelector(parentProcess) {
             this.subProcessDialog = {
                 show: true,
                 parentProcess: parentProcess,
-                selectedProcess: null
+                selectedProcess: null,
+                isNewDef: false,
+                newProcessName: '',
+                newProcessId: '',
+                isGeneratingId: false,
+                previousSuggestions: []
             };
         },
+        closeSubProcessDialog() {
+            this.subProcessDialog.show = false;
+            this.subProcessDialog.isNewDef = false;
+            this.subProcessDialog.selectedProcess = null;
+            this.subProcessDialog.newProcessName = '';
+            this.subProcessDialog.newProcessId = '';
+            this.subProcessDialog.isGeneratingId = false;
+        },
         addSelectedSubProcess() {
-            if (!this.subProcessDialog.selectedProcess || !this.subProcessDialog.selectedProcess.id) {
+            const newValue = JSON.parse(JSON.stringify(this.value));
+            const proc = newValue.processes.find(p => p.id === this.subProcessDialog.parentProcess.id);
+
+            if (!proc) {
+                this.closeSubProcessDialog();
                 return;
             }
 
-            const newValue = JSON.parse(JSON.stringify(this.value));
-            const proc = newValue.processes.find(p => p.id === this.subProcessDialog.parentProcess.id);
-            
-            if (proc) {
-                if (!proc.sub_proc_list) {
-                    proc.sub_proc_list = [];
+            if (!proc.sub_proc_list) {
+                proc.sub_proc_list = [];
+            }
+
+            let newSubProcess = null;
+            let isNew = false;
+
+            if (this.subProcessDialog.isNewDef) {
+                // Create new mode
+                if (!this.subProcessDialog.newProcessName || !this.subProcessDialog.newProcessId) {
+                    return;
                 }
-                
-                // Check for duplicate
+
+                // Check for duplicate ID
                 const isDuplicate = proc.sub_proc_list.some(
-                    s => s.id === this.subProcessDialog.selectedProcess.id
+                    s => s.id === this.subProcessDialog.newProcessId
                 );
-                
+
                 if (isDuplicate) {
                     this.snackbar.text = this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.';
                     this.snackbar.color = 'error';
                     this.snackbar.show = true;
                     return;
                 }
-                
-                proc.sub_proc_list.push({
+
+                newSubProcess = {
+                    id: this.subProcessDialog.newProcessId,
+                    name: this.subProcessDialog.newProcessName
+                };
+                isNew = true;
+            } else {
+                // Select existing mode
+                if (!this.subProcessDialog.selectedProcess || !this.subProcessDialog.selectedProcess.id) {
+                    return;
+                }
+
+                // Check for duplicate
+                const isDuplicate = proc.sub_proc_list.some(
+                    s => s.id === this.subProcessDialog.selectedProcess.id
+                );
+
+                if (isDuplicate) {
+                    this.snackbar.text = this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.';
+                    this.snackbar.color = 'error';
+                    this.snackbar.show = true;
+                    return;
+                }
+
+                newSubProcess = {
                     id: this.subProcessDialog.selectedProcess.id,
                     name: this.subProcessDialog.selectedProcess.name
-                });
-                
-                this.$emit('update:value', newValue);
+                };
             }
-            
-            this.subProcessDialog.show = false;
+
+            proc.sub_proc_list.push(newSubProcess);
+            this.$emit('update:value', newValue);
+            this.closeSubProcessDialog();
+
+            // Navigate to process editor for newly created process
+            if (isNew) {
+                const url = `/definitions/chat?id=${newSubProcess.id}&name=${encodeURIComponent(newSubProcess.name)}&modeling=true`;
+                window.open(url, '_blank');
+            }
+        },
+        // AI ID generation methods
+        async generateIdFromName() {
+            if (!this.subProcessDialog.newProcessName || !this.subProcessDialog.newProcessName.trim()) return;
+
+            this.subProcessDialog.isGeneratingId = true;
+            this.regenerateIdOnly = true;
+            this.bpmnProcessInfo = this.subProcessDialog.newProcessName;
+
+            try {
+                this.idGenerator = new ProcessDefinitionIdGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: "Korean"
+                });
+                await this.idGenerator.generate();
+            } catch (error) {
+                console.error('ID 생성 중 오류 발생:', error);
+                this.subProcessDialog.isGeneratingId = false;
+                this.generateIdFallback();
+            }
+        },
+        generateIdFallback() {
+            // Simple fallback when AI fails
+            let id = this.subProcessDialog.newProcessName
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^a-z0-9_]/g, '')
+                .replace(/^[0-9_]+/, '')
+                .replace(/_+/g, '_')
+                .replace(/_$/, '');
+
+            if (!id) {
+                id = 'process_' + Date.now().toString(36);
+            }
+            this.subProcessDialog.newProcessId = id;
+        },
+        async onGenerationFinished(response) {
+            try {
+                // Parse AI response (format: "id: suggested_id")
+                const lines = response.trim().split('\n');
+                let id = '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('id:')) {
+                        id = trimmedLine.split(':')[1]?.trim() || '';
+                    }
+                }
+
+                if (id) {
+                    // Clean up the ID to ensure it's valid
+                    id = id.toLowerCase()
+                        .replace(/[^a-z0-9_]/g, '_')
+                        .replace(/^[0-9_]+/, '')
+                        .replace(/_+/g, '_')
+                        .replace(/_$/, '');
+
+                    if (id) {
+                        this.subProcessDialog.newProcessId = id;
+                        this.subProcessDialog.previousSuggestions.push(id);
+                    } else {
+                        this.generateIdFallback();
+                    }
+                } else {
+                    this.generateIdFallback();
+                }
+            } catch (error) {
+                console.error('ID 파싱 중 오류:', error);
+                this.generateIdFallback();
+            } finally {
+                this.subProcessDialog.isGeneratingId = false;
+            }
         },
         // Remove sub process from matrix only (not deleting actual process)
         removeSubProcess(parentProcess, sub) {
