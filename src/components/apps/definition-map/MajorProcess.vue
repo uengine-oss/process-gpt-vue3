@@ -130,6 +130,14 @@ export default {
         },
         deleteProcess() {
             this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);
+            
+            // 성공 메시지 표시
+            if (window.$app_) {
+                window.$app_.snackbarMessage = this.$t('successMsg.delete');
+                window.$app_.snackbarColor = 'success';
+                window.$app_.snackbar = true;
+                window.$app_.snackbarSuccessStatus = true;
+            }
         },
         clickProcess(id) {
             this.$emit('clickProcess', id);

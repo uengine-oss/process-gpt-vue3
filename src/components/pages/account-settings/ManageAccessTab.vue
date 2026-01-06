@@ -5,7 +5,8 @@
             <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff;">
                 <Icons :icon="'magnifer-linear'" :size="22" />
                 <v-text-field 
-                v-model="search" 
+                v-model="searchInput" 
+                @keyup.enter="handleSearch"
                 variant="plain" 
                 density="compact"
                 class="position-relative pt-0 ml-3 custom-placeholer-color" 
@@ -28,7 +29,12 @@
         </v-row>
 
         <div class="manage-access-tab-table-box">
-            <v-data-table :items="users" :search="search" :filter-keys="searchKey" :headers="headers" items-per-page="5">
+            <!-- 검색 결과가 없을 때 -->
+            <div v-if="searchQuery && filteredUsers.length === 0" class="text-left pa-8">
+                <p class="text-subtitle-1 text-medium-emphasis">{{ $t('accountTab.noSearchResults') }}</p>
+            </div>
+            
+            <v-data-table v-else :items="users" :search="searchQuery" :filter-keys="searchKey" :headers="headers" items-per-page="5">
                 <template v-slot:default="{ items }">
                     <div v-for="item in items" :key="item.id" 
                         class="d-flex align-center justify-space-between pa-4 pr-0 pl-0 user-row"
@@ -187,7 +193,8 @@ export default {
     },
     data: () => ({
         isMobile: false,
-        search: '',
+        searchInput: '',
+        searchQuery: '',
         searchKey: ['name', 'email'],
         users: [],
         adminItem: [
@@ -212,6 +219,18 @@ export default {
         },
         isDeleteEnabled() {
             return this.confirmName === (this.deleteTargetUser ? this.deleteTargetUser.name : '');
+        },
+        filteredUsers() {
+            if (!this.searchQuery) {
+                return this.users;
+            }
+            const query = this.searchQuery.toLowerCase();
+            return this.users.filter(user => {
+                return this.searchKey.some(key => {
+                    const value = user[key];
+                    return value && value.toString().toLowerCase().includes(query);
+                });
+            });
         }
     },
     async mounted() {
@@ -226,6 +245,9 @@ export default {
         this.getOrganizationChart();
     },
     methods: {
+        handleSearch() {
+            this.searchQuery = this.searchInput;
+        },
         closeInviteUserCard(userList) {
             this.users = [...this.users, ...userList];
             this.openInviteUserCard = false;
