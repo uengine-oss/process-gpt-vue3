@@ -398,9 +398,7 @@ export default {
                         onToken: (token) => {
                             fullResponse += token;
                             // 스트리밍 중 표시 업데이트
-                            this.loadingMessage = fullResponse.length > 50 
-                                ? fullResponse.substring(0, 50) + '...' 
-                                : fullResponse || '생각 중...';
+                            this.loadingMessage = fullResponse.length === 0 ? '생각 중...' : fullResponse;
                         },
                         onToolStart: (toolName, input) => {
                             toolCalls.push({ name: toolName, input });
