@@ -198,6 +198,12 @@ export default {
             await this.handleInitialMessage(this.initialMessage);
         }
     },
+    beforeUnmount() {
+        // 패널이 닫힐 때 채팅방 선택 해제 알림 (알림 활성화)
+        if (this.currentRoomId) {
+            this.EventBus.emit('chat-room-unselected');
+        }
+    },
     methods: {
         // UUID 생성
         uuid() {
@@ -230,6 +236,8 @@ export default {
         // 채팅방 선택
         async selectRoom(room) {
             this.currentRoomId = room.id;
+            // App.vue에 현재 채팅방 알림 (알림 중복 방지용)
+            this.EventBus.emit('chat-room-selected', room.id);
             await this.loadMessages(room.id);
         },
 
@@ -290,6 +298,7 @@ export default {
             // 로컬 상태 업데이트
             this.chatRooms.unshift(room);
             this.currentRoomId = roomId;
+            this.EventBus.emit('chat-room-selected', roomId);
             this.messages = [];
 
             return room;
@@ -360,16 +369,21 @@ export default {
             const userMsgObj = this.createMessageObj(userMessage, 'user');
             this.messages.push(userMsgObj);
             await this.saveMessage(userMsgObj);
-            this.scrollToBottom();
-
+            
             // API 호출
             this.isLoading = true;
             this.loadingMessage = '생각 중...';
+
+            this.scrollToBottom();
             
             try {
                 // 스트리밍 응답 처리
                 let fullResponse = '';
                 const toolCalls = [];
+                
+                // Supabase 세션에서 JWT 가져오기
+                const session = await window.$supabase?.auth?.getSession();
+                const userJwt = session?.data?.session?.access_token || '';
                 
                 await workAssistantAgentService.sendMessageStream(
                     {
@@ -377,7 +391,8 @@ export default {
                         tenant_id: this.tenantId,
                         user_uid: this.userInfo.uid || this.userInfo.id,
                         user_email: this.userInfo.email,
-                        user_name: this.userInfo.name || this.userInfo.username
+                        user_name: this.userInfo.name || this.userInfo.username,
+                        user_jwt: userJwt
                     },
                     {
                         onToken: (token) => {
