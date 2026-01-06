@@ -228,6 +228,8 @@ export default {
                 let allMessages = messages.map(message => {
                     let newMessage = message.messages;
                     newMessage.thread_id = message.thread_id || null;
+                    newMessage.uuid = message.uuid || null;
+                    newMessage.id = message.id || message.uuid || null;
                     return newMessage;
                 });
                 allMessages.sort((a, b) => {

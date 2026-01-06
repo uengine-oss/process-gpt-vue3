@@ -1973,6 +1973,13 @@ export default {
                                 );
                                 
                                 if (messageIndex !== -1) {
+                                    // UUID 업데이트 (없으면 추가)
+                                    if (data.new.uuid && !me.messages[messageIndex].uuid) {
+                                        me.messages[messageIndex].uuid = data.new.uuid;
+                                    }
+                                    if (data.new.id && !me.messages[messageIndex].id) {
+                                        me.messages[messageIndex].id = data.new.id;
+                                    }
                                     // jsonContent.intervention이 있으면 업데이트
                                     if (data.new.messages.jsonContent && data.new.messages.jsonContent.intervention) {
                                         if (!me.messages[messageIndex].jsonContent) {
@@ -1984,14 +1991,23 @@ export default {
                             }
                         }
                         
-                        if (data.new.messages.email != me.userInfo.email) {
+                        // 에이전트 메시지 또는 다른 사용자 메시지 처리
+                        // 에이전트 메시지는 email이 없거나 role이 'agent'일 수 있음
+                        const isAgentMessage = data.new.messages.role === 'agent' || data.new.messages.role === 'system';
+                        const isOtherUserMessage = data.new.messages.email && data.new.messages.email != me.userInfo.email;
+                        
+                        if (isAgentMessage || isOtherUserMessage) {
                             if(data.new.id == me.currentChatRoom.id){
                                 if ((me.messages && me.messages.length > 0) 
                                 && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
                                 && (me.messages[me.messages.length - 1].content == 'AI 생성중...' || me.messages[me.messages.length - 1].content == '테이블 생성 중...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
                                 ) {
-                                    me.messages[me.messages.length - 1] = data.new.messages
-                                    me.messages[me.messages.length - 1].isLoading = false
+                                    // UUID 포함 (에이전트 개입 응답 매칭을 위해 필수)
+                                    const messageWithUuid = { ...data.new.messages };
+                                    messageWithUuid.uuid = data.new.uuid || messageWithUuid.uuid || null;
+                                    messageWithUuid.id = data.new.id || messageWithUuid.id || messageWithUuid.uuid || null;
+                                    me.messages[me.messages.length - 1] = messageWithUuid;
+                                    me.messages[me.messages.length - 1].isLoading = false;
                                     me.EventBus.emit('instances-updated');
                                 } else {
                                     // 중복 메시지 체크: uuid 또는 내용+시간으로 확인
@@ -2003,7 +2019,11 @@ export default {
                                     );
                                     
                                     if (!isDuplicate) {
-                                        me.messages.push(data.new.messages)
+                                        // UUID 포함 (에이전트 개입 응답 매칭을 위해 필수)
+                                        const messageWithUuid = { ...data.new.messages };
+                                        messageWithUuid.uuid = data.new.uuid || messageWithUuid.uuid || null;
+                                        messageWithUuid.id = data.new.id || messageWithUuid.id || messageWithUuid.uuid || null;
+                                        me.messages.push(messageWithUuid);
                                     }
                                 }
                                 me.newMessageInfo = data.new.messages

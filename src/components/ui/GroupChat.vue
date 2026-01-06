@@ -127,7 +127,8 @@
                                     </v-row>
                                 </div>
                                 
-                                <div v-for="(message, index) in filteredMessages" :key="index" class="py-1 px-3">
+                                <div v-for="(message, index) in filteredMessages" :key="index" class="py-1 px-3"
+                                    v-if="!shouldHideAgentInterventionResponse(message)">
                                     <!-- 날짜 구분선 표시 -->
                                     <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
                                         <v-divider class="date-separator-line"></v-divider>
@@ -1917,19 +1918,15 @@ export default {
                         data.formValues = {};
                     }
                     
+                    // 에이전트 개입 응답 메시지는 필터링에서 제외 (채팅창에 표시하지 않음)
+                    if (this.shouldHideAgentInterventionResponse(data)) {
+                        return;
+                    }
+                    
                     // 개입 정보가 있는 메시지도 표시 (content가 없어도)
                     // content가 있거나, jsonContent가 있거나, image가 있거나, 개입 정보가 있는 경우 표시
                     if (data.content || data.jsonContent || data.image || 
                         (data.jsonContent && data.jsonContent.intervention)) {
-                        // 이전 메시지가 개입된 메시지이고, 현재 메시지가 system/agent인 경우 제외
-                        if (index > 0 && (data.role === 'system' || data.role === 'agent')) {
-                            const prevItem = this.messages[index - 1];
-                            if (prevItem && prevItem.jsonContent && prevItem.jsonContent.intervention && 
-                                prevItem.jsonContent.intervention.should_intervene) {
-                                // 개입 응답 메시지는 필터링에서 제외
-                                return;
-                            }
-                        }
                         list.push(data);
                     }
                 });
@@ -2007,36 +2004,226 @@ export default {
         },
         getInterventionResponseMessage(index) {
             const currentMessage = this.filteredMessages[index];
-            if (!currentMessage || !currentMessage.jsonContent || !currentMessage.jsonContent.intervention || 
-                !currentMessage.jsonContent.intervention.should_intervene) {
+            
+            console.log('🔍 getInterventionResponseMessage 호출:', {
+                index,
+                currentMessage: currentMessage ? {
+                    id: currentMessage.id,
+                    uuid: currentMessage.uuid,
+                    content: currentMessage.content?.substring(0, 50),
+                    hasJsonContent: !!currentMessage.jsonContent,
+                    jsonContent: currentMessage.jsonContent,
+                    intervention: currentMessage.jsonContent?.intervention,
+                    timeStamp: currentMessage.timeStamp,
+                    email: currentMessage.email
+                } : null
+            });
+            
+            if (!currentMessage) {
+                console.log('❌ currentMessage가 없음');
                 return null;
             }
             
+            if (!currentMessage.jsonContent) {
+                console.log('❌ jsonContent가 없음');
+                return null;
+            }
+            
+            if (!currentMessage.jsonContent.intervention) {
+                console.log('❌ intervention이 없음');
+                return null;
+            }
+            
+            if (!currentMessage.jsonContent.intervention.should_intervene) {
+                console.log('❌ should_intervene이 false');
+                return null;
+            }
+            
+            // UUID를 여러 방법으로 찾기 시도
+            let userMessageUuid = currentMessage.uuid || currentMessage.id;
+            
+            // uuid가 없으면 messages 배열에서 원본 메시지를 찾아서 uuid 가져오기
+            if (!userMessageUuid) {
+                console.log('🔍 this.messages에서 원본 메시지 찾기 시도...', {
+                    filteredMessageIndex: index,
+                    totalMessages: this.messages.length,
+                    currentMessageTimeStamp: currentMessage.timeStamp,
+                    currentMessageContent: currentMessage.content?.substring(0, 50)
+                });
+                
+                for (let i = 0; i < this.messages.length; i++) {
+                    const msg = this.messages[i];
+                    // 같은 메시지인지 확인 (content, timeStamp, email 등으로)
+                    // timeStamp가 정확히 일치하거나, content와 email이 일치하는 경우
+                    const timeMatch = msg.timeStamp === currentMessage.timeStamp;
+                    const contentMatch = msg.content === currentMessage.content || 
+                                       (msg.content && currentMessage.content && 
+                                        msg.content.trim() === currentMessage.content.trim());
+                    const emailMatch = msg.email === currentMessage.email;
+                    
+                    if (timeMatch && contentMatch && emailMatch) {
+                        userMessageUuid = msg.uuid || msg.id;
+                        console.log('✅ 원본 메시지 찾음:', {
+                            index: i,
+                            uuid: msg.uuid,
+                            id: msg.id,
+                            foundUuid: userMessageUuid
+                        });
+                        break;
+                    }
+                }
+            }
+            
+            if (!userMessageUuid) {
+                console.log('❌ userMessageUuid를 찾을 수 없음:', {
+                    currentMessage: {
+                        id: currentMessage.id,
+                        uuid: currentMessage.uuid,
+                        content: currentMessage.content?.substring(0, 50),
+                        timeStamp: currentMessage.timeStamp,
+                        email: currentMessage.email
+                    },
+                    messagesSample: this.messages.slice(0, 3).map(m => ({
+                        id: m.id,
+                        uuid: m.uuid,
+                        content: m.content?.substring(0, 50),
+                        timeStamp: m.timeStamp,
+                        email: m.email
+                    }))
+                });
+                // UUID가 없어도 시간 기반으로 찾기 시도 (하위 호환성)
+                console.log('⚠️ UUID 없이 시간 기반으로 찾기 시도...');
+            }
+            
+            console.log('✅ 조건 통과, 메시지 찾기 시작:', { userMessageUuid });
+            
+            // 방법 1: user_message_uuid로 직접 연결된 에이전트 메시지 찾기 (가장 정확)
+            // UUID가 있을 때만 시도
+            if (userMessageUuid) {
+                for (let i = 0; i < this.messages.length; i++) {
+                    const msg = this.messages[i];
+                    if ((msg.role === 'system' || msg.role === 'agent')) {
+                        // jsonContent가 문자열일 수도 있으므로 파싱 시도
+                        let jsonContent = msg.jsonContent;
+                        if (typeof jsonContent === 'string') {
+                            try {
+                                jsonContent = JSON.parse(jsonContent);
+                            } catch (e) {
+                                jsonContent = null;
+                            }
+                        }
+                        
+                        if (jsonContent && jsonContent.user_message_uuid) {
+                            const userMessageUuidInResponse = jsonContent.user_message_uuid;
+                            if (String(userMessageUuidInResponse) === String(userMessageUuid)) {
+                                console.log('✅ 개입 응답 메시지 찾음 (UUID 매칭):', {
+                                    userMessageUuid,
+                                    agentMessageUuid: msg.uuid,
+                                    agentMessageContent: msg.content?.substring(0, 50)
+                                });
+                                return msg;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 디버깅: 찾지 못한 경우 로그 출력
+            console.log('⚠️ UUID 매칭 실패, 다른 방법 시도:', {
+                userMessageUuid,
+                userMessageContent: currentMessage.content?.substring(0, 50),
+                userMessageTimeStamp: currentMessage.timeStamp,
+                availableAgentMessages: this.messages
+                    .filter(m => (m.role === 'system' || m.role === 'agent'))
+                    .map(m => ({
+                        uuid: m.uuid,
+                        role: m.role,
+                        content: m.content?.substring(0, 50),
+                        timeStamp: m.timeStamp,
+                        jsonContent: m.jsonContent
+                    }))
+            });
+            
+            // 방법 2: 바로 다음 메시지 확인 (하위 호환성)
+            // UUID가 없어도 timeStamp로 원본 메시지 찾기
             let originalIndex = -1;
-            for (let i = 0; i < this.messages.length; i++) {
-                const msg = this.messages[i];
-                if (msg.id && currentMessage.id && String(msg.id) === String(currentMessage.id)) {
-                    originalIndex = i;
-                    break;
+            if (!userMessageUuid) {
+                // timeStamp로 찾기
+                for (let i = 0; i < this.messages.length; i++) {
+                    const msg = this.messages[i];
+                    if (msg.timeStamp === currentMessage.timeStamp &&
+                        msg.email === currentMessage.email &&
+                        msg.content === currentMessage.content) {
+                        originalIndex = i;
+                        userMessageUuid = msg.uuid || msg.id;
+                        console.log('✅ timeStamp로 원본 메시지 찾음:', {
+                            index: i,
+                            uuid: msg.uuid,
+                            id: msg.id
+                        });
+                        break;
+                    }
                 }
-                if (msg.uuid && currentMessage.uuid && String(msg.uuid) === String(currentMessage.uuid)) {
-                    originalIndex = i;
-                    break;
-                }
-                if (!msg.id && !msg.uuid && msg.timeStamp && currentMessage.timeStamp && 
-                    String(msg.timeStamp) === String(currentMessage.timeStamp) &&
-                    msg.email === currentMessage.email) {
-                    originalIndex = i;
-                    break;
+            } else {
+                // UUID가 있으면 UUID로 찾기
+                for (let i = 0; i < this.messages.length; i++) {
+                    const msg = this.messages[i];
+                    if (msg.id && String(msg.id) === String(userMessageUuid)) {
+                        originalIndex = i;
+                        break;
+                    }
+                    if (msg.uuid && String(msg.uuid) === String(userMessageUuid)) {
+                        originalIndex = i;
+                        break;
+                    }
                 }
             }
             
             if (originalIndex >= 0 && originalIndex < this.messages.length - 1) {
                 const nextMessage = this.messages[originalIndex + 1];
                 if (nextMessage && (nextMessage.role === 'system' || nextMessage.role === 'agent') && nextMessage.content) {
+                    console.log('✅ 개입 응답 메시지 찾음 (바로 다음 메시지):', {
+                        userMessageUuid,
+                        agentMessageUuid: nextMessage.uuid,
+                        agentMessageContent: nextMessage.content?.substring(0, 50),
+                        agentMessageJsonContent: nextMessage.jsonContent
+                    });
                     return nextMessage;
                 }
             }
+            
+            // 방법 3: 시간 기반으로 사용자 메시지 이후의 에이전트 메시지 찾기 (하위 호환성)
+            if (originalIndex >= 0 && currentMessage.timeStamp) {
+                const userTimeStamp = currentMessage.timeStamp;
+                for (let i = originalIndex + 1; i < this.messages.length; i++) {
+                    const msg = this.messages[i];
+                    // 사용자 메시지 이후의 에이전트/시스템 메시지 찾기
+                    if (msg.timeStamp && msg.timeStamp > userTimeStamp && 
+                        (msg.timeStamp - userTimeStamp) < 60000 && // 60초 이내
+                        (msg.role === 'system' || msg.role === 'agent') && 
+                        msg.content && msg.content.trim() !== '') {
+                        console.log('✅ 개입 응답 메시지 찾음 (시간 기반):', {
+                            userMessageUuid,
+                            agentMessageUuid: msg.uuid,
+                            agentMessageContent: msg.content?.substring(0, 50),
+                            timeDiff: msg.timeStamp - userTimeStamp,
+                            agentMessageJsonContent: msg.jsonContent
+                        });
+                        return msg;
+                    }
+                    // 너무 오래된 메시지는 무시 (다음 사용자 메시지가 나오면 중단)
+                    if (msg.email && msg.email === currentMessage.email && msg.timeStamp > userTimeStamp) {
+                        break;
+                    }
+                }
+            }
+            
+            console.log('❌ 개입 응답 메시지를 찾지 못함 (모든 방법 시도 후):', {
+                userMessageUuid,
+                userMessageContent: currentMessage.content?.substring(0, 50),
+                originalIndex,
+                totalMessages: this.messages.length
+            });
             return null;
         },
         isInterventionResponse(index) {
@@ -2044,6 +2231,36 @@ export default {
                 const prevMessage = this.filteredMessages[index - 1];
                 if (prevMessage && prevMessage.jsonContent && prevMessage.jsonContent.intervention && 
                     prevMessage.jsonContent.intervention.should_intervene) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        shouldHideAgentInterventionResponse(message) {
+            // 에이전트 개입 응답 메시지는 채팅창에서 숨김 (개입 배지 안에서만 표시)
+            if (!message) {
+                return false;
+            }
+            
+            // role이 'system' 또는 'agent'인 메시지 확인
+            if (message.role === 'system' || message.role === 'agent') {
+                // jsonContent가 문자열일 수도 있으므로 파싱 시도
+                let jsonContent = message.jsonContent;
+                if (typeof jsonContent === 'string') {
+                    try {
+                        jsonContent = JSON.parse(jsonContent);
+                    } catch (e) {
+                        jsonContent = null;
+                    }
+                }
+                
+                // user_message_uuid가 있으면 개입 응답 메시지이므로 숨김
+                if (jsonContent && jsonContent.user_message_uuid) {
+                    console.log('🚫 에이전트 개입 응답 메시지 숨김:', {
+                        messageUuid: message.uuid,
+                        userMessageUuid: jsonContent.user_message_uuid,
+                        content: message.content?.substring(0, 50)
+                    });
                     return true;
                 }
             }
