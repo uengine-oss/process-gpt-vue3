@@ -249,27 +249,21 @@
                                                                     </SummaryButton>
                                                                 </div>
 
-                                                                <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
+                                                                <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkifyWithMentions(message.content)"></pre>
 
                                                                 <!-- 개입 정보 표시 (GroupChat 전용) - 개입이 통과된 경우에만 표시 -->
                                                                 <div v-if="message.jsonContent && message.jsonContent.intervention && message.jsonContent.intervention.should_intervene" 
-                                                                    class="intervention-info mt-2 pa-2 intervention-yes"
-                                                                    :style="{
-                                                                        'border-radius': '6px', 
-                                                                        'font-size': '0.75rem',
-                                                                        'position': 'relative',
-                                                                        'overflow': 'hidden'
-                                                                    }"
+                                                                    class="mt-2"
                                                                 >
-                                                                    <!-- LLM 답변 대기 중일 때 펄스 애니메이션 효과 -->
-                                                                    <div v-if="isWaitingForLLMResponse(message, index)" 
-                                                                        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.1), transparent); animation: pulse 2s ease-in-out infinite; pointer-events: none;"
-                                                                    ></div>
-                                                                    
-                                                                    <div class="d-flex align-center" style="position: relative; z-index: 1;">
+                                                                    <!-- 접힌 상태: 작은 배지 형태 -->
+                                                                    <div v-if="!expandedInterventions[index]" 
+                                                                        class="intervention-badge intervention-yes"
+                                                                        @click.stop="toggleInterventionExpansion(index)"
+                                                                        style="cursor: pointer; display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; transition: all 0.2s ease;"
+                                                                    >
                                                                         <v-icon 
                                                                             color="success"
-                                                                            size="16"
+                                                                            size="14"
                                                                             class="mr-1"
                                                                         >
                                                                             mdi-check-circle
@@ -282,24 +276,71 @@
                                                                             v-if="isWaitingForLLMResponse(message, index)"
                                                                             indeterminate 
                                                                             color="success" 
-                                                                            size="16"
+                                                                            size="12"
                                                                             width="2"
-                                                                            class="ml-2"
+                                                                            class="ml-1"
                                                                         ></v-progress-circular>
-                                                                        <v-spacer></v-spacer>
-                                                                        <v-tooltip location="top">
-                                                                            <template v-slot:activator="{ props }">
-                                                                                <v-icon v-bind="props" size="14" color="grey" class="ml-1">mdi-information</v-icon>
-                                                                            </template>
-                                                                            <div>
-                                                                                <div v-if="message.jsonContent.intervention.selected_agent_id">
-                                                                                    <strong>에이전트:</strong> {{ message.jsonContent.intervention.agent_name || message.jsonContent.intervention.selected_agent_id }}
-                                                                                </div>
-                                                                                <div v-if="message.jsonContent.intervention.reason">
-                                                                                    <strong>이유:</strong> {{ message.jsonContent.intervention.reason }}
-                                                                                </div>
+                                                                        <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
+                                                                    </div>
+                                                                    
+                                                                    <!-- 펼쳐진 상태: 전체 정보 표시 -->
+                                                                    <div v-else
+                                                                        class="intervention-info pa-2 intervention-yes"
+                                                                        :style="{
+                                                                            'border-radius': '6px', 
+                                                                            'font-size': '0.75rem',
+                                                                            'position': 'relative',
+                                                                            'overflow': 'hidden'
+                                                                        }"
+                                                                    >
+                                                                        <!-- LLM 답변 대기 중일 때 펄스 애니메이션 효과 -->
+                                                                        <div v-if="isWaitingForLLMResponse(message, index)" 
+                                                                            style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.1), transparent); animation: pulse 2s ease-in-out infinite; pointer-events: none;"
+                                                                        ></div>
+                                                                        
+                                                                        <!-- LLM 응답 표시 -->
+                                                                        <div v-if="getInterventionResponseMessage(index)">
+                                                                            <div class="d-flex align-center mb-2" style="position: relative; z-index: 1;">
+                                                                                <v-avatar size="24" style="margin-right:8px;">
+                                                                                    <img src="@/assets/images/chat/chat-icon.png" height="24" width="24" />
+                                                                                </v-avatar>
+                                                                                <span style="font-size: 0.875rem; font-weight: 500; color: rgba(0,0,0,0.7);">AI 어시스턴트</span>
+                                                                                <v-spacer></v-spacer>
+                                                                                <v-icon 
+                                                                                    size="14" 
+                                                                                    color="grey" 
+                                                                                    style="cursor: pointer;"
+                                                                                    @click.stop="toggleInterventionExpansion(index)"
+                                                                                >
+                                                                                    mdi-chevron-up
+                                                                                </v-icon>
                                                                             </div>
-                                                                        </v-tooltip>
+                                                                            <div class="agent-message-content" style="font-size: 0.875rem; line-height: 1.5;">
+                                                                                <div v-html="renderedMarkdown(getInterventionResponseMessage(index).content)" 
+                                                                                    class="markdown-content pl-2 py-1"
+                                                                                ></div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <!-- LLM 답변 대기 중일 때 -->
+                                                                        <div v-else-if="isWaitingForLLMResponse(message, index)" class="d-flex align-center" style="position: relative; z-index: 1;">
+                                                                            <v-progress-circular 
+                                                                                indeterminate 
+                                                                                color="success" 
+                                                                                size="16"
+                                                                                width="2"
+                                                                                class="mr-2"
+                                                                            ></v-progress-circular>
+                                                                            <span style="font-size: 0.875rem; color: rgba(0,0,0,0.6);">AI 응답 대기 중...</span>
+                                                                            <v-spacer></v-spacer>
+                                                                            <v-icon 
+                                                                                size="14" 
+                                                                                color="grey" 
+                                                                                style="cursor: pointer;"
+                                                                                @click.stop="toggleInterventionExpansion(index)"
+                                                                            >
+                                                                                mdi-chevron-up
+                                                                            </v-icon>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
 
@@ -442,58 +483,92 @@
                                                 <div v-else-if="(message.contentType && message.contentType == 'markdown') || (message.role == 'system' && !message.contentType)" 
                                                     :class="agentMessage || message.role == 'system' ? 'agent-message' : 'other-message'"
                                                 >
-                                                    <div v-html="renderedMarkdown(message.content, filteredMessages.length - 1 == index && isLoading)" 
-                                                        class="markdown-content pl-3 py-2"
-                                                    ></div>
-                                                    
-                                                    <!-- 프로세스 실행 폼 -->
-                                                    <div v-if="message.work === 'StartProcessInstance' && message.firstActivityForm" class="mt-3 pl-3 pr-3">
-                                                        <v-card variant="outlined" class="mb-3">
-                                                            <v-card-title class="text-subtitle-1 py-2">
-                                                                {{ message.firstActivityForm.activityName || '초기 정보 입력' }}
-                                                            </v-card-title>
-                                                            <v-divider></v-divider>
-                                                            <v-card-text class="pa-3">
-                                                                <!-- formHtml이 있는 경우 DynamicForm 사용 -->
-                                                                <div v-if="message.firstActivityForm.formHtml" class="form-container">
-                                                                    <DynamicForm 
-                                                                        :formHTML="message.firstActivityForm.formHtml" 
-                                                                        v-model="message.formValues"
-                                                                        :readonly="false"
-                                                                    ></DynamicForm>
-                                                                </div>
-                                                                
-                                                                <!-- 폼 정보가 없는 경우 -->
-                                                                <div v-else class="text-caption text-grey">
-                                                                    추가 입력 정보가 필요하지 않습니다.
-                                                                </div>
-                                                            </v-card-text>
-                                                        </v-card>
-                                                        
-                                                        <v-btn 
+                                                    <!-- system/agent 메시지 접힌 상태: 작은 배지 형태 -->
+                                                    <div v-if="(message.role == 'system' || message.role == 'agent') && !expandedSystemMessages[index]" 
+                                                        class="system-message-badge"
+                                                        @click.stop="toggleSystemMessageExpansion(index)"
+                                                        style="cursor: pointer; display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 16px; font-size: 0.75rem; transition: all 0.2s ease; margin: 8px 0; background-color: rgba(25, 118, 210, 0.1); border: 1px solid rgba(25, 118, 210, 0.3); color: #1565c0;"
+                                                    >
+                                                        <v-icon 
                                                             color="primary"
-                                                            variant="elevated"
-                                                            size="default"
-                                                            @click="executeProcessInstance(message, index)"
-                                                            :loading="message.executing"
-                                                            :disabled="message.executed"
+                                                            size="16"
+                                                            class="mr-2"
                                                         >
-                                                            <v-icon left class="mr-1">{{ message.executed ? 'mdi-check' : 'mdi-play' }}</v-icon>
-                                                            {{ message.executed ? '실행 완료' : '프로세스 실행' }}
-                                                        </v-btn>
+                                                            mdi-robot
+                                                        </v-icon>
+                                                        <span class="font-weight-medium">
+                                                            AI 어시스턴트 응답
+                                                        </span>
+                                                        <v-icon size="14" class="ml-2">mdi-chevron-down</v-icon>
                                                     </div>
                                                     
-                                                    <!-- 회사 정보 조회 결과에 확인하기 버튼 추가 -->
-                                                    <div v-if="message.companyQueryUrl" class="mt-3 pl-3">
-                                                        <v-btn 
-                                                            color="primary"
-                                                            variant="elevated"
-                                                            size="small"
-                                                            @click="navigateToCompanyQuery(message.companyQueryUrl)"
+                                                    <!-- system/agent 메시지 펼쳐진 상태: 전체 내용 표시 -->
+                                                    <div v-else>
+                                                        <div v-if="(message.role == 'system' || message.role == 'agent') && expandedSystemMessages[index]" 
+                                                            class="d-flex justify-end mb-1"
                                                         >
-                                                            <v-icon left small class="mr-1">mdi-open-in-new</v-icon>
-                                                            확인하기
-                                                        </v-btn>
+                                                            <v-icon 
+                                                                size="14" 
+                                                                color="grey" 
+                                                                style="cursor: pointer;"
+                                                                @click.stop="toggleSystemMessageExpansion(index)"
+                                                            >
+                                                                mdi-chevron-up
+                                                            </v-icon>
+                                                        </div>
+                                                        <div v-html="renderedMarkdown(message.content, filteredMessages.length - 1 == index && isLoading)" 
+                                                            class="markdown-content pl-3 py-2"
+                                                        ></div>
+                                                        
+                                                        <!-- 프로세스 실행 폼 -->
+                                                        <div v-if="message.work === 'StartProcessInstance' && message.firstActivityForm" class="mt-3 pl-3 pr-3">
+                                                            <v-card variant="outlined" class="mb-3">
+                                                                <v-card-title class="text-subtitle-1 py-2">
+                                                                    {{ message.firstActivityForm.activityName || '초기 정보 입력' }}
+                                                                </v-card-title>
+                                                                <v-divider></v-divider>
+                                                                <v-card-text class="pa-3">
+                                                                    <!-- formHtml이 있는 경우 DynamicForm 사용 -->
+                                                                    <div v-if="message.firstActivityForm.formHtml" class="form-container">
+                                                                        <DynamicForm 
+                                                                            :formHTML="message.firstActivityForm.formHtml" 
+                                                                            v-model="message.formValues"
+                                                                            :readonly="false"
+                                                                        ></DynamicForm>
+                                                                    </div>
+                                                                    
+                                                                    <!-- 폼 정보가 없는 경우 -->
+                                                                    <div v-else class="text-caption text-grey">
+                                                                        추가 입력 정보가 필요하지 않습니다.
+                                                                    </div>
+                                                                </v-card-text>
+                                                            </v-card>
+                                                            
+                                                            <v-btn 
+                                                                color="primary"
+                                                                variant="elevated"
+                                                                size="default"
+                                                                @click="executeProcessInstance(message, index)"
+                                                                :loading="message.executing"
+                                                                :disabled="message.executed"
+                                                            >
+                                                                <v-icon left class="mr-1">{{ message.executed ? 'mdi-check' : 'mdi-play' }}</v-icon>
+                                                                {{ message.executed ? '실행 완료' : '프로세스 실행' }}
+                                                            </v-btn>
+                                                        </div>
+                                                        
+                                                        <!-- 회사 정보 조회 결과에 확인하기 버튼 추가 -->
+                                                        <div v-if="message.companyQueryUrl" class="mt-3 pl-3">
+                                                            <v-btn 
+                                                                color="primary"
+                                                                variant="elevated"
+                                                                size="small"
+                                                                @click="navigateToCompanyQuery(message.companyQueryUrl)"
+                                                            >
+                                                                <v-icon left small class="mr-1">mdi-open-in-new</v-icon>
+                                                                확인하기
+                                                            </v-btn>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -528,27 +603,21 @@
 
                                                                 <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
                                                                 <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
-                                                                <pre v-else class="text-body-1" v-html="setMessageForUser(message.content)"></pre>
+                                                                <pre v-else class="text-body-1" v-html="linkifyWithMentions(setMessageForUser(message.content))"></pre>
                                                                 
                                                                 <!-- 개입 정보 표시 (다른 사용자 메시지, GroupChat 전용) - 개입이 통과된 경우에만 표시 -->
                                                                 <div v-if="message.jsonContent && message.jsonContent.intervention && message.jsonContent.intervention.should_intervene && message.role !== 'system'" 
-                                                                    class="intervention-info mt-2 pa-2 intervention-yes"
-                                                                    :style="{
-                                                                        'border-radius': '6px', 
-                                                                        'font-size': '0.75rem',
-                                                                        'position': 'relative',
-                                                                        'overflow': 'hidden'
-                                                                    }"
+                                                                    class="mt-2"
                                                                 >
-                                                                    <!-- LLM 답변 대기 중일 때 펄스 애니메이션 효과 -->
-                                                                    <div v-if="isWaitingForLLMResponse(message, index)" 
-                                                                        style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.1), transparent); animation: pulse 2s ease-in-out infinite; pointer-events: none;"
-                                                                    ></div>
-                                                                    
-                                                                    <div class="d-flex align-center" style="position: relative; z-index: 1;">
+                                                                    <!-- 접힌 상태: 작은 배지 형태 -->
+                                                                    <div v-if="!expandedInterventions[index]" 
+                                                                        class="intervention-badge intervention-yes"
+                                                                        @click.stop="toggleInterventionExpansion(index)"
+                                                                        style="cursor: pointer; display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; transition: all 0.2s ease;"
+                                                                    >
                                                                         <v-icon 
                                                                             color="success"
-                                                                            size="16"
+                                                                            size="14"
                                                                             class="mr-1"
                                                                         >
                                                                             mdi-check-circle
@@ -561,24 +630,71 @@
                                                                             v-if="isWaitingForLLMResponse(message, index)"
                                                                             indeterminate 
                                                                             color="success" 
-                                                                            size="16"
+                                                                            size="12"
                                                                             width="2"
-                                                                            class="ml-2"
+                                                                            class="ml-1"
                                                                         ></v-progress-circular>
-                                                                        <v-spacer></v-spacer>
-                                                                        <v-tooltip location="top">
-                                                                            <template v-slot:activator="{ props }">
-                                                                                <v-icon v-bind="props" size="14" color="grey" class="ml-1">mdi-information</v-icon>
-                                                                            </template>
-                                                                            <div>
-                                                                                <div v-if="message.jsonContent.intervention.selected_agent_id">
-                                                                                    <strong>에이전트:</strong> {{ message.jsonContent.intervention.agent_name || message.jsonContent.intervention.selected_agent_id }}
-                                                                                </div>
-                                                                                <div v-if="message.jsonContent.intervention.reason">
-                                                                                    <strong>이유:</strong> {{ message.jsonContent.intervention.reason }}
-                                                                                </div>
+                                                                        <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
+                                                                    </div>
+                                                                    
+                                                                    <!-- 펼쳐진 상태: 전체 정보 표시 -->
+                                                                    <div v-else
+                                                                        class="intervention-info pa-2 intervention-yes"
+                                                                        :style="{
+                                                                            'border-radius': '6px', 
+                                                                            'font-size': '0.75rem',
+                                                                            'position': 'relative',
+                                                                            'overflow': 'hidden'
+                                                                        }"
+                                                                    >
+                                                                        <!-- LLM 답변 대기 중일 때 펄스 애니메이션 효과 -->
+                                                                        <div v-if="isWaitingForLLMResponse(message, index)" 
+                                                                            style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(76, 175, 80, 0.1), transparent); animation: pulse 2s ease-in-out infinite; pointer-events: none;"
+                                                                        ></div>
+                                                                        
+                                                                        <!-- LLM 응답 표시 -->
+                                                                        <div v-if="getInterventionResponseMessage(index)">
+                                                                            <div class="d-flex align-center mb-2" style="position: relative; z-index: 1;">
+                                                                                <v-avatar size="24" style="margin-right:8px;">
+                                                                                    <img src="@/assets/images/chat/chat-icon.png" height="24" width="24" />
+                                                                                </v-avatar>
+                                                                                <span style="font-size: 0.875rem; font-weight: 500; color: rgba(0,0,0,0.7);">AI 어시스턴트</span>
+                                                                                <v-spacer></v-spacer>
+                                                                                <v-icon 
+                                                                                    size="14" 
+                                                                                    color="grey" 
+                                                                                    style="cursor: pointer;"
+                                                                                    @click.stop="toggleInterventionExpansion(index)"
+                                                                                >
+                                                                                    mdi-chevron-up
+                                                                                </v-icon>
                                                                             </div>
-                                                                        </v-tooltip>
+                                                                            <div class="agent-message-content" style="font-size: 0.875rem; line-height: 1.5;">
+                                                                                <div v-html="renderedMarkdown(getInterventionResponseMessage(index).content)" 
+                                                                                    class="markdown-content pl-2 py-1"
+                                                                                ></div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <!-- LLM 답변 대기 중일 때 -->
+                                                                        <div v-else-if="isWaitingForLLMResponse(message, index)" class="d-flex align-center" style="position: relative; z-index: 1;">
+                                                                            <v-progress-circular 
+                                                                                indeterminate 
+                                                                                color="success" 
+                                                                                size="16"
+                                                                                width="2"
+                                                                                class="mr-2"
+                                                                            ></v-progress-circular>
+                                                                            <span style="font-size: 0.875rem; color: rgba(0,0,0,0.6);">AI 응답 대기 중...</span>
+                                                                            <v-spacer></v-spacer>
+                                                                            <v-icon 
+                                                                                size="14" 
+                                                                                color="grey" 
+                                                                                style="cursor: pointer;"
+                                                                                @click.stop="toggleInterventionExpansion(index)"
+                                                                            >
+                                                                                mdi-chevron-up
+                                                                            </v-icon>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
 
@@ -1003,11 +1119,46 @@
                     </div>
                 </div>
                 <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
-                    <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                        class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                    <!-- 멘션 태그 표시 영역 -->
+                    <div v-if="mentionedUsers.length > 0" 
+                        class="d-flex flex-wrap align-center pa-2"
+                        style="width: 100%; gap: 8px; border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: rgba(25, 118, 210, 0.04); border-radius: 4px 4px 0 0;"
+                    >
+                        <v-chip
+                            v-for="user in mentionedUsers"
+                            :key="user.id"
+                            size="small"
+                            color="primary"
+                            variant="tonal"
+                            closable
+                            @click:close="removeMention(user.id)"
+                            style="height: 28px; font-size: 13px; font-weight: 500;"
+                        >
+                            <v-avatar size="18" class="mr-2">
+                                <img :src="user.profile || '/images/defaultUser.png'" :alt="user.username" />
+                            </v-avatar>
+                            {{ user.username }}
+                            <v-chip v-if="user.is_agent" size="x-small" color="primary" variant="outlined" class="ml-2" style="height: 14px; font-size: 9px; font-weight: 600;">
+                                에이전트
+                            </v-chip>
+                        </v-chip>
+                    </div>
+                    
+                    <v-textarea 
+                        variant="solo" 
+                        hide-details 
+                        v-model="newMessage" 
+                        color="primary"
+                        class="shadow-none message-input-box delete-input-details cp-chat" 
+                        density="compact" 
+                        :placeholder="$t('chat.inputMessage')"
+                        auto-grow 
+                        rows="1" 
+                        @keypress.enter="beforeSend" 
+                        :disabled="disableChat"
                         @input="handleTextareaInput"
                         @paste="handlePaste"
+                        @keydown="handleKeydown"
                     >
                     </v-textarea>
                     
@@ -1094,17 +1245,32 @@
                     </div>
                     
                     <div v-if="showUserList" class="user-list"
-                        style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
-                        <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
-                            style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
-                            <img :src="user.profile" alt="profile"
+                        style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100; max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <div v-for="(user, index) in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
+                            :style="{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '10px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #f0f0f0',
+                                backgroundColor: selectedUserIndex === index ? '#e3f2fd' : 'white'
+                            }"
+                            @mouseenter="selectedUserIndex = index"
+                            @mouseleave="selectedUserIndex = -1">
+                            <img :src="user.profile || '/images/defaultUser.png'" alt="profile"
                                 style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                            <div>
-                                <div>{{ user.username }}</div>
-                                <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
+                            <div style="flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span>{{ user.username }}</span>
+                                    <v-chip v-if="user.is_agent" size="x-small" color="primary" variant="outlined" style="height: 18px; font-size: 10px;">
+                                        에이전트
+                                    </v-chip>
+                                </div>
+                                <div style="font-size: 0.8em; color: #666;">{{ user.email || '에이전트' }}</div>
                             </div>
                         </div>
                     </div>
+                    
                 </form>
             </div>
         </div>
@@ -1129,10 +1295,45 @@
                 </div>
             </div>
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
-                <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                    class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.definitionMapInputMessage')"
-                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
+                <!-- 멘션 태그 표시 영역 -->
+                <div v-if="mentionedUsers.length > 0" 
+                    class="d-flex flex-wrap align-center pa-2"
+                    style="width: 100%; gap: 8px; border-bottom: 1px solid rgba(0, 0, 0, 0.08); background-color: rgba(25, 118, 210, 0.04); border-radius: 4px 4px 0 0;"
+                >
+                    <v-chip
+                        v-for="user in mentionedUsers"
+                        :key="user.id"
+                        size="small"
+                        color="primary"
+                        variant="tonal"
+                        closable
+                        @click:close="removeMention(user.id)"
+                        style="height: 28px; font-size: 13px; font-weight: 500;"
+                    >
+                        <v-avatar size="18" class="mr-2">
+                            <img :src="user.profile || '/images/defaultUser.png'" :alt="user.username" />
+                        </v-avatar>
+                        {{ user.username }}
+                        <v-chip v-if="user.is_agent" size="x-small" color="primary" variant="outlined" class="ml-2" style="height: 14px; font-size: 9px; font-weight: 600;">
+                            에이전트
+                        </v-chip>
+                    </v-chip>
+                </div>
+                
+                <v-textarea 
+                    variant="solo" 
+                    hide-details 
+                    v-model="newMessage" 
+                    color="primary"
+                    class="shadow-none message-input-box delete-input-details cp-chat" 
+                    density="compact" 
+                    :placeholder="$t('chat.definitionMapInputMessage')"
+                    auto-grow 
+                    rows="1" 
+                    @keypress.enter="beforeSend" 
+                    :disabled="disableChat || isGenerationFinished"
                     @input="handleTextareaInput"
+                    @keydown="handleKeydown"
                     @paste="handlePaste"
                 >
                 </v-textarea>
@@ -1318,9 +1519,18 @@
                 </div>
                 
                 <div v-if="showUserList" class="user-list"
-                    style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
-                    <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
-                        style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
+                    style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100; max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div v-for="(user, index) in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
+                        :style="{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '10px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #f0f0f0',
+                            backgroundColor: selectedUserIndex === index ? '#e3f2fd' : 'white'
+                        }"
+                        @mouseenter="selectedUserIndex = index"
+                        @mouseleave="selectedUserIndex = -1">
                         <img :src="user.profile" alt="profile"
                             style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
                         <div>
@@ -1329,6 +1539,7 @@
                         </div>
                     </div>
                 </div>
+                
             </form>
         </v-card>
     </div>
@@ -1422,6 +1633,7 @@ import ProcessDefinitionGenerator from '@/components/ai/ProcessDefinitionGenerat
 import BPMNXmlGenerator from '@/components/BPMNXmlGenerator.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
+import { useDefaultSetting } from '@/stores/defaultSetting';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -1550,7 +1762,8 @@ export default {
             showNewMessageNotiTimer: null,
             showUserList: false,
             mentionStartIndex: null,
-            mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
+            mentionedUsers: [],
+            selectedUserIndex: -1, // 키보드로 선택된 사용자 인덱스
             file: null,
             isRender: false,
             
@@ -1559,39 +1772,25 @@ export default {
             isOpenedChatMenu: false,
             isViewWork: null,
 
-            //preview-message
             previewMessage: null,
-            
-            // 채팅창 높이 관련 변수
             windowWidth: window.innerWidth,
-            
-            // 프로세스 생성 관련 변수
             processCreationDialog: false,
             isAnalyzingChat: false,
             isCreatingProcess: false,
             processAnalysisResult: null,
-            showProcessButton: false, // hover 시 버튼 표시 여부
-
+            showProcessButton: false,
             generator: null,
             isGenerationFinished: false,
-            
-            // 메시지 히스토리 탐색 관련 변수
             messageHistoryIndex: -1,
-            originalMessage: '', // 사용자가 타이핑하던 원본 메시지 저장
-            
-            // 팀원 추가 관련 상태
-            showTeamMemberSelector: null, // 팀원 선택 UI를 표시할 메시지 인덱스
-            selectedTeamMembersByMessage: {}, // 메시지별 선택된 팀원들
-            teamMemberSearch: '', // 팀원 검색 텍스트
-            
-            // 사용자 정보
+            originalMessage: '',
+            showTeamMemberSelector: null,
+            selectedTeamMembersByMessage: {},
+            teamMemberSearch: '',
             currentUserName: localStorage.getItem('userName') || '사용자',
             currentUserPicture: localStorage.getItem('picture') || '/images/defaultUser.png',
-            
-            // 메시지 전송 중 플래그
             isSending: false,
-            
-            // 문서 도움말 상세정보
+            expandedInterventions: {},
+            expandedSystemMessages: {},
             chatDocumentHelpDetails: [
                 { title: "chat.helpIntro" },
                 { title: "chat.helpScheduleRegistration" },
@@ -1605,7 +1804,6 @@ export default {
         };
     },
     created() {
-        // 창 크기 변경 시 높이 조정을 위한 이벤트 리스너 추가
         window.addEventListener('resize', this.handleResize);
     },
     mounted() {
@@ -1630,7 +1828,6 @@ export default {
         });
     },
     beforeUnmount() {
-        // 컴포넌트 제거 시 이벤트 리스너 제거
         window.removeEventListener('resize', this.handleResize);
     },
     watch: {
@@ -1660,22 +1857,59 @@ export default {
                 return [];
             }
             let userList = this.userList.filter(user => this.currentChatRoom.participants.some(participant => participant.id === user.id));
+            
+            const defaultSetting = useDefaultSetting();
+            const agentList = defaultSetting.getAgentList;
+            
+            if (this.participantUsers && this.participantUsers.length > 0) {
+                agentList.forEach(agent => {
+                    if (agent.is_hidden) {
+                        return;
+                    }
+                    
+                    const existsInUserList = userList.some(u => u.id === agent.id);
+                    const isParticipant = this.participantUsers.some(participant => {
+                        if (participant.id === agent.id) {
+                            return true;
+                        }
+                        if (participant.is_agent && participant.agent_type === agent.agent_type && participant.alias === agent.alias) {
+                            return true;
+                        }
+                        if (participant.email && agent.email && participant.email === agent.email) {
+                            return true;
+                        }
+                        return false;
+                    });
+                    
+                    if (!existsInUserList && isParticipant) {
+                        userList.push({
+                            id: agent.id,
+                            username: agent.username,
+                            email: agent.email || `${agent.alias}@agent`,
+                            profile: agent.profile || '/images/chat-icon.png',
+                            is_agent: true,
+                            agent_type: agent.agent_type,
+                            alias: agent.alias
+                        });
+                    }
+                });
+            }
+            
             userList.push({
                 email: "system@uengine.org",
                 id: "system_id",
-                profile: "src/assets/images/chat/chat-icon.png",
+                profile: "/images/chat-icon.png",
                 username: "System",
             })
             userList.reverse()
             const query = this.newMessage.substring(this.mentionStartIndex + 1).toLowerCase();
-            // 이미 mention된 유저는 리스트에서 제외
             return userList.filter(user => user.username.toLowerCase().includes(query) && !this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id));
         },
         filteredMessages() {
             var list = [];
             const myEmail = localStorage.getItem('email');
             if (this.messages && this.messages.length > 0) {
-                this.messages.forEach((item) => {
+                this.messages.forEach((item, index) => {
                     let data = JSON.parse(JSON.stringify(item));
                     
                     // 프로세스 실행 메시지에 formValues 초기화
@@ -1687,6 +1921,15 @@ export default {
                     // content가 있거나, jsonContent가 있거나, image가 있거나, 개입 정보가 있는 경우 표시
                     if (data.content || data.jsonContent || data.image || 
                         (data.jsonContent && data.jsonContent.intervention)) {
+                        // 이전 메시지가 개입된 메시지이고, 현재 메시지가 system/agent인 경우 제외
+                        if (index > 0 && (data.role === 'system' || data.role === 'agent')) {
+                            const prevItem = this.messages[index - 1];
+                            if (prevItem && prevItem.jsonContent && prevItem.jsonContent.intervention && 
+                                prevItem.jsonContent.intervention.should_intervene) {
+                                // 개입 응답 메시지는 필터링에서 제외
+                                return;
+                            }
+                        }
                         list.push(data);
                     }
                 });
@@ -1728,7 +1971,6 @@ export default {
                 }
             }
         },
-        // 내가 보낸 메시지들만 필터링
         myMessages() {
             if (!this.messages || this.messages.length === 0) return [];
             return this.messages
@@ -1752,12 +1994,61 @@ export default {
             
             return users;
         },
-        // 그룹 채팅방 여부 확인 (참여자가 2명 이상)
         isGroupChat() {
             return this.participantUsers && this.participantUsers.length >= 2;
         }
     },
     methods: {
+        toggleInterventionExpansion(index) {
+            this.expandedInterventions[index] = !this.expandedInterventions[index];
+        },
+        toggleSystemMessageExpansion(index) {
+            this.expandedSystemMessages[index] = !this.expandedSystemMessages[index];
+        },
+        getInterventionResponseMessage(index) {
+            const currentMessage = this.filteredMessages[index];
+            if (!currentMessage || !currentMessage.jsonContent || !currentMessage.jsonContent.intervention || 
+                !currentMessage.jsonContent.intervention.should_intervene) {
+                return null;
+            }
+            
+            let originalIndex = -1;
+            for (let i = 0; i < this.messages.length; i++) {
+                const msg = this.messages[i];
+                if (msg.id && currentMessage.id && String(msg.id) === String(currentMessage.id)) {
+                    originalIndex = i;
+                    break;
+                }
+                if (msg.uuid && currentMessage.uuid && String(msg.uuid) === String(currentMessage.uuid)) {
+                    originalIndex = i;
+                    break;
+                }
+                if (!msg.id && !msg.uuid && msg.timeStamp && currentMessage.timeStamp && 
+                    String(msg.timeStamp) === String(currentMessage.timeStamp) &&
+                    msg.email === currentMessage.email) {
+                    originalIndex = i;
+                    break;
+                }
+            }
+            
+            if (originalIndex >= 0 && originalIndex < this.messages.length - 1) {
+                const nextMessage = this.messages[originalIndex + 1];
+                if (nextMessage && (nextMessage.role === 'system' || nextMessage.role === 'agent') && nextMessage.content) {
+                    return nextMessage;
+                }
+            }
+            return null;
+        },
+        isInterventionResponse(index) {
+            if (index > 0) {
+                const prevMessage = this.filteredMessages[index - 1];
+                if (prevMessage && prevMessage.jsonContent && prevMessage.jsonContent.intervention && 
+                    prevMessage.jsonContent.intervention.should_intervene) {
+                    return true;
+                }
+            }
+            return false;
+        },
         scrollToTop() {
             if (this.$refs.scrollContainer) {
                 this.$refs.scrollContainer.$el.scrollTop = 0;
@@ -1834,7 +2125,6 @@ export default {
                     }
                 });
             } else {
-                // 일반 채팅에서는 기존대로 이벤트 emit
                 this.$emit('startWorkOrder');
             }
             this.isOpenedChatMenu = false
@@ -1875,6 +2165,74 @@ export default {
         },
         toggleProcessGPTActive() {
             this.$emit('toggleProcessGPTActive');
+        },
+        linkifyWithMentions(inputText) {
+            if (!inputText) return '';
+            
+            let text = inputText;
+            const allUsers = [];
+            
+            if (this.userList) {
+                allUsers.push(...this.userList);
+            }
+            
+            if (this.participantUsers) {
+                this.participantUsers.forEach(participant => {
+                    if (participant.is_agent && !allUsers.find(u => u.id === participant.id)) {
+                        allUsers.push(participant);
+                    }
+                });
+            }
+            
+            allUsers.push({
+                email: "system@uengine.org",
+                id: "system_id",
+                username: "System"
+            });
+            
+            allUsers.forEach(user => {
+                if (user.username) {
+                    const mentionPattern = new RegExp(`@${user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?=\\s|$)`, 'g');
+                    const mentionHtml = `<span class="mention-highlight" style="color: #1976d2; font-weight: 600; background-color: rgba(25, 118, 210, 0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.95em;">@${user.username}</span>`;
+                    text = text.replace(mentionPattern, mentionHtml);
+                }
+            });
+            
+            return this.linkify(text);
+        },
+        formatMentionsInPreview(inputText) {
+            if (!inputText) return '';
+            
+            let text = this.escapeHtml(inputText);
+            const sortedUsers = [...this.mentionedUsers].sort((a, b) => (b.username || '').length - (a.username || '').length);
+            
+            sortedUsers.forEach(user => {
+                if (user.username) {
+                    const escapedUsername = user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const mentionPattern = new RegExp(`@${escapedUsername}(?=\\s|$)`, 'g');
+                    const mentionHtml = `<span style="color: #1976d2 !important; font-weight: 600 !important; background-color: rgba(25, 118, 210, 0.2) !important; padding: 2px 6px !important; border-radius: 4px !important; display: inline-block !important;">@${this.escapeHtml(user.username)}</span>`;
+                    text = text.replace(mentionPattern, mentionHtml);
+                }
+            });
+            
+            return text;
+        },
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        },
+        hasMentionsInText(text) {
+            if (!text || !this.mentionedUsers || this.mentionedUsers.length === 0) {
+                return false;
+            }
+            return this.mentionedUsers.some(user => {
+                if (user.username) {
+                    const mentionPattern = new RegExp(`@${user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`, 'g');
+                    return text.match(mentionPattern);
+                }
+                return false;
+            });
         },
         linkify(inputText) {
             var replacedText, replacePattern1, replacePattern2, replacePattern3;
@@ -2036,28 +2394,22 @@ export default {
                     content: processCreationPrompt
                 });
                 
-                // 3. 프로세스 정의 생성
-                // newMessage를 설정하지 않고 previousMessages를 직접 사용
-                generator.newMessage = ''; // 빈 값으로 설정하여 createMessages()에서 previousMessages 사용
+                generator.newMessage = '';
                 
-                // Promise로 응답을 받기 위해 래핑
                 const responsePromise = new Promise((resolve, reject) => {
                     const originalOnGenerationFinished = generator.client.onGenerationFinished;
                     
                     generator.client.onGenerationFinished = (model) => {
                         console.log('[createProcessFromChat] onGenerationFinished 호출됨', { model, modelJson: generator.modelJson });
                         
-                        // 원래 콜백이 있으면 실행 (오류가 발생해도 계속 진행)
                         if (originalOnGenerationFinished) {
                             try {
                                 originalOnGenerationFinished.call(generator.client, model);
                             } catch (error) {
-                                // 원래 콜백에서 오류가 발생해도 무시하고 계속 진행
                                 console.warn('[createProcessFromChat] originalOnGenerationFinished에서 오류 발생 (무시):', error);
                             }
                         }
                         
-                        // modelJson이 있으면 사용, 없으면 model 사용
                         const response = generator.modelJson || model;
                         resolve(response);
                     };
@@ -2068,40 +2420,28 @@ export default {
                     };
                 });
                 
-                // generate 시작
                 generator.generate();
-                
-                // 응답 대기
                 const response = await responsePromise;
                 console.log('[createProcessFromChat] LLM 응답 받음:', { response, type: typeof response });
                 
-                // 4. JSON 파싱
                 let jsonProcess;
                 try {
                     let responseText = typeof response === 'string' ? response : String(response);
                     
                     if (typeof response === 'object' && response !== null && !Array.isArray(response) && response.processDefinitionId) {
-                        // 이미 유효한 프로세스 정의 객체인 경우
                         jsonProcess = response;
                     } else {
-                        // 문자열에서 JSON 추출
                         console.log('[createProcessFromChat] 원본 응답 텍스트 (처음 500자):', responseText.substring(0, 500));
                         
-                        // 마크다운 코드 블록에서 JSON 추출
-                        // ```json ... ``` 또는 ``` ... ``` 형식
                         let jsonString = null;
-                        
-                        // 1. ```json ... ``` 패턴 찾기
                         const jsonBlockMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/i);
                         if (jsonBlockMatch) {
                             jsonString = jsonBlockMatch[1].trim();
                         } else {
-                            // 2. ``` ... ``` 패턴 찾기 (json 태그 없이)
                             const codeBlockMatch = responseText.match(/```\s*([\s\S]*?)\s*```/);
                             if (codeBlockMatch) {
                                 jsonString = codeBlockMatch[1].trim();
                             } else {
-                                // 3. 첫 번째 { 부터 마지막 } 까지 찾기
                                 const jsonMatch = responseText.match(/\{[\s\S]*\}/);
                                 if (jsonMatch) {
                                     jsonString = jsonMatch[0];
@@ -2116,9 +2456,7 @@ export default {
                         
                         console.log('[createProcessFromChat] 추출된 JSON 문자열 (처음 500자):', jsonString.substring(0, 500));
                         
-                        // JSON 파싱 시도
                         try {
-                            // 먼저 일반 JSON 파싱 시도
                             jsonProcess = JSON.parse(jsonString);
                         } catch (parseError) {
                             console.log('[createProcessFromChat] 일반 파싱 실패, partialParse 시도. 오류:', parseError.message);
@@ -2164,10 +2502,8 @@ export default {
                     throw new Error('유효한 프로세스 정의를 생성하지 못했습니다. processDefinitionId가 없습니다.');
                 }
                 
-                // 5. BPMN XML 생성 (기존 BPMNXmlGenerator 사용)
                 const bpmnXml = this.createBpmnXml(jsonProcess, true); // isHorizontal = true
                 
-                // 6. 백엔드에 저장
                 const saveResponse = await axios.post('/langchain-chat/process/save', {
                     process_definition: jsonProcess,
                     bpmn_xml: bpmnXml
@@ -2178,7 +2514,6 @@ export default {
                     this.processCreationDialog = false;
                     this.processAnalysisResult = null;
                     
-                    // 프로세스 생성 이벤트 발생하여 사이드바 갱신
                     if (this.EventBus) {
                         this.EventBus.emit('definitions-updated');
                     } else if (window.EventBus) {
@@ -2247,19 +2582,368 @@ export default {
         openVerMangerDialog() {
             this.$emit('openVerMangerDialog', true)
         },
-        handleTextareaInput(event) {
-            const text = event.target.value;
-            const atIndex = text.lastIndexOf('@');
+        // contenteditable div에서 텍스트 추출
+        getPlainTextFromDiv(element) {
+            if (!element) return '';
+            return element.innerText || element.textContent || '';
+        },
+        formatMentionsInInput(text) {
+            if (!text) return '';
+            let html = this.escapeHtml(text);
+            const sortedUsers = [...this.mentionedUsers].sort((a, b) => (b.username || '').length - (a.username || '').length);
+            
+            sortedUsers.forEach(user => {
+                if (user.username) {
+                    const escapedUsername = user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const mentionPattern = new RegExp(`@${escapedUsername}(?=\\s|$)`, 'g');
+                    const mentionHtml = `<span class="mention-tag" data-mention-id="${user.id}" style="color: #1976d2; font-weight: 600; background-color: rgba(25, 118, 210, 0.1); padding: 2px 6px; border-radius: 4px; font-size: 0.95em; display: inline-block;">@${this.escapeHtml(user.username)}</span>`;
+                    html = html.replace(mentionPattern, mentionHtml);
+                }
+            });
+            
+            return html;
+        },
+        handleMentionInput(event) {
+            const element = event.target;
+            const plainText = this.getPlainTextFromDiv(element);
+            const selection = window.getSelection();
+            const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+            const cursorPosition = range ? range.startOffset : 0;
+            
+            this.newMessage = plainText;
+            const usersToRemove = [];
+            let textToUpdate = null;
+            let shouldUpdateHtml = false;
+            
+            this.mentionedUsers.forEach(user => {
+                const mentionText = `@${user.username}`;
+                const fullMentionIndex = plainText.indexOf(mentionText);
+                
+                let hasCompleteMention = false;
+                if (fullMentionIndex !== -1) {
+                    const afterMentionChar = plainText.substring(fullMentionIndex + mentionText.length, fullMentionIndex + mentionText.length + 1);
+                    if (afterMentionChar === ' ' || afterMentionChar === '' || fullMentionIndex + mentionText.length === plainText.length) {
+                        hasCompleteMention = true;
+                    }
+                }
+                
+                // 완전한 멘션이 없으면 제거 대상
+                if (!hasCompleteMention) {
+                    const mentionPattern = new RegExp(`@${user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g');
+                    if (!mentionPattern.test(plainText)) {
+                        usersToRemove.push(user.id);
+                        shouldUpdateHtml = true;
+                    } else {
+                        const atIndex = plainText.lastIndexOf('@');
+                        if (atIndex !== -1) {
+                            const afterAt = plainText.substring(atIndex + 1);
+                            // 사용자 이름의 시작 부분과 일치하는지 확인
+                            const usernameStart = user.username.toLowerCase().substring(0, Math.min(afterAt.length, user.username.length));
+                            const afterAtLower = afterAt.toLowerCase();
+                            
+                            // 사용자 이름의 시작 부분과 일치하거나, 사용자 이름이 afterAt으로 시작하는 경우
+                            if (usernameStart === afterAtLower || user.username.toLowerCase().startsWith(afterAtLower) || afterAtLower.startsWith(usernameStart)) {
+                                // 커서가 멘션 부분에 있거나, 멘션이 불완전한 경우 전체 삭제
+                                const mentionEndIndex = atIndex + 1 + afterAt.length;
+                                if (cursorPosition >= atIndex && cursorPosition <= mentionEndIndex + 1) {
+                                    // @부터 다음 공백까지 삭제
+                                    const beforeMention = plainText.substring(0, atIndex);
+                                    const afterMention = plainText.substring(mentionEndIndex).replace(/^\s+/, '');
+                                    textToUpdate = beforeMention + afterMention;
+                                    usersToRemove.push(user.id);
+                                    shouldUpdateHtml = true;
+                                } else if (afterAt.length < user.username.length) {
+                                    // 멘션이 불완전하게 남아있고 커서가 멘션 부분에 있지 않더라도, 멘션의 일부가 남아있으면 전체 삭제
+                                    // 단, 커서가 멘션 바로 뒤에 있는 경우에만
+                                    if (cursorPosition === mentionEndIndex || cursorPosition === mentionEndIndex + 1) {
+                                        const beforeMention = plainText.substring(0, atIndex);
+                                        const afterMention = plainText.substring(mentionEndIndex).replace(/^\s+/, '');
+                                        textToUpdate = beforeMention + afterMention;
+                                        usersToRemove.push(user.id);
+                                        shouldUpdateHtml = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // mentionedUsers에서 제거
+            if (usersToRemove.length > 0) {
+                this.mentionedUsers = this.mentionedUsers.filter(u => !usersToRemove.includes(u.id));
+            }
+            
+            // 텍스트 업데이트가 필요한 경우
+            if (textToUpdate !== null) {
+                this.newMessage = textToUpdate;
+                shouldUpdateHtml = true;
+            }
+            
+            // HTML 업데이트
+            if (shouldUpdateHtml) {
+                this.$nextTick(() => {
+                    const html = this.formatMentionsInInput(this.newMessage);
+                    element.innerHTML = html;
+                    // 커서 위치 복원
+                    this.restoreCursorPosition(element, textToUpdate !== null ? textToUpdate.length : cursorPosition);
+                });
+                return;
+            }
+            
+            // 멘션 하이라이트 업데이트
+            this.$nextTick(() => {
+                const html = this.formatMentionsInInput(plainText);
+                if (element.innerHTML !== html) {
+                    const savedCursor = this.saveCursorPosition(element);
+                    element.innerHTML = html;
+                    this.restoreCursorPosition(element, savedCursor);
+                }
+            });
+            
+            // @ 입력 감지하여 멘션 리스트 표시
+            const atIndex = plainText.lastIndexOf('@');
             if (atIndex !== -1) {
-                this.showUserList = true;
-                this.mentionStartIndex = atIndex;
+                const afterAt = plainText.substring(atIndex + 1);
+                const hasSpace = afterAt.includes(' ');
+                const isCompleteMention = this.mentionedUsers.some(user => {
+                    const mentionText = `@${user.username}`;
+                    return plainText.substring(atIndex).startsWith(mentionText + ' ') || plainText.substring(atIndex).startsWith(mentionText);
+                });
+                
+                if (!hasSpace && !isCompleteMention) {
+                    this.showUserList = true;
+                    this.mentionStartIndex = atIndex;
+                    this.selectedUserIndex = -1;
+                } else {
+                    this.showUserList = false;
+                    this.selectedUserIndex = -1;
+                }
             } else {
                 this.showUserList = false;
+                this.selectedUserIndex = -1;
             }
+            
+            // 텍스트에서 멘션이 완전히 제거된 경우 mentionedUsers에서도 제거
             this.mentionedUsers = this.mentionedUsers.filter(user => {
-                const regex = new RegExp(`@${user.username}`, 'g');
-                return text.match(regex);
+                const regex = new RegExp(`@${user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s|$)`, 'g');
+                return plainText.match(regex);
             });
+        },
+        saveCursorPosition(element) {
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return 0;
+            
+            const range = selection.getRangeAt(0);
+            const preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(element);
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            return preCaretRange.toString().length;
+        },
+        // 커서 위치 복원
+        restoreCursorPosition(element, position) {
+            const range = document.createRange();
+            const selection = window.getSelection();
+            let charCount = 0;
+            let nodeStack = [element];
+            let node, foundStart = false, stop = false;
+            
+            while (!stop && (node = nodeStack.pop())) {
+                if (node.nodeType === 3) {
+                    const nextCharCount = charCount + node.textContent.length;
+                    if (!foundStart && position >= charCount && position <= nextCharCount) {
+                        range.setStart(node, position - charCount);
+                        range.setEnd(node, position - charCount);
+                        foundStart = true;
+                        stop = true;
+                    }
+                    charCount = nextCharCount;
+                } else {
+                    let i = node.childNodes.length;
+                    while (i--) {
+                        nodeStack.push(node.childNodes[i]);
+                    }
+                }
+            }
+            
+            selection.removeAllRanges();
+            selection.addRange(range);
+        },
+        handleMentionKeydown(event) {
+            // 백스페이스 키 처리
+            if (event.key === 'Backspace') {
+                const element = event.target;
+                const selection = window.getSelection();
+                if (selection.rangeCount === 0) return;
+                
+                const range = selection.getRangeAt(0);
+                const cursorPosition = this.saveCursorPosition(element);
+                const plainText = this.getPlainTextFromDiv(element);
+                
+                // 커서 앞에 멘션이 있는지 확인
+                for (let i = 0; i < this.mentionedUsers.length; i++) {
+                    const user = this.mentionedUsers[i];
+                    const mentionText = `@${user.username}`;
+                    
+                    // 커서 위치 기준으로 멘션 확인
+                    if (cursorPosition > 0) {
+                        const beforeCursor = plainText.substring(0, cursorPosition);
+                        const atIndex = beforeCursor.lastIndexOf('@');
+                        
+                        if (atIndex !== -1) {
+                            // @ 이후의 텍스트 확인
+                            const afterAt = plainText.substring(atIndex + 1);
+                            const spaceIndex = afterAt.indexOf(' ');
+                            
+                            // 멘션의 예상 끝 위치
+                            const expectedMentionEnd = atIndex + 1 + user.username.length;
+                            
+                            // 커서가 멘션 범위 내에 있는지 확인
+                            // 백스페이스를 누르면 한 글자가 지워지므로, 커서 위치가 멘션 끝 바로 뒤거나 멘션 내부에 있으면
+                            // 백스페이스 전에는 완전한 멘션이었을 가능성이 높음
+                            if (cursorPosition > atIndex && cursorPosition <= expectedMentionEnd + 1) {
+                                // 경우 1: 완전한 멘션이 있는 경우 (백스페이스 전 상태)
+                                // 커서가 멘션 끝 바로 뒤에 있거나, 멘션 내부에 있는 경우
+                                const currentMentionPart = plainText.substring(atIndex + 1, Math.min(cursorPosition, atIndex + 1 + user.username.length));
+                                
+                                // 현재 텍스트에 완전한 멘션이 있거나, 커서가 멘션 끝 바로 뒤에 있는 경우
+                                if (cursorPosition === expectedMentionEnd + 1 || 
+                                    (cursorPosition <= expectedMentionEnd && currentMentionPart.length > 0 && 
+                                     user.username.toLowerCase().startsWith(currentMentionPart.toLowerCase()))) {
+                                    event.preventDefault();
+                                    const beforeMention = plainText.substring(0, atIndex);
+                                    const afterMention = plainText.substring(expectedMentionEnd).replace(/^\s+/, '');
+                                    const newText = beforeMention + afterMention;
+                                    
+                                    this.newMessage = newText;
+                                    this.mentionedUsers = this.mentionedUsers.filter(u => u.id !== user.id);
+                                    
+                                    this.$nextTick(() => {
+                                        const html = this.formatMentionsInInput(newText);
+                                        element.innerHTML = html;
+                                        this.restoreCursorPosition(element, atIndex);
+                                    });
+                                    return;
+                                }
+                            }
+                            
+                            // 경우 2: 불완전한 멘션 (이미 일부가 지워진 상태)
+                            // @ 이후 텍스트가 사용자 이름의 일부인지 확인
+                            if (spaceIndex === -1 || spaceIndex > user.username.length) {
+                                const mentionPart = spaceIndex !== -1 ? afterAt.substring(0, spaceIndex) : afterAt;
+                                
+                                // mentionPart가 사용자 이름의 시작 부분과 일치하는지 확인
+                                if (mentionPart.length > 0 && user.username.toLowerCase().startsWith(mentionPart.toLowerCase())) {
+                                    // 커서가 멘션 부분에 있으면 전체 멘션 삭제
+                                    const mentionEndIndex = atIndex + 1 + (spaceIndex !== -1 ? spaceIndex : afterAt.length);
+                                    if (cursorPosition > atIndex && cursorPosition <= mentionEndIndex) {
+                                        event.preventDefault();
+                                        const beforeMention = plainText.substring(0, atIndex);
+                                        const afterMention = plainText.substring(mentionEndIndex).replace(/^\s+/, '');
+                                        const newText = beforeMention + afterMention;
+                                        
+                                        this.newMessage = newText;
+                                        this.mentionedUsers = this.mentionedUsers.filter(u => u.id !== user.id);
+                                        
+                                        this.$nextTick(() => {
+                                            const html = this.formatMentionsInInput(newText);
+                                            element.innerHTML = html;
+                                            this.restoreCursorPosition(element, atIndex);
+                                        });
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 멘션 리스트가 표시되고 있을 때만 키보드 네비게이션 처리
+            if (!this.showUserList || this.filteredUserList.length === 0) {
+                return;
+            }
+            
+            switch (event.key) {
+                case 'ArrowDown':
+                    event.preventDefault();
+                    this.selectedUserIndex = (this.selectedUserIndex + 1) % this.filteredUserList.length;
+                    this.$nextTick(() => {
+                        const userListElement = document.querySelector('.user-list');
+                        if (userListElement) {
+                            const selectedElement = userListElement.children[this.selectedUserIndex];
+                            if (selectedElement) {
+                                selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            }
+                        }
+                    });
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    if (this.selectedUserIndex <= 0) {
+                        this.selectedUserIndex = this.filteredUserList.length - 1;
+                    } else {
+                        this.selectedUserIndex--;
+                    }
+                    this.$nextTick(() => {
+                        const userListElement = document.querySelector('.user-list');
+                        if (userListElement) {
+                            const selectedElement = userListElement.children[this.selectedUserIndex];
+                            if (selectedElement) {
+                                selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            }
+                        }
+                    });
+                    break;
+                case 'Enter':
+                    if (this.selectedUserIndex >= 0 && this.selectedUserIndex < this.filteredUserList.length) {
+                        event.preventDefault();
+                        this.selectUser(this.filteredUserList[this.selectedUserIndex]);
+                    }
+                    break;
+                case 'Escape':
+                    event.preventDefault();
+                    this.showUserList = false;
+                    this.selectedUserIndex = -1;
+                    break;
+            }
+        },
+        // Enter 키 처리
+        handleEnterKey(event) {
+            if (!event.shiftKey) {
+                this.beforeSend();
+            }
+        },
+        handleTextareaInput(event) {
+            const text = event.target.value;
+            const textarea = event.target;
+            const cursorPosition = textarea.selectionStart;
+            
+            // @ 입력 감지하여 멘션 리스트 표시
+            const atIndex = text.lastIndexOf('@');
+            if (atIndex !== -1) {
+                // @ 다음에 공백이 없고, 이미 완성된 멘션이 아닌 경우에만 리스트 표시
+                const afterAt = text.substring(atIndex + 1);
+                const hasSpace = afterAt.includes(' ');
+                
+                // mentionedUsers에 있는 사용자 이름과 일치하는지 확인
+                const isCompleteMention = this.mentionedUsers.some(user => {
+                    const mentionText = `@${user.username}`;
+                    return text.substring(atIndex).startsWith(mentionText + ' ') || text.substring(atIndex).startsWith(mentionText);
+                });
+                
+                if (!hasSpace && !isCompleteMention) {
+                    this.showUserList = true;
+                    this.mentionStartIndex = atIndex;
+                    this.selectedUserIndex = -1;
+                } else {
+                    this.showUserList = false;
+                    this.selectedUserIndex = -1;
+                }
+            } else {
+                this.showUserList = false;
+                this.selectedUserIndex = -1;
+            }
 
             if (text.startsWith('>') || text.startsWith('!')) {
                 // 명령어 목록 표시 로직 추가
@@ -2271,12 +2955,81 @@ export default {
             // }
         },
         selectUser(user) {
+            // 입력창에서 @ 부분 제거 (멘션 텍스트는 입력창에 표시하지 않음)
             const beforeMention = this.newMessage.substring(0, this.mentionStartIndex);
-            this.newMessage = `${beforeMention}@${user.username} `;
+            const afterMention = this.newMessage.substring(this.mentionStartIndex);
+            // @ 다음 공백까지 제거
+            const spaceIndex = afterMention.indexOf(' ');
+            if (spaceIndex !== -1) {
+                this.newMessage = beforeMention + afterMention.substring(spaceIndex + 1);
+            } else {
+                this.newMessage = beforeMention;
+            }
+            
             this.showUserList = false;
-            // Mention된 유저의 정보를 mentionedUsers 배열에 추가
+            this.selectedUserIndex = -1;
+            
+            // Mention된 유저의 정보를 mentionedUsers 배열에만 추가 (입력창에는 텍스트 표시 안함)
             if (!this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id)) {
                 this.mentionedUsers.push(user);
+            }
+        },
+        // 멘션 제거 메서드
+        removeMention(userId) {
+            // mentionedUsers에서만 제거 (입력창에는 멘션 텍스트가 없으므로 텍스트 수정 불필요)
+            this.mentionedUsers = this.mentionedUsers.filter(u => u.id !== userId);
+        },
+        handleKeydown(event) {
+            // 멘션 리스트가 표시되고 있을 때만 키보드 네비게이션 처리
+            if (!this.showUserList || this.filteredUserList.length === 0) {
+                return;
+            }
+            
+            switch (event.key) {
+                case 'ArrowDown':
+                    event.preventDefault();
+                    this.selectedUserIndex = (this.selectedUserIndex + 1) % this.filteredUserList.length;
+                    // 선택된 항목이 보이도록 스크롤
+                    this.$nextTick(() => {
+                        const userListElement = document.querySelector('.user-list');
+                        if (userListElement) {
+                            const selectedElement = userListElement.children[this.selectedUserIndex];
+                            if (selectedElement) {
+                                selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            }
+                        }
+                    });
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    if (this.selectedUserIndex <= 0) {
+                        this.selectedUserIndex = this.filteredUserList.length - 1;
+                    } else {
+                        this.selectedUserIndex--;
+                    }
+                    // 선택된 항목이 보이도록 스크롤
+                    this.$nextTick(() => {
+                        const userListElement = document.querySelector('.user-list');
+                        if (userListElement) {
+                            const selectedElement = userListElement.children[this.selectedUserIndex];
+                            if (selectedElement) {
+                                selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                            }
+                        }
+                    });
+                    break;
+                case 'Enter':
+                    // Enter 키는 기본 동작(메시지 전송)을 막지 않지만, 선택된 사용자가 있으면 선택
+                    if (this.selectedUserIndex >= 0 && this.selectedUserIndex < this.filteredUserList.length) {
+                        event.preventDefault();
+                        this.selectUser(this.filteredUserList[this.selectedUserIndex]);
+                    }
+                    break;
+                case 'Escape':
+                    event.preventDefault();
+                    this.showUserList = false;
+                    this.selectedUserIndex = -1;
+                    break;
             }
         },
         clickToScroll() {
@@ -2414,6 +3167,43 @@ export default {
                 $event.stopPropagation();
             }
             
+            const mentionedAgent = this.mentionedUsers.find(user => user.is_agent);
+            
+            if (mentionedAgent) {
+                this.isSending = true;
+                const messageText = this.newMessage;
+                
+                // 멘션된 사용자들을 메시지 텍스트 앞에 추가
+                let fullMessageText = messageText;
+                if (this.mentionedUsers && this.mentionedUsers.length > 0) {
+                    const mentionText = this.mentionedUsers.map(user => `@${user.username}`).join(' ');
+                    fullMessageText = mentionText + (messageText ? ' ' + messageText : '');
+                }
+                
+                const cleanMessage = messageText.replace(/@[^\s@]+\s*/g, '').trim();
+                
+                if (fullMessageText.length > 0 || this.attachedImages.length > 0) {
+                    this.$emit('sendMessage', {
+                        images: this.attachedImages,
+                        text: fullMessageText,
+                        mentionedUsers: this.mentionedUsers
+                    });
+                    
+                    this.attachedImages = [];
+                }
+                
+                const agentMessage = cleanMessage || messageText;
+                this.$emit('requestDraftAgent', agentMessage, mentionedAgent);
+                
+                setTimeout(() => {
+                    this.newMessage = "";
+                    this.mentionedUsers = [];
+                    this.showUserList = false;
+                    this.isSending = false;
+                }, 100);
+                return;
+            }
+            
             if(this.isAgentMode){
                 this.isSending = true;
                 this.requestDraftAgent();
@@ -2438,19 +3228,24 @@ export default {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
             } else {
+                // 멘션된 사용자들을 메시지 텍스트 앞에 추가
+                let messageText = this.newMessage;
+                if (this.mentionedUsers && this.mentionedUsers.length > 0) {
+                    const mentionText = this.mentionedUsers.map(user => `@${user.username}`).join(' ');
+                    messageText = mentionText + (messageText ? ' ' + messageText : '');
+                }
+                
                 if (this.definitionMapOnlyInput) {
-                    // ProcessDefinitionMap에서 사용하는 경우
-                    // 부모 컴포넌트로 메시지 전달
                     this.$emit('sendMessage', {
                         images: this.attachedImages,
-                        text: this.newMessage,
+                        text: messageText,
                         mentionedUsers: this.mentionedUsers
                     });
 
                 } else {
                     this.$emit('sendMessage', {
                         images: this.attachedImages,
-                        text: this.newMessage,
+                        text: messageText,
                         mentionedUsers: this.mentionedUsers
                     });
                 }
@@ -2954,6 +3749,7 @@ export default {
     padding: 0px !important;
 }
 
+
 .prompt-edit-textarea textarea {
     padding: 5px !important;
 }
@@ -3261,6 +4057,39 @@ pre {
     &.intervention-no {
         background-color: rgba(158, 158, 158, 0.1);
         border: 1px solid rgba(158, 158, 158, 0.3);
+    }
+}
+
+// 개입 정보 배지 (접힌 상태)
+.intervention-badge {
+    transition: all 0.2s ease;
+    
+    &:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+    }
+    
+    &.intervention-yes {
+        background-color: rgba(76, 175, 80, 0.15);
+        border: 1px solid rgba(76, 175, 80, 0.4);
+        color: #2e7d32;
+    }
+    
+    &.intervention-no {
+        background-color: rgba(158, 158, 158, 0.15);
+        border: 1px solid rgba(158, 158, 158, 0.4);
+        color: #616161;
+    }
+}
+
+// system/agent 메시지 배지 (접힌 상태)
+.system-message-badge {
+    transition: all 0.2s ease;
+    
+    &:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+        background-color: rgba(25, 118, 210, 0.15) !important;
     }
 }
 

@@ -132,14 +132,16 @@ export default {
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;
         },
-        requestDraftAgent(newVal) {
+        requestDraftAgent(newVal, mentionedAgent) {
             var me = this
             me.$try({
                 context: me,
                 action() {
                     if (newVal) me.agentInfo.draftPrompt = newVal
 
-                    if (!me.agentInfo.draftPrompt) return;
+                    if (!me.agentInfo.draftPrompt) {
+                        return;
+                    }
                     me.agentInfo.isRunning = true
                     me.requestAgent(me.agentInfo.draftPrompt)
                 },

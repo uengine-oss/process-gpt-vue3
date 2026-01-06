@@ -825,7 +825,18 @@ export default {
                         }
                     });
                     this.chatRoomList.splice(index, 1, chatRoomInfo);
-                    this.putObject(`chat_rooms`, chatRoomInfo);
+                    // DB에 저장 (에러 처리 추가)
+                    try {
+                        // participants가 배열인지 확인
+                        if (!Array.isArray(chatRoomInfo.participants)) {
+                            console.error('[GroupChats] participants must be an array:', chatRoomInfo);
+                            throw new Error('participants must be an array');
+                        }
+                        await this.putObject(`chat_rooms`, chatRoomInfo);
+                    } catch (error) {
+                        console.error('[GroupChats] Failed to update chat room in DB:', error);
+                        console.error('[GroupChats] chatRoomInfo:', JSON.stringify(chatRoomInfo, null, 2));
+                    }
                     // 현재 선택된 채팅방이면 업데이트
                     if (this.currentChatRoom && this.currentChatRoom.id === chatRoomInfo.id) {
                         this.currentChatRoom = chatRoomInfo;
@@ -875,10 +886,26 @@ export default {
                 
                 // DB에 저장 (에러 처리 추가)
                 try {
+                    // id가 없으면 생성
+                    if (!chatRoomInfo.id) {
+                        chatRoomInfo.id = this.uuid();
+                    }
+                    // participants가 배열인지 확인
+                    if (!Array.isArray(chatRoomInfo.participants)) {
+                        console.error('[GroupChats] participants must be an array:', chatRoomInfo);
+                        throw new Error('participants must be an array');
+                    }
+                    // participants가 비어있으면 에러
+                    if (chatRoomInfo.participants.length === 0) {
+                        console.error('[GroupChats] participants array is empty:', chatRoomInfo);
+                        throw new Error('participants array cannot be empty');
+                    }
                     await this.putObject(`chat_rooms`, chatRoomInfo);
                 } catch (error) {
                     // 저장 실패해도 로컬에서는 사용 가능하도록 함
                     // 하지만 다른 사용자에게는 보이지 않음
+                    console.error('[GroupChats] Failed to save chat room to DB:', error);
+                    console.error('[GroupChats] chatRoomInfo:', JSON.stringify(chatRoomInfo, null, 2));
                 }
                 
                 this.chatRoomSelected(chatRoomInfo)
@@ -886,13 +913,17 @@ export default {
                 this.setWatchChatList(this.myChatRoomIds);
             }
         },
-        setReadMessage(idx){
+        async setReadMessage(idx){
             if(idx !== -1) {
                 let participant = this.chatRoomList[idx].participants.find(participant => participant.email === this.userInfo.email);
                 if(participant) {
                     participant.isExistUnReadMessage = false;
                 }
-                this.putObject(`chat_rooms`, this.chatRoomList[idx]);
+                try {
+                    await this.putObject(`chat_rooms`, this.chatRoomList[idx]);
+                } catch (error) {
+                    console.error('[GroupChats] Failed to update read message status in DB:', error);
+                }
                 this.EventBus.emit('clear-notification', this.chatRoomList[idx].id);
                 window.dispatchEvent(new CustomEvent('update-notification-badge', {
                     detail: { type: 'chat', value: false, id: this.chatRoomList[idx].id}
@@ -923,6 +954,83 @@ export default {
                 console.warn('saveAccessPage 실패:', e);
             });
         },
+        async requestDraftAgent(newVal, mentionedAgent) {
+            if (mentionedAgent && mentionedAgent.id) {
+                try {
+                    if (!this.agentInfo) {
+                        this.agentInfo = {};
+                    }
+                    if (newVal) {
+                        this.agentInfo.draftPrompt = newVal;
+                    }
+                    if (!this.agentInfo.draftPrompt) {
+                        return;
+                    }
+                    this.agentInfo.isRunning = true;
+                    
+                    const chatRoomId = this.currentChatRoom?.id || this.chatRoomId;
+                    if (!chatRoomId) {
+                        this.agentInfo.isRunning = false;
+                        return;
+                    }
+                    
+                    const response = await axios.post('/completion/multi-agent/chat', {
+                        text: this.agentInfo.draftPrompt,
+                        chat_room_id: chatRoomId,
+                        options: {
+                            agent_id: mentionedAgent.id,
+                            is_learning_mode: false
+                        }
+                    });
+                    
+                    let responseText = '';
+                    if (response.data.response) {
+                        if (typeof response.data.response === 'string') {
+                            responseText = response.data.response;
+                        } else if (response.data.response.content) {
+                            responseText = response.data.response.content;
+                        } else if (response.data.response.html_content) {
+                            responseText = response.data.response.html_content;
+                        } else if (response.data.response.text) {
+                            responseText = response.data.response.text;
+                        } else {
+                            responseText = JSON.stringify(response.data.response);
+                        }
+                    } else {
+                        responseText = JSON.stringify(response.data);
+                    }
+                    
+                    const agentEmail = mentionedAgent.email || mentionedAgent.id || 'agent';
+                    const agentName = mentionedAgent.username || mentionedAgent.name || '에이전트';
+                    const agentProfile = mentionedAgent.profile || '/images/chat-icon.png';
+                    
+                    const agentMessage = {
+                        email: agentEmail,
+                        name: agentName,
+                        role: 'agent',
+                        profile: agentProfile,
+                        command: responseText,
+                        content: responseText,
+                        timeStamp: Date.now(),
+                        jsonData: {
+                            agent_id: mentionedAgent.id,
+                            agent_name: agentName,
+                            task_id: response.data.task_id,
+                            response: response.data.response
+                        }
+                    };
+                    
+                    await this.putMessage(agentMessage, chatRoomId);
+                    this.agentInfo.isRunning = false;
+                } catch (error) {
+                    if (this.agentInfo) {
+                        this.agentInfo.isRunning = false;
+                    }
+                }
+            } else {
+                return this.$options.mixins[0].methods.requestDraftAgent.call(this, newVal, mentionedAgent);
+            }
+        },
         async putMessage(msg, chatRoomId = null){
             // this.addTextToVectorStore(msg)
             let uuid
@@ -951,7 +1059,11 @@ export default {
                     participant.isExistUnReadMessage = true
                 }
             });
-            this.putObject(`chat_rooms`, targetChatRoom);
+            try {
+                await this.putObject(`chat_rooms`, targetChatRoom);
+            } catch (error) {
+                console.error('[GroupChats] Failed to update chat room message in DB:', error);
+            }
         },
         beforeReply(msg){
             if(msg){
@@ -969,8 +1081,12 @@ export default {
                 this.messages.push(userMessageObj);
                 newMessage.callType = 'chats'
                 
+                // 멘션된 에이전트 확인
+                const mentionedAgent = newMessage.mentionedUsers && newMessage.mentionedUsers.find(user => user.is_agent);
+                
                 // 텍스트 메시지인 경우 에이전트 개입 로직을 비동기로 처리
-                if (newMessage.text && this.currentChatRoom && this.currentChatRoom.id) {
+                // 단, 에이전트가 멘션된 경우는 개입 여부 판단을 하지 않음 (직접 해당 에이전트에게 메시지 전송)
+                if (newMessage.text && this.currentChatRoom && this.currentChatRoom.id && !mentionedAgent) {
                     // 에이전트 개입 로직을 비동기로 처리 (await 제거)
                     // 사용자 메시지는 이미 화면에 표시되었으므로 백그라운드에서 처리
                     this.handleAgentIntervention(newMessage.text, this.currentChatRoom.id, this.userInfo.email).catch(error => {
@@ -980,7 +1096,7 @@ export default {
                         this.sendMessage(newMessage);
                     });
                 } else {
-                    // 이미지만 있거나 텍스트가 없으면 기존 로직 사용
+                    // 이미지만 있거나 텍스트가 없거나, 에이전트가 멘션된 경우 기존 로직 사용
                     // 이 경우에는 putMessage를 호출해야 함 (백엔드 개입 로직이 없으므로)
                     this.putMessage(userMessageObj);
                     this.sendMessage(newMessage);
