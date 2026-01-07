@@ -798,6 +798,8 @@
     "EventSynchronizationForm": {
         "edit": "Edit",
         "delete": "Delete",
+        "url": "URL",
+        "eventType": "Event Type",
         "dataMapping": "Data Mapping",
         "eventAttributes": "Event Attributes",
         "primaryKey": "Primary Key",
