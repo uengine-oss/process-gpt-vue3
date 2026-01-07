@@ -9,7 +9,7 @@
                 >
                     <div class="d-flex justify-space-between align-start flex-grow-1 mb-2">
                         <div style="flex: 1; min-width: 0;" class="d-flex align-center">
-                            <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center"
+                            <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center flex-grow-1"
                             >
                                 <v-text-field v-if="isEditableTitle" v-model="processName"
                                     :label="$t('ProcessDefinitionChatHeader.processDefinitionName')" variant="underlined" hide-details class="pa-0 ma-0"

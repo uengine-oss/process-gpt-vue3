@@ -20,6 +20,7 @@ class WorkAssistantAgentService {
      * @param {string} params.user_uid - 사용자 UID
      * @param {string} params.user_email - 사용자 이메일
      * @param {string} params.user_name - 사용자 이름
+     * @param {string} params.user_jwt - 사용자 JWT 토큰 (MCP 도구에서 Supabase 접근 시 사용)
      * @param {string} params.conversation_id - 대화 ID (선택)
      * @returns {Promise<Object>} 응답 데이터
      */
@@ -35,6 +36,7 @@ class WorkAssistantAgentService {
                 user_uid: params.user_uid,
                 user_email: params.user_email,
                 user_name: params.user_name || params.user_email,
+                user_jwt: params.user_jwt || '',
                 conversation_id: params.conversation_id || null,
                 stream: false,
                 metadata: params.metadata || {}
@@ -73,6 +75,7 @@ class WorkAssistantAgentService {
                     user_uid: params.user_uid,
                     user_email: params.user_email,
                     user_name: params.user_name || params.user_email,
+                    user_jwt: params.user_jwt || '',
                     conversation_id: params.conversation_id || null,
                     stream: true,
                     metadata: params.metadata || {}
