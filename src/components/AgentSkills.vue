@@ -290,6 +290,7 @@ export default {
 
             this.nodes = {};
             this.config.roots = [];
+            const validSkills = [];
 
             for (const skillName of this.skills) {
                 let skillId = skillName;
@@ -305,12 +306,22 @@ export default {
 
                     const skill = await this.backend.getSkillFile(skillName);
                     if (!skill || !skill.skill_name) {
+                        console.warn(`스킬 파일 정보를 가져올 수 없습니다: ${skillName}`);
                         continue;
                     }
 
                     skillId = skill.skill_name;
                     const skillText = skillCheck.name || skillId;
                     const files = Array.isArray(skill.files) ? skill.files : [];
+
+                    // 스킬 파일이 없는 경우 해당 스킬은 제외
+                    if (files.length === 0) {
+                        console.warn(`스킬 파일이 없습니다: ${skillName}`);
+                        continue;
+                    }
+
+                    // 유효한 스킬로 추가
+                    validSkills.push(skillId);
 
                     if (!this.config.roots.includes(skillId)) {
                         this.config.roots.push(skillId);
@@ -396,8 +407,20 @@ export default {
 
                 } catch (error) {
                     delete this.nodes[skillId];
-                    this.config.roots.splice(this.config.roots.indexOf(skillId), 1);
+                    const rootIndex = this.config.roots.indexOf(skillId);
+                    if (rootIndex > -1) {
+                        this.config.roots.splice(rootIndex, 1);
+                    }
                     console.error(`스킬 파일 정보를 불러오는데 실패했습니다: ${skillName}`, error);
+                }
+            }
+
+            // 유효한 스킬만 테넌트 정보에 저장
+            if (validSkills.length !== this.skills.length) {
+                try {
+                    await this.backend.saveSkills(validSkills, true);
+                } catch (saveError) {
+                    console.error('유효한 스킬 저장 실패:', saveError);
                 }
             }
         },
