@@ -2660,3 +2660,99 @@ DROP POLICY IF EXISTS "work-assistant-configuration_select_policy" ON configurat
 CREATE POLICY "work-assistant-configuration_select_policy" ON configuration 
     FOR SELECT TO authenticated 
     USING (tenant_id = public.tenant_id());
+
+
+
+-- =============================================================================
+-- Agent Memory 테이블 (에이전틱 메모리)
+-- 벡터 검색을 통한 컨텍스트 관리
+-- =============================================================================
+
+-- 메모리 타입 enum
+DO $$ BEGIN
+    CREATE TYPE memory_type AS ENUM ('conversation', 'tool_result', 'fact', 'preference');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- main_chat_memory 테이블 (에이전트 메모리)
+CREATE TABLE IF NOT EXISTS main_chat_memory (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id TEXT NOT NULL,
+    user_uid UUID NOT NULL,
+    session_id TEXT,
+    memory_type memory_type NOT NULL DEFAULT 'conversation',
+    content TEXT NOT NULL,
+    embedding vector(1536),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ,
+    
+    CONSTRAINT fk_main_chat_memory_user FOREIGN KEY (user_uid) REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_tenant_user ON main_chat_memory(tenant_id, user_uid);
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_session ON main_chat_memory(session_id);
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_type ON main_chat_memory(memory_type);
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_created ON main_chat_memory(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_expires ON main_chat_memory(expires_at) WHERE expires_at IS NOT NULL;
+
+-- 벡터 검색 인덱스 (IVFFlat)
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_embedding ON main_chat_memory 
+USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- RLS 활성화
+ALTER TABLE main_chat_memory ENABLE ROW LEVEL SECURITY;
+
+-- RLS 정책: 사용자는 자신의 메모리만 접근 가능
+DROP POLICY IF EXISTS "main_chat_memory_user_policy" ON main_chat_memory;
+CREATE POLICY "main_chat_memory_user_policy" ON main_chat_memory
+    FOR ALL TO authenticated
+    USING (user_uid = auth.uid() AND tenant_id = public.tenant_id());
+
+-- 만료된 메모리 자동 삭제 함수
+CREATE OR REPLACE FUNCTION delete_expired_main_chat_memory()
+RETURNS void AS $$
+BEGIN
+    DELETE FROM main_chat_memory WHERE expires_at IS NOT NULL AND expires_at < NOW();
+END;
+$$ LANGUAGE plpgsql;
+
+-- 벡터 유사도 검색 함수
+CREATE OR REPLACE FUNCTION search_main_chat_memory(
+    p_tenant_id TEXT,
+    p_user_uid UUID,
+    p_embedding vector(1536),
+    p_limit INT DEFAULT 5,
+    p_memory_types memory_type[] DEFAULT NULL,
+    p_session_id TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+    id UUID,
+    memory_type memory_type,
+    content TEXT,
+    metadata JSONB,
+    similarity FLOAT,
+    created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        m.id,
+        m.memory_type,
+        m.content,
+        m.metadata,
+        1 - (m.embedding <=> p_embedding) AS similarity,
+        m.created_at
+    FROM main_chat_memory m
+    WHERE m.tenant_id = p_tenant_id
+      AND m.user_uid = p_user_uid
+      AND (m.expires_at IS NULL OR m.expires_at > NOW())
+      AND (p_memory_types IS NULL OR m.memory_type = ANY(p_memory_types))
+      AND (p_session_id IS NULL OR m.session_id = p_session_id)
+      AND m.embedding IS NOT NULL
+    ORDER BY m.embedding <=> p_embedding
+    LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql STABLE;

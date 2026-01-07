@@ -2,8 +2,8 @@
  * Work Assistant Agent API Service
  * 
  * work-assistant-agent 서버와 통신하는 서비스
- * - conversation_history: 이전 대화 내역을 전달하여 컨텍스트 유지
  * - ask_user 응답 감지: 에이전트가 추가 정보를 요청할 때 감지
+ * - 에이전틱 메모리: 서버에서 벡터 검색으로 컨텍스트 관리
  */
 
 // 개발 환경에서는 vite 프록시 사용, 프로덕션에서는 환경 변수 사용
@@ -24,7 +24,6 @@ class WorkAssistantAgentService {
      * @param {string} params.user_name - 사용자 이름
      * @param {string} params.user_jwt - 사용자 JWT 토큰 (MCP 도구에서 Supabase 접근 시 사용)
      * @param {string} params.conversation_id - 대화 ID (선택)
-     * @param {Array} params.conversation_history - 이전 대화 내역 (Human in the Loop 지원)
      * @returns {Promise<Object>} 응답 데이터
      */
     async sendMessage(params) {
@@ -41,7 +40,6 @@ class WorkAssistantAgentService {
                 user_name: params.user_name || params.user_email,
                 user_jwt: params.user_jwt || '',
                 conversation_id: params.conversation_id || null,
-                conversation_history: params.conversation_history || [],
                 stream: false,
                 metadata: params.metadata || {}
             })
@@ -57,7 +55,6 @@ class WorkAssistantAgentService {
     /**
      * 채팅 메시지 전송 (스트리밍)
      * @param {Object} params - sendMessage와 동일한 파라미터
-     * @param {Array} params.conversation_history - 이전 대화 내역 (Human in the Loop 지원)
      * @param {Function} onToken - 토큰 수신 콜백
      * @param {Function} onToolStart - 도구 시작 콜백
      * @param {Function} onToolEnd - 도구 종료 콜백
@@ -83,7 +80,6 @@ class WorkAssistantAgentService {
                     user_name: params.user_name || params.user_email,
                     user_jwt: params.user_jwt || '',
                     conversation_id: params.conversation_id || null,
-                    conversation_history: params.conversation_history || [],
                     stream: true,
                     metadata: params.metadata || {}
                 })
