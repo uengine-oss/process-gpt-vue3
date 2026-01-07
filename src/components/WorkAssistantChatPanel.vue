@@ -385,6 +385,9 @@ export default {
                 const session = await window.$supabase?.auth?.getSession();
                 const userJwt = session?.data?.session?.access_token || '';
                 
+                // 대화 내역 준비 (토큰 제한 적용)
+                const conversationHistory = this.getConversationHistory();
+                
                 await workAssistantAgentService.sendMessageStream(
                     {
                         message: userMessage,
@@ -392,7 +395,8 @@ export default {
                         user_uid: this.userInfo.uid || this.userInfo.id,
                         user_email: this.userInfo.email,
                         user_name: this.userInfo.name || this.userInfo.username,
-                        user_jwt: userJwt
+                        user_jwt: userJwt,
+                        conversation_history: conversationHistory
                     },
                     {
                         onToken: (token) => {
@@ -401,11 +405,19 @@ export default {
                             this.loadingMessage = fullResponse.length === 0 ? '생각 중...' : fullResponse;
                         },
                         onToolStart: (toolName, input) => {
+                            if (toolName === 'work-assistant__ask_user') {
+                                if(toolCalls.length > 0 && toolCalls[toolCalls.length - 1].name === 'work-assistant__ask_user') {
+                                    return;
+                                }
+                            }
                             toolCalls.push({ name: toolName, input });
                             this.loadingMessage = `🔧 ${this.formatToolName(toolName)} 실행 중...`;
                         },
                         onToolEnd: (output) => {
-                            // 도구 완료 처리
+                            // 마지막 도구 호출에 결과 저장
+                            if (toolCalls.length > 0) {
+                                toolCalls[toolCalls.length - 1].output = output;
+                            }
                         },
                         onDone: async (content) => {
                             this.isLoading = false;
@@ -466,6 +478,44 @@ export default {
                 email: role === 'user' ? this.userInfo.email : 'system@uengine.org',
                 timeStamp: Date.now()
             };
+        },
+
+        // 대화 내역 반환 (토큰 제한 적용, 도구 호출 결과 포함)
+        getConversationHistory() {
+            const MAX_CHARS = 24000;
+            let totalChars = 0;
+            const result = [];
+            
+            for (let i = this.messages.length - 1; i >= 0; i--) {
+                const msg = this.messages[i];
+                if (!msg.content || msg.isLoading) continue;
+                
+                let content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+                
+                // assistant 메시지에 도구 호출 및 결과 포함
+                if (msg.role === 'assistant' && msg.toolCalls && msg.toolCalls.length > 0) {
+                    const toolSummary = msg.toolCalls.map(tc => {
+                        const toolName = tc.name?.replace('work-assistant__', '') || tc.name;
+                        const input = tc.input ? JSON.stringify(tc.input) : '';
+                        // const output = tc.output ? tc.output.substring(0, 1000) : '';
+                        const output = tc.output ? tc.output : '';
+                        let summary = `[도구: ${toolName}]`;
+                        if (output) {
+                            summary += ` 결과: ${output}`;
+                        }
+                        return summary;
+                    }).join('\n');
+                    content = `[이전 도구 호출]\n${toolSummary}\n\n[응답]\n${content}`;
+                }
+                
+                const msgChars = content.length;
+                if (totalChars + msgChars > MAX_CHARS) break;
+                
+                totalChars += msgChars;
+                result.unshift({ role: msg.role, content });
+            }
+            
+            return result;
         },
 
         // 메시지 저장
