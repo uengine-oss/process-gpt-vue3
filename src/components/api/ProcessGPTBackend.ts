@@ -525,26 +525,27 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
-            let versions: any[] = [];
+            // 1) major 버전 중 가장 최신 버전 검색
+            let majorVersions: any[] = [];
             try {
-                versions = await storage.list('proc_def_version', {
+                majorVersions = await storage.list('proc_def_version', {
                     match: {
                         proc_def_id: defId,
                         version_tag: 'major',
                     },
                 });
             } catch (e) {
-                versions = [];
+                majorVersions = [];
             }
 
-            if (versions && versions.length > 0) {
-                versions.sort((a: any, b: any) => {
+            if (majorVersions && majorVersions.length > 0) {
+                majorVersions.sort((a: any, b: any) => {
                     const va = parseFloat(a.version || '0') || 0;
                     const vb = parseFloat(b.version || '0') || 0;
                     return vb - va;
                 });
 
-                const latest = versions[0];
+                const latest = majorVersions[0];
                 return {
                     definition: latest.definition,
                     bpmn: latest.snapshot,
@@ -553,7 +554,36 @@ class ProcessGPTBackend implements Backend {
                 };
             }
 
-            // 2) major 버전이 없으면 proc_def의 현재 정의 사용
+            // 2) major 버전이 없으면 minor 버전 중 가장 최신 버전 검색
+            let minorVersions: any[] = [];
+            try {
+                minorVersions = await storage.list('proc_def_version', {
+                    match: {
+                        proc_def_id: defId,
+                        version_tag: 'minor',
+                    },
+                });
+            } catch (e) {
+                minorVersions = [];
+            }
+
+            if (minorVersions && minorVersions.length > 0) {
+                minorVersions.sort((a: any, b: any) => {
+                    const va = parseFloat(a.version || '0') || 0;
+                    const vb = parseFloat(b.version || '0') || 0;
+                    return vb - va;
+                });
+
+                const latest = minorVersions[0];
+                return {
+                    definition: latest.definition,
+                    bpmn: latest.snapshot,
+                    version: latest.version,
+                    version_tag: latest.version_tag,
+                };
+            }
+
+            // 3) 버전이 하나도 없으면 proc_def의 현재 정의 사용
             return {
                 definition: procDef.definition,
                 bpmn: procDef.bpmn,
