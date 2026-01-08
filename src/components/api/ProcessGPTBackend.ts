@@ -877,6 +877,11 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
+            if (options && options.orderBy) {
+                filter.orderBy = options.orderBy;
+                filter.sort = options.sort || 'asc';
+            }
+
             let list = await storage.list('todolist', filter);
             if(list.length === 0) { //자식인스턴스 워크아이템 조회
                 if (options && options.instId) {
