@@ -454,6 +454,8 @@ export default {
                     // todolist / 엔진 쪽에서 사용할 버전 정보 전달
                     version_tag: me.processDefinition.version_tag || 'major',
                     version: me.processDefinition.version || null,
+                    // 백엔드에서 프로세스 정의를 조회하기 위한 테넌트 정보 전달
+                    tenant_id: window.$tenantName,
                 };
                 
                 if (me.$refs.instanceSourceRef) {

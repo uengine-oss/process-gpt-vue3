@@ -392,7 +392,8 @@ export default {
                         user_uid: this.userInfo.uid || this.userInfo.id,
                         user_email: this.userInfo.email,
                         user_name: this.userInfo.name || this.userInfo.username,
-                        user_jwt: userJwt
+                        user_jwt: userJwt,
+                        conversation_id: this.currentRoomId  // 채팅방 ID로 세션 유지
                     },
                     {
                         onToken: (token) => {
@@ -401,11 +402,19 @@ export default {
                             this.loadingMessage = fullResponse.length === 0 ? '생각 중...' : fullResponse;
                         },
                         onToolStart: (toolName, input) => {
+                            if (toolName === 'work-assistant__ask_user') {
+                                if(toolCalls.length > 0 && toolCalls[toolCalls.length - 1].name === 'work-assistant__ask_user') {
+                                    return;
+                                }
+                            }
                             toolCalls.push({ name: toolName, input });
                             this.loadingMessage = `🔧 ${this.formatToolName(toolName)} 실행 중...`;
                         },
                         onToolEnd: (output) => {
-                            // 도구 완료 처리
+                            // 마지막 도구 호출에 결과 저장
+                            if (toolCalls.length > 0) {
+                                toolCalls[toolCalls.length - 1].output = output;
+                            }
                         },
                         onDone: async (content) => {
                             this.isLoading = false;

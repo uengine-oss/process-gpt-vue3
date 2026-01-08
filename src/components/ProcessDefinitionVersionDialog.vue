@@ -235,12 +235,13 @@ export default {
     computed: {
         idRules() {
             const isUEngine = this.mode === 'uEngine';
-            // uEngine 모드는 폴더 경로를 허용해야 하므로 '/'를 허용한다.
-            // - ProcessGPT: 소문자/숫자/언더바/대시만 허용 (기존 정책 유지)
-            // - uEngine: 위 + 슬래시(폴더 구분) 허용. 단, 연속 슬래시/양끝 슬래시 등은 기본적으로 막는다.
-            const pattern = isUEngine
-                ? /^[a-z0-9_-]+(?:\/[a-z0-9_-]+)*$/
-                : /^[a-z0-9_-]+$/;
+            if (isUEngine) {
+                return [
+                    (v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'),
+                    () => true
+                ];
+            }
+            const pattern = /^[a-z0-9_-]+$/;
             return [
                 (v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'),
                 (v) => (v ? pattern.test(v) : false) || this.$t('ProcessDefinitionVersionDialog.idRules')

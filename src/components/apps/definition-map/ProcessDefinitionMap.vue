@@ -669,7 +669,16 @@ export default {
         },
         // 메인 채팅 입력 처리
         handleMainChatSubmit(message) {
-            if (!message || !message.text) return;
+            // 파일만 있거나 텍스트만 있거나 둘 다 있는 경우 처리
+            if (!message || (!message.text && !message.file)) return;
+            
+            // PDF 파일이 포함된 경우 파일 정보를 메시지에 포함
+            if (message.file && message.file.fileType === 'application/pdf') {
+                // PDF 파일 정보를 포함하여 전달
+                const fileInfoText = `\n\n[InputData]\n${JSON.stringify(message.file)}`;
+                message.text = (message.text || 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.') + fileInfoText;
+                message.hasPdfFile = true;
+            }
             
             // 전체 화면 채팅 다이얼로그 열기
             this.pendingChatMessage = message;
