@@ -485,6 +485,12 @@ export default {
                 me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
                 if (me.useEvent) {
+                    if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                    if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                    if (!me.copyUengineProperties.eventSynchronization.attributes)
+                        me.copyUengineProperties.eventSynchronization.attributes = [];
+                    if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                        me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
                     me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
                 }
             } else {

@@ -306,7 +306,7 @@ export default {
                 if (this.agentInfo?.agent_type === 'pgagent') {
                     agentOrch = this.agentInfo?.alias;
                 } else if (this.agentInfo?.agent_type === 'a2a') {
-                    agentOrch = this.agentInfo?.alias;
+                    agentOrch = this.agentInfo?.agent_type;
                 } else {
                     agentOrch = 'crewai-action';
                 }

@@ -76,6 +76,7 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS owner uuid DEFAULT auth.uid(
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS mcp jsonb;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS skills text[];
 
 -- user_devices table
 ALTER TABLE public.user_devices ADD COLUMN IF NOT EXISTS user_email text;
@@ -279,6 +280,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS execution_scope text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS output_url text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS rework_count integer DEFAULT 0;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS query text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback_status text;
 -- 기존 description 컬럼을 query 컬럼으로 변경
 -- UPDATE public.todolist 
 -- SET query = COALESCE(query, description) 

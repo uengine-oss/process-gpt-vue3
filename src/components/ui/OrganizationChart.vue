@@ -619,7 +619,7 @@ export default {
 }
 
 #tree {
-    width: 100% !important;
+    width: 98% !important;
     height: 99% !important;
 }
 

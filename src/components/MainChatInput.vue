@@ -96,26 +96,82 @@
             </v-menu>
         </div>
 
+        <!-- 선택된 파일 표시 -->
+        <div v-if="selectedFile" class="selected-file-container">
+            <div class="selected-file-chip">
+                <v-icon size="18" color="error" class="mr-2">mdi-file-pdf-box</v-icon>
+                <span class="file-name">{{ selectedFile.name }}</span>
+                <v-btn
+                    icon
+                    variant="text"
+                    size="x-small"
+                    @click="clearSelectedFile"
+                    class="remove-file-btn"
+                >
+                    <v-icon size="16">mdi-close</v-icon>
+                </v-btn>
+            </div>
+        </div>
+
         <!-- 입력 필드 -->
         <div class="input-wrapper">
             <div class="input-field-container">
+                <!-- 숨겨진 파일 입력 -->
+                <input
+                    type="file"
+                    ref="fileInput"
+                    accept=".pdf,application/pdf"
+                    @change="handleFileSelect"
+                    class="d-none"
+                />
+                
+                <!-- 파일 첨부 버튼 -->
+                <v-tooltip text="PDF 파일 첨부">
+                    <template v-slot:activator="{ props }">
+                        <v-btn
+                            v-bind="props"
+                            icon
+                            variant="text"
+                            size="small"
+                            @click="triggerFileSelect"
+                            class="attach-btn mr-1"
+                            :disabled="isUploading"
+                        >
+                            <v-icon size="20" :color="selectedFile ? 'primary' : 'grey'">mdi-paperclip</v-icon>
+                        </v-btn>
+                    </template>
+                </v-tooltip>
+
                 <v-icon class="input-icon" color="primary" size="20">mdi-message-text-outline</v-icon>
                 <input
                     v-model="inputText"
                     type="text"
                     class="main-input"
-                    :placeholder="$t('mainChat.placeholder')"
+                    :placeholder="selectedFile ? $t('mainChat.placeholderWithFile') || 'PDF 파일과 함께 보낼 메시지를 입력하세요...' : $t('mainChat.placeholder')"
                     @keyup.enter="handleSubmit"
                     @focus="isFocused = true"
                     @blur="handleBlur"
                     ref="inputField"
+                    :disabled="isUploading"
                 />
+                
+                <!-- 업로드 중 로딩 표시 -->
+                <v-progress-circular
+                    v-if="isUploading"
+                    indeterminate
+                    size="20"
+                    width="2"
+                    color="primary"
+                    class="mr-2"
+                ></v-progress-circular>
+                
                 <v-btn
+                    v-else
                     icon
                     variant="text"
                     size="small"
                     color="primary"
-                    :disabled="!inputText.trim()"
+                    :disabled="!inputText.trim() && !selectedFile"
                     @click="handleSubmit"
                     class="send-btn"
                 >
@@ -154,6 +210,9 @@ export default {
             displayLimit: 10,
             showAll: false,
             userInfo: null,
+            // 파일 업로드 관련
+            selectedFile: null,
+            isUploading: false,
             examples: [
                 {
                     icon: 'mdi-plus-circle-outline',
@@ -209,18 +268,67 @@ export default {
             this.inputText = example.text;
             this.$refs.inputField.focus();
         },
-        handleSubmit() {
-            if (!this.inputText.trim()) return;
+        async handleSubmit() {
+            if (!this.inputText.trim() && !this.selectedFile) return;
+            
+            let fileInfo = null;
+            
+            // 파일이 선택되어 있으면 먼저 업로드
+            if (this.selectedFile) {
+                this.isUploading = true;
+                try {
+                    const uploadResult = await backend.uploadFile(this.selectedFile.name, this.selectedFile);
+                    if (uploadResult && uploadResult.publicUrl) {
+                        fileInfo = {
+                            fileName: this.selectedFile.name,
+                            fileUrl: uploadResult.publicUrl,
+                            fileType: this.selectedFile.type,
+                            fileSize: this.selectedFile.size
+                        };
+                    }
+                } catch (error) {
+                    console.error('파일 업로드 오류:', error);
+                    this.$emit('upload-error', error);
+                } finally {
+                    this.isUploading = false;
+                }
+            }
             
             this.$emit('submit', {
                 text: this.inputText.trim(),
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                file: fileInfo
             });
             
             this.inputText = '';
+            this.selectedFile = null;
         },
         handleBlur() {
             this.isFocused = false;
+        },
+        // 파일 선택 처리
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // PDF 파일만 허용
+                if (file.type === 'application/pdf') {
+                    this.selectedFile = file;
+                } else {
+                    alert('PDF 파일만 업로드할 수 있습니다.');
+                    event.target.value = '';
+                }
+            }
+        },
+        // 선택된 파일 제거
+        clearSelectedFile() {
+            this.selectedFile = null;
+            if (this.$refs.fileInput) {
+                this.$refs.fileInput.value = '';
+            }
+        },
+        // 파일 선택 창 열기
+        triggerFileSelect() {
+            this.$refs.fileInput.click();
         },
         async loadHistory() {
             if (!this.userInfo) {
@@ -488,6 +596,39 @@ export default {
 .send-btn {
     flex-shrink: 0;
     margin-left: 8px;
+}
+
+/* 파일 첨부 버튼 */
+.attach-btn {
+    flex-shrink: 0;
+}
+
+/* 선택된 파일 표시 */
+.selected-file-container {
+    margin-bottom: 12px;
+}
+
+.selected-file-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #991b1b;
+}
+
+.file-name {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.remove-file-btn {
+    margin-left: 4px;
+    color: #991b1b !important;
 }
 
 /* 모바일 반응형 */

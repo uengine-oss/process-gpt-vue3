@@ -525,26 +525,27 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
-            let versions: any[] = [];
+            // 1) major 버전 중 가장 최신 버전 검색
+            let majorVersions: any[] = [];
             try {
-                versions = await storage.list('proc_def_version', {
+                majorVersions = await storage.list('proc_def_version', {
                     match: {
                         proc_def_id: defId,
                         version_tag: 'major',
                     },
                 });
             } catch (e) {
-                versions = [];
+                majorVersions = [];
             }
 
-            if (versions && versions.length > 0) {
-                versions.sort((a: any, b: any) => {
+            if (majorVersions && majorVersions.length > 0) {
+                majorVersions.sort((a: any, b: any) => {
                     const va = parseFloat(a.version || '0') || 0;
                     const vb = parseFloat(b.version || '0') || 0;
                     return vb - va;
                 });
 
-                const latest = versions[0];
+                const latest = majorVersions[0];
                 return {
                     definition: latest.definition,
                     bpmn: latest.snapshot,
@@ -553,7 +554,36 @@ class ProcessGPTBackend implements Backend {
                 };
             }
 
-            // 2) major 버전이 없으면 proc_def의 현재 정의 사용
+            // 2) major 버전이 없으면 minor 버전 중 가장 최신 버전 검색
+            let minorVersions: any[] = [];
+            try {
+                minorVersions = await storage.list('proc_def_version', {
+                    match: {
+                        proc_def_id: defId,
+                        version_tag: 'minor',
+                    },
+                });
+            } catch (e) {
+                minorVersions = [];
+            }
+
+            if (minorVersions && minorVersions.length > 0) {
+                minorVersions.sort((a: any, b: any) => {
+                    const va = parseFloat(a.version || '0') || 0;
+                    const vb = parseFloat(b.version || '0') || 0;
+                    return vb - va;
+                });
+
+                const latest = minorVersions[0];
+                return {
+                    definition: latest.definition,
+                    bpmn: latest.snapshot,
+                    version: latest.version,
+                    version_tag: latest.version_tag,
+                };
+            }
+
+            // 3) 버전이 하나도 없으면 proc_def의 현재 정의 사용
             return {
                 definition: procDef.definition,
                 bpmn: procDef.bpmn,
@@ -875,6 +905,11 @@ class ProcessGPTBackend implements Backend {
                     key: 'user_id',
                     value: `%${options.userId}%`
                 }
+            }
+
+            if (options && options.orderBy) {
+                filter.orderBy = options.orderBy;
+                filter.sort = options.sort || 'asc';
             }
 
             let list = await storage.list('todolist', filter);
@@ -5260,24 +5295,27 @@ class ProcessGPTBackend implements Backend {
     }
 
     // skills
-    async saveSkills(skills: any) {
+    async saveSkills(skills: any, isOverride?: boolean) {
         try {
-            if (!skills || skills.length === 0) {
-                return;
-            }
             const tenantId = window.$tenantName;
             const tenantInfo = await this.getTenantInfo(tenantId);
             if (!tenantInfo) {
                 throw new Error('tenant not found');
             }
             let tenantSkills = tenantInfo.skills || [];
-            // 기존 skills와 새로운 skills를 병합하고 중복 제거
-            const mergedSkills = [...new Set([...tenantSkills, ...skills])];
+            if (isOverride) {
+                tenantSkills = skills;
+            } else {
+                // 기존 skills와 새로운 skills를 병합하고 중복 제거
+                const mergedSkills = [...new Set([...tenantSkills, ...skills])];
+                tenantSkills = mergedSkills;
+            }
             await storage.putObject('tenants', {
                 id: tenantId,
-                skills: mergedSkills,
+                skills: tenantSkills,
             });
-            return mergedSkills;
+            
+            return tenantSkills;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -5410,6 +5448,54 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             throw new Error(error.detail);
+        }
+    }
+
+    async getSkillHistory(agentId: string, skillName?: string) {
+        try {
+            const options: any = {
+                match: {
+                    agent_id: agentId,
+                    tenant_id: window.$tenantName,
+                    knowledge_type: 'SKILL'
+                },
+                sort: 'desc',
+                orderBy: 'created_at'
+            };
+
+            if (skillName) {
+                options.match.knowledge_id = skillName;
+            }
+
+            const history = await storage.list('agent_knowledge_history', options);
+            return history || [];
+        } catch (error) {
+            console.error('스킬 히스토리 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async getDmnHistory(agentId: string, ruleId?: string) {
+        try {
+            const options: any = {
+                match: {
+                    agent_id: agentId,
+                    tenant_id: window.$tenantName,
+                    knowledge_type: 'DMN_RULE'
+                },
+                sort: 'desc',
+                orderBy: 'created_at'
+            };
+
+            if (ruleId) {
+                options.match.knowledge_id = ruleId;
+            }
+
+            const history = await storage.list('agent_knowledge_history', options);
+            return history || [];
+        } catch (error) {
+            console.error('DMN 히스토리 조회 실패:', error);
+            return [];
         }
     }
 }

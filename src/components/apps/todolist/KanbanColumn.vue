@@ -172,7 +172,7 @@ export default {
                     
                     return new Date(dateA) - new Date(dateB);
                 });
-            } else {
+            } else if (this.sortOption === 'startDate') {
                 // 시작일이 최근인 순 (내림차순)
                 sortedTasks.sort((a, b) => {
                     const dateA = a.startDate || a.createdDate || a.startedDate;
@@ -183,6 +183,11 @@ export default {
                     if (!dateB) return -1; // dateB가 없으면 뒤로
                     
                     return new Date(dateB) - new Date(dateA);
+                });
+            } else if (this.sortOption === 'updatedAt') {
+                // 최근 변경 순 (내림차순)
+                sortedTasks.sort((a, b) => {
+                    return new Date(b.updatedAt) - new Date(a.updatedAt);
                 });
             }
             

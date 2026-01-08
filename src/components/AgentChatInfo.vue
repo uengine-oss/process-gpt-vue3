@@ -167,6 +167,19 @@
                             <v-icon size="small" class="mr-1">mdi-brain</v-icon>
                             {{ parsedSkills ? $t('AgentSkills.skills') : $t('agentField.agentSkills') }}
                         </span>
+                        <v-btn
+                            v-if="agentType === 'agent' && agentInfo.id"
+                            variant="text"
+                            icon
+                            size="x-small"
+                            @click="openSkillHistory"
+                            class="ml-auto"
+                        >
+                            <v-icon size="small">mdi-history</v-icon>
+                            <v-tooltip activator="parent" location="left">
+                                스킬 변경 이력
+                            </v-tooltip>
+                        </v-btn>
                     </div>
                     <v-chip-group v-if="isSectionVisible('skills') && !editSkills && parsedSkills && parsedSkills.length > 0" class="mb-3">
                         <v-chip
@@ -211,10 +224,25 @@
                     <!-- DMN Tabs -->
                     <div v-if="!editDialog && agentType === 'agent'">
                         <v-divider class="mb-4"></v-divider>
-                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.businessRule') }}</span>
-                        <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
-                            <v-icon>mdi-plus</v-icon>
-                        </v-btn>
+                        <div class="d-flex align-center mb-1">
+                            <span class="text-body-2 font-weight-medium mr-1">{{ $t('AgentChatInfo.businessRule') }}</span>
+                            <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
+                                <v-icon>mdi-plus</v-icon>
+                            </v-btn>
+                            <v-btn
+                                v-if="agentType === 'agent' && agentInfo.id"
+                                size="x-small"
+                                variant="text"
+                                icon
+                                class="ml-auto"
+                                @click="openDmnHistory"
+                            >
+                                <v-icon>mdi-history</v-icon>
+                                <v-tooltip activator="parent" location="left">
+                                    비즈니스 규칙 변경 이력
+                                </v-tooltip>
+                            </v-btn>
+                        </div>
                         <v-tabs
                             v-if="dmnList.length > 0"
                             v-model="selectedDmnId"
@@ -252,6 +280,7 @@
                 @closeDialog="closeEditDialog"
             />
         </div>
+
     </div>
 </template>
 
@@ -582,6 +611,14 @@ export default {
         shouldShowToolsToggle() {
             return this.parsedTools && this.parsedTools.length > 4;
         },
+
+        openSkillHistory() {
+            this.$router.push({ hash: '#skill-history' });
+        },
+
+        openDmnHistory() {
+            this.$router.push({ hash: '#dmn-history' });
+        }
 
     }
 }
