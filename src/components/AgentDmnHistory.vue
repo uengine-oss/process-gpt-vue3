@@ -82,45 +82,74 @@
                     <template v-slot:expanded-row="{ columns, item }">
                         <td :colspan="columns.length">
                             <v-card elevation="10" class="px-4 py-2 expanded-row-content">
-                                <div class="text-body-2 font-weight-medium mb-2">규칙명: {{ item.knowledge_name || item.knowledge_id }}</div>
-                                <div class="text-body-2 font-weight-medium mb-2">변경사항</div>
-                                
                                 <!-- UPDATE 작업: 이전 내용과 새 내용 diff 표시 -->
-                                <div v-if="item.operation === 'UPDATE' && item.previous_content && item.new_content" class="mt-2">
-                                    <!-- 레이블 -->
-                                    <v-row class="ma-0 mb-2">
-                                        <v-col cols="6" class="pa-0">
-                                            <div class="text-caption text-medium-emphasis">이전 내용</div>
-                                        </v-col>
-                                        <v-col cols="6" class="pa-0">
-                                            <div class="text-caption text-medium-emphasis">새 내용</div>
-                                        </v-col>
-                                    </v-row>
-                                    
-                                    <!-- Diff 표시 -->
-                                    <vuediff 
-                                        :prev="item.previous_content" 
-                                        :current="item.new_content" 
-                                        mode="split" 
-                                        theme="light"
-                                        language="text"
-                                        class="dmn-history-diff"
-                                    />
+                                <div v-if="item.operation === 'UPDATE' && item.previous_content && item.new_content">
+                                    <!-- 사용자 친화적인 DMN 변경사항 표시 -->
+                                    <div v-if="parseDmnXml(item.previous_content) && parseDmnXml(item.new_content)">
+                                        <dmn-diff-view 
+                                            :previous="parseDmnXml(item.previous_content)" 
+                                            :current="parseDmnXml(item.new_content)"
+                                        />
+                                    </div>
+                                    <!-- XML 파싱 실패 시 원본 XML 표시 -->
+                                    <div v-else>
+                                        <v-tabs :model-value="getXmlViewTab(item)" @update:model-value="setXmlViewTab(item, $event)" class="mb-2">
+                                            <v-tab value="structured">구조화된 변경사항</v-tab>
+                                            <v-tab value="raw">원본 XML</v-tab>
+                                        </v-tabs>
+                                        <v-window :model-value="getXmlViewTab(item)">
+                                            <v-window-item value="structured">
+                                                <div class="text-body-2 text-medium-emphasis pa-2">
+                                                    XML 파싱에 실패했습니다. 원본 XML 탭에서 확인하세요.
+                                                </div>
+                                            </v-window-item>
+                                            <v-window-item value="raw">
+                                                <v-row class="ma-0">
+                                                    <v-col cols="6" class="pa-2">
+                                                        <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
+                                                        <div class="change-content-box">
+                                                            <pre class="change-content-text">{{ item.previous_content }}</pre>
+                                                        </div>
+                                                    </v-col>
+                                                    <v-col cols="6" class="pa-2">
+                                                        <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
+                                                        <div class="change-content-box">
+                                                            <pre class="change-content-text">{{ item.new_content }}</pre>
+                                                        </div>
+                                                    </v-col>
+                                                </v-row>
+                                            </v-window-item>
+                                        </v-window>
+                                    </div>
                                 </div>
                                 
                                 <!-- CREATE 작업: 새 내용만 표시 -->
-                                <div v-else-if="item.operation === 'CREATE' && item.new_content" class="mt-2">
-                                    <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
-                                    <div class="change-content-box">
-                                        <pre class="change-content-text">{{ item.new_content }}</pre>
+                                <div v-else-if="item.operation === 'CREATE' && item.new_content">
+                                    <!-- 사용자 친화적인 DMN 표시 -->
+                                    <div v-if="parseDmnXml(item.new_content)">
+                                        <dmn-structure-view :dmn="parseDmnXml(item.new_content)" />
+                                    </div>
+                                    <!-- XML 파싱 실패 시 원본 XML 표시 -->
+                                    <div v-else>
+                                        <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
+                                        <div class="change-content-box">
+                                            <pre class="change-content-text">{{ item.new_content }}</pre>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <!-- DELETE 작업: 이전 내용만 표시 -->
-                                <div v-else-if="item.operation === 'DELETE' && item.previous_content" class="mt-2">
-                                    <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
-                                    <div class="change-content-box">
-                                        <pre class="change-content-text">{{ item.previous_content }}</pre>
+                                <div v-else-if="item.operation === 'DELETE' && item.previous_content">
+                                    <!-- 사용자 친화적인 DMN 표시 -->
+                                    <div v-if="parseDmnXml(item.previous_content)">
+                                        <dmn-structure-view :dmn="parseDmnXml(item.previous_content)" />
+                                    </div>
+                                    <!-- XML 파싱 실패 시 원본 XML 표시 -->
+                                    <div v-else>
+                                        <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
+                                        <div class="change-content-box">
+                                            <pre class="change-content-text">{{ item.previous_content }}</pre>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -165,9 +194,16 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { parseDmnXml } from '@/utils/dmnParser';
+import DmnDiffView from '@/components/dmn/DmnDiffView.vue';
+import DmnStructureView from '@/components/dmn/DmnStructureView.vue';
 
 export default {
     name: 'AgentDmnHistory',
+    components: {
+        DmnDiffView,
+        DmnStructureView
+    },
     props: {
         agentId: {
             type: String,
@@ -189,6 +225,7 @@ export default {
             backend: null,
             page: 1,
             itemsPerPage: 10,
+            xmlViewTabs: {}, // 각 아이템별 탭 상태 관리
             headers: [
                 { title: '비즈니스 규칙', key: 'knowledge_name', sortable: true, width: '25%' },
                 { title: '작업', key: 'operation', sortable: true, width: '10%' },
@@ -284,7 +321,27 @@ export default {
             } catch (error) {
                 return '';
             }
+        },
+
+        getXmlViewTab(item) {
+            const key = this.getItemKey(item);
+            return this.xmlViewTabs[key] || 'structured';
+        },
+
+        setXmlViewTab(item, value) {
+            const key = this.getItemKey(item);
+            this.xmlViewTabs[key] = value;
+        },
+
+        getItemKey(item) {
+            // 고유 키 생성: id, knowledge_id, created_at 조합
+            return item.id || item.knowledge_id || item.created_at || JSON.stringify(item);
+        },
+
+        parseDmnXml(xmlString) {
+            return parseDmnXml(xmlString);
         }
+
     }
 };
 </script>
@@ -345,15 +402,65 @@ export default {
     max-height: 500px;
     overflow-y: auto;
 }
-</style>
 
-{
-  "cells": [],
-  "metadata": {
-    "language_info": {
-      "name": "python"
-    }
-  },
-  "nbformat": 4,
-  "nbformat_minor": 2
+.dmn-diff-view,
+.dmn-structure-view {
+    width: 100%;
 }
+
+.dmn-info-box {
+    background-color: rgba(var(--v-theme-surface), 1);
+    border-radius: 4px;
+    padding: 12px;
+    border: 1px solid rgba(var(--v-border-color), 0.12);
+}
+
+.dmn-list-box {
+    background-color: rgba(var(--v-theme-surface), 1);
+    border-radius: 4px;
+    padding: 12px;
+    border: 1px solid rgba(var(--v-border-color), 0.12);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dmn-item {
+    padding: 8px;
+    background-color: rgba(var(--v-theme-background), 1);
+    border-radius: 4px;
+    border-left: 3px solid rgba(var(--v-theme-primary), 0.3);
+}
+
+.dmn-rules-box {
+    background-color: rgba(var(--v-theme-surface), 1);
+    border-radius: 4px;
+    padding: 12px;
+    border: 1px solid rgba(var(--v-border-color), 0.12);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.dmn-rule-item {
+    padding: 12px;
+    background-color: rgba(var(--v-theme-background), 1);
+    border-radius: 4px;
+    border-left: 3px solid rgba(var(--v-theme-primary), 0.3);
+}
+
+.dmn-added {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+    border-left-color: rgba(76, 175, 80, 0.5) !important;
+}
+
+.dmn-modified {
+    background-color: rgba(255, 152, 0, 0.1) !important;
+    border-left-color: rgba(255, 152, 0, 0.5) !important;
+}
+
+.dmn-removed {
+    background-color: rgba(244, 67, 54, 0.1) !important;
+    border-left-color: rgba(244, 67, 54, 0.5) !important;
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+</style>
