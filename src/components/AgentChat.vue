@@ -46,6 +46,8 @@ import AgentChatActions from "@/components/AgentChatActions.vue";
 import AgentKnowledgeManagement from "@/components/AgentKnowledgeManagement.vue";
 import BusinessRuleLearning from "@/components/BusinessRuleLearning.vue";
 import AgentSkillEdit from "@/components/AgentSkillEdit.vue";
+import AgentSkillHistory from "@/components/AgentSkillHistory.vue";
+import AgentDmnHistory from "@/components/AgentDmnHistory.vue";
 
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
@@ -64,6 +66,8 @@ export default {
         AgentKnowledgeManagement,
         BusinessRuleLearning,
         AgentSkillEdit,
+        AgentSkillHistory,
+        AgentDmnHistory,
     },
     data: () => ({
         defaultSetting: useDefaultSetting(),
@@ -254,6 +258,28 @@ export default {
                     props: (vm) => ({
                         ownerInfo: vm.agentInfo,
                         dmnId: vm.selectedDmnId
+                    }),
+                    events: () => ({}),
+                    activate: () => {}
+                };
+
+                // 스킬 변경 이력 (agent일 때만)
+                handlers['skill-history'] = {
+                    component: 'AgentSkillHistory',
+                    props: (vm) => ({
+                        agentId: vm.agentInfo.id,
+                        showHistory: true
+                    }),
+                    events: () => ({}),
+                    activate: () => {}
+                };
+
+                // 비즈니스 규칙 변경 이력 (agent일 때만)
+                handlers['dmn-history'] = {
+                    component: 'AgentDmnHistory',
+                    props: (vm) => ({
+                        agentId: vm.agentInfo.id,
+                        showHistory: true
                     }),
                     events: () => ({}),
                     activate: () => {}

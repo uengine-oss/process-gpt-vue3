@@ -907,6 +907,11 @@ class ProcessGPTBackend implements Backend {
                 }
             }
 
+            if (options && options.orderBy) {
+                filter.orderBy = options.orderBy;
+                filter.sort = options.sort || 'asc';
+            }
+
             let list = await storage.list('todolist', filter);
             if(list.length === 0) { //자식인스턴스 워크아이템 조회
                 if (options && options.instId) {
@@ -5290,24 +5295,27 @@ class ProcessGPTBackend implements Backend {
     }
 
     // skills
-    async saveSkills(skills: any) {
+    async saveSkills(skills: any, isOverride?: boolean) {
         try {
-            if (!skills || skills.length === 0) {
-                return;
-            }
             const tenantId = window.$tenantName;
             const tenantInfo = await this.getTenantInfo(tenantId);
             if (!tenantInfo) {
                 throw new Error('tenant not found');
             }
             let tenantSkills = tenantInfo.skills || [];
-            // 기존 skills와 새로운 skills를 병합하고 중복 제거
-            const mergedSkills = [...new Set([...tenantSkills, ...skills])];
+            if (isOverride) {
+                tenantSkills = skills;
+            } else {
+                // 기존 skills와 새로운 skills를 병합하고 중복 제거
+                const mergedSkills = [...new Set([...tenantSkills, ...skills])];
+                tenantSkills = mergedSkills;
+            }
             await storage.putObject('tenants', {
                 id: tenantId,
-                skills: mergedSkills,
+                skills: tenantSkills,
             });
-            return mergedSkills;
+            
+            return tenantSkills;
         } catch (error) {
             throw new Error(error.message);
         }
@@ -5440,6 +5448,54 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             throw new Error(error.detail);
+        }
+    }
+
+    async getSkillHistory(agentId: string, skillName?: string) {
+        try {
+            const options: any = {
+                match: {
+                    agent_id: agentId,
+                    tenant_id: window.$tenantName,
+                    knowledge_type: 'SKILL'
+                },
+                sort: 'desc',
+                orderBy: 'created_at'
+            };
+
+            if (skillName) {
+                options.match.knowledge_id = skillName;
+            }
+
+            const history = await storage.list('agent_knowledge_history', options);
+            return history || [];
+        } catch (error) {
+            console.error('스킬 히스토리 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async getDmnHistory(agentId: string, ruleId?: string) {
+        try {
+            const options: any = {
+                match: {
+                    agent_id: agentId,
+                    tenant_id: window.$tenantName,
+                    knowledge_type: 'DMN_RULE'
+                },
+                sort: 'desc',
+                orderBy: 'created_at'
+            };
+
+            if (ruleId) {
+                options.match.knowledge_id = ruleId;
+            }
+
+            const history = await storage.list('agent_knowledge_history', options);
+            return history || [];
+        } catch (error) {
+            console.error('DMN 히스토리 조회 실패:', error);
+            return [];
         }
     }
 }
