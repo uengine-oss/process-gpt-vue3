@@ -1276,13 +1276,15 @@ export default {
 
                 await this.backend.putWorkItem(taskId, {
                     feedback: updatedFeedback,
+                    feedback_status: 'REQUESTED',
                     agent_orch: agentOrch
                 });
 
                 // 상태 업데이트
                 Object.assign(this.todoStatus, {
                     agent_orch: agentOrch,
-                    feedback: updatedFeedback
+                    feedback: updatedFeedback,
+                    feedback_status: 'REQUESTED'
                 });
                 
                 this.isLoading = true;
