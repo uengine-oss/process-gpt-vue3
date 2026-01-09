@@ -2756,3 +2756,26 @@ BEGIN
     LIMIT p_limit;
 END;
 $$ LANGUAGE plpgsql STABLE;
+
+-- ==========================================
+-- ProcessGPT SDK 이벤트 벌크 저장 함수
+-- ==========================================
+-- record_events_bulk: 여러 이벤트를 한 번에 저장하는 함수
+-- ProcessGPT Agent SDK에서 이벤트 버퍼 플러시 시 사용
+CREATE OR REPLACE FUNCTION public.record_events_bulk(p_events jsonb)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  INSERT INTO events (id, job_id, todo_id, proc_inst_id, crew_type, event_type, data, status)
+  SELECT COALESCE((e->>'id')::uuid, gen_random_uuid()),
+         e->>'job_id',
+         e->>'todo_id',
+         e->>'proc_inst_id',
+         e->>'crew_type',
+         (e->>'event_type')::public.event_type_enum,
+         (e->'data')::jsonb,
+         NULLIF(e->>'status','')::public.event_status
+    FROM jsonb_array_elements(COALESCE(p_events, '[]'::jsonb)) AS e;
+END;
+$$;
