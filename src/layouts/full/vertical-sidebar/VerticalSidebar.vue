@@ -168,7 +168,29 @@
                         <AgentList/>
                     </v-col>
                 </div>
-              
+
+                <!-- Analytics 타이틀 + 목록 -->
+                <div v-if="analyticsItem.length > 0" class="mb-4">
+                    <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        Analytics
+                    </div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in analyticsItem"
+                            :key="item.title"
+                            :to="item.to"
+                            :disabled="item.disable"
+                            density="compact"
+                            class="leftPadding"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
+
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
                 <v-col class="pa-0">
                     <!-- definition menu item -->
@@ -305,6 +327,7 @@ export default {
         organizationItem: [],
         definitionItem: [],
         definitionList: null,
+        analyticsItem: [],
         logoPadding: '',
         instanceLists: [],
         isOpen: false,
@@ -471,6 +494,38 @@ export default {
                     },
                 ];
             }
+
+            // Analytics 메뉴
+            this.analyticsItem = [
+                {
+                    title: 'analytics.dashboard',
+                    icon: 'chart-square-linear',
+                    BgColor: 'primary',
+                    to: '/analytics',
+                    disable: false
+                },
+                {
+                    title: 'analytics.pivot',
+                    icon: 'tuning-square-2-linear',
+                    BgColor: 'primary',
+                    to: '/analytics/pivot',
+                    disable: false
+                },
+                {
+                    title: 'analytics.performance',
+                    icon: 'graph-up-linear',
+                    BgColor: 'primary',
+                    to: '/analytics/performance',
+                    disable: false
+                },
+                {
+                    title: 'analytics.query',
+                    icon: 'chat-round-line-linear',
+                    BgColor: 'primary',
+                    to: '/analytics/query',
+                    disable: false
+                },
+            ];
 
             if (!this.JMS) {
                 this.definitionItem.forEach((item) => {

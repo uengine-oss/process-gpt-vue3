@@ -92,6 +92,33 @@ const sidebarItem: menu[] = [
         to: "/definitions",
         children: []
     },
+    {
+        header: 'Analytics'
+    },
+    {
+        title: "대시보드",
+        icon: 'chart-square-linear',
+        BgColor: 'primary',
+        to: "/analytics",
+    },
+    {
+        title: "피벗 테이블",
+        icon: 'tuning-square-2-linear',
+        BgColor: 'primary',
+        to: "/analytics/pivot",
+    },
+    {
+        title: "퍼포먼스",
+        icon: 'graph-up-linear',
+        BgColor: 'primary',
+        to: "/analytics/performance",
+    },
+    {
+        title: "자연어 질의",
+        icon: 'chat-round-line-linear',
+        BgColor: 'primary',
+        to: "/analytics/query",
+    },
 ]
 
 export default sidebarItem;
