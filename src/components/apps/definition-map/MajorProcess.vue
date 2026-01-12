@@ -45,20 +45,20 @@
         </v-card>
 
         <draggable v-if="enableEdit"
-            class="dragArea list-group" 
-            :list="value.sub_proc_list" 
-            :animation="200" 
+            class="dragArea list-group"
+            :list="value.sub_proc_list"
+            :animation="200"
             ghost-class="ghost-card"
             group="subProcess"
         >
             <transition-group>
-                <div v-for="item in value.sub_proc_list" :key="item.id" class="cursor-pointer">
+                <div v-for="item in value.sub_proc_list" :key="item.id" class="cursor-pointer" v-show="isSubProcessVisible(item)">
                     <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
-            <div v-for="item in value.sub_proc_list" :key="item.id">
+            <div v-for="item in filteredSubProcList" :key="item.id">
                 <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
             </div>
         </div>
@@ -95,7 +95,8 @@ export default {
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
         selectedDomain: String,
-        domains: Array
+        domains: Array,
+        filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
     },
     data: () => ({
         type: 'major'
@@ -114,6 +115,16 @@ export default {
             const b = parseInt(hex.substr(4, 2), 16);
             const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
             return luminance > 0.5 ? '#000000' : '#FFFFFF';
+        },
+        filteredSubProcList() {
+            // null = no filter active, show all
+            if (this.filteredProcDefIds === null || !this.value.sub_proc_list) {
+                return this.value.sub_proc_list || [];
+            }
+            // Filter by proc_def_ids from process_organizations table
+            return this.value.sub_proc_list.filter(sub => {
+                return this.filteredProcDefIds.includes(sub.id);
+            });
         }
     },
     methods: {
@@ -160,6 +171,13 @@ export default {
         },
         clickPlayBtn(value){
             this.$emit('clickPlayBtn', value)
+        },
+        isSubProcessVisible(item) {
+            // null = no filter active, show all
+            if (this.filteredProcDefIds === null) {
+                return true;
+            }
+            return this.filteredProcDefIds.includes(item.id);
         },
     },
 }

@@ -8,7 +8,7 @@
                     :min-width="200"
                     v-show="!visibleMegaIds || visibleMegaIds.has(item.id)"
                 >
-                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain"/>
+                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
                 </v-col>
                 <!-- MegaProcess 추가 카드: 특정 도메인 탭에서만 표시 -->
                 <v-col v-if="selectedDomain" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
@@ -43,7 +43,7 @@
             <v-col v-for="item in filteredValue.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="3" sm="6"
                 v-show="!visibleMegaIds || visibleMegaIds.has(item.id)"
             >
-                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain"/>
+                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
             </v-col>
         </v-row>
         <v-dialog v-model="permissionDialogStatus" max-width="500" persistent>
@@ -75,7 +75,8 @@ export default {
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
         domains: Array,
-        selectedDomain: String
+        selectedDomain: String,
+        filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
     },
     computed: {
         // Just return original value - filtering is done in MegaProcess

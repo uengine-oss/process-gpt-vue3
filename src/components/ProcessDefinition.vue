@@ -2,7 +2,7 @@
     <div :style="containerStyle">
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
-                <v-card style="border-radius: 0px !important; border: none; height: 100%" flat>
+                <v-card style="border-radius: 0px !important; border: none; height: 100%; position: relative;" flat>
                     <v-row v-if="isViewMode && isAdmin && !isMobile"
                         class="align-center"
                         style="position: absolute;
@@ -108,6 +108,34 @@
                             :element="element"
                             @saved="onSavedToCatalog"
                         />
+                        <!-- View Mode Property Panel (inside canvas) -->
+                        <Transition name="slide-panel">
+                            <div v-if="panel && isViewMode" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
+                                <div class="resize-handle" @mousedown="startResize"></div>
+                                <v-card elevation="4" class="view-mode-panel-card">
+                                    <bpmn-property-panel
+                                        ref="bpmnPropertyPanel"
+                                        :element="element"
+                                        @close="closePanel"
+                                        @saveToCatalog="openSaveToCatalog"
+                                        :roles="roles"
+                                        :process-variables="processVariables"
+                                        :key="element.id"
+                                        :isViewMode="isViewMode"
+                                        v-on:updateElement="(val) => updateElement(val)"
+                                        :definition="thisDefinition"
+                                        :processDefinitionId="definitionPath"
+                                        :processDefinition="processDefinition"
+                                        :validationList="validationList"
+                                        :isPreviewMode="isPreviewMode"
+                                        v-on:change-sequence="onChangeSequence"
+                                        v-on:remove-shape="onRemoveShape"
+                                        v-on:change-shape="onChangeShape"
+                                        @addUengineVariable="addUengineVariable"
+                                    ></bpmn-property-panel>
+                                </v-card>
+                            </div>
+                        </Transition>
                     </template>
                     
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
@@ -120,31 +148,6 @@
                 </v-card>
             </v-col>
             <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
-                <v-card elevation="1">
-                    <bpmn-property-panel
-                        ref="bpmnPropertyPanel"
-                        :element="element"
-                        @close="closePanel"
-                        @saveToCatalog="openSaveToCatalog"
-                        :roles="roles"
-                        :process-variables="processVariables"
-                        :key="element.id"
-                        :isViewMode="isViewMode"
-                        v-on:updateElement="(val) => updateElement(val)"
-                        :definition="thisDefinition"
-                        :processDefinitionId="definitionPath"
-                        :processDefinition="processDefinition"
-                        :validationList="validationList"
-                        :isPreviewMode="isPreviewMode"
-                        v-on:change-sequence="onChangeSequence"
-                        v-on:remove-shape="onRemoveShape"
-                        v-on:change-shape="onChangeShape"
-                        @addUengineVariable="addUengineVariable"
-                    ></bpmn-property-panel>
-                    <!-- {{ definition }} -->
-                </v-card>
-            </div>
-            <div v-else-if="panel && isPal && isViewMode" style="position: fixed; z-index: 999; right: 0; top:123px; height: 100%">
                 <v-card elevation="1">
                     <bpmn-property-panel
                         ref="bpmnPropertyPanel"
@@ -341,6 +344,8 @@ export default {
     data: () => ({
         panel: false,
         panelId: null,
+        viewPanelWidth: 360,
+        isResizing: false,
         roles: [],
         element: null,
         definitions: null,
@@ -597,7 +602,22 @@ export default {
         },
         setDefinition() {
             let self = this;
+            const store = useBpmnStore();
+            this.bpmnModeler = store.getModeler;
+
+            if (!this.bpmnModeler) {
+                console.warn('[setDefinition] bpmnModeler is null');
+                this.$emit('onLoaded');
+                return;
+            }
+
             const def = this.bpmnModeler.getDefinitions();
+            if (!def) {
+                console.warn('[setDefinition] definitions is null');
+                this.$emit('onLoaded');
+                return;
+            }
+
             let bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             const processElement = def.rootElements.find((element) => element.$type === 'bpmn:Process');
             if (!processElement) {
@@ -970,8 +990,6 @@ export default {
             this.$emit('update');
         },
         async openPanel(id) {
-            console.log(id);
-            
             // 배경 요소 클릭 시 패널을 열지 않음
             if (id && (id.startsWith('Collaboration_') || id.startsWith('Process_'))) {
                 // 패널이 열려있는 상태에서 배경 클릭 시 저장 후 패널 닫기
@@ -1102,6 +1120,26 @@ export default {
         },
         updateIsAIGenerated(isAIGenerated) {
             this.$emit('update:isAIGenerated', isAIGenerated);
+        },
+        startResize(e) {
+            this.isResizing = true;
+            document.addEventListener('mousemove', this.doResize);
+            document.addEventListener('mouseup', this.stopResize);
+            e.preventDefault();
+        },
+        doResize(e) {
+            if (!this.isResizing) return;
+            const container = this.$el.querySelector('.v-card');
+            if (container) {
+                const containerRect = container.getBoundingClientRect();
+                const newWidth = containerRect.right - e.clientX;
+                this.viewPanelWidth = Math.max(280, Math.min(600, newWidth));
+            }
+        },
+        stopResize() {
+            this.isResizing = false;
+            document.removeEventListener('mousemove', this.doResize);
+            document.removeEventListener('mouseup', this.stopResize);
         }
     }
 };
@@ -1158,5 +1196,68 @@ export default {
     background: white;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     border-radius: 8px 8px 0 0;
+}
+
+/* View Mode Panel Styles - Inside Canvas */
+.view-mode-panel {
+    position: absolute;
+    z-index: 100;
+    right: 12px;
+    top: 12px;
+    bottom: 12px;
+    display: flex;
+}
+
+/* Resize Handle */
+.resize-handle {
+    width: 6px;
+    cursor: ew-resize;
+    background: transparent;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    border-radius: 3px;
+    margin-right: 2px;
+}
+
+.resize-handle:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.resize-handle:active {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.view-mode-panel-card {
+    border-radius: 12px !important;
+    overflow: hidden;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Slide Panel Animation */
+.slide-panel-enter-active {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+
+.slide-panel-leave-active {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1), opacity 0.15s ease;
+}
+
+.slide-panel-enter-from {
+    transform: translateX(20px) scale(0.95);
+    opacity: 0;
+}
+
+.slide-panel-leave-to {
+    transform: translateX(20px) scale(0.95);
+    opacity: 0;
+}
+
+.slide-panel-enter-to,
+.slide-panel-leave-from {
+    transform: translateX(0) scale(1);
+    opacity: 1;
 }
 </style>

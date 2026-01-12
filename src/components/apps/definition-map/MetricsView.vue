@@ -384,6 +384,10 @@ export default {
                 processes: []
             })
         },
+        filteredProcDefIds: {
+            type: Array,
+            default: null  // null = no filter, [] = filter active but no matches
+        },
         enableEdit: {
             type: Boolean,
             default: false
@@ -495,9 +499,26 @@ export default {
         },
         getProcesses(domainId, megaProcessId) {
             if (!this.value.processes) return [];
-            return this.value.processes.filter(
+
+            let processes = this.value.processes.filter(
                 proc => proc.domain_id === domainId && proc.mega_process_id === megaProcessId
             );
+
+            // Apply organization filter if active
+            if (this.filteredProcDefIds !== null) {
+                processes = processes.map(proc => {
+                    // Filter sub_proc_list by filteredProcDefIds
+                    const filteredSubProcList = (proc.sub_proc_list || []).filter(
+                        sub => this.filteredProcDefIds.includes(sub.id)
+                    );
+                    return {
+                        ...proc,
+                        sub_proc_list: filteredSubProcList
+                    };
+                }).filter(proc => proc.sub_proc_list && proc.sub_proc_list.length > 0);
+            }
+
+            return processes;
         },
         goProcess(proc) {
             if (this.enableEdit) return;

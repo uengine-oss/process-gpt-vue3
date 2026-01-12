@@ -376,6 +376,28 @@ const MainRoutes = {
             name: 'TaskCatalogAdmin',
             path: '/admin/task-catalog',
             component: () => import('@/components/admin/TaskCatalogAdmin.vue')
+        },
+
+        // ============== Analytics Routes ==============
+        {
+            name: 'Analytics Dashboard',
+            path: '/analytics',
+            component: () => import('@/views/analytics/Dashboard.vue')
+        },
+        {
+            name: 'Pivot Table',
+            path: '/analytics/pivot',
+            component: () => import('@/views/analytics/PivotTablePage.vue')
+        },
+        {
+            name: 'Performance Analysis',
+            path: '/analytics/performance',
+            component: () => import('@/views/analytics/Performance.vue')
+        },
+        {
+            name: 'Natural Query',
+            path: '/analytics/query',
+            component: () => import('@/views/analytics/NaturalQueryPage.vue')
         }
     ]
 };

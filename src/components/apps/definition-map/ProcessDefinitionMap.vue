@@ -208,9 +208,45 @@
                         >
                             <v-icon size="20">mdi-plus</v-icon>
                         </v-btn>
+
+                        <!-- Organization Filter -->
+                        <v-autocomplete
+                            v-if="organizationOptions.length > 0"
+                            v-model="selectedOrganization"
+                            :items="organizationOptions"
+                            :label="$t('processDefinitionMap.filterByOrganization') || '조직 필터'"
+                            item-title="name"
+                            item-value="id"
+                            return-object
+                            clearable
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            class="ml-4 org-filter-select"
+                            style="max-width: 200px;"
+                            :loading="loadingOrganizations"
+                        >
+                            <template v-slot:prepend-inner>
+                                <v-icon size="18" color="grey">mdi-account-group</v-icon>
+                            </template>
+                            <template v-slot:item="{ item, props }">
+                                <v-list-item v-bind="props">
+                                    <template v-slot:prepend>
+                                        <v-icon :color="item.raw.type === 'group' ? 'primary' : 'grey'" size="18" class="mr-2">
+                                            {{ item.raw.type === 'group' ? 'mdi-account-group' : 'mdi-account-multiple' }}
+                                        </v-icon>
+                                    </template>
+                                    <template v-slot:append>
+                                        <v-chip size="x-small" :color="item.raw.type === 'group' ? 'primary' : 'grey'" variant="tonal">
+                                            {{ item.raw.type === 'group' ? $t('LanePanel.group') : $t('LanePanel.team') }}
+                                        </v-chip>
+                                    </template>
+                                </v-list-item>
+                            </template>
+                        </v-autocomplete>
                     </div>
-                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue.domains" :selectedDomain="selectedDomain"/>
-                    <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue" :enableEdit="enableEdit" @update:value="updateMetricsValue"/>
+                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue.domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
+                    <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue" :enableEdit="enableEdit" @update:value="updateMetricsValue" :filteredProcDefIds="filteredProcDefIds"/>
                 </div>
             </div>
 
@@ -456,6 +492,10 @@ export default {
         pendingRoute: null,
         viewMode: 'proc_map',
         selectedDomain: null,
+        selectedOrganization: null,
+        organizationOptions: [],
+        loadingOrganizations: false,
+        filteredProcDefIds: null,  // null means no filter, [] means filter active but no matches
         domainDialog: {
             show: false,
             mode: 'add', // 'add' or 'edit'
@@ -620,6 +660,13 @@ export default {
                 await this.syncMetricsToCard();
                 await this.getProcessMap();
             }
+        },
+        async selectedOrganization(newVal) {
+            if (!newVal) {
+                this.filteredProcDefIds = null;
+                return;
+            }
+            await this.loadFilteredProcDefIds(newVal.id);
         }
     },
     async created() {
@@ -633,6 +680,7 @@ export default {
                 }
                 await me.getProcessMap();
                 await me.getMetricsMap();
+                await me.loadOrganizationOptions();
                 // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
                 if (me.useLock) {
                     await me.checkedLock();
@@ -932,6 +980,108 @@ export default {
         async getMetricsMap() {
             this.metricsValue = await backend.getMetricsMap();
             // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
+        },
+        async loadOrganizationOptions() {
+            console.log('[ProcessDefinitionMap.loadOrganizationOptions] Starting...');
+            this.loadingOrganizations = true;
+            const supabase = window.$supabase;
+            const tenantId = window.$tenantName || 'default';
+            console.log('[ProcessDefinitionMap.loadOrganizationOptions] tenantId:', tenantId);
+
+            try {
+                const options = [];
+
+                // 1. Load teams from organization chart
+                const { data: orgData, error: orgError } = await supabase
+                    .from('configuration')
+                    .select('value')
+                    .eq('key', 'organization')
+                    .eq('tenant_id', tenantId)
+                    .single();
+
+                console.log('[ProcessDefinitionMap.loadOrganizationOptions] orgData:', orgData, 'orgError:', orgError);
+
+                if (!orgError && orgData?.value) {
+                    const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
+                    const chart = orgValue.chart || orgValue;
+                    console.log('[ProcessDefinitionMap.loadOrganizationOptions] chart:', chart);
+                    const teams = this.extractTeamsFromOrgChart(chart);
+                    console.log('[ProcessDefinitionMap.loadOrganizationOptions] extracted teams:', teams);
+                    teams.forEach(team => {
+                        options.push({
+                            id: team.id,
+                            name: team.name,
+                            type: 'team'
+                        });
+                    });
+                }
+
+                // 2. Load org-chart-groups
+                const { data: groupsData, error: groupsError } = await supabase
+                    .from('org_chart_groups')
+                    .select('id, name')
+                    .eq('tenant_id', tenantId);
+
+                console.log('[ProcessDefinitionMap.loadOrganizationOptions] groupsData:', groupsData, 'groupsError:', groupsError);
+
+                if (!groupsError && groupsData) {
+                    groupsData.forEach(group => {
+                        options.push({
+                            id: group.id,
+                            name: group.name,
+                            type: 'group'
+                        });
+                    });
+                }
+
+                this.organizationOptions = options;
+                console.log('[ProcessDefinitionMap.loadOrganizationOptions] Final organizationOptions:', this.organizationOptions);
+            } catch (error) {
+                console.error('[ProcessDefinitionMap.loadOrganizationOptions] Failed:', error);
+            } finally {
+                this.loadingOrganizations = false;
+            }
+        },
+        async loadFilteredProcDefIds(organizationId) {
+            const supabase = window.$supabase;
+            const tenantId = window.$tenantName || 'default';
+
+            try {
+                const { data, error } = await supabase
+                    .from('process_organizations')
+                    .select('proc_def_id')
+                    .eq('tenant_id', tenantId)
+                    .eq('organization_id', organizationId);
+
+                if (error) {
+                    console.error('[loadFilteredProcDefIds] Error:', error);
+                    this.filteredProcDefIds = [];
+                    return;
+                }
+
+                this.filteredProcDefIds = data ? data.map(d => d.proc_def_id) : [];
+                console.log('[loadFilteredProcDefIds] Filtered proc_def_ids:', this.filteredProcDefIds);
+            } catch (error) {
+                console.error('[loadFilteredProcDefIds] Error:', error);
+                this.filteredProcDefIds = [];
+            }
+        },
+        extractTeamsFromOrgChart(node) {
+            const teams = [];
+            const traverse = (n) => {
+                if (!n) return;
+                if (n.data?.isTeam) {
+                    teams.push({
+                        id: n.id,
+                        name: n.data.name || n.id
+                    });
+                }
+                if (n.children) {
+                    n.children.forEach(child => traverse(child));
+                }
+            };
+            traverse(node);
+            return teams;
         },
         async updateMetricsValue(newValue) {
             this.metricsValue = newValue;

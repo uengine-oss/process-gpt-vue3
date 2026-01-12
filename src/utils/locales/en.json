@@ -346,7 +346,8 @@
         "cardView": "Card",
         "matrixView": "Matrix",
         "allDomains": "All",
-        "selectColor": "Select Color"
+        "selectColor": "Select Color",
+        "filterByOrganization": "Organization Filter"
     },
     "processDefinitionTree": {
         "search": "Search",
@@ -553,7 +554,34 @@
         "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?",
         "skills": "Skills",
         "taskCatalog": "Task Catalog",
-        "tenantManage": "Tenant Manage"
+        "tenantManage": "Tenant Manage",
+        "orgChartGroup": "Org Groups"
+    },
+    "orgChartGroup": {
+        "title": "Organization Group Management",
+        "description": "Manage organization groups for process permission settings.",
+        "addGroup": "Add Group",
+        "editGroup": "Edit Group",
+        "deleteGroup": "Delete Group",
+        "groupName": "Group Name",
+        "groupDescription": "Description",
+        "groupNamePlaceholder": "Enter group name",
+        "groupDescriptionPlaceholder": "Enter description (optional)",
+        "searchGroup": "Search groups",
+        "teams": "Teams",
+        "assignedTeams": "Assigned Teams",
+        "teamCount": "{count} team(s)",
+        "noTeams": "No teams assigned",
+        "noTeamsAssigned": "No teams assigned",
+        "addTeam": "Add Team",
+        "removeTeam": "Remove Team",
+        "selectTeams": "Select Teams",
+        "searchTeams": "Search teams",
+        "noGroups": "No groups registered",
+        "noAvailableTeams": "No teams available to add",
+        "addSelectedTeams": "Add Selected Teams",
+        "confirmDelete": "Delete Group",
+        "deleteConfirmMessage": "Are you sure you want to delete '{name}' group?"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -916,6 +944,10 @@
     "LanePanel": {
         "selectRoleType": "Select Role Type",
         "none": "None",
+        "organization": "Organization/Group",
+        "selectOrganization": "Select Organization or Group",
+        "group": "Group",
+        "team": "Team",
         "IAMScope": "Role Resolution By IAM Scope",
         "DirecUser": "Role Resolution By Direct user",
         "resolutionRule": "Resolution Rule",
@@ -923,7 +955,7 @@
         "userID": "User ID",
         "externalCustomer": "External Customer",
         "radioDescriptionTitle": "Select the role you want to add.",
-        "radioDescriptionSubTitle": "None: Selecting this option does not assign a specific role to the task. All users can perform this task.\nSelect by Role Name: Selecting this option allows you to choose from a predefined list of roles. Only users belonging to the selected role can perform this task.\nSelect Users Directly: Selecting this option allows you to designate specific users. Only designated users can perform this task."
+        "radioDescriptionSubTitle": "None: Selecting this option does not assign a specific role to the task. All users can perform this task.\nOrganization/Group: Select a team from org chart or an organization group. Only users belonging to the selected organization can perform this task.\nSelect by Role Name: Selecting this option allows you to choose from a predefined list of roles. Only users belonging to the selected role can perform this task.\nSelect Users Directly: Selecting this option allows you to designate specific users. Only designated users can perform this task."
     },
     "MessageEventDefinitionPanel": {
         "correlationKey": "Correlation Key",
@@ -2438,5 +2470,39 @@
         "weekly": "Weekly",
         "monthly": "Monthly",
         "yearly": "Yearly"
+    },
+    "analytics": {
+        "title": "Analytics",
+        "dashboard": "Dashboard",
+        "pivot": "Pivot Table",
+        "performance": "Performance",
+        "query": "Natural Query",
+        "totalInstances": "Total Instances",
+        "completedTasks": "Completed Tasks",
+        "avgDuration": "Average Duration",
+        "activeUsers": "Active Users",
+        "instanceTrend": "Instance Trend",
+        "taskDistribution": "Task Distribution",
+        "cubeSelect": "Select Cube",
+        "schemaUpload": "Upload Schema",
+        "schemaRequired": "Schema Required",
+        "schemaRequiredDesc": "Please upload a Mondrian XML schema to use the pivot table.",
+        "naturalQueryDesc": "Query your data using natural language (Text2SQL)",
+        "agentPerformance": "Agent Performance",
+        "humanPerformance": "Human Performance",
+        "taskCount": "Task Count",
+        "avgF1": "Average F1",
+        "avgProcessTime": "Avg Process Time",
+        "errorCount": "Error Count",
+        "f1Trend": "F1 Score Trend",
+        "taskCountTrend": "Task Count Trend",
+        "rows": "Rows",
+        "columns": "Columns",
+        "measures": "Measures",
+        "dimensions": "Dimensions",
+        "executeQuery": "Execute Query",
+        "queryPlaceholder": "e.g., Show me the number of completed instances this month",
+        "generatedSql": "Generated SQL",
+        "queryResult": "Query Result"
     }
 }

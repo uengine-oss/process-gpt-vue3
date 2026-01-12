@@ -97,6 +97,7 @@
 
 <script>
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
+import zeebeModdleDescriptor from '@/components/descriptors/zeebe.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
@@ -714,6 +715,7 @@ export default {
                         ],
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
+                            zeebe: zeebeModdleDescriptor,
                             phase: phaseModdle
                         },
                         propertiesPanel: {}

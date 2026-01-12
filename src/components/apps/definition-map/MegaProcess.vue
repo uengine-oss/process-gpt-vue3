@@ -42,13 +42,13 @@
         >
             <transition-group>
                 <div v-for="item in filteredMajorProcList" :key="item.id" class="cursor-pointer">
-                    <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :selectedDomain="selectedDomain" :domains="domains"/>
+                    <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :selectedDomain="selectedDomain" :domains="domains" :filteredProcDefIds="filteredProcDefIds"/>
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
             <div v-for="item in filteredMajorProcList" :key="item.id">
-                <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :selectedDomain="selectedDomain" :domains="domains"/>
+                <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :selectedDomain="selectedDomain" :domains="domains" :filteredProcDefIds="filteredProcDefIds"/>
             </div>
         </div>
         <!-- Add Major Process Dialog: 특정 도메인 탭에서만 표시 -->
@@ -86,7 +86,8 @@ export default {
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
         domains: Array,
-        selectedDomain: String
+        selectedDomain: String,
+        filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
     },
     data: () => ({
         type: 'mega',

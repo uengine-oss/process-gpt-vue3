@@ -59,6 +59,7 @@
 
 <script>
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
+import zeebeModdleDescriptor from '@/components/descriptors/zeebe.json';
 import { useBpmnStore } from '@/stores/bpmn';
 import { useTaskCatalogStore } from '@/stores/taskCatalog';
 import 'bpmn-js/dist/assets/diagram-js.css';
@@ -545,7 +546,7 @@ export default {
                 if (self.isViewMode) {
                     const elementRegistry = self.bpmnViewer.get('elementRegistry');
                     const overlays = self.bpmnViewer.get('overlays');
-                    
+
                     const callActivities = elementRegistry.filter(element => element.type === 'bpmn:CallActivity');
                     
                     callActivities.forEach(element => {
@@ -582,7 +583,6 @@ export default {
                     });
 
                     eventBus.on('element.dblclick', function (e) {
-                        // self.openPanel = true;
                         if (e.element.type.includes('CallActivity')) {
                             self.$emit('openDefinition', e.element.businessObject);
                         } else if (e.element.type.includes('Collaboration')) {
@@ -698,6 +698,7 @@ export default {
                         ],
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
+                            zeebe: zeebeModdleDescriptor,
                             phase: phaseModdle
                         }
                     },
@@ -713,6 +714,7 @@ export default {
                         },
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
+                            zeebe: zeebeModdleDescriptor,
                             phase: phaseModdle
                         },
                         additionalModules: [
@@ -720,7 +722,7 @@ export default {
                             {
                                 __init__: ['paletteProvider'],
                                 paletteProvider: ['type', paletteProvider],
-                                viewModeFlag: ['value', false] 
+                                viewModeFlag: ['value', false]
                             },
                             customContextPadModule,
                             customReplaceElement,
@@ -1417,6 +1419,12 @@ export default {
 }
 .view-mode .djs-palette {
   display: none !important;
+}
+
+/* View 모드에서 요소 클릭 허용 (Property Panel 열기 위해) */
+#canvas-container.view-mode .djs-element,
+#canvas-container.view-mode .djs-element * {
+  pointer-events: auto !important;
 }
 
 /* Font size controls */

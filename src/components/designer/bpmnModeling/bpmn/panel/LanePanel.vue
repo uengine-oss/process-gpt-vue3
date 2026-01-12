@@ -33,6 +33,37 @@
                     class="mt-4"
                 ></v-text-field>
 
+                <!-- Organization/Group Selection -->
+                <div v-if="type == 'Organization'">
+                    <v-autocomplete
+                        v-model="selectedOrganization"
+                        :items="organizationOptions"
+                        :label="$t('LanePanel.selectOrganization')"
+                        item-title="name"
+                        item-value="id"
+                        return-object
+                        clearable
+                        class="mt-4"
+                        variant="outlined"
+                        density="comfortable"
+                        :loading="loadingOrganizations"
+                    >
+                        <template v-slot:item="{ item, props }">
+                            <v-list-item v-bind="props">
+                                <template v-slot:prepend>
+                                    <v-icon :color="item.raw.type === 'group' ? 'primary' : 'grey'" size="20" class="mr-2">
+                                        {{ item.raw.type === 'group' ? 'mdi-account-group' : 'mdi-account-multiple' }}
+                                    </v-icon>
+                                </template>
+                                <template v-slot:append>
+                                    <v-chip size="x-small" :color="item.raw.type === 'group' ? 'primary' : 'grey'" variant="tonal">
+                                        {{ item.raw.type === 'group' ? $t('LanePanel.group') : $t('LanePanel.team') }}
+                                    </v-chip>
+                                </template>
+                            </v-list-item>
+                        </template>
+                    </v-autocomplete>
+                </div>
 
                 <div v-if="isDirectUser">
                     <div v-if="isProcessGPT">
@@ -117,6 +148,7 @@ export default {
             role: null,
             roleOptions: [
                 { value: 'None', label: 'LanePanel.none' },
+                { value: 'Organization', label: 'LanePanel.organization' },
                 { value: 'org.uengine.five.overriding.IAMRoleResolutionContext', label: 'LanePanel.IAMScope' },
                 { value: 'org.uengine.kernel.DirectRoleResolutionContext', label: 'LanePanel.DirecUser' },
                 { value: 'org.uengine.kernel.ExternalCustomerRoleResolutionContext', label: 'LanePanel.externalCustomer' }
@@ -128,6 +160,11 @@ export default {
             ],
 
             isDirectUser: false,
+
+            // Organization/Group selection
+            selectedOrganization: null,
+            organizationOptions: [],
+            loadingOrganizations: false,
         };
     },
     async mounted() {
@@ -155,6 +192,9 @@ export default {
         if (value) {
             this.definitions = value;
         }
+
+        // Load organization options (teams + groups)
+        await this.loadOrganizationOptions();
     },
     computed: {
         isProcessGPT() {
@@ -177,10 +217,36 @@ export default {
                 if (this.copyUengineProperties.roleResolutionContext) {
                     delete this.copyUengineProperties.roleResolutionContext;
                 }
+                this.selectedOrganization = null;
             } else if (after == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
                 if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
                 if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = 'external_customer'
+            } else if (after == 'Organization') {
+                if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
+                this.copyUengineProperties.roleResolutionContext._type = 'Organization';
+                // Restore selected organization if exists
+                if (this.copyUengineProperties.roleResolutionContext.organizationId) {
+                    const savedOrg = this.organizationOptions.find(
+                        opt => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId
+                    );
+                    if (savedOrg) {
+                        this.selectedOrganization = savedOrg;
+                    }
+                }
+            }
+        },
+        selectedOrganization(newVal) {
+            if (this.type === 'Organization' && this.copyUengineProperties.roleResolutionContext) {
+                if (newVal) {
+                    this.copyUengineProperties.roleResolutionContext.organizationId = newVal.id;
+                    this.copyUengineProperties.roleResolutionContext.organizationName = newVal.name;
+                    this.copyUengineProperties.roleResolutionContext.organizationType = newVal.type;
+                } else {
+                    delete this.copyUengineProperties.roleResolutionContext.organizationId;
+                    delete this.copyUengineProperties.roleResolutionContext.organizationName;
+                    delete this.copyUengineProperties.roleResolutionContext.organizationType;
+                }
             }
         }
     },
@@ -197,7 +263,99 @@ export default {
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
                 this.type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
                 this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint
+            } else if (this.copyUengineProperties.roleResolutionContext._type == 'Organization') {
+                this.type = 'Organization';
+                // Restore selected organization after options are loaded
+                if (this.copyUengineProperties.roleResolutionContext.organizationId) {
+                    this.$nextTick(() => {
+                        const savedOrg = this.organizationOptions.find(
+                            opt => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId
+                        );
+                        if (savedOrg) {
+                            this.selectedOrganization = savedOrg;
+                        }
+                    });
+                }
             }
+        },
+        async loadOrganizationOptions() {
+            this.loadingOrganizations = true;
+            const supabase = window.$supabase;
+            const tenantId = window.$tenantName || 'default';
+
+            try {
+                const options = [];
+
+                // 1. Load teams from organization chart
+                const { data: orgData, error: orgError } = await supabase
+                    .from('configuration')
+                    .select('value')
+                    .eq('key', 'organization')
+                    .eq('tenant_id', tenantId)
+                    .single();
+
+                if (!orgError && orgData?.value) {
+                    const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
+                    const chart = orgValue.chart || orgValue;
+                    const teams = this.extractTeamsFromOrgChart(chart);
+                    teams.forEach(team => {
+                        options.push({
+                            id: team.id,
+                            name: team.name,
+                            type: 'team'
+                        });
+                    });
+                }
+
+                // 2. Load org-chart-groups
+                const { data: groupsData, error: groupsError } = await supabase
+                    .from('org_chart_groups')
+                    .select('id, name')
+                    .eq('tenant_id', tenantId);
+
+                if (!groupsError && groupsData) {
+                    groupsData.forEach(group => {
+                        options.push({
+                            id: group.id,
+                            name: group.name,
+                            type: 'group'
+                        });
+                    });
+                }
+
+                this.organizationOptions = options;
+
+                // Restore selection after loading
+                if (this.type === 'Organization' && this.copyUengineProperties.roleResolutionContext?.organizationId) {
+                    const savedOrg = options.find(
+                        opt => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId
+                    );
+                    if (savedOrg) {
+                        this.selectedOrganization = savedOrg;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load organization options:', error);
+            } finally {
+                this.loadingOrganizations = false;
+            }
+        },
+        extractTeamsFromOrgChart(node) {
+            const teams = [];
+            const traverse = (n) => {
+                if (!n) return;
+                if (n.data?.isTeam) {
+                    teams.push({
+                        id: n.id,
+                        name: n.data.name || n.id
+                    });
+                }
+                if (n.children) {
+                    n.children.forEach(child => traverse(child));
+                }
+            };
+            traverse(node);
+            return teams;
         },
         ensureKeyExists(obj, key, defaultValue) {
             console.log(key);

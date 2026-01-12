@@ -336,7 +336,8 @@
         "matrixView": "매트릭스",
         "duplicateName": "동일한 이름의 프로세스가 이미 존재합니다.",
         "allDomains": "전체",
-        "selectColor": "색상 선택"
+        "selectColor": "색상 선택",
+        "filterByOrganization": "조직 필터"
     },
     "metricsView": {
         "domain": "Domain",
@@ -561,7 +562,34 @@
         "confirmDeleteConnectionText": "\"{name}\"을(를) 삭제하시겠습니까?",
         "skills": "스킬",
         "taskCatalog": "Task 설정",
-        "tenantManage": "테넌트 관리"
+        "tenantManage": "테넌트 관리",
+        "orgChartGroup": "조직 그룹"
+    },
+    "orgChartGroup": {
+        "title": "조직 그룹 관리",
+        "description": "프로세스 권한 설정에 사용할 조직 그룹을 관리합니다.",
+        "addGroup": "그룹 추가",
+        "editGroup": "그룹 수정",
+        "deleteGroup": "그룹 삭제",
+        "groupName": "그룹명",
+        "groupDescription": "그룹 설명",
+        "groupNamePlaceholder": "그룹명을 입력하세요",
+        "groupDescriptionPlaceholder": "그룹 설명을 입력하세요 (선택사항)",
+        "searchGroup": "그룹 검색",
+        "teams": "팀",
+        "assignedTeams": "소속 팀",
+        "teamCount": "{count}개 팀",
+        "noTeams": "소속된 팀이 없습니다",
+        "noTeamsAssigned": "배정된 팀이 없습니다",
+        "addTeam": "팀 추가",
+        "removeTeam": "팀 제거",
+        "selectTeams": "팀 선택",
+        "searchTeams": "팀 검색",
+        "noGroups": "등록된 그룹이 없습니다",
+        "noAvailableTeams": "추가 가능한 팀이 없습니다",
+        "addSelectedTeams": "선택한 팀 추가",
+        "confirmDelete": "그룹 삭제",
+        "deleteConfirmMessage": "'{name}' 그룹을 삭제하시겠습니까?"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -924,6 +952,10 @@
     "LanePanel": {
         "selectRoleType": "역할 선택",
         "none": "없음",
+        "organization": "조직/그룹",
+        "selectOrganization": "조직 또는 그룹 선택",
+        "group": "그룹",
+        "team": "팀",
         "IAMScope": "역할명으로 역할 선택",
         "DirecUser": "직접 사용자 선택",
         "resolutionRule": "역할 규칙",
@@ -931,7 +963,7 @@
         "userID": "유저 ID",
         "externalCustomer": "외부 고객",
         "radioDescriptionTitle": "추가하고 싶은 역할을 선택합니다.",
-        "radioDescriptionSubTitle": "없음 : 이 옵션을 선택하면 해당 작업에 대해 특정 역할이 할당되지 않습니다. 모든 사용자가 이 작업을 수행할 수 있습니다. \n\n역할명으로 역할 선택 : 이 옵션을 선택하면 미리 정의된 역할 목록에서 역할을 선택할 수 있습니다. 선택된 역할에 속한 사용자만 이 작업을 수행할 수 있습니다. \n\n직접 사용자 선택 : 이 옵션을 선택하면 특정 사용자를 직접 지정할 수 있습니다. 지정된 사용자만 이 작업을 수행할 수 있습니다."
+        "radioDescriptionSubTitle": "없음 : 이 옵션을 선택하면 해당 작업에 대해 특정 역할이 할당되지 않습니다. 모든 사용자가 이 작업을 수행할 수 있습니다. \n\n조직/그룹 : 조직도의 팀 또는 조직 그룹을 선택합니다. 선택된 조직에 속한 사용자만 이 작업을 수행할 수 있습니다. \n\n역할명으로 역할 선택 : 이 옵션을 선택하면 미리 정의된 역할 목록에서 역할을 선택할 수 있습니다. 선택된 역할에 속한 사용자만 이 작업을 수행할 수 있습니다. \n\n직접 사용자 선택 : 이 옵션을 선택하면 특정 사용자를 직접 지정할 수 있습니다. 지정된 사용자만 이 작업을 수행할 수 있습니다."
     },
     "MessageEventDefinitionPanel": {
         "correlationKey": "관계 키",
@@ -2469,5 +2501,39 @@
         "weekly": "주간",
         "monthly": "월간",
         "yearly": "연간"
+    },
+    "analytics": {
+        "title": "Analytics",
+        "dashboard": "대시보드",
+        "pivot": "피벗 테이블",
+        "performance": "퍼포먼스",
+        "query": "자연어 질의",
+        "totalInstances": "총 인스턴스",
+        "completedTasks": "완료된 태스크",
+        "avgDuration": "평균 처리 시간",
+        "activeUsers": "활성 사용자",
+        "instanceTrend": "인스턴스 추이",
+        "taskDistribution": "태스크 분포",
+        "cubeSelect": "큐브 선택",
+        "schemaUpload": "스키마 업로드",
+        "schemaRequired": "스키마가 필요합니다",
+        "schemaRequiredDesc": "피벗 테이블을 사용하려면 먼저 Mondrian XML 스키마를 업로드하세요.",
+        "naturalQueryDesc": "자연어로 데이터를 질의하세요 (Text2SQL)",
+        "agentPerformance": "Agent 성과",
+        "humanPerformance": "Human 성과",
+        "taskCount": "처리 건수",
+        "avgF1": "평균 F1",
+        "avgProcessTime": "평균 처리시간",
+        "errorCount": "에러 건수",
+        "f1Trend": "F1 Score 추이",
+        "taskCountTrend": "Task 처리 건수",
+        "rows": "행",
+        "columns": "열",
+        "measures": "측정값",
+        "dimensions": "차원",
+        "executeQuery": "쿼리 실행",
+        "queryPlaceholder": "예: 이번 달 완료된 인스턴스 수를 보여줘",
+        "generatedSql": "생성된 SQL",
+        "queryResult": "쿼리 결과"
     }
 }

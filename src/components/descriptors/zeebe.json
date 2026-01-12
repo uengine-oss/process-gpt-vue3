@@ -1,0 +1,389 @@
+{
+    "name": "zeebe",
+    "prefix": "zeebe",
+    "uri": "http://camunda.org/schema/zeebe/1.0",
+    "xml": {
+        "tagAlias": "lowerCase"
+    },
+    "associations": [],
+    "types": [
+        {
+            "name": "Properties",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "properties",
+                    "isMany": true,
+                    "type": "Property"
+                }
+            ]
+        },
+        {
+            "name": "Property",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "name",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "value",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "ExecutionListeners",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "executionListeners",
+                    "isMany": true,
+                    "type": "ExecutionListener"
+                }
+            ]
+        },
+        {
+            "name": "ExecutionListener",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "eventType",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "type",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "retries",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "TaskListeners",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "taskListeners",
+                    "isMany": true,
+                    "type": "TaskListener"
+                }
+            ]
+        },
+        {
+            "name": "TaskListener",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "eventType",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "type",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "retries",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "UserTask",
+            "superClass": ["Element"],
+            "properties": []
+        },
+        {
+            "name": "FormDefinition",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "formId",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "formKey",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "AssignmentDefinition",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "assignee",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "candidateGroups",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "candidateUsers",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "PriorityDefinition",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "priority",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "TaskSchedule",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "dueDate",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "followUpDate",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "IoMapping",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "inputParameters",
+                    "isMany": true,
+                    "type": "Input"
+                },
+                {
+                    "name": "outputParameters",
+                    "isMany": true,
+                    "type": "Output"
+                }
+            ]
+        },
+        {
+            "name": "Input",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "source",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "target",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "Output",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "source",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "target",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "TaskHeaders",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "values",
+                    "isMany": true,
+                    "type": "Header"
+                }
+            ]
+        },
+        {
+            "name": "Header",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "key",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "value",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "TaskDefinition",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "type",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "retries",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "CalledDecision",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "decisionId",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "resultVariable",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "CalledElement",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "processId",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "propagateAllChildVariables",
+                    "isAttr": true,
+                    "type": "Boolean"
+                },
+                {
+                    "name": "propagateAllParentVariables",
+                    "isAttr": true,
+                    "type": "Boolean"
+                }
+            ]
+        },
+        {
+            "name": "Script",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "expression",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "resultVariable",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "Subscription",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "correlationKey",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "LoopCharacteristics",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "inputCollection",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "inputElement",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "outputCollection",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "outputElement",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "PublishMessage",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "correlationKey",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "messageId",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "messageName",
+                    "isAttr": true,
+                    "type": "String"
+                },
+                {
+                    "name": "timeToLive",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        },
+        {
+            "name": "VersionTag",
+            "superClass": ["Element"],
+            "properties": [
+                {
+                    "name": "value",
+                    "isAttr": true,
+                    "type": "String"
+                }
+            ]
+        }
+    ]
+}
