@@ -10,13 +10,9 @@ export default class CustomPopupMenu extends PopupMenu {
     config, eventBus, canvas
   ) {
     super(config, eventBus, canvas);
-
   }
-  _getEntries(target) {
-    const entries = PopupMenu.prototype._getEntries.call(this, target); 
-    return null;
-  }
-
+  // Note: _getEntries is handled by the modified PopupMenu.prototype._getEntries below
+  // Do NOT override it here as it would shadow the prototype method
 }
 
 

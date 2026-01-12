@@ -19,6 +19,12 @@
                                 <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
+                                <v-tab value="TaskCatalog">
+                                    <v-icon class="mr-2" size="20">mdi-folder-cog</v-icon> {{ $t('accountTab.taskCatalog') }}
+                                </v-tab>
+                                <v-tab value="OrgChartGroup">
+                                    <v-icon class="mr-2" size="20">mdi-account-group</v-icon> {{ $t('accountTab.orgChartGroup') }}
+                                </v-tab>
                             </div>
                             <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
@@ -122,6 +128,24 @@
                                 :class="{ 'selected-tab': tab === 'ConnectionInfo' }"
                             >
                                 <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
+                            </v-btn>
+                            <v-btn
+                                variant="text"
+                                color="default"
+                                size="small"
+                                @click="tab = 'TaskCatalog'"
+                                :class="{ 'selected-tab': tab === 'TaskCatalog' }"
+                            >
+                                <v-icon class="mr-2" size="16">mdi-folder-cog</v-icon>{{ $t('accountTab.taskCatalog') }}
+                            </v-btn>
+                            <v-btn
+                                variant="text"
+                                color="default"
+                                size="small"
+                                @click="tab = 'OrgChartGroup'"
+                                :class="{ 'selected-tab': tab === 'OrgChartGroup' }"
+                            >
+                                <v-icon class="mr-2" size="16">mdi-account-group</v-icon>{{ $t('accountTab.orgChartGroup') }}
                             </v-btn>
                         </template>
 
@@ -230,7 +254,22 @@
                                 <SkillsTab />
                             </div>
                         </v-window-item>
-                        
+                        <v-window-item value="TaskCatalog">
+                            <div
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
+                                <TaskCatalogAdmin />
+                            </div>
+                        </v-window-item>
+                        <v-window-item value="OrgChartGroup">
+                            <div
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
+                                <OrgChartGroupTab />
+                            </div>
+                        </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
                         </v-window-item>
@@ -259,6 +298,8 @@ import MCPServerTab from '@/components/pages/account-settings/MCPServer.vue';
 import MCPEnvSecretTab from '@/components/pages/account-settings/MCPEnvSecret.vue';
 import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInfoTab.vue';
 import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
+import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
+import OrgChartGroupTab from '@/components/pages/account-settings/OrgChartGroupTab.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -276,7 +317,9 @@ export default {
         MCPServerTab,
         MCPEnvSecretTab,
         ConnectionInfoTab,
-        SkillsTab
+        SkillsTab,
+        TaskCatalogAdmin,
+        OrgChartGroupTab
     },
     data() {
         return {
