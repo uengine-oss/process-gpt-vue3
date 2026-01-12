@@ -120,14 +120,7 @@ export default {
                             <div style="display: flex;">
                                 ${content.id == 'root' || content.isTeam ? '' : (userData.profile ? `<img class="node-content-img" src='${userData.profile}' onerror="this.src='/images/defaultUser.png'" />` : `<img class="node-content-img" src='/images/defaultUser.png' />`)}
                                 <div style="flex: 1;"></div>
-                                <div class="node-content-btn-box">
-                                    ${content.id == 'root' ? `<div class="node-content-btn add-team-btn"><i class="mdi mdi-plus node-content-icon"></i></div>` : ''}
-                                    ${content.isTeam == true ? `<div class="node-content-btn add-member-btn"><i class="mdi mdi-plus node-content-icon"></i></div>` : ''}
-                                    ${content.isTeam == true ? `<div class="node-content-btn edit-team-btn"><i class="mdi mdi-pencil node-content-icon"></i></div>` : ''}
-                                    ${content.isTeam == true ? `<div class="node-content-btn delete-team-btn"><i class="mdi mdi-delete node-content-icon"></i></div>` : ''}
-                                    ${content.isAgent ? `<div class="node-content-btn delete-agent-btn"><i class="mdi mdi-delete node-content-icon"></i></div>` : ''}
-                                    ${!content.isAgent && !content.isTeam && content.id != 'root' ? `<div class="node-content-btn edit-member-btn"><i class="mdi mdi-pencil node-content-icon"></i></div>` : ''}
-                                </div>
+                                
                             </div>
                             <div class="node-content-title-box" data-node-id="${content.id}">
                                 <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${userData.username || content.name}</div>
@@ -626,7 +619,7 @@ export default {
 }
 
 #tree {
-    width: 100% !important;
+    width: 98% !important;
     height: 99% !important;
 }
 

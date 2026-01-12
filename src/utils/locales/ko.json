@@ -328,6 +328,7 @@
         "settingPermission": "권한 설정",
         "isReadable": "열람",
         "isWritable": "개정",
+        "isDeployable": "배포",
         "marketplace": "마켓플레이스",
         "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요",
         "treeView": "트리 뷰로 보기",
@@ -442,7 +443,7 @@
     },
     "chat": {
         "inputMessage": "메시지 입력",
-        "definitionMapInputMessage": "무엇을 도와드릴까요?",
+        "definitionMapInputMessage": "예: 휴가 신청 프로세스 만들어줘 / 휴가 신청 프로세스 실행해줘 / 실행중인 휴가 신청의 승인 여부 알려줘",
         "lock": "저장하려면 저장 아이콘을 누르세요.",
         "unlock": "편집하려면 연필 아이콘을 누르세요.",
         "processDefinitionSave": "저장",
@@ -535,6 +536,7 @@
         "username": "유저명",
         "password": "비밀번호",
         "search": "사용자 검색",
+        "noSearchResults": "검색 결과가 없습니다",
         "inviteUser": "사용자 초대",
         "inviteUserMessage": "회사에 함께할 동료들을 초대해보세요",
         "inviteUserMessage2": "*초대된 사용자들에게 이메일이 발송됩니다",
@@ -589,7 +591,8 @@
         "noAvailableTeams": "추가 가능한 팀이 없습니다",
         "addSelectedTeams": "선택한 팀 추가",
         "confirmDelete": "그룹 삭제",
-        "deleteConfirmMessage": "'{name}' 그룹을 삭제하시겠습니까?"
+        "deleteConfirmMessage": "'{name}' 그룹을 삭제하시겠습니까?",
+        "affiliatedTeam": "소속 팀"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -863,6 +866,8 @@
     "EventSynchronizationForm": {
         "edit": "수정",
         "delete": "삭제",
+        "url": "URL",
+        "eventType": "이벤트 타입",
         "dataMapping": "데이터 매핑",
         "eventAttributes": "속성",
         "primaryKey": "고유 키",
@@ -1558,11 +1563,13 @@
         "addedButton": "추가됨",
         "addButton": "추가",
         "deleteButton": "삭제",
+        "previewButton": "미리보기",
         "otherCategory": "기타",
         "deleteDialogTitle": "프로세스 삭제 확인",
         "deleteDialogMessage": "정말로 \"{name}\" 프로세스를 마켓플레이스에서 삭제하시겠습니까?",
         "deleteDialogWarning": "이 작업은 되돌릴 수 없습니다.",
         "deleteDialogConfirmMessage": "계속하려면 프로세스 이름을 정확히 입력해주세요:",
+        "previewDialogTitle": "프로세스 미리보기",
         "countUnit": "개",
         "allTemplates": "전체 템플릿"
     },
@@ -1679,7 +1686,7 @@
     },
     "Header": {
         "tutorial": "튜토리얼",
-        "works": "작동 방식",
+        "works": "핵심 기능",
         "ai3Steps": "AI 전환의 3단계",
         "movieGallery": "영상 갤러리",
         "download": "다운로드",
@@ -1701,14 +1708,29 @@
     "HeroSection": {
         "title1": "업무 프로세스를 정의하세요.",
         "title2": "실행은 Process GPT가 맡습니다.",
-        "description1": "전략 목표에 맞춘 최정예 에이전트들이 업무 초안을 만들고 자동화합니다. 에이전트가 실수하면 가르쳐주세요. 알아서 프로세스와 지식이 개선됩니다.",
+        "description1": "전략 목표에 맞춰 AI 에이전트들이 업무 흐름을 구성하고 실행합니다. 사람은 필요한 판단만 개입하고, 프로세스는 자동으로 이어집니다.",
         "betaTestButton": "베타 테스트하기",
-        "galleryButton": "갤러리 보기",
         "educationButton": "교육과정 보기",
         "technicalReportLink": "Technical Report 보기"
     },
+    "NecessitySection": {
+        "title1": "지금까지의 AI 활용은",
+        "title2": "대부분 개인 생산성 도구 수준에 머물렀습니다.",
+        "feature1": "문서 초안 만들기",
+        "feature2": "번역하기",
+        "feature3": "요약하기",
+        "feature4": "검색 자동화",
+        "problemTitle": "이런 기능은 개인에게는 유용하지만, 조직의 전체 업무 흐름(End-to-End Process)에는 영향을 주지 못합니다.",
+        "solutionTitle": "이젠, 업무 전체 흐름을 이해하고 실행하는 Agentic Process AI가",
+        "solutionDescription": "조직의 End-to-End 프로세스 자동화를 위해 필요합니다.",
+        "benefit1": "문서 작성부터 시스템 연동까지 자동 실행",
+        "benefit2": "사람과 AI 에이전트의 혼합 조직 구현",
+        "benefit3": "반복 작업과 지식 기반 판단 자동화",
+        "benefit4": "전략적 의사결정과 맥락 판단에만 집중"
+    },
     "AI3StepsSection": {
-        "title": "MS Work Trend Index 2025:  AI 전환의 3단계",
+        "title1": "ProcessGPT는 이러한",
+        "title2": "Agentic Process AI를 구현한 솔루션입니다",
         "category": "구분",
         "step1": "1단계: 어시스턴트 활용",
         "step2": "2단계: 디지털 동료 에이전트",
@@ -1734,8 +1756,8 @@
         "technology1": "생성형 AI + <b>MCP</b><br>(예: Copilot, ChatGPT)",
         "technology2": "멀티에이전트, <b>Agentic BPM, A2A</b> 통신<br>(예: AgentSpace, Orchestrate)",
         "technology3": "자율 에이전트 네트워크 (<b>Agentic Mesh</b>) + 거버넌스<br>(예: Palantir AIP)",
-        "description1": "Process GPT는 ‘Agent Boss’ 체계에서 AI가 반복 업무를 실행하고, 사람은 전략과 감독에 집중하는 협업형 에이전트 시스템입니다.",
-        "description2": "이는 MS Work Trend Index 2025의 3단계 전환 모델과 부합하며, 조직 내 역할 기반 협업과 실행 자동화를 통해 업무 효율을 크게 향상시킵니다."
+        "description1": "ProcessGPT는 'Agent Boss' 체계에서 AI가 반복 업무를 실행하고 사람은 전략과 감독에 집중합니다.",
+        "description2": "이를 통해 조직 내 역할 기반 협업과 실행 자동화를 구현하여 업무 효율을 크게 향상시킵니다."
     },
     "DemoSection": {
         "title": "AI 기반 비즈니스 프로세스 혁신",
@@ -1744,31 +1766,26 @@
         "diagramImg": "diagram.png"
     },
     "HowSection": {
-        "title": "작동 방식",
-        "subtitle": "현업의 다양한 업무, 이제 Process-GPT가 실행합니다",
-        "subtitle1": "1. 에이전트 선언",
-        "subtitle2": "2. 프로세스 생성",
-        "subtitle3": "3. 프로세스 실행",
-        "subtitle4": "4. 개선",
-        "subtitle5": "5. A2A 호출 & 서비스 노출",
-        "description1-1": "일반 에이전트와 A2A 에이전트를 등록·관리합니다.",
-        "description1-2": "각 에이전트에 페르소나와 역할을 부여합니다.",
-        "description1-3": "문서와 데이터를 온톨로지 기반으로 관리해 학습과 실행에 활용합니다.",
-        "description1-4": "필요한 도구와 권한을 연결해 업무 자동화와 시스템 연동을 수행할 수 있도록 구성합니다.",
-        "description2-1": "목표를 입력하면 태스크, 양식, 체크포인트가 자동 정의됩니다.",
-        "description2-2": "워크차트에서 사람과 에이전트의 역할이 선언됩니다.",
-        "description2-3": "Open API 명세와 프로세스 데이터를 해석해 MCP·A2A 연동 방식을 제안합니다.",
-        "description2-4": "입력폼과 승인 절차까지 포함해 구성되며, 자연어 수정이나 BPMN 편집이 가능합니다.",
-        "description3-1": "등록된 에이전트로 Crew를 구성해 자율적으로 실행합니다.",
-        "description3-2": "ERP, 메일, 협업툴은 MCP를 통해 자동으로 처리되며, 업무 실행 결과는 시스템에 반영되거나 필요한 산출물(예: 문서, 보고서)로 출력됩니다.",
-        "description3-3": "프로세스와 에이전트는 A2A 서비스로 노출되어 외부 호출이 가능합니다.",
-        "description3-4": "내부 검색·오피스 도구를 활용할 수 있는 실행 중심 환경을 제공합니다.",
-        "description3-5": "모바일은 음성·이미지, 데스크톱은 텍스트 입력을 지원해 어디서나 업무 연속성이 보장됩니다.",
-        "description4-1": "실행 데이터를 피드백 루프로 축적합니다.",
-        "description4-2": "에이전트는 반복 실행을 통해 성능을 학습·향상합니다.",
-        "description4-3": "개선된 지식은 온톨로지에 반영되어 프로세스와 태스크 설계에 활용됩니다.",
-        "description4-4": "사람은 새로운 지식·규칙을 추가해 에이전트를 재훈련할 수 있습니다.",
-        "description4-5": "조직은 데이터 기반으로 점진적으로 고도화된 운영 환경을 확보합니다."
+        "title": "Process GPT의 핵심 기능",
+        "subtitle1": "1. 사람·에이전트 협업형 업무 실행",
+        "subtitle2": "2. 시스템 간 연결(A2A) 자동화",
+        "subtitle3": "3. 프로세스 자동 생성",
+        "subtitle4": "4. 지식 자동 축적 및 재사용",
+        "subtitle5": "5. 멀티모달 인터페이스",
+        "description1-1": "에이전트는 실무를 실행하고, 사람은 승인 및 결정을 담당합니다.",
+        "description1-2": "BPMN 기반으로 업무 흐름을 시각화하고 팀 단위 협업을 자동화합니다.",
+        "description2-1": "ERP, CRM, 그룹웨어 등 주요 시스템을 자동으로 연결합니다.",
+        "description2-2": "데이터 조회, 입력, 문서 첨부 등 반복적인 작업을 자동 처리합니다.",
+        "description2-3": "외부 API 및 MCP 툴과 연동하여 내외부 시스템 화면을 제어합니다.",
+        "description3-1": "자연어로 업무를 설명하면 BPMN 프로세스가 자동으로 모델링됩니다.",
+        "description3-2": "휴먼 승인 및 검토 단계를 자동으로 삽입합니다.",
+        "description3-3": "부서별, 역할별 업무 흐름을 자동으로 구성합니다.",
+        "description4-1": "AI가 업무를 수행하면서 지속적으로 학습합니다.",
+        "description4-2": "규칙, 메타데이터, 온톨로지를 자동으로 보강하여 업무 매뉴얼 및 룰북 생성에 활용합니다.",
+        "description4-3": "사람의 피드백을 통해 프로세스를 지속적으로 개선합니다.",
+        "description5-1": "웹 기반 MCP(브라우저/데스크톱)와 모바일 앱 환경을 모두 지원하여 다양한 사용자의 업무 환경에 대응합니다.",
+        "description5-2": "내근직은 정밀한 프로세스 설계 UI를, 외근·영업직은 음성/이미지 기반 모바일 인터페이스를 제공합니다.",
+        "description5-3": "사용 환경에 따라 선택 가능한 멀티 인터페이스를 제공함으로써, 업무 장소나 기기에 구애받지 않고 일관된 사용자 경험과 작업 연속성을 확보할 수 있습니다."
     },
     "ConsultingSection": {
         "title": "프로세스 컨설팅 AI 및 관리",
@@ -1821,18 +1838,6 @@
         "processExample1Title": "ERP 시스템을 연동한 주문처리 프로세스",
         "processExample2Title": "Browser Use 기능을 활용한 영업제안서 작성 프로세스",
         "processExample3Title": "VIP 맞춤 뉴스레터 자동화 프로세스",
-        "coreDistinctionTitle": "Process GPT의 핵심 차별점",
-        "coreDistinctionDescription": "Process GPT는 기존 AI 에이전트 시스템과 달리 비즈니스 프로세스를 자동으로 식별하고 구현하는 혁신적인 접근 방식을 제공합니다. 사용자는 코딩 지식 없이도 자연어 대화만으로 복잡한 비즈니스 프로세스를 정의하고 실행할 수 있습니다.",
-        "feature1Title": "코딩 지식 불필요",
-        "feature1Description": "일반 사용자가 프로그래밍 개념 없이도 프로세스 흐름의 적합성만 피드백하면 AI가 내부적으로 BPMN 기반 프로세스를 정의합니다.",
-        "feature2Title": "자가 학습 및 개선",
-        "feature2Description": "업무 프로세스 인스턴스가 발생할 때 사용자 피드백을 통해 자동으로 프로세스가 개선되며 지속적인 발전이 이루어집니다.",
-        "feature3Title": "프로세스 컨설팅 서비스",
-        "feature3Description": "사용자와의 대화를 통해 비즈니스 프로세스를 도출하고, 자동 투어를 통해 피드백을 수집하며 프로세스를 정립합니다.",
-        "feature4Title": "자동화된 에이전트 배치",
-        "feature4Description": "프로세스에 필요한 에이전트를 자동으로 식별하여 BPMN의 SwimLane(업무 역할)에 매핑하고 프롬프트를 자동 생성합니다.",
-        "feature5Title": "BPMN 기반 표준 프로세스 표기법",
-        "feature5Description": "약 20년 동안 축적된 비즈니스 프로세스 표기법을 활용하여 업계 표준을 준수하는 프로세스를 구현합니다.",
         "tabTitle1": "대화로 프로세스 정의",
         "tabDescription1": "생성형 AI를 통한 프로세스 정의 생성과 함께 가시화가 가능합니다. 생성 후에 관리자가 세부 수정을 할 수 있으며, 세부 수정사항도 자연어로 기술할 수 있습니다.",
         "tabItem1_1": "생성형 AI를 통한 프로세스 정의",
@@ -1942,7 +1947,7 @@
         "selectAssignee": "위임 대상자를 선택하세요.",
         "equalDelegate": "위임 대상자와 동일한 사용자입니다.",
         "successMsg": "위임 완료되었습니다.",
-        "searchUser": "검색",
+        "searchUser": "이름, 이메일 검색",
         "profile": "프로필",
         "userInfo": "대상 정보",
         "delegateToMyself": "나에게 위임"
@@ -2098,7 +2103,19 @@
     "ProcessInstanceChat": {
         "subprocessCreating": "서브프로세스 생성 중입니다...",
         "feedback": "프로세스 실행이 정상인가요?",
-        "feedbackDescription": "프로세스 실행이 정상인가요?"
+        "feedbackDescription": "프로세스 피드백을 반영하시겠습니까?"
+    },
+    "ProcessInstanceLog": {
+        "headers": {
+            "time": "시간",
+            "role": "역할",
+            "sender": "작성자",
+            "message": "메시지"
+        },
+        "noData": "아직 기록된 메시지가 없습니다.",
+        "streaming": "실시간 로그 수신 중...",
+        "unknownSender": "알 수 없음",
+        "systemSender": "시스템"
     },
     "ActivityInputData": {
         "previousInput": "이전 작업 입력 내역",
@@ -2164,18 +2181,24 @@
         "versionManagement": "버전 관리",
         "description": "설명:",
         "versionList": "버전 목록",
-        "changeToSelectedVersion": "{version} 버전으로 변경",
+        "changeToSelectedVersion": "{version} 버전으로 편집",
         "versionLabel": "버전 목록",
         "versionWithColon": "버전: {version}",
         "versionSummary": "버전 {version} · 최종 수정: {time}",
         "versionItemTitle": "버전 {version}",
         "download": "다운로드",
+        "downloadVersionXML": "{version}버전 XML 다운로드",
         "changeToVersion": "버전으로 변경",
         "noXmlData": "선택된 버전의 XML 데이터가 없습니다.",
         "copiedToClipboard": "클립보드에 복사되었습니다.",
         "relativeJustNow": "방금",
         "relativeMinutesAgo": "{minutes}분 전",
         "relativeHoursAgo": "{hours}시간 전"
+    },
+    "BpmnUengineField": {
+        "newProcess": "신규",
+        "processSelectLabel": "Process",
+        "versionSelectLabel": "Version"
     },
     "AgentList": {
         "title": "에이전트 목록",
@@ -2266,7 +2289,8 @@
         "learningModeInfo": "학습 모드: 에이전트가 사용자의 지침을 학습하여 이후 작업에 반영합니다. \n 예를 들어, \n ‘제안서 작성 시 각 회사의 CI에 맞는 컬러를 사용해.’ \n ‘정부·공공기관 대상 제안서는 반드시 한글(HWP) 형식으로 작성해.’ \n ‘B2C 제안서는 고객 이해를 돕기 위해 시각 자료를 우선 활용해.’ \n 와 같은 가이드를 학습시킬 수 있습니다.",
         "questionModeInfo": "질의 모드: 에이전트가 학습한 내용을 기반으로 질의응답을 수행하고, 필요한 정보를 선별해 제공합니다. \n 예를 들어, \n ‘지난주 학습한 보험 심사 기준 중 지역 평가 항목만 알려줘.’ \n ‘제안서 작성 지침에서 CI 컬러 관련 규칙만 요약해.’ \n ‘학습된 매뉴얼 중 품질검사 절차 부분만 설명해.’ \n 와 같은 질문을 통해 학습 내용을 검증하거나 필요한 부분만 확인할 수 있습니다.",
         "actionsModeInfo": "액션 모드: 에이전트가 실제 작업을 수행하고 결과를 확인할 수 있습니다. \n 예를 들어, \n ‘입력된 고객 데이터를 기반으로 보험료를 산출해.’ \n ‘최근 분기 영업 실적을 요약하고 그래프로 시각화해.’ \n ‘지정된 서식에 따라 제안서를 자동으로 작성해.’ \n 와 같은 명령을 실행할 수 있습니다.",
-        "ruleInferenceModeInfo": "비즈니스 규칙 추론 모드: 학습한 비즈니스 규칙을 조회하고 특정 조건에 대한 결과를 추론할 수 있습니다. \n 예를 들어, \n '신용점수 750점, 연소득 6천만원인 고객의 대출 가능 여부는?' \n '구매 금액이 100만원인 VIP 고객에게 적용되는 최종 가격은?' \n '경력 7년에 자격증 2개를 보유한 지원자의 심사 결과는?' \n 와 같이 규칙을 검증하고 결과를 미리 확인할 수 있습니다."
+        "ruleInferenceModeInfo": "비즈니스 규칙 추론 모드: 학습한 비즈니스 규칙을 조회하고 특정 조건에 대한 결과를 추론할 수 있습니다. \n 예를 들어, \n '신용점수 750점, 연소득 6천만원인 고객의 대출 가능 여부는?' \n '구매 금액이 100만원인 VIP 고객에게 적용되는 최종 가격은?' \n '경력 7년에 자격증 2개를 보유한 지원자의 심사 결과는?' \n 와 같이 규칙을 검증하고 결과를 미리 확인할 수 있습니다.",
+        "mainChatInfo": "프로세스 생성, 실행, 실행결과 또는 여러 질의응답을 수행할 수 있습니다. \n 예를 들어, \n '휴가 신청 프로세스를 생성/실행해줘', \n '가장 최근에 신청한 휴가 결과를 조회해줘'"
     },
     "ReworkDialog": {
         "title": "재작업 범위 설정",
@@ -2334,7 +2358,13 @@
         "duration": "기간",
         "assignees": "담당자"
     },
-
+    "Common": {
+        "cancel": "취소",
+        "delete": "삭제",
+        "save": "저장",
+        "submit": "제출",
+        "role": "역할"
+    },
     "AgentSkillEdit": {
         "deleteDialogTitle": "스킬 파일 삭제",
         "deleteDialogMessage": "스킬 파일을 삭제하시겠습니까? 삭제된 스킬 파일은 복구할 수 없습니다."
@@ -2535,5 +2565,62 @@
         "queryPlaceholder": "예: 이번 달 완료된 인스턴스 수를 보여줘",
         "generatedSql": "생성된 SQL",
         "queryResult": "쿼리 결과"
+    },
+    "mainChat": {
+        "placeholder": "무엇을 도와드릴까요? 프로세스 생성, 실행, 조회 등을 요청해보세요.",
+        "examples": {
+            "createProcess": "휴가 신청 프로세스를 만들어줘",
+            "executeProcess": "출장 신청서 작성해줘",
+            "checkResult": "내 휴가 신청 현황 알려줘",
+            "askQuestion": "우리 회사 조직도 알려줘"
+        },
+        "intentAnalysis": "요청을 분석하고 있습니다...",
+        "createMode": {
+            "title": "프로세스 생성",
+            "description": "AI와 대화하며 새로운 프로세스를 설계합니다."
+        },
+        "executeMode": {
+            "title": "프로세스 실행",
+            "description": "선택한 프로세스를 실행합니다."
+        },
+        "queryMode": {
+            "title": "정보 조회",
+            "description": "요청하신 정보를 조회합니다."
+        },
+        "history": {
+            "title": "대화 히스토리",
+            "loading": "불러오는 중...",
+            "empty": "이전 대화가 없습니다",
+            "showMore": "더보기"
+        }
+    },
+    "fullScreenChat": {
+        "title": "AI 어시스턴트",
+        "newChat": "새 대화",
+        "close": "닫기",
+        "analyzing": "분석 중...",
+        "executeProcess": "프로세스 실행",
+        "goToDefinition": "프로세스 편집으로 이동"
+    },
+    "ProcessFeedback": {
+        "applyTitle": "피드백 반영",
+        "inputTitle": "피드백을 입력해주세요",
+        "columnApply": "반영 여부",
+        "columnProperty": "속성",
+        "columnBefore": "피드백 반영 전",
+        "columnAfter": "피드백 반영 후",
+        "noChanges": "반영 할 내용이 없습니다.",
+        "noContent": "내용 없음",
+        "goodExample": "좋은 예시",
+        "badExample": "나쁜 예시",
+        "applyButton": "반영",
+        "feedbackLabel": "피드백 입력",
+        "autoGenerate": "자동 생성",
+        "generating": "자동으로 피드백을 생성 중입니다...",
+        "inputData": "입력 데이터",
+        "checkpoints": "체크포인트",
+        "description": "설명",
+        "instruction": "지시사항",
+        "conditionExamples": "조건 예시"
     }
 }

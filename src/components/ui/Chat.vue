@@ -341,6 +341,56 @@
                                                     <div v-html="renderedMarkdown(message.content, filteredMessages.length - 1 == index && isLoading)" 
                                                         class="markdown-content pl-3 py-2"
                                                     ></div>
+                                                    
+                                                    <!-- 프로세스 실행 폼 -->
+                                                    <div v-if="message.work === 'StartProcessInstance' && message.firstActivityForm" class="mt-3 pl-3 pr-3">
+                                                        <v-card variant="outlined" class="mb-3">
+                                                            <v-card-title class="text-subtitle-1 py-2">
+                                                                {{ message.firstActivityForm.activityName || '초기 정보 입력' }}
+                                                            </v-card-title>
+                                                            <v-divider></v-divider>
+                                                            <v-card-text class="pa-3">
+                                                                <!-- formHtml이 있는 경우 DynamicForm 사용 -->
+                                                                <div v-if="message.firstActivityForm.formHtml" class="form-container">
+                                                                    <DynamicForm 
+                                                                        :formHTML="message.firstActivityForm.formHtml" 
+                                                                        v-model="message.formValues"
+                                                                        :readonly="false"
+                                                                    ></DynamicForm>
+                                                                </div>
+                                                                
+                                                                <!-- 폼 정보가 없는 경우 -->
+                                                                <div v-else class="text-caption text-grey">
+                                                                    추가 입력 정보가 필요하지 않습니다.
+                                                                </div>
+                                                            </v-card-text>
+                                                        </v-card>
+                                                        
+                                                        <v-btn 
+                                                            color="primary"
+                                                            variant="elevated"
+                                                            size="default"
+                                                            @click="executeProcessInstance(message, index)"
+                                                            :loading="message.executing"
+                                                            :disabled="message.executed"
+                                                        >
+                                                            <v-icon left class="mr-1">{{ message.executed ? 'mdi-check' : 'mdi-play' }}</v-icon>
+                                                            {{ message.executed ? '실행 완료' : '프로세스 실행' }}
+                                                        </v-btn>
+                                                    </div>
+                                                    
+                                                    <!-- 회사 정보 조회 결과에 확인하기 버튼 추가 -->
+                                                    <div v-if="message.companyQueryUrl" class="mt-3 pl-3">
+                                                        <v-btn 
+                                                            color="primary"
+                                                            variant="elevated"
+                                                            size="small"
+                                                            @click="navigateToCompanyQuery(message.companyQueryUrl)"
+                                                        >
+                                                            <v-icon left small class="mr-1">mdi-open-in-new</v-icon>
+                                                            확인하기
+                                                        </v-btn>
+                                                    </div>
                                                 </div>
 
                                                 <div v-else class="w-100 pb-3">
@@ -665,29 +715,13 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
-                    <div v-if="!definitionMapOnlyInput" style="position:relative; z-index: 9999;">
-                        <v-row class="pa-0 ma-0" style="position: absolute; bottom:0px; left:0px;">
+                    <div v-if="!definitionMapOnlyInput" style="position:relative; z-index: 9999; margin-bottom: 10px;">
+                        <v-row class="pa-0 ma-0">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                <!-- <v-tooltip v-if="type != 'AssistantChats'" :text="$t('chat.document')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); startWorkOrder()" v-bind="props"
-                                            style="width:30px; height:30px;" :disabled="disableChat">
-                                            <Icons :icon="'document'" :size="20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip> -->
-                                <!-- <v-tooltip v-if="isMobile" :text="$t('chat.camera')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); capture()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
-                                            <Icons :icon="'camera'" :size="20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip> -->
                                 <v-tooltip :text="$t('chat.addImage')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat">
+                                            style="width:30px; height:30px;" :disabled="disableChat">
                                             <Icons :icon="'add-media-image'" :size="20" />
                                         </v-btn>
                                     </template>
@@ -706,7 +740,7 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting') && (agentInfo && !agentInfo.isRunning)"
+                                <v-form v-if="(type == 'instances' || type == 'chats' || type == 'consulting' || type == 'monitor') && (agentInfo && !agentInfo.isRunning)"
                                     ref="uploadForm" @submit.prevent="openChatMenu(); submitFile()"
                                     style="height:30px;"
                                     class="chat-selected-file"
@@ -1395,6 +1429,12 @@ export default {
             if (this.messages && this.messages.length > 0) {
                 this.messages.forEach((item) => {
                     let data = JSON.parse(JSON.stringify(item));
+                    
+                    // 프로세스 실행 메시지에 formValues 초기화
+                    if (data.work === 'StartProcessInstance' && data.firstActivityForm && !data.formValues) {
+                        data.formValues = {};
+                    }
+                    
                     if (data.content || data.jsonContent || data.image) {
                         list.push(data);
                     }
@@ -1670,20 +1710,15 @@ export default {
             var me = this
             if (!me.file) return;
             const fileName = me.file[0].name;
-            const fileObj = {
-                chat_room_id: me.chatRoomId,
-                user_name: me.userInfo.name
-            }
-            backend.uploadFile(fileName, me.file[0], fileObj).then((response) => {
+            backend.uploadFile(fileName, me.file[0]).then((response) => {
                 me.$try({
                     action: async () => {
-                        console.log(response);
+                        me.$emit('uploadedFile', response);
                         this.file = null
                     },
                     successMsg: '파일 업로드가 완료되었습니다.'
                 })
             });
-            
             // me.$try({
             //     action: async () => {
             //         if (!me.file) return;
@@ -1820,6 +1855,32 @@ export default {
                 this.$emit('deleteWorkList', index)
             }
         },
+        async executeProcessInstance(message, index) {
+            const me = this;
+            try {
+                message.executing = true;
+                
+                // 폼 데이터 수집
+                const formValues = message.formValues || {};
+                
+                // 프로세스 실행
+                await me.$emit('executeProcess', {
+                    processDefinitionId: message.processDefinitionId,
+                    processDefinitionName: message.processDefinitionName,
+                    formValues: formValues,
+                    processDefinition: message.processDefinition,
+                    firstActivityForm: message.firstActivityForm
+                });
+                
+                message.executing = false;
+                message.executed = true;
+                
+            } catch (error) {
+                console.error('프로세스 실행 중 오류:', error);
+                message.executing = false;
+                alert('프로세스 실행 중 오류가 발생했습니다.');
+            }
+        },
         cancelProcess(messageObj) {
             this.$emit('cancelProcess', messageObj)
         },
@@ -1885,25 +1946,13 @@ export default {
                 this.editIndex = -1;
             } else {
                 if (this.definitionMapOnlyInput) {
-                    this.isGenerationFinished = true;
-
-                    this.defMapMsgData = {
-                        text: this.newMessage,
+                    // ProcessDefinitionMap에서 사용하는 경우
+                    // 부모 컴포넌트로 메시지 전달
+                    this.$emit('sendMessage', {
                         images: this.attachedImages,
+                        text: this.newMessage,
                         mentionedUsers: this.mentionedUsers
-                    };
-                    
-                    this.generator = new ChatRoomNameGenerator(this, {
-                        isStream: true,
-                        preferredLanguage: "Korean"
                     });
-
-                    this.generator.previousMessages.push({
-                        role: 'user',
-                        content: JSON.stringify(this.defMapMsgData)
-                    });
-
-                    this.generator.generate();
 
                 } else {
                     this.$emit('sendMessage', {
@@ -2121,6 +2170,20 @@ export default {
             if(!message.timeStamp) return false;
             
             if (index === 0) {
+                const currentDate = new Date(message.timeStamp);
+                const today = new Date();
+                
+                // 첫 메시지가 오늘 날짜인 경우
+                if (currentDate.toDateString() === today.toDateString()) {
+                    // 오늘이 아닌 이전 메시지가 있는지 확인
+                    const hasOlderMessages = this.filteredMessages.some((msg, idx) => {
+                        if (!msg.timeStamp || idx === 0) return false;
+                        const msgDate = new Date(msg.timeStamp);
+                        return msgDate.toDateString() !== today.toDateString();
+                    });
+                    // 오늘이 아닌 메시지가 있을 때만 "오늘" 구분선 표시
+                    return hasOlderMessages;
+                }
                 return true;
             }
             
@@ -2284,6 +2347,11 @@ export default {
             
             this.$emit('addTeamMembers', teamMemberData);
             this.closeTeamMemberSelector();
+        },
+        navigateToCompanyQuery(url) {
+            if (url) {
+                this.$router.push(url);
+            }
         },
     }
 };

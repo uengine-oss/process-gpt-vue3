@@ -7,8 +7,12 @@ hr {
 }
 
 .agent-chat-info-content {
-    height: calc(100vh - 190px);
+    height: calc(100vh - 205px);
     overflow: auto;
+}
+
+.delegate-task-form-table .v-table__wrapper {
+    max-height: calc(100vh - 500px);
 }
 
 .knowledge-management-table .v-data-table .v-table__wrapper {
@@ -375,6 +379,10 @@ hr {
     cursor: pointer !important;
 }
 
+.vue-bpmn-diagram-container .djs-palette .djs-palette-entries .entry {
+    width: 40px;
+}
+
 .vue-bpmn-diagram-container .djs-palette {
     width: 740px !important;
     height: 50px;
@@ -441,6 +449,50 @@ hr {
 }
 .chat-display-block {
     display: block;
+}
+.process-gpt-execute-component-dialog .work-item-tab-item-process-box-empty {
+    height: calc(100vh - 176px);
+    overflow: auto
+}
+
+.work-item-tab-item-process-box-empty {
+    height: calc(100vh - 260px);
+    color: black;
+    overflow: auto
+}
+
+.work-item-tab-item-process-box-full {
+    height: calc(100vh - 130px);
+}
+
+.process-gpt-execute-component-dialog .work-item-tab-process-box-empty {
+    height: calc(100vh - 176px);
+    overflow: auto
+}
+
+.work-item-tab-process-box-full {
+    height: calc(100vh - 130px);
+    overflow: auto
+}
+
+.work-item-tab-process-box-empty {
+    height: calc(100vh - 257px);
+    overflow: auto
+}
+
+.process-gpt-execute-component-dialog .work-item-form-box-height-empty {
+    height: calc(100vh - 96px);
+    overflow: auto
+}
+
+.work-item-form-box-height-full {
+    height: calc(100vh - 70px);
+    overflow: auto
+}
+
+.work-item-form-box-height-empty {
+    height: calc(100vh - 190px);
+    overflow: auto
 }
 
 .border-primary {
@@ -635,6 +687,11 @@ hr {
     max-height: calc(100vh - 420px);
     overflow-y: auto;
 }
+.marketplace-bpmn-preview-skeleton-loader .v-skeleton-loader__image {
+    height: calc(100vh - 84px) !important;
+    border-radius: 8px !important;
+}
+
 .work-item-skeleton-loader .v-skeleton-loader__image {
     height: calc(100% - 50px);
     border-radius: 8px;
@@ -1257,15 +1314,15 @@ hr {
 }
 
 .is-sidebar-mobile {
-    display: none;
+    display: none !important;
 }
 
 @media only screen and (max-width: 1279px) {
     .is-sidebar-pc {
-        display: none;
+        display: none !important;
     }
     .is-sidebar-mobile {
-        display: block;
+        display: block !important;
     }
 
 
@@ -1458,8 +1515,10 @@ hr {
         height: 100vh;
     }
 
+    
+
     .leftSidebar {
-        width: 300px !important;
+        width: 350px !important;
     }
 
     .instance-card-kanban-board-box {

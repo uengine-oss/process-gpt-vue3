@@ -5,7 +5,8 @@
             <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff;">
                 <Icons :icon="'magnifer-linear'" :size="22" />
                 <v-text-field 
-                v-model="search" 
+                v-model="searchInput" 
+                @keyup.enter="handleSearch"
                 variant="plain" 
                 density="compact"
                 class="position-relative pt-0 ml-3 custom-placeholer-color" 
@@ -28,7 +29,12 @@
         </v-row>
 
         <div class="manage-access-tab-table-box">
-            <v-data-table :items="users" :search="search" :filter-keys="searchKey" :headers="headers" items-per-page="5">
+            <!-- 검색 결과가 없을 때 -->
+            <div v-if="searchQuery && filteredUsers.length === 0" class="text-left pa-8">
+                <p class="text-subtitle-1 text-medium-emphasis">{{ $t('accountTab.noSearchResults') }}</p>
+            </div>
+            
+            <v-data-table v-else :items="users" :search="searchQuery" :filter-keys="searchKey" :headers="headers" items-per-page="5">
                 <template v-slot:default="{ items }">
                     <div v-for="item in items" :key="item.id" 
                         class="d-flex align-center justify-space-between pa-4 pr-0 pl-0 user-row"
@@ -44,6 +50,9 @@
                             <div class="ml-5">
                                 <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ item.name }}</h4>
                                 <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ item.email }}</div>
+                                <div v-if="item.teamName" class="text-caption mt-1">
+                                    {{ $t('accountTab.affiliatedTeam') }} : {{ item.teamName }}
+                                </div>
                             </div>
                         </div>
                         <div v-if="editable" class="d-flex align-center">
@@ -184,7 +193,8 @@ export default {
     },
     data: () => ({
         isMobile: false,
-        search: '',
+        searchInput: '',
+        searchQuery: '',
         searchKey: ['name', 'email'],
         users: [],
         adminItem: [
@@ -200,6 +210,7 @@ export default {
         deleteDialog: false,
         deleteTargetUser: null,
         confirmName: '',
+        organizationChart: null,
     }),
     computed: {
         isAdmin() {
@@ -208,6 +219,18 @@ export default {
         },
         isDeleteEnabled() {
             return this.confirmName === (this.deleteTargetUser ? this.deleteTargetUser.name : '');
+        },
+        filteredUsers() {
+            if (!this.searchQuery) {
+                return this.users;
+            }
+            const query = this.searchQuery.toLowerCase();
+            return this.users.filter(user => {
+                return this.searchKey.some(key => {
+                    const value = user[key];
+                    return value && value.toString().toLowerCase().includes(query);
+                });
+            });
         }
     },
     async mounted() {
@@ -219,11 +242,56 @@ export default {
     },
     created() {
         this.getUserList();
+        this.getOrganizationChart();
     },
     methods: {
+        handleSearch() {
+            this.searchQuery = this.searchInput;
+        },
         closeInviteUserCard(userList) {
             this.users = [...this.users, ...userList];
             this.openInviteUserCard = false;
+        },
+        async getOrganizationChart() {
+            const orgData = await backend.getData('configuration', { match: { key: 'organization' } });
+            if (orgData && orgData.value && orgData.value.chart) {
+                this.organizationChart = orgData.value.chart;
+                this.updateUserTeamInfo();
+            }
+        },
+        findUserTeamInOrganization(userId, node = null, teamName = null) {
+            const searchNode = node || this.organizationChart;
+            if (!searchNode) return null;
+            
+            if (searchNode.data && searchNode.data.isTeam) {
+                teamName = searchNode.data.name;
+            }
+            
+            if (searchNode.children && searchNode.children.length > 0) {
+                for (const child of searchNode.children) {
+                    if (child.id === userId || (child.data && child.data.id === userId)) {
+                        return teamName;
+                    }
+                    
+                    const foundTeam = this.findUserTeamInOrganization(userId, child, teamName);
+                    if (foundTeam) {
+                        return foundTeam;
+                    }
+                }
+            }
+            
+            return null;
+        },
+        updateUserTeamInfo() {
+            if (!this.organizationChart) return;
+            
+            this.users = this.users.map(user => {
+                const teamName = this.findUserTeamInOrganization(user.id);
+                return {
+                    ...user,
+                    teamName: teamName || null
+                };
+            });
         },
         async getUserList() {
             this.users  = await backend.getUserList();
@@ -236,6 +304,10 @@ export default {
                     is_admin: user.is_admin
                 };
             });
+            
+            if (this.organizationChart) {
+                this.updateUserTeamInfo();
+            }
         },
         async updateUser(user) {
             const userInfo = {

@@ -278,6 +278,7 @@ export default {
                 ],
                 anthropic: [
                     { key: 'claude-sonnet-4', name: 'Claude Sonnet 4' },
+                    { key: 'claude-opus-4-5', name: 'Claude Opus 4.5' },
                     { key: 'claude-opus-4', name: 'Claude Opus 4' },
                     { key: 'claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
                     { key: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },

@@ -88,6 +88,9 @@
                     :process="processDefinition"
                     :open="verMangerDialog"
                     :type="'bpmn'"
+                    :bpmn="bpmn"
+                    :definitionId="fullPath"
+                    :isSimulate="isSimulate"
                     @close="toggleVerMangerDialog"
                     @changeXML="changeXML"
                 ></ProcessDefinitionVersionManager>
@@ -206,9 +209,9 @@
                 </div>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog" max-width="80%" persistent
-            :class="$globalState.state.isZoomed ? 'dry-run-process-dialog' : ''"
-             :fullscreen="isMobile"
+        <v-dialog v-model="executeDialog"
+            persistent
+            fullscreen
         >
             <div v-if="!pal && mode === 'ProcessGPT'">
                 <process-gpt-execute :isSimulate="isSimulate" :processDefinition="processDefinition" :bpmn="bpmn" :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
@@ -294,6 +297,10 @@ export default {
     },
     props: {
         chatMode: {
+            type: String,
+            default: ""
+        },
+        definitionId: {
             type: String,
             default: ""
         },
@@ -384,7 +391,8 @@ export default {
                     this.$try({
                         context: this,
                         action: async () => {
-                            this.datasourceSchema = await backend.extractDatasourceSchema();
+                            const schema = await backend.extractDatasourceSchema();
+                            this.datasourceSchema = Array.isArray(schema) ? schema : [];
                             this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
                         },
                         errorMsg: '데이터소스 스키마 연동 실패'
@@ -795,7 +803,8 @@ export default {
                     me.EventBus.emit('definitions-updated');
                     me.EventBus.emit('instances-updated');
                     me.$router.push('/definitions/chat');
-                }
+                },
+                successMsg: this.$t('successMsg.delete')
             });
         },
         async restoreProcess() {

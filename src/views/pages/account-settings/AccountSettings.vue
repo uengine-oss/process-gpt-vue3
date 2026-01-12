@@ -12,11 +12,11 @@
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
                                 <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
-                                <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
-                                <v-tab value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
-                                <v-tab value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
-                                <v-tab value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab>
-                                <v-tab value="ConnectionInfo">
+                                <v-tab v-if="superAdmin && !isUEngineMode" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
+                                <v-tab v-if="!isUEngineMode" value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
+                                <v-tab v-if="!isUEngineMode" value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
+                                <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab>
+                                <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
                                 <v-tab value="TaskCatalog">
@@ -89,7 +89,7 @@
                             </v-btn>
 
                             <v-btn
-                                v-if="superAdmin"
+                                v-if="superAdmin && !isUEngineMode"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -100,6 +100,7 @@
                             </v-btn>
 
                             <v-btn
+                                v-if="!isUEngineMode"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -109,6 +110,7 @@
                                 {{ $t('accountTab.mcpServers') }}
                             </v-btn>
                             <v-btn
+                                v-if="!isUEngineMode"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -118,6 +120,7 @@
                                 {{ $t('accountTab.environments') }}
                             </v-btn>
                             <v-btn
+                                v-if="!isUEngineMode"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -185,6 +188,7 @@
                 <v-divider></v-divider>
                 <v-card-text class="pa-0">
                     <v-window v-model="tab">
+                        <!-- Account: 계정 설정 탭 (accountTab.accountSetting) -->
                         <v-window-item value="Account">
                             <div 
                                 style="overflow: auto;"
@@ -193,6 +197,8 @@
                                 <AccountTab />
                             </div>
                         </v-window-item>
+                        
+                        <!-- ManageAccess: 사용자 관리 탭 (accountTab.manageAccess) -->
                         <v-window-item value="ManageAccess">
                             <div 
                                 style="overflow: auto;"
@@ -201,7 +207,9 @@
                                 <ManageAccessTab :editable="superAdmin" />
                             </div>
                         </v-window-item>
-                        <v-window-item value="Drive">
+                        
+                        <!-- Drive: 구글 드라이브 설정 탭 (accountTab.drive) -->
+                        <v-window-item v-if="!isUEngineMode" value="Drive">
                             <div 
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
@@ -209,7 +217,9 @@
                                 <DriveTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="ConnectionInfo">
+                        
+                        <!-- ConnectionInfo: 데이터소스 탭 (accountTab.dataSource) -->
+                        <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
                             <div 
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
@@ -217,12 +227,16 @@
                                 <ConnectionInfoTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="MCP-Servers">
+                        
+                        <!-- MCP-Servers: MCP 서버 탭 (accountTab.mcpServers) -->
+                        <v-window-item v-if="!isUEngineMode" value="MCP-Servers">
                             <div>
                                 <MCPServerTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="MCP-Environments">
+                        
+                        <!-- MCP-Environments: 환경변수 탭 (accountTab.environments) -->
+                        <v-window-item v-if="!isUEngineMode" value="MCP-Environments">
                             <div 
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
@@ -230,8 +244,10 @@
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="Skills">
-                            <div
+                        
+                        <!-- Skills: 스킬 탭 (accountTab.skills) -->
+                        <v-window-item v-if="!isUEngineMode" value="Skills">
+                            <div 
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
                             >
@@ -327,13 +343,28 @@ export default {
     },
     mounted() {
         // this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
+        // 초기 탭이 비어있거나(uEngine 모드에서 숨긴 탭으로 들어온 경우 포함) 안전하게 Account로 보정
+        this.ensureVisibleTab();
     },
     computed: {
+        isUEngineMode() {
+            return window.$mode === 'uEngine';
+        },
         isMobile() {
             return window.innerWidth <= 768;
         }
     },
     methods: {
+        ensureVisibleTab() {
+            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'Skills', 'ConnectionInfo']);
+            if (!this.tab) {
+                this.tab = 'Account';
+                return;
+            }
+            if (this.isUEngineMode && hiddenInUEngine.has(this.tab)) {
+                this.tab = 'Account';
+            }
+        },
         goToTenantManage() {
             // ===== 로컬 테스트용 코드 시작 =====
             // 로컬호스트에서 테넌트 관리 페이지 테스트를 위한 코드

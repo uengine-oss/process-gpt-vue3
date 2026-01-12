@@ -77,11 +77,12 @@
                 :messages="chatMessages"
                 :agentInfo="{ isRunning: isLoading, isConnection: false }"
                 :disableChat="isLoading"
-                type="chats"
                 :userInfo="{ name: '', email: '' }"
                 :chatRoomId="getTaskIdFromWorkItem()"
+                type="monitor"
                 @sendMessage="submitChat"
                 @stopMessage="stopTask"
+                @uploadedFile="handleUploadedFile"
             >
                 <template #custom-input-tools>
                     <div v-if="isGeneralAgent" class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
@@ -165,6 +166,11 @@ export default {
             default: null
         },
         selectedAgentType: {
+            type: String,
+            default: null
+        },
+        // 자동 전송 메시지 (메인 채팅에서 전달)
+        autoMessage: {
             type: String,
             default: null
         }
@@ -488,6 +494,14 @@ export default {
                         orchestration: newVal.worklist.orchestration || null
                     };
                 }
+                
+                // autoMessage가 있고 상태가 NEW이면 자동 전송
+                if (this.autoMessage && this.todoStatus && this.todoStatus.status === 'NEW') {
+                    this.$nextTick(() => {
+                        this.submitChat({ text: this.autoMessage });
+                        this.$emit('auto-message-sent');
+                    });
+                }
             },
         }
     },
@@ -754,6 +768,14 @@ export default {
                 : original;
             const normalized = this.normalizeFormValues(payloadForSubmit);
             // console.log('[AgentMonitor] submitTask!!', normalized);
+            
+            // 의도 분석 결과 감지 및 emit (work 필드가 있는 경우)
+            if (normalized && normalized.work) {
+                console.log('[AgentMonitor] 의도 분석 결과 감지:', normalized);
+                this.$emit('intent-detected', normalized);
+                this.EventBus.emit('agent-intent-result', normalized);
+            }
+            
             this.EventBus.emit('form-values-updated', normalized);
         },
 
@@ -1124,7 +1146,7 @@ export default {
             try {
                 const { data, error } = await window.$supabase
                     .from('todolist')
-                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft')
+                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft, query')
                     .eq('id', taskId)
                     .single();
 
@@ -1228,10 +1250,14 @@ export default {
 
             if (this.isActionsMode) {
                 if (this.todoStatus.status === 'NEW') {
+                    let query = content.text;
+                    if (this.todoStatus.query && this.todoStatus.query.trim() !== '') {
+                        query = this.todoStatus.query + '\n\n' + content.text;
+                    }
                     await this.backend.putWorkItem(taskId, {
                         status: 'IN_PROGRESS',
                         description: content.text,
-                        query: content.text,
+                        query: query,
                     });
                     this.isLoading = true;
                     this.chatMessages.push({ time: new Date().toISOString(), content: content.text });
@@ -1250,17 +1276,15 @@ export default {
 
                 await this.backend.putWorkItem(taskId, {
                     feedback: updatedFeedback,
-                    draft_status: 'FB_REQUESTED',
-                    status: 'IN_PROGRESS',
+                    feedback_status: 'REQUESTED',
                     agent_orch: agentOrch
                 });
 
                 // 상태 업데이트
                 Object.assign(this.todoStatus, {
-                    draft_status: 'FB_REQUESTED',
-                    status: 'IN_PROGRESS',
                     agent_orch: agentOrch,
-                    feedback: updatedFeedback
+                    feedback: updatedFeedback,
+                    feedback_status: 'REQUESTED'
                 });
                 
                 this.isLoading = true;
@@ -1273,6 +1297,21 @@ export default {
                 });
             } catch (error) {
                 this.handleError(error, '채팅 전송 중 오류가 발생했습니다');
+            }
+        },
+        async handleUploadedFile(response) {
+            if (response && response.publicUrl) {
+                var me = this;
+                const taskId = this.validateTaskId();
+                if (!taskId) return;
+
+                const query = me.todoStatus.query;
+                const responseStr = JSON.stringify(response);
+                const newQuery = query ? `${query}\n\n[InputData]\n${responseStr}` : `[InputData]\n${responseStr}`;
+
+                await this.backend.putWorkItem(taskId, {
+                    query: newQuery
+                });
             }
         },
         // ========================================

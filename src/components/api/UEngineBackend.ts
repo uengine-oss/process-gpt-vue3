@@ -2,64 +2,186 @@ import axios from 'axios';
 const axiosInstance = axios.create();
 import type { Backend } from './Backend';
 
+// uEngine 모드에서 ProcessGPT 전용(또는 미지원) 메서드 호출 시
+// - null/undefined 반환으로 인해 호출부에서 NPE(예: .forEach, .path 접근) 나는 걸 방지하기 위해
+// - 안전한 기본값을 반환하고, "다른 모드 전용 기능이라 추후 개발 가능" 경고를 1회만 출력한다.
+const __uEngineWarnedUnsupported = new Set<string>();
+function __warnUnsupported(methodName: string) {
+    if (__uEngineWarnedUnsupported.has(methodName)) return;
+    __uEngineWarnedUnsupported.add(methodName);
+    // eslint-disable-next-line no-console
+    console.warn(
+        `[uEngine] '${methodName}' 는 다른 모드(ProcessGPT/Pal 등)에서 추가된 기능일 수 있어 현재 uEngine 모드에서는 스킵합니다. (추가 개발 가능성 있음)`
+    );
+}
+
+// uEngine API 호출 시 인증 토큰을 자동으로 첨부한다.
+// - uEngine 모드에서 Keycloak 토큰은 localStorage.accessToken(또는 localStorage.keycloak)에 저장됨
+// - Authorization 헤더가 없으면 서버에서 principal/userId/scopes가 null로 떨어져 worklist 조회가 비게 됨
+axiosInstance.interceptors.request.use(
+    (config) => {
+        // NOTE:
+        // - 현재 코드베이스에서는 Supabase 세션도 localStorage 'accessToken'을 사용하고 있어(uEngine Keycloak 토큰과 키 충돌)
+        //   uEngine API 호출에 Supabase JWT가 실릴 수 있다.
+        // - 따라서 uEngine 모드에서는 keycloak 토큰을 최우선으로 사용한다.
+        const token =
+            (typeof window !== 'undefined' && (window as any).$mode === 'uEngine'
+                ? (localStorage.getItem('keycloak') || localStorage.getItem('accessToken'))
+                : (localStorage.getItem('accessToken') || localStorage.getItem('keycloak')));
+        if (token) {
+            // Axios v1에서는 config.headers 타입이 AxiosHeaders일 수 있어 단순 {} 할당이 타입에러를 유발할 수 있음
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const anyConfig = config as any;
+            anyConfig.headers = anyConfig.headers ?? {};
+            anyConfig.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
 class UEngineBackend implements Backend {
     // constructor() {
     //     super();
     // }
 
     async fetchAgentData(url: string) {
-        return null;
+        __warnUnsupported('fetchAgentData');
+        return {};
     }
 
     async getMCPTools() {
-        return null;
+        __warnUnsupported('getMCPTools');
+        return {};
     }
 
     async getMCPByTenant() {
-        return null;
+        // 호출부가 configuredData?.mcpServers / Object.keys(configuredData) 등을 사용하므로
+        // null 대신 안전한 빈 객체 반환
+        __warnUnsupported('getMCPByTenant');
+        return {};
     }
 
     async setMCPByTenant(mcp: any) {
-        return null;
+        __warnUnsupported('setMCPByTenant');
+        return { ok: false };
     }
 
     async watchNotifications(callback: (notification: any) => void) {
-        return null;
+        // 호출부에서 unsubscribe 함수를 기대할 수 있어 noop 반환
+        __warnUnsupported('watchNotifications');
+        return () => {};
     }
 
     async getRefForm(taskId: string) {
-        return null;
+        // WorkItem.vue 에서 refForms.forEach(...) 를 호출하므로 배열 반환이 안전
+        __warnUnsupported('getRefForm');
+        return [];
     }
     async listMarketplaceDefinition() {
-        return null;
+        __warnUnsupported('listMarketplaceDefinition');
+        return [];
+    }
+
+    /**
+     * Process-GPT 모드 전용 API들과의 인터페이스 호환을 위한 stub 구현
+     * (uEngine 모드에서는 지원하지 않으므로 안전한 기본값을 리턴)
+     */
+    async getAgentList(options?: any) {
+        return [];
+    }
+
+    async watchInstanceList(callback: (payload: any) => void, options?: any) {
+        // uEngine 모드에서는 실시간 구독을 제공하지 않음
+        // 호출 측에서 watchRef를 저장하므로, 해제 함수 형태로 반환
+        return () => {};
+    }
+
+    async getCreditBalance() {
+        // ExtraBox.vue에서 credit.available.toFixed(2)를 호출하므로 기본 구조 제공
+        return {
+            available: 0,
+            used: 0,
+            total: 0
+        };
+    }
+
+    async watchCreditUsage(callback: (payload: any) => void) {
+        // uEngine 모드에서는 크레딧 사용량 구독을 제공하지 않음
+        return () => {};
+    }
+
+    /**
+     * 재작업(리워크) 기능은 ProcessGPT 모드 전용.
+     * 칸반/WorkItem UI에서 enableRework를 호출하므로, uEngine에서는 안전하게 false를 반환한다.
+     */
+    async enableRework(workItem?: any): Promise<boolean> {
+        return false;
+    }
+
+    async getReworkActivities(options?: any): Promise<any> {
+        // uEngine 모드에서는 재작업 액티비티 목록을 제공하지 않음
+        return { reference: [], all: [] };
+    }
+
+    async reWorkItem(item?: any): Promise<any> {
+        // uEngine 모드에서는 재작업 실행을 제공하지 않음
+        __warnUnsupported('reWorkItem');
+        return { ok: false };
+    }
+
+    /**
+     * Process-GPT 스토리지 계층 호환용 API (uEngine 모드에서는 미지원)
+     * - 호출부에서 null 체크를 하는 케이스가 많아 기본값은 null/false로 둠
+     */
+    async getData(path: string, options?: any) {
+        __warnUnsupported('getData');
+        // 호출부에서 null-check 하는 케이스가 많지만, 안전하게 빈 객체로 반환
+        return {};
+    }
+
+    async putObject(path: string, obj: any, options?: any) {
+        __warnUnsupported('putObject');
+        return { ok: false };
     }
 
     async updateUser(userInfo: any) {
-        return null;
+        __warnUnsupported('updateUser');
+        return { ok: false };
     }
 
     async getTenant(tenantId: string) {
-        return null;
+        __warnUnsupported('getTenant');
+        return {};
     }
 
     async setTenant(tenantId: string) {
-        return null;
+        __warnUnsupported('setTenant');
+        return { ok: false };
     }
 
     async uploadImage(fileName: string, image: File) {
-        return null;
+        __warnUnsupported('uploadImage');
+        // Chat.vue 에서 data.path 사용 → 최소 path 제공
+        return { path: null };
     }
 
     async getImageUrl(fileName: string) {
-        return null;
+        __warnUnsupported('getImageUrl');
+        // imageUrl 을 기대 → null 대신 빈 문자열
+        return '';
     }
 
     async uploadFile(fileName: string, file: File, storageType: string) {
-        return null;
+        __warnUnsupported('uploadFile');
+        // FileField.vue 에서 res.path 체크 → path 키는 제공
+        return { path: null };
     }
 
     async getFileUrl(path: string) {
-        return null;
+        __warnUnsupported('getFileUrl');
+        // URL(string)로 쓰는 곳이 있어 빈 문자열 반환
+        return '';
     }
 
     async getUserList(options: any) {
@@ -94,6 +216,8 @@ class UEngineBackend implements Backend {
 
     async setNotifications(value: any) {
         // Placeholder implementation
+        __warnUnsupported('setNotifications');
+        return { ok: false };
     }
     async search(keyword: string) {
         let url = '/definition';
@@ -470,9 +594,7 @@ class UEngineBackend implements Backend {
         let result = response.data._embedded.worklist;
         return result;
     }
-    // WorkListRepository API
-    // 자신의 역할에 맞는 업무 모두 가져오기 
-    async getWorkList() {
+    async getWorkList(options?: any) {
         const response = await axiosInstance.get(`/worklist/search/findToDo`);
 
         if (!response.data) return null;
@@ -492,6 +614,23 @@ class UEngineBackend implements Backend {
             adhoc: task.adhoc,
             task: task,
         }));
+
+        if (options && options.instId !== undefined && options.instId !== null && options.instId !== '') {
+            const rawInstId = options.instId;
+            const instId =
+                typeof rawInstId === 'number'
+                    ? rawInstId
+                    : parseInt(String(rawInstId).replace(/_DOT_/g, '.'), 10);
+
+            if (!Number.isNaN(instId)) {
+                mappedResult = mappedResult.filter((w: any) => {
+                    const wInstId = typeof w.instId === 'number' ? w.instId : parseInt(String(w.instId), 10);
+                    const wRootInstId =
+                        typeof w.rootInstId === 'number' ? w.rootInstId : parseInt(String(w.rootInstId), 10);
+                    return wInstId === instId || wRootInstId === instId;
+                });
+            }
+        }
 
         return mappedResult;
     }
@@ -946,6 +1085,7 @@ class UEngineBackend implements Backend {
 
     async putBSCard(card: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async getSchedule(id: string, version: string) {
@@ -955,10 +1095,12 @@ class UEngineBackend implements Backend {
 
     async setSchedule(json: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async deleteSchedule(defId: string, eventId: string) {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async getDataSourceList() {
@@ -968,23 +1110,29 @@ class UEngineBackend implements Backend {
 
     async addDataSource(dataSource: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async updateDataSource(dataSource: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async deleteDataSource(dataSource: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async extractDatasourceSchema(): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
-        return null;
+        // 호출부에서 this.datasourceSchema.map(...)을 수행하므로 null 대신 빈 배열을 반환해
+        // UI/모델러 렌더링 흐름이 끊기지 않도록 한다.
+        return [];
     }
 
     async callDataSource(dataSource: any, bodyData: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async getEnvByTenant(): Promise<any> {
@@ -999,26 +1147,32 @@ class UEngineBackend implements Backend {
 
     async deleteEnvByTenant(name: string): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async deleteSecretByTenant(name: string): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async createEnvByTenant(data: any): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async createSecretByTenant(data: any): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async updateEnvByTenant(data: any): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async updateSecretByTenant(data: any): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async getBrowserUseSecretByTenant(): Promise<any> {
@@ -1028,14 +1182,17 @@ class UEngineBackend implements Backend {
 
     async createBrowserUseSecretByTenant(data: any): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async updateBrowserUseSecretByTenant(data: any): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async deleteBrowserUseSecretByTenant(name: string): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
     }
 
     async getMCPLists(): Promise<any> {

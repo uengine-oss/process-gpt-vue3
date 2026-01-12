@@ -1,16 +1,30 @@
 <template>
-    <div>
-        <v-card elevation="10" :style="!$globalState.state.isZoomed ? '' : 'height:100vh;'"
-            class="is-work-height"
-            style="overflow: auto;"
+    <div class="definition-map-wrapper">
+        <!-- 좌측: 정의체계도 -->
+        <v-card 
+            v-show="!showFullScreenChat"
+            elevation="10" :style="[
+            !$globalState.state.isZoomed ? '' : 'height:100vh;',
+            'width: 100%'
+        ]"
+            class="is-work-height definition-map-card"
+            style="overflow: auto; flex-shrink: 0;"
         >
-            <div v-if="componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
+            <!-- <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <Chat 
                     :showDetailInfo="true"
                     :definitionMapOnlyInput="true"
                     :disableChat="false"
                     :isMobile="isMobile"
-                    @sendMessage="() => {}"
+                    @sendMessage="handleMainChatMessage"
+                />
+            </div> -->
+            <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
+                <MainChatInput 
+                    :agentInfo="mainChatAgentInfo"
+                    :userId="userInfo.uid || userInfo.id"
+                    @submit="handleMainChatSubmit"
+                    @open-history="handleOpenHistory"
                 />
             </div>
             
@@ -23,6 +37,23 @@
                     <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
                     <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
                 </v-row>
+
+                <!-- 액션 버튼 -->
+                <v-btn
+                    v-for="(card, index) in actionCards"
+                    :key="index"
+                    v-show="card.show"
+                    @click="card.action"
+                    color="primary"
+                    variant="flat"
+                    density="compact"
+                    class="rounded-pill ml-2"
+                >
+                    <template v-slot:prepend>
+                        <Icons :icon="card.icon" color="white" :size="16" />
+                    </template>
+                    {{ card.title }}
+                </v-btn>
                 <DetailComponent class="ml-2"
                     :title="$t('processDefinitionMap.usageGuide.title')"
                     :details="usageGuideDetails"
@@ -81,7 +112,13 @@
 
                     <v-tooltip location="bottom" v-if="!useLock">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" @click="saveProcess()">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                size="24"
+                                @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
+                            >
                                 <Icons :icon="'save'" />
                             </v-btn>
                         </template>
@@ -313,8 +350,8 @@
                 </v-card>
             </v-dialog>
 
-
-            <v-row class="ma-0 pa-0">
+            <!-- 기존 하단에 있던 AI 컨설팅 및 마켓플레이스 카드 -->
+            <!-- <v-row class="ma-0 pa-0">
                 <v-col 
                     v-for="(card, index) in actionCards" 
                     :key="index"
@@ -352,9 +389,45 @@
                         </v-card-item>
                     </v-card>
                 </v-col>
-            </v-row>
+            </v-row> -->
         </v-card>
-        <v-dialog v-model="openConsultingDialog"
+
+        <!-- 전체 화면: 채팅 패널 -->
+        <v-card 
+            v-if="showFullScreenChat"
+            elevation="10"
+            class="is-work-height chat-panel-card"
+            style="width: 100%"
+        >
+            <!-- 채팅 헤더 -->
+            <div class="chat-panel-header">
+                <div class="header-left">
+                    <v-icon color="primary" class="mr-2">mdi-robot-outline</v-icon>
+                    <span class="header-title">AI 어시스턴트</span>
+                </div>
+                <v-btn
+                    icon
+                    variant="text"
+                    size="small"
+                    @click="closeChatPanel"
+                >
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
+            </div>
+
+            <!-- 채팅 컨텐츠 -->
+            <div class="chat-panel-content">
+                <WorkAssistantChatPanel
+                    ref="workAssistantChatPanel"
+                    :initialMessage="pendingChatMessage?.text"
+                    :userInfo="userInfo"
+                    :openHistoryRoom="pendingHistoryRoom"
+                    @response-parsed="handleAgentResponse"
+                />
+            </div>
+        </v-card>
+
+         <v-dialog v-if="mode !== 'uEngine'" v-model="openConsultingDialog"
             :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
             :fullscreen="isMobile"
             :scrim="isSimulateMode ? false : true" persistent
@@ -412,6 +485,42 @@
             </v-card>
         </v-dialog>
 
+        <v-dialog v-model="saveConfirmDialog" max-width="520" persistent>
+            <v-card class="pa-0">
+                <v-row class="ma-0 pa-4 pb-0 flex-start">
+                    <v-card-title class="pa-0 alert-message">
+                        {{ saveConfirmMessage }}
+                    </v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeSaveConfirmDialog()" icon variant="text" density="compact">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-row class="ma-0 pa-4">
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        :disabled="saveConfirmSaving"
+                        rounded
+                        variant="flat"
+                        color="gray"
+                        @click="closeSaveConfirmDialog()"
+                    >
+                        {{ $t('processDefinitionMap.cancel') }}
+                    </v-btn>
+                    <v-btn
+                        class="ml-2"
+                        :loading="saveConfirmSaving"
+                        :disabled="saveConfirmSaving"
+                        rounded
+                        variant="flat"
+                        color="primary"
+                        @click="confirmSaveProcess()"
+                    >
+                        {{ $t('processDefinitionMap.save') }}
+                    </v-btn>
+                </v-row>
+            </v-card>
+        </v-dialog>
         <v-dialog v-model="openMarketplaceDialog" 
             persistent
             fullscreen
@@ -432,7 +541,12 @@ import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPl
 import Chat from '@/components/ui/Chat.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import MetricsView from './MetricsView.vue';
-
+import MainChatInput from '@/components/MainChatInput.vue';
+import FullScreenChatDialog from '@/components/FullScreenChatDialog.vue';
+import AgentChatActions from '@/components/AgentChatActions.vue';
+import WorkAssistantChatPanel from '@/components/WorkAssistantChatPanel.vue';
+import ChatModule from '@/components/ChatModule.vue';
+import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
@@ -444,6 +558,7 @@ var jsondiffpatch = jsondiff.create({
 });
 
 export default {
+    mixins: [ChatModule],
     components: {
         ProcessMenu,
         ViewProcessDetails,
@@ -453,7 +568,11 @@ export default {
         ProcessDefinitionMarketPlace,
         Chat,
         DetailComponent,
-        MetricsView
+        MetricsView,
+        MainChatInput,
+        FullScreenChatDialog,
+        AgentChatActions,
+        WorkAssistantChatPanel
     },
     props: {
         componentName: {
@@ -482,6 +601,9 @@ export default {
         alertType: '',
         alertDialog: false,
         alertMessage: '',
+        saveConfirmDialog: false,
+        saveConfirmSaving: false,
+        saveConfirmMessage: '저장하시겠습니까?',
         isAdmin: false,
         versionHistory: [],
         openConsultingDialog: false,
@@ -523,6 +645,9 @@ export default {
             mega_processes: [],
             processes: []
         },
+        messages: [], // ChatModule에서 필요한 메시지 배열
+        chatRoomId: 'definition-map-main', // ChatModule에서 필요한 채팅방 ID
+        userInfo: {}, // ChatModule에서 필요한 사용자 정보
         usageGuideDetails: [
             { 
                 icon: 'pencil', 
@@ -540,7 +665,34 @@ export default {
                 icon: 'market', 
                 title: 'processDefinitionMap.usageGuide.details.3.title' 
             }
-        ]
+        ],
+        generator: null,
+        initialConsultingMessage: null,
+        showFullScreenChat: false,
+        pendingChatMessage: null,
+        pendingHistoryRoom: null,
+        chatPanelWidth: 500,
+        isResizing: false,
+        mainChatAgentInfo: {
+            id: "0e9a546b-9ae0-48ef-1e9e-f0e95d5bc028",
+            username: "업무 지원 에이전트",
+            profile: "/images/chat-icon.png",
+            email: null,
+            is_admin: false,
+            role: "프로세스 생성과 실행, 질문 의도 분석 및 답변 제공을 통해 지원팀의 업무 효율을 높이는 에이전트",
+            tenant_id: "uengine",
+            device_token: null,
+            goal: "지원팀 내 요청되는 프로세스의 90% 이상을 신속하게 생성 및 실행하고, 질문 의도를 정확히 분석하여 95% 이상의 정확도로 적합한 답변을 제공한다.",
+            persona: "꼼꼼하고 친절하며, 팀원들과의 소통을 중시하는 협력적인 성격입니다. 항상 명확하고 이해하기 쉬운 언어로 응답하며, 복잡한 요청도 체계적으로 분석해 해결책을 제시합니다. 신뢰할 수 있는 지원 전문가로서, 긴급 상황에도 침착하게 대응하고 팀원들의 부담을 최소화하는 데 집중합니다. 언제든 피드백을 환영하며 지속적으로 업무 방식 개선을 추구합니다.",
+            endpoint: "",
+            description: "",
+            tools: "work-assistant",
+            skills: null,
+            is_agent: true,
+            model: "anthropic/claude-opus-4-5",
+            agent_type: "agent",
+            alias: ""
+        }
     }),
     computed: {
         useLock() {
@@ -555,16 +707,16 @@ export default {
         },
         actionCards() {
             return [
-                {
-                    show: this.componentName === 'DefinitionMapList' && this.isAdmin,
-                    icon: 'magic',
-                    title: this.$t('processDefinitionMap.consultingButton'),
-                    description: this.$t('processDefinitionMap.analyzeAndImproveProcessWithAI'),
-                    action: () => {
-                        this.openConsultingDialog = true;
-                        this.ProcessPreviewMode = false;
-                    }
-                },
+                // {
+                //     show: this.componentName === 'DefinitionMapList' && this.isAdmin,
+                //     icon: 'magic',
+                //     title: this.$t('processDefinitionMap.consultingButton'),
+                //     description: this.$t('processDefinitionMap.analyzeAndImproveProcessWithAI'),
+                //     action: () => {
+                //         this.openConsultingDialog = true;
+                //         this.ProcessPreviewMode = false;
+                //     }
+                // },
                 {
                     show: this.componentName === 'DefinitionMapList' && this.mode === 'ProcessGPT' && this.isAdmin,
                     icon: 'market',
@@ -689,6 +841,15 @@ export default {
                     me.editUser = me.userName;
                     me.enableEdit = true;
                 }
+
+                // WorkAssistantGenerator 초기화 (ChatModule 스타일)
+                me.generator = new WorkAssistantGenerator(me, {
+                    isStream: false, // 스트리밍 비활성화 (전체 응답을 받아야 intent 파싱 가능)
+                    preferredLanguage: "Korean"
+                });
+
+                // ChatModule을 위한 userInfo 설정
+                me.userInfo = await backend.getUserInfo();
             },
         });
     },
@@ -819,6 +980,155 @@ export default {
 
             // Save updated process map
             await backend.putProcessDefinitionMap(this.value);
+        },
+        openSaveConfirmDialog() {
+            // uEngine 모드에서 저장 버튼 클릭 시 한번 더 확인
+            this.saveConfirmMessage = '저장하시겠습니까?';
+            this.saveConfirmDialog = true;
+        },
+        closeSaveConfirmDialog() {
+            if (this.saveConfirmSaving) return;
+            this.saveConfirmDialog = false;
+        },
+        async confirmSaveProcess() {
+            if (this.saveConfirmSaving) return;
+            this.saveConfirmSaving = true;
+            try {
+                await this.saveProcess();
+                this.saveConfirmDialog = false;
+            } finally {
+                this.saveConfirmSaving = false;
+            }
+        },
+        normalizeProcessMap(processMap) {
+            // backend에서 null/undefined 또는 부분 구조로 내려오는 경우에도 UI가 기본 형태로 렌더링되도록 보정
+            const base = (processMap && typeof processMap === 'object') ? processMap : {};
+            const megaList = Array.isArray(base.mega_proc_list) ? base.mega_proc_list : [];
+
+            return {
+                ...base,
+                mega_proc_list: megaList.map((megaProc) => {
+                    const majorList = Array.isArray(megaProc?.major_proc_list) ? megaProc.major_proc_list : [];
+                    return {
+                        ...megaProc,
+                        major_proc_list: majorList.map((majorProc) => ({
+                            ...majorProc,
+                            sub_proc_list: Array.isArray(majorProc?.sub_proc_list) ? majorProc.sub_proc_list : []
+                        }))
+                    };
+                })
+            };
+        },
+        // 메인 채팅 입력 처리
+        handleMainChatSubmit(message) {
+            // 파일만 있거나 텍스트만 있거나 둘 다 있는 경우 처리
+            if (!message || (!message.text && !message.file)) return;
+            
+            // PDF 파일이 포함된 경우 파일 정보를 메시지에 포함
+            if (message.file && message.file.fileType === 'application/pdf') {
+                // PDF 파일 정보를 포함하여 전달
+                const fileInfoText = `\n\n[InputData]\n${JSON.stringify(message.file)}`;
+                message.text = (message.text || 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.') + fileInfoText;
+                message.hasPdfFile = true;
+            }
+            
+            // 전체 화면 채팅 다이얼로그 열기
+            this.pendingChatMessage = message;
+            this.showFullScreenChat = true;
+        },
+
+        // 히스토리 항목 열기
+        handleOpenHistory(room) {
+            this.pendingChatMessage = null;
+            this.pendingHistoryRoom = room;
+            this.showFullScreenChat = true;
+        },
+
+        // 채팅 패널 닫기
+        closeChatPanel() {
+            this.showFullScreenChat = false;
+            this.pendingChatMessage = null;
+            this.pendingHistoryRoom = null;
+        },
+
+        // 의도 분석 결과 처리
+        handleIntentDetected(result) {
+            console.log('[ProcessDefinitionMap] 의도 분석 결과:', result);
+        },
+
+        // 에이전트 응답 처리
+        handleAgentResponse(response) {
+            console.log('[ProcessDefinitionMap] 에이전트 응답:', response);
+            
+            if (!response || !response.action) return;
+            
+            switch (response.action) {
+                case 'process_created':
+                    // 프로세스 생성 요청 - WorkAssistantChatPanel에서 직접 컨설팅 모드로 전환됨
+                    // 별도 처리 불필요
+                    break;
+                    
+                case 'process_executed':
+                    // 프로세스 실행 완료 - 인스턴스 업데이트 알림
+                    this.EventBus.emit('instances-updated');
+                    break;
+                    
+                case 'query_result':
+                    // 조회 결과 - 필요 시 추가 처리
+                    break;
+                    
+                case 'organization_info':
+                    // 조직도 정보 - 필요 시 추가 처리
+                    break;
+                    
+                case 'error':
+                    // 오류 처리
+                    console.error('에이전트 오류:', response.message);
+                    break;
+            }
+            
+            this.$emit('agent-response', response);
+        },
+
+        // 채팅 패널 리사이즈
+        startResize(e) {
+            this.isResizing = true;
+            const startX = e.clientX;
+            const startWidth = this.chatPanelWidth;
+
+            const onMouseMove = (e) => {
+                if (!this.isResizing) return;
+                const delta = startX - e.clientX;
+                const newWidth = Math.max(350, Math.min(800, startWidth + delta));
+                this.chatPanelWidth = newWidth;
+            };
+
+            const onMouseUp = () => {
+                this.isResizing = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        },
+
+        async handleMainChatMessage(message) {
+            const me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    if (!message || !message.text) return;
+
+                    // 즉시 chats로 이동하면서 사용자 메시지 전달
+                    me.$router.push({
+                        path: '/chats',
+                        query: {
+                            mainChatMessage: encodeURIComponent(message.text)
+                        }
+                    });
+                }
+            });
         },
         closePDM(){
             this.$emit('closePDM')
@@ -975,7 +1285,8 @@ export default {
             this.$router.push(`/definition-map`);
         },
         async getProcessMap() {
-            this.value = await backend.getProcessDefinitionMap();
+            const res = await backend.getProcessDefinitionMap();
+            this.value = this.normalizeProcessMap(res);
         },
         async getMetricsMap() {
             this.metricsValue = await backend.getMetricsMap();
@@ -1298,7 +1609,7 @@ export default {
             } else {
                 await this.syncCardToMetrics();
             }
-            await backend.putProcessDefinitionMap(this.value);
+            await backend.putProcessDefinitionMap(this.normalizeProcessMap(this.value));
             await this.getProcessMap();
             this.closeAlertDialog();
         },
@@ -1593,12 +1904,82 @@ export default {
     display: flex;
     gap: 2px;
 }
-</style>
+/* 전체 레이아웃 */
+.definition-map-wrapper {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
 
-<style scoped>
+.definition-map-card {
+    flex: 1;
+    min-width: 0;
+    transition: width 0.2s ease;
+}
+
+/* 채팅 리사이저 */
+.chat-resizer {
+    width: 6px;
+    background: #e2e8f0;
+    cursor: col-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+}
+
+.chat-resizer:hover {
+    background: #cbd5e1;
+}
+
+.resizer-handle {
+    width: 2px;
+    height: 40px;
+    background: #94a3b8;
+    border-radius: 2px;
+}
+
+/* 채팅 패널 */
+.chat-panel-card {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.chat-panel-header .header-left {
+    display: flex;
+    align-items: center;
+}
+
+.chat-panel-header .header-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.chat-panel-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
 .alert-message {
     white-space: pre-line;
 }
+
 .consulting-card {
     cursor: pointer;
     transition: transform 0.2s;

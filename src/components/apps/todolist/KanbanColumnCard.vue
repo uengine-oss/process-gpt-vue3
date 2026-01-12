@@ -12,7 +12,7 @@
                 <div class="pa-0">
                     <v-row class="ma-0 pa-0" style="width: 100%;">
                         <v-col class="pa-0 d-flex align-center" cols="9">
-                            <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ task.name }}</span>
+                            <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ displayTitle }}</span>
                             <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{ reworkCount }}</v-chip>
                             <v-chip v-if="task.status === 'SUBMITTED'" class="ml-1" size="small" color="success" variant="flat" density="comfortable">
                                 제출됨
@@ -175,9 +175,9 @@
                     </div>
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
                     <div class="body-text-2 text-dark mr-2">
-                        <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username).join(', ') }}</span>
+                        <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username || user.name).join(', ') }}</span>
                         <span v-else-if="isMyTask">{{ $t('TodoTaskItemCard.myTask') }}</span>
-                        <span v-else-if="userInfoForTask">{{ userInfoForTask.username }}</span>
+                        <span v-else-if="userInfoForTask">{{ userInfoForTask.username || userInfoForTask.name }}</span>
                         <span v-else>{{ $t('TodoTaskItemCard.noAssignee') }}</span>
                         <!-- 프로필 이미지를 v-img로 표시, 없으면 기본 이미지 사용 -->
                     </div>
@@ -229,6 +229,14 @@ export default {
         }
     },
     computed: {
+        displayTitle() {
+            // 모드별 필드 우선순위:
+            // - uEngine(worklist): title
+            // - ProcessGPT(worklist): name
+            const mode = window.$mode;
+            if (mode === 'ProcessGPT') return this.task?.name || this.task?.title || '';
+            return this.task?.title || this.task?.name || '';
+        },
         mode() {
             return window.$mode;
         },
@@ -302,29 +310,60 @@ export default {
         },
         userInfoForTask() {
             if (!this.userList || !this.task || !this.task.endpoint) return null;
+            
             if (this.task.endpoint.includes(',')) {
-                const endpoints = this.task.endpoint.split(',');
+                const endpoints = this.task.endpoint.split(',').map(e => e.trim());
                 let users = [];
                 let user = null;
                 for (const endpoint of endpoints) {
                     user = this.userList.find(user => (user.email && user.email === endpoint) || user.id == endpoint);
                     if (user) {
-                        users.push(user)
+                        users.push(user);
+                    } else {
+                        // 사용자를 못 찾은 경우 역할명인지 체크
+                        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(endpoint);
+                        const isEmail = endpoint.includes('@');
+                        
+                        if (!isUUID && !isEmail) {
+                            users.push({
+                                username: `[${this.$t('Common.role')}] ${endpoint}`,
+                                name: `[${this.$t('Common.role')}] ${endpoint}`,
+                                id: endpoint
+                            });
+                        } else {
+                            users.push({
+                                username: endpoint,
+                                name: endpoint,
+                                id: endpoint
+                            });
+                        }
                     }
-                };
-                return users;
+                }
+                return users.length > 0 ? users : null;
             } else {
                 let user = this.userList.find(user => (user.email && user.email === this.task.endpoint) || user.id == this.task.endpoint);
                 if (!user) {
-                    user = {
-                        name: this.task.endpoint
+                    // UUID나 email 형식이 아니면 역할명으로 판단
+                    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(this.task.endpoint);
+                    const isEmail = this.task.endpoint.includes('@');
+                    
+                    if (!isUUID && !isEmail) {
+                        user = {
+                            username: `[${this.$t('Common.role')}] ${this.task.endpoint}`,
+                            name: `[${this.$t('Common.role')}] ${this.task.endpoint}`
+                        }
+                    } else {
+                        user = {
+                            username: this.task.endpoint,
+                            name: this.task.endpoint
+                        }
                     }
                 }
                 return user;
             }
         },
         isMultiUser() {
-            return this.task.endpoint.includes(',');
+            return this.task.endpoint && this.task.endpoint.includes(',');
         },
         isMyTask() {
             // localStorage의 uid와 task의 endpoint가 일치하는지 확인 (uid 또는 이메일 비교)

@@ -120,30 +120,29 @@
                         </div>
                     </div>
                     <div v-else>
-                        <div v-if="isVersion">
-                            <div v-if="isNew">
-                                <v-text-field
-                                    v-model="information.proc_def_id"
-                                    :label="$t('ProcessDefinitionVersionDialog.id')"
-                                    :rules="idRules"
-                                    required
-                                    class="pb-2"
-                                ></v-text-field>
-                                <v-text-field
-                                    v-model="information.name"
-                                    :label="$t('ProcessDefinitionVersionDialog.name')"
-                                    :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.nameRequired')]"
-                                    required
-                                    class="pb-2"
-                                ></v-text-field>
-                            </div>
-                            <v-textarea
-                                v-model="information.message"
-                                :label="$t('ProcessDefinitionVersionDialog.message')"
-                                hide-details
-                                rows="3"
-                            ></v-textarea>
+                        <!-- uEngine(및 기타 non-ProcessGPT) 모드에서도 기본 입력 폼은 항상 보여야 한다 -->
+                        <div v-if="isNew">
+                            <v-text-field
+                                v-model="information.proc_def_id"
+                                :label="$t('ProcessDefinitionVersionDialog.id')"
+                                :rules="idRules"
+                                required
+                                class="pb-2"
+                            ></v-text-field>
+                            <v-text-field
+                                v-model="information.name"
+                                :label="$t('ProcessDefinitionVersionDialog.name')"
+                                :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.nameRequired')]"
+                                required
+                                class="pb-2"
+                            ></v-text-field>
                         </div>
+                        <v-textarea
+                            v-model="information.message"
+                            :label="$t('ProcessDefinitionVersionDialog.message')"
+                            hide-details
+                            rows="3"
+                        ></v-textarea>
                     </div>
                     <div v-if="mode == 'ProcessGPT' && !isPal">
                         <v-checkbox
@@ -235,9 +234,17 @@ export default {
     }),
     computed: {
         idRules() {
+            const isUEngine = this.mode === 'uEngine';
+            if (isUEngine) {
+                return [
+                    (v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'),
+                    () => true
+                ];
+            }
+            const pattern = /^[a-z0-9_-]+$/;
             return [
                 (v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'),
-                (v) => (v ? /^[a-z0-9_-]+$/.test(v) : false) || this.$t('ProcessDefinitionVersionDialog.idRules')
+                (v) => (v ? pattern.test(v) : false) || this.$t('ProcessDefinitionVersionDialog.idRules')
             ];
         },
         newVersion() {

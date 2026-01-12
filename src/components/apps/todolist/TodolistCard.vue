@@ -109,7 +109,7 @@ export default {
                 DONE: false
             },
             deletedInstances: null,
-            sortOption: 'startDate',
+            sortOption: 'updatedAt',
             pageSize: 10
         };
     },
@@ -119,6 +119,7 @@ export default {
         },
         sortOptions() {
             return [
+                { value: 'updatedAt', label: '최근 작업 순' },
                 { value: 'startDate', label: this.$t('todoList.sortByStartDate') },
                 { value: 'dueDate', label: this.$t('todoList.sortByDueDate') }
             ];
@@ -128,12 +129,12 @@ export default {
             const deletedInstanceIds = this.deletedInstances ? this.deletedInstances.map(instance => instance.proc_inst_id) : [];
             
             return this.todolist
-                .filter(column => column.id !== 'TODO')  // 기존 TODO 컬럼 제외
+                .filter(column => column.id !== 'TODO')  // TODO 컬럼 제외
                 .map(column => ({
                     ...column,
                     tasks: column.tasks.filter(task => {
-                        // rootInstId 또는 instId가 삭제된 인스턴스 리스트에 있는지 확인
-                        return !deletedInstanceIds.includes(task.rootInstId) || !deletedInstanceIds.includes(task.instId);
+                        // rootInstId와 instId 둘 다 삭제된 인스턴스 리스트에 없을 때만 표시
+                        return !deletedInstanceIds.includes(task.rootInstId) && !deletedInstanceIds.includes(task.instId);
                     })
                 }));
         }
@@ -142,8 +143,9 @@ export default {
         await this.loadDeletedInstance();
         await Promise.all([
             this.loadWorkListByStatus('IN_PROGRESS'),
+            this.loadWorkListByStatus('SUBMITTED'),
             this.loadWorkListByStatus('PENDING'),
-            this.loadWorkListByStatus('TODO'),
+            // this.loadWorkListByStatus('TODO'),
             this.loadWorkListByStatus('DONE')
         ]);
         
@@ -154,39 +156,30 @@ export default {
     methods: {
         async reloadAllTodoList() {
             const userId = localStorage.getItem('uid');
+            const mode = window.$mode;
             
             // 각 status별로 현재까지 로드된 데이터만 다시 불러오기
             const reloadPromises = this.todolist.map(async (column) => {
                 const status = column.id;
                 let requestOptions = {
                     page: 0,
-                    size: (this.pages[status] + 1) * this.pageSize
+                    size: (this.pages[status] + 1) * this.pageSize,
+                    status: status,
+                    userId: userId
                 };
                 
-                let worklist;
-                if (status === 'DONE') {
-                    worklist = await backend.getCompletedList(requestOptions);
-                } else if (status === 'IN_PROGRESS') {
-                    requestOptions.status = 'IN_PROGRESS';
-                    requestOptions.userId = userId;
-                    worklist = await backend.getWorkList(requestOptions);
-                } else if (status === 'PENDING') {
-                    requestOptions.status = 'PENDING';
-                    requestOptions.userId = userId;
-                    worklist = await backend.getWorkList(requestOptions);
-                } else if (status === 'TODO') {
-                    requestOptions.userId = userId;
-                    let allWorklist = await backend.getWorkList(requestOptions);
-                    worklist = allWorklist.filter(item => 
-                        item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT'
-                    );
-                }
+                let worklist = await backend.getWorkList(requestOptions);
                 
                 if (!worklist) worklist = [];
                 
-                // 컬럼 tasks 업데이트
+                // 컬럼 tasks 업데이트 (콤마로 구분된 user_id 필드에서 정확히 userId가 포함되는지 확인)
                 column.tasks = worklist.filter(item => {
-                    if (status === 'IN_PROGRESS' && (item.status === 'IN_PROGRESS' || item.status === 'SUBMITTED')) {
+                    // uEngine 모드에서는 Worklist 상태 'NEW'를 진행중으로 분류(InstanceTodo.vue와 동일)
+                    if (status === 'IN_PROGRESS' && (
+                        item.status === 'IN_PROGRESS' ||
+                        item.status === 'SUBMITTED' ||
+                        (mode === 'uEngine' && (item.status === 'NEW' || item.status === 'Running'))
+                    )) {
                         return true;
                     } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
                         return true;
@@ -222,6 +215,7 @@ export default {
         },
         async loadWorkListByStatus(status) {
             const me = this;
+            const mode = window.$mode;
             
             // 로딩 시작
             me.loading[status] = true;
@@ -230,32 +224,23 @@ export default {
                 const userId = localStorage.getItem('uid');
                 let requestOptions = {
                     page: me.pages[status],
-                    size: me.pageSize
+                    size: me.pageSize,
+                    status: status,
+                    userId: userId,
+                    sort: 'desc'
                 };
 
-                // status별로 다른 API 호출
-                let worklist;
-                if (status === 'DONE') {
-                    worklist = await backend.getCompletedList(requestOptions);
-                } else if (status === 'IN_PROGRESS') {
-                    requestOptions.status = 'IN_PROGRESS';
-                    requestOptions.userId = userId;
-                    worklist = await backend.getWorkList(requestOptions);
-                } else if (status === 'PENDING') {
-                    requestOptions.status = 'PENDING';
-                    requestOptions.userId = userId;
-                    worklist = await backend.getWorkList(requestOptions);
-                } else if (status === 'TODO') {
-                    // TODO는 여러 상태를 포함 (TODO, NEW, DRAFT)
-                    requestOptions.userId = userId;
-                    let allWorklist = await backend.getWorkList(requestOptions);
-                    worklist = allWorklist.filter(item => 
-                        item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT'
-                    );
+                if (me.sortOption === 'updatedAt') {
+                    requestOptions.orderBy = 'updated_at';
+                } else if (me.sortOption === 'startDate') {
+                    requestOptions.orderBy = 'start_date';
+                } else if (me.sortOption === 'dueDate') {
+                    requestOptions.orderBy = 'due_date';
                 }
-                
+
+                let worklist = await backend.getWorkList(requestOptions);
                 if (!worklist) worklist = [];
-                
+                                
                 // 더 이상 데이터가 없는지 확인
                 if (worklist.length < me.pageSize) {
                     me.hasMore[status] = false;
@@ -266,7 +251,12 @@ export default {
                 worklist.forEach(function(item) {
                     // 상태별 매칭 (IN_PROGRESS는 SUBMITTED도 포함)
                     let shouldAdd = false;
-                    if (status === 'IN_PROGRESS' && (item.status === 'IN_PROGRESS' || item.status === 'SUBMITTED')) {
+                    // uEngine 모드에서는 Worklist 상태 'NEW'를 진행중으로 분류(InstanceTodo.vue와 동일)
+                    if (status === 'IN_PROGRESS' && (
+                        item.status === 'IN_PROGRESS' ||
+                        item.status === 'SUBMITTED' ||
+                        (mode === 'uEngine' && (item.status === 'NEW' || item.status === 'Running'))
+                    )) {
                         shouldAdd = true;
                     } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
                         shouldAdd = true;

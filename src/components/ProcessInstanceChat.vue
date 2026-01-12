@@ -68,7 +68,7 @@
                     </div>
                 </div>
                 <!-- feedback -->
-                <div v-if="useFeedback" class="bottom-0 end-0 ml-2 mr-2">
+                <div v-if="!showFeedbackInput && !streamingText" class="bottom-0 end-0 ml-2 mr-2">
                     <span class="text-body-2">{{ $t('ProcessInstanceChat.feedback') }}</span>
                     <v-btn icon size="x-small" variant="text" color="error" @click="selectFeedback('bad')">
                         <v-icon>mdi-thumb-down</v-icon>
@@ -77,22 +77,11 @@
                         <v-icon>mdi-thumb-up</v-icon>
                     </v-btn>
                 </div>
-                <div v-else-if="!useFeedback && showAcceptFeedback && !showFeedback" class="bottom-0 end-0 ml-2">
-                    <span class="text-body-2">{{ $t('ProcessInstanceChat.feedbackDescription') }}</span>
-                    <v-btn icon size="x-small" variant="text" color="error" @click="cancelAppliedFeedback">
-                        <v-icon>mdi-close</v-icon>
-                    </v-btn>
-                    <v-btn icon size="x-small" variant="text" color="success" @click="showFeedback = true">
-                        <v-icon>mdi-check</v-icon>
-                    </v-btn>
-                </div>
                 <div class="pr-4">
                     <ProcessFeedback 
-                        v-if="showFeedback"
+                        v-if="showFeedbackInput"
                         :lastMessage="lastMessage"
                         :task="lastTask"
-                        :isAcceptMode="showAcceptFeedback"
-                        @submitFeedback="submitFeedback"
                         @closeFeedback="closeFeedback"
                     />
                 </div>
@@ -143,12 +132,10 @@ export default {
         streamingText: '',
 
         // feedback
-        useFeedback: false,
-        showFeedback: false,
+        showFeedbackInput: false,
         lastMessage: null,
         lastTask: null,
-        showAcceptFeedback: false,
-
+        
         // child streaming text
         childStreamingText: {},
         // childStreamingText: { "4003a495-b591-4aed-baf9-fc08b37536aa": { "name": "VIP 뉴스레터 작성 시작:0", "log": "```json\n{\n \"completedActivities\": [\n {\n \"completedActivityId\": \"Event_1ttnk4r\",\n \"completedActivityName\": \"VIP 뉴스레터 작성 시작\",\n \"completedUserEmail\": \"827ac44b-1435-4ad8-ab14-8b28c3f64ef2\",\n \"type\": \"event\",\n \"expression\": \"\",\n \"dueDate\": \"2025-09-05\",\n \"result\": \"DONE\",\n \"description\": \"VIP 뉴스레터 작성 시작 이벤트\",\n \"cannotProceedErrors\": []\n }\n ],\n " }, "bea1984c-a95d-492f-a9d4-34d3d2810a82": { "name": "VIP 뉴스레터 작성 시작:1", "log": "```json\n{\n \"completedActivities\": [\n {\n \"completedActivityId\": \"Event_1ttnk4r\",\n \"completedActivityName\": \"VIP 뉴스레터 작성 시작\",\n \"completedUserEmail\": \"827ac44b-1435-4ad8-ab14-8b28c3f64ef2\",\n \"type\": \"event\",\n \"expression\": \"\",\n \"dueDate\": \"2025-09-05\",\n \"result\": \"DONE\",\n \"description\": \"VIP 뉴스레터 작성 시작 이벤트\",\n \"cannotProceedErrors\": []\n }\n ],\n " } },
@@ -233,17 +220,6 @@ export default {
                 if (systemMessages.length > 0) {
                     this.lastMessage = systemMessages[systemMessages.length - 1];
                 }
-            }
-        },
-        lastMessage(newVal) {
-            if (newVal && newVal.role == 'system' && !this.isTaskMode) {
-                if (newVal.jsonContent && newVal.jsonContent.appliedFeedback) {
-                    this.showAcceptFeedback = true;
-                } else {
-                    this.showAcceptFeedback = false;
-                }
-            } else {
-                this.useFeedback = false;
             }
         }
     },
@@ -418,15 +394,18 @@ export default {
                 }
             }
             if (type == 'good') {
-                backend.setFeedback(this.lastTask, type);
+                await backend.saveFeedback(type, this.lastTask.taskId);
             } else if (type == 'bad') {
-                this.showFeedback = true;
+                this.showFeedbackInput = true;
             }
-            this.useFeedback = false;
         },
-        closeFeedback() {
-            this.showFeedback = false;
-            this.showAcceptFeedback = false;
+        async closeFeedback(taskId = null) {
+            if (taskId) {
+                this.runningTaskId = taskId;
+                await this.getTaskLog();
+            }
+            this.showFeedbackInput = false;
+
         },
         async getLastTask(instId) {
             const worklist = await backend.getWorkListByInstId(instId);
@@ -440,11 +419,6 @@ export default {
                 if (workItems.length > 0) {
                     const workItem = workItems.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
                     this.lastTask = workItem;
-                    if (this.lastTask.task.temp_feedback && this.lastTask.task.temp_feedback.length > 0) {
-                        this.useFeedback = false;
-                    } else {
-                        this.useFeedback = true;
-                    }
                 }
             }
         },
@@ -466,15 +440,9 @@ export default {
                 me.messages = allMessages;
             }
         },
-        async submitFeedback(taskId) {
-            this.closeFeedback();
-            this.runningTaskId = taskId;
-            await this.getTaskLog(false);
-            await this.loadData();
-        },
-        async getTaskLog(useFeedback) {
+        async getTaskLog() {
+            this.showFeedbackInput = false;
             this.subscription = await backend.getTaskLog(this.runningTaskId, async (task) => {
-                this.useFeedback = false;
                 if (task.log) {
                     this.streamingText = task.log;
                 }
@@ -490,7 +458,6 @@ export default {
                     this.childStreamingText = {};
                     this.$emit('updated');
                     this.EventBus.emit('instances-updated');
-                    this.useFeedback = useFeedback;
                     await this.loadData();
                     this.$refs.chatComponent.scrollToBottom();
                 }
@@ -506,7 +473,6 @@ export default {
                     if (item.task.status == 'SUBMITTED') {
                         const childTaskId = item.taskId;
                         this.childSubscription[childTaskId] = await backend.getTaskLog(childTaskId, async (childTask) => {
-                            this.useFeedback = false;
                             if (childTask.log) {
                                 this.childStreamingText[childTaskId] = {
                                     name: item.task.activity_name + ":" + item.task.execution_scope,
@@ -529,7 +495,6 @@ export default {
                 this.lastMessage.jsonContent.appliedFeedback = false;
                 await backend.updateInstanceChat(this.chatRoomId, this.lastMessage, this.lastMessage.thread_id, this.lastMessage.uuid);
             }
-            this.showAcceptFeedback = false;
         },
     }
 };

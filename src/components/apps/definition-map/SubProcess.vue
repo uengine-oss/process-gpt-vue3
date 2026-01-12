@@ -97,6 +97,14 @@ export default {
         },
         deleteProcess() {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
+            
+            // 성공 메시지 표시
+            if (window.$app_) {
+                window.$app_.snackbarMessage = this.$t('successMsg.delete');
+                window.$app_.snackbarColor = 'success';
+                window.$app_.snackbar = true;
+                window.$app_.snackbarSuccessStatus = true;
+            }
         },
         async editProcessModel() {
             const id = this.value.id.replace(/ /g, '_')

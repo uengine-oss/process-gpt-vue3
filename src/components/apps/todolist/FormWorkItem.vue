@@ -228,6 +228,14 @@ export default {
         activityIndex: {
             type: Number,
             default: 0
+        },
+        deployDefinitionId: {
+            type: String,
+            default: ''
+        },
+        deployVersion: {
+            type: String,
+            default: ''
         }
     },
     data: () => ({
@@ -334,6 +342,39 @@ export default {
         await this.init();
     },
     methods: {
+        injectDeployTargetToBpmnField() {
+            if (!this.deployDefinitionId || !this.html) return;
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(this.html, 'text/html');
+                const nodes = Array.from(doc.querySelectorAll('bpmn-uengine-field'));
+                if (nodes.length === 0) return;
+                // 우선순위:
+                // 1) name="definition_id"
+                // 2) bpmn-uengine-field가 1개면 그 name
+                // 3) alias에 "요청"이 포함된 필드 (요청 프로세스 등)
+                let target = nodes.find(n => (n.getAttribute('name') || '') === 'definition_id');
+                if (!target && nodes.length === 1) target = nodes[0];
+                if (!target) {
+                    target = nodes.find(n => ((n.getAttribute('alias') || '') + '').includes('요청')) || nodes[0];
+                }
+                const fieldName = (target.getAttribute('name') || '').trim();
+                if (!fieldName) return;
+                const current = this.formData ? this.formData[fieldName] : undefined;
+                const existingBpmn =
+                    (current && typeof current === 'object' && (current.bpmn || current.xml)) ||
+                    (typeof current === 'string' ? current : undefined);
+                if (!this.formData) this.formData = {};
+                this.formData[fieldName] = {
+                    definition_id: this.deployDefinitionId,
+                    version: this.deployVersion || undefined,
+                    ...(existingBpmn ? { bpmn: existingBpmn } : {})
+                };
+            } catch (e) {
+                // eslint-disable-next-line no-console
+                console.warn('[FormWorkItem] injectDeployTargetToBpmnField failed:', e);
+            }
+        },
         async init() {
             var me = this;
             me.$try({
@@ -341,8 +382,16 @@ export default {
                 action: async () => {
                     // 안전한 formDefId 설정
                     try {
-                        const tool = me.workItem?.worklist?.tool;
-                        me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
+                        if(me.processDefinition 
+                        && me.processDefinition.processDefinitionId
+                        && me.workItem
+                        && me.workItem.activity
+                        && me.workItem.activity.tracingTag) {
+                            me.formDefId = `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag.toLowerCase()}_form`;
+                        } else {
+                            const tool = me.workItem?.worklist?.tool;
+                            me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
+                        }
                     } catch (error) {
                         console.warn('formDefId 설정 중 오류:', error);
                         me.formDefId = null;
@@ -368,7 +417,7 @@ export default {
                             }
                         }
                         me.formInfo = await backend.getFormFields(me.formDefId);
-                        me.html = me.formInfo.html;
+                        me.html = me.formInfo?.html || null;
                     }
                     if(!me.html) {
                         me.formDefId = 'defaultform'
@@ -393,6 +442,9 @@ export default {
                     } else {
                         await me.loadInputData()
                     }
+
+                    // 반영 요청 등에서, 대상 프로세스 정보를 폼 내 bpmn-uengine-field에 주입
+                    me.injectDeployTargetToBpmnField();
                     
                     me.isInitialized = true;
                 }

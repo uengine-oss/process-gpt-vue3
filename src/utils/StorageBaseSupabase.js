@@ -1203,36 +1203,25 @@ export default class StorageBaseSupabase {
                 .select()
                 .eq('isdeleted', false)
                 .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,bpmn.ilike.%${keyword}%`);
-            var formatData = data;
-            for (var i = 1; i < keyword.length; i++) {
-                formatData.push(formatData.filter(item => 
-                    keyword.charAt(i) != ' ' &&(
-                    item.id.toLowerCase().indexOf(keyword.charAt(i).toLowerCase()) > -1) ||
-                    item.name.toLowerCase().indexOf(keyword.charAt(i).toLowerCase()) > -1 ||
-                    item.bpmn.toLowerCase().indexOf(keyword.charAt(i).toLowerCase()) > -1) 
-                );
-            }
 
             if (error) throw new StorageBaseError('error in searchProcDef', error, arguments);
 
-            if (formatData && formatData.length > 0) {
-                let list = formatData.map((item) => {
+            if (data && data.length > 0) {
+                let list = data.map((item) => {
                     if (!item.id) return null;
                     const matchingColumns = [];
-                    for (var i = 0; i < keyword.length; i++) {
-                        if(keyword.charAt(i) == ' '){
-                            continue;
-                        }
-                        if (item.id && item.id.toLowerCase().includes(keyword.charAt(i).toLowerCase())) {
-                            matchingColumns.push(item.id);
-                        }
-                        if (item.name && item.name.toLowerCase().includes(keyword.charAt(i).toLowerCase())) {
-                            matchingColumns.push(item.name);
-                        }
-                        if (item.bpmn && item.bpmn.toLowerCase().includes(keyword.charAt(i).toLowerCase())) {
-                            matchingColumns.push(item.bpmn);
-                        }
+                    const lowerKeyword = keyword.toLowerCase();
+                    
+                    if (item.id && item.id.toLowerCase().includes(lowerKeyword)) {
+                        matchingColumns.push(item.id);
                     }
+                    if (item.name && item.name.toLowerCase().includes(lowerKeyword)) {
+                        matchingColumns.push(item.name);
+                    }
+                    if (item.bpmn && item.bpmn.toLowerCase().includes(lowerKeyword)) {
+                        matchingColumns.push(item.bpmn);
+                    }
+                    
                     return {
                         title: item.name,
                         href: `/definitions/${item.id}`,

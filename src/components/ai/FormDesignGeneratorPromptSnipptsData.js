@@ -137,6 +137,12 @@ Detailed guidelines:
     - 출력은 반드시 마크다운 문서 본문만 포함하고, 그 외의 설명이나 해설은 절대 포함하지 마십시오.
     `.trim()
       },
+      {
+          tagName: "bpmn-uengine-field",
+          tag: `<bpmn-uengine-field name='<unique_identifier>' alias='<display_label>'></bpmn-uengine-field>`,
+          purpose: "To collect BPMN process definitions as XML",
+          limit: "Use this field when the user explicitly asks for a BPMN process editor or diagram input."
+      },
       
       {
         tagName: "text-field",

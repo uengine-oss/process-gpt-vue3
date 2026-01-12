@@ -76,6 +76,7 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS owner uuid DEFAULT auth.uid(
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS mcp jsonb;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS skills text[];
 
 -- user_devices table
 ALTER TABLE public.user_devices ADD COLUMN IF NOT EXISTS user_email text;
@@ -122,6 +123,7 @@ ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS id text;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS name text;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS definition jsonb;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS bpmn text;
+ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS prod_version text;
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
 ALTER TABLE public.proc_def ADD COLUMN IF NOT EXISTS isdeleted boolean DEFAULT false;
@@ -138,6 +140,17 @@ ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS diff text;
 ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS message text;
 ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
 ALTER TABLE public.proc_def_arcv ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
+
+-- proc_def_version table
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS arcv_id text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS proc_def_id text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS version text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS version_tag text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS snapshot text;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS definition jsonb;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS "timeStamp" timestamp without time zone DEFAULT current_timestamp;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS parent_version text null;
+ALTER TABLE public.proc_def_version ADD COLUMN IF NOT EXISTS source_todolist_id uuid null;
 
 -- form_def table
 ALTER TABLE public.form_def ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();
@@ -267,6 +280,7 @@ ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS execution_scope text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS output_url text;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS rework_count integer DEFAULT 0;
 ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS query text;
+ALTER TABLE public.todolist ADD COLUMN IF NOT EXISTS feedback_status text;
 -- 기존 description 컬럼을 query 컬럼으로 변경
 -- UPDATE public.todolist 
 -- SET query = COALESCE(query, description) 
@@ -308,6 +322,7 @@ ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS proc_def_id text;
 ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS proc_def_ids jsonb;
 ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS readable boolean DEFAULT false;
 ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS writable boolean DEFAULT false;
+ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS deployable boolean DEFAULT false;
 
 -- proc_def_marketplace table
 ALTER TABLE public.proc_def_marketplace ADD COLUMN IF NOT EXISTS uuid uuid DEFAULT gen_random_uuid();

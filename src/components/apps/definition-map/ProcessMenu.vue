@@ -52,6 +52,7 @@
                         icon v-bind="props"
                         density="compact"
                         size="small"
+                        class="process-delete-btn"
                     >
                         <Icons :icon="'trash'" :width="12" :height="12" />
                     </v-btn>

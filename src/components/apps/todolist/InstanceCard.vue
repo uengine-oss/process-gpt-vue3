@@ -4,7 +4,6 @@
     >
         <div>
             <div>
-                <!-- 한글: 세로 기준 중앙정렬을 위해 align-center 클래스 추가 -->
                 <v-row class="ma-0 pa-4 pb-0 align-center instance-card-title">
                     <!-- 한글: 인스턴스 이름이 길 경우 줄바꿈이 가능하도록 스타일 추가 -->
                     <div class="text-h5 font-weight-semibold align-center"
@@ -42,7 +41,7 @@
                         </v-btn>
                     </div>
                     <v-spacer></v-spacer>
-                    <div v-if="isParticipant && !isNew">
+                    <div v-if="isParticipant">
                         <div v-if="instance.is_deleted">
                             <div class="text-caption">
                                 {{ getRemainingTime(instance.deleted_at) }}
@@ -551,12 +550,18 @@ export default {
                 result = result.concat(updatedWorklist);
             }
             me.tasks = result;
-            let dependencies = await backend.getTaskDependencyByInstId(me.id)
+            const rawDependencies = await backend.getTaskDependencyByInstId(me.id);
+            const dependencies = Array.isArray(rawDependencies) ? rawDependencies : [];
+            if (!Array.isArray(rawDependencies) && rawDependencies != null) {
+                console.warn(
+                    `[InstanceCard] getTaskDependencyByInstId returned non-array. skipping as empty array.`,
+                    rawDependencies
+                );
+            }
             me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
-            // 칸반 컬럼 업데이트
             me.columns.forEach(column => {
                 if(column.id == 'IN_PROGRESS') {
-                    column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS');
+                    column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS' || task.status === 'NEW' || task.status === 'Running');
                 } else {
                     column.tasks = me.tasks.filter(task => task.status === column.id);
                 }

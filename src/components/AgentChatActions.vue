@@ -31,7 +31,7 @@
                     variant="text"
                     size="small"
                     class="add-tab-btn"
-                    @click="addNewTab"
+                    @click="addNewTab()"
                 >
                     <v-icon>mdi-plus</v-icon>
                 </v-btn>
@@ -47,7 +47,10 @@
                 :selectedAgentType="selectedAgent"
                 :isActionsMode="true"
                 :howToUseInfo="howToUseInfo"
+                :autoMessage="currentTab.autoMessage"
                 @update:new-tab-title="updateNewTabTitle"
+                @intent-detected="handleIntentDetected"
+                @auto-message-sent="handleAutoMessageSent"
             />
         </div>
     </div>
@@ -72,7 +75,20 @@ export default {
             type: Object,
             required: true
         },
+        userId: {
+            type: String,
+            default: null
+        },
+        isMainChat: {
+            type: Boolean,
+            default: false
+        },
+        initialMessage: {
+            type: String,
+            default: null
+        }
     },
+    emits: ['intent-detected'],
     data: () => ({
         instance: null,
         currentTabIndex: 0,
@@ -86,6 +102,7 @@ export default {
             }
         },
         howToUseInfo: {
+            // text: this.isMainChat ? 'agentChat.mainChatInfo' : 'agentChat.actionsModeInfo'
             text: 'agentChat.actionsModeInfo'
         },
         tabCounter: 1, // 탭 제목 생성용 카운터
@@ -101,7 +118,7 @@ export default {
     }),
     computed: {
         id() {
-            return this.$route.params.id;
+            return this.userId || this.$route.params.id || this.agentInfo?.id;
         },
         currentTab() {
             return this.tabs[this.currentTabIndex] || null;
@@ -171,6 +188,18 @@ export default {
         // 탭이 없으면 새 탭 생성
         if (this.tabs.length === 0) {
             await this.addNewTab();
+        }
+        
+        // initialMessage가 있으면 새 탭 생성 후 자동 전송
+        if (this.initialMessage) {
+            const tabId = await this.addNewTab(this.initialMessage);
+            if (tabId) {
+                const tab = this.tabs.find(t => t.id === tabId);
+                if (tab) {
+                    tab.title = this.initialMessage.substring(0, 20) + 
+                               (this.initialMessage.length > 20 ? '...' : '');
+                }
+            }
         }
         
         // 초기화 완료 플래그 설정
@@ -257,7 +286,7 @@ export default {
             }
             this.hoveredTabIndex = null;
         },
-        async addNewTab() {
+        async addNewTab(autoMessage) {
             try {
                 const tabId = this.uuid();
                 const tabTitle = `새 대화 ${this.tabCounter++}`;
@@ -266,7 +295,8 @@ export default {
                 this.tabs.push({
                     id: tabId,
                     title: tabTitle,
-                    workItemId: null
+                    workItemId: null,
+                    autoMessage: autoMessage || null // 자동 전송 메시지
                 });
                 
                 // 새 탭으로 전환
@@ -276,7 +306,7 @@ export default {
                 if (this.agentInfo?.agent_type === 'pgagent') {
                     agentOrch = this.agentInfo?.alias;
                 } else if (this.agentInfo?.agent_type === 'a2a') {
-                    agentOrch = this.agentInfo?.alias;
+                    agentOrch = this.agentInfo?.agent_type;
                 } else {
                     agentOrch = 'crewai-action';
                 }
@@ -292,6 +322,8 @@ export default {
                     currentTab.workItemId = newWorkItem.id;
                     this.workItemsByTab[tabId] = newWorkItem;
                 }
+                
+                return tabId;
             } catch (error) {
                 console.error('새 탭 추가 중 오류:', error);
                 // 오류 발생 시 탭 제거
@@ -369,6 +401,16 @@ export default {
             } catch (error) {
                 console.error('새로운 작업 항목 생성 중 오류가 발생했습니다:', error);
                 return null;
+            }
+        },
+        handleIntentDetected(result) {
+            // 의도 분석 결과를 부모 컴포넌트로 전달
+            this.$emit('intent-detected', result);
+        },
+        handleAutoMessageSent() {
+            // autoMessage 전송 완료 후 클리어 (중복 전송 방지)
+            if (this.currentTab) {
+                this.currentTab.autoMessage = null;
             }
         },
         updateNewTabTitle(title, taskId) {
