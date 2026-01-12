@@ -71,10 +71,14 @@ export default {
             }
         }
         me.activity.type = 'serviceTask';
+        if (me.copyUengineProperties && me.copyUengineProperties.customProperties) {
+            me.activity.customProperties = me.copyUengineProperties.customProperties;
+        }
     },
     methods: {
         beforeSave() {
             var me = this;
+            me.copyUengineProperties.customProperties = me.activity.customProperties;
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         }
     }

@@ -203,7 +203,10 @@ export default {
         
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        beforeSave() {
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
         }
     }
 };
