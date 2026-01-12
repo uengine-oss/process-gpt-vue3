@@ -2,6 +2,20 @@
     <div class="pa-5">
         <!-- Matrix Table -->
         <v-card elevation="3" class="overflow-x-auto">
+            <v-snackbar
+                v-model="snackbar.show"
+                :color="snackbar.color"
+                :timeout="snackbar.timeout"
+                location="top"
+            >
+                {{ snackbar.text }}
+                <template v-slot:actions>
+                    <v-btn variant="text" @click="snackbar.show = false">
+                        {{ $t('common.close') || 'Close' }}
+                    </v-btn>
+                </template>
+            </v-snackbar>
+
             <v-table density="comfortable" class="metrics-table">
                 <thead>
                     <tr>
@@ -54,23 +68,23 @@
                 </thead>
                 <tbody>
                     <tr v-for="domain in value.domains" :key="domain.id" class="domain-row">
-                        <td class="domain-cell text-center">
+                        <td class="domain-cell text-center" :style="getDomainCellStyle(domain)">
                             <div class="d-flex align-center justify-center">
                                 <span class="domain-cell-text">{{ domain.name }}</span>
-                                <v-btn 
+                                <v-btn
                                     v-if="enableEdit"
-                                    icon 
-                                    variant="text" 
-                                    size="x-small" 
+                                    icon
+                                    variant="text"
+                                    size="x-small"
                                     class="ml-1"
                                     @click="editDomain(domain)"
                                 >
                                     <v-icon size="14">mdi-pencil</v-icon>
                                 </v-btn>
-                                <v-btn 
+                                <v-btn
                                     v-if="enableEdit"
-                                    icon 
-                                    variant="text" 
+                                    icon
+                                    variant="text"
                                     size="x-small"
                                     color="error"
                                     @click="deleteDomain(domain)"
@@ -193,13 +207,38 @@
             <v-card>
                 <v-card-title>{{ dialog.title }}</v-card-title>
                 <v-card-text>
-                    <v-text-field 
-                        v-model="dialog.name" 
+                    <v-text-field
+                        v-model="dialog.name"
                         :label="dialog.label"
                         variant="outlined"
                         density="compact"
                         autofocus
+                        @keyup.enter="saveDialog"
                     ></v-text-field>
+
+                    <!-- Domain 색상 선택 (Domain 타입일 때만) -->
+                    <div v-if="dialog.type === 'domain'" class="mt-4">
+                        <div class="text-subtitle-2 mb-2">{{ $t('processDefinitionMap.selectColor') || '색상 선택' }}</div>
+                        <div class="d-flex flex-wrap" style="gap: 8px;">
+                            <div
+                                v-for="color in domainColors"
+                                :key="color"
+                                class="color-option"
+                                :class="{ 'color-selected': dialog.color === color }"
+                                :style="{ backgroundColor: color }"
+                                @click="dialog.color = color"
+                            ></div>
+                        </div>
+                        <v-btn
+                            v-if="dialog.color"
+                            variant="text"
+                            size="small"
+                            class="mt-2"
+                            @click="dialog.color = null"
+                        >
+                            {{ $t('common.reset') || '초기화' }}
+                        </v-btn>
+                    </div>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -213,12 +252,40 @@
             </v-card>
         </v-dialog>
 
-        <!-- Sub Process Selector Dialog (select from saved processes) -->
+        <!-- Sub Process Selector Dialog (select from saved processes or create new) -->
         <v-dialog v-model="subProcessDialog.show" max-width="500" persistent>
-            <v-card>
-                <v-card-title>{{ $t('processDefinitionMap.addSub') }}</v-card-title>
-                <v-card-text>
+            <v-card class="pa-4" style="border-radius: 12px;">
+                <v-card-title class="px-0 pt-0 d-flex align-center">
+                    {{ $t('processDefinitionMap.addSub') }}
+                    <v-spacer></v-spacer>
+                    <v-btn @click="closeSubProcessDialog" icon variant="text" density="compact" size="small">
+                        <v-icon size="18">mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="px-0">
+                    <!-- Toggle: Select Existing vs Create New -->
+                    <v-btn-toggle
+                        v-model="subProcessDialog.isNewDef"
+                        mandatory
+                        density="compact"
+                        color="primary"
+                        variant="outlined"
+                        divided
+                        class="w-100 mb-4"
+                    >
+                        <v-btn :value="false" class="flex-grow-1" size="small">
+                            <v-icon start size="16">mdi-file-search</v-icon>
+                            {{ $t('processDialog.selectExisting') }}
+                        </v-btn>
+                        <v-btn :value="true" class="flex-grow-1" size="small">
+                            <v-icon start size="16">mdi-plus</v-icon>
+                            {{ $t('processDialog.createNew') }}
+                        </v-btn>
+                    </v-btn-toggle>
+
+                    <!-- Select Existing Mode -->
                     <ProcessDefinitionDisplay
+                        v-if="!subProcessDialog.isNewDef"
                         v-model="subProcessDialog.selectedProcess"
                         :file-extensions="['.bpmn']"
                         :options="{
@@ -227,17 +294,69 @@
                             hideDetails: true
                         }"
                     ></ProcessDefinitionDisplay>
+
+                    <!-- Create New Mode -->
+                    <div v-else>
+                        <v-text-field
+                            v-model="subProcessDialog.newProcessName"
+                            variant="outlined"
+                            color="primary"
+                            density="comfortable"
+                            :label="$t('processDialog.processName') || '프로세스 이름'"
+                            autofocus
+                            hide-details="auto"
+                            @keypress.enter="addSelectedSubProcess"
+                        ></v-text-field>
+
+                        <v-text-field
+                            v-model="subProcessDialog.newProcessId"
+                            variant="outlined"
+                            color="primary"
+                            density="comfortable"
+                            :rules="idRules"
+                            :hint="$t('processDialog.idHint') || '영문 소문자, 숫자, 언더스코어(_)만 사용'"
+                            persistent-hint
+                            class="mt-3"
+                            :loading="subProcessDialog.isGeneratingId"
+                        >
+                            <template v-slot:label>
+                                <span v-if="!subProcessDialog.isGeneratingId">{{ $t('processDialog.processId') || 'Process ID' }}</span>
+                                <span v-else class="d-flex align-center">
+                                    <v-progress-circular indeterminate size="14" width="2" class="mr-2" />
+                                    {{ $t('processDialog.generatingId') || 'ID 생성 중...' }}
+                                </span>
+                            </template>
+                            <template v-slot:append-inner>
+                                <v-tooltip location="top">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-bind="props"
+                                            @click="generateIdFromName"
+                                            icon
+                                            size="x-small"
+                                            variant="text"
+                                            :disabled="!subProcessDialog.newProcessName || subProcessDialog.isGeneratingId"
+                                        >
+                                            <v-icon size="18">mdi-auto-fix</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <span>{{ $t('processDialog.generateIdTooltip') || 'AI로 ID 추천받기' }}</span>
+                                </v-tooltip>
+                            </template>
+                        </v-text-field>
+                    </div>
                 </v-card-text>
-                <v-card-actions>
+                <v-card-actions class="px-0 pb-0">
                     <v-spacer></v-spacer>
-                    <v-btn variant="text" @click="subProcessDialog.show = false">
+                    <v-btn variant="text" @click="closeSubProcessDialog" class="rounded-pill">
                         {{ $t('common.cancel') }}
                     </v-btn>
-                    <v-btn 
-                        color="primary" 
-                        variant="flat" 
+                    <v-btn
+                        color="primary"
+                        variant="flat"
                         @click="addSelectedSubProcess"
-                        :disabled="!subProcessDialog.selectedProcess || !subProcessDialog.selectedProcess.id"
+                        :disabled="isSubProcessSaveDisabled"
+                        class="rounded-pill px-6"
                     >
                         {{ $t('common.save') }}
                     </v-btn>
@@ -249,6 +368,7 @@
 
 <script>
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
+import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
 
 export default {
     name: 'MetricsView',
@@ -263,6 +383,10 @@ export default {
                 mega_processes: [],
                 processes: []
             })
+        },
+        filteredProcDefIds: {
+            type: Array,
+            default: null  // null = no filter, [] = filter active but no matches
         },
         enableEdit: {
             type: Boolean,
@@ -279,6 +403,7 @@ export default {
                 title: '',
                 label: '',
                 name: '',
+                color: null, // Domain color
                 editItem: null,
                 domainId: null,
                 megaProcessId: null
@@ -286,19 +411,114 @@ export default {
             subProcessDialog: {
                 show: false,
                 parentProcess: null,
-                selectedProcess: null
-            }
+                selectedProcess: null,
+                isNewDef: false,
+                newProcessName: '',
+                newProcessId: '',
+                isGeneratingId: false,
+                previousSuggestions: []
+            },
+            idGenerator: null,
+            regenerateIdOnly: true,
+            bpmnProcessInfo: '',
+            snackbar: {
+                show: false,
+                text: '',
+                color: 'error',
+                timeout: 3000
+            },
+            domainColors: [
+                '#E53935', '#D81B60', '#8E24AA', '#5E35B1',
+                '#3949AB', '#1E88E5', '#00ACC1', '#00897B',
+                '#43A047', '#7CB342', '#FB8C00', '#6D4C41',
+            ]
         };
     },
+    computed: {
+        isSubProcessSaveDisabled() {
+            if (this.subProcessDialog.isNewDef) {
+                // Create new mode: need name and valid id
+                return !this.subProcessDialog.newProcessName ||
+                       !this.subProcessDialog.newProcessId ||
+                       !this.isValidId(this.subProcessDialog.newProcessId);
+            } else {
+                // Select existing mode: need id from selection
+                return !this.subProcessDialog.selectedProcess || !this.subProcessDialog.selectedProcess.id;
+            }
+        },
+        idRules() {
+            return [
+                v => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
+                v => /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
+            ];
+        }
+    },
     methods: {
+        isValidId(id) {
+            return /^[a-z][a-z0-9_]*$/.test(id);
+        },
         generateId() {
             return Math.random().toString(36).substring(2, 15);
         },
+        getContrastTextColor(hexColor) {
+            if (!hexColor) return '#333333';
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.5 ? '#333333' : '#FFFFFF';
+        },
+        getPastelColor(hexColor) {
+            if (!hexColor) return null;
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            // 흰색과 혼합하여 파스텔톤 생성 (85% 흰색 + 15% 원래 색상)
+            const mixRatio = 0.15;
+            const newR = Math.round(255 * (1 - mixRatio) + r * mixRatio);
+            const newG = Math.round(255 * (1 - mixRatio) + g * mixRatio);
+            const newB = Math.round(255 * (1 - mixRatio) + b * mixRatio);
+            return `rgb(${newR}, ${newG}, ${newB})`;
+        },
+        getDomainCellStyle(domain) {
+            if (!domain.color) return {};
+            return {
+                backgroundColor: this.getPastelColor(domain.color),
+                borderLeft: `4px solid ${domain.color}`
+            };
+        },
+        updateDomainColor(domain, color) {
+            const newValue = JSON.parse(JSON.stringify(this.value));
+            const targetDomain = newValue.domains.find(d => d.id === domain.id);
+            if (targetDomain) {
+                targetDomain.color = color;
+                this.$emit('update:value', newValue);
+            }
+        },
         getProcesses(domainId, megaProcessId) {
             if (!this.value.processes) return [];
-            return this.value.processes.filter(
+
+            let processes = this.value.processes.filter(
                 proc => proc.domain_id === domainId && proc.mega_process_id === megaProcessId
             );
+
+            // Apply organization filter if active
+            if (this.filteredProcDefIds !== null) {
+                processes = processes.map(proc => {
+                    // Filter sub_proc_list by filteredProcDefIds
+                    const filteredSubProcList = (proc.sub_proc_list || []).filter(
+                        sub => this.filteredProcDefIds.includes(sub.id)
+                    );
+                    return {
+                        ...proc,
+                        sub_proc_list: filteredSubProcList
+                    };
+                }).filter(proc => proc.sub_proc_list && proc.sub_proc_list.length > 0);
+            }
+
+            return processes;
         },
         goProcess(proc) {
             if (this.enableEdit) return;
@@ -324,6 +544,7 @@ export default {
                 title: this.$t('metricsView.addDomain'),
                 label: this.$t('metricsView.domainName'),
                 name: '',
+                color: null,
                 editItem: null,
                 domainId: null,
                 megaProcessId: null
@@ -337,6 +558,7 @@ export default {
                 title: this.$t('metricsView.editDomain'),
                 label: this.$t('metricsView.domainName'),
                 name: domain.name,
+                color: domain.color || null,
                 editItem: domain,
                 domainId: null,
                 megaProcessId: null
@@ -418,46 +640,171 @@ export default {
                 this.$emit('update:value', newValue);
             }
         },
-        // Sub Process methods - using ProcessDefinitionDisplay selector
+        // Sub Process methods - using ProcessDefinitionDisplay selector or create new
         openSubProcessSelector(parentProcess) {
             this.subProcessDialog = {
                 show: true,
                 parentProcess: parentProcess,
-                selectedProcess: null
+                selectedProcess: null,
+                isNewDef: false,
+                newProcessName: '',
+                newProcessId: '',
+                isGeneratingId: false,
+                previousSuggestions: []
             };
         },
+        closeSubProcessDialog() {
+            this.subProcessDialog.show = false;
+            this.subProcessDialog.isNewDef = false;
+            this.subProcessDialog.selectedProcess = null;
+            this.subProcessDialog.newProcessName = '';
+            this.subProcessDialog.newProcessId = '';
+            this.subProcessDialog.isGeneratingId = false;
+        },
         addSelectedSubProcess() {
-            if (!this.subProcessDialog.selectedProcess || !this.subProcessDialog.selectedProcess.id) {
+            const newValue = JSON.parse(JSON.stringify(this.value));
+            const proc = newValue.processes.find(p => p.id === this.subProcessDialog.parentProcess.id);
+
+            if (!proc) {
+                this.closeSubProcessDialog();
                 return;
             }
 
-            const newValue = JSON.parse(JSON.stringify(this.value));
-            const proc = newValue.processes.find(p => p.id === this.subProcessDialog.parentProcess.id);
-            
-            if (proc) {
-                if (!proc.sub_proc_list) {
-                    proc.sub_proc_list = [];
+            if (!proc.sub_proc_list) {
+                proc.sub_proc_list = [];
+            }
+
+            let newSubProcess = null;
+            let isNew = false;
+
+            if (this.subProcessDialog.isNewDef) {
+                // Create new mode
+                if (!this.subProcessDialog.newProcessName || !this.subProcessDialog.newProcessId) {
+                    return;
                 }
-                
+
+                // Check for duplicate ID
+                const isDuplicate = proc.sub_proc_list.some(
+                    s => s.id === this.subProcessDialog.newProcessId
+                );
+
+                if (isDuplicate) {
+                    this.snackbar.text = this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.';
+                    this.snackbar.color = 'error';
+                    this.snackbar.show = true;
+                    return;
+                }
+
+                newSubProcess = {
+                    id: this.subProcessDialog.newProcessId,
+                    name: this.subProcessDialog.newProcessName
+                };
+                isNew = true;
+            } else {
+                // Select existing mode
+                if (!this.subProcessDialog.selectedProcess || !this.subProcessDialog.selectedProcess.id) {
+                    return;
+                }
+
                 // Check for duplicate
                 const isDuplicate = proc.sub_proc_list.some(
                     s => s.id === this.subProcessDialog.selectedProcess.id
                 );
-                
+
                 if (isDuplicate) {
-                    alert(this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.');
+                    this.snackbar.text = this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.';
+                    this.snackbar.color = 'error';
+                    this.snackbar.show = true;
                     return;
                 }
-                
-                proc.sub_proc_list.push({
+
+                newSubProcess = {
                     id: this.subProcessDialog.selectedProcess.id,
                     name: this.subProcessDialog.selectedProcess.name
-                });
-                
-                this.$emit('update:value', newValue);
+                };
             }
-            
-            this.subProcessDialog.show = false;
+
+            proc.sub_proc_list.push(newSubProcess);
+            this.$emit('update:value', newValue);
+            this.closeSubProcessDialog();
+
+            // Navigate to process editor for newly created process
+            if (isNew) {
+                const url = `/definitions/chat?id=${newSubProcess.id}&name=${encodeURIComponent(newSubProcess.name)}&modeling=true`;
+                window.open(url, '_blank');
+            }
+        },
+        // AI ID generation methods
+        async generateIdFromName() {
+            if (!this.subProcessDialog.newProcessName || !this.subProcessDialog.newProcessName.trim()) return;
+
+            this.subProcessDialog.isGeneratingId = true;
+            this.regenerateIdOnly = true;
+            this.bpmnProcessInfo = this.subProcessDialog.newProcessName;
+
+            try {
+                this.idGenerator = new ProcessDefinitionIdGenerator(this, {
+                    isStream: true,
+                    preferredLanguage: "Korean"
+                });
+                await this.idGenerator.generate();
+            } catch (error) {
+                console.error('ID 생성 중 오류 발생:', error);
+                this.subProcessDialog.isGeneratingId = false;
+                this.generateIdFallback();
+            }
+        },
+        generateIdFallback() {
+            // Simple fallback when AI fails
+            let id = this.subProcessDialog.newProcessName
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^a-z0-9_]/g, '')
+                .replace(/^[0-9_]+/, '')
+                .replace(/_+/g, '_')
+                .replace(/_$/, '');
+
+            if (!id) {
+                id = 'process_' + Date.now().toString(36);
+            }
+            this.subProcessDialog.newProcessId = id;
+        },
+        async onGenerationFinished(response) {
+            try {
+                // Parse AI response (format: "id: suggested_id")
+                const lines = response.trim().split('\n');
+                let id = '';
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('id:')) {
+                        id = trimmedLine.split(':')[1]?.trim() || '';
+                    }
+                }
+
+                if (id) {
+                    // Clean up the ID to ensure it's valid
+                    id = id.toLowerCase()
+                        .replace(/[^a-z0-9_]/g, '_')
+                        .replace(/^[0-9_]+/, '')
+                        .replace(/_+/g, '_')
+                        .replace(/_$/, '');
+
+                    if (id) {
+                        this.subProcessDialog.newProcessId = id;
+                        this.subProcessDialog.previousSuggestions.push(id);
+                    } else {
+                        this.generateIdFallback();
+                    }
+                } else {
+                    this.generateIdFallback();
+                }
+            } catch (error) {
+                console.error('ID 파싱 중 오류:', error);
+                this.generateIdFallback();
+            } finally {
+                this.subProcessDialog.isGeneratingId = false;
+            }
         },
         // Remove sub process from matrix only (not deleting actual process)
         removeSubProcess(parentProcess, sub) {
@@ -472,7 +819,9 @@ export default {
         },
         saveDialog() {
             if (!this.dialog.name.trim()) {
-                alert(this.$t('metricsView.nameRequired'));
+                this.snackbar.text = this.$t('metricsView.nameRequired');
+                this.snackbar.color = 'warning';
+                this.snackbar.show = true;
                 return;
             }
 
@@ -486,12 +835,14 @@ export default {
                     newValue.domains.push({
                         id: newId,
                         name: trimmedName,
+                        color: this.dialog.color,
                         order: newOrder
                     });
                 } else {
                     const domain = newValue.domains.find(d => d.id === this.dialog.editItem.id);
                     if (domain) {
                         domain.name = trimmedName;
+                        domain.color = this.dialog.color;
                     }
                 }
             } else if (this.dialog.type === 'megaProcess') {
@@ -533,8 +884,9 @@ export default {
 </script>
 
 <style scoped>
-.metrics-table {
-    border-collapse: collapse;
+.metrics-table th,
+.metrics-table td {
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
 }
 
 .domain-header {
@@ -542,13 +894,10 @@ export default {
     color: white;
     font-weight: 700;
     font-size: 1rem;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
 }
 
 .mega-header {
     background-color: rgb(var(--v-theme-primary), 0.15);
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
     font-weight: 700;
 }
 
@@ -559,20 +908,15 @@ export default {
 
 .add-column-header {
     background-color: rgba(0, 0, 0, 0.02);
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
 }
 
 .domain-row {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .domain-cell {
-    background-color: rgb(var(--v-theme-primary), 0.08);
+    background-color: rgb(var(--v-theme-primary), 0.05);
     font-weight: 600;
     vertical-align: middle;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-    border-right: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .domain-cell-text {
@@ -581,16 +925,12 @@ export default {
 }
 
 .process-cell {
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     vertical-align: top;
     padding: 8px !important;
     min-height: 80px;
 }
 
 .add-column-cell {
-    border-left: 1px solid rgba(0, 0, 0, 0.12);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     background-color: rgba(0, 0, 0, 0.02);
 }
 
@@ -647,5 +987,39 @@ export default {
 
 .cursor-pointer {
     cursor: pointer;
+}
+
+/* Domain color picker styles */
+.domain-color-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s ease;
+}
+
+.domain-color-dot:hover {
+    transform: scale(1.15);
+}
+
+.color-option {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: 2px solid transparent;
+}
+
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.color-option.color-selected {
+    border-color: #333;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
 }
 </style>

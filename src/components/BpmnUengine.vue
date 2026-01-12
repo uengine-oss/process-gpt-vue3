@@ -1,13 +1,52 @@
 <template>
-    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal }" v-hammer:pan="onPan" v-hammer:pinch="onPinch"> 
+    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop">
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
+                <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
                 <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
+        </div>
+        <!-- Font size and zoom controls (edit mode only) -->
+        <div v-if="!isViewMode" class="font-size-controls">
+            <!-- Font size controls -->
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-decrease</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.decreaseFontSize') || 'Decrease Font Size' }}</span>
+            </v-tooltip>
+            <span class="font-size-value">{{ labelFontSize }}px</span>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-increase</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.increaseFontSize') || 'Increase Font Size' }}</span>
+            </v-tooltip>
+            <span class="controls-divider">|</span>
+            <!-- Zoom controls -->
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="small">mdi-crosshairs-gps</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.resetZoom') || 'Fit to Screen (Ctrl+0)' }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="zoomOut" style="color: #444; cursor: pointer;" size="small">mdi-minus</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.zoomOut') || 'Zoom Out (Ctrl+-)' }}</span>
+            </v-tooltip>
+            <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="zoomIn" style="color: #444; cursor: pointer;" size="small">mdi-plus</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.zoomIn') || 'Zoom In (Ctrl++)' }}</span>
+            </v-tooltip>
         </div>
     </div>
     <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">
@@ -20,7 +59,9 @@
 
 <script>
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
+import zeebeModdleDescriptor from '@/components/descriptors/zeebe.json';
 import { useBpmnStore } from '@/stores/bpmn';
+import { useTaskCatalogStore } from '@/stores/taskCatalog';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
@@ -36,6 +77,7 @@ import paletteProvider from './customPalette/PaletteProvider';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
 import customPopupMenu from './customPopupMenu';
+import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
@@ -130,6 +172,8 @@ export default {
             panStart: { x: 0, y: 0 },
             pinchStartZoom: 1,
             isHorizontal: false,
+            labelFontSize: 12, // Default font size for task labels
+            currentZoomLevel: 100, // Current zoom level percentage
         };
     },
     computed: {
@@ -147,20 +191,102 @@ export default {
             return window.$pal;
         },
     },
-    mounted() {
+    async mounted() {
         this.onLoadStart();
         this.canvasContainer = document.getElementById('canvas-container');
+
+        // Load palette settings before initializing viewer
+        await this.loadPaletteSettings();
+
         this.initializeViewer();
         this.setDiagramEvent();
         if (this.bpmn) {
             this.diagramXML = this.bpmn;
         } else {
-            this.diagramXML = '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <uengine:ProcessVariables id="ProcessVariables_1"> <uengine:ProcessVariable key="variable1" value="value1"/> <uengine:ProcessVariable key="variable2" value="value2"/> </uengine:ProcessVariables> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>'
+            // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
+            this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_1" name="Process" processRef="Process_1"/>
+  </bpmn:collaboration>
+  <bpmn:process id="Process_1" isExecutable="false">
+    <uengine:ProcessVariables id="ProcessVariables_1">
+      <uengine:ProcessVariable key="variable1" value="value1"/>
+      <uengine:ProcessVariable key="variable2" value="value2"/>
+    </uengine:ProcessVariables>
+    <bpmn:laneSet id="LaneSet_1">
+      <bpmn:lane id="Lane_1" name="Lane 1">
+        <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ManualTask_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:manualTask id="ManualTask_1" name="Manual Task">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:endEvent id="EndEvent_1" name="End">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="ManualTask_1"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="ManualTask_1" targetRef="EndEvent_1"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNShape id="Participant_1_di" bpmnElement="Participant_1" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="600" height="250"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_1_di" bpmnElement="Lane_1" isHorizontal="true">
+        <dc:Bounds x="190" y="80" width="570" height="250"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="232" y="182" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="238" y="225" width="24" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ManualTask_1_di" bpmnElement="ManualTask_1">
+        <dc:Bounds x="340" y="160" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="512" y="182" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="520" y="225" width="20" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="268" y="200"/>
+        <di:waypoint x="340" y="200"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="440" y="200"/>
+        <di:waypoint x="512" y="200"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
         }
         // if (this.mode == 'uEngine') {
         this.bpmnViewer.importXML(this.diagramXML);
         this.initResizeObserver();
         // }
+
+        // Add keyboard event listener for Ctrl+C/V/Z/Y
+        this._keyboardHandler = this.handleKeyboardShortcuts.bind(this);
+        document.addEventListener('keydown', this._keyboardHandler);
+    },
+    beforeUnmount() {
+        // Remove keyboard event listener
+        if (this._keyboardHandler) {
+            document.removeEventListener('keydown', this._keyboardHandler);
+        }
+        // Clean up resize observer
+        if (this.resizeObserver) {
+            this.resizeObserver.disconnect();
+        }
     },
     watch: {
         isViewMode(val) {
@@ -235,6 +361,25 @@ export default {
         },
     },
     methods: {
+        async loadPaletteSettings() {
+            try {
+                const catalogStore = useTaskCatalogStore();
+                // Load new table-based palette task types
+                await catalogStore.loadPaletteTaskTypes();
+
+                // Set enabled palette task types to window for PaletteProvider access
+                window.$enabledPaletteTaskTypes = catalogStore.enabledPaletteTaskTypes;
+
+                // Legacy support: also load old palette settings
+                await catalogStore.loadPaletteSettings();
+                window.$paletteSettings = catalogStore.paletteSettings;
+            } catch (error) {
+                console.error('Failed to load palette settings:', error);
+                // Set default settings
+                window.$enabledPaletteTaskTypes = [];
+                window.$paletteSettings = { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+            }
+        },
         applyAutoLayout() {
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
@@ -401,7 +546,7 @@ export default {
                 if (self.isViewMode) {
                     const elementRegistry = self.bpmnViewer.get('elementRegistry');
                     const overlays = self.bpmnViewer.get('overlays');
-                    
+
                     const callActivities = elementRegistry.filter(element => element.type === 'bpmn:CallActivity');
                     
                     callActivities.forEach(element => {
@@ -438,7 +583,6 @@ export default {
                     });
 
                     eventBus.on('element.dblclick', function (e) {
-                        // self.openPanel = true;
                         if (e.element.type.includes('CallActivity')) {
                             self.$emit('openDefinition', e.element.businessObject);
                         } else if (e.element.type.includes('Collaboration')) {
@@ -554,6 +698,7 @@ export default {
                         ],
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
+                            zeebe: zeebeModdleDescriptor,
                             phase: phaseModdle
                         }
                     },
@@ -569,6 +714,7 @@ export default {
                         },
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
+                            zeebe: zeebeModdleDescriptor,
                             phase: phaseModdle
                         },
                         additionalModules: [
@@ -576,11 +722,12 @@ export default {
                             {
                                 __init__: ['paletteProvider'],
                                 paletteProvider: ['type', paletteProvider],
-                                viewModeFlag: ['value', false] 
+                                viewModeFlag: ['value', false]
                             },
                             customContextPadModule,
                             customReplaceElement,
                             customPopupMenu,
+                            customReplaceModule,
                             ZoomScroll,
                             MoveCanvas
                         ]
@@ -866,14 +1013,97 @@ export default {
             };
             zoomScroll.scaleOffset = bbox.scale;
             zoomScroll.resetMovedDistance();
+            this.updateZoomLevel();
         },
         zoomIn() {
             const zoomScroll = this.bpmnViewer.get('zoomScroll');
             zoomScroll.stepZoom(1);
+            this.updateZoomLevel();
         },
         zoomOut() {
             const zoomScroll = this.bpmnViewer.get('zoomScroll');
             zoomScroll.stepZoom(-1);
+            this.updateZoomLevel();
+        },
+        updateZoomLevel() {
+            if (this.bpmnViewer) {
+                const canvas = this.bpmnViewer.get('canvas');
+                this.currentZoomLevel = Math.round(canvas.zoom() * 100);
+            }
+        },
+        setZoomLevel(level) {
+            if (this.bpmnViewer) {
+                const canvas = this.bpmnViewer.get('canvas');
+                canvas.zoom(level / 100, 'auto');
+                this.currentZoomLevel = level;
+            }
+        },
+        increaseFontSize() {
+            if (this.labelFontSize < 24) {
+                this.labelFontSize += 2;
+                this.applyFontSize();
+            }
+        },
+        decreaseFontSize() {
+            if (this.labelFontSize > 8) {
+                this.labelFontSize -= 2;
+                this.applyFontSize();
+            }
+        },
+        applyFontSize() {
+            // Apply font size to all label text elements while maintaining center position
+            const container = this.$refs.container;
+            if (!container) return;
+
+            // Handle internal labels (inside tasks, events, etc.)
+            const internalTexts = container.querySelectorAll('.djs-element .djs-visual text');
+            internalTexts.forEach(textEl => {
+                const parentGroup = textEl.closest('.djs-element');
+                if (!parentGroup) return;
+
+                // Get the shape dimensions from the rect/polygon in the visual
+                const rect = parentGroup.querySelector('.djs-visual rect');
+                const polygon = parentGroup.querySelector('.djs-visual polygon');
+
+                let shapeWidth = 0;
+                if (rect) {
+                    shapeWidth = parseFloat(rect.getAttribute('width')) || 0;
+                } else if (polygon) {
+                    // For gateway (diamond shape)
+                    const bbox = polygon.getBBox();
+                    shapeWidth = bbox.width;
+                }
+
+                if (shapeWidth > 0) {
+                    const centerX = shapeWidth / 2;
+
+                    // Apply font size
+                    textEl.style.fontSize = this.labelFontSize + 'px';
+
+                    // Set text-anchor to middle and position at center
+                    textEl.setAttribute('text-anchor', 'middle');
+                    textEl.setAttribute('x', centerX);
+
+                    // Update all tspan elements
+                    const tspans = textEl.querySelectorAll('tspan');
+                    tspans.forEach(tspan => {
+                        tspan.style.fontSize = this.labelFontSize + 'px';
+                        tspan.setAttribute('x', centerX);
+                    });
+                }
+            });
+
+            // Handle external labels (sequence flow labels, etc.)
+            const externalLabels = container.querySelectorAll('.djs-label text');
+            externalLabels.forEach(textEl => {
+                // Just change font size for external labels, keep their position
+                textEl.style.fontSize = this.labelFontSize + 'px';
+
+                const tspans = textEl.querySelectorAll('tspan');
+                tspans.forEach(tspan => {
+                    tspan.style.fontSize = this.labelFontSize + 'px';
+                });
+            });
         },
         initResizeObserver() {
             const container = this.$refs.container;
@@ -939,6 +1169,86 @@ export default {
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
         },
+        handleKeyboardShortcuts(event) {
+            // Skip if in view mode or if target is an input element
+            if (this.isViewMode) return;
+
+            const target = event.target;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+                return;
+            }
+
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const modifierKey = isMac ? event.metaKey : event.ctrlKey;
+
+            if (!modifierKey) return;
+            if (!this.bpmnViewer) return;
+
+            try {
+                const copyPaste = this.bpmnViewer.get('copyPaste');
+                const commandStack = this.bpmnViewer.get('commandStack');
+                const selection = this.bpmnViewer.get('selection');
+
+                switch (event.key.toLowerCase()) {
+                    case 'c':
+                        // Copy
+                        const selectedElements = selection.get();
+                        if (selectedElements.length > 0) {
+                            copyPaste.copy(selectedElements);
+                        }
+                        event.preventDefault();
+                        break;
+                    case 'v':
+                        // Paste
+                        copyPaste.paste();
+                        event.preventDefault();
+                        break;
+                    case 'x':
+                        // Cut
+                        const elementsTocut = selection.get();
+                        if (elementsTocut.length > 0) {
+                            copyPaste.copy(elementsTocut);
+                            const modeling = this.bpmnViewer.get('modeling');
+                            modeling.removeElements(elementsTocut);
+                        }
+                        event.preventDefault();
+                        break;
+                    case 'z':
+                        if (event.shiftKey) {
+                            // Redo (Ctrl+Shift+Z)
+                            commandStack.redo();
+                        } else {
+                            // Undo (Ctrl+Z)
+                            commandStack.undo();
+                        }
+                        event.preventDefault();
+                        break;
+                    case 'y':
+                        // Redo (Ctrl+Y)
+                        commandStack.redo();
+                        event.preventDefault();
+                        break;
+                    case '=':
+                    case '+':
+                        // Zoom In (Ctrl+Plus)
+                        this.zoomIn();
+                        event.preventDefault();
+                        break;
+                    case '-':
+                        // Zoom Out (Ctrl+Minus)
+                        this.zoomOut();
+                        event.preventDefault();
+                        break;
+                    case '0':
+                        // Reset Zoom (Ctrl+0)
+                        this.resetZoom();
+                        event.preventDefault();
+                        break;
+                }
+            } catch (e) {
+                console.warn('Keyboard shortcut error:', e);
+            }
+        },
         onPinch(ev) {
             const srcEvent = ev.srcEvent;
             if (srcEvent.pointerType === 'mouse' || srcEvent.type.startsWith('mouse')) {
@@ -959,6 +1269,133 @@ export default {
             }
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
+        },
+        onDragOver(event) {
+            // Enable drop
+            event.dataTransfer.dropEffect = 'copy';
+        },
+        onDrop(event) {
+            if (this.isViewMode) return;
+
+            try {
+                const data = event.dataTransfer.getData('application/json');
+                if (!data) return;
+
+                const parsed = JSON.parse(data);
+                if (parsed.type !== 'task-catalog') return;
+
+                const item = parsed.item;
+                if (!item) return;
+
+                // Get drop position relative to canvas
+                const canvas = this.bpmnViewer.get('canvas');
+                const container = this.$refs.container;
+                const rect = container.getBoundingClientRect();
+
+                // Convert screen coordinates to canvas coordinates
+                const viewbox = canvas.viewbox();
+                const x = (event.clientX - rect.left) / viewbox.scale + viewbox.x;
+                const y = (event.clientY - rect.top) / viewbox.scale + viewbox.y;
+
+                // Create the task element
+                this.createTaskFromCatalog(item, { x, y });
+            } catch (error) {
+                console.error('Failed to handle drop:', error);
+            }
+        },
+        createTaskFromCatalog(catalogItem, position) {
+            if (!this.bpmnViewer) return;
+
+            console.log('=== createTaskFromCatalog ===');
+            console.log('catalogItem:', catalogItem);
+            console.log('catalogItem.task_type:', catalogItem.task_type);
+            console.log('catalogItem.name:', catalogItem.name);
+            console.log('catalogItem.properties:', catalogItem.properties);
+
+            const modeling = this.bpmnViewer.get('modeling');
+            const elementFactory = this.bpmnViewer.get('elementFactory');
+            const elementRegistry = this.bpmnViewer.get('elementRegistry');
+            const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
+
+            // Find parent (process or participant)
+            let parent = null;
+            const participants = elementRegistry.filter(e => e.type === 'bpmn:Participant');
+            if (participants.length > 0) {
+                // Find which participant contains the drop position
+                for (const participant of participants) {
+                    if (position.x >= participant.x &&
+                        position.x <= participant.x + participant.width &&
+                        position.y >= participant.y &&
+                        position.y <= participant.y + participant.height) {
+                        parent = participant;
+                        break;
+                    }
+                }
+                if (!parent) {
+                    parent = participants[0];
+                }
+            } else {
+                // No participant, find process
+                const processes = elementRegistry.filter(e => e.type === 'bpmn:Process');
+                if (processes.length > 0) {
+                    parent = processes[0];
+                }
+            }
+
+            if (!parent) {
+                console.warn('No parent element found for task creation');
+                return;
+            }
+
+            // Determine task type - use stored type from catalog
+            let taskType = catalogItem.task_type || 'bpmn:ManualTask';
+            // Ensure taskType has bpmn: prefix
+            if (!taskType.startsWith('bpmn:')) {
+                taskType = 'bpmn:' + taskType;
+            }
+            console.log('Final taskType:', taskType);
+
+            // Task name - use the name from catalog (original task name)
+            const taskName = catalogItem.name || catalogItem.display_name || 'New Task';
+            console.log('Task name:', taskName);
+
+            // Create business object for the task with the correct type
+            const businessObject = bpmnFactory.create(taskType, {
+                name: taskName
+            });
+
+            // Create shape with the correct type
+            const shape = elementFactory.createShape({
+                type: taskType,
+                businessObject: businessObject
+            });
+
+            // Add shape to canvas
+            const createdShape = modeling.createShape(shape, position, parent);
+            console.log('Created shape:', createdShape);
+
+            // Prepare extension elements with ALL properties from catalog
+            const propertiesJson = {
+                ...catalogItem.properties,
+                _catalogId: catalogItem.id,
+                _systemName: catalogItem.system_name
+            };
+            console.log('Properties to save:', propertiesJson);
+
+            // Create extension elements
+            const extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+            const uengineProperties = bpmnFactory.create('uengine:Properties', {
+                json: JSON.stringify(propertiesJson)
+            });
+            extensionElements.get('values').push(uengineProperties);
+
+            // Use modeling API to properly set the extension elements
+            modeling.updateProperties(createdShape, {
+                extensionElements: extensionElements
+            });
+
+            console.log(`Created ${taskType} from catalog: ${taskName}`);
+            console.log('=== createTaskFromCatalog done ===');
         }
     }
 };
@@ -983,4 +1420,45 @@ export default {
 .view-mode .djs-palette {
   display: none !important;
 }
+
+/* View 모드에서 요소 클릭 허용 (Property Panel 열기 위해) */
+#canvas-container.view-mode .djs-element,
+#canvas-container.view-mode .djs-element * {
+  pointer-events: auto !important;
+}
+
+/* Font size controls */
+.font-size-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.font-size-value {
+  font-size: 12px;
+  color: #666;
+  min-width: 36px;
+  text-align: center;
+}
+
+.zoom-level-value {
+  font-size: 12px;
+  color: #666;
+  min-width: 40px;
+  text-align: center;
+}
+
+.controls-divider {
+  color: #ccc;
+  margin: 0 4px;
+}
+
 </style>
