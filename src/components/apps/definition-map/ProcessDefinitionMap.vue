@@ -618,6 +618,12 @@ export default {
                 this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
             }
         });
+        
+        // 채팅 패널 닫기 이벤트 수신
+        this.EventBus.on('close-chat-panel', this.closeChatPanel);
+    },
+    beforeUnmount() {
+        this.EventBus.off('close-chat-panel', this.closeChatPanel);
     },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {

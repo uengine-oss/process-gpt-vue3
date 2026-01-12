@@ -651,6 +651,11 @@ export default {
                 
                 self.setRoleMapping();
 
+                // 초기 로딩 시 orientation 정돈 (깨짐 방지)
+                self.$nextTick(() => {
+                    self.applyAutoLayout();
+                });
+
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
             });
@@ -904,6 +909,14 @@ export default {
                     self.$emit('error', err);
                 });
         },
+        applyAutoLayout() {
+            var self = this;
+            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const horizontal = participant[0].di.isHorizontal;
+            window.BpmnAutoLayout.applyAutoLayout(self.bpmnViewer, { horizontal: horizontal }, self.onLoadStart, self.onLoadEnd);
+            self.resetZoom();
+        },
         changeOrientation() {
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
@@ -919,6 +932,7 @@ export default {
                     element.di.isHorizontal = true;
                 }
             });
+            self.resetZoom();
         },
         initDefaultOrientation(orientation = null) {
             let self = this;

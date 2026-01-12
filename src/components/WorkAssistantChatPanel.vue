@@ -44,32 +44,52 @@
                     <v-icon class="mr-2">mdi-sitemap</v-icon>
                     {{ selectedBpmn?.process_name || 'BPMN Preview' }}
                     <v-spacer></v-spacer>
+                    <!-- 다이어그램/XML 토글 버튼 -->
+                    <v-btn-toggle v-model="bpmnViewMode" mandatory density="compact" class="mr-2 bpmn-view-toggle">
+                        <v-btn value="diagram" size="small" class="bpmn-toggle-btn">
+                            <v-icon size="18" :color="bpmnViewMode === 'diagram' ? 'primary' : undefined">mdi-sitemap</v-icon>
+                        </v-btn>
+                        <v-btn value="xml" size="small" class="bpmn-toggle-btn">
+                            <v-icon size="18" :color="bpmnViewMode === 'xml' ? 'primary' : undefined">mdi-xml</v-icon>
+                        </v-btn>
+                    </v-btn-toggle>
                     <v-btn icon variant="text" @click="bpmnPreviewDialog = false">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-card-title>
                 <v-divider></v-divider>
                 <v-card-text class="pa-0">
-                    <div class="bpmn-preview-container">
+                    <!-- 다이어그램 뷰 -->
+                    <div v-if="bpmnViewMode === 'diagram'" class="bpmn-diagram-container">
+                        <BpmnUengineViewer
+                            v-if="selectedBpmn?.bpmn_xml"
+                            :bpmn="selectedBpmn.bpmn_xml"
+                            :key="selectedBpmn?.process_name"
+                        />
+                    </div>
+                    <!-- XML 뷰 -->
+                    <div v-else class="bpmn-preview-container">
                         <pre class="bpmn-xml-content">{{ selectedBpmn?.bpmn_xml }}</pre>
                     </div>
                 </v-card-text>
                 <v-card-actions>
+                    <!-- XML 모드일 때: XML 복사 버튼 -->
                     <v-btn 
-                        color="primary" 
+                        v-if="bpmnViewMode === 'xml'"
                         variant="tonal"
                         @click="copyBpmnToClipboard"
                     >
                         <v-icon class="mr-1">mdi-content-copy</v-icon>
                         XML 복사
                     </v-btn>
+                    <!-- 다이어그램 모드일 때: 프로세스 수정 버튼 -->
                     <v-btn 
-                        color="success" 
+                        v-if="bpmnViewMode === 'diagram'"
                         variant="tonal"
                         @click="openInModeler"
                     >
                         <v-icon class="mr-1">mdi-pencil</v-icon>
-                        모델러에서 열기
+                        프로세스 수정
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -173,6 +193,7 @@
                         <div class="progress-info">
                             <span class="progress-message">{{ pdf2bpmnProgress.message }}</span>
                             <span class="progress-percent">{{ pdf2bpmnProgress.progress }}%</span>
+                            <v-progress-circular v-if="pdf2bpmnProgress.status === 'processing'" style="margin-left: 3px; margin-bottom: 3px;" indeterminate size="12" width="2" color="primary" />
                         </div>
 
                         <!-- 생성된 BPMN 목록 (스크롤 가능) -->
@@ -234,6 +255,37 @@
                     @keydown.enter.exact.prevent="sendMessage"
                     :disabled="isLoading"
                 />
+                <!-- 음성 인식 버튼 -->
+                <v-btn
+                    v-if="!isMicRecording && !isMicRecorderLoading"
+                    icon
+                    variant="text"
+                    size="small"
+                    @click="startVoiceRecording"
+                    class="mic-btn"
+                    :disabled="isLoading"
+                >
+                    <v-icon color="grey">mdi-microphone</v-icon>
+                </v-btn>
+                <v-btn
+                    v-else-if="isMicRecording"
+                    icon
+                    variant="text"
+                    size="small"
+                    @click="stopVoiceRecording"
+                    class="mic-btn"
+                    color="error"
+                >
+                    <v-icon>mdi-stop</v-icon>
+                </v-btn>
+                <v-progress-circular
+                    v-if="isMicRecorderLoading"
+                    indeterminate
+                    size="20"
+                    width="2"
+                    color="primary"
+                    class="mx-2"
+                ></v-progress-circular>
                 <v-btn
                     icon
                     color="primary"
@@ -253,11 +305,16 @@
 import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
 import BackendFactory from '@/components/api/BackendFactory';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
+import { getValidToken } from '@/utils/supabaseAuth.js';
+import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'WorkAssistantChatPanel',
+    components: {
+        BpmnUengineViewer
+    },
     props: {
         initialMessage: {
             type: String,
@@ -302,7 +359,13 @@ export default {
             eventsChannel: null,
             // BPMN 미리보기
             bpmnPreviewDialog: false,
-            selectedBpmn: null
+            bpmnViewMode: 'diagram',  // 'diagram' | 'xml'
+            selectedBpmn: null,
+            // 음성 인식 관련
+            isMicRecording: false,
+            micRecorder: null,
+            micAudioChunks: [],
+            isMicRecorderLoading: false
         };
     },
     computed: {
@@ -536,9 +599,8 @@ export default {
                 let fullResponse = '';
                 const toolCalls = [];
                 
-                // Supabase 세션에서 JWT 가져오기
-                const session = await window.$supabase?.auth?.getSession();
-                const userJwt = session?.data?.session?.access_token || '';
+                // Supabase 세션에서 JWT 가져오기 (자동 갱신 포함)
+                const userJwt = await getValidToken() || '';
                 
                 await workAssistantAgentService.sendMessageStream(
                     {
@@ -590,12 +652,27 @@ export default {
                             this.checkAndSubscribePdf2Bpmn(content, toolCalls);
                             
                             // 응답 파싱 및 이벤트 발생
-                            const parsed = workAssistantAgentService.parseAgentResponse(content);
+                            let parsed = workAssistantAgentService.parseAgentResponse(content);
+                            
+                            // 파싱 실패 시 toolCalls에서 generate_process 결과 직접 확인
+                            if (!parsed) {
+                                const generateProcessCall = toolCalls.find(tc => 
+                                    tc.name?.includes('generate_process')
+                                );
+                                if (generateProcessCall?.output) {
+                                    try {
+                                        parsed = this.parseToolOutput(generateProcessCall.output);
+                                    } catch (e) {
+                                        console.warn('[WorkAssistantChatPanel] generate_process output 파싱 실패:', e);
+                                    }
+                                }
+                            }
+                            
                             if (parsed) {
                                 // 프로세스 생성 요청인 경우 컨설팅 모드로 전환
-                                if (parsed.action === 'process_created' || 
-                                    (parsed.user_request_type === 'generate_process')) {
-                                    await this.switchToConsultingMode(parsed.data?.user_message || userMessage);
+                                if (parsed.user_request_type === 'generate_process') {
+                                    const originalMessage = parsed.user_message || parsed.data?.user_message || userMessage;
+                                    await this.switchToConsultingMode(originalMessage);
                                     return;
                                 }
                                 
@@ -633,6 +710,31 @@ export default {
                 email: role === 'user' ? this.userInfo.email : 'system@uengine.org',
                 timeStamp: Date.now()
             };
+        },
+
+        // MCP 도구 output 파싱 (content='...' name=... 형식 처리)
+        parseToolOutput(outputStr) {
+            if (!outputStr) return null;
+            
+            // content='...' name=... 형식 처리
+            if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
+                const contentMatch = outputStr.match(/content='(.+?)'\s*name=/s);
+                if (contentMatch) {
+                    const jsonStr = contentMatch[1]
+                        .replace(/\\n/g, '\n')
+                        .replace(/\\"/g, '"')
+                        .replace(/\\\\/g, '\\');
+                    return JSON.parse(jsonStr);
+                }
+            }
+            
+            // 일반 JSON 문자열
+            if (typeof outputStr === 'string') {
+                return JSON.parse(outputStr);
+            }
+            
+            // 이미 객체인 경우
+            return outputStr;
         },
 
         // 메시지 저장
@@ -681,6 +783,18 @@ export default {
             
             // 일반 코드 블록 처리
             formatted = formatted.replace(/```(\w*)\s*([\s\S]*?)\s*```/g, '<pre class="code-block">$2</pre>');
+            
+            // 마크다운 링크 형식 [텍스트](URL) 처리
+            formatted = formatted.replace(
+                /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+                '<a href="$2" target="_blank" class="message-link">$1</a>'
+            );
+            
+            // 일반 URL을 클릭 가능한 링크로 변환 - href=" 뒤에 있는 URL은 제외
+            formatted = formatted.replace(
+                /(?<!href=")(https?:\/\/[^\s<)\]"]+)/g,
+                '<a href="$1" target="_blank" class="message-link">$1</a>'
+            );
             
             // 줄바꿈 처리
             formatted = formatted.replace(/\n/g, '<br>');
@@ -960,24 +1074,7 @@ export default {
                     
                     if (pdf2bpmnTool && pdf2bpmnTool.output) {
                         try {
-                            let output = null;
-                            const outputStr = pdf2bpmnTool.output;
-                            
-                            // output 파싱
-                            if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
-                                const contentMatch = outputStr.match(/content='(.+?)'\s*name=/s);
-                                if (contentMatch) {
-                                    const jsonStr = contentMatch[1]
-                                        .replace(/\\n/g, '\n')
-                                        .replace(/\\"/g, '"')
-                                        .replace(/\\\\/g, '\\');
-                                    output = JSON.parse(jsonStr);
-                                }
-                            } else if (typeof outputStr === 'string') {
-                                output = JSON.parse(outputStr);
-                            } else {
-                                output = outputStr;
-                            }
+                            const output = this.parseToolOutput(pdf2bpmnTool.output);
                             
                             if (output) {
                                 const taskId = output.workitem_id || output.task_id || output.todo_id || output.id;
@@ -1152,10 +1249,10 @@ export default {
                 const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
                 const { data, error } = await window.$supabase
                     .from('todolist')
-                    .select('id, query, agent_orch, created_at')
+                    .select('id, query, agent_orch, start_date')
                     .eq('agent_orch', 'pdf2bpmn')
-                    .gte('created_at', fiveMinAgo)
-                    .order('created_at', { ascending: false })
+                    .gte('start_date', fiveMinAgo)
+                    .order('start_date', { ascending: false })
                     .limit(1);
                 
                 if (error) {
@@ -1570,7 +1667,7 @@ export default {
         openInModeler() {
             if (this.selectedBpmn && this.selectedBpmn.process_id) {
                 // 현재 접속 주소 기반 모델러 URL
-                const modelerUrl = `${window.location.origin}/definitions/${this.selectedBpmn.process_id}`;
+                const modelerUrl = `${window.location.origin}/definitions/${this.selectedBpmn.process_id}?edit=true`;
                 window.open(modelerUrl, '_blank');
                 this.bpmnPreviewDialog = false;
             }
@@ -1601,27 +1698,7 @@ export default {
                     
                     if (outputStr) {
                         try {
-                            let output = null;
-                            
-                            // output 형식: "content='{...}' name='...' tool_call_id='...'"
-                            if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
-                                // content='...' 부분에서 JSON 추출
-                                const contentMatch = outputStr.match(/content='(.+?)'\s*name=/s);
-                                if (contentMatch) {
-                                    // 이스케이프된 JSON 파싱
-                                    const jsonStr = contentMatch[1]
-                                        .replace(/\\n/g, '\n')
-                                        .replace(/\\"/g, '"')
-                                        .replace(/\\\\/g, '\\');
-                                    output = JSON.parse(jsonStr);
-                                }
-                            } else if (typeof outputStr === 'string') {
-                                // 일반 JSON
-                                output = JSON.parse(outputStr);
-                            } else {
-                                output = outputStr;
-                            }
-                            
+                            const output = me.parseToolOutput(outputStr);
                             console.log('[WorkAssistantChatPanel] parsed output:', output);
                             
                             // workitem_id 추출
@@ -1681,6 +1758,63 @@ export default {
             }
             
             return false;
+        },
+        
+        // ===== 음성 인식 =====
+        
+        // 음성 인식 시작
+        async startVoiceRecording() {
+            this.isMicRecording = true;
+            if (!navigator.mediaDevices) {
+                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+                this.isMicRecording = false;
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.micRecorder = new MediaRecorder(stream);
+                this.micAudioChunks = [];
+                this.micRecorder.ondataavailable = e => {
+                    this.micAudioChunks.push(e.data);
+                };
+                this.micRecorder.start();
+            } catch (error) {
+                console.error('마이크 접근 오류:', error);
+                this.isMicRecording = false;
+            }
+        },
+        
+        // 음성 인식 중지
+        stopVoiceRecording() {
+            this.isMicRecording = false;
+            if (this.micRecorder && this.micRecorder.state === 'recording') {
+                this.micRecorder.stop();
+                this.micRecorder.onstop = async () => {
+                    const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
+                    await this.uploadAudio(audioBlob);
+                };
+            }
+        },
+        
+        // 음성 파일 업로드 및 텍스트 변환
+        async uploadAudio(audioBlob) {
+            this.isMicRecorderLoading = true;
+            const formData = new FormData();
+            formData.append('audio', audioBlob);
+            try {
+                const response = await fetch('/completion/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.transcript) {
+                    this.inputText = data.transcript;
+                }
+            } catch (error) {
+                console.error('음성 인식 오류:', error);
+            } finally {
+                this.isMicRecorderLoading = false;
+            }
         }
     }
 };
@@ -1811,6 +1945,17 @@ export default {
     word-break: break-word;
 }
 
+.message-text :deep(.message-link) {
+    color: #3b82f6;
+    text-decoration: underline;
+    cursor: pointer;
+    word-break: break-all;
+}
+
+.message-text :deep(.message-link:hover) {
+    color: #1d4ed8;
+}
+
 .message-text :deep(.json-block),
 .message-text :deep(.code-block) {
     background: #1e293b;
@@ -1871,6 +2016,11 @@ export default {
 .send-btn {
     flex-shrink: 0;
     margin-bottom: 2px;
+}
+
+.mic-btn {
+    flex-shrink: 0;
+    margin-right: 4px;
 }
 
 /* PDF2BPMN 진행 상황 */
@@ -2134,8 +2284,20 @@ export default {
 }
 
 /* BPMN 미리보기 */
+.bpmn-view-toggle .bpmn-toggle-btn {
+    min-width: 40px !important;
+    width: 40px !important;
+    height: 36px !important;
+}
+
+.bpmn-diagram-container {
+    height: 450px;
+    background: #f8fafc;
+    position: relative;
+}
+
 .bpmn-preview-container {
-    max-height: 400px;
+    max-height: 450px;
     overflow: auto;
     background: #1e293b;
 }

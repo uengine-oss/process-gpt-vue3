@@ -635,6 +635,8 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
+                self.applyAutoLayout();
+                self.resetZoom();
             });
             
             // 사용자가 수동으로 요소를 추가할 때 클래스 추가

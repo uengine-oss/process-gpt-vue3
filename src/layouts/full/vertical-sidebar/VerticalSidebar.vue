@@ -41,6 +41,7 @@
                         v-bind="props"
                         class="text-medium-emphasis"
                         :to="'/definition-map'"
+                        @click="closeChatPanelIfOpen"
                     >
                         <Icons :icon="'write'" />
                     </v-btn>
@@ -364,6 +365,9 @@ export default {
         });
     },
     methods: {
+        closeChatPanelIfOpen() {
+            this.EventBus.emit('close-chat-panel');
+        },
         updateNotiCount(count) {
             this.notiCount = count;
         },
