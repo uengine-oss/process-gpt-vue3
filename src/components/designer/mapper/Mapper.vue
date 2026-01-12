@@ -318,6 +318,7 @@ export default {
         },
         findTasks(elements) {
             var me = this;
+            if(!elements) return;
             elements.forEach((element) => {
                 if (element.$type.toLowerCase().indexOf('task') !== -1) {
                     me.activities.push(element);
