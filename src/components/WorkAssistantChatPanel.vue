@@ -803,22 +803,43 @@ export default {
         parseToolOutput(outputStr) {
             if (!outputStr) return null;
             
-            // content='...' name=... 형식 처리
+            // content='...' name=... 형식 처리 (Python ToolMessage repr 형식)
             if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
-                const contentMatch = outputStr.match(/content='(.+?)'\s*name=/s);
-                if (contentMatch) {
-                    let jsonStr = contentMatch[1];
-                    // 이중 이스케이프 처리: \\\\n -> \\n -> \n (순서 중요!)
-                    jsonStr = jsonStr.replace(/\\\\\\\\/g, '\\\\'); // \\\\ -> \\
-                    jsonStr = jsonStr.replace(/\\\\n/g, '\\n');     // \\n -> \n (JSON 내 개행)
-                    jsonStr = jsonStr.replace(/\\\\"/g, '\\"');     // \\" -> \" (JSON 내 따옴표)
-                    return JSON.parse(jsonStr);
+                try {
+                    // content=' 이후부터 ' name= 직전까지 추출 (인덱스 기반으로 더 안정적)
+                    const contentStart = "content='".length;
+                    // ' name= 또는 ' tool_call_id= 패턴 찾기 (content 끝 마커)
+                    const endMarkers = [/' name=/, /' tool_call_id=/];
+                    let endIdx = -1;
+                    
+                    for (const marker of endMarkers) {
+                        const match = outputStr.match(marker);
+                        if (match && (endIdx === -1 || match.index < endIdx)) {
+                            endIdx = match.index;
+                        }
+                    }
+                    
+                    if (endIdx > contentStart) {
+                        let jsonStr = outputStr.substring(contentStart, endIdx);
+                        // 이중 이스케이프 처리: \\\\n -> \\n -> \n (순서 중요!)
+                        jsonStr = jsonStr.replace(/\\\\\\\\/g, '\\\\'); // \\\\ -> \\
+                        jsonStr = jsonStr.replace(/\\\\n/g, '\\n');     // \\n -> \n (JSON 내 개행)
+                        jsonStr = jsonStr.replace(/\\\\"/g, '\\"');     // \\" -> \" (JSON 내 따옴표)
+                        return JSON.parse(jsonStr);
+                    }
+                } catch (e) {
+                    console.warn('[parseToolOutput] content= 형식 파싱 실패:', e.message);
                 }
             }
             
             // 일반 JSON 문자열
             if (typeof outputStr === 'string') {
-                return JSON.parse(outputStr);
+                try {
+                    return JSON.parse(outputStr);
+                } catch (e) {
+                    console.warn('[parseToolOutput] JSON 파싱 실패:', e.message);
+                    return null;
+                }
             }
             
             // 이미 객체인 경우
