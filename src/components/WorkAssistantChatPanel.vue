@@ -807,10 +807,11 @@ export default {
             if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
                 const contentMatch = outputStr.match(/content='(.+?)'\s*name=/s);
                 if (contentMatch) {
-                    const jsonStr = contentMatch[1]
-                        .replace(/\\n/g, '\n')
-                        .replace(/\\"/g, '"')
-                        .replace(/\\\\/g, '\\');
+                    let jsonStr = contentMatch[1];
+                    // 이중 이스케이프 처리: \\\\n -> \\n -> \n (순서 중요!)
+                    jsonStr = jsonStr.replace(/\\\\\\\\/g, '\\\\'); // \\\\ -> \\
+                    jsonStr = jsonStr.replace(/\\\\n/g, '\\n');     // \\n -> \n (JSON 내 개행)
+                    jsonStr = jsonStr.replace(/\\\\"/g, '\\"');     // \\" -> \" (JSON 내 따옴표)
                     return JSON.parse(jsonStr);
                 }
             }
@@ -2098,9 +2099,24 @@ export default {
 
 /* 입력 영역 */
 .chat-input-container {
-    padding: 12px 16px;
+    padding: 8px 16px 12px;
     background: white;
     border-top: 1px solid #e2e8f0;
+}
+
+/* Chat 컴포넌트 내부 스타일 오버라이드 (패널 모드) */
+.chat-input-container :deep(.v-card) {
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+.chat-input-container :deep(.v-textarea) {
+    font-size: 14px;
+}
+
+.chat-input-container :deep(.message-input-box) {
+    min-height: 40px;
 }
 
 .chat-input-wrapper {
