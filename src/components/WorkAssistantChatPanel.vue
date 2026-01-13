@@ -974,11 +974,13 @@ export default {
                 me.messages.pop();
             }
             
-            // 전체 대화 내역을 previousMessages에 추가
+            // 전체 대화 내역을 previousMessages에 추가 (마지막 사용자 메시지 제외)
             let chatMsgs = [];
             if (me.messages && me.messages.length > 0) {
-                me.messages.forEach((msg) => {
-                    if (msg.content && !msg.isLoading) {
+                me.messages.forEach((msg, idx) => {
+                    // 마지막 사용자 메시지는 제외 (합쳐진 userMessage로 대체할 예정)
+                    const isLastUserMsg = idx === me.messages.length - 1 && msg.role === 'user';
+                    if (msg.content && !msg.isLoading && !isLastUserMsg) {
                         chatMsgs.push({
                             role: msg.role,
                             content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
@@ -986,6 +988,13 @@ export default {
                     }
                 });
             }
+            
+            // 합쳐진 userMessage를 사용자 메시지로 추가
+            chatMsgs.push({
+                role: 'user',
+                content: userMessage
+            });
+            
             me.generator.previousMessages = [me.generator.previousMessages[0], ...chatMsgs];
             
             // 컨설팅 시작
