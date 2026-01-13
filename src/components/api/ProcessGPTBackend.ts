@@ -280,6 +280,10 @@ class ProcessGPTBackend implements Backend {
                     diff: options.diff,
                     message: options.message,
                 }
+                // agent_knowledge_history.id를 proc_def_version.uuid로 설정
+                if (options.history_id) {
+                    procDefVersion.uuid = options.history_id;
+                }
                 await storage.putObject('proc_def_version', procDefVersion);
             }
 
@@ -5496,6 +5500,131 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             console.error('DMN 히스토리 조회 실패:', error);
             return [];
+        }
+    }
+
+    /**
+     * DMN 버전 적용 공통 로직
+     * @param historyId 변경 이력 ID
+     * @param ruleId DMN 규칙 ID
+     * @param usePreviousContent true면 previous_content 사용 (되돌리기), false면 new_content 사용 (다시 적용)
+     * @param useParentVersion true면 parent_version 사용, false면 version 사용
+     * @param errorMessages 에러 메시지 객체
+     */
+    async applyDmnVersion(
+        historyId: string,
+        ruleId: string,
+        usePreviousContent: boolean,
+        useParentVersion: boolean,
+        errorMessages: { contentNotFound: string; operationNotAllowed: string; applyFailed: string }
+    ) {
+        // 변경 이력 조회
+        const history = await storage.getObject('agent_knowledge_history', {
+            match: {
+                id: historyId,
+                tenant_id: window.$tenantName
+            }
+        });
+
+        const contentKey = usePreviousContent ? 'previous_content' : 'new_content';
+        if (!history || !history[contentKey]) {
+            throw new Error(errorMessages.contentNotFound);
+        }
+
+        if (history.operation !== 'UPDATE') {
+            throw new Error(errorMessages.operationNotAllowed);
+        }
+
+        // 현재 DMN 조회
+        const currentDmn = await storage.getObject('proc_def', {
+            match: {
+                id: ruleId,
+                tenant_id: window.$tenantName
+            }
+        });
+
+        if (!currentDmn) {
+            throw new Error('DMN 규칙을 찾을 수 없습니다.');
+        }
+
+        // 적용할 내용 가져오기
+        const newContent = history[contentKey];
+
+        // historyId로 proc_def_version 조회하여 버전 번호 가져오기
+        let targetVersionNumber = currentDmn.prod_version;
+        try {
+            const targetVersion = await storage.getObject('proc_def_version', {
+                match: {
+                    uuid: historyId,
+                    tenant_id: window.$tenantName
+                }
+            });
+            if (targetVersion) {
+                const versionKey = useParentVersion ? 'parent_version' : 'version';
+                if (targetVersion[versionKey]) {
+                    targetVersionNumber = targetVersion[versionKey];
+                }
+            }
+        } catch (e) {
+            // 버전을 찾지 못해도 계속 진행 (prod_version은 현재 값 유지)
+        }
+
+        // proc_def 테이블만 업데이트 (proc_def_version과 agent_knowledge_history는 수정하지 않음)
+        currentDmn.bpmn = newContent;
+        currentDmn.prod_version = targetVersionNumber;
+        await storage.putObject('proc_def', currentDmn);
+
+        return {
+            success: true,
+            version: targetVersionNumber
+        };
+    }
+
+    async restoreDmnVersion(historyId: string, ruleId: string, agentId: string) {
+        try {
+            const result = await this.applyDmnVersion(
+                historyId,
+                ruleId,
+                true, // previous_content 사용
+                true, // parent_version 사용
+                {
+                    contentNotFound: '이전 버전 내용을 찾을 수 없습니다.',
+                    operationNotAllowed: '되돌리기는 UPDATE 작업에만 가능합니다.',
+                    applyFailed: 'DMN 버전 되돌리기에 실패했습니다.'
+                }
+            );
+
+            return {
+                ...result,
+                message: '이전 버전으로 성공적으로 되돌렸습니다.'
+            };
+        } catch (error) {
+            console.error('DMN 버전 되돌리기 실패:', error);
+            throw new Error(error instanceof Error ? error.message : 'DMN 버전 되돌리기에 실패했습니다.');
+        }
+    }
+
+    async reapplyDmnVersion(historyId: string, ruleId: string, agentId: string) {
+        try {
+            const result = await this.applyDmnVersion(
+                historyId,
+                ruleId,
+                false, // new_content 사용
+                false, // version 사용
+                {
+                    contentNotFound: '적용할 버전 내용을 찾을 수 없습니다.',
+                    operationNotAllowed: '다시 적용은 UPDATE 작업에만 가능합니다.',
+                    applyFailed: 'DMN 버전 적용에 실패했습니다.'
+                }
+            );
+
+            return {
+                ...result,
+                message: '변경 사항을 성공적으로 적용했습니다.'
+            };
+        } catch (error) {
+            console.error('DMN 버전 다시 적용 실패:', error);
+            throw new Error(error instanceof Error ? error.message : 'DMN 버전 적용에 실패했습니다.');
         }
     }
 }
