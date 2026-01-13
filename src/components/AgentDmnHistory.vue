@@ -89,7 +89,32 @@
                                         <dmn-diff-view 
                                             :previous="parseDmnXml(item.previous_content)" 
                                             :current="parseDmnXml(item.new_content)"
-                                        />
+                                        >
+                                            <template v-slot:actions>
+                                                <div v-if="item.operation === 'UPDATE'" class="d-flex ga-2">
+                                                    <v-btn 
+                                                        color="orange" 
+                                                        variant="tonal" 
+                                                        size="small"
+                                                        :loading="item.restoring"
+                                                        @click="restoreVersion(item)"
+                                                    >
+                                                        <v-icon start>mdi-undo</v-icon>
+                                                        변경 사항 되돌리기
+                                                    </v-btn>
+                                                    <v-btn 
+                                                        color="primary" 
+                                                        variant="tonal" 
+                                                        size="small"
+                                                        :loading="item.reapplying"
+                                                        @click="reapplyVersion(item)"
+                                                    >
+                                                        <v-icon start>mdi-redo</v-icon>
+                                                        변경 사항 다시 적용
+                                                    </v-btn>
+                                                </div>
+                                            </template>
+                                        </dmn-diff-view>
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
@@ -226,6 +251,8 @@ export default {
             page: 1,
             itemsPerPage: 10,
             xmlViewTabs: {}, // 각 아이템별 탭 상태 관리
+            restoringItems: new Set(), // 되돌리기 진행 중인 아이템 ID들
+            reapplyingItems: new Set(), // 다시 적용 진행 중인 아이템 ID들
             headers: [
                 { title: '비즈니스 규칙', key: 'knowledge_name', sortable: true, width: '25%' },
                 { title: '작업', key: 'operation', sortable: true, width: '10%' },
@@ -340,6 +367,96 @@ export default {
 
         parseDmnXml(xmlString) {
             return parseDmnXml(xmlString);
+        },
+
+        async restoreVersion(item) {
+            if (!item.id || !item.knowledge_id || !this.agentId) {
+                this.$try({
+                    context: this,
+                    action: () => {},
+                    errorMsg: '되돌리기에 필요한 정보가 없습니다.'
+                });
+                return;
+            }
+
+            // 확인 다이얼로그
+            const confirmed = window.confirm('이전 버전으로 되돌리시겠습니까?');
+            if (!confirmed) return;
+
+            // 되돌리기 진행 중 표시
+            this.restoringItems.add(item.id);
+            item.restoring = true;
+
+            try {
+                const result = await this.backend.restoreDmnVersion(
+                    item.id,
+                    item.knowledge_id,
+                    this.agentId
+                );
+
+                this.$try({
+                    context: this,
+                    action: () => {},
+                    successMsg: result.message || '이전 버전으로 성공적으로 되돌렸습니다.'
+                });
+
+                // 히스토리 다시 로드
+                await this.loadHistory();
+            } catch (error) {
+                this.$try({
+                    context: this,
+                    action: () => {},
+                    errorMsg: error instanceof Error ? error.message : '되돌리기에 실패했습니다.'
+                });
+            } finally {
+                this.restoringItems.delete(item.id);
+                item.restoring = false;
+            }
+        },
+
+        async reapplyVersion(item) {
+            if (!item.id || !item.knowledge_id || !this.agentId) {
+                this.$try({
+                    context: this,
+                    action: () => {},
+                    errorMsg: '다시 적용에 필요한 정보가 없습니다.'
+                });
+                return;
+            }
+
+            // 확인 다이얼로그
+            const confirmed = window.confirm('변경 사항을 다시 적용하시겠습니까?');
+            if (!confirmed) return;
+
+            // 다시 적용 진행 중 표시
+            this.reapplyingItems.add(item.id);
+            item.reapplying = true;
+
+            try {
+                const result = await this.backend.reapplyDmnVersion(
+                    item.id,
+                    item.knowledge_id,
+                    this.agentId
+                );
+
+                this.$try({
+                    context: this,
+                    action: () => {},
+                    successMsg: result.message || '변경 사항을 성공적으로 다시 적용했습니다.'
+                });
+
+                // 히스토리 다시 로드
+                await this.loadHistory();
+            } catch (error) {
+                this.$try({
+                    context: this,
+                    action: () => {},
+                    errorMsg: error instanceof Error ? error.message : '다시 적용에 실패했습니다.'
+                });
+            } finally {
+                this.reapplyingItems.delete(item.id);
+                item.reapplying = false;
+            }
         }
 
     }

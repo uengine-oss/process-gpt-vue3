@@ -36,7 +36,7 @@
                             <thead>
                                 <tr>
                                     <th v-for="(input, idx) in previous.inputs" :key="'prev-input-' + idx" class="dmn-input-header">
-                                        {{ input.label || `조건${idx + 1}` }}
+                                        {{ input.label || input.expression || input.name || `조건${idx + 1}` }}
                                     </th>
                                     <th v-for="(output, idx) in previous.outputs" :key="'prev-output-' + idx" class="dmn-output-header">
                                         {{ output.label || output.name || `결과${idx + 1}` }}
@@ -68,9 +68,9 @@
                                         class="dmn-input-header"
                                         :class="{ 
                                             'dmn-added': !previous.inputs || idx >= previous.inputs.length || !previous.inputs[idx],
-                                            'dmn-modified': previous.inputs && previous.inputs[idx] && previous.inputs[idx].label !== input.label
+                                            'dmn-modified': previous.inputs && previous.inputs[idx] && (previous.inputs[idx].label !== input.label || previous.inputs[idx].expression !== input.expression)
                                         }">
-                                        {{ input.label || `조건${idx + 1}` }}
+                                        {{ input.label || input.expression || `조건${idx + 1}` }}
                                     </th>
                                     <th v-for="(output, idx) in current.outputs" :key="'curr-output-' + idx" 
                                         class="dmn-output-header"
@@ -110,18 +110,25 @@
 
         <!-- 변경 요약 -->
         <div v-if="changeSummary" class="mt-2">
-            <div class="text-body-2 font-weight-medium mb-1">변경 요약</div>
-            <v-chip-group>
-                <v-chip v-if="changeSummary.addedRules > 0" color="success" size="small">
-                    추가: {{ changeSummary.addedRules }}개
-                </v-chip>
-                <v-chip v-if="changeSummary.modifiedRules > 0" color="warning" size="small">
-                    수정: {{ changeSummary.modifiedRules }}개
-                </v-chip>
-                <v-chip v-if="changeSummary.removedRules > 0" color="error" size="small">
-                    삭제: {{ changeSummary.removedRules }}개
-                </v-chip>
-            </v-chip-group>
+            <div class="d-flex align-center justify-space-between">
+                <div class="flex-grow-1">
+                    <div class="text-body-2 font-weight-medium mb-1">변경 요약</div>
+                    <v-chip-group>
+                        <v-chip v-if="changeSummary.addedRules > 0" color="success" size="small">
+                            추가: {{ changeSummary.addedRules }}개
+                        </v-chip>
+                        <v-chip v-if="changeSummary.modifiedRules > 0" color="warning" size="small">
+                            수정: {{ changeSummary.modifiedRules }}개
+                        </v-chip>
+                        <v-chip v-if="changeSummary.removedRules > 0" color="error" size="small">
+                            삭제: {{ changeSummary.removedRules }}개
+                        </v-chip>
+                    </v-chip-group>
+                </div>
+                <div class="ml-4">
+                    <slot name="actions"></slot>
+                </div>
+            </div>
         </div>
     </div>
 </template>

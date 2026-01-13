@@ -1274,18 +1274,23 @@ export default {
                 const updatedFeedback = [...existingFeedback, { time: now, content: text }];
                 const agentOrch = this.selectedOrchestrationMethod || this.todoStatus.agent_orch;
 
-                await this.backend.putWorkItem(taskId, {
+                let putItem = {
                     feedback: updatedFeedback,
-                    feedback_status: 'REQUESTED',
-                    agent_orch: agentOrch
-                });
+                    agent_orch: agentOrch,
+                }
+
+                if (agentOrch == 'agent') {
+                    putItem['feedback_status'] = 'REQUESTED';
+                }
+
+                if (this.todoStatus.status != 'DONE') {
+                    putItem['draft_status'] = 'FB_REQUESTED';
+                }
+
+                await this.backend.putWorkItem(taskId, putItem);
 
                 // 상태 업데이트
-                Object.assign(this.todoStatus, {
-                    agent_orch: agentOrch,
-                    feedback: updatedFeedback,
-                    feedback_status: 'REQUESTED'
-                });
+                Object.assign(this.todoStatus, putItem);
                 
                 this.isLoading = true;
                 this.chatMessages.push({ time: now, content: text });
