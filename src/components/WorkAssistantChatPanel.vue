@@ -740,7 +740,10 @@ export default {
                             if (parsed) {
                                 // 프로세스 생성 요청인 경우 컨설팅 모드로 전환
                                 if (parsed.user_request_type === 'generate_process') {
+                                    console.log('[WorkAssistantChatPanel] parsed:', JSON.stringify(parsed, null, 2));
+                                    console.log('[WorkAssistantChatPanel] parsed.user_message:', parsed.user_message);
                                     const originalMessage = parsed.user_message || parsed.data?.user_message || userMessage;
+                                    console.log('[WorkAssistantChatPanel] originalMessage:', originalMessage);
                                     await this.switchToConsultingMode(originalMessage);
                                     return;
                                 }
