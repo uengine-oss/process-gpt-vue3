@@ -1527,7 +1527,13 @@
     "ExternalForms": {
         "submit": "Submit",
         "submitted": "Submitted",
-        "submittedMessage": "Submitted successfully."
+        "submittedMessage": "Submitted successfully.",
+        "formNotFound": "Form not found",
+        "formNotFoundMessage": "The requested form could not be found. Please contact the administrator.",
+        "previousStep": "Previous Step",
+        "previousStepDescription": "The information below is what you entered in the previous step. It is for reference only.",
+        "currentStep": "Current Step",
+        "invalidAccess": "Invalid access."
     },
     "ProcessDefinitionChatHeader": {
         "addMarketplace": "Register to Marketplace",

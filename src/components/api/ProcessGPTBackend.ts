@@ -3867,19 +3867,40 @@ class ProcessGPTBackend implements Backend {
                         return null;
                     }
 
-                    const prevWorkItem = data;
+                    // data는 배열이므로 첫 번째 항목 사용
+                    const prevWorkItem = data && data.length > 0 ? data[0] : null;
 
-                    if (prevWorkItem && prevWorkItem.proc_inst_id && prevWorkItem.activity_id) {
+                    if (prevWorkItem && prevWorkItem.proc_inst_id && prevWorkItem.activity_id && prevWorkItem.tool) {
+                        // tool이 'formHandler:'로 시작하는지 확인
+                        if (!prevWorkItem.tool.includes('formHandler:')) {
+                            return null;
+                        }
+                        
                         const formId = prevWorkItem.tool.split('formHandler:')[1];
-                        const [form, formData] = await Promise.all([
-                            this.getRawDefinition(formId, { type: 'form' }),
-                            this.getVariableWithTaskId(workItem.proc_inst_id, prevWorkItem.id, formId)
-                        ]);
-                        return {
-                            name: prevWorkItem.activity_name,
-                            html: form,
-                            formData: formData.valueMap
-                        };
+                        if (!formId) {
+                            return null;
+                        }
+                        
+                        try {
+                            const [form, formData] = await Promise.all([
+                                this.getRawDefinition(formId, { type: 'form' }),
+                                this.getVariableWithTaskId(workItem.proc_inst_id, prevWorkItem.id, formId)
+                            ]);
+                            
+                            // 폼을 찾지 못한 경우 null 반환
+                            if (!form) {
+                                return null;
+                            }
+                            
+                            return {
+                                name: prevWorkItem.activity_name || '',
+                                html: form,
+                                formData: (formData && formData.valueMap) ? formData.valueMap : {}
+                            };
+                        } catch (error) {
+                            console.error(`참조 폼 조회 중 오류 (formId: ${formId}):`, error);
+                            return null;
+                        }
                     }
                     return null;
                 });
