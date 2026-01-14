@@ -2356,6 +2356,22 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // 그룹 채팅 메시지 실시간 구독
+    async watchGroupChats(callback: (payload: any) => void, filter?: string) {
+        try {
+            return await storage._watch({
+                channel: 'group_chat_messages',
+                table: 'group_chat_messages',
+                filter: filter
+            },(payload) => {
+                callback(payload);  
+            });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async watchNotifications(callback: (payload: any) => void) {
         try {
             return await storage._watch({
@@ -4434,6 +4450,46 @@ class ProcessGPTBackend implements Backend {
                 }
             });
             return messages;
+        } catch (error) {
+            throw new Error(error.message);
+        }
+    }
+
+    // 그룹 채팅 메시지 조회
+    async getGroupChatMessages(chatRoomId: string) {
+        try {
+            // Supabase를 통해 직접 조회 (RLS 정책 적용)
+            const { data, error } = await window.$supabase
+                .from('group_chat_messages')
+                .select('*')
+                .eq('chat_room_id', chatRoomId)
+                .order('time_stamp', { ascending: true });
+            
+            if (error) {
+                throw new Error(error.message);
+            }
+            
+            // 기존 chats 테이블 형식과 호환되도록 변환
+            return (data || []).map((msg) => ({
+                uuid: msg.uuid,
+                id: msg.id, // 실제 메시지 PK 사용 (auto increment)
+                messages: {
+                    content: msg.content,
+                    email: msg.email,
+                    name: msg.name,
+                    role: msg.role,
+                    timeStamp: msg.time_stamp,
+                    uuid: msg.uuid,
+                    profile: msg.profile,
+                    jsonContent: msg.json_content,
+                    jsonData: msg.json_data,
+                    image: msg.image,
+                    images: msg.images,
+                    interventionStatus: msg.intervention_status || msg.json_content?.intervention?.status || null
+                },
+                thread_id: msg.thread_id,
+                tenant_id: msg.tenant_id
+            }));
         } catch (error) {
             throw new Error(error.message);
         }

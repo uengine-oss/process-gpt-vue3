@@ -5,12 +5,21 @@ export function useScroll() {
   const isAtBottom = ref(true);
   const previewMessage = ref(null);
 
+  function resolveContainer() {
+    const refVal = scrollContainer.value;
+    if (!refVal) return null;
+    // perfect-scrollbar 컴포넌트(ref) 또는 DOM 엘리먼트(ref.value) 모두 대응
+    return refVal.$el || refVal.value || refVal;
+  }
+
   // 스크롤 이벤트 핸들러
   function handleScroll() {
-    if (!scrollContainer.value) return;
-
-    const container = scrollContainer.value.$el || scrollContainer.value;
-    const { scrollTop, scrollHeight, clientHeight } = container;
+    const container = resolveContainer();
+    if (!container) return;
+    const target =
+      (container && container.querySelector && (container.querySelector('.ps-content') || container.querySelector('.ps'))) ||
+      container;
+    const { scrollTop, scrollHeight, clientHeight } = target || {};
     
     // 하단에서 100px 이내면 하단으로 간주
     isAtBottom.value = scrollHeight - scrollTop - clientHeight < 100;
@@ -22,8 +31,8 @@ export function useScroll() {
 
   // 최상단으로 스크롤
   function scrollToTop() {
-    if (scrollContainer.value) {
-      const container = scrollContainer.value.$el || scrollContainer.value;
+    const container = resolveContainer();
+    if (container) {
       container.scrollTop = 0;
     }
   }
@@ -31,20 +40,25 @@ export function useScroll() {
   // 최하단으로 스크롤
   function scrollToBottom() {
     nextTick(() => {
-      if (scrollContainer.value) {
-        const container = scrollContainer.value.$el || scrollContainer.value;
-        container.scrollTop = container.scrollHeight;
-        isAtBottom.value = true;
-        previewMessage.value = null;
+      const container = resolveContainer();
+      if (!container) return;
+      let target = container;
+      if (container && container.querySelector) {
+        target = container.querySelector('.ps-content') || container.querySelector('.ps') || container.firstElementChild || container;
       }
+      if (target && typeof target.scrollTop !== 'undefined') {
+        target.scrollTop = target.scrollHeight;
+      }
+      isAtBottom.value = true;
+      previewMessage.value = null;
     });
   }
 
   // 스크롤 컨테이너 업데이트
   function updateScroll() {
-    if (scrollContainer.value && scrollContainer.value.update) {
-      scrollContainer.value.update();
-    }
+    const refVal = scrollContainer.value;
+    const updater = refVal?.update || refVal?.value?.update;
+    if (typeof updater === 'function') updater();
   }
 
   return {

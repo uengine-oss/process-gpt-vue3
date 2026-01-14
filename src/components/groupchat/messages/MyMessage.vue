@@ -343,22 +343,21 @@
   const { formatTime, linkifyWithMentions } = useMessages(ref([]), ref({}));
   
   // 개입 관련 computed
-  const hasIntervention = computed(() => {
-    return props.message.jsonContent?.intervention?.should_intervene;
-  });
+const hasIntervention = computed(() => {
+  const status = props.message.interventionStatus || props.message.jsonContent?.intervention?.status;
+  return !!status && status !== 'not_intervening';
+});
   
-  const isInterventionPending = computed(() => {
-    if (!hasIntervention.value) return false;
-    
-    const status = props.message.jsonContent?.intervention?.status;
-    if (status === 'completed') return false;
-    if (status === 'checking' || status === 'intervening') return true;
-    
-    return !interventionResponse.value;
-  });
+const isInterventionPending = computed(() => {
+  if (!hasIntervention.value) return false;
   
-  const currentMessageUuid = computed(() => props.message?.uuid || props.message?.id || props.message?.message_uuid);
-
+  const status = props.message.interventionStatus || props.message.jsonContent?.intervention?.status;
+  if (status === 'completed') return false;
+  if (status === 'checking' || status === 'intervening') return true;
+  
+  return !interventionResponse.value;
+});
+  
   function parseJsonContent(content) {
     if (!content) return null;
     if (typeof content === 'object') return content;
@@ -369,30 +368,62 @@
     }
   }
 
-  const interventionResponse = computed(() => {
-    const all = props.allMessages || [];
+const interventionResponse = computed(() => {
+  const all = props.allMessages || [];
 
-    // 1) user_message_uuid로 직접 매핑
-    if (currentMessageUuid.value) {
-      const found = all.find((msg) => {
-        if (!msg) return false;
-        const roleOk = ['system', 'agent', 'assistant'].includes(msg.role);
-        if (!roleOk) return false;
-        const json = parseJsonContent(msg.jsonContent || msg.jsonData);
-        return json?.user_message_uuid === currentMessageUuid.value;
-      });
-      if (found) return found;
+  console.log('🔵 [interventionResponse] computed 실행', {
+    index: props.index,
+    currentMessageId: props.message?.id,
+    allMessagesCount: all.length,
+    messageContent: props.message?.content?.substring(0, 30)
+  });
+
+  // 1) user_message_id로 직접 매핑 (그룹채팅은 id 기반)
+  const currentMessageId = props.message?.id;
+  if (currentMessageId) {
+    const found = all.find((msg) => {
+      if (!msg) return false;
+      const roleOk = ['system', 'agent', 'assistant'].includes(msg.role);
+      if (!roleOk) return false;
+      const json = parseJsonContent(msg.jsonContent || msg.jsonData);
+      const matches = json?.user_message_id === currentMessageId;
+
+      if (matches) {
+        console.log('✅ [interventionResponse] user_message_id 매칭 성공', {
+          userMessageId: currentMessageId,
+          foundMessageId: msg.id,
+          foundMessageRole: msg.role,
+          foundMessageContent: msg.content?.substring(0, 50)
+        });
+      }
+
+      return matches;
+    });
+    if (found) {
+      console.log('✅ [interventionResponse] 응답 반환 (user_message_id)', found);
+      return found;
     }
+  }
 
-    // 2) 바로 다음 메시지에서 찾는 기존 로직 (후방 호환)
+  // 2) 바로 다음 메시지에서 찾는 기존 로직 (후방 호환)
     if (props.index < all.length - 1) {
       const nextMessage = all[props.index + 1];
       if (nextMessage?.role === 'system' || nextMessage?.role === 'agent' || nextMessage?.role === 'assistant') {
+        console.log('✅ [interventionResponse] 응답 반환 (다음 메시지)', {
+          nextMessageRole: nextMessage.role,
+          nextMessageContent: nextMessage.content?.substring(0, 50)
+        });
         return nextMessage;
       }
     }
-    return null;
+  
+  console.log('❌ [interventionResponse] 응답을 찾지 못함', {
+    currentMessageId: currentMessageId,
+    allMessagesRoles: all.map(m => m?.role).slice(-5),
+    allMessagesIds: all.map(m => m?.id).slice(-5)
   });
+  return null;
+});
   
   // 타임스탬프 표시 여부
   const shouldDisplayTimestamp = computed(() => {

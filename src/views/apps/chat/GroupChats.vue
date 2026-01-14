@@ -37,7 +37,15 @@
             </template>
             <template v-slot:rightpart>
                 <div :key="chatRenderKey" class="chat-info-view-wrapper-chats">
+                    <div v-if="!currentChatRoom || !chatRoomId" class="empty-chat-placeholder">
+                        <div class="empty-chat-content">
+                            <v-icon size="80" color="grey-lighten-1">mdi-message-outline</v-icon>
+                            <h3 class="mt-4 mb-2 text-h6 text-grey-darken-1">채팅방을 선택해주세요</h3>
+                            <p class="text-body-2 text-grey-darken-1">왼쪽에서 채팅방을 선택하거나 새로운 채팅방을 생성해주세요.</p>
+                        </div>
+                    </div>
                     <GroupChat
+                        v-else
                         ref="chatTempRef"
                         :messages="messages"
                         :userInfo="userInfo"
@@ -85,6 +93,13 @@
                                     </div>
                                     <Attachments :isOpen="isAttachmentsOpen" :attachments="attachments" />
                                 </div>
+                                <ScenarioScript
+                                    :currentChatRoom="currentChatRoom"
+                                    :chatRoomId="chatRoomId"
+                                    :messages="messages"
+                                    @message-sent="handleScenarioMessageSent"
+                                    @scroll-to-bottom="handleScenarioScrollToBottom"
+                                />
                             </div>
                         </template>
                     </GroupChat>
@@ -227,6 +242,7 @@ import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import UserListing from '@/components/apps/chats/UserListing.vue';
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import GroupChat from '@/components/ui/GroupChat.vue';
+import ScenarioScript from '@/components/groupchat/ScenarioScript.vue';
 import axios from 'axios';
 import partialParse from 'partial-json-parser';
 
@@ -239,7 +255,8 @@ export default {
         ChatListing,
         UserListing,
         AssistantChats,
-        Attachments
+        Attachments,
+        ScenarioScript
     },
     emits: ['selectedUser', 'startChat', 'chat-selected', 'create-chat-room', 'delete-chat-room', 'genFinished', 'clickedWorkOrder'],
     props: {
@@ -273,12 +290,24 @@ export default {
 
         // attachments
         isAttachmentsOpen: false,
-        attachments: []
+        attachments: [],
+        
+        // 메시지 로드 시점 추적 (중복 방지용)
+        messagesLoadedAt: null,
+        watchChatsSubscription: null,
+        // putMessage 중복 호출 방지 (대본 모드용)
+        savingMessageIds: new Set(),
+        // 실시간 실패 시 개입 결과 폴링용
+        interventionPollers: {}
     }),
     computed: {
         filteredChatRoomList() {
             // 그룹채팅: chat_type이 'group'인 채팅방만 필터링
-            const groupChatRooms = this.chatRoomList.filter((room) => room.chat_type === 'group');
+            const groupChatRooms = this.chatRoomList.filter((room) => {
+                // chat_type이 명시적으로 'group'인 경우만 포함
+                // chat_type이 없거나 'single'인 경우는 제외
+                return room.chat_type === 'group';
+            });
             return groupChatRooms.sort((a, b) => new Date(b.message.createdAt) - new Date(a.message.createdAt));
         },
         computedParticipantUsers() {
@@ -299,7 +328,7 @@ export default {
     },
     watch: {
         currentChatRoom: {
-            async handler(newVal) {
+            async handler(newVal, oldVal) {
                 if (newVal && newVal.id) {
                     if (this.generator) {
                         this.chatRoomId = newVal.id;
@@ -362,6 +391,19 @@ export default {
     },
     beforeUnmount() {
         this.EventBus.emit('chat-room-unselected');
+        // 구독 정리
+        if (this.watchChatsSubscription) {
+            try {
+                if (typeof this.watchChatsSubscription.unsubscribe === 'function') {
+                    this.watchChatsSubscription.unsubscribe();
+                } else if (typeof this.watchChatsSubscription === 'function') {
+                    this.watchChatsSubscription();
+                }
+            } catch (e) {
+                console.warn('구독 정리 실패:', e);
+            }
+            this.watchChatsSubscription = null;
+        }
     },
     methods: {
         restoreInputFocus() {
@@ -382,6 +424,65 @@ export default {
         },
         toggleAttachments() {
             this.isAttachmentsOpen = !this.isAttachmentsOpen;
+        },
+        scrollToBottomSafe(label = '') {
+            this.$nextTick(() => {
+                const gc = this.$refs.chatTempRef;
+                if (gc && typeof gc.scrollToBottom === 'function') {
+                    gc.scrollToBottom();
+                }
+            });
+        },
+        async handleScenarioMessageSent({ message, chatRoomId, text, userId, userMessageUuid }) {
+            // 중복 호출 방지: 같은 ID로 이미 처리 중이면 무시
+            if (message.id && this.savingMessageIds.has(message.id)) {
+                console.log('⚠️ [handleScenarioMessageSent] 이미 처리 중인 메시지 ID, 무시', { id: message.id });
+                return;
+            }
+            
+            // 처리 중 표시
+            if (message.id) {
+                this.savingMessageIds.add(message.id);
+            }
+            
+            try {
+                // 1. 먼저 messages 배열에 추가 (화면에 즉시 표시)
+                const isDuplicate = this.messages.some((msg) => msg.id === message.id);
+                if (!isDuplicate) {
+                    this.messages.push(message);
+                    this.scrollToBottomSafe('scenario-push');
+                    console.log('✅ [handleScenarioMessageSent] 메시지 화면 추가', {
+                        id: message.id,
+                        content: message.content?.substring(0, 50)
+                    });
+                }
+                
+                // 2. DB에 저장
+                await this.putMessage(message, chatRoomId);
+                console.log('✅ [handleScenarioMessageSent] DB 저장 완료', { 
+                    id: message.id
+                });
+                
+                // 3. Agent 개입 검사 (메시지가 messages 배열에 있으므로 찾을 수 있음)
+                await this.handleAgentIntervention(text, chatRoomId, userId, message.id);
+            } catch (error) {
+                console.warn('❌ [handleScenarioMessageSent] 시나리오 메시지 저장 실패:', error);
+                // 저장 실패 시 화면에서도 제거
+                if (message.id) {
+                    const index = this.messages.findIndex((msg) => msg.id === message.id);
+                    if (index !== -1) {
+                        this.messages.splice(index, 1);
+                    }
+                }
+            } finally {
+                // 처리 완료 후 Set에서 제거
+                if (message.id) {
+                    this.savingMessageIds.delete(message.id);
+                }
+            }
+        },
+        handleScenarioScrollToBottom(label) {
+            this.scrollToBottomSafe(label);
         },
         async getAttachments() {
             await this.backend.getAttachments(this.chatRoomId, (attachment) => {
@@ -524,42 +625,18 @@ export default {
             var me = this;
 
             // RLS 정책 문제 해결: 직접 Supabase 쿼리 사용
-            // 참가자 목록에 현재 사용자가 있는 채팅방도 가져오기 위해 여러 방법 시도
-            const currentUserEmail = me.userInfo.email;
             const userTenantId = me.userInfo.tenant_id || 'localhost';
-
-            let chatRooms = [];
-            try {
-                // 방법 1: tenant_id로 필터링 시도
-                const { data: data1, error: error1 } = await window.$supabase.from('chat_rooms').select('*').eq('tenant_id', userTenantId);
-
-                if (!error1 && data1) {
-                    chatRooms = data1;
-                }
-
-                // 방법 2: 참가자 목록에 현재 사용자가 있는 채팅방도 추가로 가져오기
-                // JSONB 쿼리로 participants 배열에서 email 검색
-                const { data: data2, error: error2 } = await window.$supabase
-                    .from('chat_rooms')
-                    .select('*')
-                    .contains('participants', JSON.stringify([{ email: currentUserEmail }]));
-
-                if (!error2 && data2) {
-                    // 중복 제거
-                    const existingIds = new Set(chatRooms.map((r) => r.id));
-                    const newRooms = data2.filter((r) => !existingIds.has(r.id));
-                    chatRooms = [...chatRooms, ...newRooms];
-                }
-            } catch (e) {
-                // 폴백: 기존 방법 사용
-                chatRooms = (await me.backend.getChatRoomList(`chat_rooms`)) || [];
+            const { data: chatRooms, error } = await window.$supabase.from('chat_rooms').select('*').eq('tenant_id', userTenantId);
+            
+            if (error || !chatRooms) {
+                console.error('채팅방 조회 실패:', error);
+                return;
             }
 
-            if (chatRooms) {
-                me.myChatRoomIds = [];
-                me.chatRoomList = []; // 초기화
+            me.myChatRoomIds = [];
+            me.chatRoomList = [];
 
-                chatRooms.forEach(function (chatRoom) {
+            chatRooms.forEach(function (chatRoom) {
                     // participants가 배열인지 확인
                     if (!chatRoom.participants || !Array.isArray(chatRoom.participants)) {
                         return;
@@ -577,6 +654,11 @@ export default {
                     });
 
                     if (existUserInfo) {
+                        // 그룹채팅 페이지에서는 chat_type이 'group'인 채팅방만 추가
+                        if (chatRoom.chat_type !== 'group') {
+                            return;
+                        }
+
                         // 참가자 정보가 없거나 불완전한 경우 보완
                         if (existUserInfo.isExistUnReadMessage === undefined) {
                             existUserInfo.isExistUnReadMessage = false;
@@ -595,42 +677,61 @@ export default {
                     }
                 });
 
-                // 필터링된 그룹채팅방이 있으면 첫 번째 채팅방 선택
-                if (me.filteredChatRoomList.length > 0) {
-                    me.currentChatRoom = me.filteredChatRoomList[0];
-                    me.chatRoomSelected(me.currentChatRoom);
-                    me.setWatchChatList(me.myChatRoomIds);
-                    me.setReadMessage(0);
-                } else {
-                    let systemChatRoom = {
-                        name: 'Process GPT',
-                        participants: [
-                            {
-                                email: 'system@uengine.org',
-                                id: 'system_id',
-                                username: 'System',
-                                is_admin: true,
-                                notifications: null
-                            }
-                        ]
-                    };
-                    me.createChatRoom(systemChatRoom);
-                }
+            // 필터링된 그룹채팅방이 있으면 첫 번째 채팅방 선택
+            if (me.filteredChatRoomList.length > 0) {
+                me.currentChatRoom = me.filteredChatRoomList[0];
+                // getMessages가 완료된 후에만 실시간 구독 시작 (중복 방지)
+                await me.chatRoomSelected(me.currentChatRoom);
+                me.setWatchChatList(me.myChatRoomIds);
+                me.setReadMessage(0);
+            } else {
+                me.currentChatRoom = null;
+                me.chatRoomId = null;
+                me.messages = [];
             }
         },
-        deleteChatRoom(chatRoomId) {
-            let index = this.chatRoomList.findIndex((room) => room.id === chatRoomId);
-            if (index !== -1) {
-                this.chatRoomList.splice(index, 1);
-            }
-            this.backend.delete(`chats/${chatRoomId}`, { key: 'id' });
-            this.backend.delete(`chat_rooms/${chatRoomId}`, { key: 'id' });
+        async deleteChatRoom(chatRoomId) {
+            try {
+                // 그룹 채팅 메시지 삭제 (CASCADE로 자동 삭제되지만 명시적으로 삭제)
+                try {
+                    const { error } = await window.$supabase
+                        .from('group_chat_messages')
+                        .delete()
+                        .eq('chat_room_id', chatRoomId);
+                    if (error) {
+                        console.warn('그룹 채팅 메시지 삭제 실패 (CASCADE로 자동 삭제될 수 있음):', error);
+                    }
+                } catch (e) {
+                    console.warn('그룹 채팅 메시지 삭제 중 오류:', e);
+                }
+                
+                // 먼저 서버에서 삭제 요청
+                await Promise.all([
+                    this.backend.delete(`chat_rooms/${chatRoomId}`, { key: 'id' })
+                ]);
 
-            if (this.chatRoomList && this.chatRoomList.length > 0) {
-                this.chatRoomSelected(this.chatRoomList[0]);
-            } else {
-                this.currentChatRoom = null;
-                this.messages = [];
+                // 서버 삭제가 완료된 후 로컬 상태 업데이트
+                let index = this.chatRoomList.findIndex((room) => room.id === chatRoomId);
+                if (index !== -1) {
+                    this.chatRoomList.splice(index, 1);
+                }
+
+                // 현재 선택된 채팅방이 삭제된 채팅방인 경우
+                if (this.currentChatRoom && this.currentChatRoom.id === chatRoomId) {
+                    if (this.filteredChatRoomList && this.filteredChatRoomList.length > 0) {
+                        this.chatRoomSelected(this.filteredChatRoomList[0]);
+                    } else {
+                        this.currentChatRoom = null;
+                        this.chatRoomId = null;
+                        this.messages = [];
+                    }
+                }
+            } catch (error) {
+                console.error('채팅방 삭제 실패:', error);
+                // 에러 발생 시 사용자에게 알림
+                alert('채팅방 삭제 중 오류가 발생했습니다. 다시 시도해주세요.');
+                // 에러가 발생해도 로컬에서 제거된 경우 다시 추가하지 않음
+                // (이미 UI에서 제거되었을 수 있으므로)
             }
         },
         async createChatRoom(chatRoomInfo) {
@@ -662,11 +763,11 @@ export default {
                     if (u.id === participant.id) {
                         return true;
                     }
-                    // email이 있는 경우 email로 비교
+                    // email로 비교
                     if (participant.email && u.email && u.email === participant.email) {
                         return true;
                     }
-                    // uid로도 비교 시도
+                    // uid로 비교
                     if (u.uid === participant.id) {
                         return true;
                     }
@@ -884,7 +985,7 @@ export default {
                 );
             }
         },
-        chatRoomSelected(chatRoomInfo) {
+        async chatRoomSelected(chatRoomInfo) {
             // 현재 진행 중인 AI 생성 작업이 있으면 백그라운드 모드로 전환 (새로운 채팅방 정보 설정 전에 호출)
             this.handleChatRoomChange();
 
@@ -900,7 +1001,8 @@ export default {
                 this.ProcessGPTActive = false;
                 this.isSystemChat = false;
             }
-            this.getMessages(this.currentChatRoom.id);
+            // getMessages가 완료된 후에만 다음 작업 진행 (중복 방지)
+            await this.getMessages(this.currentChatRoom.id);
             this.setReadMessage(this.chatRoomList.findIndex((x) => x.id == chatRoomInfo.id));
 
             this.EventBus.emit('chat-room-selected', this.currentChatRoom.id);
@@ -987,26 +1089,65 @@ export default {
         },
         async putMessage(msg, chatRoomId = null) {
             // this.addTextToVectorStore(msg)
-            let uuid;
-            if (msg.uuid) {
-                uuid = msg.uuid;
-            } else {
-                uuid = this.uuid();
+            const roomId = chatRoomId || this.currentChatRoom.id;
+            
+            // 디버깅: putMessage 호출 추적
+            const callStack = new Error().stack;
+            console.log('🔍 [putMessage] 호출됨', {
+                content: msg.content?.substring(0, 30),
+                chatRoomId: roomId,
+                caller: callStack?.split('\n')[2]?.trim()
+            });
+            
+            // 그룹 채팅 전용 테이블에 저장
+            try {
+                const { data, error } = await window.$supabase
+                    .from('group_chat_messages')
+                    .insert({
+                        chat_room_id: roomId,
+                        content: msg.content,
+                        email: msg.email,
+                        name: msg.name,
+                        role: msg.role || 'user',
+                        time_stamp: msg.timeStamp || Date.now(),
+                        profile: msg.profile,
+                        json_content: msg.jsonContent || null,
+                        json_data: msg.jsonData || null,
+                        image: msg.image || null,
+                        images: msg.images || null,
+                        thread_id: msg.thread_id || null,
+                        tenant_id: this.userInfo.tenant_id || window.$tenantName || 'localhost'
+                    })
+                    .select('id')
+                    .single();
+                
+                if (error) {
+                    // PRIMARY KEY 제약 위반 (중복 ID)인 경우 무시
+                    if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+                        console.log('⚠️ [putMessage] 중복 ID 에러 (이미 저장된 메시지)', { id: data?.id, chatRoomId: roomId, error: error.message });
+                        return;
+                    }
+                    throw error;
+                }
+                
+                // 저장된 메시지의 id를 메시지 객체에 추가
+                if (data && data.id) {
+                    msg.id = data.id;
+                }
+                
+                console.log('✅ [putMessage] 그룹 채팅 메시지 저장 완료', { id: data?.id, chatRoomId: roomId });
+            } catch (error) {
+                console.error('[GroupChats] Failed to save group chat message:', error);
+                throw error;
             }
-            let message = {
-                messages: msg,
-                id: chatRoomId || this.currentChatRoom.id,
-                uuid: uuid
-            };
 
-            this.putObject(`chats/${uuid}`, message);
-
+            // chat_rooms 테이블의 최신 메시지 정보 업데이트
             let chatRoomObj = {
                 msg: msg.messageForUser ? msg.messageForUser : msg.content,
                 type: 'text',
                 createdAt: msg.timeStamp
             };
-            let targetChatRoom = this.chatRoomList.find((room) => room.id === chatRoomId) || this.currentChatRoom;
+            let targetChatRoom = this.chatRoomList.find((room) => room.id === roomId) || this.currentChatRoom;
             targetChatRoom.message = chatRoomObj;
             targetChatRoom.participants.forEach((participant) => {
                 if (participant.email !== this.userInfo.email) {
@@ -1031,7 +1172,6 @@ export default {
                 // 사용자 메시지를 먼저 화면에 표시 (즉시 반응)
                 const userMessageObj = this.createMessageObj(newMessage);
                 // messages 배열에 즉시 추가하여 화면에 표시
-                // putMessage는 호출하지 않음 - 백엔드에서 저장하므로 중복 방지
                 this.messages.push(userMessageObj);
                 newMessage.callType = 'chats';
 
@@ -1041,14 +1181,21 @@ export default {
                 // 텍스트 메시지인 경우 에이전트 개입 로직을 비동기로 처리
                 // 단, 에이전트가 멘션된 경우는 개입 여부 판단을 하지 않음 (직접 해당 에이전트에게 메시지 전송)
                 if (newMessage.text && this.currentChatRoom && this.currentChatRoom.id && !mentionedAgent) {
-                    // 에이전트 개입 로직을 비동기로 처리 (await 제거)
-                    // 사용자 메시지는 이미 화면에 표시되었으므로 백그라운드에서 처리
-                    this.handleAgentIntervention(newMessage.text, this.currentChatRoom.id, this.userInfo.email).catch((error) => {
-                        console.error('❌ 에이전트 개입 처리 실패:', error);
-                        console.error('에러 상세:', error.response?.data || error.message);
-                        // 실패 시 기존 로직 사용
+                    // 먼저 DB에 저장하고 id를 받아옴
+                    await this.putMessage(userMessageObj);
+                    
+                    // 저장된 메시지의 id로 개입 로직 처리
+                    if (userMessageObj.id) {
+                        this.handleAgentIntervention(newMessage.text, this.currentChatRoom.id, this.userInfo.email, userMessageObj.id).catch((error) => {
+                            console.error('❌ 에이전트 개입 처리 실패:', error);
+                            console.error('에러 상세:', error.response?.data || error.message);
+                            // 실패 시 기존 로직 사용
+                            this.sendMessage(newMessage);
+                        });
+                    } else {
+                        console.warn('⚠️ [beforeSendMessage] 메시지 ID를 받지 못함, 개입 로직 건너뜀');
                         this.sendMessage(newMessage);
-                    });
+                    }
                 } else {
                     // 이미지만 있거나 텍스트가 없거나, 에이전트가 멘션된 경우 기존 로직 사용
                     // 이 경우에는 putMessage를 호출해야 함 (백엔드 개입 로직이 없으므로)
@@ -1062,29 +1209,37 @@ export default {
                 });
             }
         },
-        async handleAgentIntervention(text, chatRoomId, userId) {
+        async handleAgentIntervention(text, chatRoomId, userId, userMessageId = null) {
             // 에이전트 개입 로직을 비동기로 처리
+            console.log('🔵 [handleAgentIntervention] 시작', {
+                text: text?.substring(0, 50),
+                chatRoomId,
+                userId,
+                userMessageId,
+                messagesCount: this.messages.length
+            });
+            
             try {
                 const response = await axios.post('/langchain-chat/intervention', {
                     text: text,
                     chat_room_id: chatRoomId,
-                    user_id: userId
+                    user_id: userId,
+                    user_message_id: userMessageId || undefined
+                });
+
+                console.log('🟢 [handleAgentIntervention] 응답 받음', {
+                    hasIntervention: !!(response.data && response.data.intervention),
+                    intervention: response.data?.intervention,
+                    fullResponse: response.data
                 });
 
                 if (response.data && response.data.intervention) {
                     const intervention = response.data.intervention;
 
-                    // 개입 정보를 사용자 메시지에 즉시 반영
-                    // 방금 추가한 사용자 메시지를 찾아서 jsonContent 업데이트
-                    // 가장 최근에 추가된 사용자 메시지를 찾음 (내림차순으로 검색)
-                    let userMessage = null;
-                    for (let i = this.messages.length - 1; i >= 0; i--) {
-                        const msg = this.messages[i];
-                        if (msg.content === text && msg.email === this.userInfo.email) {
-                            userMessage = msg;
-                            break;
-                        }
-                    }
+                    // 개입 정보를 사용자 메시지에 즉시 반영 (ID로 찾기)
+                    const userMessage = userMessageId 
+                        ? this.messages.find((msg) => msg.id === userMessageId)
+                        : null;
 
                     if (userMessage) {
                         // jsonContent가 없으면 생성 (Vue 3는 반응성이 자동 처리됨)
@@ -1093,36 +1248,180 @@ export default {
                         }
 
                         // 개입 정보 업데이트 (Vue 3는 직접 할당해도 반응성 유지)
+                        const statusFromServer = intervention.status || (intervention.should_intervene ? 'intervening' : 'not_intervening');
+                        const shouldIntervene =
+                            intervention.should_intervene !== undefined
+                                ? intervention.should_intervene
+                                : statusFromServer !== 'not_intervening' && !!statusFromServer;
+
+                        userMessage.interventionStatus = statusFromServer;
                         userMessage.jsonContent.intervention = {
-                            should_intervene: intervention.should_intervene || false,
-                            status: intervention.should_intervene ? 'intervening' : 'not_intervening',
+                            should_intervene: shouldIntervene,
+                            status: statusFromServer,
                             reason: intervention.reason || '',
                             selected_agent_id: intervention.selected_agent_id || null,
                             agent_name: intervention.agent_response?.agent_name || null
                         };
+                        
+                        console.log('✅ [handleAgentIntervention] 개입 정보 업데이트 완료', {
+                            messageId: userMessage.id,
+                            intervention: userMessage.jsonContent.intervention,
+                            should_intervene: intervention.should_intervene
+                        });
+
+                        // 실시간 이벤트 누락 대비 폴링 시작
+                        if (chatRoomId && userMessageId) {
+                            this.pollInterventionResult(chatRoomId, userMessageId);
+                        }
+                    } else {
+                        console.warn('⚠️ [handleAgentIntervention] 사용자 메시지를 찾지 못함', {
+                            userMessageId,
+                            userId,
+                            messagesCount: this.messages.length,
+                            lastMessages: this.messages.slice(-3).map(m => ({
+                                id: m.id,
+                                email: m.email,
+                                content: m.content?.substring(0, 30)
+                            }))
+                        });
                     }
                 }
 
-                // Supabase 실시간 구독이 이미 설정되어 있으므로, getMessages를 호출할 필요 없음
-                // 백엔드에서 메시지가 저장되면 실시간 구독을 통해 자동으로 messages 배열에 추가됨
-                // getMessages를 호출하면 messages 배열이 초기화되면서 리프레시가 발생하여 입력 필드 포커스가 사라짐
-
-                // 에이전트 개입 여부와 관계없이 실시간 구독이 메시지를 자동으로 처리함
-                // 사용자 메시지는 이미 messages.push로 추가되었고,
-                // 에이전트 응답은 백엔드에서 저장되면 실시간 구독을 통해 자동으로 추가됨
-
-                // 단, 사용자가 보낸 메시지가 실시간 구독으로 중복 추가될 수 있으므로 확인
-                // 실시간 구독의 중복 체크 로직이 있지만, 사용자 메시지는 email로 필터링됨
-                // (175줄: if (data.new.messages.email != me.userInfo.email))
-                // 따라서 사용자 메시지는 실시간 구독으로 추가되지 않음
-
-                // 에이전트 응답만 실시간 구독으로 추가되므로, 별도 처리 불필요
             } catch (error) {
                 console.error('❌ 에이전트 개입 처리 실패:', error);
                 console.error('에러 상세:', error.response?.data || error.message);
-                // 실패 시에도 LLM 채팅을 실행하지 않음 (에이전트 개입 시스템이 동작하지 않을 때)
-                // 사용자 메시지는 이미 화면에 표시되었으므로 그대로 둠
             }
+        },
+        async pollInterventionResult(chatRoomId, userMessageId) {
+            if (!chatRoomId || !userMessageId) return;
+
+            const pollKey = `${chatRoomId}:${userMessageId}`;
+            if (this.interventionPollers[pollKey]) {
+                return; // 이미 폴링 중이면 중복 실행 방지
+            }
+            this.interventionPollers[pollKey] = true;
+
+            const safeParse = (val) => {
+                if (!val) return null;
+                if (typeof val === 'object') return val;
+                try {
+                    return JSON.parse(val);
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            const maxAttempts = 10;
+            const delayMs = 1500;
+
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                try {
+                    const { data, error } = await window.$supabase
+                        .from('group_chat_messages')
+                        .select('*')
+                        .eq('chat_room_id', chatRoomId)
+                        .or(
+                            `id.eq.${userMessageId},json_content->>user_message_id.eq.${userMessageId},json_data->>user_message_id.eq.${userMessageId}`
+                        )
+                        .order('time_stamp', { ascending: true });
+
+                    if (error) {
+                        console.warn('⚠️ [pollInterventionResult] 조회 실패:', error);
+                        break;
+                    }
+
+                    const rows = (data || []).map((row) => ({
+                        ...row,
+                        json_content: safeParse(row.json_content),
+                        json_data: safeParse(row.json_data)
+                    }));
+
+                    const userRow = rows.find((row) => row.id === userMessageId);
+                    const agentRow = rows.find(
+                        (row) =>
+                            ['agent', 'assistant', 'system'].includes(row.role) &&
+                            (row.json_content?.user_message_id == userMessageId ||
+                                row.json_data?.user_message_id == userMessageId)
+                    );
+
+                    // 사용자 메시지 상태 동기화
+                    if (userRow) {
+                        const userIdx = this.messages.findIndex((m) => m.id === userMessageId);
+                        if (userIdx !== -1) {
+                            const status = userRow.intervention_status || this.messages[userIdx].interventionStatus;
+                            this.messages[userIdx].interventionStatus = status || null;
+                            if (!this.messages[userIdx].jsonContent) {
+                                this.messages[userIdx].jsonContent = {};
+                            }
+                            if (!this.messages[userIdx].jsonContent.intervention) {
+                                this.messages[userIdx].jsonContent.intervention = {};
+                            }
+                            this.messages[userIdx].jsonContent.intervention = {
+                                ...this.messages[userIdx].jsonContent.intervention,
+                                ...(userRow.json_content?.intervention || {}),
+                                status: status || this.messages[userIdx].jsonContent.intervention.status || null,
+                                should_intervene: true
+                            };
+                        }
+                    }
+
+                    // 에이전트 응답 동기화
+                    if (agentRow) {
+                        const existing = this.messages.find((m) => m.id === agentRow.id);
+                        const normalizedAgent = {
+                            id: agentRow.id,
+                            chat_room_id: agentRow.chat_room_id,
+                            content: agentRow.content,
+                            email: agentRow.email,
+                            name: agentRow.name,
+                            role: agentRow.role,
+                            timeStamp: agentRow.time_stamp,
+                            profile: agentRow.profile,
+                            jsonContent: agentRow.json_content,
+                            jsonData: agentRow.json_data,
+                            image: agentRow.image,
+                            images: agentRow.images,
+                            interventionStatus:
+                                agentRow.intervention_status || agentRow.json_content?.intervention?.status || null
+                        };
+
+                        if (!existing) {
+                            this.messages.push(normalizedAgent);
+                        }
+
+                        // 사용자 메시지도 완료 처리
+                        const userIdx = this.messages.findIndex((m) => m.id === userMessageId);
+                        if (userIdx !== -1) {
+                            this.messages[userIdx].interventionStatus = 'completed';
+                            if (!this.messages[userIdx].jsonContent) {
+                                this.messages[userIdx].jsonContent = {};
+                            }
+                            if (!this.messages[userIdx].jsonContent.intervention) {
+                                this.messages[userIdx].jsonContent.intervention = {};
+                            }
+                            this.messages[userIdx].jsonContent.intervention.status = 'completed';
+                            this.messages[userIdx].jsonContent.intervention.should_intervene = true;
+                        }
+
+                        delete this.interventionPollers[pollKey];
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ [pollInterventionResult] 폴링 중 오류:', e);
+                    break;
+                }
+
+                // 이미 완료되었으면 폴링 종료
+                const currentMsg = this.messages.find((m) => m.id === userMessageId);
+                if (currentMsg && currentMsg.interventionStatus === 'completed') {
+                    delete this.interventionPollers[pollKey];
+                    return;
+                }
+
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+
+            delete this.interventionPollers[pollKey];
         },
         async executeProcess(input) {
             var me = this;
@@ -1230,8 +1529,19 @@ export default {
                 }
             }
         },
-        deleteSystemMessage(response) {
-            this.backend.delete(`chats/${response.uuid}`, { key: 'uuid' });
+        async deleteSystemMessage(response) {
+            // 그룹 채팅 메시지 삭제
+            try {
+                const { error } = await window.$supabase
+                    .from('group_chat_messages')
+                    .delete()
+                    .eq('uuid', response.uuid);
+                if (error) {
+                    console.error('그룹 채팅 메시지 삭제 실패:', error);
+                }
+            } catch (e) {
+                console.error('그룹 채팅 메시지 삭제 중 오류:', e);
+            }
         },
         cancelProcess(response) {
             let systemMsg = this.$t('chats.requestCancelled', { name: this.name });
@@ -1371,11 +1681,120 @@ export default {
             var me = this;
             me.userInfo = await this.backend.getUserInfo();
 
-            await this.backend.watchChats(
+            // 이전 구독 정리
+            if (me.watchChatsSubscription) {
+                try {
+                    if (typeof me.watchChatsSubscription.unsubscribe === 'function') {
+                        me.watchChatsSubscription.unsubscribe();
+                    } else if (typeof me.watchChatsSubscription === 'function') {
+                        me.watchChatsSubscription();
+                    }
+                } catch (e) {
+                    console.warn('이전 구독 정리 실패:', e);
+                }
+                me.watchChatsSubscription = null;
+            }
+
+            // 그룹 채팅 전용 실시간 구독 (chat_room_id 필터 적용)
+            // uuid 문자열은 따옴표가 필요하므로 숫자가 아닌 경우 따옴표를 붙여줌
+            const formattedIds = (chatRoomIds || [])
+                .filter((id) => !!id)
+                .map((id) => {
+                    const value = String(id).trim();
+                    // 숫자만으로 된 ID는 그대로, UUID/문자열은 단일 인용부호로 감싸기 (Supabase in. 필터 포맷)
+                    return /^[0-9]+$/.test(value) ? value : `'${value.replace(/'/g, "''")}'`;
+                })
+                .join(',');
+
+            if (!formattedIds) {
+                console.warn('⚠️ [setWatchChatList] chatRoomIds가 비어 있어 실시간 구독을 건너뜁니다.');
+                return;
+            }
+
+            const filter = `chat_room_id=in.(${formattedIds})`;
+            console.log('🔔 [setWatchChatList] 실시간 구독 필터', { filter });
+            me.watchChatsSubscription = await this.backend.watchGroupChats(
                 (data) => {
+                    console.log('📡 [실시간 구독] 이벤트 수신', {
+                        eventType: data?.eventType,
+                        hasNew: !!data?.new,
+                        hasOld: !!data?.old,
+                        messageId: data?.new?.id || data?.old?.id
+                    });
+                    
+                    // UPDATE 이벤트 처리 (data.new가 없을 수도 있음)
+                    if (data && data.eventType === 'UPDATE' && data.new) {
+                        const msg = {
+                            id: data.new.id,
+                            chat_room_id: data.new.chat_room_id,
+                            content: data.new.content,
+                            email: data.new.email,
+                            name: data.new.name,
+                            role: data.new.role,
+                            timeStamp: data.new.time_stamp,
+                            profile: data.new.profile,
+                            jsonContent: data.new.json_content,
+                            jsonData: data.new.json_data,
+                            image: data.new.image,
+                            images: data.new.images,
+                            interventionStatus: data.new.intervention_status || data.new.json_content?.intervention?.status || null
+                        };
+                        
+                        console.log('🔄 [실시간 구독] UPDATE 이벤트 수신', {
+                            messageId: msg.id,
+                            chatRoomId: msg.chat_room_id,
+                            currentChatRoomId: me.currentChatRoom?.id,
+                            jsonContent: msg.jsonContent
+                        });
+                        
+                        if (msg.chat_room_id == me.currentChatRoom.id) {
+                            const messageIndex = me.messages.findIndex((m) => m.id === msg.id);
+                            
+                            console.log('🔄 [실시간 구독] UPDATE 이벤트 처리', {
+                                messageId: msg.id,
+                                messageIndex,
+                                interventionStatus: msg.interventionStatus
+                            });
+                            
+                            if (messageIndex !== -1) {
+                                me.messages[messageIndex].interventionStatus = msg.interventionStatus || me.messages[messageIndex].interventionStatus || null;
+                                if (msg.jsonContent) {
+                                    me.messages[messageIndex].jsonContent = {
+                                        ...me.messages[messageIndex].jsonContent,
+                                        ...msg.jsonContent
+                                    };
+                                }
+                            } else {
+                                console.warn('⚠️ [실시간 구독] UPDATE 이벤트: 메시지를 찾을 수 없음', {
+                                    messageId: msg.id,
+                                    messagesCount: me.messages.length,
+                                    messageIds: me.messages.map(m => m.id)
+                                });
+                            }
+                        }
+                        return; // UPDATE 이벤트는 여기서 처리하고 종료
+                    }
+                    
                     if (data && data.new) {
+                        // group_chat_messages 테이블 구조에 맞게 변환
+                        const msg = {
+                            id: data.new.id,  // id (auto increment, 필수)
+                            chat_room_id: data.new.chat_room_id,
+                            content: data.new.content,
+                            email: data.new.email,
+                            name: data.new.name,
+                            role: data.new.role,
+                            timeStamp: data.new.time_stamp,
+                            profile: data.new.profile,
+                            jsonContent: data.new.json_content,
+                            jsonData: data.new.json_data,
+                            image: data.new.image,
+                            images: data.new.images,
+                            interventionStatus: data.new.intervention_status || data.new.json_content?.intervention?.status || null
+                        };
+                        
                         if (data.eventType == 'DELETE') {
-                            let messageIndex = me.messages.findIndex((msg) => msg.uuid === data.old.uuid);
+                            const messageIndex = me.messages.findIndex((m) => m.id === data.old.id);
                             if (messageIndex !== -1) {
                                 me.messages.splice(messageIndex, 1);
                             }
@@ -1386,89 +1805,165 @@ export default {
                                 };
                             }
 
-                            // UPDATE 이벤트인 경우: 사용자 메시지의 intervention 정보 업데이트 처리 (그룹채팅 전용)
-                            if (data.eventType == 'UPDATE' && data.new.messages.email === me.userInfo.email) {
-                                if (data.new.id == me.currentChatRoom.id) {
-                                    // 해당 메시지를 찾아서 jsonContent 업데이트
-                                    const messageIndex = me.messages.findIndex(
-                                        (msg) =>
-                                            msg.uuid === data.new.uuid ||
-                                            (msg.content === data.new.messages.content &&
-                                                msg.email === data.new.messages.email &&
-                                                Math.abs(msg.timeStamp - data.new.messages.timeStamp) < 5000)
-                                    );
 
-                                    if (messageIndex !== -1) {
-                                        // UUID 업데이트 (없으면 추가)
-                                        if (data.new.uuid && !me.messages[messageIndex].uuid) {
-                                            me.messages[messageIndex].uuid = data.new.uuid;
+                            // 모든 메시지 처리 (에이전트, 시스템, 다른 사용자, 대본 모드 포함)
+                            const isAgentMessage = msg.role === 'agent' || msg.role === 'system';
+                            const isOtherUserMessage = msg.email && msg.email != me.userInfo.email;
+                            const isCurrentUserMessage = msg.email && msg.email === me.userInfo.email;
+
+                            // 현재 사용자가 보낸 메시지는 실시간 구독에서 처리하지 않음 (이미 화면에 추가됨)
+                            // 단, 에이전트나 시스템 메시지는 처리
+                            if (isAgentMessage || isOtherUserMessage || (isCurrentUserMessage && isAgentMessage)) {
+                                if (msg.chat_room_id == me.currentChatRoom.id) {
+                                    // INSERT 이벤트인 경우: 중복 체크를 먼저 수행
+                                    if (data.eventType === 'INSERT') {
+                                        // getMessages로 로드한 시점보다 오래된 메시지는 무시
+                                        if (me.messagesLoadedAt && msg.timeStamp && msg.timeStamp < me.messagesLoadedAt) {
+                                            console.log('⚠️ [실시간 구독] INSERT 이벤트: 이미 로드된 오래된 메시지, 무시', {
+                                                messageTimeStamp: msg.timeStamp,
+                                                loadedAt: me.messagesLoadedAt,
+                                                content: msg.content?.substring(0, 30)
+                                            });
+                                            return;
                                         }
-                                        if (data.new.id && !me.messages[messageIndex].id) {
-                                            me.messages[messageIndex].id = data.new.id;
-                                        }
-                                        // jsonContent.intervention이 있으면 업데이트
-                                        if (data.new.messages.jsonContent && data.new.messages.jsonContent.intervention) {
-                                            if (!me.messages[messageIndex].jsonContent) {
-                                                me.messages[messageIndex].jsonContent = {};
+                                        
+                                        // ID로 중복 체크
+                                        const existingById = me.messages.find((m) => m.id === msg.id);
+                                        if (existingById) {
+                                            // 이미 있으면 업데이트만 하고 추가하지 않음
+                                            const index = me.messages.indexOf(existingById);
+                                            if (index !== -1) {
+                                                Object.assign(me.messages[index], msg);
                                             }
-                                            me.messages[messageIndex].jsonContent.intervention = data.new.messages.jsonContent.intervention;
+                                            console.log('⚠️ [실시간 구독] INSERT 이벤트: ID로 중복 감지, 업데이트만 수행', {
+                                                id: msg.id,
+                                                content: msg.content?.substring(0, 30)
+                                            });
+                                            return;
+                                        }
+                                        
+                                        // 내용+시간+이메일+role로 중복 체크 (ID가 없는 경우 대비)
+                                        const isDuplicateByContent = me.messages.some(
+                                            (m) =>
+                                                m.content === msg.content &&
+                                                m.role === msg.role &&
+                                                (m.email === msg.email || (!m.email && !msg.email)) &&
+                                                Math.abs(m.timeStamp - msg.timeStamp) < 3000
+                                        );
+                                        
+                                        if (isDuplicateByContent) {
+                                            console.log('⚠️ [실시간 구독] INSERT 이벤트: 내용으로 중복 감지, 추가하지 않음', {
+                                                content: msg.content?.substring(0, 30),
+                                                email: msg.email,
+                                                timeStamp: msg.timeStamp
+                                            });
+                                            return;
                                         }
                                     }
-                                }
-                            }
+                                    
 
-                            // 에이전트 메시지 또는 다른 사용자 메시지 처리
-                            // 에이전트 메시지는 email이 없거나 role이 'agent'일 수 있음
-                            const isAgentMessage = data.new.messages.role === 'agent' || data.new.messages.role === 'system';
-                            const isOtherUserMessage = data.new.messages.email && data.new.messages.email != me.userInfo.email;
-
-                            if (isAgentMessage || isOtherUserMessage) {
-                                if (data.new.id == me.currentChatRoom.id) {
+                                    // 시스템 메시지 업데이트 처리
                                     if (
                                         me.messages &&
                                         me.messages.length > 0 &&
-                                        data.new.messages.role == 'system' &&
+                                        msg.role == 'system' &&
                                         me.messages[me.messages.length - 1].role == 'system' &&
                                         (me.messages[me.messages.length - 1].content == 'AI 생성중...' ||
                                             me.messages[me.messages.length - 1].content == '테이블 생성 중...' ||
                                             me.messages[me.messages.length - 1].content
                                                 .replace(/\s+/g, '')
-                                                .includes(data.new.messages.content.replace(/\s+/g, '')))
+                                                .includes(msg.content.replace(/\s+/g, '')))
                                     ) {
-                                        // UUID 포함 (에이전트 개입 응답 매칭을 위해 필수)
-                                        const messageWithUuid = { ...data.new.messages };
-                                        messageWithUuid.uuid = data.new.uuid || messageWithUuid.uuid || null;
-                                        messageWithUuid.id = data.new.id || messageWithUuid.id || messageWithUuid.uuid || null;
-                                        me.messages[me.messages.length - 1] = messageWithUuid;
+                                        msg.id = msg.id || me.messages[me.messages.length - 1].id;
+                                        me.messages[me.messages.length - 1] = msg;
                                         me.messages[me.messages.length - 1].isLoading = false;
                                         me.EventBus.emit('instances-updated');
                                     } else {
-                                        // 중복 메시지 체크: uuid 또는 내용+시간으로 확인
+                                        // INSERT 이벤트가 아닌 경우에도 중복 체크
+                                        const existingById = me.messages.find((m) => m.id === msg.id);
+                                        if (existingById) {
+                                            const index = me.messages.indexOf(existingById);
+                                            if (index !== -1) {
+                                                Object.assign(me.messages[index], msg);
+                                            }
+                                            console.log('⚠️ [실시간 구독] ID로 중복 감지, 업데이트만 수행', {
+                                                id: msg.id,
+                                                content: msg.content?.substring(0, 30)
+                                            });
+                                            return;
+                                        }
+                                        
+                                        // 내용+시간+이메일+role로 중복 체크
                                         const isDuplicate = me.messages.some(
-                                            (msg) =>
-                                                (data.new.uuid && msg.uuid === data.new.uuid) ||
-                                                (msg.content === data.new.messages.content &&
-                                                    msg.role === data.new.messages.role &&
-                                                    Math.abs(msg.timeStamp - data.new.messages.timeStamp) < 1000)
+                                            (m) =>
+                                                m.content === msg.content &&
+                                                m.role === msg.role &&
+                                                (m.email === msg.email || (!m.email && !msg.email)) &&
+                                                Math.abs(m.timeStamp - msg.timeStamp) < 3000
                                         );
 
                                         if (!isDuplicate) {
-                                            // UUID 포함 (에이전트 개입 응답 매칭을 위해 필수)
-                                            const messageWithUuid = { ...data.new.messages };
-                                            messageWithUuid.uuid = data.new.uuid || messageWithUuid.uuid || null;
-                                            messageWithUuid.id = data.new.id || messageWithUuid.id || messageWithUuid.uuid || null;
-                                            me.messages.push(messageWithUuid);
+                                            // 에이전트 개입 응답인 경우, user_message_uuid로 사용자 메시지 찾아서 개입 정보 업데이트
+                                            if (isAgentMessage) {
+                                                console.log('🤖 [실시간 구독] 에이전트 메시지 수신', {
+                                                    uuid: msg.uuid,
+                                                    role: msg.role,
+                                                    content: msg.content?.substring(0, 50),
+                                                    jsonContent: msg.jsonContent,
+                                                    jsonData: msg.jsonData
+                                                });
+                                                
+                                                let userMessageId = null;
+                                                try {
+                                                    const jsonContent = typeof msg.jsonContent === 'string' 
+                                                        ? JSON.parse(msg.jsonContent) 
+                                                        : msg.jsonContent;
+                                                    const jsonData = typeof msg.jsonData === 'string' 
+                                                        ? JSON.parse(msg.jsonData) 
+                                                        : msg.jsonData;
+                                                    
+                                                    userMessageId = jsonContent?.user_message_id || jsonData?.user_message_id || null;
+                                                    
+                                                    if (userMessageId) {
+                                                        const userMessageIndex = me.messages.findIndex((m) => m.id === userMessageId);
+                                                        
+                                                        if (userMessageIndex !== -1) {
+                                                            if (!me.messages[userMessageIndex].jsonContent) {
+                                                                me.messages[userMessageIndex].jsonContent = {};
+                                                            }
+                                                            if (!me.messages[userMessageIndex].jsonContent.intervention) {
+                                                                me.messages[userMessageIndex].jsonContent.intervention = {};
+                                                            }
+                                                            me.messages[userMessageIndex].interventionStatus = 'completed';
+                                                            me.messages[userMessageIndex].jsonContent.intervention.status = 'completed';
+                                                            me.messages[userMessageIndex].jsonContent.intervention.should_intervene = true;
+                                                        }
+                                                    }
+                                                } catch (e) {
+                                                    console.warn('❌ [실시간 구독] 에이전트 응답의 user_message_id 파싱 실패:', e);
+                                                }
+                                            }
+                                            
+                                            // 메시지 추가
+                                            console.log('➕ [실시간 구독] 메시지 추가', {
+                                                uuid: msg.uuid,
+                                                role: msg.role,
+                                                isAgentMessage,
+                                                messagesCountBefore: me.messages.length
+                                            });
+                                            me.messages.push(msg);
+                                            console.log('✅ [실시간 구독] 메시지 추가 완료', {
+                                                messagesCountAfter: me.messages.length
+                                            });
                                         }
                                     }
-                                    me.newMessageInfo = data.new.messages;
+                                    me.newMessageInfo = msg;
                                 }
 
-                                let idx = me.chatRoomList.findIndex((x) => x.id == data.new.id);
+                                let idx = me.chatRoomList.findIndex((x) => x.id == msg.chat_room_id);
                                 if (idx != -1) {
-                                    me.chatRoomList[idx].message.msg = data.new.messages.messageForUser
-                                        ? data.new.messages.messageForUser
-                                        : data.new.messages.content;
-                                    me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp;
+                                    me.chatRoomList[idx].message.msg = msg.content;
+                                    me.chatRoomList[idx].message.createdAt = msg.timeStamp;
 
                                     if (me.chatRoomList[idx].id != me.currentChatRoom.id) {
                                         const participantWithEmail = me.chatRoomList[idx].participants.find(
@@ -1481,10 +1976,52 @@ export default {
                         }
                     }
                 },
-                {
-                    filter: `id=in.(${chatRoomIds.join(',')})`
-                }
+                filter
             );
+        },
+        // getMessages 오버라이드: 그룹 채팅 전용 메시지 로드
+        async getMessages(chatRoomId) {
+            var me = this;
+            if (!me.backend || me.backend == null) {
+                me.backend = BackendFactory.createBackend();
+            }
+            me.messages = [];
+            
+            // 그룹 채팅 전용 메시지 조회
+            let messages = await me.backend.getGroupChatMessages(chatRoomId);
+            if (messages) {
+                let allMessages = messages.map((message) => {
+                    let newMessage = message.messages;
+                    newMessage.thread_id = message.thread_id || null;
+                    newMessage.uuid = message.uuid || null;
+                    newMessage.id = message.id || message.uuid || null;
+                    newMessage.interventionStatus = message.messages?.interventionStatus || null;
+                    return newMessage;
+                });
+                allMessages.sort((a, b) => {
+                    return new Date(a.timeStamp) - new Date(b.timeStamp);
+                });
+                me.messages = allMessages;
+                
+                // 메시지 로드 완료 시점 기록 (가장 최신 메시지의 시간 또는 현재 시간)
+                if (allMessages.length > 0) {
+                    const latestMessage = allMessages[allMessages.length - 1];
+                    me.messagesLoadedAt = latestMessage.timeStamp || Date.now();
+                } else {
+                    me.messagesLoadedAt = Date.now();
+                }
+                
+                console.log('✅ [getMessages] 그룹 채팅 메시지 로드 완료', {
+                    chatRoomId,
+                    messageCount: allMessages.length,
+                    messagesLoadedAt: me.messagesLoadedAt
+                });
+                
+                me.EventBus.emit('messages-updated');
+            } else {
+                me.messagesLoadedAt = Date.now();
+            }
+            me.isInitDone = true;
         }
     }
 };
@@ -1503,5 +2040,50 @@ export default {
 
 .custom-top-area .v-btn {
     background-color: white;
+}
+
+.scenario-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.92);
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+    margin: 8px 0 0 60px;
+    max-width: 680px;
+}
+
+.scenario-select {
+    min-width: 200px;
+    max-width: 260px;
+}
+
+.scenario-progress {
+    color: #555;
+}
+
+.empty-chat-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 400px;
+    background-color: rgba(255, 255, 255, 1);
+}
+
+.empty-chat-content {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-chat-content h3 {
+    font-weight: 500;
+}
+
+.empty-chat-content p {
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.6;
 }
 </style>

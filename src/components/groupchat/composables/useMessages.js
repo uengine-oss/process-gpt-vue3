@@ -59,7 +59,7 @@ export function useMessages(messages, userInfo) {
       }
     }
 
-    return jsonContent && jsonContent.user_message_uuid;
+    return jsonContent && (jsonContent.user_message_id || jsonContent.user_message_uuid);
   }
 
   // 시간 포맷팅

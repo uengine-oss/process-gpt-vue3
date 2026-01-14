@@ -361,20 +361,21 @@ import { ref, computed } from 'vue';
     return user?.profile || '/images/defaultUser.png';
   });
   
-  // 개입 관련
-  const hasIntervention = computed(() => {
-    return props.message.jsonContent?.intervention?.should_intervene;
-  });
-  
-  const isInterventionPending = computed(() => {
-    if (!hasIntervention.value) return false;
-    const status = props.message.jsonContent?.intervention?.status;
-    if (status === 'completed') return false;
-    if (status === 'checking' || status === 'intervening') return true;
-    return !interventionResponse.value;
-  });
-  
-  const currentMessageUuid = computed(() => props.message?.uuid || props.message?.id || props.message?.message_uuid);
+// 개입 관련 (id 기반)
+const hasIntervention = computed(() => {
+  const status = props.message.interventionStatus || props.message.jsonContent?.intervention?.status;
+  return !!status && status !== 'not_intervening';
+});
+
+const isInterventionPending = computed(() => {
+  if (!hasIntervention.value) return false;
+  const status = props.message.interventionStatus || props.message.jsonContent?.intervention?.status;
+  if (status === 'completed') return false;
+  if (status === 'checking' || status === 'intervening') return true;
+  return !interventionResponse.value;
+});
+
+const currentMessageUuid = computed(() => props.message?.id);
 
   function parseJsonContent(content) {
     if (!content) return null;
@@ -389,18 +390,19 @@ import { ref, computed } from 'vue';
   const interventionResponse = computed(() => {
     const all = props.allMessages || [];
 
-    // 1) user_message_uuid로 직접 매핑
-    if (currentMessageUuid.value) {
+    // 1) user_message_id로 직접 매핑 (우선)
+    const currentMessageId = props.message?.id;
+    if (currentMessageId) {
       const found = all.find((msg) => {
         if (!msg) return false;
         const roleOk = ['system', 'agent', 'assistant'].includes(msg.role);
         if (!roleOk) return false;
         const json = parseJsonContent(msg.jsonContent || msg.jsonData);
-        return json?.user_message_uuid === currentMessageUuid.value;
+        return json?.user_message_id === currentMessageId;
       });
       if (found) return found;
     }
-
+    
     // 2) 바로 다음 메시지에서 찾는 기존 로직 (후방 호환)
     if (props.index < all.length - 1) {
       const nextMessage = all[props.index + 1];

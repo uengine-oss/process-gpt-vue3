@@ -106,7 +106,21 @@ const props = defineProps({
   const { renderedMarkdown } = useMessages(ref([]), ref({}));
 
 const displayedContent = computed(() => {
-  if (!props.responseMessage) return '';
+  if (!props.responseMessage) {
+    console.log('🔵 [InterventionBadge] displayedContent - responseMessage 없음');
+    return '';
+  }
+
+  console.log('🔵 [InterventionBadge] displayedContent 계산', {
+    hasResponseMessage: !!props.responseMessage,
+    responseMessageRole: props.responseMessage.role,
+    responseMessageUuid: props.responseMessage.uuid,
+    responseMessageContent: props.responseMessage.content?.substring(0, 50),
+    hasJsonContent: !!props.responseMessage.jsonContent,
+    hasJsonData: !!props.responseMessage.jsonData,
+    jsonContentType: typeof props.responseMessage.jsonContent,
+    jsonDataType: typeof props.responseMessage.jsonData
+  });
 
   // 우선순위: content -> jsonContent.content/jsonData.content -> message/json/text
   const json = typeof props.responseMessage.jsonContent === 'object' ? props.responseMessage.jsonContent : (() => {
@@ -117,17 +131,26 @@ const displayedContent = computed(() => {
           ? JSON.parse(props.responseMessage.jsonData)
           : props.responseMessage.jsonData;
     } catch (e) {
+      console.warn('⚠️ [InterventionBadge] JSON 파싱 실패', e);
       return props.responseMessage.jsonData;
     }
   })();
 
-  return (
+  const result = (
     props.responseMessage.content ||
     json?.content ||
     json?.message ||
     json?.text ||
     ''
   );
+
+  console.log('✅ [InterventionBadge] displayedContent 결과', {
+    result: result?.substring(0, 50),
+    source: props.responseMessage.content ? 'content' : json?.content ? 'json.content' : json?.message ? 'json.message' : json?.text ? 'json.text' : 'empty',
+    jsonKeys: json ? Object.keys(json) : []
+  });
+
+  return result;
 });
   </script>
   
