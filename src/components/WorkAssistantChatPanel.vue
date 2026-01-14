@@ -95,6 +95,29 @@
             </v-card>
         </v-dialog>
 
+        <!-- 이미지 미리보기 다이얼로그 -->
+        <v-dialog v-model="imagePreviewDialog" max-width="900">
+            <v-card>
+                <v-card-title class="d-flex align-center">
+                    <v-icon class="mr-2">mdi-image</v-icon>
+                    이미지 미리보기
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" @click="imagePreviewDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-divider></v-divider>
+                <v-card-text class="pa-2">
+                    <v-img
+                        v-if="previewImageUrl"
+                        :src="previewImageUrl"
+                        max-height="600"
+                        contain
+                    />
+                </v-card-text>
+            </v-card>
+        </v-dialog>
+
         <!-- 채팅 내역 -->
         <div class="chat-messages" ref="messagesContainer">
             <!-- 히스토리 로딩 중 -->
@@ -127,6 +150,26 @@
                         <span class="message-time">{{ formatTime(msg.timeStamp) }}</span>
                     </div>
                     <div class="message-text" v-html="formatMessage(msg.content)"></div>
+                    
+                    <!-- 첨부된 이미지 표시 -->
+                    <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
+                        <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
+                            <img :src="image.url" class="attached-image" @click="openImagePreview(image.url)" />
+                        </div>
+                    </div>
+                    
+                    <!-- 첨부된 PDF 파일 표시 -->
+                    <div v-if="msg.pdfFile" class="attached-pdf mt-2">
+                        <v-chip
+                            color="primary"
+                            variant="tonal"
+                            size="small"
+                            @click="msg.pdfFile.url && openExternalUrl(msg.pdfFile.url)"
+                        >
+                            <v-icon start size="14">mdi-file-pdf-box</v-icon>
+                            {{ msg.pdfFile.name }}
+                        </v-chip>
+                    </div>
                     
                     <!-- 도구 호출 표시 -->
                     <div v-if="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls">
@@ -239,64 +282,14 @@
             </div>
         </div>
 
-        <!-- 입력 영역 -->
+        <!-- 입력 영역 - Chat 컴포넌트 사용 -->
         <div class="chat-input-container">
-            <div class="chat-input-wrapper">
-                <v-textarea
-                    v-model="inputText"
-                    :placeholder="$t('mainChat.placeholder')"
-                    rows="1"
-                    auto-grow
-                    max-rows="4"
-                    hide-details
-                    variant="outlined"
-                    density="compact"
-                    class="chat-input"
-                    @keydown.enter.exact.prevent="sendMessage"
-                    :disabled="isLoading"
-                />
-                <!-- 음성 인식 버튼 -->
-                <v-btn
-                    v-if="!isMicRecording && !isMicRecorderLoading"
-                    icon
-                    variant="text"
-                    size="small"
-                    @click="startVoiceRecording"
-                    class="mic-btn"
-                    :disabled="isLoading"
-                >
-                    <v-icon color="grey">mdi-microphone</v-icon>
-                </v-btn>
-                <v-btn
-                    v-else-if="isMicRecording"
-                    icon
-                    variant="text"
-                    size="small"
-                    @click="stopVoiceRecording"
-                    class="mic-btn"
-                    color="error"
-                >
-                    <v-icon>mdi-stop</v-icon>
-                </v-btn>
-                <v-progress-circular
-                    v-if="isMicRecorderLoading"
-                    indeterminate
-                    size="20"
-                    width="2"
-                    color="primary"
-                    class="mx-2"
-                ></v-progress-circular>
-                <v-btn
-                    icon
-                    color="primary"
-                    size="small"
-                    :disabled="!inputText.trim() || isLoading"
-                    @click="sendMessage"
-                    class="send-btn"
-                >
-                    <v-icon>mdi-send</v-icon>
-                </v-btn>
-            </div>
+            <Chat 
+                :workAssistantAgentMode="true"
+                :disableChat="isLoading"
+                :isMobile="false"
+                @sendMessage="handleChatInputMessage"
+            />
         </div>
     </div>
 </template>
@@ -307,17 +300,20 @@ import BackendFactory from '@/components/api/BackendFactory';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import { getValidToken } from '@/utils/supabaseAuth.js';
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
+import Chat from '@/components/ui/Chat.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'WorkAssistantChatPanel',
     components: {
-        BpmnUengineViewer
+        BpmnUengineViewer,
+        Chat
     },
     props: {
+        // 초기 메시지 - 문자열 또는 { text, images, file } 객체
         initialMessage: {
-            type: String,
+            type: [String, Object],
             default: null
         },
         userInfo: {
@@ -365,7 +361,13 @@ export default {
             isMicRecording: false,
             micRecorder: null,
             micAudioChunks: [],
-            isMicRecorderLoading: false
+            isMicRecorderLoading: false,
+            // 첨부 파일 (Chat 컴포넌트에서 전달받음)
+            pendingImages: [],
+            pendingPdfFile: null,
+            // 이미지 미리보기
+            imagePreviewDialog: false,
+            previewImageUrl: null
         };
     },
     computed: {
@@ -395,8 +397,14 @@ export default {
         }
         // 초기 메시지가 있으면 새 채팅방 생성 후 메시지 전송
         else if (this.initialMessage && !this.initialMessageHandled) {
-            this.initialMessageHandled = true;
-            await this.handleInitialMessage(this.initialMessage);
+            // 문자열 또는 객체 형태 모두 처리
+            const hasContent = typeof this.initialMessage === 'string' 
+                ? this.initialMessage.trim() 
+                : (this.initialMessage.text || this.initialMessage.images?.length > 0 || this.initialMessage.file);
+            if (hasContent) {
+                this.initialMessageHandled = true;
+                await this.handleInitialMessage(this.initialMessage);
+            }
         }
     },
     beforeUnmount() {
@@ -545,11 +553,29 @@ export default {
 
         // 초기 메시지 처리
         async handleInitialMessage(message) {
-            // 새 채팅방 생성
-            const room = await this.createNewRoom(message);
+            console.log('[WorkAssistantChatPanel] handleInitialMessage 시작:', message);
+            // 문자열 또는 객체 형태 모두 지원
+            let text = '';
+            let images = [];
+            let pdfFile = null;
             
-            // 메시지 전송
-            this.inputText = message;
+            if (typeof message === 'string') {
+                text = message;
+            } else if (message && typeof message === 'object') {
+                text = message.text || '';
+                images = message.images || [];
+                pdfFile = message.file || null;
+                console.log('[WorkAssistantChatPanel] 추출된 file:', pdfFile);
+            }
+            
+            // 새 채팅방 생성
+            const room = await this.createNewRoom(text);
+            
+            // 메시지 전송 (이미지/PDF 포함)
+            this.inputText = text;
+            this.pendingImages = images;
+            this.pendingPdfFile = pdfFile;
+            console.log('[WorkAssistantChatPanel] sendMessage 호출 전 pendingPdfFile:', this.pendingPdfFile);
             await this.sendMessage();
         },
 
@@ -564,11 +590,40 @@ export default {
             await this.selectRoom(room);
         },
 
+        // Chat 컴포넌트에서 메시지 전송 시 처리
+        handleChatInputMessage(message) {
+            if (!message || (!message.text && (!message.images || message.images.length === 0) && !message.file)) return;
+            this.inputText = message.text || '';
+            this.pendingImages = message.images || [];
+            // Chat.vue에서 업로드 완료된 fileInfo를 전달받음 (MainChatInput과 동일)
+            this.pendingPdfFile = message.file || null;
+            this.sendMessage();
+        },
+
         // 메시지 전송
         async sendMessage() {
-            if (!this.inputText.trim() || this.isLoading) return;
+            console.log('[WorkAssistantChatPanel] sendMessage 시작, pendingPdfFile:', this.pendingPdfFile);
+            // 텍스트, 이미지, PDF 중 하나라도 있어야 전송 가능
+            const hasText = this.inputText.trim();
+            const hasImages = this.pendingImages && this.pendingImages.length > 0;
+            const hasPdf = this.pendingPdfFile;
+            console.log('[WorkAssistantChatPanel] 조건 체크 - hasText:', !!hasText, 'hasImages:', hasImages, 'hasPdf:', !!hasPdf);
+            if ((!hasText && !hasImages && !hasPdf) || this.isLoading) return;
 
-            const userMessage = this.inputText.trim();
+            // 현재 첨부된 이미지/PDF 복사 후 초기화
+            const currentImages = [...this.pendingImages];
+            const currentPdfFile = this.pendingPdfFile;
+            console.log('[WorkAssistantChatPanel] currentPdfFile:', currentPdfFile);
+            this.pendingImages = [];
+            this.pendingPdfFile = null;
+            
+            // 텍스트가 없고 첨부만 있는 경우 기본 메시지 설정
+            let userMessage = this.inputText.trim();
+            if (!userMessage && (currentPdfFile || currentImages.length > 0)) {
+                userMessage = currentPdfFile 
+                    ? 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.' 
+                    : '첨부된 내용을 확인해주세요.';
+            }
             this.inputText = '';
             
             // 컨설팅 모드인 경우 컨설팅 메시지 전송
@@ -583,10 +638,24 @@ export default {
                 return;
             }
 
-            // 사용자 메시지 추가
-            const userMsgObj = this.createMessageObj(userMessage, 'user');
+            // 사용자 메시지 추가 (이미지/PDF 정보 포함)
+            const userMsgObj = this.createMessageObj(userMessage, 'user', {
+                images: currentImages,
+                pdfFile: currentPdfFile
+            });
             this.messages.push(userMsgObj);
             await this.saveMessage(userMsgObj);
+            
+            // 기존 방식 유지: 첨부 정보는 [InputData]로 텍스트에 포함시켜 에이전트에게 전달
+            let messageForAgent = userMessage;
+            if ((currentImages && currentImages.length > 0) || currentPdfFile) {
+                const inputData = {};
+                if (currentImages && currentImages.length > 0) inputData.images = currentImages;
+                if (currentPdfFile) inputData.file = currentPdfFile;
+                messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
+                console.log('[WorkAssistantChatPanel] [InputData] 추가됨:', inputData);
+            }
+            console.log('[WorkAssistantChatPanel] messageForAgent:', messageForAgent.substring(0, 200) + '...');
             
             // API 호출
             this.isLoading = true;
@@ -604,7 +673,7 @@ export default {
                 
                 await workAssistantAgentService.sendMessageStream(
                     {
-                        message: userMessage,
+                        message: messageForAgent,
                         tenant_id: this.tenantId,
                         user_uid: this.userInfo.uid || this.userInfo.id,
                         user_email: this.userInfo.email,
@@ -671,7 +740,12 @@ export default {
                             if (parsed) {
                                 // 프로세스 생성 요청인 경우 컨설팅 모드로 전환
                                 if (parsed.user_request_type === 'generate_process') {
-                                    const originalMessage = parsed.user_message || parsed.data?.user_message || userMessage;
+                                    // user_message와 image_analysis_result 합치기
+                                    let originalMessage = parsed.user_message || userMessage;
+                                    if (parsed.image_analysis_result) {
+                                        originalMessage = `${originalMessage}\n\n[이미지 분석 결과]\n${parsed.image_analysis_result}`;
+                                    }
+                                    console.log('[WorkAssistantChatPanel] originalMessage:', originalMessage);
                                     await this.switchToConsultingMode(originalMessage);
                                     return;
                                 }
@@ -701,8 +775,8 @@ export default {
         },
 
         // 메시지 객체 생성
-        createMessageObj(content, role) {
-            return {
+        createMessageObj(content, role, options = {}) {
+            const obj = {
                 uuid: this.uuid(),
                 content: content,
                 role: role,
@@ -710,27 +784,67 @@ export default {
                 email: role === 'user' ? this.userInfo.email : 'system@uengine.org',
                 timeStamp: Date.now()
             };
+            
+            // 이미지 정보 추가
+            if (options.images && options.images.length > 0) {
+                obj.images = options.images;
+                obj.image = options.images[0].url;
+            }
+            
+            // PDF 파일 정보 추가 (Chat.vue에서 전달된 필드명: fileName, fileUrl, fileType, fileSize)
+            if (options.pdfFile) {
+                obj.pdfFile = {
+                    name: options.pdfFile.fileName || options.pdfFile.name,
+                    url: options.pdfFile.fileUrl || options.pdfFile.url,
+                    size: options.pdfFile.fileSize || options.pdfFile.size,
+                    type: options.pdfFile.fileType || options.pdfFile.type
+                };
+            }
+            
+            return obj;
         },
 
         // MCP 도구 output 파싱 (content='...' name=... 형식 처리)
         parseToolOutput(outputStr) {
             if (!outputStr) return null;
             
-            // content='...' name=... 형식 처리
+            // content='...' name=... 형식 처리 (Python ToolMessage repr 형식)
             if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
-                const contentMatch = outputStr.match(/content='(.+?)'\s*name=/s);
-                if (contentMatch) {
-                    const jsonStr = contentMatch[1]
-                        .replace(/\\n/g, '\n')
-                        .replace(/\\"/g, '"')
-                        .replace(/\\\\/g, '\\');
-                    return JSON.parse(jsonStr);
+                try {
+                    // content=' 이후부터 ' name= 직전까지 추출 (인덱스 기반으로 더 안정적)
+                    const contentStart = "content='".length;
+                    // ' name= 또는 ' tool_call_id= 패턴 찾기 (content 끝 마커)
+                    const endMarkers = [/' name=/, /' tool_call_id=/];
+                    let endIdx = -1;
+                    
+                    for (const marker of endMarkers) {
+                        const match = outputStr.match(marker);
+                        if (match && (endIdx === -1 || match.index < endIdx)) {
+                            endIdx = match.index;
+                        }
+                    }
+                    
+                    if (endIdx > contentStart) {
+                        let jsonStr = outputStr.substring(contentStart, endIdx);
+                        // 이중 이스케이프 처리: \\\\n -> \\n -> \n (순서 중요!)
+                        jsonStr = jsonStr.replace(/\\\\\\\\/g, '\\\\'); // \\\\ -> \\
+                        jsonStr = jsonStr.replace(/\\\\n/g, '\\n');     // \\n -> \n (JSON 내 개행)
+                        jsonStr = jsonStr.replace(/\\\\"/g, '\\"');     // \\" -> \" (JSON 내 따옴표)
+                        return JSON.parse(jsonStr);
+                    }
+                } catch (e) {
+                    console.warn('[parseToolOutput] content= 형식 파싱 실패:', e.message);
                 }
             }
             
             // 일반 JSON 문자열
             if (typeof outputStr === 'string') {
-                return JSON.parse(outputStr);
+                try {
+                    return JSON.parse(outputStr);
+                } catch (e) {
+                    console.warn('[parseToolOutput] JSON 파싱 실패:', e.message);
+                    return null;
+                }
             }
             
             // 이미 객체인 경우
@@ -860,11 +974,13 @@ export default {
                 me.messages.pop();
             }
             
-            // 전체 대화 내역을 previousMessages에 추가
+            // 전체 대화 내역을 previousMessages에 추가 (마지막 사용자 메시지 제외)
             let chatMsgs = [];
             if (me.messages && me.messages.length > 0) {
-                me.messages.forEach((msg) => {
-                    if (msg.content && !msg.isLoading) {
+                me.messages.forEach((msg, idx) => {
+                    // 마지막 사용자 메시지는 제외 (합쳐진 userMessage로 대체할 예정)
+                    const isLastUserMsg = idx === me.messages.length - 1 && msg.role === 'user';
+                    if (msg.content && !msg.isLoading && !isLastUserMsg) {
                         chatMsgs.push({
                             role: msg.role,
                             content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
@@ -872,6 +988,13 @@ export default {
                     }
                 });
             }
+            
+            // 합쳐진 userMessage를 사용자 메시지로 추가
+            chatMsgs.push({
+                role: 'user',
+                content: userMessage
+            });
+            
             me.generator.previousMessages = [me.generator.previousMessages[0], ...chatMsgs];
             
             // 컨설팅 시작
@@ -1629,6 +1752,23 @@ export default {
         },
         
         /**
+         * 이미지 미리보기 (새 탭에서 열기)
+         */
+        openImagePreview(imageUrl) {
+            if (!imageUrl) return;
+            this.previewImageUrl = imageUrl;
+            this.imagePreviewDialog = true;
+        },
+
+        /**
+         * 외부 URL 열기 (PDF 등)
+         */
+        openExternalUrl(url) {
+            if (!url) return;
+            window.open(url, '_blank');
+        },
+        
+        /**
          * BPMN XML 클립보드 복사
          */
         async copyBpmnToClipboard() {
@@ -1994,9 +2134,24 @@ export default {
 
 /* 입력 영역 */
 .chat-input-container {
-    padding: 12px 16px;
+    padding: 8px 16px 12px;
     background: white;
     border-top: 1px solid #e2e8f0;
+}
+
+/* Chat 컴포넌트 내부 스타일 오버라이드 (패널 모드) */
+.chat-input-container :deep(.v-card) {
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+.chat-input-container :deep(.v-textarea) {
+    font-size: 14px;
+}
+
+.chat-input-container :deep(.message-input-box) {
+    min-height: 40px;
 }
 
 .chat-input-wrapper {
@@ -2311,6 +2466,36 @@ export default {
     color: #e2e8f0;
     white-space: pre-wrap;
     word-break: break-all;
+}
+
+/* 첨부된 이미지 */
+.attached-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.attached-image-item {
+    position: relative;
+}
+
+.attached-image {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attached-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 첨부된 PDF */
+.attached-pdf {
+    display: inline-block;
 }
 </style>
 

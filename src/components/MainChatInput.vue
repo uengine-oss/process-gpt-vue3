@@ -96,180 +96,31 @@
             </v-menu>
         </div>
 
-        <!-- 첨부된 이미지 미리보기 -->
-        <div v-if="attachedImages.length > 0" class="attached-images-container">
-            <div v-for="(image, index) in attachedImages" :key="index" class="attached-image-item">
-                <img :src="image.url" class="attached-image-preview" />
-                <v-btn
-                    icon
-                    variant="flat"
-                    size="x-small"
-                    @click="removeImage(index)"
-                    class="remove-image-btn"
-                    color="black"
-                >
-                    <v-icon size="12" color="white">mdi-close</v-icon>
-                </v-btn>
-            </div>
-        </div>
-
-        <!-- 선택된 PDF 파일 표시 -->
-        <div v-if="selectedFile" class="selected-file-container">
-            <div class="selected-file-chip">
-                <v-icon size="18" color="red" class="mr-2">mdi-file-pdf-box</v-icon>
-                <span class="file-name">{{ selectedFile.name }}</span>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="x-small"
-                    @click="clearSelectedFile"
-                    class="remove-file-btn"
-                >
-                    <v-icon size="16">mdi-close</v-icon>
-                </v-btn>
-            </div>
-        </div>
-
-        <!-- 입력 필드 -->
+        <!-- 입력 필드 - Chat 컴포넌트 사용 -->
         <div class="input-wrapper">
-            <div class="input-field-container" @paste="handlePaste">
-                <!-- 숨겨진 파일 입력들 -->
-                <input
-                    type="file"
-                    ref="fileInput"
-                    accept=".pdf,application/pdf"
-                    @change="handleFileSelect"
-                    class="d-none"
-                />
-                <input
-                    type="file"
-                    ref="imageInput"
-                    accept="image/*"
-                    @change="handleImageSelect"
-                    class="d-none"
-                    multiple
-                />
-                
-                <!-- + 메뉴 버튼 -->
-                <v-menu v-model="showAttachMenu" location="top start">
-                    <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            icon
-                            variant="text"
-                            size="small"
-                            class="attach-btn mr-1"
-                            :disabled="isUploading"
-                        >
-                            <v-icon size="20" :color="showAttachMenu ? 'primary' : 'grey'">
-                                {{ showAttachMenu ? 'mdi-close' : 'mdi-plus' }}
-                            </v-icon>
-                        </v-btn>
-                    </template>
-                    <v-list density="compact" class="attach-menu-list">
-                        <v-list-item @click="triggerImageSelect" prepend-icon="mdi-image" title="이미지 첨부"></v-list-item>
-                        <v-list-item @click="triggerFileSelect" prepend-icon="mdi-file-pdf-box" title="PDF 파일 첨부"></v-list-item>
-                    </v-list>
-                </v-menu>
-                <v-textarea
-                    v-model="inputText"
-                    class="main-input-textarea"
-                    :placeholder="selectedFile ? $t('mainChat.placeholderWithFile') || 'PDF 파일과 함께 보낼 메시지를 입력하세요...' : $t('mainChat.placeholder')"
-                    @keydown.enter.exact.prevent="handleSubmit"
-                    @focus="isFocused = true"
-                    @blur="handleBlur"
-                    ref="inputField"
-                    :disabled="isUploading"
-                    :rows="textareaRows"
-                    hide-details
-                    variant="plain"
-                    density="compact"
-                />
-                
-                <!-- 음성 인식 버튼 -->
-                <v-btn
-                    v-if="!isMicRecording && !isMicRecorderLoading"
-                    icon
-                    variant="text"
-                    size="small"
-                    @click="startVoiceRecording"
-                    class="mic-btn mr-1"
-                    :disabled="isUploading"
-                >
-                    <v-icon size="20" color="grey">mdi-microphone</v-icon>
-                </v-btn>
-                <v-btn
-                    v-else-if="isMicRecording"
-                    icon
-                    variant="text"
-                    size="small"
-                    @click="stopVoiceRecording"
-                    class="mic-btn mr-1"
-                    color="error"
-                >
-                    <v-icon size="20">mdi-stop</v-icon>
-                </v-btn>
-                <v-progress-circular
-                    v-if="isMicRecorderLoading"
-                    indeterminate
-                    size="20"
-                    width="2"
-                    color="primary"
-                    class="mr-2"
-                ></v-progress-circular>
-                
-                <!-- 헤드셋 버튼 (음성 대화 모드) -->
-                <v-tooltip :text="$t('chat.headset') || '음성 대화 모드'">
-                    <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            icon
-                            variant="text"
-                            size="small"
-                            @click="toggleRecordingMode"
-                            class="headset-btn mr-1"
-                            :disabled="isUploading"
-                            :color="recordingMode ? 'primary' : 'grey'"
-                        >
-                            <v-icon size="20">mdi-headset</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-                
-                <!-- 업로드 중 로딩 표시 -->
-                <v-progress-circular
-                    v-if="isUploading"
-                    indeterminate
-                    size="20"
-                    width="2"
-                    color="primary"
-                    class="mr-2"
-                ></v-progress-circular>
-                
-                <v-btn
-                    v-if="!isUploading"
-                    icon
-                    variant="text"
-                    size="small"
-                    color="primary"
-                    :disabled="!inputText.trim() && !selectedFile"
-                    @click="handleSubmit"
-                    class="send-btn"
-                >
-                    <v-icon>mdi-send</v-icon>
-                </v-btn>
-            </div>
+            <Chat 
+                :workAssistantAgentMode="true"
+                :disableChat="isUploading"
+                :isMobile="false"
+                @sendMessage="handleChatMessage"
+                @recording-mode-change="handleRecordingModeChange"
+            />
         </div>
+        <!-- NOTE: 이미지 첨부/미리보기는 workAssistantAgentMode 모드에서 Chat.vue가 전담 -->
     </div>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import Chat from '@/components/ui/Chat.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'MainChatInput',
+    components: {
+        Chat
+    },
     props: {
         agentInfo: {
             type: Object,
@@ -291,8 +142,6 @@ export default {
             displayLimit: 10,
             showAll: false,
             userInfo: null,
-            // 파일 업로드 관련
-            selectedFile: null,
             isUploading: false,
             // 음성 인식 관련
             isMicRecording: false,
@@ -300,9 +149,7 @@ export default {
             micAudioChunks: [],
             isMicRecorderLoading: false,
             recordingMode: false,
-            // 이미지 첨부 관련
-            attachedImages: [],
-            showAttachMenu: false,
+            // NOTE: 이미지 첨부는 Chat.vue가 전담
             examples: [
                 {
                     icon: 'mdi-plus-circle-outline',
@@ -360,127 +207,45 @@ export default {
     },
     methods: {
         selectExample(example) {
-            this.inputText = example.text;
-            this.$refs.inputField.focus();
-        },
-        async handleSubmit() {
-            if (!this.inputText.trim() && !this.selectedFile && this.attachedImages.length === 0) return;
-            
-            let fileInfo = null;
-            
-            // PDF 파일이 선택되어 있으면 먼저 업로드
-            if (this.selectedFile) {
-                this.isUploading = true;
-                try {
-                    const uploadResult = await backend.uploadFile(this.selectedFile.name, this.selectedFile);
-                    if (uploadResult && uploadResult.publicUrl) {
-                        fileInfo = {
-                            fileName: this.selectedFile.name,
-                            fileUrl: uploadResult.publicUrl,
-                            fileType: this.selectedFile.type,
-                            fileSize: this.selectedFile.size
-                        };
-                    }
-                } catch (error) {
-                    console.error('파일 업로드 오류:', error);
-                    this.$emit('upload-error', error);
-                } finally {
-                    this.isUploading = false;
-                }
-            }
-            
+            // 예시 선택 시 Chat 컴포넌트로 메시지 전달하여 바로 전송
             this.$emit('submit', {
-                text: this.inputText.trim(),
+                text: example.text,
                 timestamp: new Date().toISOString(),
-                file: fileInfo,
-                images: this.attachedImages.length > 0 ? [...this.attachedImages] : null
+                file: null,
+                images: null
             });
-            
-            this.inputText = '';
-            this.selectedFile = null;
-            this.attachedImages = [];
         },
+        // Chat 컴포넌트에서 메시지 전송 시 처리
+        async handleChatMessage(message) {
+            console.log('[MainChatInput] handleChatMessage 받음:', message);
+            // Chat은 "입력 UI 트리거"로만 사용하고,
+            // 실제 전송/업로드/첨부 구조는 기존 MainChatInput 로직(handleSubmit)로 유지
+            if (!message || (!message.text && !message.file && (!message.images || message.images.length === 0))) return;
+            this.inputText = (message.text || '').trim();
+
+            const submitPayload = {
+                text: this.inputText,
+                timestamp: new Date().toISOString(),
+                file: message.file || null,
+                images: message.images || null
+            };
+            console.log('[MainChatInput] submit emit:', submitPayload);
+            this.$emit('submit', submitPayload);
+
+            this.inputText = '';
+        },
+        // 음성 대화 모드 변경 처리
+        handleRecordingModeChange(isRecording) {
+            this.recordingMode = isRecording;
+            this.$emit('recording-mode-change', isRecording);
+        },
+        // NOTE: PDF 업로드/선택/미리보기는 Chat.vue로 일원화 (중복 제거)
         handleBlur() {
             this.isFocused = false;
         },
-        // 파일 선택 처리
-        handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                // PDF 파일만 허용
-                if (file.type === 'application/pdf') {
-                    this.selectedFile = file;
-                } else {
-                    alert('PDF 파일만 업로드할 수 있습니다.');
-                    event.target.value = '';
-                }
-            }
-        },
-        // 선택된 파일 제거
-        clearSelectedFile() {
-            this.selectedFile = null;
-            if (this.$refs.fileInput) {
-                this.$refs.fileInput.value = '';
-            }
-        },
-        // 파일 선택 창 열기
-        triggerFileSelect() {
-            this.showAttachMenu = false;
-            this.$refs.fileInput.click();
-        },
+        
         // 이미지 선택 창 열기
-        triggerImageSelect() {
-            this.showAttachMenu = false;
-            this.$refs.imageInput.click();
-        },
-        // 이미지 선택 처리
-        handleImageSelect(event) {
-            const files = event.target.files;
-            if (files) {
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            this.attachedImages.push({
-                                file: file,
-                                url: e.target.result,
-                                name: file.name
-                            });
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                }
-            }
-            event.target.value = '';
-        },
-        // 첨부된 이미지 제거
-        removeImage(index) {
-            this.attachedImages.splice(index, 1);
-        },
-        // 붙여넣기로 이미지 첨부
-        handlePaste(event) {
-            const items = event.clipboardData?.items;
-            if (!items) return;
-            
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.startsWith('image/')) {
-                    const file = items[i].getAsFile();
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            this.attachedImages.push({
-                                file: file,
-                                url: e.target.result,
-                                name: `pasted-image-${Date.now()}.png`
-                            });
-                        };
-                        reader.readAsDataURL(file);
-                        event.preventDefault();
-                    }
-                }
-            }
-        },
+        // NOTE: 이미지 관련 트리거/처리는 Chat.vue가 전담
         // 헤드셋(음성 대화) 모드 토글
         toggleRecordingMode() {
             this.recordingMode = !this.recordingMode;

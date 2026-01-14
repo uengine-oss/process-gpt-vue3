@@ -13,7 +13,7 @@
             <!-- <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <Chat 
                     :showDetailInfo="true"
-                    :definitionMapOnlyInput="true"
+                    :workAssistantAgentMode="true"
                     :disableChat="false"
                     :isMobile="isMobile"
                     @sendMessage="handleMainChatMessage"
@@ -419,7 +419,7 @@
             <div class="chat-panel-content">
                 <WorkAssistantChatPanel
                     ref="workAssistantChatPanel"
-                    :initialMessage="pendingChatMessage?.text"
+                    :initialMessage="pendingChatMessage"
                     :userInfo="userInfo"
                     :openHistoryRoom="pendingHistoryRoom"
                     @response-parsed="handleAgentResponse"
@@ -1027,19 +1027,18 @@ export default {
         },
         // 메인 채팅 입력 처리
         handleMainChatSubmit(message) {
+            console.log('[ProcessDefinitionMap] handleMainChatSubmit 받음:', message);
             // 파일만 있거나 텍스트만 있거나 둘 다 있는 경우 처리
-            if (!message || (!message.text && !message.file)) return;
+            if (!message || (!message.text && !message.file && !message.images)) return;
             
-            // PDF 파일이 포함된 경우 파일 정보를 메시지에 포함
-            if (message.file && message.file.fileType === 'application/pdf') {
-                // PDF 파일 정보를 포함하여 전달
-                const fileInfoText = `\n\n[InputData]\n${JSON.stringify(message.file)}`;
-                message.text = (message.text || 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.') + fileInfoText;
-                message.hasPdfFile = true;
+            // 기본 텍스트 설정 (파일/이미지만 있는 경우)
+            if (!message.text && (message.file || message.images)) {
+                message.text = message.file ? 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.' : '첨부된 내용을 확인해주세요.';
             }
             
-            // 전체 화면 채팅 다이얼로그 열기
+            // 전체 화면 채팅 다이얼로그 열기 (message 객체 전체 전달 - 패널에서 [InputData] 처리)
             this.pendingChatMessage = message;
+            console.log('[ProcessDefinitionMap] pendingChatMessage 설정:', this.pendingChatMessage);
             this.showFullScreenChat = true;
         },
 
