@@ -1130,6 +1130,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     key: 'proc_map',
+                    tenant_id: window.$tenantName
                 }
             };
             const procMap = await storage.getObject('configuration', options);
@@ -1173,6 +1174,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     key: 'proc_map',
+                    tenant_id: window.$tenantName
                 },
                 column: 'uuid'
             };
@@ -1214,6 +1216,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     key: 'metrics',
+                    tenant_id: window.$tenantName
                 }
             };
             const metricsMap = await storage.getObject('configuration', options);
@@ -1241,6 +1244,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     key: 'metrics',
+                    tenant_id: window.$tenantName
                 },
                 column: 'uuid'
             };
