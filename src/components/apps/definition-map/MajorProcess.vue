@@ -94,7 +94,7 @@ export default {
         parent: Object,
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
-        selectedDomain: String,
+        selectedDomain: [String, Number],
         domains: Array,
         filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
     },

@@ -73,7 +73,7 @@ export default {
         type: String,
         process: Object,
         enableEdit: Boolean,
-        selectedDomain: String,
+        selectedDomain: [String, Number],
     },
     data: () => ({
         newProcess: {

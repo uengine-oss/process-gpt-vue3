@@ -86,7 +86,7 @@ export default {
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
         domains: Array,
-        selectedDomain: String,
+        selectedDomain: [String, Number],
         filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
     },
     data: () => ({
