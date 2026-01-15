@@ -479,6 +479,8 @@ export default {
         userName: null,
         lock: null,
         editUser: null,
+        lockSubscription: null,
+        isForceCheckoutInProgress: false,
         alertType: '',
         alertDialog: false,
         alertMessage: '',
@@ -630,6 +632,10 @@ export default {
                     color: 'primary',
                     class: 'cp-check-in',
                     action: async () => {
+                        // Notify the current editor via Realtime before taking over
+                        await backend.forceCheckout('process-map', this.userName);
+                        // Wait a moment for the other user to save and release
+                        await new Promise(resolve => setTimeout(resolve, 2000));
                         await this.getProcessMap();
                         this.checkOut();
                     }
@@ -699,6 +705,16 @@ export default {
                 this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
             }
         });
+
+        // Subscribe to lock table changes for force checkout notifications
+        this.subscribeLockChanges();
+    },
+    beforeUnmount() {
+        // Unsubscribe from lock table changes
+        if (this.lockSubscription) {
+            this.lockSubscription.unsubscribe();
+            this.lockSubscription = null;
+        }
     },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
@@ -710,6 +726,77 @@ export default {
         }
     },
     methods: {
+        subscribeLockChanges() {
+            const supabase = window.$supabase;
+            if (!supabase || !this.useLock) return;
+
+            const tenantId = window.$tenantName || 'default';
+
+            // Subscribe to UPDATE events on lock table for process-map
+            this.lockSubscription = supabase
+                .channel('lock-changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'lock',
+                        filter: `id=eq.process-map`
+                    },
+                    (payload) => {
+                        this.handleLockChange(payload.new);
+                    }
+                )
+                .subscribe();
+        },
+        async handleLockChange(lockData) {
+            // Check if this is a force checkout targeting the current user
+            if (
+                lockData &&
+                lockData.force_checkout_by &&
+                lockData.user_id === this.userName &&
+                lockData.force_checkout_by !== this.userName &&
+                this.enableEdit &&
+                !this.isForceCheckoutInProgress
+            ) {
+                this.isForceCheckoutInProgress = true;
+                await this.handleForceCheckout(lockData.force_checkout_by);
+            }
+        },
+        async handleForceCheckout(forceCheckoutBy) {
+            try {
+                // 1. Auto-save current work
+                if (this.viewMode === 'metrics') {
+                    await this.syncMetricsToCard();
+                } else {
+                    await this.syncCardToMetrics();
+                }
+                await backend.putProcessDefinitionMap(this.value);
+
+                // 2. Show notification to user
+                this.$toast.warning(
+                    this.$t('processDefinitionMap.forceCheckoutNotification', { name: forceCheckoutBy }) ||
+                    `${forceCheckoutBy} 님이 수정을 시작하여, 현재까지 작업 내용이 저장된 후 수정이 종료됩니다.`
+                );
+
+                // 3. Exit edit mode
+                this.lock = false;
+                this.enableEdit = false;
+
+                // 4. Clear force checkout flags and transfer lock to new user
+                await backend.deleteLock('process-map');
+
+                // 5. Refresh the page data
+                await this.getProcessMap();
+                await this.getMetricsMap();
+
+            } catch (error) {
+                console.error('Force checkout handling error:', error);
+                this.$toast.error(this.$t('processDefinitionMap.forceCheckoutError') || '강제 체크아웃 처리 중 오류가 발생했습니다.');
+            } finally {
+                this.isForceCheckoutInProgress = false;
+            }
+        },
         async ensureUncategorizedDomainTab() {
             // '미분류' 도메인 탭이 없으면 추가 (데이터는 수정하지 않음, UI 탭만 추가)
             const uncategorizedName = this.$t('processDefinitionMap.uncategorized');

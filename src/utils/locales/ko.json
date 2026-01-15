@@ -331,6 +331,8 @@
         "checkInMessage": "편집을 종료하시겠습니까? \n저장하지 않을 경우, 수정된 내용은 반영되지 않습니다.",
         "checkOutMessage": "프로세스 정의 체계도를 수정하시겠습니까?",
         "forcedCheckOutMessage": "현재 {name} 님께서 수정 중입니다. 편집을 진행하는 경우 {name}님이 수정한 내용은 손상되어 저장되지 않습니다. \n편집을 진행 하시겠습니까?",
+        "forceCheckoutNotification": "{name} 님이 수정을 시작하여, 현재까지 작업 내용이 저장된 후 수정이 종료됩니다.",
+        "forceCheckoutError": "강제 체크아웃 처리 중 오류가 발생했습니다.",
         "settingPermission": "권한 설정",
         "isReadable": "열람",
         "isWritable": "개정",
