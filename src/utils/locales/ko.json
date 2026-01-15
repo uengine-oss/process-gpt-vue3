@@ -1535,7 +1535,13 @@
     "ExternalForms": {
         "submit": "제출",
         "submitted": "제출 완료",
-        "submittedMessage": "제출되었습니다."
+        "submittedMessage": "제출되었습니다.",
+        "formNotFound": "폼을 찾을 수 없습니다",
+        "formNotFoundMessage": "요청하신 폼을 찾을 수 없습니다. 관리자에게 문의해주세요.",
+        "previousStep": "이전 단계",
+        "previousStepDescription": "아래 내용은 이전 단계에서 입력하신 정보입니다. 참고용으로만 확인하시면 됩니다.",
+        "currentStep": "현재 단계",
+        "invalidAccess": "잘못된 접근입니다."
     },
     "ProcessDefinitionChatHeader": {
         "addMarketplace": "마켓플레이스 등록",

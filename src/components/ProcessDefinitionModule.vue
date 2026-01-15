@@ -1141,10 +1141,10 @@ export default {
                         const laneJson = getPropsJson(lane);
                         if (laneJson?.roleResolutionContext) {
                             if (laneJson.roleResolutionContext.endpoint) {
-                            endpoint = laneJson.roleResolutionContext.endpoint;
+                                endpoint = laneJson.roleResolutionContext.endpoint;
                             }
                             if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
-                            defaultEndpoint = endpoint;
+                                defaultEndpoint = endpoint;
                             }
                         }
                         } else {
@@ -1159,14 +1159,14 @@ export default {
                             if (Array.isArray(endpoint)) {
                                 endpoint = endpoint.filter((item) => isUUID(item));
                             } else {
-                                endpoint = isUUID(endpoint) ? endpoint : '';
+                                endpoint = isUUID(endpoint) || endpoint == 'external_customer' ? endpoint : '';
                             }
                         }
                         if (defaultEndpoint && defaultEndpoint.length > 0) {
                             if (Array.isArray(defaultEndpoint)) {
                                 defaultEndpoint = defaultEndpoint.filter((item) => isUUID(item));
                             } else {
-                                defaultEndpoint = isUUID(defaultEndpoint) ? defaultEndpoint : '';
+                                defaultEndpoint = isUUID(defaultEndpoint) || defaultEndpoint == 'external_customer' ? defaultEndpoint : '';
                             }
                         }
                         return {
@@ -1269,14 +1269,14 @@ export default {
                             if (Array.isArray(endpoint)) {
                                 endpoint = endpoint.filter((item) => isUUID(item));
                             } else {
-                                endpoint = isUUID(endpoint) ? endpoint : '';
+                                endpoint = isUUID(endpoint) || endpoint == 'external_customer' ? endpoint : '';
                             }
                         }
                         if (defaultEndpoint && defaultEndpoint.length > 0) {
                             if (Array.isArray(defaultEndpoint)) {
                                 defaultEndpoint = defaultEndpoint.filter((item) => isUUID(item));
                             } else {
-                                defaultEndpoint = isUUID(defaultEndpoint) ? defaultEndpoint : '';
+                                defaultEndpoint = isUUID(defaultEndpoint) || defaultEndpoint == 'external_customer' ? defaultEndpoint : '';
                             }
                         }
                         return {
