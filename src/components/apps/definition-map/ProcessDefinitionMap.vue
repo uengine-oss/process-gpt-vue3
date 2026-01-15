@@ -1091,10 +1091,103 @@ export default {
         },
         async getProcessMap() {
             this.value = await backend.getProcessDefinitionMap();
+            // 미분류 프로세스 업데이트
+            await this.updateUncategorizedProcesses();
         },
         async getMetricsMap() {
             this.metricsValue = await backend.getMetricsMap();
             // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
+        },
+        // 체계도에 등록되지 않은 프로세스를 "미분류" Mega에 추가
+        async updateUncategorizedProcesses() {
+            try {
+                // 1. 모든 proc_def 가져오기
+                const allProcDefs = await backend.listDefinition();
+                if (!allProcDefs || allProcDefs.length === 0) return;
+
+                // 미분류 이름 목록
+                const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
+
+                // 2. 체계도에 등록된 모든 SubProcess ID 수집 (미분류 Mega 제외!)
+                const registeredIds = new Set();
+                if (this.value && this.value.mega_proc_list) {
+                    this.value.mega_proc_list.forEach(mega => {
+                        // 미분류 Mega는 건너뛰기
+                        if (uncategorizedNames.includes(mega.name) || uncategorizedNames.includes(mega.id)) {
+                            return;
+                        }
+                        if (mega.major_proc_list) {
+                            mega.major_proc_list.forEach(major => {
+                                if (major.sub_proc_list) {
+                                    major.sub_proc_list.forEach(sub => {
+                                        registeredIds.add(sub.id);
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+
+                // 3. 미등록 프로세스 찾기 (bpmn 파일만)
+                const unregisteredProcesses = allProcDefs
+                    .filter(proc => {
+                        const procId = proc.id || (proc.path ? proc.path.replace('.bpmn', '') : null);
+                        return procId && !registeredIds.has(procId) && !proc.directory;
+                    })
+                    .map(proc => ({
+                        id: proc.id || proc.path.replace('.bpmn', ''),
+                        name: proc.name || proc.id || proc.path.replace('.bpmn', '')
+                    }));
+
+                // 4. "미분류" Mega 프로세스 찾기
+                let uncategorizedMega = this.value.mega_proc_list.find(
+                    mega => uncategorizedNames.includes(mega.name) || uncategorizedNames.includes(mega.id)
+                );
+
+                if (unregisteredProcesses.length > 0) {
+                    if (!uncategorizedMega) {
+                        // 미분류 Mega 생성
+                        uncategorizedMega = {
+                            id: 'uncategorized',
+                            name: this.$t('processDefinitionMap.uncategorized') || '미분류',
+                            major_proc_list: [{
+                                id: 'uncategorized_major',
+                                name: this.$t('processDefinitionMap.uncategorized') || '미분류',
+                                domain: this.$t('processDefinitionMap.uncategorized') || '미분류',
+                                sub_proc_list: []
+                            }]
+                        };
+                        this.value.mega_proc_list.push(uncategorizedMega);
+                    }
+
+                    // 미분류 Major 찾기 또는 생성
+                    let uncategorizedMajor = uncategorizedMega.major_proc_list.find(
+                        major => uncategorizedNames.includes(major.name) || uncategorizedNames.includes(major.id)
+                    );
+
+                    if (!uncategorizedMajor) {
+                        uncategorizedMajor = {
+                            id: 'uncategorized_major',
+                            name: this.$t('processDefinitionMap.uncategorized') || '미분류',
+                            domain: this.$t('processDefinitionMap.uncategorized') || '미분류',
+                            sub_proc_list: []
+                        };
+                        uncategorizedMega.major_proc_list.push(uncategorizedMajor);
+                    }
+
+                    // 미등록 프로세스로 sub_proc_list 교체 (이전 데이터 삭제 후 새로 추가)
+                    uncategorizedMajor.sub_proc_list = unregisteredProcesses;
+                } else {
+                    // 미등록 프로세스가 없으면 미분류 Mega 제거
+                    if (uncategorizedMega) {
+                        this.value.mega_proc_list = this.value.mega_proc_list.filter(
+                            mega => !uncategorizedNames.includes(mega.name) && !uncategorizedNames.includes(mega.id)
+                        );
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating uncategorized processes:', error);
+            }
         },
         async loadOrganizationOptions() {
             console.log('[ProcessDefinitionMap.loadOrganizationOptions] Starting...');
