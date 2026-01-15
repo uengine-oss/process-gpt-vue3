@@ -99,8 +99,15 @@ export default {
                 return this.value.major_proc_list || [];
             }
 
+            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized'), 'uncategorized'];
+
+            // 이 Mega가 미분류 Mega인 경우: 모든 도메인 탭에서 항상 표시
+            const isUncategorizedMega = uncategorizedNames.includes(this.value.name) || uncategorizedNames.includes(this.value.id);
+            if (isUncategorizedMega) {
+                return this.value.major_proc_list;
+            }
+
             // '미분류' 탭 선택 시: 도메인이 비어있거나 '미분류'인 프로세스 표시
-            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
             const isUncategorizedTab = uncategorizedNames.includes(this.selectedDomain);
 
             return this.value.major_proc_list.filter(major => {
