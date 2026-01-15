@@ -355,7 +355,8 @@
         "matrixView": "Matrix",
         "allDomains": "All",
         "selectColor": "Select Color",
-        "filterByOrganization": "Organization Filter"
+        "filterByOrganization": "Organization Filter",
+        "editingEnded": "{name} has finished editing. You can now edit."
     },
     "processDefinitionTree": {
         "search": "Search",

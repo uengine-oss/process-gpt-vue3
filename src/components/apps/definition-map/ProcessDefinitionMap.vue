@@ -730,9 +730,7 @@ export default {
             const supabase = window.$supabase;
             if (!supabase || !this.useLock) return;
 
-            const tenantId = window.$tenantName || 'default';
-
-            // Subscribe to UPDATE events on lock table for process-map
+            // Subscribe to lock table changes for process-map
             this.lockSubscription = supabase
                 .channel('lock-changes')
                 .on(
@@ -745,6 +743,30 @@ export default {
                     },
                     (payload) => {
                         this.handleLockChange(payload.new);
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'DELETE',
+                        schema: 'public',
+                        table: 'lock',
+                        filter: `id=eq.process-map`
+                    },
+                    (payload) => {
+                        this.handleLockDeleted(payload.old);
+                    }
+                )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'lock',
+                        filter: `id=eq.process-map`
+                    },
+                    (payload) => {
+                        this.handleLockInserted(payload.new);
                     }
                 )
                 .subscribe();
@@ -761,6 +783,33 @@ export default {
             ) {
                 this.isForceCheckoutInProgress = true;
                 await this.handleForceCheckout(lockData.force_checkout_by);
+            }
+        },
+        handleLockDeleted(oldLockData) {
+            // 다른 사용자가 수정을 종료했을 때 (체크인)
+            // 현재 사용자가 편집 중이 아닌 경우에만 UI 업데이트
+            if (!this.enableEdit) {
+                this.lock = false;
+                this.editUser = null;
+
+                // 알림 표시 (이전 편집자가 있었던 경우)
+                if (oldLockData && oldLockData.user_id && oldLockData.user_id !== this.userName) {
+                    this.$toast.info(
+                        this.$t('processDefinitionMap.editingEnded', { name: oldLockData.user_id }) ||
+                        `${oldLockData.user_id} 님이 수정을 완료했습니다. 이제 수정할 수 있습니다.`
+                    );
+                }
+
+                // 최신 데이터 로드
+                this.getProcessMap(true);
+            }
+        },
+        handleLockInserted(newLockData) {
+            // 다른 사용자가 수정을 시작했을 때 (체크아웃)
+            // 현재 사용자가 편집 중이 아닌 경우에만 UI 업데이트
+            if (!this.enableEdit && newLockData && newLockData.user_id !== this.userName) {
+                this.lock = true;
+                this.editUser = newLockData.user_id;
             }
         },
         async handleForceCheckout(forceCheckoutBy) {
@@ -1089,10 +1138,12 @@ export default {
         goProcessMap() {
             this.$router.push(`/definition-map`);
         },
-        async getProcessMap() {
+        async getProcessMap(skipUncategorized = false) {
             this.value = await backend.getProcessDefinitionMap();
-            // 미분류 프로세스 업데이트
-            await this.updateUncategorizedProcesses();
+            // 미분류 프로세스 업데이트 (초기 로드 시에만, 또는 명시적 요청 시)
+            if (!skipUncategorized) {
+                await this.updateUncategorizedProcesses();
+            }
         },
         async getMetricsMap() {
             this.metricsValue = await backend.getMetricsMap();
@@ -1507,7 +1558,7 @@ export default {
                 await this.syncCardToMetrics();
             }
             await backend.putProcessDefinitionMap(this.value);
-            await this.getProcessMap();
+            await this.getProcessMap(true);  // 저장 직후에는 미분류 업데이트 스킵
             this.closeAlertDialog();
         },
         async checkIn() {
