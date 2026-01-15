@@ -170,7 +170,7 @@
                 </div>
 
                 <!-- Analytics 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0" class="mb-4">
+                <!-- <div v-if="analyticsItem.length > 0" class="mb-4">
                     <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         Analytics
                     </div>
@@ -189,7 +189,7 @@
                             <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
                         </v-list-item>
                     </v-col>
-                </div>
+                </div> -->
 
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
                 <v-col class="pa-0">
@@ -199,7 +199,7 @@
                         <div v-if="item.header && index === 0"
                             style="font-size:14px;"
                             class="text-medium-emphasis cp-menu mt-3 ml-2"
-                        >{{ $t(item.header) }}ddo</div>
+                        >{{ $t(item.header) }}</div>
                         <v-row v-if="item.header && !item.disable"
                             class="pa-0 ma-0" 
                         >
