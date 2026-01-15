@@ -288,6 +288,8 @@
                 :workAssistantAgentMode="true"
                 :disableChat="isLoading"
                 :isMobile="false"
+                :showStopButton="isLoading"
+                @stopMessage="stopAgent(currentRoomId)"
                 @sendMessage="handleChatInputMessage"
             />
         </div>
@@ -332,9 +334,14 @@ export default {
             currentRoomId: null,
             messages: [],
             inputText: '',
-            isLoading: false,
+            // 로딩 상태를 채팅방별로 관리 (여러 채팅방 동시 요청 지원)
+            // { roomId: { isLoading: true, message: '...' } }
+            loadingStates: {},
+            // 에이전트 스트리밍 중지(Abort)용 컨트롤러 (채팅방별)
+            agentAbortControllers: {},
+            // 사용자가 "중지" 버튼을 눌렀는지 여부 (채팅방별)
+            agentAbortRequested: {},
             isLoadingHistory: true,
-            loadingMessage: '생각 중...',
             streamingContent: '',
             // ConsultingGenerator 관련
             generator: null,
@@ -376,6 +383,15 @@ export default {
         },
         currentRoom() {
             return this.chatRooms.find(r => r.id === this.currentRoomId);
+        },
+        // 현재 채팅방의 로딩 상태
+        isLoading() {
+            const state = this.loadingStates[this.currentRoomId];
+            return state?.isLoading || false;
+        },
+        loadingMessage() {
+            const state = this.loadingStates[this.currentRoomId];
+            return state?.message || '생각 중...';
         }
     },
     watch: {
@@ -414,6 +430,8 @@ export default {
         }
         // Events 채널 정리
         this.unsubscribeFromEvents();
+        // 진행 중인 에이전트 스트림 중지
+        this.abortAllAgentStreams();
     },
     methods: {
         // UUID 생성
@@ -608,7 +626,10 @@ export default {
             const hasImages = this.pendingImages && this.pendingImages.length > 0;
             const hasPdf = this.pendingPdfFile;
             console.log('[WorkAssistantChatPanel] 조건 체크 - hasText:', !!hasText, 'hasImages:', hasImages, 'hasPdf:', !!hasPdf);
-            if ((!hasText && !hasImages && !hasPdf) || this.isLoading) return;
+            
+            // 현재 채팅방이 로딩 중인 경우에만 메시지 전송 차단 (다른 채팅방은 허용)
+            const currentRoomState = this.loadingStates[this.currentRoomId];
+            if ((!hasText && !hasImages && !hasPdf) || currentRoomState?.isLoading) return;
 
             // 현재 첨부된 이미지/PDF 복사 후 초기화
             const currentImages = [...this.pendingImages];
@@ -638,6 +659,10 @@ export default {
                 return;
             }
 
+            // ★ 시작 시점의 roomId 캡처 (콜백에서 사용)
+            const targetRoomId = this.currentRoomId;
+            const targetRoom = this.currentRoom;
+
             // 사용자 메시지 추가 (이미지/PDF 정보 포함)
             const userMsgObj = this.createMessageObj(userMessage, 'user', {
                 images: currentImages,
@@ -657,9 +682,11 @@ export default {
             }
             console.log('[WorkAssistantChatPanel] messageForAgent:', messageForAgent.substring(0, 200) + '...');
             
-            // API 호출
-            this.isLoading = true;
-            this.loadingMessage = '생각 중...';
+            // API 호출 - 로딩 상태를 채팅방별로 관리
+            this.loadingStates[targetRoomId] = {
+                isLoading: true,
+                message: '생각 중...'
+            };
 
             this.scrollToBottom();
             
@@ -670,6 +697,10 @@ export default {
                 
                 // Supabase 세션에서 JWT 가져오기 (자동 갱신 포함)
                 const userJwt = await getValidToken() || '';
+
+                // 채팅방별 AbortController 저장 (중지 버튼용)
+                const abortController = new AbortController();
+                this.agentAbortControllers[targetRoomId] = abortController;
                 
                 await workAssistantAgentService.sendMessageStream(
                     {
@@ -679,13 +710,15 @@ export default {
                         user_email: this.userInfo.email,
                         user_name: this.userInfo.name || this.userInfo.username,
                         user_jwt: userJwt,
-                        conversation_id: this.currentRoomId  // 채팅방 ID로 세션 유지
+                        conversation_id: targetRoomId  // 캡처된 채팅방 ID 사용
                     },
                     {
                         onToken: (token) => {
                             fullResponse += token;
-                            // 스트리밍 중 표시 업데이트
-                            this.loadingMessage = fullResponse.length === 0 ? '생각 중...' : fullResponse;
+                            // 스트리밍 중 표시 업데이트 (해당 채팅방의 로딩 상태)
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].message = fullResponse.length === 0 ? '생각 중...' : fullResponse;
+                            }
                         },
                         onToolStart: (toolName, input) => {
                             if (toolName === 'work-assistant__ask_user') {
@@ -694,7 +727,10 @@ export default {
                                 }
                             }
                             toolCalls.push({ name: toolName, input });
-                            this.loadingMessage = `🔧 ${this.formatToolName(toolName)} 실행 중...`;
+                            // 해당 채팅방의 로딩 상태 업데이트
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].message = `🔧 ${this.formatToolName(toolName)} 실행 중...`;
+                            }
                         },
                         onToolEnd: (output) => {
                             // 마지막 도구 호출에 결과 저장
@@ -702,19 +738,59 @@ export default {
                                 toolCalls[toolCalls.length - 1].output = output;
                             }
                         },
+                        onAbort: async () => {
+                            // 로딩 상태 해제 (해당 채팅방)
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].isLoading = false;
+                            }
+
+                            // 컨트롤러 정리
+                            delete this.agentAbortControllers[targetRoomId];
+
+                            // 사용자가 직접 중지한 경우: 지금까지 생성된 내용을 최종 답변으로 확정
+                            if (this.agentAbortRequested[targetRoomId]) {
+                                delete this.agentAbortRequested[targetRoomId];
+
+                                // 현재까지 스트리밍된 결과가 있으면 메시지로 저장/표시
+                                const partial = (fullResponse || '').trim();
+                                if (partial) {
+                                    const assistantMsgObj = this.createMessageObj(partial, 'assistant');
+                                    assistantMsgObj.toolCalls = toolCalls;
+
+                                    if (this.currentRoomId === targetRoomId) {
+                                        this.messages.push(assistantMsgObj);
+                                    }
+                                    await this.saveMessageToRoom(assistantMsgObj, targetRoomId);
+                                }
+                            }
+                        },
                         onDone: async (content) => {
-                            this.isLoading = false;
+                            // 로딩 상태 해제 (해당 채팅방)
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].isLoading = false;
+                            }
+
+                            // 컨트롤러 정리
+                            delete this.agentAbortControllers[targetRoomId];
+                            delete this.agentAbortRequested[targetRoomId];
                             
-                            // AI 응답 메시지 추가
+                            // AI 응답 메시지 생성
                             const assistantMsgObj = this.createMessageObj(content, 'assistant');
                             assistantMsgObj.toolCalls = toolCalls;
-                            this.messages.push(assistantMsgObj);
-                            await this.saveMessage(assistantMsgObj);
+                            
+                            // ★ 현재 채팅방이 요청 시작 채팅방과 같을 때만 UI에 추가
+                            if (this.currentRoomId === targetRoomId) {
+                                this.messages.push(assistantMsgObj);
+                            }
+                            
+                            // DB에는 항상 저장 (targetRoomId 기준)
+                            await this.saveMessageToRoom(assistantMsgObj, targetRoomId);
                             
                             // 채팅방 이름 업데이트 (첫 메시지인 경우)
-                            if (this.messages.length <= 2 && this.currentRoom) {
-                                this.currentRoom.name = this.truncateText(userMessage, 20);
-                                await this.putObject('chat_rooms', this.currentRoom);
+                            if (targetRoom) {
+                                // 메시지 수 확인을 위해 DB에서 카운트하거나 간단히 처리
+                                targetRoom.name = this.truncateText(userMessage, 20);
+                                await this.putObject('chat_rooms', targetRoom);
                             }
                             
                             // PDF2BPMN 작업 감지 및 events watch 시작
@@ -738,8 +814,8 @@ export default {
                             }
                             
                             if (parsed) {
-                                // 프로세스 생성 요청인 경우 컨설팅 모드로 전환
-                                if (parsed.user_request_type === 'generate_process') {
+                                // 프로세스 생성 요청인 경우 컨설팅 모드로 전환 (현재 채팅방일 때만)
+                                if (parsed.user_request_type === 'generate_process' && this.currentRoomId === targetRoomId) {
                                     // user_message와 image_analysis_result 합치기
                                     let originalMessage = parsed.user_message || userMessage;
                                     if (parsed.image_analysis_result) {
@@ -753,23 +829,44 @@ export default {
                                 this.$emit('response-parsed', parsed);
                             }
                             
-                            this.scrollToBottom();
+                            // 현재 채팅방일 때만 스크롤
+                            if (this.currentRoomId === targetRoomId) {
+                                this.scrollToBottom();
+                            }
                         },
                         onError: (error) => {
-                            this.isLoading = false;
+                            // 로딩 상태 해제 (해당 채팅방)
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].isLoading = false;
+                            }
+                            // 컨트롤러 정리
+                            delete this.agentAbortControllers[targetRoomId];
+                            delete this.agentAbortRequested[targetRoomId];
                             console.error('에이전트 오류:', error);
                             
-                            // 오류 메시지 추가
+                            // 오류 메시지 추가 (현재 채팅방일 때만 UI에 추가)
                             const errorMsgObj = this.createMessageObj(
                                 '죄송합니다. 요청 처리 중 오류가 발생했습니다. 다시 시도해 주세요.',
                                 'assistant'
                             );
-                            this.messages.push(errorMsgObj);
+                            if (this.currentRoomId === targetRoomId) {
+                                this.messages.push(errorMsgObj);
+                            }
+                            // DB에는 항상 저장
+                            this.saveMessageToRoom(errorMsgObj, targetRoomId);
                         }
                     }
+                    ,
+                    { signal: abortController.signal }
                 );
             } catch (error) {
-                this.isLoading = false;
+                // 로딩 상태 해제 (해당 채팅방)
+                if (this.loadingStates[targetRoomId]) {
+                    this.loadingStates[targetRoomId].isLoading = false;
+                }
+                // 컨트롤러 정리
+                delete this.agentAbortControllers[targetRoomId];
+                delete this.agentAbortRequested[targetRoomId];
                 console.error('메시지 전송 오류:', error);
             }
         },
@@ -826,10 +923,15 @@ export default {
                     
                     if (endIdx > contentStart) {
                         let jsonStr = outputStr.substring(contentStart, endIdx);
-                        // 이중 이스케이프 처리: \\\\n -> \\n -> \n (순서 중요!)
-                        jsonStr = jsonStr.replace(/\\\\\\\\/g, '\\\\'); // \\\\ -> \\
-                        jsonStr = jsonStr.replace(/\\\\n/g, '\\n');     // \\n -> \n (JSON 내 개행)
-                        jsonStr = jsonStr.replace(/\\\\"/g, '\\"');     // \\" -> \" (JSON 내 따옴표)
+                        // 이스케이프 처리 (순서 중요!)
+                        // 1. 4중 백슬래시 -> 2중 백슬래시
+                        jsonStr = jsonStr.replace(/\\\\\\\\/g, '\\\\');
+                        // 2. 2중 백슬래시+n -> 실제 개행 (\\n -> \n)
+                        jsonStr = jsonStr.replace(/\\\\n/g, '\n');
+                        // 3. 단일 백슬래시+n -> 실제 개행 (\n -> 개행문자)
+                        jsonStr = jsonStr.replace(/\\n/g, '\n');
+                        // 4. 이스케이프된 따옴표 처리
+                        jsonStr = jsonStr.replace(/\\\\"/g, '\\"');
                         return JSON.parse(jsonStr);
                     }
                 } catch (e) {
@@ -851,23 +953,34 @@ export default {
             return outputStr;
         },
 
-        // 메시지 저장
+        // 메시지 저장 (현재 채팅방에 저장)
         async saveMessage(msg) {
+            await this.saveMessageToRoom(msg, this.currentRoomId);
+        },
+
+        // 특정 채팅방에 메시지 저장 (비동기 콜백에서 사용)
+        async saveMessageToRoom(msg, roomId) {
+            if (!roomId) {
+                console.error('[WorkAssistantChatPanel] saveMessageToRoom: roomId가 없습니다.');
+                return;
+            }
+            
             const messageData = {
                 uuid: msg.uuid,
-                id: this.currentRoomId,
+                id: roomId,
                 messages: msg
             };
             await this.putObject(`chats/${msg.uuid}`, messageData);
             
             // 채팅방 마지막 메시지 업데이트
-            if (this.currentRoom) {
-                this.currentRoom.message = {
+            const room = this.chatRooms.find(r => r.id === roomId);
+            if (room) {
+                room.message = {
                     msg: typeof msg.content === 'string' ? msg.content.substring(0, 50) : 'New message',
                     type: 'text',
                     createdAt: msg.timeStamp
                 };
-                await this.putObject('chat_rooms', this.currentRoom);
+                await this.putObject('chat_rooms', room);
             }
         },
 
@@ -1008,8 +1121,15 @@ export default {
             
             if (!me.generator) return;
             
-            me.isLoading = true;
-            me.loadingMessage = '프로세스를 설계하고 있습니다...';
+            // 컨설팅 모드 시작 시점의 roomId 캡처
+            const targetRoomId = me.currentRoomId;
+            me._consultingTargetRoomId = targetRoomId;  // 콜백에서 사용하기 위해 저장
+            
+            // 로딩 상태를 채팅방별로 관리
+            me.loadingStates[targetRoomId] = {
+                isLoading: true,
+                message: '프로세스를 설계하고 있습니다...'
+            };
             
             // 로딩 메시지 표시
             const loadingMsg = me.createMessageObj('...', 'assistant');
@@ -1022,7 +1142,9 @@ export default {
                 await me.generator.generate();
             } catch (error) {
                 console.error('컨설팅 생성 오류:', error);
-                me.isLoading = false;
+                if (me.loadingStates[targetRoomId]) {
+                    me.loadingStates[targetRoomId].isLoading = false;
+                }
                 
                 // 로딩 메시지 제거
                 if (me.messages.length > 0 && me.messages[me.messages.length - 1].isLoading) {
@@ -1053,7 +1175,10 @@ export default {
         // AIGenerator에서 호출 - 생성 완료
         async onGenerationFinished(response, chatRoomId = null) {
             const me = this;
-            me.isLoading = false;
+            const targetRoomId = me._consultingTargetRoomId || me.currentRoomId;
+            if (me.loadingStates[targetRoomId]) {
+                me.loadingStates[targetRoomId].isLoading = false;
+            }
             
             // 로딩 상태 제거
             me.messages.forEach((message) => {
@@ -1092,7 +1217,10 @@ export default {
         async onError(error) {
             const me = this;
             console.error('Generator 에러:', error);
-            me.isLoading = false;
+            const targetRoomId = me._consultingTargetRoomId || me.currentRoomId;
+            if (me.loadingStates[targetRoomId]) {
+                me.loadingStates[targetRoomId].isLoading = false;
+            }
             
             // 로딩 메시지 제거
             if (me.messages.length > 0 && me.messages[me.messages.length - 1].isLoading) {
@@ -1954,6 +2082,42 @@ export default {
                 console.error('음성 인식 오류:', error);
             } finally {
                 this.isMicRecorderLoading = false;
+            }
+        }
+        ,
+
+        /**
+         * 에이전트 스트림 중지 (현재 채팅방 또는 특정 채팅방)
+         */
+        stopAgent(roomId) {
+            if (!roomId) return;
+            const controller = this.agentAbortControllers[roomId];
+            const state = this.loadingStates[roomId];
+            if (!controller || !state?.isLoading) return;
+
+            // 사용자 요청에 의한 중지임을 표시 (onAbort에서 메시지 남김)
+            this.agentAbortRequested[roomId] = true;
+            controller.abort();
+        },
+
+        /**
+         * 패널 종료 시 진행 중인 모든 스트림 중지
+         * (사용자 중지 메시지는 남기지 않음)
+         */
+        abortAllAgentStreams() {
+            try {
+                const controllers = this.agentAbortControllers || {};
+                Object.keys(controllers).forEach((roomId) => {
+                    try {
+                        delete this.agentAbortRequested[roomId];
+                        controllers[roomId]?.abort?.();
+                    } catch (e) {
+                        // ignore
+                    }
+                });
+                this.agentAbortControllers = {};
+            } catch (e) {
+                // ignore
             }
         }
     }

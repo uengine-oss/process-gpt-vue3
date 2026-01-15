@@ -894,7 +894,7 @@
                                 </template>
                             </v-tooltip>
 
-                            <v-btn v-if="!isLoading"
+                            <v-btn v-if="!(showStopButton || isLoading)"
                                 class="cp-send text-medium-emphasis"
                                 color="primary" 
                                 variant="outlined" 
@@ -915,7 +915,7 @@
                                 icon
                                 size="small"
                                 style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
-                                @click="isLoading = !isLoading"
+                                @click="handleStopClick"
                             >
                                 <Icons :icon="'outline-stop-circle'" :size="16" />
                             </v-btn>
@@ -1131,7 +1131,7 @@
                         </v-tooltip>
                         <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
 
-                        <v-btn v-if="!isLoading && !isGenerationFinished"
+                        <v-btn v-if="!(showStopButton || isLoading) && !isGenerationFinished"
                             class="cp-send text-medium-emphasis"
                             color="primary" 
                             variant="outlined" 
@@ -1168,7 +1168,7 @@
                             icon
                             size="small"
                             style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
-                            @click="isLoading = !isLoading"
+                            @click="handleStopClick"
                         >
                             <Icons :icon="'outline-stop-circle'" :size="16" />
                         </v-btn>
@@ -1279,6 +1279,12 @@ export default {
             default: false
         },
         showDetailInfo: {
+            type: Boolean,
+            default: false
+        },
+        // workAssistantAgentMode 등에서 외부(부모) 로딩 상태에 따라
+        // 전송 버튼 위치에 "중지" 버튼을 표시하기 위한 플래그
+        showStopButton: {
             type: Boolean,
             default: false
         }
@@ -1544,6 +1550,19 @@ export default {
         }
     },
     methods: {
+        handleStopClick() {
+            // 전송 버튼 위치의 "중지" 버튼 클릭 처리
+            // - 기존 Chat 로직(animateBorder + stopMessage emit)을 트리거
+            // - 부모(WorkAssistantChatPanel 등)에서 stopMessage를 받아 실제 Abort 처리
+            try {
+                this.isLoading = false;
+            } catch (e) {
+                // ignore
+            }
+            if (this.showStopButton) {
+                this.$emit('stopMessage');
+            }
+        },
         scrollToTop() {
             if (this.$refs.scrollContainer) {
                 this.$refs.scrollContainer.$el.scrollTop = 0;
