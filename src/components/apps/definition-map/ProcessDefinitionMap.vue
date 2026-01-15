@@ -801,7 +801,7 @@ export default {
                 }
 
                 // 최신 데이터 로드
-                this.getProcessMap(true);
+                this.getProcessMap();
             }
         },
         handleLockInserted(newLockData) {
@@ -871,6 +871,9 @@ export default {
         async syncCardToMetrics() {
             if (!this.value || !this.value.mega_proc_list) return;
 
+            // 미분류 Mega 이름 목록 (동기화에서 제외)
+            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
+
             // 1. Ensure "미분류" (Uncategorized) domain exists as default
             const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
             let uncategorizedDomain = this.metricsValue.domains.find(d => d.name === uncategorizedName || d.name === '미분류' || d.name === 'Uncategorized');
@@ -888,8 +891,10 @@ export default {
             const newMegaProcesses = [];
             const newProcesses = [];
 
-            // 2. Sync Mega Processes
-            this.value.mega_proc_list.forEach((mega, megaIndex) => {
+            // 2. Sync Mega Processes (미분류 Mega 제외)
+            this.value.mega_proc_list
+                .filter(mega => !uncategorizedNames.includes(mega.name) && !uncategorizedNames.includes(mega.id))
+                .forEach((mega, megaIndex) => {
                 const metricMega = {
                     id: mega.id,
                     name: mega.name,
@@ -1138,12 +1143,10 @@ export default {
         goProcessMap() {
             this.$router.push(`/definition-map`);
         },
-        async getProcessMap(skipUncategorized = false) {
+        async getProcessMap() {
             this.value = await backend.getProcessDefinitionMap();
-            // 미분류 프로세스 업데이트 (초기 로드 시에만, 또는 명시적 요청 시)
-            if (!skipUncategorized) {
-                await this.updateUncategorizedProcesses();
-            }
+            // 미분류 프로세스 업데이트 (항상 재계산)
+            await this.updateUncategorizedProcesses();
         },
         async getMetricsMap() {
             this.metricsValue = await backend.getMetricsMap();
@@ -1552,13 +1555,19 @@ export default {
             await backend.deleteUserPermission({ user_id: userId, proc_def_id: process.id });
         },
         async saveProcess() {
+            // 저장 전에 미분류 Mega 제거 (미분류는 저장하지 않음, 로드 시 항상 재계산)
+            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
+            this.value.mega_proc_list = this.value.mega_proc_list.filter(
+                mega => !uncategorizedNames.includes(mega.name) && !uncategorizedNames.includes(mega.id)
+            );
+
             if (this.viewMode === 'metrics') {
                 await this.syncMetricsToCard();
             } else {
                 await this.syncCardToMetrics();
             }
             await backend.putProcessDefinitionMap(this.value);
-            await this.getProcessMap(true);  // 저장 직후에는 미분류 업데이트 스킵
+            await this.getProcessMap();  // 미분류 재계산 포함
             this.closeAlertDialog();
         },
         async checkIn() {
