@@ -209,8 +209,8 @@
                 </div>
             </div>
 
-            <!-- PDF2BPMN 진행 상황 카드 (메시지 영역 내부, 현재 채팅방만) -->
-            <div v-if="pdf2bpmnProgress.isActive && pdf2bpmnProgress.roomId === currentRoomId" class="message-item assistant-message">
+            <!-- PDF2BPMN 진행 상황 카드 (메시지 영역 내부, 현재 채팅방) -->
+            <div v-if="currentPdf2bpmnProgress.isActive" class="message-item assistant-message">
                 <div class="message-avatar">
                     <v-avatar size="32" color="blue-lighten-4">
                         <v-icon size="18" color="blue-darken-1">mdi-file-document-outline</v-icon>
@@ -219,35 +219,35 @@
                 <div class="message-content">
                     <div class="message-header">
                         <span class="message-sender">PDF → BPMN 변환</span>
-                        <v-chip size="x-small" :color="getProgressChipColor(pdf2bpmnProgress.status)" class="ml-2">
-                            {{ pdf2bpmnProgress.status }}
+                        <v-chip size="x-small" :color="getProgressChipColor(currentPdf2bpmnProgress.status)" class="ml-2">
+                            {{ currentPdf2bpmnProgress.status }}
                         </v-chip>
                     </div>
                     
                     <div class="pdf2bpmn-progress-card">
                         <v-progress-linear 
-                            :model-value="pdf2bpmnProgress.progress" 
-                            :color="pdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'" 
+                            :model-value="currentPdf2bpmnProgress.progress" 
+                            :color="currentPdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'" 
                             height="8"
                             rounded
                             class="mb-2"
                         ></v-progress-linear>
                         
                         <div class="progress-info">
-                            <span class="progress-message">{{ pdf2bpmnProgress.message }}</span>
-                            <span class="progress-percent">{{ pdf2bpmnProgress.progress }}%</span>
-                            <v-progress-circular v-if="pdf2bpmnProgress.status === 'processing'" style="margin-left: 3px; margin-bottom: 3px;" indeterminate size="12" width="2" color="primary" />
+                            <span class="progress-message">{{ currentPdf2bpmnProgress.message }}</span>
+                            <span class="progress-percent">{{ currentPdf2bpmnProgress.progress }}%</span>
+                            <v-progress-circular v-if="currentPdf2bpmnProgress.status === 'processing'" style="margin-left: 3px; margin-bottom: 3px;" indeterminate size="12" width="2" color="primary" />
                         </div>
 
                         <!-- 생성된 BPMN 목록 (스크롤 가능) -->
-                        <div v-if="pdf2bpmnProgress.generatedBpmns.length > 0" class="generated-bpmns-scroll mt-3">
+                        <div v-if="currentPdf2bpmnProgress.generatedBpmns.length > 0" class="generated-bpmns-scroll mt-3">
                             <div class="bpmn-list-title">
                                 <v-icon size="14" class="mr-1">mdi-sitemap</v-icon>
-                                생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
+                                생성된 프로세스 ({{ currentPdf2bpmnProgress.generatedBpmns.length }})
                             </div>
                             <div class="bpmn-cards-scroll">
                                 <div 
-                                    v-for="(bpmn, idx) in pdf2bpmnProgress.generatedBpmns" 
+                                    v-for="(bpmn, idx) in currentPdf2bpmnProgress.generatedBpmns" 
                                     :key="idx" 
                                     class="bpmn-card-mini"
                                     @click="showBpmnPreview(bpmn)"
@@ -349,17 +349,13 @@ export default {
             lastSendMessage: null,
             // 중복 처리 방지 플래그
             initialMessageHandled: false,
-            // PDF2BPMN 진행 상황 (채팅방별)
-            pdf2bpmnProgress: {
-                isActive: false,
-                roomId: null,  // 해당 진행상황이 속한 채팅방
-                taskId: null,
-                status: '',
-                progress: 0,
-                message: '',
-                generatedBpmns: []
-            },
-            eventsChannel: null,
+            // PDF2BPMN 진행 상황/구독 (채팅방별로 분리)
+            // progressByRoomId: { [roomId]: { isActive, taskId, status, progress, message, generatedBpmns } }
+            pdf2bpmnProgressByRoomId: {},
+            // taskIdByRoomId: { [roomId]: taskId }
+            pdf2bpmnTaskIdByRoomId: {},
+            // eventsChannelByTaskId: { [taskId]: RealtimeChannel }
+            pdf2bpmnEventsChannelByTaskId: {},
             // BPMN 미리보기
             bpmnPreviewDialog: false,
             bpmnViewMode: 'diagram',  // 'diagram' | 'xml'
@@ -392,6 +388,18 @@ export default {
         loadingMessage() {
             const state = this.loadingStates[this.currentRoomId];
             return state?.message || '생각 중...';
+        },
+        // 현재 채팅방의 PDF2BPMN 진행 상태
+        currentPdf2bpmnProgress() {
+            const state = this.pdf2bpmnProgressByRoomId[this.currentRoomId];
+            return state || {
+                isActive: false,
+                taskId: null,
+                status: '',
+                progress: 0,
+                message: '',
+                generatedBpmns: []
+            };
         }
     },
     watch: {
@@ -428,8 +436,8 @@ export default {
         if (this.currentRoomId) {
             this.EventBus.emit('chat-room-unselected');
         }
-        // Events 채널 정리
-        this.unsubscribeFromEvents();
+        // PDF2BPMN Events 채널 정리
+        this.unsubscribeAllPdf2bpmnEvents();
         // 진행 중인 에이전트 스트림 중지
         this.abortAllAgentStreams();
     },
@@ -476,18 +484,6 @@ export default {
                 this.isLoadingHistory = true;
                 this.messages = [];
                 
-                // 채팅방 전환 시 기존 watch 해제 및 진행상황 초기화
-                this.unsubscribeFromEvents();
-                this.pdf2bpmnProgress = {
-                    isActive: false,
-                    roomId: null,
-                    taskId: null,
-                    status: '',
-                    progress: 0,
-                    message: '',
-                    generatedBpmns: []
-                };
-                
                 const messages = await backend.getMessages(roomId);
                 if (messages && messages.length > 0) {
                     const allMessages = messages.map(message => {
@@ -500,7 +496,7 @@ export default {
                     this.messages = allMessages;
                     
                     // 해당 채팅방의 PDF2BPMN 작업 확인 및 구독 시작
-                    this.checkExistingPdf2BpmnTask();
+                    this.checkExistingPdf2BpmnTask(roomId);
                 }
                 this.$nextTick(() => this.scrollToBottom());
             } catch (error) {
@@ -794,7 +790,7 @@ export default {
                             }
                             
                             // PDF2BPMN 작업 감지 및 events watch 시작
-                            this.checkAndSubscribePdf2Bpmn(content, toolCalls);
+                            this.checkAndSubscribePdf2Bpmn(content, toolCalls, targetRoomId);
                             
                             // 응답 파싱 및 이벤트 발생
                             let parsed = workAssistantAgentService.parseAgentResponse(content);
@@ -1301,19 +1297,38 @@ export default {
         // ===== PDF2BPMN Events Watch =====
         
         /**
-         * 기존 메시지에서 PDF2BPMN 작업 확인 및 구독/표시
+         * roomId 기준으로 PDF2BPMN 진행 상태 객체를 생성/반환
          */
-        async checkExistingPdf2BpmnTask() {
+        _getOrInitPdf2bpmnProgress(roomId) {
+            if (!roomId) return null;
+            if (!this.pdf2bpmnProgressByRoomId[roomId]) {
+                this.pdf2bpmnProgressByRoomId[roomId] = {
+                    isActive: false,
+                    taskId: null,
+                    status: '',
+                    progress: 0,
+                    message: '',
+                    generatedBpmns: []
+                };
+            }
+            return this.pdf2bpmnProgressByRoomId[roomId];
+        },
+
+        /**
+         * 기존 메시지에서 PDF2BPMN 작업 확인 및 구독/표시 (채팅방별)
+         */
+        async checkExistingPdf2BpmnTask(roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
-            // 최근 메시지부터 역순으로 확인
+            // 최근 메시지부터 역순으로 확인 (현재 로드된 messages는 targetRoomId의 메시지)
             for (let i = me.messages.length - 1; i >= 0; i--) {
                 const msg = me.messages[i];
                 
                 // 1. 이미 완료된 결과가 있는 경우 - 메시지에 이미 표시됨
                 if (msg.pdf2bpmnResult) {
                     console.log('[WorkAssistantChatPanel] Found existing pdf2bpmn result in message (already displayed)');
-                    // 메시지 하단에 이미 결과가 표시되므로 별도 처리 불필요
                     return;
                 }
                 
@@ -1326,14 +1341,11 @@ export default {
                     if (pdf2bpmnTool && pdf2bpmnTool.output) {
                         try {
                             const output = this.parseToolOutput(pdf2bpmnTool.output);
-                            
                             if (output) {
                                 const taskId = output.workitem_id || output.task_id || output.todo_id || output.id;
                                 if (taskId) {
-                                    console.log(`[WorkAssistantChatPanel] Found existing pdf2bpmn task: ${taskId}`);
-                                    
-                                    // 작업 상태 확인 후 진행 중이면 구독 시작
-                                    await me.checkTaskStatusAndSubscribe(taskId);
+                                    console.log(`[WorkAssistantChatPanel] Found existing pdf2bpmn task: ${taskId} (room: ${targetRoomId})`);
+                                    await me.checkTaskStatusAndSubscribe(taskId, targetRoomId);
                                     return;
                                 }
                             }
@@ -1348,8 +1360,10 @@ export default {
         /**
          * 작업 상태 확인 후 진행 중이면 구독 시작
          */
-        async checkTaskStatusAndSubscribe(taskId) {
+        async checkTaskStatusAndSubscribe(taskId, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             if (!window.$supabase) return;
             
@@ -1368,7 +1382,7 @@ export default {
                     const resultData = typeof completedEvent.data === 'string' 
                         ? JSON.parse(completedEvent.data) 
                         : completedEvent.data;
-                    me.showCompletedTaskResult(resultData);
+                    await me.showCompletedTaskResult(resultData, targetRoomId);
                     return;
                 }
                 
@@ -1389,10 +1403,10 @@ export default {
                 if (todo) {
                     // 진행 중인 작업이면 구독 시작
                     if (todo.status === 'IN_PROGRESS' || todo.status === 'PENDING') {
-                        me.subscribeToEventsForTask(taskId);
+                        me.subscribeToEventsForTask(taskId, targetRoomId);
                         
                         // 기존 events도 로드
-                        await me.loadExistingEvents(taskId);
+                        await me.loadExistingEvents(taskId, targetRoomId);
                     }
                 }
             } catch (e) {
@@ -1403,8 +1417,10 @@ export default {
         /**
          * 기존 events 로드 (채팅방 재입장 시)
          */
-        async loadExistingEvents(taskId) {
+        async loadExistingEvents(taskId, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             if (!window.$supabase) return;
             
@@ -1426,7 +1442,7 @@ export default {
                     
                     // 각 이벤트 처리 (UI 업데이트)
                     for (const event of events) {
-                        me.handlePdf2BpmnEvent(event);
+                        me.handlePdf2BpmnEvent(event, targetRoomId);
                     }
                 }
             } catch (e) {
@@ -1438,8 +1454,10 @@ export default {
          * 완료된 작업 결과 표시 (events에서 가져온 데이터)
          * 메시지에 결과가 없으면 메시지에 추가
          */
-        async showCompletedTaskResult(resultData) {
+        async showCompletedTaskResult(resultData, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             try {
                 console.log('[WorkAssistantChatPanel] Showing completed result:', resultData);
@@ -1460,6 +1478,7 @@ export default {
                     }
                     
                     // 이미 메시지에 결과가 있는지 확인
+                    // (현재 로드된 messages는 targetRoomId의 메시지)
                     const hasResult = me.messages.some(m => m.pdf2bpmnResult);
                     
                     if (!hasResult && generatedBpmns.length > 0) {
@@ -1474,10 +1493,12 @@ export default {
                             savedProcesses: resultData.saved_processes || [],
                             generatedBpmns: generatedBpmns
                         };
-                        
-                        me.messages.push(msgObj);
-                        await me.saveMessage(msgObj);
-                        me.scrollToBottom();
+                        // UI에는 현재 방일 때만 추가, DB에는 항상 저장
+                        if (me.currentRoomId === targetRoomId) {
+                            me.messages.push(msgObj);
+                            me.scrollToBottom();
+                        }
+                        await me.saveMessageToRoom(msgObj, targetRoomId);
                         
                         console.log('[WorkAssistantChatPanel] Added result message with', generatedBpmns.length, 'BPMNs');
                     }
@@ -1490,8 +1511,10 @@ export default {
         /**
          * todolist에서 최근 pdf2bpmn 작업 감지 후 구독 시작
          */
-        async checkAndWatchPdf2BpmnTodo() {
+        async checkAndWatchPdf2BpmnTodo(roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             if (!window.$supabase) return;
             
@@ -1516,8 +1539,9 @@ export default {
                     console.log('[WorkAssistantChatPanel] Found recent pdf2bpmn todo:', todo.id);
                     
                     // 이미 구독 중인지 확인
-                    if (me.pdf2bpmnProgress.taskId !== todo.id) {
-                        me.subscribeToEventsForTask(todo.id);
+                    const currentTaskId = me.pdf2bpmnTaskIdByRoomId[targetRoomId];
+                    if (currentTaskId !== todo.id) {
+                        me.subscribeToEventsForTask(todo.id, targetRoomId);
                     }
                 }
             } catch (e) {
@@ -1529,31 +1553,47 @@ export default {
          * 특정 task_id에 대한 events 테이블 watch 시작
          * PDF2BPMN 에이전트의 진행 상황을 실시간으로 받아옴
          */
-        subscribeToEventsForTask(taskId) {
+        subscribeToEventsForTask(taskId, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             if (!window.$supabase) {
                 console.warn('[WorkAssistantChatPanel] Supabase not available');
                 return;
             }
+
+            // 이미 taskId 구독 중이면 재구독하지 않음
+            if (me.pdf2bpmnEventsChannelByTaskId[taskId]) {
+                console.log(`[WorkAssistantChatPanel] Already subscribed to pdf2bpmn task: ${taskId}`);
+                // roomId 매핑만 보정
+                me.pdf2bpmnTaskIdByRoomId[targetRoomId] = taskId;
+                const progress = me._getOrInitPdf2bpmnProgress(targetRoomId);
+                if (progress) progress.taskId = taskId;
+                return;
+            }
+
+            // 같은 room에 기존 task 구독이 있으면 제거 (room별 1개 작업을 기본 가정)
+            const prevTaskId = me.pdf2bpmnTaskIdByRoomId[targetRoomId];
+            if (prevTaskId && prevTaskId !== taskId) {
+                me.unsubscribePdf2bpmnEventsForTask(prevTaskId);
+            }
+            me.pdf2bpmnTaskIdByRoomId[targetRoomId] = taskId;
+
+            const progress = me._getOrInitPdf2bpmnProgress(targetRoomId);
+            if (progress) {
+                progress.isActive = true;
+                progress.taskId = taskId;
+                progress.status = 'started';
+                progress.progress = Math.max(progress.progress || 0, 0);
+                progress.message = progress.message || 'PDF2BPMN 작업 시작 대기 중...';
+                progress.generatedBpmns = progress.generatedBpmns || [];
+            }
             
-            // 기존 구독 해제
-            me.unsubscribeFromEvents();
-            
-            me.pdf2bpmnProgress = {
-                isActive: true,
-                roomId: me.currentRoomId,  // 현재 채팅방 ID 저장
-                taskId: taskId,
-                status: 'started',
-                progress: 0,
-                message: 'PDF2BPMN 작업 시작 대기 중...',
-                generatedBpmns: []
-            };
-            
-            console.log(`[WorkAssistantChatPanel] Subscribing to events for task: ${taskId} in room: ${me.currentRoomId}`);
+            console.log(`[WorkAssistantChatPanel] Subscribing to events for task: ${taskId} in room: ${targetRoomId}`);
             
             // events 테이블 실시간 구독 (todo_id로 필터링)
-            me.eventsChannel = window.$supabase
+            const channel = window.$supabase
                 .channel(`pdf2bpmn-events-${taskId}`)
                 .on(
                     'postgres_changes',
@@ -1564,29 +1604,55 @@ export default {
                         filter: `todo_id=eq.${taskId}`
                     },
                     (payload) => {
-                        me.handlePdf2BpmnEvent(payload.new);
+                        me.handlePdf2BpmnEvent(payload.new, targetRoomId);
                     }
                 )
                 .subscribe((status) => {
                     console.log(`[WorkAssistantChatPanel] Events subscription status: ${status}`);
                 });
+            
+            me.pdf2bpmnEventsChannelByTaskId[taskId] = channel;
         },
         
         /**
-         * events 구독 해제
+         * 특정 taskId의 events 구독 해제
          */
-        unsubscribeFromEvents() {
-            if (this.eventsChannel) {
-                window.$supabase.removeChannel(this.eventsChannel);
-                this.eventsChannel = null;
+        unsubscribePdf2bpmnEventsForTask(taskId) {
+            try {
+                const channel = this.pdf2bpmnEventsChannelByTaskId?.[taskId];
+                if (channel && window.$supabase) {
+                    window.$supabase.removeChannel(channel);
+                }
+            } catch (e) {
+                // ignore
+            } finally {
+                if (this.pdf2bpmnEventsChannelByTaskId) {
+                    delete this.pdf2bpmnEventsChannelByTaskId[taskId];
+                }
+            }
+        },
+
+        /**
+         * PDF2BPMN 전체 구독 해제 (패널 종료 시)
+         */
+        unsubscribeAllPdf2bpmnEvents() {
+            try {
+                const map = this.pdf2bpmnEventsChannelByTaskId || {};
+                Object.keys(map).forEach((taskId) => this.unsubscribePdf2bpmnEventsForTask(taskId));
+            } catch (e) {
+                // ignore
             }
         },
         
         /**
          * PDF2BPMN 이벤트 처리 (browser_use_agent_executor.py와 동일한 패턴)
          */
-        handlePdf2BpmnEvent(event) {
+        handlePdf2BpmnEvent(event, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
+            const progressState = me._getOrInitPdf2bpmnProgress(targetRoomId);
+            if (!progressState) return;
             
             console.log('[WorkAssistantChatPanel] Received PDF2BPMN event:', event);
             
@@ -1623,26 +1689,29 @@ export default {
                 // 이벤트 타입별 상태 업데이트
                 switch (eventType) {
                     case 'task_started':
-                        me.pdf2bpmnProgress.status = 'started';
-                        me.pdf2bpmnProgress.progress = progress || 5;
-                        me.pdf2bpmnProgress.message = message || 'PDF2BPMN 작업 시작됨';
+                        progressState.isActive = true;
+                        progressState.status = 'started';
+                        progressState.progress = progress || 5;
+                        progressState.message = message || 'PDF2BPMN 작업 시작됨';
                         break;
                         
                     case 'tool_usage_started':
-                        me.pdf2bpmnProgress.status = 'processing';
-                        me.pdf2bpmnProgress.progress = Math.max(me.pdf2bpmnProgress.progress, progress || 10);
-                        me.pdf2bpmnProgress.message = message || '처리 중...';
+                        progressState.isActive = true;
+                        progressState.status = 'processing';
+                        progressState.progress = Math.max(progressState.progress, progress || 10);
+                        progressState.message = message || '처리 중...';
                         break;
                         
                     case 'tool_usage_finished':
-                        me.pdf2bpmnProgress.progress = Math.max(me.pdf2bpmnProgress.progress, progress || 80);
-                        me.pdf2bpmnProgress.message = message || '처리 완료';
+                        progressState.isActive = true;
+                        progressState.progress = Math.max(progressState.progress, progress || 80);
+                        progressState.message = message || '처리 완료';
                         
                         // bpmn_xml이 있으면 generatedBpmns에 추가
                         if (messageData.bpmn_xml && messageData.process_id) {
-                            const existing = me.pdf2bpmnProgress.generatedBpmns.find(b => b.process_id === messageData.process_id);
+                            const existing = progressState.generatedBpmns.find(b => b.process_id === messageData.process_id);
                             if (!existing) {
-                                me.pdf2bpmnProgress.generatedBpmns.push({
+                                progressState.generatedBpmns.push({
                                     process_id: messageData.process_id,
                                     process_name: messageData.process_name || 'Unnamed Process',
                                     bpmn_xml: messageData.bpmn_xml
@@ -1654,38 +1723,44 @@ export default {
                         
                     case 'task_completed':
                     case 'crew_completed':
-                        me.pdf2bpmnProgress.status = 'completed';
-                        me.pdf2bpmnProgress.progress = 100;
-                        me.pdf2bpmnProgress.message = message || '변환 완료!';
+                        progressState.isActive = true;
+                        progressState.status = 'completed';
+                        progressState.progress = 100;
+                        progressState.message = message || '변환 완료!';
                         
                         // 완료 메시지를 채팅에 추가
-                        me.addPdf2BpmnResultMessage(messageData);
+                        me.addPdf2BpmnResultMessage(messageData, targetRoomId);
                         
                         // 잠시 후 진행 상황 패널 숨김
                         setTimeout(() => {
-                            me.pdf2bpmnProgress.isActive = false;
+                            const st = me._getOrInitPdf2bpmnProgress(targetRoomId);
+                            if (st) st.isActive = false;
                         }, 3000);
                         break;
                         
                     case 'error':
-                        me.pdf2bpmnProgress.status = 'failed';
-                        me.pdf2bpmnProgress.message = messageData.error || message || '작업 실패';
+                        progressState.isActive = true;
+                        progressState.status = 'failed';
+                        progressState.message = messageData.error || message || '작업 실패';
                         
                         // 에러 메시지를 채팅에 추가
                         const errorMsg = me.createMessageObj(
                             `PDF2BPMN 변환 실패: ${messageData.error || '알 수 없는 오류'}`,
                             'assistant'
                         );
-                        me.messages.push(errorMsg);
+                        if (me.currentRoomId === targetRoomId) {
+                            me.messages.push(errorMsg);
+                        }
+                        me.saveMessageToRoom(errorMsg, targetRoomId);
                         break;
                         
                     default:
                         // 기타 이벤트는 진행률 업데이트만
                         if (progress > 0) {
-                            me.pdf2bpmnProgress.progress = Math.max(me.pdf2bpmnProgress.progress, progress);
+                            progressState.progress = Math.max(progressState.progress, progress);
                         }
                         if (message) {
-                            me.pdf2bpmnProgress.message = message;
+                            progressState.message = message;
                         }
                 }
                 
@@ -1709,8 +1784,12 @@ export default {
             // lastChunk가 true면 최종 결과
             if (event.lastChunk === true) {
                 console.log('[WorkAssistantChatPanel] Received final artifact (lastChunk=true)');
-                me.pdf2bpmnProgress.status = 'completed';
-                me.pdf2bpmnProgress.progress = 100;
+                const progressState = me._getOrInitPdf2bpmnProgress(me.currentRoomId);
+                if (progressState) {
+                    progressState.isActive = true;
+                    progressState.status = 'completed';
+                    progressState.progress = 100;
+                }
             }
         },
         
@@ -1721,6 +1800,8 @@ export default {
             const me = this;
             
             try {
+                const progressState = me._getOrInitPdf2bpmnProgress(me.currentRoomId);
+                if (!progressState) return;
                 let artifactData = artifact;
                 
                 // 문자열인 경우 파싱
@@ -1739,8 +1820,8 @@ export default {
                     // 저장된 프로세스 정보로 결과 메시지 추가
                     if (artifactData.saved_processes && artifactData.saved_processes.length > 0) {
                         // generatedBpmns가 비어있으면 saved_processes로 대체
-                        if (me.pdf2bpmnProgress.generatedBpmns.length === 0) {
-                            me.pdf2bpmnProgress.generatedBpmns = artifactData.saved_processes.map(proc => ({
+                        if (progressState.generatedBpmns.length === 0) {
+                            progressState.generatedBpmns = artifactData.saved_processes.map(proc => ({
                                 process_id: proc.id,
                                 process_name: proc.name,
                                 bpmn_xml: null, // XML은 별도로 가져와야 함
@@ -1749,8 +1830,9 @@ export default {
                         }
                     }
                     
-                    me.pdf2bpmnProgress.status = 'completed';
-                    me.pdf2bpmnProgress.progress = 100;
+                    progressState.isActive = true;
+                    progressState.status = 'completed';
+                    progressState.progress = 100;
                     return;
                 }
                 
@@ -1762,11 +1844,11 @@ export default {
                                 const bpmnData = JSON.parse(part.text);
                                 if (bpmnData.type === 'bpmn' && bpmnData.bpmn_xml) {
                                     // 중복 체크
-                                    const exists = me.pdf2bpmnProgress.generatedBpmns.some(
+                                    const exists = progressState.generatedBpmns.some(
                                         b => b.process_id === bpmnData.process_id
                                     );
                                     if (!exists) {
-                                        me.pdf2bpmnProgress.generatedBpmns.push({
+                                        progressState.generatedBpmns.push({
                                             process_id: bpmnData.process_id,
                                             process_name: bpmnData.process_name,
                                             bpmn_xml: bpmnData.bpmn_xml,
@@ -1787,12 +1869,14 @@ export default {
                 
                 // 직접 bpmn_xml이 있는 경우
                 if (artifactData.bpmn_xml) {
+                    const progressState = me._getOrInitPdf2bpmnProgress(me.currentRoomId);
+                    if (!progressState) return;
                     // 중복 체크
-                    const exists = me.pdf2bpmnProgress.generatedBpmns.some(
+                    const exists = progressState.generatedBpmns.some(
                         b => b.process_id === artifactData.process_id
                     );
                     if (!exists) {
-                        me.pdf2bpmnProgress.generatedBpmns.push({
+                        progressState.generatedBpmns.push({
                             process_id: artifactData.process_id,
                             process_name: artifactData.process_name,
                             bpmn_xml: artifactData.bpmn_xml,
@@ -1809,10 +1893,14 @@ export default {
         /**
          * PDF2BPMN 결과 메시지 추가
          */
-        async addPdf2BpmnResultMessage(resultData) {
+        async addPdf2BpmnResultMessage(resultData, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
+            const progressState = me._getOrInitPdf2bpmnProgress(targetRoomId);
+            if (!progressState) return;
             
-            const processCount = resultData.process_count || me.pdf2bpmnProgress.generatedBpmns.length;
+            const processCount = resultData.process_count || progressState.generatedBpmns.length;
             const savedProcesses = resultData.saved_processes || [];
             
             let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
@@ -1823,9 +1911,9 @@ export default {
                 savedProcesses.forEach((proc, idx) => {
                     content += `${idx + 1}. ${proc.name} (ID: ${proc.id})\n`;
                 });
-            } else if (me.pdf2bpmnProgress.generatedBpmns.length > 0) {
+            } else if (progressState.generatedBpmns.length > 0) {
                 content += `**생성된 프로세스:**\n`;
-                me.pdf2bpmnProgress.generatedBpmns.forEach((bpmn, idx) => {
+                progressState.generatedBpmns.forEach((bpmn, idx) => {
                     content += `${idx + 1}. ${bpmn.process_name}\n`;
                 });
             }
@@ -1836,12 +1924,15 @@ export default {
             msgObj.pdf2bpmnResult = {
                 processCount: processCount,
                 savedProcesses: savedProcesses,
-                generatedBpmns: me.pdf2bpmnProgress.generatedBpmns
+                generatedBpmns: progressState.generatedBpmns
             };
-            
-            me.messages.push(msgObj);
-            await me.saveMessage(msgObj);
-            me.scrollToBottom();
+
+            // UI에는 현재 방일 때만 추가, DB에는 항상 저장
+            if (me.currentRoomId === targetRoomId) {
+                me.messages.push(msgObj);
+                me.scrollToBottom();
+            }
+            await me.saveMessageToRoom(msgObj, targetRoomId);
             
             // 정의 목록 새로고침 이벤트
             me.EventBus.emit('definitions-updated');
@@ -1944,8 +2035,9 @@ export default {
         /**
          * 응답에서 PDF2BPMN 작업 감지 및 watch 시작
          */
-        checkAndSubscribePdf2Bpmn(responseText, toolCalls) {
+        checkAndSubscribePdf2Bpmn(responseText, toolCalls, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
             
             console.log('[WorkAssistantChatPanel] checkAndSubscribePdf2Bpmn called');
             console.log('[WorkAssistantChatPanel] toolCalls:', JSON.stringify(toolCalls, null, 2));
@@ -1974,7 +2066,7 @@ export default {
                                 const taskId = output.workitem_id || output.task_id || output.todo_id || output.id;
                                 if (taskId) {
                                     console.log(`[WorkAssistantChatPanel] Detected PDF2BPMN task: ${taskId}`);
-                                    me.subscribeToEventsForTask(taskId);
+                                    me.subscribeToEventsForTask(taskId, targetRoomId);
                                     return true;
                                 }
                             }
@@ -2002,7 +2094,7 @@ export default {
                     if (match) {
                         const taskId = match[1];
                         console.log(`[WorkAssistantChatPanel] Detected PDF2BPMN task from response pattern: ${taskId}`);
-                        me.subscribeToEventsForTask(taskId);
+                        me.subscribeToEventsForTask(taskId, targetRoomId);
                         return true;
                     }
                 }
@@ -2021,7 +2113,7 @@ export default {
             )) {
                 // 약간의 지연 후 todolist 확인 (DB 저장 시간 고려)
                 setTimeout(() => {
-                    me.checkAndWatchPdf2BpmnTodo();
+                    me.checkAndWatchPdf2BpmnTodo(targetRoomId);
                 }, 1000);
             }
             
