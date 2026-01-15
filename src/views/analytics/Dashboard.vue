@@ -190,8 +190,8 @@ function formatDateTime(timestamp) {
                 <div style="height: 220px;">
                   <Doughnut
                     v-if="chartData.taskDistribution"
-                    :data="chartData.taskDistribution"
-                    :options="chartOptions"
+                    :chartData="chartData.taskDistribution"
+                    :chartOptions="chartOptions"
                   />
                   <div v-else class="d-flex align-center justify-center h-100">
                     <v-progress-circular indeterminate color="primary" size="24" />
@@ -207,8 +207,8 @@ function formatDateTime(timestamp) {
                 <div style="height: 220px;">
                   <Line
                     v-if="chartData.monthlyTrend"
-                    :data="chartData.monthlyTrend"
-                    :options="lineChartOptions"
+                    :chartData="chartData.monthlyTrend"
+                    :chartOptions="lineChartOptions"
                   />
                   <div v-else class="d-flex align-center justify-center h-100">
                     <v-progress-circular indeterminate color="primary" size="24" />

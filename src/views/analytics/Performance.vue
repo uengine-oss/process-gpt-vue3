@@ -254,8 +254,8 @@ const chartOptions = {
                 <div style="height: 280px;">
                   <Line
                     v-if="f1ChartData"
-                    :data="f1ChartData"
-                    :options="chartOptions"
+                    :chartData="f1ChartData"
+                    :chartOptions="chartOptions"
                   />
                   <div v-else class="d-flex align-center justify-center h-100">
                     <v-progress-circular indeterminate color="primary" size="24" />
@@ -269,8 +269,8 @@ const chartOptions = {
                 <div style="height: 280px;">
                   <Bar
                     v-if="taskCountChartData"
-                    :data="taskCountChartData"
-                    :options="chartOptions"
+                    :chartData="taskCountChartData"
+                    :chartOptions="chartOptions"
                   />
                   <div v-else class="d-flex align-center justify-center h-100">
                     <v-progress-circular indeterminate color="primary" size="24" />
