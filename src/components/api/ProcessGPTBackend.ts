@@ -2720,6 +2720,51 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // Force checkout: notify the current editor that someone else is taking over
+    async forceCheckout(id: string, newUserId: string) {
+        try {
+            const lock = await this.getLock(id);
+            if (lock && lock.user_id && lock.user_id !== newUserId) {
+                // Update lock with force_checkout info
+                const putObj: any = {
+                    id: id,
+                    user_id: lock.user_id,
+                    tenant_id: window.$tenantName,
+                    uuid: lock.uuid,
+                    force_checkout_by: newUserId,
+                    force_checkout_at: new Date().toISOString()
+                };
+                await storage.putObject('lock', putObj);
+                return { success: true, previousUser: lock.user_id };
+            }
+            return { success: false, previousUser: null };
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // Clear force checkout flags after handover is complete
+    async clearForceCheckout(id: string) {
+        try {
+            const lock = await this.getLock(id);
+            if (lock) {
+                const putObj: any = {
+                    id: id,
+                    user_id: lock.user_id,
+                    tenant_id: window.$tenantName,
+                    uuid: lock.uuid,
+                    force_checkout_by: null,
+                    force_checkout_at: null
+                };
+                await storage.putObject('lock', putObj);
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getTenants() {
         try {
             const uid: string = localStorage.getItem('uid') || '';
