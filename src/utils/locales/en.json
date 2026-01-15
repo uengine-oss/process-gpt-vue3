@@ -672,6 +672,7 @@
         "logOut": "log out"
     },
     "BpmnPropertyPanel": {
+        "readOnly": "Read Only",
         "name": "Name",
         "subProcessNamePattern": "Sub-Process Name Pattern",
         "condition": "Condition",

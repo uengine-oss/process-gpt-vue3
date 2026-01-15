@@ -680,6 +680,7 @@
         "logOut": "로그아웃"
     },
     "BpmnPropertyPanel": {
+        "readOnly": "읽기 전용",
         "name": "이름",
         "subProcessNamePattern": "서브프로세스명 패턴",
         "condition": "조건",
