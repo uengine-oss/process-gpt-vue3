@@ -98,15 +98,32 @@ export default {
             if (!this.selectedDomain || !this.value.major_proc_list) {
                 return this.value.major_proc_list || [];
             }
+
+            // '미분류' 탭 선택 시: 도메인이 비어있거나 '미분류'인 프로세스 표시
+            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
+            const isUncategorizedTab = uncategorizedNames.includes(this.selectedDomain);
+
             return this.value.major_proc_list.filter(major => {
-                if (this.selectedDomain === 'Access') {
-                    return !major.domain || major.domain === 'Access';
+                if (isUncategorizedTab) {
+                    // 도메인이 없거나 빈 문자열이거나 '미분류'인 경우
+                    return !major.domain || major.domain.trim() === '' || uncategorizedNames.includes(major.domain);
                 }
                 return major.domain === this.selectedDomain;
             });
         }
     },
     created() {
+        // 다른 곳에서 프로세스 다이얼로그가 열리면 자신의 다이얼로그 닫기
+        this._processDialogId = Math.random().toString(36).substr(2, 9);
+        this._closeDialogHandler = (event) => {
+            if (event.detail !== this._processDialogId) {
+                this.processDialogStatus = false;
+            }
+        };
+        window.addEventListener('closeAllProcessDialogs', this._closeDialogHandler);
+    },
+    beforeUnmount() {
+        window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
     methods:{
         addProcess(newProcess) {
@@ -118,8 +135,10 @@ export default {
                 this.$toast.error(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
                 return;
             }
-            
-            const id = newProcess.name.toLowerCase().replace(/[/.]/g, "_");
+
+            // ID를 MegaProcess ID + 이름으로 생성하여 고유성 보장
+            const baseName = newProcess.name.toLowerCase().replace(/[/.]/g, "_").replace(/\s+/g, "_");
+            const id = `${this.value.id}_${baseName}`;
             const process = {
                 id: id,
                 name: newProcess.name,

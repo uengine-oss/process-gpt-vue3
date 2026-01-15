@@ -1,5 +1,14 @@
 <template>
     <div>
+        <!-- Lead Time -->
+        <div class="mt-4">
+            <LeadTimeInput
+                v-model="copyUengineProperties.leadTime"
+                :label="$t('leadTime.title') || 'Lead Time'"
+                :disabled="isViewMode"
+            />
+        </div>
+
         <div class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
@@ -11,6 +20,7 @@
 </template>
 <script>
 import KeyValueField from '@/components/designer/KeyValueField.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
 
 export default {
     name: 'business-rule-task-panel',
@@ -20,7 +30,8 @@ export default {
         isViewMode: Boolean
     },
     components: {
-        KeyValueField
+        KeyValueField,
+        LeadTimeInput
     },
     created() {
         if (this.uengineProperties) {

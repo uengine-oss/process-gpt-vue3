@@ -157,15 +157,6 @@
                                 </template>
                                 <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
                             </v-tooltip>
-                            <!-- 색상 규칙 설정 아이콘 -->
-                            <v-tooltip location="bottom" :text="$t('colorRules.title')">
-                                <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis"
-                                        density="comfortable" @click="showColorSettingsDialog = true">
-                                        <v-icon>mdi-palette-outline</v-icon>
-                                    </v-btn>
-                                </template>
-                            </v-tooltip>
                         </div>
                         
                         <!-- 실행 관련 버튼  -->
@@ -234,21 +225,11 @@
 
             <v-divider class="ma-0" />
         </div>
-
-        <!-- Color Rules Settings Dialog -->
-        <v-dialog v-model="showColorSettingsDialog" max-width="700">
-            <BpmnColorRulesSettings @close="showColorSettingsDialog = false" />
-        </v-dialog>
     </div>
 </template>
 
 <script>
-import BpmnColorRulesSettings from '@/components/settings/BpmnColorRulesSettings.vue';
-
 export default {
-    components: {
-        BpmnColorRulesSettings
-    },
     props: {
         modelValue: String,
         bpmn: String,
@@ -266,8 +247,7 @@ export default {
             processName: "",
             expandedTexts: {
                 title: false
-            },
-            showColorSettingsDialog: false
+            }
         }
     },
     created() {

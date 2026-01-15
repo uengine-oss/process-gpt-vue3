@@ -121,6 +121,14 @@
                 </v-row>
             </div>
         </div>
+        <!-- Lead Time -->
+        <div class="mt-4">
+            <LeadTimeInput
+                v-model="copyUengineProperties.leadTime"
+                :label="$t('leadTime.title') || 'Lead Time'"
+                :disabled="isViewMode"
+            />
+        </div>
         <div class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
@@ -137,12 +145,14 @@ import { Icon } from '@iconify/vue';
 import BPMNAPIGenerator from '@/components/ai/BPMNAPIGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
     name: 'send-task-panel',
     components: {
-        KeyValueField
+        KeyValueField,
+        LeadTimeInput
     },
     props: {
         uengineProperties: Object,

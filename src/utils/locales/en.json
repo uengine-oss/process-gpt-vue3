@@ -1,5 +1,11 @@
 {
     "message": "en",
+    "leadTime": {
+        "title": "Lead Time",
+        "days": "Days",
+        "hours": "Hours",
+        "minutes": "Min"
+    },
     "common": {
         "cancel": "Cancel",
         "save": "Save",
@@ -1045,6 +1051,13 @@
         "EndEvent": "Create End Event",
         "ExclusiveGateway": "Create Exclusive Gateway",
         "Task": "Create Task",
+        "UserTask": "Create User Task",
+        "ManualTask": "Create Manual Task",
+        "ServiceTask": "Create Service Task",
+        "ScriptTask": "Create Script Task",
+        "BusinessRuleTask": "Create Business Rule Task",
+        "SendTask": "Create Send Task",
+        "ReceiveTask": "Create Receive Task",
         "SubProcess": "Create Sub Process",
         "DataStoreReference": "Create Data Store",
         "DataObjectReference": "Create Data Object",
@@ -2240,7 +2253,8 @@
         "duplicate": "Duplicate",
         "copySuffix": "Copy",
         "duplicateSuccess": "Process has been duplicated.",
-        "duplicateFailed": "Failed to duplicate process."
+        "duplicateFailed": "Failed to duplicate process.",
+        "duplicatePartialSuccess": "Process has been duplicated, but details were not copied."
     },
     "agentChat": {
         "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n 'Use the color that matches each company's CI when writing a proposal.' \n 'Proposals for government and public institutions must be written in Korean (HWP) format.' \n 'For B2C proposals, prioritize visual materials to help customers understand.' \n You can train such guides.",

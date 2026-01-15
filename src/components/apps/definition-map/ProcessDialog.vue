@@ -40,37 +40,27 @@
             <v-row class="ma-0 pa-0">
                 <v-col cols="12" class="ma-0 pa-0">
                     <ProcessDefinitionDisplay
-                        v-if="addType == 'sub' && !isNewDef"
+                        v-if="addType == 'sub' && !isNewDef && processType === 'add'"
                         v-model="newProcess"
                         :file-extensions="['.bpmn']"
                         :options="{
                             label: $t('processDialog.processDefinition'),
                             returnObject: true,
-                            hideDetails: true
+                            hideDetails: true,
+                            itemValue: 'id'
                         }"
                     ></ProcessDefinitionDisplay>
 
-                    <v-combobox
-                        v-if="addType == 'major'"
-                        v-model="newProcess.domain"
-                        :items="domainNames"
-                        :label="$t('metricsView.domain') || '도메인'"
-                        variant="outlined"
-                        class="mb-4"
-                        density="comfortable"
-                        hide-details="auto"
-                        color="primary"
-                        :placeholder="$t('processDialog.selectOrEnterDomain') || '도메인을 선택하거나 입력하세요'"
-                    ></v-combobox>
+                    <!-- 도메인은 상위 탭에서 선택하므로 입력 필드 제거 -->
 
                     <v-text-field
-                        v-if="addType != 'sub' || isNewDef"
+                        v-if="addType != 'sub' || isNewDef || processType === 'update'"
                         class="cp-process-id"
                         v-model="newProcess.name"
                         variant="outlined"
                         color="primary"
                         density="comfortable"
-                        :label="$i18n.locale === 'ko' ? (processType === 'add' ? `${addType.toUpperCase()} 프로세스 추가` : `${addType.toUpperCase()} 프로세스 수정`) : (processType === 'add' ? `Add ${addType.toUpperCase()} Process` : `Edit ${addType.toUpperCase()} Process`)"
+                        :label="$i18n.locale === 'ko' ? (processType === 'add' ? `${displayType.toUpperCase()} 프로세스 추가` : `${displayType.toUpperCase()} 프로세스 수정`) : (processType === 'add' ? `Add ${displayType.toUpperCase()} Process` : `Edit ${displayType.toUpperCase()} Process`)"
                         autofocus
                         @keypress.enter="processType === 'add' ? addProcess() : updateProcess()"
                         @click.stop
@@ -78,7 +68,7 @@
 
                     <!-- ID field for new subprocess creation -->
                     <v-text-field
-                        v-if="addType === 'sub' && isNewDef"
+                        v-if="addType === 'sub' && isNewDef && processType === 'add'"
                         v-model="newProcess.id"
                         variant="outlined"
                         color="primary"
@@ -187,6 +177,13 @@ export default {
                 return "sub";
             }
         },
+        // For edit mode, use current type; for add mode, use child type
+        displayType() {
+            if (this.processType === 'update') {
+                return this.type;
+            }
+            return this.addType;
+        },
         isSaveDisabled() {
             if (this.addType === 'sub') {
                 if (this.isNewDef) {
@@ -214,7 +211,7 @@ export default {
             this.newProcess = {
                 id: '',
                 name: '',
-                domain: ''
+                domain: this.defaultDomain || ''
             };
             this.previousSuggestions = [];
             this.isGeneratingId = false;
@@ -274,6 +271,10 @@ export default {
             } else {
                 // For mega/major processes
                 if (this.newProcess.name) {
+                    // Major process인 경우 선택된 도메인 탭을 자동으로 설정
+                    if (this.addType === 'major' && this.defaultDomain) {
+                        this.newProcess.domain = this.defaultDomain;
+                    }
                     this.$emit("add", this.newProcess);
                     this.closeDialog();
                 }

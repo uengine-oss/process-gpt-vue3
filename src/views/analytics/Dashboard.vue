@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 /**
  * Analytics Dashboard
  * 프로세스 실행 요약 통계 및 차트
@@ -15,10 +15,10 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointE
 const store = useOlapStore()
 const loading = ref(false)
 
-// Chart data (null until loaded)
+// Chart data - same pattern as reference project
 const chartData = ref({
-  taskDistribution: null as any,
-  monthlyTrend: null as any
+  taskDistribution: null,
+  monthlyTrend: null
 })
 
 async function refresh() {
@@ -33,6 +33,7 @@ async function refresh() {
     const summary = store.dashboardSummary
     const inst = summary?.instances || {}
 
+    // Update task distribution chart
     chartData.value.taskDistribution = {
       labels: ['Agent Tasks', 'Human Tasks'],
       datasets: [{
@@ -42,6 +43,7 @@ async function refresh() {
       }]
     }
 
+    // Update monthly trend chart
     chartData.value.monthlyTrend = {
       labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
       datasets: [{
@@ -106,7 +108,7 @@ const chartOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'bottom' as const
+      position: 'bottom'
     }
   }
 }
@@ -126,7 +128,7 @@ const lineChartOptions = {
   }
 }
 
-function formatTokens(tokens: number): string {
+function formatTokens(tokens) {
   if (tokens >= 1000000) {
     return (tokens / 1000000).toFixed(1) + 'M'
   } else if (tokens >= 1000) {
@@ -135,7 +137,7 @@ function formatTokens(tokens: number): string {
   return tokens.toString()
 }
 
-function formatDateTime(timestamp: string): string {
+function formatDateTime(timestamp) {
   return dayjs(timestamp).format('MM/DD HH:mm')
 }
 </script>

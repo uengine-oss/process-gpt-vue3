@@ -13,9 +13,11 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 
 const store = useOlapStore()
 
-// Chart data as refs (null until ready)
+// Chart data as refs (null until ready) - same pattern as reference project
 const f1ChartData = ref<any>(null)
 const taskCountChartData = ref<any>(null)
+
+const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
 
 // Filters
 const selectedYear = ref(new Date().getFullYear())
@@ -33,8 +35,6 @@ const quarters = [
   { value: 3, title: 'Q3' },
   { value: 4, title: 'Q4' }
 ]
-
-const months = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
 
 const updateChartData = () => {
   const agentF1 = Array(12).fill(0)

@@ -1,5 +1,11 @@
 {
     "message": "ko",
+    "leadTime": {
+        "title": "소요 시간",
+        "days": "일",
+        "hours": "시간",
+        "minutes": "분"
+    },
     "validation": {
         "title": "BPMN 검증 결과",
         "warningMessage": "프로세스 정의에 다음 문제가 발견되었습니다:",
@@ -1053,6 +1059,13 @@
         "EndEvent": "종료 이벤트 생성",
         "ExclusiveGateway": "독점 게이트웨이 생성",
         "Task": "작업 생성",
+        "UserTask": "사용자 작업 생성",
+        "ManualTask": "수동 작업 생성",
+        "ServiceTask": "서비스 작업 생성",
+        "ScriptTask": "스크립트 작업 생성",
+        "BusinessRuleTask": "비즈니스 규칙 작업 생성",
+        "SendTask": "전송 작업 생성",
+        "ReceiveTask": "수신 작업 생성",
         "SubProcess": "하위 프로세스 생성",
         "DataStoreReference": "데이터 저장소 생성",
         "DataObjectReference": "데이터 객체 생성",
@@ -2260,7 +2273,8 @@
         "duplicate": "복제",
         "copySuffix": "복사",
         "duplicateSuccess": "프로세스가 복사되었습니다.",
-        "duplicateFailed": "프로세스 복사에 실패했습니다."
+        "duplicateFailed": "프로세스 복사에 실패했습니다.",
+        "duplicatePartialSuccess": "프로세스가 복사되었으나 세부내용은 복제되지 않았습니다."
     },
     "agentChat": {
         "learningModeInfo": "학습 모드: 에이전트가 사용자의 지침을 학습하여 이후 작업에 반영합니다. \n 예를 들어, \n ‘제안서 작성 시 각 회사의 CI에 맞는 컬러를 사용해.’ \n ‘정부·공공기관 대상 제안서는 반드시 한글(HWP) 형식으로 작성해.’ \n ‘B2C 제안서는 고객 이해를 돕기 위해 시각 자료를 우선 활용해.’ \n 와 같은 가이드를 학습시킬 수 있습니다.",

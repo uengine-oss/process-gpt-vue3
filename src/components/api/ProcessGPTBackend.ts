@@ -84,8 +84,8 @@ class ProcessGPTBackend implements Backend {
                 }
                 let procDefs = await storage.list('proc_def', options);
                 procDefs.map((item: any) => {
-                    item.path = `${item.id}`
-                    item.name = item.name || item.path
+                    item.path = `${item.id}.bpmn`
+                    item.name = item.name || item.id
                 });
                 return procDefs
             }
@@ -3614,14 +3614,15 @@ class ProcessGPTBackend implements Backend {
 
     async duplicateLocalProcess(sourceId: string, newName: string, bpmn: string, definition?: any): Promise<{ success: boolean; newId: string }> {
         try {
-            // Generate new ID from name
-            let newId = newName.replace(/[/.]/g, '_').replace(/\s+/g, '_');
+            // Generate new ID from source ID with _copy suffix
+            let newId = `${sourceId}_copy`;
+            let counter = 1;
 
-            // Check if ID already exists
-            const existing = await storage.getObject('proc_def', { match: { id: newId } });
-            if (existing) {
-                // Append timestamp to make unique
-                newId = `${newId}_${Date.now()}`;
+            // Check if ID already exists and find unique ID
+            let existing = await storage.getObject('proc_def', { match: { id: newId } });
+            while (existing) {
+                newId = `${sourceId}_copy${counter++}`;
+                existing = await storage.getObject('proc_def', { match: { id: newId } });
             }
 
             // Create new process definition

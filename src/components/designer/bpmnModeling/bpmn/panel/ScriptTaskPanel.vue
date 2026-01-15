@@ -39,6 +39,14 @@
             style="padding-bottom:20px;"
             :title="$t('ScriptTaskPanel.returnTitle')"
         />
+        <!-- Lead Time -->
+        <div class="mt-4">
+            <LeadTimeInput
+                v-model="copyUengineProperties.leadTime"
+                :label="$t('leadTime.title') || 'Lead Time'"
+                :disabled="isViewMode"
+            />
+        </div>
         <div class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
@@ -53,6 +61,7 @@ import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import GenerateScriptPanel from './GenerateScriptPanel.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
 
 export default {
     name: 'script-task-panel',
@@ -64,7 +73,8 @@ export default {
     },
     components: {
         GenerateScriptPanel,
-        KeyValueField
+        KeyValueField,
+        LeadTimeInput
     },
     created() {},
     data() {

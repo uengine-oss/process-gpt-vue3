@@ -556,20 +556,26 @@ export default {
                     next();
                     return;
                 }
-                const store = useBpmnStore();
-                const modeler = store.getModeler;
-                const xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                
-                const shouldConfirm = xmlObj && xmlObj.xml && !this.isViewMode;
+                try {
+                    const store = useBpmnStore();
+                    const modeler = store.getModeler;
+                    const xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
-                if (shouldConfirm) {
-                    const answer = window.confirm(this.$t('changePath'));
-                    if (answer) {
-                        next();
+                    const shouldConfirm = xmlObj && xmlObj.xml && !this.isViewMode;
+
+                    if (shouldConfirm) {
+                        const answer = window.confirm(this.$t('changePath'));
+                        if (answer) {
+                            next();
+                        } else {
+                            next(false);
+                        }
                     } else {
-                        next(false);
+                        next();
                     }
-                } else {
+                } catch (error) {
+                    // definition 로드 실패 등의 에러 발생 시 강제 이동
+                    console.warn('Route change error, forcing navigation:', error.message);
                     next();
                 }
             } else {

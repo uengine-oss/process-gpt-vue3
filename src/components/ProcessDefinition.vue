@@ -109,8 +109,7 @@
                             @saved="onSavedToCatalog"
                         />
                         <!-- View Mode Property Panel (inside canvas) -->
-                        <Transition name="slide-panel">
-                            <div v-if="panel && isViewMode" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
+                        <div v-if="panel && isViewMode" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
                                 <div class="resize-handle" @mousedown="startResize"></div>
                                 <v-card elevation="4" class="view-mode-panel-card">
                                     <bpmn-property-panel
@@ -135,7 +134,6 @@
                                     ></bpmn-property-panel>
                                 </v-card>
                             </div>
-                        </Transition>
                     </template>
                     
                     <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
@@ -1022,8 +1020,8 @@ export default {
             if (this.element) {
                 const businessObject = {};
                 businessObject.businessObject = this.element;
-                this.panel = true;
                 this.$refs.bpmnVue.extendUEngineProperties(businessObject);
+                this.panel = true;
             }
         },
         closePanel() {

@@ -77,6 +77,18 @@ export default {
     }),
     async created() {
         this.checkedProcess = JSON.parse(localStorage.getItem('checkedProcess')) || [];
+
+        // 다른 곳에서 프로세스 다이얼로그가 열리면 자신의 다이얼로그 닫기
+        this._processDialogId = Math.random().toString(36).substr(2, 9);
+        this._closeDialogHandler = (event) => {
+            if (event.detail !== this._processDialogId) {
+                this.processDialogStatus = false;
+            }
+        };
+        window.addEventListener('closeAllProcessDialogs', this._closeDialogHandler);
+    },
+    beforeUnmount() {
+        window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
     methods: {
         isNew(id) {
@@ -113,37 +125,43 @@ export default {
         clickPlayBtn(){
             this.$emit('clickPlayBtn', this.value)
         },
-        duplicateProcess(process) {
-            // Generate unique name with copy suffix
-            let baseName = process.name;
-            let newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'})`;
-            let counter = 1;
+        async duplicateProcess(process) {
+            try {
+                const backend = BackendFactory.createBackend();
 
-            // Check for duplicate names
-            while (this.parent.sub_proc_list.some(item => item.name === newName)) {
-                newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'} ${counter++})`;
+                // Generate unique name with copy suffix
+                let baseName = process.name;
+                let newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'})`;
+
+                // 원본 프로세스 정의(BPMN XML) 가져오기
+                const originalDef = await backend.getRawDefinition(process.id, null);
+                const bpmn = originalDef?.bpmn || '';
+                const definition = originalDef?.definition || null;
+
+                // duplicateLocalProcess 사용 (ID는 _copy 형태로 자동 생성)
+                const result = await backend.duplicateLocalProcess(
+                    process.id,
+                    newName,
+                    bpmn,
+                    definition
+                );
+
+                if (result.success) {
+                    // Add to parent's sub_proc_list
+                    const newProcess = {
+                        id: result.newId,
+                        name: newName
+                    };
+                    this.parent.sub_proc_list.push(newProcess);
+
+                    this.$toast.success(this.$t('ProcessMenu.duplicateSuccess') || '프로세스가 복사되었습니다.');
+                } else {
+                    throw new Error('Duplication failed');
+                }
+            } catch (error) {
+                console.error('프로세스 복제 중 오류:', error);
+                this.$toast.error(this.$t('ProcessMenu.duplicateFailed') || '프로세스 복사에 실패했습니다.');
             }
-
-            // Generate unique ID based on original ID with _duplicate suffix
-            let baseId = process.id;
-            let newId = `${baseId}_duplicate`;
-            let idCounter = 1;
-
-            // Check for duplicate IDs
-            while (this.parent.sub_proc_list.some(item => item.id === newId)) {
-                newId = `${baseId}_duplicate${idCounter++}`;
-            }
-
-            // Create new process with unique ID
-            const newProcess = {
-                id: newId,
-                name: newName
-            };
-
-            // Add to parent's sub_proc_list
-            this.parent.sub_proc_list.push(newProcess);
-
-            this.$toast.success(this.$t('ProcessMenu.duplicateSuccess') || '프로세스가 복사되었습니다.');
         }
     },
 }

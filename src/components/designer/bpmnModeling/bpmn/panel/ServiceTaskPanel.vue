@@ -74,6 +74,15 @@
                 :definition="copyDefinition"
             />
         </div>
+        <!-- Lead Time -->
+        <div class="mt-4">
+            <LeadTimeInput
+                v-model="copyUengineProperties.leadTime"
+                :label="$t('leadTime.title') || 'Lead Time'"
+                :disabled="isViewMode"
+            />
+        </div>
+
         <!-- Schema-based Properties -->
         <div class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
@@ -137,6 +146,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import SchemaBasedProperties from './SchemaBasedProperties.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
@@ -145,6 +155,7 @@ export default {
         Mapper,
         EventSynchronizationForm,
         KeyValueField,
+        LeadTimeInput,
         SchemaBasedProperties
     },
     props: {

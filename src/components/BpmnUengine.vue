@@ -27,6 +27,14 @@
                 <span>{{ $t('BpmnUengine.increaseFontSize') || 'Increase Font Size' }}</span>
             </v-tooltip>
             <span class="controls-divider">|</span>
+            <!-- Color Ruleset button -->
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer;" size="small">mdi-palette</v-icon>
+                </template>
+                <span>Color Ruleset</span>
+            </v-tooltip>
+            <span class="controls-divider">|</span>
             <!-- Zoom controls -->
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
@@ -55,6 +63,12 @@
             <PDFPreviewer  :bpmnViewer="bpmnViewer" @closeDialog="closePDFDialog"/>
         </v-card>
     </v-dialog>
+    <!-- Color Ruleset Dialog -->
+    <ColorRulesetDialog
+        v-model="showColorRulesetDialog"
+        :initialRules="colorRules"
+        @save="onColorRulesSave"
+    />
 </template>
 
 <script>
@@ -80,8 +94,11 @@ import customPopupMenu from './customPopupMenu';
 import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
+import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
 import { markRaw } from 'vue';
+import minimapModule from 'diagram-js-minimap';
+import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 
 
 const backend = BackendFactory.createBackend();
@@ -155,7 +172,8 @@ export default {
         }
     },
     components: {
-        PDFPreviewer
+        PDFPreviewer,
+        ColorRulesetDialog
     },
     data: function () {
         return {
@@ -174,6 +192,8 @@ export default {
             isHorizontal: false,
             labelFontSize: 12, // Default font size for task labels
             currentZoomLevel: 100, // Current zoom level percentage
+            showColorRulesetDialog: false,
+            colorRules: [], // Color rules loaded from BPMN XML
         };
     },
     computed: {
@@ -497,7 +517,18 @@ export default {
             // });
             eventBus.on('import.done', async function (evt) {
                 self.$emit('done');
-                
+
+                // Load color rules from BPMN and store in window for renderer
+                self.$nextTick(() => {
+                    const rules = self.loadColorRulesFromBpmn();
+                    window.$bpmnColorRules = rules;
+                    self.colorRules = rules;
+                    // Apply color rules after loading to re-render tasks with correct colors
+                    self.$nextTick(() => {
+                        self.applyColorRules();
+                    });
+                });
+
                 if(self.bpmn) {
                     self.$nextTick(async () => {
                         const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
@@ -582,7 +613,12 @@ export default {
                         }
                     });
 
-                    eventBus.on('element.dblclick', function (e) {
+                    // Use high priority (2000) to handle dblclick before directEditing module
+                    // This prevents text from disappearing when directEditing tries to activate
+                    eventBus.on('element.dblclick', 2000, function (e) {
+                        // Stop propagation to prevent directEditing from activating
+                        e.stopPropagation();
+
                         if (e.element.type.includes('CallActivity')) {
                             self.$emit('openDefinition', e.element.businessObject);
                         } else if (e.element.type.includes('Collaboration')) {
@@ -642,7 +678,7 @@ export default {
             var container = this.$refs.container;
             var self = this;
             if (self.isViewMode) {
-                var Blocker = function(eventBus) {
+                var Blocker = function(eventBus, elementRegistry, graphicsFactory) {
                     const ignoreEvent = (event) => {
                         event.preventDefault();
                     };
@@ -667,9 +703,33 @@ export default {
                     eventBus.on('directEditing.activate', ignoreEvent);
                     eventBus.on('directEditing.deactivate', ignoreEvent);
                     eventBus.on('directEditing.cancel', ignoreEvent);
+
+                    // Fix: Re-render selected elements to prevent text from disappearing
+                    // when directEditing is blocked in view mode
+                    eventBus.on('selection.changed', function(event) {
+                        const newSelection = event.newSelection || [];
+                        const oldSelection = event.oldSelection || [];
+
+                        // Re-render newly selected elements after a short delay
+                        // to ensure the text is visible after directEditing is blocked
+                        setTimeout(() => {
+                            newSelection.forEach(element => {
+                                if (element && element.type && element.type.includes('Task')) {
+                                    try {
+                                        const gfx = elementRegistry.getGraphics(element);
+                                        if (gfx) {
+                                            graphicsFactory.update('shape', element, gfx);
+                                        }
+                                    } catch (e) {
+                                        // Ignore errors
+                                    }
+                                }
+                            });
+                        }, 10);
+                    });
                 }
 
-                Blocker.$inject = ['eventBus'];
+                Blocker.$inject = ['eventBus', 'elementRegistry', 'graphicsFactory'];
                 const blockEditingInteractions = {
                     __init__: ['blocker'],
                     blocker: ['type', Blocker]
@@ -686,7 +746,7 @@ export default {
                             {
                                 __init__: ['paletteProvider'],
                                 paletteProvider: ['type', paletteProvider],
-                                viewModeFlag: ['value', true] 
+                                viewModeFlag: ['value', true]
                             },
                             {
                                 __init__: ['contextPadProvider'],
@@ -694,7 +754,8 @@ export default {
                             },
                             blockEditingInteractions,
                             ZoomScroll,
-                            MoveCanvas
+                            MoveCanvas,
+                            minimapModule
                         ],
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
@@ -729,7 +790,8 @@ export default {
                             customPopupMenu,
                             customReplaceModule,
                             ZoomScroll,
-                            MoveCanvas
+                            MoveCanvas,
+                            minimapModule
                         ]
                     },
                 );
@@ -1396,6 +1458,184 @@ export default {
 
             console.log(`Created ${taskType} from catalog: ${taskName}`);
             console.log('=== createTaskFromCatalog done ===');
+        },
+        openColorRulesetDialog() {
+            // Load rules from BPMN XML before opening dialog
+            this.colorRules = this.loadColorRulesFromBpmn();
+            console.log('[BpmnUengine] Opening dialog with rules:', this.colorRules);
+            this.showColorRulesetDialog = true;
+        },
+        loadColorRulesFromBpmn() {
+            if (!this.bpmnViewer) {
+                console.log('[BpmnUengine] loadColorRulesFromBpmn: no bpmnViewer');
+                return [];
+            }
+
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const collaboration = elementRegistry.filter(e => e.type === 'bpmn:Collaboration')[0];
+
+                console.log('[BpmnUengine] loadColorRulesFromBpmn: collaboration:', collaboration?.id);
+
+                if (!collaboration || !collaboration.businessObject) {
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: no collaboration or businessObject');
+                    return [];
+                }
+
+                const businessObject = collaboration.businessObject;
+                console.log('[BpmnUengine] loadColorRulesFromBpmn: extensionElements:', businessObject.extensionElements);
+
+                if (!businessObject.extensionElements || !businessObject.extensionElements.values) {
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: no extensionElements');
+                    return [];
+                }
+
+                const uengineProps = businessObject.extensionElements.values.find(
+                    v => v.$type === 'uengine:Properties'
+                );
+
+                console.log('[BpmnUengine] loadColorRulesFromBpmn: uengineProps:', uengineProps);
+
+                if (!uengineProps || !uengineProps.json) {
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: no uengineProps or json');
+                    return [];
+                }
+
+                try {
+                    const props = JSON.parse(uengineProps.json);
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: parsed props:', props);
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: colorRules:', props.colorRules);
+                    return props.colorRules || [];
+                } catch (e) {
+                    console.warn('Failed to parse color rules from BPMN:', e);
+                    return [];
+                }
+            } catch (e) {
+                console.warn('Failed to load color rules from BPMN:', e);
+                return [];
+            }
+        },
+        saveColorRulesToBpmn(rules) {
+            console.log('[BpmnUengine] saveColorRulesToBpmn called with rules:', rules);
+
+            if (!this.bpmnViewer) {
+                console.log('[BpmnUengine] saveColorRulesToBpmn: no bpmnViewer');
+                return;
+            }
+
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const modeling = this.bpmnViewer.get('modeling');
+                const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
+
+                const collaboration = elementRegistry.filter(e => e.type === 'bpmn:Collaboration')[0];
+
+                if (!collaboration) {
+                    console.warn('[BpmnUengine] saveColorRulesToBpmn: No Collaboration element found');
+                    return;
+                }
+
+                console.log('[BpmnUengine] saveColorRulesToBpmn: collaboration:', collaboration.id);
+
+                const businessObject = collaboration.businessObject;
+
+                // Get or create extension elements
+                let extensionElements = businessObject.extensionElements;
+                if (!extensionElements) {
+                    console.log('[BpmnUengine] saveColorRulesToBpmn: creating new extensionElements');
+                    extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                    extensionElements.values = [];
+                }
+
+                // Find or create uengine:Properties
+                let uengineProps = extensionElements.values?.find(
+                    v => v.$type === 'uengine:Properties'
+                );
+
+                let existingProps = {};
+                if (uengineProps && uengineProps.json) {
+                    try {
+                        existingProps = JSON.parse(uengineProps.json);
+                    } catch (e) {
+                        // Ignore parse error
+                    }
+                }
+
+                // Update colorRules in props
+                existingProps.colorRules = rules;
+                console.log('[BpmnUengine] saveColorRulesToBpmn: existingProps after update:', existingProps);
+
+                if (!uengineProps) {
+                    console.log('[BpmnUengine] saveColorRulesToBpmn: creating new uengineProps');
+                    uengineProps = bpmnFactory.create('uengine:Properties', {
+                        json: JSON.stringify(existingProps)
+                    });
+                    extensionElements.get('values').push(uengineProps);
+                } else {
+                    console.log('[BpmnUengine] saveColorRulesToBpmn: updating existing uengineProps');
+                    uengineProps.json = JSON.stringify(existingProps);
+                }
+
+                // Update the element
+                modeling.updateProperties(collaboration, {
+                    extensionElements: extensionElements
+                });
+
+                console.log('[BpmnUengine] saveColorRulesToBpmn: saved successfully');
+
+                // Store rules in window for renderer access
+                window.$bpmnColorRules = rules;
+
+            } catch (e) {
+                console.error('Failed to save color rules to BPMN:', e);
+            }
+        },
+        onColorRulesSave(rules) {
+            this.colorRules = rules;
+            this.saveColorRulesToBpmn(rules);
+            this.applyColorRules();
+        },
+        applyColorRules() {
+            if (!this.bpmnViewer) return;
+
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const graphicsFactory = this.bpmnViewer.get('graphicsFactory');
+
+                // Get all task elements
+                const tasks = elementRegistry.filter(e =>
+                    e.type && e.type.includes('Task')
+                );
+
+                // Re-render each task to apply new colors
+                tasks.forEach(task => {
+                    const gfx = elementRegistry.getGraphics(task);
+                    if (gfx) {
+                        graphicsFactory.update('shape', task, gfx);
+                    }
+                });
+
+            } catch (e) {
+                console.error('Failed to apply color rules:', e);
+            }
+        },
+        refreshElement(elementId) {
+            if (!this.bpmnViewer) return;
+
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const graphicsFactory = this.bpmnViewer.get('graphicsFactory');
+
+                const element = elementRegistry.get(elementId);
+                if (element) {
+                    const gfx = elementRegistry.getGraphics(element);
+                    if (gfx) {
+                        graphicsFactory.update('shape', element, gfx);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to refresh element:', e);
+            }
         }
     }
 };
@@ -1459,6 +1699,61 @@ export default {
 .controls-divider {
   color: #ccc;
   margin: 0 4px;
+}
+
+/* Dynamic text color for dark backgrounds */
+.djs-element[data-dark-bg="true"] text,
+.djs-element[data-dark-bg="true"] text tspan {
+  fill: #ffffff !important;
+}
+
+.djs-element[data-dark-bg="false"] text,
+.djs-element[data-dark-bg="false"] text tspan {
+  fill: #000000 !important;
+}
+
+/* Minimap styling - positioned above BPMN.io logo */
+.djs-minimap {
+  bottom: 40px !important;
+  top: auto !important;
+  right: 10px !important;
+  left: auto !important;
+}
+
+.djs-minimap .toggle {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.djs-minimap .toggle:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Map icon */
+.djs-minimap .toggle::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M15 5.1L9 3 3 5.02v16.2l6-2.33 6 2.1 6-2.02V2.77L15 5.1zm0 13.79-6-2.11V5.11l6 2.11v11.67z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.djs-minimap .map {
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 
 </style>

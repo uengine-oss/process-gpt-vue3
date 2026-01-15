@@ -15,33 +15,169 @@ import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil';
 
 const HIGH_PRIORITY = 1500,
-  TASK_BORDER_RADIUS = 10,
-  COLOR_RULES_STORAGE_KEY = 'bpmn_color_rules';
+  TASK_BORDER_RADIUS = 10;
 
-// Get color from rules stored in localStorage
+// Convert HEX to RGB
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 0, g: 0, b: 0 };
+}
+
+// Convert RGB to HEX
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(x => {
+    const hex = Math.round(Math.max(0, Math.min(255, x))).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  }).join('');
+}
+
+// Convert sRGB to linear RGB
+function srgbToLinear(c) {
+  c = c / 255;
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+// Convert linear RGB to sRGB
+function linearToSrgb(c) {
+  return c <= 0.0031308 ? c * 12.92 * 255 : (1.055 * Math.pow(c, 1 / 2.4) - 0.055) * 255;
+}
+
+// Convert RGB to OKLAB
+function rgbToOklab(r, g, b) {
+  const lr = srgbToLinear(r);
+  const lg = srgbToLinear(g);
+  const lb = srgbToLinear(b);
+
+  const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
+  const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
+  const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
+
+  const l_ = Math.cbrt(l);
+  const m_ = Math.cbrt(m);
+  const s_ = Math.cbrt(s);
+
+  return {
+    L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+    a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+  };
+}
+
+// Convert OKLAB to RGB
+function oklabToRgb(L, a, b) {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+
+  const lr = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const lb = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+  return {
+    r: linearToSrgb(lr),
+    g: linearToSrgb(lg),
+    b: linearToSrgb(lb)
+  };
+}
+
+// Interpolate color using OKLAB color space for perceptually uniform transitions
+function interpolateColorOklab(startHex, endHex, ratio) {
+  const start = hexToRgb(startHex);
+  const end = hexToRgb(endHex);
+
+  const startLab = rgbToOklab(start.r, start.g, start.b);
+  const endLab = rgbToOklab(end.r, end.g, end.b);
+
+  // Linear interpolation in OKLAB space
+  const L = startLab.L + (endLab.L - startLab.L) * ratio;
+  const a = startLab.a + (endLab.a - startLab.a) * ratio;
+  const b = startLab.b + (endLab.b - startLab.b) * ratio;
+
+  const rgb = oklabToRgb(L, a, b);
+  return rgbToHex(rgb.r, rgb.g, rgb.b);
+}
+
+// Adjust color intensity (lightness) based on ratio
+// ratio 0 = original/light, ratio 1 = darker
+function adjustColorIntensity(hexColor, ratio) {
+  const rgb = hexToRgb(hexColor);
+  const lab = rgbToOklab(rgb.r, rgb.g, rgb.b);
+
+  // Adjust lightness: lighter when ratio is low, darker when ratio is high
+  // Original lightness is maintained at ratio=0, reduced to ~40% at ratio=1
+  const minLightness = 0.35; // Minimum lightness (darkest)
+  const maxLightness = Math.min(lab.L * 1.15, 0.95); // Slightly lighter than original, capped at 0.95
+
+  // Linear interpolation from maxLightness to minLightness
+  const newL = maxLightness - (maxLightness - minLightness) * ratio;
+
+  // Keep hue and saturation (a, b), only adjust lightness
+  const newRgb = oklabToRgb(newL, lab.a, lab.b);
+  return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+}
+
+// Calculate relative luminance (WCAG formula)
+// Returns value between 0 (black) and 1 (white)
+function getRelativeLuminance(hexColor) {
+  const rgb = hexToRgb(hexColor);
+
+  // Convert to sRGB
+  const rsRGB = rgb.r / 255;
+  const gsRGB = rgb.g / 255;
+  const bsRGB = rgb.b / 255;
+
+  // Apply gamma correction
+  const r = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
+  const g = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
+  const b = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
+
+  // Calculate luminance
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+// Check if background is dark enough to need white text
+// Using WCAG contrast ratio threshold
+function shouldUseWhiteText(hexColor) {
+  const luminance = getRelativeLuminance(hexColor);
+  // If luminance is below 0.4, use white text for better contrast
+  return luminance < 0.4;
+}
+
+// Get color from rules stored in BPMN XML (via window.$bpmnColorRules)
 function getColorFromRules(element) {
   try {
-    const savedSettings = localStorage.getItem(COLOR_RULES_STORAGE_KEY);
-    if (!savedSettings) return null;
+    const rules = window.$bpmnColorRules;
+    if (!rules || !Array.isArray(rules) || rules.length === 0) {
+      return null;
+    }
 
-    const settings = JSON.parse(savedSettings);
-    const rules = settings.rules || [];
-    const defaultColor = settings.defaultColor || '#fdf2d0';
+    const defaultColor = '#fdf2d0';
 
     // Get element type
     const elementType = element.businessObject?.$type;
     if (!elementType) return { fillColor: defaultColor };
 
-    // Get duration from extension elements
-    let duration = null;
+    // Get leadTime (duration) from extension elements
+    let leadTime = null;
     const extensionElements = element.businessObject?.extensionElements;
     if (extensionElements?.values) {
       const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
       if (uengineProps?.json) {
         try {
           const parsed = JSON.parse(uengineProps.json);
-          if (parsed.duration !== undefined) {
-            duration = Number(parsed.duration);
+          // Support both 'duration' and 'leadTime' property names
+          if (parsed.leadTime !== undefined) {
+            leadTime = Number(parsed.leadTime);
+          } else if (parsed.duration !== undefined) {
+            leadTime = Number(parsed.duration);
           }
         } catch (e) {
           // Ignore parse errors
@@ -52,27 +188,43 @@ function getColorFromRules(element) {
     // Sort rules by priority
     const sortedRules = [...rules]
       .filter(r => r.enabled)
-      .sort((a, b) => a.priority - b.priority);
+      .sort((a, b) => (a.priority || 0) - (b.priority || 0));
 
-    // Check lead time rules first
-    for (const rule of sortedRules.filter(r => r.type === 'leadTime')) {
-      if (duration !== null) {
+    // Step 1: Get base color from task type rules
+    let baseColor = defaultColor;
+    let baseStrokeColor = '';
+    for (const rule of sortedRules.filter(r => r.type === 'taskType')) {
+      if (rule.taskTypes?.includes(elementType)) {
+        baseColor = rule.fillColor || defaultColor;
+        baseStrokeColor = rule.strokeColor || '';
+        break;
+      }
+    }
+
+    // Step 2: Apply leadTime intensity adjustment if applicable
+    if (leadTime !== null) {
+      for (const rule of sortedRules.filter(r => r.type === 'leadTime')) {
         const min = rule.minDuration ?? 0;
-        const max = rule.maxDuration ?? Infinity;
-        if (duration >= min && duration < max) {
-          return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
+        const max = rule.maxDuration ?? 60;
+
+        if (leadTime >= min && leadTime <= max) {
+          // Calculate ratio: 0 = short time (light), 1 = long time (dark)
+          const range = max - min;
+          const ratio = range > 0 ? Math.min(1, Math.max(0, (leadTime - min) / range)) : 0;
+
+          // Apply intensity adjustment to base color
+          const adjustedColor = adjustColorIntensity(baseColor, ratio);
+          return { fillColor: adjustedColor, strokeColor: baseStrokeColor };
         }
       }
     }
 
-    // Then check task type rules
-    for (const rule of sortedRules.filter(r => r.type === 'taskType')) {
-      if (rule.taskTypes?.includes(elementType)) {
-        return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
-      }
+    // Return base color if no leadTime rule matched
+    if (baseColor !== defaultColor) {
+      return { fillColor: baseColor, strokeColor: baseStrokeColor };
     }
 
-    return { fillColor: defaultColor };
+    return null;
   } catch (e) {
     console.warn('Failed to get color from rules:', e);
     return null;
@@ -296,6 +448,42 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, 'none', fillColor, shape.style);
     prependTo(rect, parentNode);
     svgRemove(shape);
+
+    // Dynamic text color: white text on dark backgrounds
+    // Set data attribute on parent for CSS-based coloring (immediate)
+    // and also apply directly via JS as backup
+    const useWhiteText = shouldUseWhiteText(fillColor);
+
+    // Set data attribute for CSS-based styling (immediate, no flicker)
+    if (parentNode.closest) {
+      const container = parentNode.closest('.djs-element');
+      if (container) {
+        container.setAttribute('data-dark-bg', useWhiteText ? 'true' : 'false');
+      }
+    }
+
+    // Also apply directly via JS for immediate effect
+    const textElements = parentNode.querySelectorAll('text, text tspan');
+    textElements.forEach(textEl => {
+      svgAttr(textEl, { fill: useWhiteText ? '#ffffff' : '#000000' });
+    });
+
+    // Retry for text elements that might be added later
+    let retryCount = 0;
+    const maxRetries = 5;
+
+    const applyTextColor = () => {
+      const texts = parentNode.querySelectorAll('text, text tspan');
+      if (texts.length > 0) {
+        texts.forEach(textEl => {
+          svgAttr(textEl, { fill: useWhiteText ? '#ffffff' : '#000000' });
+        });
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+        requestAnimationFrame(applyTextColor);
+      }
+    };
+    requestAnimationFrame(applyTextColor);
   }
 
   // StartEvnet 관련
@@ -504,19 +692,14 @@ function drawNotchTag(parentNode, width, height, fillColor, strokeColor, x = 0, 
 
 function drawBorderRect(parentNode, width, height, borderRadius, strokeColor, strokeWidth) {
   const borderRect = svgCreate('rect');
-  
-  if (strokeColor !== '#000000' && strokeColor !== '#4e72be') {
-    svgAttr(borderRect, {
-      'stroke-dasharray': '10, 10'
-    });
-  }
+
   svgAttr(borderRect, {
     width: width,
     height: height,
     rx: borderRadius,
     ry: borderRadius,
-    stroke: strokeColor == '#000000'? 'none' : strokeColor,
-    strokeWidth: strokeWidth ? strokeWidth : 5,
+    stroke: strokeColor == '#000000' ? 'none' : strokeColor,
+    strokeWidth: strokeWidth ? strokeWidth : 2,
     fill: 'none'
   });
   svgAppend(parentNode, borderRect);

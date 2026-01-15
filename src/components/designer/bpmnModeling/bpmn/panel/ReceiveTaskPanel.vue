@@ -108,6 +108,15 @@
             </v-row>
             <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
         </div>
+        <!-- Lead Time -->
+        <div class="mt-4">
+            <LeadTimeInput
+                v-model="copyUengineProperties.leadTime"
+                :label="$t('leadTime.title') || 'Lead Time'"
+                :disabled="isViewMode"
+            />
+        </div>
+
         <div class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
@@ -142,6 +151,7 @@ import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
 import yaml from 'yamljs';
 
 export default {
@@ -155,7 +165,8 @@ export default {
     },
     components: {
         Mapper,
-        KeyValueField
+        KeyValueField,
+        LeadTimeInput
     },
     created() {
         if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];

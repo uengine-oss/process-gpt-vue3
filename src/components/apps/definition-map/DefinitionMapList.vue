@@ -79,9 +79,24 @@ export default {
         filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
     },
     computed: {
-        // Just return original value - filtering is done in MegaProcess
+        // 미분류 Mega Process를 항상 마지막에 위치시킴
         filteredValue() {
-            return this.value;
+            if (!this.value || !this.value.mega_proc_list) return this.value;
+
+            const uncategorizedNames = ['미분류', 'Uncategorized', 'unclassified'];
+            const sortedList = [...this.value.mega_proc_list].sort((a, b) => {
+                const aIsUncategorized = uncategorizedNames.includes(a.name) || uncategorizedNames.includes(a.id);
+                const bIsUncategorized = uncategorizedNames.includes(b.name) || uncategorizedNames.includes(b.id);
+
+                if (aIsUncategorized && !bIsUncategorized) return 1;  // a를 뒤로
+                if (!aIsUncategorized && bIsUncategorized) return -1; // b를 뒤로
+                return 0; // 순서 유지
+            });
+
+            return {
+                ...this.value,
+                mega_proc_list: sortedList
+            };
         },
         // metrics 구조 상 모든 Domain은 같은 MegaProcess를 가지고 있어야함
         // 모든 MegaProcess를 항상 표시
@@ -96,12 +111,24 @@ export default {
     }),
     created() {
         this.classifyProcess();
+
+        // 다른 곳에서 프로세스 다이얼로그가 열리면 자신의 다이얼로그 닫기
+        this._processDialogId = Math.random().toString(36).substr(2, 9);
+        this._closeDialogHandler = (event) => {
+            if (event.detail !== this._processDialogId) {
+                this.processDialogStatus = false;
+            }
+        };
+        window.addEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
     mounted() {
         this.EventBus.on('openPermissionDialog', (process) => {
             this.permissionProcess = process;
             this.permissionDialogStatus = true;
         });
+    },
+    beforeUnmount() {
+        window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
     watch: {
         enableEdit(newVal, oldVal) {

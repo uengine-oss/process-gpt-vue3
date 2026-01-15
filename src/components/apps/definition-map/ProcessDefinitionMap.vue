@@ -680,6 +680,7 @@ export default {
                 }
                 await me.getProcessMap();
                 await me.getMetricsMap();
+                await me.ensureUncategorizedDomainTab(); // '미분류' 탭이 없으면 추가
                 await me.loadOrganizationOptions();
                 // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
                 if (me.useLock) {
@@ -709,19 +710,42 @@ export default {
         }
     },
     methods: {
+        async ensureUncategorizedDomainTab() {
+            // '미분류' 도메인 탭이 없으면 추가 (데이터는 수정하지 않음, UI 탭만 추가)
+            const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
+
+            if (!this.metricsValue.domains) {
+                this.metricsValue.domains = [];
+            }
+
+            let uncategorizedDomain = this.metricsValue.domains.find(
+                d => d.name === uncategorizedName || d.name === '미분류' || d.name === 'Uncategorized'
+            );
+
+            if (!uncategorizedDomain) {
+                uncategorizedDomain = {
+                    id: 'uncategorized',
+                    name: uncategorizedName,
+                    order: 0  // 첫 번째로 표시
+                };
+                this.metricsValue.domains.unshift(uncategorizedDomain);
+                await backend.putMetricsMap(this.metricsValue);
+            }
+        },
         async syncCardToMetrics() {
             if (!this.value || !this.value.mega_proc_list) return;
 
-            // 1. Ensure "Access" domain exists
-            let accessDomain = this.metricsValue.domains.find(d => d.name === 'Access');
-            if (!accessDomain) {
-                const newId = 'access';
-                accessDomain = {
+            // 1. Ensure "미분류" (Uncategorized) domain exists as default
+            const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
+            let uncategorizedDomain = this.metricsValue.domains.find(d => d.name === uncategorizedName || d.name === '미분류' || d.name === 'Uncategorized');
+            if (!uncategorizedDomain) {
+                const newId = 'uncategorized';
+                uncategorizedDomain = {
                     id: newId,
-                    name: 'Access',
+                    name: uncategorizedName,
                     order: this.metricsValue.domains.length + 1
                 };
-                this.metricsValue.domains.push(accessDomain);
+                this.metricsValue.domains.push(uncategorizedDomain);
             }
 
             // Rebuild mega_processes and processes to handle deletions
@@ -740,18 +764,22 @@ export default {
                 // 3. Sync Major Processes (as Processes in Metric View)
                 if (mega.major_proc_list) {
                     mega.major_proc_list.forEach(major => {
-                        let targetDomainName = major.domain || 'Access';
-                        major.domain = targetDomainName; // Update card data with default domain
-                        let targetDomain = this.metricsValue.domains.find(d => d.name === targetDomainName);
-                        
-                        if (!targetDomain) {
-                            const newId = targetDomainName.toLowerCase().replace(/[/.]/g, '_');
-                            targetDomain = {
-                                id: newId,
-                                name: targetDomainName,
-                                order: this.metricsValue.domains.length + 1
-                            };
-                            this.metricsValue.domains.push(targetDomain);
+                        // 도메인이 비어있으면 '미분류' 도메인 사용 (메트릭스 뷰용, 원본 데이터는 수정하지 않음)
+                        let targetDomain;
+                        if (major.domain && major.domain.trim() !== '') {
+                            targetDomain = this.metricsValue.domains.find(d => d.name === major.domain);
+                            if (!targetDomain) {
+                                const newId = major.domain.toLowerCase().replace(/[/.]/g, '_');
+                                targetDomain = {
+                                    id: newId,
+                                    name: major.domain,
+                                    order: this.metricsValue.domains.length + 1
+                                };
+                                this.metricsValue.domains.push(targetDomain);
+                            }
+                        } else {
+                            // 도메인이 없으면 '미분류' 도메인 사용
+                            targetDomain = uncategorizedDomain;
                         }
 
                         const metricProc = {

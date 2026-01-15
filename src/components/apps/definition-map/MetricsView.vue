@@ -291,7 +291,8 @@
                         :options="{
                             label: $t('processDialog.processDefinition') || '프로세스 정의 선택',
                             returnObject: true,
-                            hideDetails: true
+                            hideDetails: true,
+                            itemValue: 'id'
                         }"
                     ></ProcessDefinitionDisplay>
 
@@ -861,8 +862,10 @@ export default {
                 }
             } else if (this.dialog.type === 'process') {
                 if (this.dialog.mode === 'add') {
+                    // ID를 mega_process_id + 이름으로 생성하여 고유성 보장
+                    const processId = `${this.dialog.megaProcessId}_${newId}`;
                     newValue.processes.push({
-                        id: newId,
+                        id: processId,
                         name: trimmedName,
                         domain_id: this.dialog.domainId,
                         mega_process_id: this.dialog.megaProcessId,
