@@ -780,11 +780,14 @@ export default {
                             // DB에는 항상 저장 (targetRoomId 기준)
                             await this.saveMessageToRoom(assistantMsgObj, targetRoomId);
                             
-                            // 채팅방 이름 업데이트 (첫 메시지인 경우)
+                            // 채팅방 이름 업데이트: 최초(기본값)인 경우에만 첫 사용자 메시지로 고정
                             if (targetRoom) {
-                                // 메시지 수 확인을 위해 DB에서 카운트하거나 간단히 처리
-                                targetRoom.name = this.truncateText(userMessage, 20);
-                                await this.putObject('chat_rooms', targetRoom);
+                                const currentName = (targetRoom.name || '').trim();
+                                const isDefaultName = !currentName || currentName === '새 대화';
+                                if (isDefaultName) {
+                                    targetRoom.name = this.truncateText(userMessage, 20);
+                                    await this.putObject('chat_rooms', targetRoom);
+                                }
                             }
                             
                             // PDF2BPMN 작업 감지 및 events watch 시작
@@ -1286,9 +1289,11 @@ export default {
                 
                 // 프로세스 생성 모드로 전환
                 if (responseObj.answerType === 'generateProcessDef') {
-                    // 기존에는 컨설팅 LLM이 직접 definitions 생성으로 전환했지만,
-                    // 이제는 메인 에이전트가 generate_process 도구를 호출했을 때만 전환합니다.
-                    // (여기서는 화면 전환하지 않고 메시지만 표시)
+                    // 컨설팅 LLM이 "이미 생성 가능"하다고 판단한 경우에는 생성 화면으로 전환
+                    // (generate_process 도구 호출과 동일하게 처리)
+                    me.$store.dispatch('updateMessages', me.messages);
+                    me.$router.push('/definitions/chat');
+                    return;
                 }
             }
             
