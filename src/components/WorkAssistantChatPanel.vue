@@ -643,11 +643,9 @@ export default {
             }
             this.inputText = '';
             
-            // 컨설팅 모드인 경우 컨설팅 메시지 전송
-            if (this.isConsultingMode && this.generator) {
-                await this.sendConsultingMessage(userMessage);
-                return;
-            }
+            // 컨설팅 모드는 "사용자 메시지 라우팅"이 아니라,
+            // 에이전트가 start_process_consulting 도구를 호출할 때마다 1회 컨설팅 응답을 생성하는 방식으로 동작합니다.
+            // 따라서 사용자의 다음 답변은 항상 에이전트가 의도 파악(생성/추가 컨설팅/질문)을 하도록 그대로 전달합니다.
 
             // 채팅방이 없으면 메시지 전송 불가
             if (!this.currentRoomId) {
@@ -795,30 +793,39 @@ export default {
                             // 응답 파싱 및 이벤트 발생
                             let parsed = workAssistantAgentService.parseAgentResponse(content);
                             
-                            // 파싱 실패 시 toolCalls에서 generate_process 결과 직접 확인
+                            // 파싱 실패 시 toolCalls에서 start_process_consulting / generate_process 결과 직접 확인
                             if (!parsed) {
-                                const generateProcessCall = toolCalls.find(tc => 
+                                const toolCallForParse = toolCalls.find(tc =>
+                                    tc.name?.includes('start_process_consulting') ||
                                     tc.name?.includes('generate_process')
                                 );
-                                if (generateProcessCall?.output) {
+                                if (toolCallForParse?.output) {
                                     try {
-                                        parsed = this.parseToolOutput(generateProcessCall.output);
+                                        parsed = this.parseToolOutput(toolCallForParse.output);
                                     } catch (e) {
-                                        console.warn('[WorkAssistantChatPanel] generate_process output 파싱 실패:', e);
+                                        console.warn('[WorkAssistantChatPanel] tool output 파싱 실패:', e);
                                     }
                                 }
                             }
                             
                             if (parsed) {
-                                // 프로세스 생성 요청인 경우 컨설팅 모드로 전환 (현재 채팅방일 때만)
-                                if (parsed.user_request_type === 'generate_process' && this.currentRoomId === targetRoomId) {
-                                    // user_message와 image_analysis_result 합치기
+                                // 1) 프로세스 생성 요청 → 컨설팅 모드로 전환 (현재 채팅방일 때만)
+                                if (parsed.user_request_type === 'start_process_consulting' && this.currentRoomId === targetRoomId) {
                                     let originalMessage = parsed.user_message || userMessage;
                                     if (parsed.image_analysis_result) {
                                         originalMessage = `${originalMessage}\n\n[이미지 분석 결과]\n${parsed.image_analysis_result}`;
                                     }
-                                    console.log('[WorkAssistantChatPanel] originalMessage:', originalMessage);
+                                    console.log('[WorkAssistantChatPanel] start_process_consulting originalMessage:', originalMessage);
                                     await this.switchToConsultingMode(originalMessage);
+                                    return;
+                                }
+
+                                // 2) 컨설팅 후 생성 확정 → definitions 생성 화면으로 전환 (현재 채팅방일 때만)
+                                if (parsed.user_request_type === 'generate_process' && this.currentRoomId === targetRoomId) {
+                                    // 현재까지의 대화 내용을 store에 저장
+                                    this.$store.dispatch('updateMessages', this.messages);
+                                    // /definitions/chat로 이동
+                                    this.$router.push('/definitions/chat');
                                     return;
                                 }
                                 
@@ -1037,6 +1044,7 @@ export default {
                 'get_instance_list': '인스턴스 목록 조회',
                 'get_todolist': '할일 목록 조회',
                 'get_organization': '조직도 조회',
+                'start_process_consulting': '프로세스 컨설팅 시작',
                 'generate_process': '프로세스 생성'
             };
             
@@ -1076,6 +1084,8 @@ export default {
                 isStream: true,
                 preferredLanguage: "Korean"
             });
+            // 컨설팅은 "고정 모드"가 아니라, start_process_consulting 도구 호출 시마다 1회 응답 생성으로 처리합니다.
+            // (사용자 다음 메시지는 항상 에이전트가 받아 의도 판단)
             me.isConsultingMode = true;
             
             // 마지막 시스템 메시지 제거 (work-assistant-agent의 응답)
@@ -1205,6 +1215,11 @@ export default {
             
             // afterGenerationFinished 호출
             await me.afterGenerationFinished(jsonData);
+
+            // 컨설팅 1회 실행 종료: 다음 사용자 메시지는 에이전트가 받도록 컨설팅 상태를 정리
+            me.isConsultingMode = false;
+            me.generator = null;
+            me._consultingTargetRoomId = null;
             
             me.scrollToBottom();
         },
@@ -1271,12 +1286,9 @@ export default {
                 
                 // 프로세스 생성 모드로 전환
                 if (responseObj.answerType === 'generateProcessDef') {
-                    // 현재까지의 대화 내용을 store에 저장
-                    me.$store.dispatch('updateMessages', me.messages);
-                    
-                    // /definitions/chat로 이동
-                    me.$router.push('/definitions/chat');
-                    return;
+                    // 기존에는 컨설팅 LLM이 직접 definitions 생성으로 전환했지만,
+                    // 이제는 메인 에이전트가 generate_process 도구를 호출했을 때만 전환합니다.
+                    // (여기서는 화면 전환하지 않고 메시지만 표시)
                 }
             }
             
