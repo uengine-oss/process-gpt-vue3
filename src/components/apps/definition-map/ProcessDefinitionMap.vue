@@ -1244,11 +1244,11 @@ export default {
             }
         },
         async loadOrganizationOptions() {
-            console.log('[ProcessDefinitionMap.loadOrganizationOptions] Starting...');
+
             this.loadingOrganizations = true;
             const supabase = window.$supabase;
             const tenantId = window.$tenantName || 'default';
-            console.log('[ProcessDefinitionMap.loadOrganizationOptions] tenantId:', tenantId);
+
 
             try {
                 const options = [];
@@ -1261,14 +1261,14 @@ export default {
                     .eq('tenant_id', tenantId)
                     .single();
 
-                console.log('[ProcessDefinitionMap.loadOrganizationOptions] orgData:', orgData, 'orgError:', orgError);
+
 
                 if (!orgError && orgData?.value) {
                     const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
                     const chart = orgValue.chart || orgValue;
-                    console.log('[ProcessDefinitionMap.loadOrganizationOptions] chart:', chart);
+
                     const teams = this.extractTeamsFromOrgChart(chart);
-                    console.log('[ProcessDefinitionMap.loadOrganizationOptions] extracted teams:', teams);
+
                     teams.forEach(team => {
                         options.push({
                             id: team.id,
@@ -1284,7 +1284,7 @@ export default {
                     .select('id, name')
                     .eq('tenant_id', tenantId);
 
-                console.log('[ProcessDefinitionMap.loadOrganizationOptions] groupsData:', groupsData, 'groupsError:', groupsError);
+
 
                 if (!groupsError && groupsData) {
                     groupsData.forEach(group => {
@@ -1297,7 +1297,7 @@ export default {
                 }
 
                 this.organizationOptions = options;
-                console.log('[ProcessDefinitionMap.loadOrganizationOptions] Final organizationOptions:', this.organizationOptions);
+
             } catch (error) {
                 console.error('[ProcessDefinitionMap.loadOrganizationOptions] Failed:', error);
             } finally {
