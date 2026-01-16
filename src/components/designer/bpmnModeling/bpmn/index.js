@@ -1,7 +1,5 @@
 const modules = import.meta.glob("@/components/designer/bpmnModeling/bpmn/**/*.vue", { eager: true });
 
-const registeredComponents = new Set();
-
 export default function loadBpmnComponents(app) {
   const bpmnComponents = {}
   for (const path in modules) {
@@ -14,13 +12,17 @@ export default function loadBpmnComponents(app) {
     const componentDef = modules[path].default;
     const registrationName = componentDef?.name;
 
-    // name이 없거나 이미 등록된 컴포넌트는 건너뛰기
-    if (!registrationName || registeredComponents.has(registrationName)) {
+    // name이 없으면 건너뛰기
+    if (!registrationName) {
+      continue;
+    }
+
+    // Vue 앱에 이미 등록된 컴포넌트인지 확인
+    if (app._context?.components?.[registrationName]) {
       continue;
     }
 
     app.component(registrationName, componentDef);
-    registeredComponents.add(registrationName);
     bpmnComponents[componentName] = modules[path];
   }
   window.bpmnComponents = bpmnComponents
