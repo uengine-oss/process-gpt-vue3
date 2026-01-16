@@ -323,7 +323,8 @@ export default {
             handler(newVal) {
                 if (newVal && newVal.id) {
                     this.selectedTeam = newVal;
-                    this.updateTeamData();
+                    // teamInfo 변경 시에도 selectTeam을 호출하여 teamMembers 업데이트
+                    this.selectTeam();
                 }
             }
         },
@@ -335,8 +336,19 @@ export default {
                     const teams = newVal.children.filter(child => child.data && child.data.isTeam);
                     if (teams.length > 0) {
                         this.selectedTeam = teams[0];
-                        this.updateTeamData();
+                        // 초기 선택 시에도 selectTeam을 호출하여 teamMembers 업데이트
+                        this.selectTeam();
                     }
+                }
+            }
+        },
+        userList: {
+            immediate: true,
+            deep: true,
+            handler() {
+                // userList가 변경되면 teamMembers도 업데이트
+                if (this.selectedTeam) {
+                    this.updateTeamData();
                 }
             }
         }
@@ -347,7 +359,10 @@ export default {
         } else if (this.teamList && this.teamList.length > 0) {
             this.selectedTeam = this.teamList[0];
         }
-        this.updateTeamData();
+        // 초기 선택 시에도 selectTeam을 호출하여 teamMembers 업데이트
+        if (this.selectedTeam) {
+            this.selectTeam();
+        }
     },
     methods: {
         openTeamDialog(type) {
