@@ -109,6 +109,7 @@ WARNING = 0,
 
 export default {
     name: 'bpmn-uengine',
+    inheritAttrs: false,
     emits: [
         'closePDFDialog',
         'error',
@@ -554,25 +555,54 @@ export default {
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
                 var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
 
-                if (allPools.length > 1) {
-                    var firstPool = allPools[0];
-                    var bbox = canvas.getAbsoluteBBox(firstPool);
-                    canvas.viewbox({
-                        x: bbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
-                        y: bbox.y - 100,
-                        width: bbox.width + 100,
-                        height: bbox.height + 100
-                    });
-                } else {
-                    canvas.zoom('fit-viewport');
-                    var viewbox = canvas.viewbox();
-                    canvas.viewbox({
-                        x: viewbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
-                        y: viewbox.y - 100,
-                        width: viewbox.width + 100,
-                        height: viewbox.height + 100
-                    });
-                }
+                // 안전한 zoom 함수
+                const safeZoom = (retryCount = 0) => {
+                    const container = self.$refs.container;
+                    const containerWidth = container?.clientWidth || 0;
+                    const containerHeight = container?.clientHeight || 0;
+
+                    // 컨테이너 크기가 유효하지 않으면 재시도
+                    if (containerWidth <= 0 || containerHeight <= 0) {
+                        if (retryCount < 5) {
+                            setTimeout(() => safeZoom(retryCount + 1), 100);
+                        }
+                        return;
+                    }
+
+                    try {
+                        if (allPools.length > 1) {
+                            var firstPool = allPools[0];
+                            var bbox = canvas.getAbsoluteBBox(firstPool);
+                            if (bbox && bbox.width > 0 && bbox.height > 0) {
+                                canvas.viewbox({
+                                    x: bbox.x - 50,
+                                    y: bbox.y - 100,
+                                    width: bbox.width + 100,
+                                    height: bbox.height + 100
+                                });
+                            }
+                        } else {
+                            canvas.zoom('fit-viewport');
+                            var viewbox = canvas.viewbox();
+                            if (viewbox && viewbox.width > 0 && viewbox.height > 0) {
+                                canvas.viewbox({
+                                    x: viewbox.x - 50,
+                                    y: viewbox.y - 100,
+                                    width: viewbox.width + 100,
+                                    height: viewbox.height + 100
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        // zoom 실패 시 재시도
+                        if (retryCount < 5) {
+                            setTimeout(() => safeZoom(retryCount + 1), 100);
+                        }
+                    }
+                };
+
+                // DOM 렌더링 후 zoom 실행
+                setTimeout(() => safeZoom(), 50);
                 // you may hook into any of the following events
                 if (self.isViewMode) {
                     const elementRegistry = self.bpmnViewer.get('elementRegistry');

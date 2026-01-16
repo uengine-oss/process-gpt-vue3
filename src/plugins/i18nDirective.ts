@@ -172,8 +172,16 @@ function scanAndTagI18nTexts(el: HTMLElement) {
   });
 }
 
+let installed = false;
+
 export default {
   install(app: App) {
+    // 이미 설치된 경우 건너뛰기
+    if (installed) {
+      return;
+    }
+    installed = true;
+
     // v-t 디렉티브 (선택적 사용)
     app.directive('t', {
       mounted(el, binding) {

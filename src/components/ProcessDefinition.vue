@@ -68,34 +68,34 @@
                         <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
                     </div>
                     <template v-else>
-                        <BpmnuEngine
-                        v-show="!isBpmnLoading"
-                        ref="bpmnVue"
-                        :key="bpmnKey"
-                        :bpmn="bpmn"
-                        :options="options"
-                        :isViewMode="isViewMode"
-                        :isPreviewMode="isPreviewMode"
-                        :currentActivities="currentActivities"
-                        :generateFormTask="generateFormTask"
-                        :isPreviewPDFDialog="isPreviewPDFDialog"
-                        :isAIGenerated="isAIGenerated"
-                        @closePDFDialog="closePDFDialog"
-                        v-on:error="handleError"
-                        v-on:shown="handleBpmnShown"
-                        v-on:openDefinition="(ele) => openSubProcess(ele)"
-                        v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)"
-                        v-on:update-xml="(val) => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)"
-                        v-on:add-shape="onAddShape"
-                        v-on:done="handleBpmnDone"
-                        @changeElement="changeElement"
-                        @update:isAIGenerated="updateIsAIGenerated"
-                        :onLoadStart="onBpmnLoadStart"
-                        :onLoadEnd="onBpmnLoadEnd"
-                            style="height: 100%"
-                        ></BpmnuEngine>
+                        <div v-show="!isBpmnLoading" style="height: 100%">
+                            <BpmnuEngine
+                            ref="bpmnVue"
+                            :key="bpmnKey"
+                            :bpmn="bpmn"
+                            :options="options"
+                            :isViewMode="isViewMode"
+                            :isPreviewMode="isPreviewMode"
+                            :currentActivities="currentActivities"
+                            :generateFormTask="generateFormTask"
+                            :isPreviewPDFDialog="isPreviewPDFDialog"
+                            :isAIGenerated="isAIGenerated"
+                            @closePDFDialog="closePDFDialog"
+                            v-on:error="handleError"
+                            v-on:shown="handleBpmnShown"
+                            v-on:openDefinition="(ele) => openSubProcess(ele)"
+                            v-on:loading="handleLoading"
+                            v-on:openPanel="(id) => openPanel(id)"
+                            v-on:update-xml="(val) => $emit('update-xml', val)"
+                            v-on:definition="(def) => (definitions = def)"
+                            v-on:add-shape="onAddShape"
+                            v-on:done="handleBpmnDone"
+                            @changeElement="changeElement"
+                            @update:isAIGenerated="updateIsAIGenerated"
+                            :onLoadStart="onBpmnLoadStart"
+                            :onLoadEnd="onBpmnLoadEnd"
+                            ></BpmnuEngine>
+                        </div>
                         <!-- Task Catalog Section for drag & drop -->
                         <TaskCatalogSection
                             v-if="!isViewMode"

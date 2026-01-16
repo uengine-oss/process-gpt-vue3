@@ -223,7 +223,6 @@ export default {
         lists: [],
         loading: false,
         currentInfo: null,
-        currentXML: null,
         options: {
             additionalModules: [customBpmnModule]
         },
