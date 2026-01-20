@@ -943,7 +943,13 @@
         <v-card elevation="10" class="pa-4">
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
-            <input type="file" accept="application/pdf" ref="pdfUploader" class="d-none" @change="handlePdfSelect">
+            <input
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                ref="pdfUploader"
+                class="d-none"
+                @change="handlePdfSelect"
+            >
             <div style="z-index: 9999;" class="d-flex flex-wrap">
                 <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
                     <img :src="image.url" width="56" height="56" style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />
@@ -1013,7 +1019,7 @@
                                     </template>
                                 </v-tooltip>
                                 <!-- PDF 업로드 버튼: 메인/패널 공통으로 Chat 내부에서 처리 -->
-                                <v-tooltip text="PDF 업로드">
+                                <v-tooltip text="파일 업로드">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
                                             icon
@@ -2044,8 +2050,18 @@ export default {
         handlePdfSelect(e) {
             const file = e.target.files?.[0];
             if (!file) return;
-            if (file.type !== 'application/pdf') {
-                alert('PDF 파일만 업로드할 수 있습니다.');
+
+            // Allow PDF + common Office + image formats (stored to Supabase, converted/OCR’d server-side).
+            const name = (file.name || '').toLowerCase();
+            const allowedExt = [
+                '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+                '.txt', '.csv',
+                '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'
+            ];
+            const ok = allowedExt.some(ext => name.endsWith(ext));
+            if (!ok) {
+                alert('지원되는 파일 형식이 아닙니다. (PDF/Office/Image/Text)');
+                if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
                 return;
             }
             this.selectedPdfFile = file;

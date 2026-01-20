@@ -61,10 +61,12 @@
                 <v-card-text class="pa-0">
                     <!-- 다이어그램 뷰 -->
                     <div v-if="bpmnViewMode === 'diagram'" class="bpmn-diagram-container">
-                        <BpmnUengineViewer
+                        <ProcessDefinition
                             v-if="selectedBpmn?.bpmn_xml"
                             :bpmn="selectedBpmn.bpmn_xml"
                             :key="selectedBpmn?.process_name"
+                            isViewMode="true"
+                            isAIGenerated="true"
                         />
                     </div>
                     <!-- XML 뷰 -->
@@ -301,7 +303,7 @@ import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
 import BackendFactory from '@/components/api/BackendFactory';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import { getValidToken } from '@/utils/supabaseAuth.js';
-import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
+import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from '@/components/ui/Chat.vue';
 
 const backend = BackendFactory.createBackend();
@@ -309,7 +311,7 @@ const backend = BackendFactory.createBackend();
 export default {
     name: 'WorkAssistantChatPanel',
     components: {
-        BpmnUengineViewer,
+        ProcessDefinition,
         Chat
     },
     props: {
