@@ -328,6 +328,7 @@
         "cancel": "Cancel",
         "download": "Download",
         "uncategorized": "Uncategorized",
+        "searchProcess": "Search Process Definition (e.g., insurance, application)",
         "closeConsulting": "Are you sure you want to end the consultation without saving?",
         "closeConsultingInPreview": "Are you sure you want to end the consultation without saving?\nYou can save by clicking the lock button on the right.\n\nDo you want to end the consultation?",
         "checkInDBError": "DB connection is lost. Download the modified data and save it, then contact the administrator.",
