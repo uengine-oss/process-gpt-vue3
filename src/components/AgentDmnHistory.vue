@@ -85,10 +85,10 @@
                                 <!-- UPDATE 작업: 이전 내용과 새 내용 diff 표시 -->
                                 <div v-if="item.operation === 'UPDATE' && item.previous_content && item.new_content">
                                     <!-- 사용자 친화적인 DMN 변경사항 표시 -->
-                                    <div v-if="parseDmnXml(item.previous_content) && parseDmnXml(item.new_content)">
+                                    <div v-if="getParsedDmn(item, 'previous') && getParsedDmn(item, 'current')">
                                         <dmn-diff-view 
-                                            :previous="parseDmnXml(item.previous_content)" 
-                                            :current="parseDmnXml(item.new_content)"
+                                            :previous="getParsedDmn(item, 'previous')" 
+                                            :current="getParsedDmn(item, 'current')"
                                         >
                                             <template v-slot:actions>
                                                 <div v-if="item.operation === 'UPDATE'" class="d-flex ga-2">
@@ -151,8 +151,8 @@
                                 <!-- CREATE 작업: 새 내용만 표시 -->
                                 <div v-else-if="item.operation === 'CREATE' && item.new_content">
                                     <!-- 사용자 친화적인 DMN 표시 -->
-                                    <div v-if="parseDmnXml(item.new_content)">
-                                        <dmn-structure-view :dmn="parseDmnXml(item.new_content)" />
+                                    <div v-if="getParsedDmn(item, 'current')">
+                                        <dmn-structure-view :dmn="getParsedDmn(item, 'current')" />
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
@@ -166,8 +166,8 @@
                                 <!-- DELETE 작업: 이전 내용만 표시 -->
                                 <div v-else-if="item.operation === 'DELETE' && item.previous_content">
                                     <!-- 사용자 친화적인 DMN 표시 -->
-                                    <div v-if="parseDmnXml(item.previous_content)">
-                                        <dmn-structure-view :dmn="parseDmnXml(item.previous_content)" />
+                                    <div v-if="getParsedDmn(item, 'previous')">
+                                        <dmn-structure-view :dmn="getParsedDmn(item, 'previous')" />
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
@@ -251,6 +251,7 @@ export default {
             page: 1,
             itemsPerPage: 10,
             xmlViewTabs: {}, // 각 아이템별 탭 상태 관리
+            dmnParsedCache: {}, // 각 아이템별 DMN 파싱 캐시
             restoringItems: new Set(), // 되돌리기 진행 중인 아이템 ID들
             reapplyingItems: new Set(), // 다시 적용 진행 중인 아이템 ID들
             headers: [
@@ -367,6 +368,21 @@ export default {
 
         parseDmnXml(xmlString) {
             return parseDmnXml(xmlString);
+        },
+
+        getParsedDmn(item, which) {
+            const key = `${this.getItemKey(item)}:${which}`;
+            const xmlString = which === 'previous' ? item.previous_content : item.new_content;
+            if (!xmlString) return null;
+
+            const cached = this.dmnParsedCache[key];
+            if (cached && cached._src === xmlString) {
+                return cached._parsed;
+            }
+
+            const parsed = parseDmnXml(xmlString);
+            this.dmnParsedCache[key] = { _src: xmlString, _parsed: parsed };
+            return parsed;
         },
 
         async restoreVersion(item) {
@@ -497,6 +513,16 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Expand 영역을 테이블과 확실히 구분 */
+.dmn-history-data-table :deep(tr.v-data-table__expanded-row) td {
+    background-color: rgba(var(--v-theme-primary), 0.04);
+}
+
+/* expanded-row 슬롯 내부 카드가 td 배경을 덮어서 차이가 안 보일 수 있어 카드에도 배경만 적용 */
+.expanded-row-content {
+    background-color: rgba(var(--v-theme-primary), 0.04) !important;
 }
 
 .change-content-box {

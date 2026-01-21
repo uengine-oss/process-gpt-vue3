@@ -67,6 +67,7 @@
 
 <script>
 import { marked } from 'marked';
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     name: 'AgentSkillEdit',
@@ -82,6 +83,7 @@ export default {
     },
     data() {
         return {
+            backend: null,
             skillName: '',
             fileName: '',
             skillContent: '',
@@ -147,6 +149,9 @@ export default {
             deep: true
         }
     },
+    created() {
+        this.backend = BackendFactory.createBackend();
+    },
     mounted() {
         if (this.skillFile) {
             this.skillName = this.skillFile.skill_name;
@@ -155,12 +160,22 @@ export default {
         }
     },
     methods: {
-        saveSkillFile() {
-            this.$emit('saveSkillFile', this.skillName, this.fileName, this.skillContent);
+        async saveSkillFile() {
+            await this.backend.putSkillFile(this.skillName, this.fileName, this.skillContent);
+            this.$try({
+                context: this,
+                action: () => {},
+                successMsg: '스킬 파일이 성공적으로 저장되었습니다.'
+            });
         },
-        deleteSkillFile() {
-            this.$emit('deleteSkillFile', this.skillName, this.fileName);
+        async deleteSkillFile() {
             this.deleteDialog = false;
+            await this.backend.deleteSkillFile(this.skillName, this.fileName);
+            this.$try({
+                context: this,
+                action: () => {},
+                successMsg: '스킬 파일이 성공적으로 삭제되었습니다.'
+            });
         },
         handleMount(editor) {
             // Monaco Editor 마운트 후 높이 설정
