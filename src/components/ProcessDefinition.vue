@@ -608,6 +608,10 @@ export default {
         // console.log(this.definitions)
         // LLM과 uEngine 각각 처리 필요.
         // this.processVariables = this.copyProcessDefinition.data
+
+        this.EventBus.on('autoLayout.complete', () => {
+            this.applyAutoLayout();
+        });
     },
     methods: {
         openSaveToCatalog() {

@@ -430,6 +430,7 @@ export default {
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
             window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
+            this.EventBus.emit('autoLayout.complete');
         },
         debounce(func, timeout) {
             let timer;
