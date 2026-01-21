@@ -72,12 +72,20 @@
                         :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : ''"
                     >
                     
-                        <div class="mr-0 d-flex" v-if="Pal">
+                        <div class="mr-0 d-flex" v-if="bpmn">
                             <!-- PDF 저장 아이콘 -->
                             <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" @click="savePDF" icon variant="text" class="text-medium-emphasis" density="comfortable">
                                         <v-icon>mdi-file-pdf-box</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                            <!-- 이미지 캡처 아이콘 -->
+                            <v-tooltip location="bottom" :text="$t('processDefinition.capture')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" @click="capturePng" icon variant="text" class="text-medium-emphasis" density="comfortable">
+                                        <Icons :icon="'image-download'" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -337,6 +345,9 @@ export default {
         },
         savePDF() {
             this.$emit('savePDF');
+        },
+        capturePng() {
+            this.$emit('capturePng');
         },
         createFormUrl() {
             this.$emit('createFormUrl');

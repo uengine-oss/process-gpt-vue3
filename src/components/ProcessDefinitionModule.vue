@@ -8,6 +8,7 @@ import FormDefinitionModule from './FormDefinitionModule.vue';
 import BPMNXmlGenerator from './BPMNXmlGenerator.vue';
 import partialParse from "partial-json-parser";
 import JSON5 from 'json5';
+import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 
 const backend = BackendFactory.createBackend();
 
@@ -480,7 +481,33 @@ export default {
                     let retryCount = 0;
                     const maxRetries = 3;
                     const retryDelay = 1000; // 1초
-                    
+
+                    // Pool/Lane 자동 설정
+                    try {
+                        const elementRegistry = modeler.get('elementRegistry');
+                        const modeling = modeler.get('modeling');
+
+                        // Pool(Participant) 이름을 프로세스명으로 설정
+                        const participants = elementRegistry.filter(el => el.type === 'bpmn:Participant');
+                        if (participants.length > 0 && info.name) {
+                            modeling.updateProperties(participants[0], { name: info.name });
+                        }
+
+                        // Lane 이름을 사용자 팀명으로 설정 (기본값인 경우에만)
+                        const userTeamName = await getCurrentUserTeamName();
+                        if (userTeamName) {
+                            const lanes = elementRegistry.filter(el => el.type === 'bpmn:Lane');
+                            if (lanes.length > 0) {
+                                const firstLane = lanes[0];
+                                const laneName = firstLane.businessObject?.name;
+                                if (!laneName || laneName === 'Lane 1' || laneName === 'Lane') {
+                                    modeling.updateProperties(firstLane, { name: userTeamName });
+                                }
+                            }
+                        }
+                    } catch (poolLaneError) {
+                        console.warn('[saveDefinition] Pool/Lane 자동 설정 실패:', poolLaneError);
+                    }
 
                     async function saveXML() {
                         try {

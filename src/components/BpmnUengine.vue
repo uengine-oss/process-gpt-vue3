@@ -12,6 +12,9 @@
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
         <div v-if="!isViewMode" class="font-size-controls">
+            <!-- Extra controls slot (for parent component buttons) -->
+            <slot name="extra-controls"></slot>
+            <span v-if="$slots['extra-controls']" class="controls-divider">|</span>
             <!-- Font size controls -->
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
@@ -99,6 +102,7 @@ import '@/components/autoLayout/bpmn-auto-layout.js';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
+import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 
 
 const backend = BackendFactory.createBackend();
@@ -224,6 +228,17 @@ export default {
         if (this.bpmn) {
             this.diagramXML = this.bpmn;
         } else {
+            // 사용자 팀명 조회하여 Lane 이름에 사용
+            let laneName = 'Lane 1';
+            try {
+                const teamName = await getCurrentUserTeamName();
+                if (teamName) {
+                    laneName = teamName;
+                }
+            } catch (e) {
+                console.warn('[BpmnUengine] 팀명 조회 실패, 기본값 사용:', e);
+            }
+
             // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
             this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
@@ -236,7 +251,7 @@ export default {
       <uengine:ProcessVariable key="variable2" value="value2"/>
     </uengine:ProcessVariables>
     <bpmn:laneSet id="LaneSet_1">
-      <bpmn:lane id="Lane_1" name="Lane 1">
+      <bpmn:lane id="Lane_1" name="${laneName}">
         <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>ManualTask_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
@@ -555,7 +570,7 @@ export default {
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
                 var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
 
-                // 안전한 zoom 함수
+                // 안전한 zoom 함수 - Pool을 화면 중앙에 정렬
                 const safeZoom = (retryCount = 0) => {
                     const container = self.$refs.container;
                     const containerWidth = container?.clientWidth || 0;
@@ -570,28 +585,50 @@ export default {
                     }
 
                     try {
-                        if (allPools.length > 1) {
-                            var firstPool = allPools[0];
-                            var bbox = canvas.getAbsoluteBBox(firstPool);
-                            if (bbox && bbox.width > 0 && bbox.height > 0) {
-                                canvas.viewbox({
-                                    x: bbox.x - 50,
-                                    y: bbox.y - 100,
-                                    width: bbox.width + 100,
-                                    height: bbox.height + 100
-                                });
-                            }
+                        // 모든 요소의 bounding box 계산
+                        let contentBBox;
+                        if (allPools.length > 0) {
+                            // Pool이 있으면 모든 Pool의 통합 bbox 계산
+                            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                            allPools.forEach(pool => {
+                                const bbox = canvas.getAbsoluteBBox(pool);
+                                if (bbox) {
+                                    minX = Math.min(minX, bbox.x);
+                                    minY = Math.min(minY, bbox.y);
+                                    maxX = Math.max(maxX, bbox.x + bbox.width);
+                                    maxY = Math.max(maxY, bbox.y + bbox.height);
+                                }
+                            });
+                            contentBBox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
                         } else {
+                            // Pool이 없으면 전체 요소의 bbox 사용
                             canvas.zoom('fit-viewport');
-                            var viewbox = canvas.viewbox();
-                            if (viewbox && viewbox.width > 0 && viewbox.height > 0) {
-                                canvas.viewbox({
-                                    x: viewbox.x - 50,
-                                    y: viewbox.y - 100,
-                                    width: viewbox.width + 100,
-                                    height: viewbox.height + 100
-                                });
-                            }
+                            contentBBox = canvas.viewbox();
+                        }
+
+                        if (contentBBox && contentBBox.width > 0 && contentBBox.height > 0) {
+                            // padding 추가
+                            const padding = 50;
+                            const contentWidth = contentBBox.width + padding * 2;
+                            const contentHeight = contentBBox.height + padding * 2;
+
+                            // 컨테이너 비율에 맞춰 zoom 계산
+                            const scaleX = containerWidth / contentWidth;
+                            const scaleY = containerHeight / contentHeight;
+                            const scale = Math.min(scaleX, scaleY, 1); // 최대 1배율
+
+                            // 중앙 정렬을 위한 viewbox 계산
+                            const viewboxWidth = containerWidth / scale;
+                            const viewboxHeight = containerHeight / scale;
+                            const centerX = contentBBox.x + contentBBox.width / 2;
+                            const centerY = contentBBox.y + contentBBox.height / 2;
+
+                            canvas.viewbox({
+                                x: centerX - viewboxWidth / 2,
+                                y: centerY - viewboxHeight / 2,
+                                width: viewboxWidth,
+                                height: viewboxHeight
+                            });
                         }
                     } catch (e) {
                         // zoom 실패 시 재시도

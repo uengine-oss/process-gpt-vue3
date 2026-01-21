@@ -14,6 +14,7 @@
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
                 <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+                <v-icon @click="capturePng" style="color: #444; cursor: pointer;">mdi-download</v-icon>
             </div>
         </div>
         <!-- 참여자 보기 툴팁 -->
@@ -101,6 +102,7 @@ import zeebeModdleDescriptor from '@/components/descriptors/zeebe.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
+import domtoimage from 'dom-to-image';
 import ZoomScroll from './customZoomScroll';
 // import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
 import MoveCanvas from './customMoveCanvas';
@@ -377,23 +379,25 @@ export default {
         resetZoom() {
             try {
                 var self = this;
-                
+
                 // 컨테이너 유효성 검사
                 const container = self.$refs.container;
                 if (!container) {
                     return;
                 }
-                
+
                 const containerRect = container.getBoundingClientRect();
-                if (!containerRect || containerRect.width === 0 || containerRect.height === 0) {
+                const containerWidth = containerRect?.width || 0;
+                const containerHeight = containerRect?.height || 0;
+                if (containerWidth === 0 || containerHeight === 0) {
                     return;
                 }
-                
+
                 // BPMN viewer 유효성 검사
                 if (!self.bpmnViewer) {
                     return;
                 }
-                
+
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
                 var zoomScroll = self.bpmnViewer.get('zoomScroll');
@@ -407,10 +411,53 @@ export default {
 
                 zoomScroll.reset();
 
-                // ✅ 1) 기본 줌: 캔버스 꽉 채우기
-                canvas.zoom('fit-viewport', 'auto');
+                // Pool을 화면 중앙에 정렬
+                let contentBBox;
+                if (allPools.length > 0) {
+                    // Pool이 있으면 모든 Pool의 통합 bbox 계산
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    allPools.forEach(pool => {
+                        const bbox = canvas.getAbsoluteBBox(pool);
+                        if (bbox) {
+                            minX = Math.min(minX, bbox.x);
+                            minY = Math.min(minY, bbox.y);
+                            maxX = Math.max(maxX, bbox.x + bbox.width);
+                            maxY = Math.max(maxY, bbox.y + bbox.height);
+                        }
+                    });
+                    contentBBox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+                } else {
+                    // Pool이 없으면 전체 요소의 bbox 사용
+                    canvas.zoom('fit-viewport');
+                    contentBBox = canvas.viewbox();
+                }
 
-                // ✅ 2) 줌 제한 핸들러
+                if (contentBBox && contentBBox.width > 0 && contentBBox.height > 0) {
+                    // padding 추가
+                    const padding = 50;
+                    const contentWidth = contentBBox.width + padding * 2;
+                    const contentHeight = contentBBox.height + padding * 2;
+
+                    // 컨테이너 비율에 맞춰 zoom 계산
+                    const scaleX = containerWidth / contentWidth;
+                    const scaleY = containerHeight / contentHeight;
+                    const scale = Math.min(scaleX, scaleY, 1); // 최대 1배율
+
+                    // 중앙 정렬을 위한 viewbox 계산
+                    const viewboxWidth = containerWidth / scale;
+                    const viewboxHeight = containerHeight / scale;
+                    const centerX = contentBBox.x + contentBBox.width / 2;
+                    const centerY = contentBBox.y + contentBBox.height / 2;
+
+                    canvas.viewbox({
+                        x: centerX - viewboxWidth / 2,
+                        y: centerY - viewboxHeight / 2,
+                        width: viewboxWidth,
+                        height: viewboxHeight
+                    });
+                }
+
+                // ✅ 줌 제한 핸들러
                 canvas._eventBus.on('zoom', function(event) {
                     let zoomLevel = event.scale;
 
@@ -426,18 +473,15 @@ export default {
                     });
                 });
 
-                // ✅ 3) 꽉 찬 상태의 bbox 가져오기
+                // 꽉 찬 상태의 bbox 가져오기
                 const bbox = canvas.viewbox();
-                
+
                 // bbox 유효성 검사
                 if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height) || !Number.isFinite(bbox.scale)) {
                     return;
                 }
 
-                // ✅ 4) 필요하면 여기서 padding / 이동 조정하고 싶으면 scroll 사용
-                // 예: canvas.scroll({ dx: 50, dy: 50 });
-
-                // ✅ 5) zoomScroll, moveCanvas 동기화
+                // zoomScroll, moveCanvas 동기화
                 moveCanvas.canvasSize = {
                     height: bbox.height,
                     width: bbox.width,
@@ -472,6 +516,23 @@ export default {
         zoomOut() {
             const zoomScroll = this.bpmnViewer.get('zoomScroll');
             zoomScroll.stepZoom(-1);
+        },
+        capturePng() {
+            const container = this.$refs.container;
+            if (!container) return;
+
+            domtoimage.toPng(container, { bgcolor: 'white' })
+                .then((dataUrl) => {
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = 'process_diagram.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch((error) => {
+                    console.error('PNG capture failed:', error);
+                });
         },
         goToPreviewer(index) {
             this.diagramXML = this.previewersXMLLists[index].xml;
@@ -977,6 +1038,7 @@ export default {
             this.resizeObserver.observe(container);
         },
         onContainerResizeFinished() {
+            return;
             const container = this.$refs.container;
             if (!container || this.isAIGenerated || !container.getBoundingClientRect) return;
 

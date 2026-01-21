@@ -13,7 +13,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip v-if="isPal" :text="$t('ProcessMenu.setPermission')">
+            <v-tooltip v-if="canSetPermission" :text="$t('ProcessMenu.setPermission')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="setPermission"
                         icon v-bind="props"
@@ -95,6 +95,13 @@ export default {
         },
         isPal() {
             return window.$pal;
+        },
+        isAdmin() {
+            return localStorage.getItem('isAdmin') === 'true';
+        },
+        canSetPermission() {
+            // PAL 모드이거나 관리자 권한이 있으면 표시
+            return this.isPal || this.isAdmin;
         },
         addTooltipText() {
             if (this.type === 'mega') {

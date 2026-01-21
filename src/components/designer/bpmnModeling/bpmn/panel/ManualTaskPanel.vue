@@ -1,5 +1,27 @@
 <template>
     <div>
+        <!-- System Name / Menu Name -->
+        <v-row class="ma-0 pa-0 mb-4">
+            <v-col cols="6" class="pa-0 pr-2">
+                <v-text-field
+                    v-model="copyUengineProperties.systemName"
+                    :label="$t('BpmnPropertyPanel.systemName') || 'System Name'"
+                    :disabled="isViewMode"
+                    density="compact"
+                    variant="outlined"
+                ></v-text-field>
+            </v-col>
+            <v-col cols="6" class="pa-0 pl-2">
+                <v-text-field
+                    v-model="copyUengineProperties.menuName"
+                    :label="$t('BpmnPropertyPanel.menuName') || 'Menu Name'"
+                    :disabled="isViewMode"
+                    density="compact"
+                    variant="outlined"
+                ></v-text-field>
+            </v-col>
+        </v-row>
+
         <div v-if="inputData.length > 0" style="margin-bottom: 20px">
             <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
@@ -194,6 +216,8 @@ export default {
         });
         if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
         if(!this.copyUengineProperties.schemaProperties) this.copyUengineProperties.schemaProperties = {};
+        if(!this.copyUengineProperties.systemName) this.copyUengineProperties.systemName = '';
+        if(!this.copyUengineProperties.menuName) this.copyUengineProperties.menuName = '';
     },
     data() {
         return {
@@ -311,3 +335,114 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+/* ============================================
+   Manual Task Panel - Refined Design
+   ============================================ */
+
+/* Section headers */
+:deep(.text-subtitle-2) {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px !important;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+/* Data chips */
+:deep(.v-chip) {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.75rem !important;
+    font-weight: 500;
+    height: 30px !important;
+    border-radius: 10px !important;
+    transition: all 150ms ease;
+}
+
+:deep(.v-chip.text-body-2) {
+    background: rgba(248, 250, 252, 0.8) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    color: #475569 !important;
+}
+
+:deep(.v-chip.text-body-2:hover) {
+    background: rgba(99, 102, 241, 0.08) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: #6366f1 !important;
+}
+
+:deep(.v-chip--variant-outlined[color="primary"]) {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: #6366f1 !important;
+}
+
+/* Table styling */
+:deep(.v-table) {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    border-radius: 12px !important;
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.6) !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+:deep(.v-table thead) {
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.9) 100%);
+}
+
+:deep(.v-table th) {
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+}
+
+:deep(.v-table td) {
+    font-size: 0.8125rem !important;
+    font-weight: 500;
+    color: #334155 !important;
+    padding: 10px 16px !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.4) !important;
+}
+
+:deep(.v-table tr:last-child td) {
+    border-bottom: none !important;
+}
+
+:deep(.v-table tr:hover td) {
+    background: rgba(99, 102, 241, 0.04) !important;
+}
+
+/* Input fields in table */
+:deep(.v-table .v-text-field) {
+    margin: 0 !important;
+}
+
+:deep(.v-table .v-field) {
+    min-height: 36px !important;
+    font-size: 0.8125rem !important;
+}
+
+/* Section dividers */
+div[style*="margin-bottom: 20px"] {
+    margin-bottom: 24px !important;
+}
+
+div[style*="margin-bottom: -8px"] {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.6875rem !important;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px !important;
+}
+</style>

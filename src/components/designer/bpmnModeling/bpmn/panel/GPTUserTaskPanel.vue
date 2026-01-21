@@ -11,6 +11,28 @@
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
+                <!-- System Name / Menu Name -->
+                <v-row class="ma-0 pa-0 mb-4">
+                    <v-col cols="6" class="pa-0 pr-2">
+                        <v-text-field
+                            v-model="activity.systemName"
+                            :label="$t('BpmnPropertyPanel.systemName') || 'System Name'"
+                            :disabled="isViewMode"
+                            density="compact"
+                            variant="outlined"
+                        ></v-text-field>
+                    </v-col>
+                    <v-col cols="6" class="pa-0 pl-2">
+                        <v-text-field
+                            v-model="activity.menuName"
+                            :label="$t('BpmnPropertyPanel.menuName') || 'Menu Name'"
+                            :disabled="isViewMode"
+                            density="compact"
+                            variant="outlined"
+                        ></v-text-field>
+                    </v-col>
+                </v-row>
+
                 <!-- Duration -->
                 <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
                 
@@ -167,7 +189,9 @@ export default {
                 orchestration: null,
                 tool: '',
                 inputData: [],
-                customProperties: []
+                customProperties: [],
+                systemName: '',
+                menuName: ''
             },
             formId: '',
             tempFormHtml: '',
@@ -206,6 +230,8 @@ export default {
             if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
             if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
             if (this.copyUengineProperties.customProperties !== undefined) this.activity.customProperties = this.copyUengineProperties.customProperties;
+            if (this.copyUengineProperties.systemName !== undefined) this.activity.systemName = this.copyUengineProperties.systemName;
+            if (this.copyUengineProperties.menuName !== undefined) this.activity.menuName = this.copyUengineProperties.menuName;
         }
 
         if (this.activity.inputData) {
@@ -369,7 +395,9 @@ export default {
                 attachments: me.activity.attachments,
                 inputData: me.activity.inputData,
                 tool: me.activity.tool,
-                customProperties: me.activity.customProperties
+                customProperties: me.activity.customProperties,
+                systemName: me.activity.systemName,
+                menuName: me.activity.menuName
             };
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);

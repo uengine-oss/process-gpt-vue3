@@ -399,6 +399,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     let customStrokeColor = 'none';
     let hasIndividualColor = false;
 
+    let systemName = '';
+    let menuName = '';
+
     const extensionElements = element.businessObject?.extensionElements;
     if (extensionElements && extensionElements.values) {
       const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
@@ -411,6 +414,12 @@ export default class CustomBpmnRenderer extends BaseRenderer {
           }
           if (props.taskStrokeColor) {
             customStrokeColor = props.taskStrokeColor;
+          }
+          if (props.systemName) {
+            systemName = props.systemName;
+          }
+          if (props.menuName) {
+            menuName = props.menuName;
           }
         } catch (e) {
           // Ignore JSON parse errors
@@ -484,6 +493,27 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       }
     };
     requestAnimationFrame(applyTextColor);
+
+    // Display System Name / Menu Name below the Task
+    if (systemName || menuName) {
+      const labelParts = [];
+      if (systemName) labelParts.push(systemName);
+      if (menuName) labelParts.push(menuName);
+      const labelText = labelParts.join(' / ');
+
+      const metaLabel = svgCreate('text');
+      svgAttr(metaLabel, {
+        x: existingWidth / 2,
+        y: existingHeight + 14,
+        'text-anchor': 'middle',
+        'font-size': '10px',
+        'font-family': 'Arial, sans-serif',
+        'fill': '#666666',
+        'font-style': 'italic'
+      });
+      metaLabel.textContent = `[${labelText}]`;
+      svgAppend(parentNode, metaLabel);
+    }
   }
 
   // StartEvnet 관련

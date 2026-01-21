@@ -2,7 +2,7 @@
     <v-card
         elevation="10"
         style="background-color: rgba(255, 255, 255, 0)"
-        :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }"
+        :class="{ 'is-deleted': isDeleted, 'user-left-part': !canEdit }"
     >
         <v-card v-if="isConsultingMode">
             <div :key="chatRenderKey">
@@ -46,7 +46,7 @@
              :customMenuName="projectName"
         >
             <template v-slot:leftpart>
-                <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
+                <h5 v-if="!canEdit" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
                     {{ projectName }}
                 </h5>
                 <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
@@ -61,7 +61,7 @@
                     :isXmlMode="isXmlMode"
                     :definitionPath="fullPath"
                     :definitionChat="this"
-                    :isAdmin="isAdmin"
+                    :isAdmin="canEdit"
                     :generateFormTask="generateFormTask"
                     :isPreviewPDFDialog="isPreviewPDFDialog"
                     @closePDFDialog="isPreviewPDFDialog = false"
@@ -140,7 +140,7 @@
                 </v-dialog>
             </template>
             <template v-slot:rightpart>
-                <div v-if="isAdmin" class="process-consulting-ai-second-screen no-scrollbar">
+                <div v-if="canEdit" class="process-consulting-ai-second-screen no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -166,7 +166,7 @@
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @beforeRestore="beforeRestore" @savePDF="savePDF"
+                                @beforeRestore="beforeRestore" @savePDF="savePDF" @capturePng="capturePng"
                                 @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess" />
                         </template>
                     </Chat>
@@ -176,7 +176,7 @@
             <template v-slot:mobileLeftContent>
                 <div class="process-consulting-ai-third-screen chat-info-view-wrapper">
                     <Chat
-                        v-if="isAdmin"
+                        v-if="canEdit"
                         :prompt="prompt"
                         :name="projectName"
                         :messages="messages"
@@ -200,6 +200,7 @@
                                 @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
+                                @savePDF="savePDF" @capturePng="capturePng"
                                 @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess" />
                         </template>
                     </Chat>
@@ -277,6 +278,7 @@
 <script>
 import partialParse from 'partial-json-parser';
 import xml2js from 'xml2js';
+import domtoimage from 'dom-to-image';
 
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
@@ -387,12 +389,14 @@ export default {
         useCrewAI: false, // 테스트용 플래그
         crewAIBaseURL: 'http://localhost:8000',
         crewAISessionId: null,
-        
+
         // 실시간 JSON 파싱용
         accumulatedJSON: '',
         lastParsedJSON: null,
         isRetry: false,
         retryCount: 0,
+        // 권한 관련
+        hasWritePermission: false, // 현재 프로세스에 대한 수정 권한
     }),
     async created() {
         $try(async () => {
@@ -525,6 +529,10 @@ export default {
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
             return isAdmin;
+        },
+        // 편집 가능 여부: 관리자이거나 수정 권한이 있는 경우
+        canEdit() {
+            return this.isAdmin || this.hasWritePermission;
         },
         mode(){
             return window.$mode;
@@ -1089,23 +1097,44 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    const lockObj = await me.getData(`lock/${defId}`, { key: 'id' });
-                    if (lockObj && lockObj.id && lockObj.user_id) {
-                        me.editUser = lockObj.user_id;
-                        if (lockObj.user_id == this.userInfo.name) {
-                            me.lock = false;
-                            me.disableChat = false;
-                            me.isViewMode = false;
+                    // 비관리자 writable 권한 사용자는 lock 메커니즘 없이 바로 편집 모드
+                    if (!me.isAdmin && me.hasWritePermission) {
+                        me.editUser = me.userInfo?.name || '';
+                        me.lock = false;
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                        return;
+                    }
+
+                    // 관리자는 기존 lock 메커니즘 사용
+                    try {
+                        const lockObj = await me.getData(`lock/${defId}`, { key: 'id' });
+                        if (lockObj && lockObj.id && lockObj.user_id) {
+                            me.editUser = lockObj.user_id;
+                            if (lockObj.user_id == this.userInfo.name) {
+                                me.lock = false;
+                                me.disableChat = false;
+                                me.isViewMode = false;
+                            } else {
+                                me.lock = true;
+                                me.disableChat = true;
+                                me.isViewMode = true;
+                            }
                         } else {
+                            me.editUser = '';
                             me.lock = true;
                             me.disableChat = true;
                             me.isViewMode = true;
                         }
-                    } else {
-                        me.editUser = '';
-                        me.lock = true;
-                        me.disableChat = true;
-                        me.isViewMode = true;
+                    } catch (e) {
+                        console.warn('[checkedLock] Lock 확인 실패:', e);
+                        // Lock 확인 실패 시 writable 권한이 있으면 편집 허용
+                        if (me.hasWritePermission) {
+                            me.editUser = me.userInfo?.name || '';
+                            me.lock = false;
+                            me.disableChat = false;
+                            me.isViewMode = false;
+                        }
                     }
                 }
             });
@@ -1117,11 +1146,17 @@ export default {
                 action: async () => {
                     if (me.lock) {
                         // 잠금 > 수정가능 하도록
-                        if (me.processDefinition && me.useLock) {
-                            await backend.setLock({
-                                id: me.processDefinition.processDefinitionId,
-                                user_id: me.userInfo.name
-                            });
+                        // 관리자만 lock 테이블에 접근 가능 (RLS 정책)
+                        // 비관리자 writable 권한 사용자는 lock 없이 편집
+                        if (me.processDefinition && me.useLock && me.isAdmin) {
+                            try {
+                                await backend.setLock({
+                                    id: me.processDefinition.processDefinitionId,
+                                    user_id: me.userInfo.name
+                                });
+                            } catch (e) {
+                                console.warn('[toggleLock] Lock 설정 실패 (권한 없음):', e);
+                            }
                         }
                         me.editUser = me.userInfo.name;
                         me.disableChat = false;
@@ -1241,25 +1276,25 @@ export default {
                             me.afterLoadBpmn();
                         }
 
-                        // const role = localStorage.getItem('role');
-                        // if (role !== 'superAdmin') {
-                        //     // 수정 권한 체크
-                        //     const permission = await me.checkPermission(lastPath);
-                        //     if (permission && permission.writable) {
-                        //         me.isEditable = true;
-                        //         me.checkedLock(lastPath);
-                        //     } else if (permission && !permission.writable) {
-                        //         me.isEditable = false;
-                        //         me.lock = true;
-                        //         me.disableChat = true;
-                        //         me.isViewMode = true;
-                        //     }
-                        // } else {
-                        //     me.isEditable = true;
-                        //     me.checkedLock(lastPath);
-                        // }
-                        me.isEditable = true;
-                        me.checkedLock(lastPath);
+                        // 수정 권한 체크
+                        const role = localStorage.getItem('role');
+                        if (role !== 'superAdmin' && !me.isAdmin) {
+                            const permission = await backend.checkProcessPermission(lastPath);
+                            me.hasWritePermission = permission.writable || permission.isPublic;
+                            if (permission.writable || permission.isPublic) {
+                                me.isEditable = true;
+                                me.checkedLock(lastPath);
+                            } else {
+                                me.isEditable = false;
+                                me.lock = true;
+                                me.disableChat = true;
+                                me.isViewMode = true;
+                            }
+                        } else {
+                            me.hasWritePermission = true;
+                            me.isEditable = true;
+                            me.checkedLock(lastPath);
+                        }
                     } else {
                         // uEngine 모드
                         me.isEditable = true;
@@ -2044,6 +2079,26 @@ export default {
         savePDF() {
             this.isPreviewPDFDialog = false;
             this.isPreviewPDFDialog = true;
+        },
+        capturePng() {
+            const definitionComponent = this.$refs.definitionComponent;
+            if (!definitionComponent || !definitionComponent.$el) {
+                console.error('Definition component not found');
+                return;
+            }
+
+            domtoimage.toPng(definitionComponent.$el, { bgcolor: 'white' })
+                .then((dataUrl) => {
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = `${this.projectName || 'process_diagram'}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch((error) => {
+                    console.error('PNG capture failed:', error);
+                });
         },
         async checkPermission(id) {
             const uid = localStorage.getItem('uid');

@@ -348,6 +348,34 @@
         "filterByOrganization": "조직 필터",
         "editingEnded": "{name} 님이 수정을 완료했습니다. 이제 수정할 수 있습니다."
     },
+    "permissionDialog": {
+        "title": "접근 권한 설정",
+        "permissionLevel": "권한 적용 범위",
+        "levelSub": "현재 프로세스만",
+        "levelMajor": "Major 프로세스 전체 (하위 Sub 포함)",
+        "levelMega": "Mega 프로세스 전체 (하위 Major/Sub 포함)",
+        "levelDomain": "Domain 전체 (해당 도메인의 모든 프로세스)",
+        "publicAccess": "모두에게 공개 (아래 설정 무시)",
+        "addTarget": "대상 추가",
+        "tabUser": "사용자",
+        "tabOrganization": "조직",
+        "tabOrgGroup": "조직 그룹",
+        "searchUser": "사용자 검색",
+        "searchOrganization": "조직 검색",
+        "searchOrgGroup": "조직 그룹 검색",
+        "permissionList": "권한 목록",
+        "name": "이름",
+        "type": "유형",
+        "view": "조회",
+        "execute": "실행",
+        "edit": "수정",
+        "noPermissions": "설정된 권한이 없습니다. 위에서 대상을 추가해주세요.",
+        "typeUser": "사용자",
+        "typeOrg": "조직",
+        "typeGroup": "그룹",
+        "save": "저장",
+        "cancel": "취소"
+    },
     "metricsView": {
         "domain": "Domain",
         "addDomain": "Domain 추가",
@@ -738,7 +766,9 @@
         "schemaProperties": "일반 속성",
         "taskColor": "작업 색상",
         "customColor": "사용자 정의 색상",
-        "resetColor": "초기화"
+        "resetColor": "초기화",
+        "systemName": "시스템명",
+        "menuName": "메뉴명"
     },
     "KeyValueField": {
         "add": "추가",

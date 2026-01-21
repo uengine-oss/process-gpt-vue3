@@ -339,8 +339,16 @@ export default {
             if (!activity) return;
             var me = this;
             const query = `[Description]\n${activity.description}\n\n[Instruction]\n${activity.instruction}`;
-            const agentMode = activity.agentMode && activity.agentMode !== 'none' ? activity.agentMode.toUpperCase() : null;
-            const agentOrch = activity.orchestration && activity.orchestration !== 'none' ? activity.orchestration : null;
+
+            // enum 유효성 검사
+            const validAgentModes = ['DRAFT', 'COMPLETE'];
+            const validAgentOrch = ['crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a', 'visionparse'];
+
+            const rawAgentMode = activity.agentMode && activity.agentMode !== 'none' ? activity.agentMode.toUpperCase() : null;
+            const agentMode = rawAgentMode && validAgentModes.includes(rawAgentMode) ? rawAgentMode : null;
+
+            const rawAgentOrch = activity.orchestration && activity.orchestration !== 'none' ? activity.orchestration : null;
+            const agentOrch = rawAgentOrch && validAgentOrch.includes(rawAgentOrch) ? rawAgentOrch : null;
             let userId = localStorage.getItem('uid');
             let username = localStorage.getItem('userName');
             if (agentMode && activity.agent && activity.agent !== 'none') {

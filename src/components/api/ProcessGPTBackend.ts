@@ -354,7 +354,10 @@ class ProcessGPTBackend implements Backend {
 
         return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
     }
-
+    /**
+        process instance 실행 -> Completed (task)
+        
+    */
     async start(input: any) {
         try {
             var me = this;
@@ -1147,18 +1150,25 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
-                if (isPal) {
-                    const usePermissions = await this.checkUsePermissions();
-                    const role = localStorage.getItem('role');
-                    if (role == 'superAdmin' || !usePermissions) {
-                        return procMap.value;
-                    } else {
-                        const filteredMap = await this.filterProcDefMap(procMap.value);
-                        return filteredMap;
-                    }
-                } else {
+
+                // 권한 체크: PAL 모드 여부와 관계없이 권한이 설정되어 있으면 필터링 적용
+                const usePermissions = await this.checkUsePermissions();
+                const role = localStorage.getItem('role');
+                const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+                // superAdmin이거나 권한 설정이 없으면 전체 반환
+                if (role === 'superAdmin' || !usePermissions) {
                     return procMap.value;
                 }
+
+                // 관리자는 전체 볼 수 있음 (권한 설정은 일반 사용자에게만 적용)
+                if (isAdmin) {
+                    return procMap.value;
+                }
+
+                // 일반 사용자는 권한에 따라 필터링
+                const filteredMap = await this.filterProcDefMap(procMap.value);
+                return filteredMap;
             }
             return {};
         } catch (error) {
@@ -1373,59 +1383,215 @@ class ProcessGPTBackend implements Backend {
 
 
     async filterProcDefMap(map: any) {
-        // 사용자 권한에 따라 필터링
+        // 사용자 권한에 따라 필터링 (user, organization, org_group 모두 체크)
         const uid = localStorage.getItem('uid');
-        const permissions = await storage.list('user_permissions', { match: { user_id: uid } });
-        if (!permissions || permissions.length === 0) {
+        if (!uid) {
             return {};
         }
-        const processList = permissions.map((permission: any) => permission.proc_def_ids);
-        let filteredMap: any = {};
 
-        if (processList.length > 0) {
-            function removeDuplicates(processList: any) {
-                const uniqueByIdAndName = (array: any) => {
-                    const seen = new Map();
-                    return array.filter((item: any) => {
-                        const key = `${item.id}-${item.name}`;
-                        if (seen.has(key)) {
-                            const existingItem = seen.get(key);
-                            if (item.major_proc_list && existingItem.major_proc_list) {
-                                existingItem.major_proc_list = item.major_proc_list.length > existingItem.major_proc_list.length ? item.major_proc_list : existingItem.major_proc_list;
-                            }
-                            if (item.sub_proc_list && existingItem.sub_proc_list) {
-                                existingItem.sub_proc_list = item.sub_proc_list.length > existingItem.sub_proc_list.length ? item.sub_proc_list : existingItem.sub_proc_list;
-                            }
-                            return false;
+        try {
+            // 1. 사용자의 조직 목록 가져오기
+            const { getCurrentUserOrganizations } = await import('@/utils/organizationUtils');
+            const userOrganizations = await getCurrentUserOrganizations();
+
+            // 2. 사용자가 속한 조직 그룹 가져오기
+            let userOrgGroupIds: string[] = [];
+            if (userOrganizations.length > 0) {
+                try {
+                    const orgGroups = await this.getOrgChartGroupList();
+                    for (const group of orgGroups) {
+                        // group.team_ids 배열에 사용자 조직이 포함되어 있는지 확인
+                        const groupTeams = await storage.list('org_chart_group_teams', { match: { group_id: group.id } });
+                        const groupTeamIds = groupTeams.map((t: any) => t.team_id);
+                        const hasUserOrg = userOrganizations.some(orgId => groupTeamIds.includes(orgId));
+                        if (hasUserOrg) {
+                            userOrgGroupIds.push(group.id);
                         }
-                        seen.set(key, item);
-                        return true;
-                    });
-                };
-
-                processList = uniqueByIdAndName(processList);
-
-                return processList.map((megaProc: any) => {
-                    if (megaProc.major_proc_list) {
-                        megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map((majorProc: any) => {
-                            majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
-                            return majorProc;
-                        }));
                     }
-                    return megaProc;
-                });
+                } catch (e) {
+                    console.warn('[filterProcDefMap] 조직 그룹 조회 실패:', e);
+                }
             }
 
-            const uniqueProcessList = removeDuplicates(processList);
-            filteredMap = {
-                mega_proc_list: uniqueProcessList
+            // 3. 모든 유형의 권한 조회 (user, organization, org_group)
+            const allPermissions: any[] = [];
+
+            // 3-1. 직접 사용자 권한 (target_type='user' 또는 legacy 권한)
+            const userPermissions = await storage.list('user_permissions', {
+                match: { user_id: uid, tenant_id: window.$tenantName }
+            });
+            if (userPermissions && userPermissions.length > 0) {
+                // target_type이 'user'이거나 없는 경우만 추가 (legacy 호환)
+                const filteredUserPerms = userPermissions.filter(
+                    (p: any) => !p.target_type || p.target_type === 'user'
+                );
+                allPermissions.push(...filteredUserPerms);
             }
-        } else {
-            filteredMap = {
-                mega_proc_list: []
+
+            // 3-2. 조직 권한 (사용자가 속한 조직에 부여된 권한)
+            for (const orgId of userOrganizations) {
+                const orgPermissions = await storage.list('user_permissions', {
+                    match: { organization_id: orgId, target_type: 'organization', tenant_id: window.$tenantName }
+                });
+                if (orgPermissions && orgPermissions.length > 0) {
+                    allPermissions.push(...orgPermissions);
+                }
+            }
+
+            // 3-3. 조직 그룹 권한
+            for (const groupId of userOrgGroupIds) {
+                const groupPermissions = await storage.list('user_permissions', {
+                    match: { org_group_id: groupId, target_type: 'org_group', tenant_id: window.$tenantName }
+                });
+                if (groupPermissions && groupPermissions.length > 0) {
+                    allPermissions.push(...groupPermissions);
+                }
+            }
+
+            // 4. 모든 권한에서 사용자에게 readable이 true인 프로세스 ID 추출
+            const accessibleProcDefIds = new Set<string>();
+            for (const permission of allPermissions) {
+                if (permission.readable === true) {
+                    if (permission.proc_def_id) {
+                        accessibleProcDefIds.add(permission.proc_def_id);
+                    }
+                    if (permission.proc_def_ids) {
+                        this.extractProcDefIds(permission.proc_def_ids, accessibleProcDefIds);
+                    }
+                }
+            }
+
+            // 5. 권한이 설정된 모든 프로세스 ID 조회 (제한된 프로세스 목록)
+            const restrictedProcDefIds = new Set<string>();
+            try {
+                const allDefinedPermissions = await storage.list('user_permissions', {
+                    match: { tenant_id: window.$tenantName }
+                });
+                if (allDefinedPermissions && allDefinedPermissions.length > 0) {
+                    for (const perm of allDefinedPermissions) {
+                        if (perm.proc_def_id) {
+                            restrictedProcDefIds.add(perm.proc_def_id);
+                        }
+                        if (perm.proc_def_ids) {
+                            this.extractProcDefIds(perm.proc_def_ids, restrictedProcDefIds);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[filterProcDefMap] 전체 권한 목록 조회 실패:', e);
+            }
+
+            // 6. 원본 맵에서 필터링
+            // - 권한이 정의되지 않은 프로세스: 모두에게 공개 (표시)
+            // - 권한이 정의된 프로세스: 사용자에게 readable 권한이 있어야 표시
+            if (!map || !map.mega_proc_list) {
+                return {};
+            }
+
+            const isProcessAllowed = (procId: string): boolean => {
+                // 권한이 정의되지 않은 프로세스는 공개
+                if (!restrictedProcDefIds.has(procId)) {
+                    return true;
+                }
+                // 권한이 정의된 프로세스는 사용자에게 접근 권한이 있어야 함
+                return accessibleProcDefIds.has(procId);
+            };
+
+            const filteredMegaList = map.mega_proc_list
+                .map((mega: any) => {
+                    if (!mega) return null;
+
+                    // mega 프로세스가 허용되는지 확인
+                    const megaAllowed = isProcessAllowed(mega.id);
+
+                    // major_proc_list 필터링
+                    let filteredMajorList: any[] = [];
+                    if (mega.major_proc_list) {
+                        filteredMajorList = mega.major_proc_list
+                            .map((major: any) => {
+                                if (!major) return null;
+
+                                // major 프로세스가 허용되는지 확인
+                                const majorAllowed = megaAllowed || isProcessAllowed(major.id);
+
+                                // sub_proc_list 필터링
+                                let filteredSubList: any[] = [];
+                                if (major.sub_proc_list) {
+                                    filteredSubList = major.sub_proc_list.filter((sub: any) =>
+                                        sub && (majorAllowed || isProcessAllowed(sub.id))
+                                    );
+                                }
+
+                                // major가 허용되거나 허용된 sub가 있으면 포함
+                                if (majorAllowed || filteredSubList.length > 0) {
+                                    return {
+                                        ...major,
+                                        sub_proc_list: majorAllowed ? major.sub_proc_list : filteredSubList
+                                    };
+                                }
+                                return null;
+                            })
+                            .filter((m: any) => m !== null);
+                    }
+
+                    // mega가 허용되거나 허용된 major가 있으면 포함
+                    if (megaAllowed || filteredMajorList.length > 0) {
+                        return {
+                            ...mega,
+                            major_proc_list: megaAllowed ? mega.major_proc_list : filteredMajorList
+                        };
+                    }
+                    return null;
+                })
+                .filter((m: any) => m !== null);
+
+            return {
+                mega_proc_list: filteredMegaList
+            };
+        } catch (error) {
+            console.error('[filterProcDefMap] 권한 필터링 오류:', error);
+            return {};
+        }
+    }
+
+    /**
+     * proc_def_ids 구조에서 모든 프로세스 ID를 추출
+     * @param procDefIds - 프로세스 정의 구조 (mega/major/sub 레벨)
+     * @param idSet - ID를 저장할 Set
+     */
+    private extractProcDefIds(procDefIds: any, idSet: Set<string>): void {
+        if (!procDefIds) return;
+
+        // 현재 노드의 ID 추가
+        if (procDefIds.id) {
+            idSet.add(procDefIds.id);
+        }
+
+        // major_proc_list (mega 레벨)
+        if (procDefIds.major_proc_list && Array.isArray(procDefIds.major_proc_list)) {
+            for (const major of procDefIds.major_proc_list) {
+                if (major && major.id) {
+                    idSet.add(major.id);
+                }
+                // sub_proc_list
+                if (major && major.sub_proc_list && Array.isArray(major.sub_proc_list)) {
+                    for (const sub of major.sub_proc_list) {
+                        if (sub && sub.id) {
+                            idSet.add(sub.id);
+                        }
+                    }
+                }
             }
         }
-        return filteredMap;
+
+        // sub_proc_list (major 레벨 - major_proc_list 없이 바로 sub_proc_list가 있는 경우)
+        if (procDefIds.sub_proc_list && Array.isArray(procDefIds.sub_proc_list)) {
+            for (const sub of procDefIds.sub_proc_list) {
+                if (sub && sub.id) {
+                    idSet.add(sub.id);
+                }
+            }
+        }
     }
 
     async mergeProcessMaps(oldValue: any, newValue: any) {
@@ -1829,10 +1995,76 @@ class ProcessGPTBackend implements Backend {
                 version: (workItem as any).version || null,
             };
 
-            return await me.executeInstance(input);
+            // Task 실행 속성 저장 (시작)
+            await me.saveTaskExecutionStarted(workItem);
+
+            const result = await me.executeInstance(input);
+
+            // Task 실행 완료 상태 업데이트
+            if (result && !result.error) {
+                await me.updateTaskExecutionCompletion({
+                    procInstId: workItem.proc_inst_id,
+                    activityId: workItem.activity_id,
+                    status: 'COMPLETED'
+                });
+            } else {
+                await me.updateTaskExecutionCompletion({
+                    procInstId: workItem.proc_inst_id,
+                    activityId: workItem.activity_id,
+                    status: 'FAILED'
+                });
+            }
+
+            return result;
 
         } catch (error) {
             return error;
+        }
+    }
+
+    /**
+     * Task 실행 시작 시 속성 저장 (내부 헬퍼)
+     */
+    private async saveTaskExecutionStarted(workItem: any) {
+        try {
+            // 프로세스 정의에서 activity 속성 조회
+            const execDef = await this.getExecutionDefinition(workItem.proc_def_id);
+            if (!execDef || !execDef.definition || !execDef.definition.activities) {
+                return;
+            }
+
+            const activity = execDef.definition.activities.find(
+                (act: any) => act.id === workItem.activity_id
+            );
+
+            if (activity) {
+                await this.saveTaskExecutionProperties({
+                    procDefId: workItem.proc_def_id,
+                    procInstId: workItem.proc_inst_id,
+                    activityId: workItem.activity_id,
+                    activityName: activity.name || workItem.title,
+                    todoId: workItem.id,
+                    properties: {
+                        role: activity.role,
+                        duration: activity.duration,
+                        instruction: activity.instruction,
+                        description: activity.description,
+                        checkpoints: activity.checkpoints,
+                        agent: activity.agent,
+                        agentMode: activity.agentMode,
+                        orchestration: activity.orchestration,
+                        tool: activity.tool,
+                        inputData: activity.inputData,
+                        customProperties: activity.customProperties,
+                        systemName: activity.systemName,
+                        menuName: activity.menuName
+                    },
+                    executorEmail: localStorage.getItem('email')
+                });
+            }
+        } catch (error) {
+            // 저장 실패해도 프로세스 실행은 계속
+            console.error('Failed to save task execution properties:', error);
         }
     }
 
@@ -3289,7 +3521,23 @@ class ProcessGPTBackend implements Backend {
 
     async putUserPermission(permission: any) {
         try {
-            await storage.putObject('user_permissions', permission);
+            // ID 생성: target_type에 따라 다른 조합 사용
+            let idSuffix = '';
+            if (permission.target_type === 'user') {
+                idSuffix = permission.user_id;
+            } else if (permission.target_type === 'organization') {
+                idSuffix = permission.organization_id;
+            } else if (permission.target_type === 'org_group') {
+                idSuffix = permission.org_group_id;
+            }
+
+            const permissionData = {
+                ...permission,
+                id: `${permission.proc_def_id}_${idSuffix}`,
+                tenant_id: window.$tenantName
+            };
+
+            await storage.putObject('user_permissions', permissionData);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3307,10 +3555,11 @@ class ProcessGPTBackend implements Backend {
 
     /**
      * 사용자별 프로세스 권한 체크
-     * @param options 
+     * @param options
      *  proc_def_id: 프로세스 정의 ID
      *  user_id: 사용자 ID
-     * @returns 
+     *  user_organizations: 사용자 소속 조직 ID 배열 (선택)
+     * @returns
      */
     async getUserPermissions(options: any) {
         try {
@@ -3320,17 +3569,185 @@ class ProcessGPTBackend implements Backend {
                     p_user_id: options.user_id,
                     p_proc_def_id: options.proc_def_id
                 }
+                // 조직 정보가 있으면 추가
+                if (options.user_organizations) {
+                    filter.p_user_organizations = options.user_organizations;
+                }
             } else if (options.proc_def_id && !options.user_id) {
                 filter = {
                     p_proc_def_id: options.proc_def_id
                 }
             }
-            const result = await storage.callProcedure('check_process_permission', filter);
-            if (result && result.length > 0) {
-                return result;
-            } else {
-                return null;
+
+            // v2 함수 우선 시도, 없으면 기존 함수 사용
+            try {
+                const result = await storage.callProcedure('check_process_permission_v2', filter);
+                if (result && result.length > 0) {
+                    return result;
+                }
+            } catch (e) {
+                // v2 함수가 없으면 기존 함수 사용
+                const result = await storage.callProcedure('check_process_permission', filter);
+                if (result && result.length > 0) {
+                    return result;
+                }
             }
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 조직 그룹 목록 조회
+     * @returns org_chart_groups 목록
+     */
+    async getOrgChartGroupList() {
+        try {
+            const filter = {
+                match: { tenant_id: window.$tenantName },
+                orderBy: 'name',
+                sort: 'asc'
+            };
+            const result = await storage.list('org_chart_groups', filter);
+            return result || [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 프로세스에 대한 병합된 권한 조회 (사용자의 모든 권한 OR 병합)
+     * @param options proc_def_id, user_id, user_organizations
+     * @returns { has_readable, has_executable, has_writable }
+     */
+    async getMergedPermission(options: any) {
+        try {
+            const filter = {
+                p_proc_def_id: options.proc_def_id,
+                p_user_id: options.user_id,
+                p_user_organizations: options.user_organizations || []
+            };
+            const result = await storage.callProcedure('get_merged_permission', filter);
+            if (result && result.length > 0) {
+                return result[0];
+            }
+            return { has_readable: false, has_executable: false, has_writable: false };
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 현재 사용자의 특정 프로세스에 대한 권한 체크
+     * 직접 쿼리로 사용자, 조직, 조직그룹 권한을 모두 확인하여 병합
+     * @param procDefId 프로세스 정의 ID
+     * @returns { readable, executable, writable, isPublic }
+     */
+    async checkProcessPermission(procDefId: string): Promise<{readable: boolean, executable: boolean, writable: boolean, isPublic: boolean}> {
+        try {
+            const uid = localStorage.getItem('uid');
+            const role = localStorage.getItem('role');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+            // superAdmin 또는 admin은 모든 권한 있음
+            if (role === 'superAdmin' || isAdmin) {
+                return { readable: true, executable: true, writable: true, isPublic: false };
+            }
+
+            if (!uid) {
+                return { readable: false, executable: false, writable: false, isPublic: false };
+            }
+
+            // 해당 프로세스에 정의된 모든 권한 조회
+            const allPermissions = await storage.list('user_permissions', {
+                match: { proc_def_id: procDefId, tenant_id: window.$tenantName }
+            });
+
+            // 권한이 정의되지 않은 프로세스는 공개 (모든 권한 있음)
+            if (!allPermissions || allPermissions.length === 0) {
+                return { readable: true, executable: true, writable: true, isPublic: true };
+            }
+
+            // 사용자의 조직 목록 가져오기
+            const { getCurrentUserOrganizations } = await import('@/utils/organizationUtils');
+            const userOrganizations = await getCurrentUserOrganizations();
+
+            // 사용자가 속한 조직 그룹 가져오기
+            let userOrgGroupIds: string[] = [];
+            if (userOrganizations.length > 0) {
+                try {
+                    const orgGroups = await this.getOrgChartGroupList();
+                    for (const group of orgGroups) {
+                        const groupTeams = await storage.list('org_chart_group_teams', { match: { group_id: group.id } });
+                        const groupTeamIds = groupTeams.map((t: any) => t.team_id);
+                        const hasUserOrg = userOrganizations.some(orgId => groupTeamIds.includes(orgId));
+                        if (hasUserOrg) {
+                            userOrgGroupIds.push(group.id);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[checkProcessPermission] 조직 그룹 조회 실패:', e);
+                }
+            }
+
+            // 사용자에게 적용되는 권한 필터링
+            const applicablePermissions = allPermissions.filter((p: any) => {
+                // 직접 사용자 권한
+                if (p.target_type === 'user' && p.user_id === uid) {
+                    return true;
+                }
+                // legacy 권한 (target_type 없이 user_id만 있는 경우)
+                if (!p.target_type && p.user_id === uid) {
+                    return true;
+                }
+                // 조직 권한
+                if (p.target_type === 'organization' && userOrganizations.includes(p.organization_id)) {
+                    return true;
+                }
+                // 조직 그룹 권한
+                if (p.target_type === 'org_group' && userOrgGroupIds.includes(p.org_group_id)) {
+                    return true;
+                }
+                return false;
+            });
+
+            // 적용 가능한 권한 병합 (OR 연산)
+            let readable = false;
+            let executable = false;
+            let writable = false;
+
+            for (const perm of applicablePermissions) {
+                if (perm.readable) readable = true;
+                if (perm.executable) executable = true;
+                if (perm.writable) writable = true;
+            }
+
+            return { readable, executable, writable, isPublic: false };
+        } catch (error) {
+            console.error('[checkProcessPermission] 권한 체크 실패:', error);
+            return { readable: false, executable: false, writable: false, isPublic: false };
+        }
+    }
+
+    /**
+     * 프로세스별 권한 목록 조회 (설정된 모든 권한)
+     * @param procDefId 프로세스 정의 ID
+     * @returns 권한 목록
+     */
+    async getPermissionsByProcDef(procDefId: string) {
+        try {
+            const filter = {
+                match: {
+                    proc_def_id: procDefId,
+                    tenant_id: window.$tenantName
+                }
+            };
+            const result = await storage.list('user_permissions', filter);
+            return result || [];
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3347,6 +3764,96 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             console.log(error)
+        }
+    }
+
+    /**
+     * 현재 사용자가 접근 가능한 모든 proc_def_id 목록 조회
+     * 사용자, 조직, 조직그룹 기반 권한 모두 체크
+     * @param permissionType - 'readable' | 'executable' | 'writable'
+     * @returns proc_def_id 배열
+     */
+    async getAccessibleProcDefIds(permissionType: 'readable' | 'executable' | 'writable' = 'readable'): Promise<string[]> {
+        const uid = localStorage.getItem('uid');
+        if (!uid) {
+            return [];
+        }
+
+        try {
+            // 1. 사용자의 조직 목록 가져오기
+            const { getCurrentUserOrganizations } = await import('@/utils/organizationUtils');
+            const userOrganizations = await getCurrentUserOrganizations();
+
+            // 2. 사용자가 속한 조직 그룹 가져오기
+            let userOrgGroupIds: string[] = [];
+            if (userOrganizations.length > 0) {
+                try {
+                    const orgGroups = await this.getOrgChartGroupList();
+                    for (const group of orgGroups) {
+                        const groupTeams = await storage.list('org_chart_group_teams', { match: { group_id: group.id } });
+                        const groupTeamIds = groupTeams.map((t: any) => t.team_id);
+                        const hasUserOrg = userOrganizations.some(orgId => groupTeamIds.includes(orgId));
+                        if (hasUserOrg) {
+                            userOrgGroupIds.push(group.id);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[getAccessibleProcDefIds] 조직 그룹 조회 실패:', e);
+                }
+            }
+
+            // 3. 모든 유형의 권한 조회
+            const allPermissions: any[] = [];
+
+            // 사용자 직접 권한
+            const userPermissions = await storage.list('user_permissions', {
+                match: { user_id: uid, tenant_id: window.$tenantName }
+            });
+            if (userPermissions && userPermissions.length > 0) {
+                const filteredUserPerms = userPermissions.filter(
+                    (p: any) => !p.target_type || p.target_type === 'user'
+                );
+                allPermissions.push(...filteredUserPerms);
+            }
+
+            // 조직 권한
+            for (const orgId of userOrganizations) {
+                const orgPermissions = await storage.list('user_permissions', {
+                    match: { organization_id: orgId, target_type: 'organization', tenant_id: window.$tenantName }
+                });
+                if (orgPermissions && orgPermissions.length > 0) {
+                    allPermissions.push(...orgPermissions);
+                }
+            }
+
+            // 조직 그룹 권한
+            for (const groupId of userOrgGroupIds) {
+                const groupPermissions = await storage.list('user_permissions', {
+                    match: { org_group_id: groupId, target_type: 'org_group', tenant_id: window.$tenantName }
+                });
+                if (groupPermissions && groupPermissions.length > 0) {
+                    allPermissions.push(...groupPermissions);
+                }
+            }
+
+            // 4. 지정된 권한 타입이 있는 것만 필터링
+            const filteredPermissions = allPermissions.filter(p => p[permissionType] === true);
+
+            // 5. proc_def_id 추출
+            const accessibleIds = new Set<string>();
+            for (const permission of filteredPermissions) {
+                if (permission.proc_def_id) {
+                    accessibleIds.add(permission.proc_def_id);
+                }
+                if (permission.proc_def_ids) {
+                    this.extractProcDefIds(permission.proc_def_ids, accessibleIds);
+                }
+            }
+
+            return Array.from(accessibleIds);
+        } catch (error) {
+            console.error('[getAccessibleProcDefIds] 오류:', error);
+            return [];
         }
     }
 
@@ -5571,6 +6078,129 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
         return data?.[0] || { id, is_enabled: isEnabled };
+    }
+
+    // ============================================
+    // Task Execution Properties API (분석용)
+    // ============================================
+
+    /**
+     * Task 실행 시작 시 속성 저장
+     */
+    async saveTaskExecutionProperties(params: {
+        procDefId: string;
+        procInstId: string;
+        activityId: string;
+        activityName?: string;
+        todoId?: string;
+        properties: any;
+        executorEmail?: string;
+    }): Promise<any> {
+        const storage = StorageBaseFactory.getStorage();
+        const props = params.properties || {};
+
+        const data = {
+            id: this.uuid(),
+            tenant_id: window.$tenantName,
+            proc_def_id: params.procDefId,
+            proc_inst_id: params.procInstId,
+            activity_id: params.activityId,
+            activity_name: params.activityName,
+            todo_id: params.todoId,
+
+            // Task 속성
+            role: props.role,
+            duration: props.duration,
+            instruction: props.instruction,
+            description: props.description,
+            checkpoints: props.checkpoints,
+
+            // AI/Agent 속성
+            agent_id: props.agent,
+            agent_mode: props.agentMode !== 'none' ? props.agentMode : null,
+            orchestration: props.orchestration,
+            tool: props.tool,
+
+            // 시스템 정보
+            system_name: props.systemName,
+            menu_name: props.menuName,
+
+            // JSONB 데이터
+            input_data: props.inputData || [],
+            custom_properties: props.customProperties || [],
+
+            // 실행 정보
+            execution_status: 'STARTED',
+            executor_email: params.executorEmail || localStorage.getItem('email')
+        };
+
+        await storage.putObject('task_execution_properties', data);
+        return data;
+    }
+
+    /**
+     * Task 완료 시 상태 업데이트
+     */
+    async updateTaskExecutionCompletion(params: {
+        procInstId: string;
+        activityId: string;
+        status: 'COMPLETED' | 'CANCELLED' | 'FAILED';
+    }): Promise<any> {
+        const storage = StorageBaseFactory.getStorage();
+
+        // 기존 STARTED 상태 레코드 찾기
+        const existingRecord = await storage.getObject('task_execution_properties', {
+            match: {
+                proc_inst_id: params.procInstId,
+                activity_id: params.activityId,
+                execution_status: 'STARTED',
+                tenant_id: window.$tenantName
+            }
+        });
+
+        if (existingRecord && existingRecord.id) {
+            const completedAt = new Date().toISOString();
+            const startedAt = new Date(existingRecord.started_at);
+            const durationMs = new Date(completedAt).getTime() - startedAt.getTime();
+            const durationSeconds = Math.floor(durationMs / 1000);
+
+            await storage.putObject('task_execution_properties', {
+                id: existingRecord.id,
+                execution_status: params.status,
+                completed_at: completedAt,
+                actual_duration: `${durationSeconds} seconds`
+            }, { onConflict: 'id' });
+
+            return { ...existingRecord, execution_status: params.status, completed_at: completedAt };
+        }
+        return null;
+    }
+
+    /**
+     * Task 실행 속성 목록 조회 (분석용)
+     */
+    async getTaskExecutionProperties(options?: {
+        procDefId?: string;
+        systemName?: string;
+        agentMode?: string;
+        dateFrom?: string;
+        dateTo?: string;
+        limit?: number;
+    }): Promise<any[]> {
+        const storage = StorageBaseFactory.getStorage();
+        const queryOptions: any = {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'started_at',
+            sort: 'desc'
+        };
+
+        if (options?.procDefId) queryOptions.match.proc_def_id = options.procDefId;
+        if (options?.systemName) queryOptions.match.system_name = options.systemName;
+        if (options?.agentMode) queryOptions.match.agent_mode = options.agentMode;
+        if (options?.limit) queryOptions.size = options.limit;
+
+        const result = await storage.list('task_execution_properties', queryOptions);
+        return result || [];
     }
 }
 

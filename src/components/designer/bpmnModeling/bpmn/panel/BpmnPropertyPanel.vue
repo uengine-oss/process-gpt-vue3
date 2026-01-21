@@ -103,8 +103,8 @@
                 max-width="1150px"
                 max-height="80vh"
             >
-                <template v-slot:activator="{ on, attrs }">
-                    <v-btn block color="primary" class="panel-download-btn" v-bind="attrs" v-on="on" @click="printDocument">
+                <template v-slot:activator="{ props }">
+                    <v-btn block color="primary" class="panel-download-btn" v-bind="props" @click="printDocument">
                         {{ $t('BpmnPropertyPanel.printDocument') }}
                     </v-btn>
                 </template>
@@ -692,7 +692,9 @@ export default {
 </script>
 
 <style>
-/* View Mode Panel Styles - Compact */
+/* ============================================
+   View Mode Panel Styles
+   ============================================ */
 .view-mode-panel-content {
     background: #ffffff;
     height: 100%;
@@ -708,69 +710,86 @@ export default {
 .view-mode-panel-content > .v-card-text {
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 8px 12px !important;
+    padding: 12px 16px !important;
 }
 
+/* View Mode Header */
 .view-mode-header {
-    background: #ffffff;
+    background: linear-gradient(to right, #f8fafc, #ffffff);
     border-bottom: 1px solid #e2e8f0;
-    padding: 4px 10px !important;
+    padding: 8px 12px !important;
     flex-shrink: 0;
     align-items: center;
-    min-height: 36px !important;
-    max-height: 36px !important;
+    min-height: 44px !important;
 }
 
 .view-mode-title {
-    font-size: 0.85rem !important;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.9375rem !important;
     font-weight: 600 !important;
     color: #1e293b;
-    line-height: 1.2;
+    line-height: 1.3;
     padding: 0 !important;
     margin: 0 !important;
 }
 
 .view-mode-header .v-chip {
-    height: 20px !important;
+    height: 22px !important;
     font-size: 0.7rem !important;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.1) !important;
+    color: #6366f1 !important;
 }
 
 .view-mode-header .panel-close-btn {
-    width: 24px !important;
-    height: 24px !important;
+    width: 32px !important;
+    height: 32px !important;
 }
 
 .view-mode-header .panel-close-btn .v-icon {
-    font-size: 16px !important;
+    font-size: 18px !important;
 }
 
-/* All inputs and interactive elements disabled in view mode */
-.view-mode-panel-content .v-field,
-.view-mode-panel-content .v-input,
-.view-mode-panel-content .v-textarea,
-.view-mode-panel-content .v-select,
-.view-mode-panel-content .v-autocomplete,
-.view-mode-panel-content .v-text-field,
+/* Keep tabs interactive in view mode for navigation */
+.view-mode-panel-content .v-tabs {
+    pointer-events: auto !important;
+}
+
+.view-mode-panel-content .v-tabs .v-tab {
+    pointer-events: auto !important;
+}
+
+/* Disable form inputs in view mode */
+.view-mode-panel-content .v-text-field .v-field,
+.view-mode-panel-content .v-textarea .v-field,
+.view-mode-panel-content .v-select .v-field,
+.view-mode-panel-content .v-autocomplete .v-field,
 .view-mode-panel-content .v-radio-group,
-.view-mode-panel-content .v-radio,
 .view-mode-panel-content .v-checkbox,
 .view-mode-panel-content .v-switch,
 .view-mode-panel-content .v-slider {
     pointer-events: none !important;
 }
 
-/* Hide action buttons in view mode (add/delete/edit buttons inside panel) */
-.view-mode-panel-content .v-card .v-btn:not(.panel-close-btn),
-.view-mode-panel-content .v-row .v-btn:not(.panel-close-btn) {
+/* Hide action buttons in view mode */
+.view-mode-panel-content .v-window-item .v-btn:not(.panel-close-btn):not(.panel-download-btn) {
     display: none !important;
 }
 
-/* But keep the close button visible */
+/* Keep header buttons visible */
 .view-mode-panel-content .panel-close-btn {
     display: inline-flex !important;
     pointer-events: auto !important;
 }
 
+/* Keep print/download button visible in view mode */
+.view-mode-panel-content .panel-download-btn {
+    display: flex !important;
+    pointer-events: auto !important;
+    margin-top: 16px;
+}
+
+/* Make disabled fields look clean */
 .view-mode-panel-content .v-field--disabled,
 .view-mode-panel-content .v-field {
     opacity: 1 !important;
@@ -778,52 +797,47 @@ export default {
 
 .view-mode-panel-content .v-field__input,
 .view-mode-panel-content .v-field textarea {
-    color: #334155 !important;
+    color: #1e293b !important;
+    -webkit-text-fill-color: #1e293b !important;
 }
 
-/* Hide unnecessary elements in view mode */
-.view-mode-panel-content .v-input__append,
-.view-mode-panel-content .v-field__append-inner,
+/* Hide interactive UI elements in view mode */
+.view-mode-panel-content .v-field__append-inner .v-icon,
 .view-mode-panel-content .v-field__clearable {
     display: none !important;
 }
 
-/* View mode card sections */
+/* View mode cards */
 .view-mode-panel-content .v-card {
     box-shadow: none !important;
     border: 1px solid #e2e8f0 !important;
+    background: #f8fafc;
 }
 
-/* Compact spacing */
-.view-mode-panel-content .mb-6 {
+/* Spacing adjustments for view mode */
+.view-mode-panel-content .mb-4 {
+    margin-bottom: 12px !important;
+}
+
+.view-mode-panel-content .v-input {
     margin-bottom: 8px !important;
 }
 
-.view-mode-panel-content .mt-6 {
-    margin-top: 8px !important;
+/* Section labels in view mode */
+.view-mode-panel-content .text-subtitle-1,
+.view-mode-panel-content .text-subtitle-2 {
+    color: #6366f1;
 }
 
-.view-mode-panel-content .pa-4,
-.view-mode-panel-content .pa-2 {
-    padding: 6px !important;
-}
-
+/* Role display styling */
 .view-mode-panel-content .mb-3 {
-    margin-bottom: 4px !important;
-}
-
-/* Hide print button in compact view */
-.view-mode-panel-content .panel-download-btn {
-    display: none !important;
-}
-
-/* Compact input fields */
-.view-mode-panel-content .v-input {
-    margin-bottom: 4px !important;
-}
-
-.view-mode-panel-content .v-field {
-    font-size: 0.875rem;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.8125rem;
+    color: #475569;
+    padding: 8px 12px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    margin-bottom: 12px !important;
 }
 </style>
 

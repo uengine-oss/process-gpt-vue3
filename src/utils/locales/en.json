@@ -358,6 +358,34 @@
         "filterByOrganization": "Organization Filter",
         "editingEnded": "{name} has finished editing. You can now edit."
     },
+    "permissionDialog": {
+        "title": "Access Permission Settings",
+        "permissionLevel": "Permission Scope",
+        "levelSub": "Current process only",
+        "levelMajor": "Entire Major process (including Sub processes)",
+        "levelMega": "Entire Mega process (including Major/Sub processes)",
+        "levelDomain": "Entire Domain (all processes in this domain)",
+        "publicAccess": "Public access (ignores settings below)",
+        "addTarget": "Add Target",
+        "tabUser": "User",
+        "tabOrganization": "Organization",
+        "tabOrgGroup": "Org Group",
+        "searchUser": "Search user",
+        "searchOrganization": "Search organization",
+        "searchOrgGroup": "Search org group",
+        "permissionList": "Permission List",
+        "name": "Name",
+        "type": "Type",
+        "view": "View",
+        "execute": "Execute",
+        "edit": "Edit",
+        "noPermissions": "No permissions set. Add a target above.",
+        "typeUser": "User",
+        "typeOrg": "Org",
+        "typeGroup": "Group",
+        "save": "Save",
+        "cancel": "Cancel"
+    },
     "processDefinitionTree": {
         "search": "Search",
         "uploadExcel": "Upload Excel",
@@ -730,7 +758,9 @@
         "schemaProperties": "General Properties",
         "taskColor": "Task Color",
         "customColor": "Custom Color",
-        "resetColor": "Reset"
+        "resetColor": "Reset",
+        "systemName": "System Name",
+        "menuName": "Menu Name"
     },
     "KeyValueField": {
         "add": "Add",
