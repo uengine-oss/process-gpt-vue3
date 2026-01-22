@@ -85,12 +85,30 @@
                             'selected-node-background': selectedNodeId === node.id,
                         }"
                     >
-                        <span v-if="editingNodeId !== node.id || node.data.type !== 'folder'" class="text-subtitle-1 font-weight-medium text-truncate ml-1">
-                            {{ node.text }}
-                            <v-tooltip activator="parent" location="bottom">
+                        <div v-if="editingNodeId !== node.id || node.data.type !== 'folder'" class="d-inline-flex align-center text-subtitle-1 font-weight-medium text-truncate ml-1">
+                            <span class="text-truncate">
                                 {{ node.text }}
+                                <v-tooltip activator="parent" location="bottom">
+                                    {{ node.text }}
+                                </v-tooltip>
+                            </span>
+                            <v-tooltip 
+                                v-if="node.data.type === 'skill' && node.data.hasWarning"
+                                location="bottom"
+                            >
+                                <template v-slot:activator="{ props }">
+                                    <v-icon 
+                                        v-bind="props"
+                                        size="small" 
+                                        color="warning" 
+                                        class="ml-1"
+                                    >
+                                        mdi-alert-circle
+                                    </v-icon>
+                                </template>
+                                <span>{{ node.data.warningMessage || '스킬을 불러올 수 없습니다' }}</span>
                             </v-tooltip>
-                        </span>
+                        </div>
                         <v-text-field
                             v-else
                             v-model="editingFolderName"
@@ -106,7 +124,7 @@
                         ></v-text-field>
                         <div v-if="node.data.type === 'skill'">
                             <v-btn 
-                                v-if="node.exists"
+                                v-if="node.exists || node.data.hasWarning"
                                 variant="text" 
                                 icon 
                                 size="x-small" color="error" 
@@ -285,47 +303,50 @@ export default {
             }
         },
         async loadSkillFiles() {
-            const tenantInfo = await this.backend.getTenantInfo(window.$tenantName);
-            this.skills = tenantInfo.skills || [];
+            const result = await this.backend.getTenantSkills(window.$tenantName);
+            const tenantSkills = result.skills;
+            this.skills = Array.isArray(tenantSkills) ? tenantSkills : (tenantSkills?.skills || []);
+            console.log(this.skills);
 
             this.nodes = {};
             this.config.roots = [];
             const validSkills = [];
 
-            for (const skillName of this.skills) {
-                let skillId = skillName;
+            for (const skillInfo of this.skills) {
+                let skillId = skillInfo.name;
+                let skillName = skillInfo.name;
+                let hasWarning = false;
+                let warningMessage = '';
+                let skill = null;
+                let files = [];
+                
                 try {
-                    const skillCheck = await this.backend.checkSkills({
-                        skillName: skillName
-                    });
-
-                    if (!skillCheck || skillCheck.exists === false) {
-                        console.warn(`서버에 스킬이 존재하지 않습니다: ${skillName}`);
-                        continue;
-                    }
-
-                    const skill = await this.backend.getSkillFile(skillName);
+                    skill = await this.backend.getSkillFile(skillName);
                     if (!skill || !skill.skill_name) {
                         console.warn(`스킬 파일 정보를 가져올 수 없습니다: ${skillName}`);
-                        continue;
+                        hasWarning = true;
+                        warningMessage = '스킬 파일 정보를 가져올 수 없습니다';
+                    } else {
+                        skillId = skill.skill_name;
+                        files = Array.isArray(skill.files) ? skill.files : [];
+
+                        // 스킬 파일이 없는 경우 경고 표시
+                        if (files.length === 0) {
+                            console.warn(`스킬 파일이 없습니다: ${skillName}`);
+                            hasWarning = true;
+                            warningMessage = '스킬 파일이 없습니다';
+                        } else {
+                            // 유효한 스킬로 추가
+                            validSkills.push(skillId);
+                        }
                     }
 
-                    skillId = skill.skill_name;
-                    const skillText = skillCheck.name || skillId;
-                    const files = Array.isArray(skill.files) ? skill.files : [];
-
-                    // 스킬 파일이 없는 경우 해당 스킬은 제외
-                    if (files.length === 0) {
-                        console.warn(`스킬 파일이 없습니다: ${skillName}`);
-                        continue;
-                    }
-
-                    // 유효한 스킬로 추가
-                    validSkills.push(skillId);
-
+                    // 노드 추가 (경고 여부와 관계없이)
                     if (!this.config.roots.includes(skillId)) {
                         this.config.roots.push(skillId);
                     }
+
+                    const skillText = skill?.skill_name || skillName;
 
                     this.nodes[skillId] = {
                         id: skillId,
@@ -338,72 +359,68 @@ export default {
                             type: 'skill',
                             originalId: skillId,
                             fileCount: files.length,
-                            description: skillCheck.description || '',
-                            source: skillCheck.source || null,
-                            documentCount: skillCheck.document_count ?? null
+                            description: skill?.description || '',
+                            source: skill?.source || null,
+                            documentCount: skill?.document_count ?? null,
+                            hasWarning: hasWarning,
+                            warningMessage: warningMessage
                         },
-                        exists: true
+                        exists: !hasWarning
                     };
 
-                    files.forEach((file, index) => {
-                        const rawPath = (file.path || file.file_name || file.name || '').replace(/\\/g, '/');
-                        const fallbackName = file.file_name || file.name || `file_${index + 1}`;
-                        const segments = (rawPath ? rawPath.split('/') : [fallbackName]).filter(segment => segment && segment.trim().length > 0);
+                    // 경고가 없을 때만 파일 트리 구성
+                    if (!hasWarning && files.length > 0) {
+                        files.forEach((file, index) => {
+                            const rawPath = (file.path || file.file_name || file.name || '').replace(/\\/g, '/');
+                            const fallbackName = file.file_name || file.name || `file_${index + 1}`;
+                            const segments = (rawPath ? rawPath.split('/') : [fallbackName]).filter(segment => segment && segment.trim().length > 0);
 
-                        if (segments.length === 0) {
-                            segments.push(fallbackName);
-                        }
-
-                        let parentId = skillId;
-                        let accumulatedPath = '';
-
-                        segments.forEach((segment, segmentIndex) => {
-                            accumulatedPath = accumulatedPath ? `${accumulatedPath}/${segment}` : segment;
-                            const nodeId = `${skillId}::${accumulatedPath}`;
-                            const isFile = segmentIndex === segments.length - 1;
-
-                            if (!this.nodes[nodeId]) {
-                                this.nodes[nodeId] = {
-                                    id: nodeId,
-                                    text: segment,
-                                    children: [],
-                                    ...(isFile ? {} : {
-                                        state: {
-                                            opened: false
-                                        }
-                                    }),
-                                    data: {
-                                        type: isFile ? 'file' : 'folder',
-                                        originalId: segment,
-                                        path: accumulatedPath,
-                                        size: isFile ? (file.size ?? null) : null,
-                                        modified: isFile ? (file.modified ?? null) : null
-                                    },
-                                    exists: true
-                                };
-                            } else if (isFile) {
-                                this.nodes[nodeId].data.size = file.size ?? null;
-                                this.nodes[nodeId].data.modified = file.modified ?? null;
-                                this.nodes[nodeId].text = segment;
+                            if (segments.length === 0) {
+                                segments.push(fallbackName);
                             }
 
-                            const parentChildren = this.nodes[parentId].children;
-                            if (!parentChildren.includes(nodeId)) {
-                                parentChildren.push(nodeId);
-                            }
+                            let parentId = skillId;
+                            let accumulatedPath = '';
 
-                            parentId = nodeId;
+                            segments.forEach((segment, segmentIndex) => {
+                                accumulatedPath = accumulatedPath ? `${accumulatedPath}/${segment}` : segment;
+                                const nodeId = `${skillId}::${accumulatedPath}`;
+                                const isFile = segmentIndex === segments.length - 1;
+
+                                if (!this.nodes[nodeId]) {
+                                    this.nodes[nodeId] = {
+                                        id: nodeId,
+                                        text: segment,
+                                        children: [],
+                                        ...(isFile ? {} : {
+                                            state: {
+                                                opened: false
+                                            }
+                                        }),
+                                        data: {
+                                            type: isFile ? 'file' : 'folder',
+                                            originalId: segment,
+                                            path: accumulatedPath,
+                                            size: isFile ? (file.size ?? null) : null,
+                                            modified: isFile ? (file.modified ?? null) : null
+                                        },
+                                        exists: true
+                                    };
+                                } else if (isFile) {
+                                    this.nodes[nodeId].data.size = file.size ?? null;
+                                    this.nodes[nodeId].data.modified = file.modified ?? null;
+                                    this.nodes[nodeId].text = segment;
+                                }
+
+                                const parentChildren = this.nodes[parentId].children;
+                                if (!parentChildren.includes(nodeId)) {
+                                    parentChildren.push(nodeId);
+                                }
+
+                                parentId = nodeId;
+                            });
                         });
-                    });
-
-                    this.nodes[skillId].data = {
-                        type: 'skill',
-                        originalId: skillId,
-                        fileCount: files.length,
-                        description: skillCheck.description || '',
-                        source: skillCheck.source || null,
-                        documentCount: skillCheck.document_count ?? null
-                    };
+                    }
 
                 } catch (error) {
                     delete this.nodes[skillId];

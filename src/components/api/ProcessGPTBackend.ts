@@ -5487,7 +5487,8 @@ class ProcessGPTBackend implements Backend {
                 return false;
             }
         } catch (error) {
-            throw new Error(error.detail);
+            console.log(error);
+            return false;
         }
     }
 
@@ -5511,6 +5512,20 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             throw new Error(error.detail);
+        }
+    }
+
+    async getTenantSkills(tenantId: string) {
+        try {
+            const response = await axios.get(`/claude-skills/skills/list?tenant_id=${encodeURIComponent(tenantId)}`);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                return [];
+            }
+        } catch (error) {
+            console.error('테넌트 스킬 목록 조회 실패:', error);
+            return [];
         }
     }
 
