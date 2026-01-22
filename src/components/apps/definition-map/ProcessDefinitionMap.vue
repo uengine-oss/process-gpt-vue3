@@ -284,15 +284,14 @@
                                         @click="selectedDomain = domain.name"
                                     >
                                         {{ domain.name }}
-                                    <v-chip
-                                        v-if="getDomainProcessCount(domain.id) > 0"
-                                        :color="selectedDomain === domain.name ? 'white' : 'default'"
-                                        size="x-small"
-                                        class="ml-2 count-chip"
-                                        :variant="selectedDomain === domain.name ? 'flat' : 'text'"
-                                    >
-                                        {{ getDomainProcessCount(domain.id) }}
-                                    </v-chip>
+                                        <v-chip
+                                            v-if="getDomainProcessCount(domain.id) > 0"
+                                            :color="selectedDomain === domain.name ? 'white' : 'default'"
+                                            size="x-small"
+                                            class="ml-2 count-chip"
+                                            :variant="selectedDomain === domain.name ? 'flat' : 'text'"
+                                        >{{ getDomainProcessCount(domain.id) }}
+                                        </v-chip>
                                         
                                     <!-- 편집 모드일 때 수정/삭제 버튼 -->
                                         <template v-if="enableEdit && selectedDomain === domain.name">
@@ -1799,7 +1798,7 @@ export default {
     background: #ffffff;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     position: sticky;
-    top: 69px; /* Adjust based on header height */
+    top: 73px; /* Adjust based on header height */
     z-index: 10;
 }
 
@@ -1837,6 +1836,17 @@ export default {
 .domain-chip-selected {
     background-color: #757575 !important;
     color: white !important;
+}
+
+/* 카운트 칩 스타일 */
+.count-chip {
+    font-weight: 600;
+}
+
+/* 선택되지 않은 카운트 칩 연한 회색 배경 */
+.domain-chip .count-chip:not(.v-chip--variant-flat) {
+    background-color: rgba(128, 128, 128, 0.15) !important;
+    color: #808080 !important;
 }
 
 .premium-tab .d-flex {
