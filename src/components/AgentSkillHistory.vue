@@ -7,10 +7,10 @@
             </p>
         </div>
         <div>
-            <div v-if="filteredHistoryList.length === 0 && !isLoading" class="text-center py-8">
+            <div v-if="historyList.length === 0 && !isLoading" class="text-center py-8">
                 <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-history</v-icon>
-                <h6 class="text-h6 text-grey">수정 이력이 없습니다</h6>
-                <p class="text-body-2 text-grey">스킬 수정 이력만 표시됩니다. (추가/삭제 제외)</p>
+                <h6 class="text-h6 text-grey">변경 이력이 없습니다</h6>
+                <p class="text-body-2 text-grey">스킬이 변경되면 이력이 표시됩니다.</p>
             </div>
 
             <div v-else-if="historyList.length === 0 && isLoading">
@@ -20,7 +20,7 @@
             <div v-else class="agent-skill-history-table">
                 <v-data-table
                     :headers="headers"
-                    :items="filteredHistoryList"
+                    :items="historyList"
                     :items-per-page="itemsPerPage"
                     :page="page"
                     @update:page="page = $event"
@@ -49,7 +49,7 @@
                         </v-chip>
                     </template>
 
-                    <!-- 변경 내용 컬럼 (수정만 표시, JSON이면 "N개 파일 변경") -->
+                    <!-- 변경 내용 컬럼 -->
                     <template v-slot:item.change_summary="{ item }">
                         <div class="text-body-2">
                             {{ getChangeSummary(item) }}
@@ -64,42 +64,43 @@
                         </div>
                     </template>
 
-                    <!-- Expand 영역 (수정 작업만 오므로 JSON 파일별 diff) -->
+                    <!-- Expand 영역 -->
                     <template v-slot:expanded-row="{ columns, item }">
                         <td :colspan="columns.length">
                             <v-card elevation="10" class="px-4 py-2 expanded-row-content">
                                 <div class="text-body-2 font-weight-medium mb-2">스킬명: {{ item.knowledge_name || item.knowledge_id }}</div>
-                                <div class="d-flex align-center justify-space-between mb-2 flex-wrap ga-2">
-                                    <span class="text-body-2 font-weight-medium">변경사항</span>
-                                    <!-- 되돌리기 / 다시 적용: JSON 파일별 diff일 때만 -->
-                                    <div v-if="getFileDiffPairs(item).length > 0" class="d-flex ga-2">
-                                        <v-btn
-                                            color="orange"
-                                            variant="tonal"
-                                            size="small"
-                                            :loading="revertingItemKey === getItemKey(item)"
-                                            :disabled="!!(revertingItemKey || reapplyingItemKey)"
-                                            @click="revertToPrevious(item)"
-                                        >
-                                            <v-icon start size="small">mdi-undo</v-icon>
-                                            변경 사항 되돌리기
-                                        </v-btn>
-                                        <v-btn
-                                            color="primary"
-                                            variant="tonal"
-                                            size="small"
-                                            :loading="reapplyingItemKey === getItemKey(item)"
-                                            :disabled="!!(revertingItemKey || reapplyingItemKey)"
-                                            @click="reapplyNew(item)"
-                                        >
-                                            <v-icon start size="small">mdi-redo</v-icon>
-                                            다시 적용
-                                        </v-btn>
-                                    </div>
-                                </div>
+                                <div class="text-body-2 font-weight-medium mb-2">변경사항</div>
                                 
-                                <!-- UPDATE: JSON이면 파일별 접기/펼치기 diff, 아니면 기존 전체 diff -->
-                                <div v-if="item.previous_content || item.new_content" class="mt-2">
+                                <!-- UPDATE 작업: JSON이면 파일별 접기/펼치기 diff, 아니면 기존 전체 diff -->
+                                <div v-if="item.operation === 'UPDATE' && item.previous_content && item.new_content" class="mt-2">
+                                    <div class="d-flex align-center justify-space-between mb-2 flex-wrap ga-2">
+                                        <span class="text-caption text-medium-emphasis">변경 내용</span>
+                                        <!-- 되돌리기 / 다시 적용: JSON 파일별 diff일 때만 -->
+                                        <div v-if="getFileDiffPairs(item).length > 0" class="d-flex ga-2">
+                                            <v-btn
+                                                color="orange"
+                                                variant="tonal"
+                                                size="small"
+                                                :loading="revertingItemKey === getItemKey(item)"
+                                                :disabled="!!(revertingItemKey || reapplyingItemKey)"
+                                                @click="revertToPrevious(item)"
+                                            >
+                                                <v-icon start size="small">mdi-undo</v-icon>
+                                                변경 사항 되돌리기
+                                            </v-btn>
+                                            <v-btn
+                                                color="primary"
+                                                variant="tonal"
+                                                size="small"
+                                                :loading="reapplyingItemKey === getItemKey(item)"
+                                                :disabled="!!(revertingItemKey || reapplyingItemKey)"
+                                                @click="reapplyNew(item)"
+                                            >
+                                                <v-icon start size="small">mdi-redo</v-icon>
+                                                다시 적용
+                                            </v-btn>
+                                        </div>
+                                    </div>
                                     <!-- JSON 형식: 파일별 expansion panel -->
                                     <template v-if="getFileDiffPairs(item).length > 0">
                                         <v-expansion-panels variant="accordion" class="skill-history-file-diff-panels">
@@ -136,8 +137,8 @@
                                             </v-col>
                                         </v-row>
                                         <vuediff
-                                            :prev="item.previous_content || ''"
-                                            :current="item.new_content || ''"
+                                            :prev="item.previous_content"
+                                            :current="item.new_content"
                                             mode="split"
                                             theme="light"
                                             language="plaintext"
@@ -145,6 +146,24 @@
                                         />
                                     </template>
                                 </div>
+                                
+                                <!-- CREATE 작업: 새 내용만 표시 -->
+                                <div v-else-if="item.operation === 'CREATE' && item.new_content" class="mt-2">
+                                    <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
+                                    <div class="change-content-box">
+                                        <pre class="change-content-text">{{ item.new_content }}</pre>
+                                    </div>
+                                </div>
+                                
+                                <!-- DELETE 작업: 이전 내용만 표시 -->
+                                <div v-else-if="item.operation === 'DELETE' && item.previous_content" class="mt-2">
+                                    <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
+                                    <div class="change-content-box">
+                                        <pre class="change-content-text">{{ item.previous_content }}</pre>
+                                    </div>
+                                </div>
+                                
+                                <!-- 내용이 없는 경우 -->
                                 <div v-else class="mt-2 text-body-2 text-medium-emphasis">
                                     변경 내용이 없습니다.
                                 </div>
@@ -192,12 +211,6 @@ export default {
                 { title: '변경 일시', key: 'created_at', sortable: true, width: '15%' }
             ]
         };
-    },
-    computed: {
-        /** CREATE/DELETE 스킵, 수정(UPDATE)만 표시 */
-        filteredHistoryList() {
-            return (this.historyList || []).filter((it) => it.operation === 'UPDATE');
-        }
     },
     watch: {
         agentId: {

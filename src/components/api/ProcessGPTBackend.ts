@@ -4,6 +4,7 @@ const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
 import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
 
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -12,6 +13,32 @@ enum ErrorCode {
 }
 
 class ProcessGPTBackend implements Backend {
+
+    // =========================
+    // Business Rule raw-definition mock store (ProcessGPT 모드)
+    // - uEngine 서버의 /definition/raw 저장 규약을 흉내내기 위해 localStorage를 사용한다.
+    // - key: "business-rules/<id>" (확장자 없이 저장)
+    // - value: JSON string
+    // =========================
+    __brRawStorageKey() {
+        return 'processgpt_raw_definition_business_rules_v1';
+    }
+    __loadBrRawMap(): Record<string, string> {
+        try {
+            const raw = localStorage.getItem(this.__brRawStorageKey());
+            const parsed = raw ? JSON.parse(raw) : {};
+            return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+    __saveBrRawMap(map: Record<string, string>) {
+        try {
+            localStorage.setItem(this.__brRawStorageKey(), JSON.stringify(map || {}));
+        } catch (e) {
+            // ignore
+        }
+    }
 
     async deleteTest(testId: string): Promise<void> {
         throw new Error("Method not implemented.");
@@ -178,6 +205,16 @@ class ProcessGPTBackend implements Backend {
 
     async putRawDefinition(xml: any, defId: string, options: any) {
         try {
+            // Business Rule (raw-definition mock)
+            if (options && options.type === 'rule') {
+                const map = this.__loadBrRawMap();
+                const key = String(defId || '');
+                const val = typeof xml === 'string' ? xml : JSON.stringify(xml);
+                map[key] = val;
+                this.__saveBrRawMap(map);
+                return;
+            }
+
             // 폼 정보를 저장하기 위해서
             if (options && options.type === "form") {
                 const fieldsJson = this.extractFields(xml);
@@ -305,6 +342,13 @@ class ProcessGPTBackend implements Backend {
         try {
             if (!defId) return;
 
+            // Business Rule (raw-definition mock)
+            if (options && options.type === 'rule') {
+                const map = this.__loadBrRawMap();
+                const key = String(defId || '');
+                return map[key] ?? null;
+            }
+            
             if (options) {
                 // 폼 정보를 불러오기 위해서
                 if (options.type === "form") {
@@ -1520,7 +1564,145 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+    
+    // =========================
+    // Business Rule (비즈니스 규칙)
+    // - UI에는 JSON을 노출하지 않는다. (내부 데이터)
+    // - 백엔드 미구현 환경에서는 localStorage 기반 mock을 사용한다.
+    // =========================
+    __brStorageKey() {
+        return 'uengine_business_rules_v1';
+    }
+    __loadRulesFromStorage() {
+        try {
+            const raw = localStorage.getItem(this.__brStorageKey());
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+    __saveRulesToStorage(rules: any[]) {
+        try {
+            localStorage.setItem(this.__brStorageKey(), JSON.stringify(rules));
+        } catch (e) {
+            // ignore
+        }
+    }
 
+    async listBusinessRules() {
+        // raw definition 저장소에서 목록 생성
+        const map = this.__loadBrRawMap();
+        const entries = Object.entries(map).filter(([k]) => String(k).startsWith('business-rules/'));
+
+        const results = entries
+            .map(([k, v]) => {
+                const idFromKey = String(k).split('/').pop() || '';
+                try {
+                    const parsed = v ? JSON.parse(v) : null;
+                    return {
+                        id: parsed?.id ?? idFromKey,
+                        name: parsed?.name ?? idFromKey,
+                        description: parsed?.description ?? ''
+                    };
+                } catch (e) {
+                    return { id: idFromKey, name: idFromKey, description: '' };
+                }
+            })
+            .filter((r: any) => r && r.id);
+
+        return results.sort((a: any, b: any) => String(a?.name ?? '').localeCompare(String(b?.name ?? '')));
+    }
+
+    async getBusinessRule(ruleId: string) {
+        if (!ruleId) return null;
+        const raw = await this.getRawDefinition(`business-rules/${ruleId}`, { type: 'rule' });
+        if (!raw) return null;
+
+        const parsedJson = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        const dmnXml =
+            (typeof parsedJson?.dmnXml === 'string' ? parsedJson.dmnXml : '') ||
+            (typeof parsedJson?.ruleJson?.dmnXml === 'string' ? parsedJson.ruleJson.dmnXml : '');
+
+        // 저장본이 dmnXml만 가지고 있으므로, 화면에서 필요한 inputs/rules는 dmnXml로부터 즉석에서 구성한다.
+        if (dmnXml) {
+            const parsed = dmnXmlToBusinessRule(dmnXml);
+            if (parsed) {
+                return {
+                    ...parsedJson,
+                    dmnXml,
+                    inputs: parsed.inputs || [],
+                    rules: parsed.rules || []
+                };
+            }
+        }
+
+        return { ...parsedJson, dmnXml };
+    }
+
+    async saveBusinessRule(rule: any) {
+        const toSave = { ...(rule || {}) };
+        if (!toSave.id) toSave.id = this.uuid();
+
+        // 저장 포맷을 uEngine과 동일하게 "dmnXml 단일 진실원천"으로 둔다.
+        let dmnXml = typeof toSave?.dmnXml === 'string' ? toSave.dmnXml : '';
+        if (!dmnXml || !String(dmnXml).trim()) {
+            try {
+                dmnXml = businessRuleToDmnXml({
+                    id: toSave?.id,
+                    name: toSave?.name,
+                    description: toSave?.description,
+                    inputs: Array.isArray(toSave?.inputs) ? toSave.inputs : [],
+                    rules: Array.isArray(toSave?.rules) ? toSave.rules : []
+                });
+            } catch (e) {
+                dmnXml = '';
+            }
+        }
+
+        const payload = {
+            id: toSave.id,
+            name: toSave.name ?? '',
+            description: toSave.description ?? '',
+            dmnXml
+        };
+
+        await this.putRawDefinition(JSON.stringify(payload), `business-rules/${toSave.id}`, { type: 'rule' });
+        return { id: toSave.id };
+    }
+
+    async deleteBusinessRule(ruleId: string): Promise<void> {
+        // ProcessGPT 모드에서는 삭제 기능 미지원
+        console.warn(`[ProcessGPT] deleteBusinessRule은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
+        return null as any;
+    }
+
+    // =========================
+    // Business Rule Test (룰 테스트 실행)
+    // =========================
+    async executeBusinessRule(ruleId: string, inputs: Record<string, any>): Promise<any> {
+        // ProcessGPT 모드에서는 룰 실행 기능 미지원
+        console.warn(`[ProcessGPT] executeBusinessRule은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
+        return null as any;
+    }
+
+    async saveRuleTestCase(ruleId: string, testCase: any): Promise<void> {
+        // ProcessGPT 모드에서는 테스트 케이스 저장 기능 미지원
+        console.warn(`[ProcessGPT] saveRuleTestCase은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
+        return null as any;
+    }
+
+    async getRuleTestCases(ruleId: string): Promise<any[]> {
+        // ProcessGPT 모드에서는 테스트 케이스 조회 기능 미지원
+        console.warn(`[ProcessGPT] getRuleTestCases은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
+        return [];
+    }
+
+    async deleteRuleTestCase(ruleId: string, testCaseId: string): Promise<void> {
+        // ProcessGPT 모드에서는 테스트 케이스 삭제 기능 미지원
+        console.warn(`[ProcessGPT] deleteRuleTestCase은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}, testCaseId: ${testCaseId}`);
+        return null as any;
+    }
 
     async filterProcDefMap(map: any) {
         // 사용자 권한에 따라 필터링
@@ -5487,7 +5669,8 @@ class ProcessGPTBackend implements Backend {
                 return false;
             }
         } catch (error) {
-            throw new Error(error.detail);
+            console.log(error);
+            return false;
         }
     }
 
@@ -5511,6 +5694,20 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             throw new Error(error.detail);
+        }
+    }
+
+    async getTenantSkills(tenantId: string) {
+        try {
+            const response = await axios.get(`/claude-skills/skills/list?tenant_id=${encodeURIComponent(tenantId)}`);
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                return [];
+            }
+        } catch (error) {
+            console.error('테넌트 스킬 목록 조회 실패:', error);
+            return [];
         }
     }
 
