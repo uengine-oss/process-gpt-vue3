@@ -5,7 +5,7 @@ export interface Backend {
     versionUp(version: string, major: boolean, makeProduction: boolean): Promise<any>;
     makeProduction(version: string): Promise<any>;
     getProduction(): Promise<any>;
-    getDefinitionVersions(defId: string, options: any) : Promise<any>;
+    getDefinitionVersions(defId: string, options: any): Promise<any>;
     getVersion(version: string): Promise<any>;
     getDefinition(defPath: string): Promise<any>;
     renameOrMove(definition: any, requestPath: string): Promise<any>;
@@ -40,13 +40,15 @@ export interface Backend {
     getWorkList(options?: any): Promise<any>;
     getProcessDefinitionMap(): Promise<any>;
     putProcessDefinitionMap(definitionMap: any): Promise<any>;
+    getMetricsMap(): Promise<any>;
+    putMetricsMap(metricsMap: any): Promise<any>;
     getPendingList(): Promise<any>;
     getCompletedList(options?: any): Promise<any>;
     getInProgressList(): Promise<any>;
     putWorklist(taskId: string, workItem: any): Promise<any>;
     getEventList(instanceId: string): Promise<any>;
     dryRun(isSimulate: string, command: object): Promise<any>;
-    startAndComplete(command: object, isSimulate: string) : Promise<any>;
+    startAndComplete(command: object, isSimulate: string): Promise<any>;
     getSystemList(): Promise<any>;
     putSystem(system: any): Promise<any>;
     deleteSystem(system: any): Promise<any>;
@@ -60,7 +62,7 @@ export interface Backend {
     findCurrentWorkItemByInstId(instId: string): Promise<any>;
     getUserList(options: any): Promise<any>;
     getGroupList(): Promise<any>;
-    releaseVersion(releaseName: string) : Promise<any>;
+    releaseVersion(releaseName: string): Promise<any>;
     uploadDefinition(file: File, path: string): Promise<any>;
     getCompletedTaskId(instId: string): Promise<any>;
     getActivitiesStatus(instId: string, executionScope: String): Promise<any>;
@@ -123,6 +125,27 @@ export interface Backend {
     saveRuleTestCase(ruleId: string, testCase: any): Promise<void>;
     getRuleTestCases(ruleId: string): Promise<any[]>;
     deleteRuleTestCase(ruleId: string, testCaseId: string): Promise<void>;
+
+    // Task Catalog API
+    getTaskSystems(): Promise<any>;
+    saveTaskSystem(system: any): Promise<any>;
+    deleteTaskSystem(id: string): Promise<any>;
+
+    getTaskCatalogList(options?: any): Promise<any>;
+    getTaskCatalog(id: string): Promise<any>;
+    saveTaskCatalog(item: any): Promise<any>;
+    deleteTaskCatalog(id: string): Promise<any>;
+
+    getPropertySchemas(taskType?: string): Promise<any>;
+    savePropertySchema(schema: any): Promise<any>;
+    deletePropertySchema(id: string): Promise<any>;
+
+    getPaletteSettings(): Promise<any>;
+    savePaletteSettings(settings: any): Promise<any>;
+
+    // Palette Task Types API
+    getPaletteTaskTypes(): Promise<any>;
+    updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any>;
 }
 
 // export type { Backend }

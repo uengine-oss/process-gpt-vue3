@@ -44,34 +44,79 @@
                     <v-icon class="mr-2">mdi-sitemap</v-icon>
                     {{ selectedBpmn?.process_name || 'BPMN Preview' }}
                     <v-spacer></v-spacer>
+                    <!-- 다이어그램/XML 토글 버튼 -->
+                    <v-btn-toggle v-model="bpmnViewMode" mandatory density="compact" class="mr-2 bpmn-view-toggle">
+                        <v-btn value="diagram" size="small" class="bpmn-toggle-btn">
+                            <v-icon size="18" :color="bpmnViewMode === 'diagram' ? 'primary' : undefined">mdi-sitemap</v-icon>
+                        </v-btn>
+                        <v-btn value="xml" size="small" class="bpmn-toggle-btn">
+                            <v-icon size="18" :color="bpmnViewMode === 'xml' ? 'primary' : undefined">mdi-xml</v-icon>
+                        </v-btn>
+                    </v-btn-toggle>
                     <v-btn icon variant="text" @click="bpmnPreviewDialog = false">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-card-title>
                 <v-divider></v-divider>
                 <v-card-text class="pa-0">
-                    <div class="bpmn-preview-container">
+                    <!-- 다이어그램 뷰 -->
+                    <div v-if="bpmnViewMode === 'diagram'" class="bpmn-diagram-container">
+                        <ProcessDefinition
+                            v-if="selectedBpmn?.bpmn_xml"
+                            :bpmn="selectedBpmn.bpmn_xml"
+                            :key="selectedBpmn?.process_name"
+                            isViewMode="true"
+                            isAIGenerated="true"
+                        />
+                    </div>
+                    <!-- XML 뷰 -->
+                    <div v-else class="bpmn-preview-container">
                         <pre class="bpmn-xml-content">{{ selectedBpmn?.bpmn_xml }}</pre>
                     </div>
                 </v-card-text>
                 <v-card-actions>
+                    <!-- XML 모드일 때: XML 복사 버튼 -->
                     <v-btn 
-                        color="primary" 
+                        v-if="bpmnViewMode === 'xml'"
                         variant="tonal"
                         @click="copyBpmnToClipboard"
                     >
                         <v-icon class="mr-1">mdi-content-copy</v-icon>
                         XML 복사
                     </v-btn>
+                    <!-- 다이어그램 모드일 때: 프로세스 수정 버튼 -->
                     <v-btn 
-                        color="success" 
+                        v-if="bpmnViewMode === 'diagram'"
                         variant="tonal"
                         @click="openInModeler"
                     >
                         <v-icon class="mr-1">mdi-pencil</v-icon>
-                        모델러에서 열기
+                        프로세스 수정
                     </v-btn>
                 </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- 이미지 미리보기 다이얼로그 -->
+        <v-dialog v-model="imagePreviewDialog" max-width="900">
+            <v-card>
+                <v-card-title class="d-flex align-center">
+                    <v-icon class="mr-2">mdi-image</v-icon>
+                    이미지 미리보기
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" @click="imagePreviewDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-divider></v-divider>
+                <v-card-text class="pa-2">
+                    <v-img
+                        v-if="previewImageUrl"
+                        :src="previewImageUrl"
+                        max-height="600"
+                        contain
+                    />
+                </v-card-text>
             </v-card>
         </v-dialog>
 
@@ -107,6 +152,26 @@
                         <span class="message-time">{{ formatTime(msg.timeStamp) }}</span>
                     </div>
                     <div class="message-text" v-html="formatMessage(msg.content)"></div>
+                    
+                    <!-- 첨부된 이미지 표시 -->
+                    <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
+                        <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
+                            <img :src="image.url" class="attached-image" @click="openImagePreview(image.url)" />
+                        </div>
+                    </div>
+                    
+                    <!-- 첨부된 PDF 파일 표시 -->
+                    <div v-if="msg.pdfFile" class="attached-pdf mt-2">
+                        <v-chip
+                            color="primary"
+                            variant="tonal"
+                            size="small"
+                            @click="msg.pdfFile.url && openExternalUrl(msg.pdfFile.url)"
+                        >
+                            <v-icon start size="14">mdi-file-pdf-box</v-icon>
+                            {{ msg.pdfFile.name }}
+                        </v-chip>
+                    </div>
                     
                     <!-- 도구 호출 표시 -->
                     <div v-if="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls">
@@ -146,8 +211,8 @@
                 </div>
             </div>
 
-            <!-- PDF2BPMN 진행 상황 카드 (메시지 영역 내부, 현재 채팅방만) -->
-            <div v-if="pdf2bpmnProgress.isActive && pdf2bpmnProgress.roomId === currentRoomId" class="message-item assistant-message">
+            <!-- PDF2BPMN 진행 상황 카드 (메시지 영역 내부, 현재 채팅방) -->
+            <div v-if="currentPdf2bpmnProgress.isActive" class="message-item assistant-message">
                 <div class="message-avatar">
                     <v-avatar size="32" color="blue-lighten-4">
                         <v-icon size="18" color="blue-darken-1">mdi-file-document-outline</v-icon>
@@ -156,34 +221,35 @@
                 <div class="message-content">
                     <div class="message-header">
                         <span class="message-sender">PDF → BPMN 변환</span>
-                        <v-chip size="x-small" :color="getProgressChipColor(pdf2bpmnProgress.status)" class="ml-2">
-                            {{ pdf2bpmnProgress.status }}
+                        <v-chip size="x-small" :color="getProgressChipColor(currentPdf2bpmnProgress.status)" class="ml-2">
+                            {{ currentPdf2bpmnProgress.status }}
                         </v-chip>
                     </div>
                     
                     <div class="pdf2bpmn-progress-card">
                         <v-progress-linear 
-                            :model-value="pdf2bpmnProgress.progress" 
-                            :color="pdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'" 
+                            :model-value="currentPdf2bpmnProgress.progress" 
+                            :color="currentPdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'" 
                             height="8"
                             rounded
                             class="mb-2"
                         ></v-progress-linear>
                         
                         <div class="progress-info">
-                            <span class="progress-message">{{ pdf2bpmnProgress.message }}</span>
-                            <span class="progress-percent">{{ pdf2bpmnProgress.progress }}%</span>
+                            <span class="progress-message">{{ currentPdf2bpmnProgress.message }}</span>
+                            <span class="progress-percent">{{ currentPdf2bpmnProgress.progress }}%</span>
+                            <v-progress-circular v-if="currentPdf2bpmnProgress.status === 'processing'" style="margin-left: 3px; margin-bottom: 3px;" indeterminate size="12" width="2" color="primary" />
                         </div>
 
                         <!-- 생성된 BPMN 목록 (스크롤 가능) -->
-                        <div v-if="pdf2bpmnProgress.generatedBpmns.length > 0" class="generated-bpmns-scroll mt-3">
+                        <div v-if="currentPdf2bpmnProgress.generatedBpmns.length > 0" class="generated-bpmns-scroll mt-3">
                             <div class="bpmn-list-title">
                                 <v-icon size="14" class="mr-1">mdi-sitemap</v-icon>
-                                생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
+                                생성된 프로세스 ({{ currentPdf2bpmnProgress.generatedBpmns.length }})
                             </div>
                             <div class="bpmn-cards-scroll">
                                 <div 
-                                    v-for="(bpmn, idx) in pdf2bpmnProgress.generatedBpmns" 
+                                    v-for="(bpmn, idx) in currentPdf2bpmnProgress.generatedBpmns" 
                                     :key="idx" 
                                     class="bpmn-card-mini"
                                     @click="showBpmnPreview(bpmn)"
@@ -218,33 +284,16 @@
             </div>
         </div>
 
-        <!-- 입력 영역 -->
+        <!-- 입력 영역 - Chat 컴포넌트 사용 -->
         <div class="chat-input-container">
-            <div class="chat-input-wrapper">
-                <v-textarea
-                    v-model="inputText"
-                    :placeholder="$t('mainChat.placeholder')"
-                    rows="1"
-                    auto-grow
-                    max-rows="4"
-                    hide-details
-                    variant="outlined"
-                    density="compact"
-                    class="chat-input"
-                    @keydown.enter.exact.prevent="sendMessage"
-                    :disabled="isLoading"
-                />
-                <v-btn
-                    icon
-                    color="primary"
-                    size="small"
-                    :disabled="!inputText.trim() || isLoading"
-                    @click="sendMessage"
-                    class="send-btn"
-                >
-                    <v-icon>mdi-send</v-icon>
-                </v-btn>
-            </div>
+            <Chat 
+                :workAssistantAgentMode="true"
+                :disableChat="isLoading"
+                :isMobile="false"
+                :showStopButton="isLoading"
+                @stopMessage="stopAgent(currentRoomId)"
+                @sendMessage="handleChatInputMessage"
+            />
         </div>
     </div>
 </template>
@@ -253,14 +302,22 @@
 import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
 import BackendFactory from '@/components/api/BackendFactory';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
+import { getValidToken } from '@/utils/supabaseAuth.js';
+import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import Chat from '@/components/ui/Chat.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'WorkAssistantChatPanel',
+    components: {
+        ProcessDefinition,
+        Chat
+    },
     props: {
+        // 초기 메시지 - 문자열 또는 { text, images, file } 객체
         initialMessage: {
-            type: String,
+            type: [String, Object],
             default: null
         },
         userInfo: {
@@ -279,9 +336,14 @@ export default {
             currentRoomId: null,
             messages: [],
             inputText: '',
-            isLoading: false,
+            // 로딩 상태를 채팅방별로 관리 (여러 채팅방 동시 요청 지원)
+            // { roomId: { isLoading: true, message: '...' } }
+            loadingStates: {},
+            // 에이전트 스트리밍 중지(Abort)용 컨트롤러 (채팅방별)
+            agentAbortControllers: {},
+            // 사용자가 "중지" 버튼을 눌렀는지 여부 (채팅방별)
+            agentAbortRequested: {},
             isLoadingHistory: true,
-            loadingMessage: '생각 중...',
             streamingContent: '',
             // ConsultingGenerator 관련
             generator: null,
@@ -289,20 +351,28 @@ export default {
             lastSendMessage: null,
             // 중복 처리 방지 플래그
             initialMessageHandled: false,
-            // PDF2BPMN 진행 상황 (채팅방별)
-            pdf2bpmnProgress: {
-                isActive: false,
-                roomId: null,  // 해당 진행상황이 속한 채팅방
-                taskId: null,
-                status: '',
-                progress: 0,
-                message: '',
-                generatedBpmns: []
-            },
-            eventsChannel: null,
+            // PDF2BPMN 진행 상황/구독 (채팅방별로 분리)
+            // progressByRoomId: { [roomId]: { isActive, taskId, status, progress, message, generatedBpmns } }
+            pdf2bpmnProgressByRoomId: {},
+            // taskIdByRoomId: { [roomId]: taskId }
+            pdf2bpmnTaskIdByRoomId: {},
+            // eventsChannelByTaskId: { [taskId]: RealtimeChannel }
+            pdf2bpmnEventsChannelByTaskId: {},
             // BPMN 미리보기
             bpmnPreviewDialog: false,
-            selectedBpmn: null
+            bpmnViewMode: 'diagram',  // 'diagram' | 'xml'
+            selectedBpmn: null,
+            // 음성 인식 관련
+            isMicRecording: false,
+            micRecorder: null,
+            micAudioChunks: [],
+            isMicRecorderLoading: false,
+            // 첨부 파일 (Chat 컴포넌트에서 전달받음)
+            pendingImages: [],
+            pendingPdfFile: null,
+            // 이미지 미리보기
+            imagePreviewDialog: false,
+            previewImageUrl: null
         };
     },
     computed: {
@@ -311,6 +381,27 @@ export default {
         },
         currentRoom() {
             return this.chatRooms.find(r => r.id === this.currentRoomId);
+        },
+        // 현재 채팅방의 로딩 상태
+        isLoading() {
+            const state = this.loadingStates[this.currentRoomId];
+            return state?.isLoading || false;
+        },
+        loadingMessage() {
+            const state = this.loadingStates[this.currentRoomId];
+            return state?.message || '생각 중...';
+        },
+        // 현재 채팅방의 PDF2BPMN 진행 상태
+        currentPdf2bpmnProgress() {
+            const state = this.pdf2bpmnProgressByRoomId[this.currentRoomId];
+            return state || {
+                isActive: false,
+                taskId: null,
+                status: '',
+                progress: 0,
+                message: '',
+                generatedBpmns: []
+            };
         }
     },
     watch: {
@@ -332,8 +423,14 @@ export default {
         }
         // 초기 메시지가 있으면 새 채팅방 생성 후 메시지 전송
         else if (this.initialMessage && !this.initialMessageHandled) {
-            this.initialMessageHandled = true;
-            await this.handleInitialMessage(this.initialMessage);
+            // 문자열 또는 객체 형태 모두 처리
+            const hasContent = typeof this.initialMessage === 'string' 
+                ? this.initialMessage.trim() 
+                : (this.initialMessage.text || this.initialMessage.images?.length > 0 || this.initialMessage.file);
+            if (hasContent) {
+                this.initialMessageHandled = true;
+                await this.handleInitialMessage(this.initialMessage);
+            }
         }
     },
     beforeUnmount() {
@@ -341,8 +438,10 @@ export default {
         if (this.currentRoomId) {
             this.EventBus.emit('chat-room-unselected');
         }
-        // Events 채널 정리
-        this.unsubscribeFromEvents();
+        // PDF2BPMN Events 채널 정리
+        this.unsubscribeAllPdf2bpmnEvents();
+        // 진행 중인 에이전트 스트림 중지
+        this.abortAllAgentStreams();
     },
     methods: {
         // UUID 생성
@@ -387,18 +486,6 @@ export default {
                 this.isLoadingHistory = true;
                 this.messages = [];
                 
-                // 채팅방 전환 시 기존 watch 해제 및 진행상황 초기화
-                this.unsubscribeFromEvents();
-                this.pdf2bpmnProgress = {
-                    isActive: false,
-                    roomId: null,
-                    taskId: null,
-                    status: '',
-                    progress: 0,
-                    message: '',
-                    generatedBpmns: []
-                };
-                
                 const messages = await backend.getMessages(roomId);
                 if (messages && messages.length > 0) {
                     const allMessages = messages.map(message => {
@@ -411,7 +498,7 @@ export default {
                     this.messages = allMessages;
                     
                     // 해당 채팅방의 PDF2BPMN 작업 확인 및 구독 시작
-                    this.checkExistingPdf2BpmnTask();
+                    this.checkExistingPdf2BpmnTask(roomId);
                 }
                 this.$nextTick(() => this.scrollToBottom());
             } catch (error) {
@@ -482,11 +569,29 @@ export default {
 
         // 초기 메시지 처리
         async handleInitialMessage(message) {
-            // 새 채팅방 생성
-            const room = await this.createNewRoom(message);
+            console.log('[WorkAssistantChatPanel] handleInitialMessage 시작:', message);
+            // 문자열 또는 객체 형태 모두 지원
+            let text = '';
+            let images = [];
+            let pdfFile = null;
             
-            // 메시지 전송
-            this.inputText = message;
+            if (typeof message === 'string') {
+                text = message;
+            } else if (message && typeof message === 'object') {
+                text = message.text || '';
+                images = message.images || [];
+                pdfFile = message.file || null;
+                console.log('[WorkAssistantChatPanel] 추출된 file:', pdfFile);
+            }
+            
+            // 새 채팅방 생성
+            const room = await this.createNewRoom(text);
+            
+            // 메시지 전송 (이미지/PDF 포함)
+            this.inputText = text;
+            this.pendingImages = images;
+            this.pendingPdfFile = pdfFile;
+            console.log('[WorkAssistantChatPanel] sendMessage 호출 전 pendingPdfFile:', this.pendingPdfFile);
             await this.sendMessage();
         },
 
@@ -501,18 +606,48 @@ export default {
             await this.selectRoom(room);
         },
 
+        // Chat 컴포넌트에서 메시지 전송 시 처리
+        handleChatInputMessage(message) {
+            if (!message || (!message.text && (!message.images || message.images.length === 0) && !message.file)) return;
+            this.inputText = message.text || '';
+            this.pendingImages = message.images || [];
+            // Chat.vue에서 업로드 완료된 fileInfo를 전달받음 (MainChatInput과 동일)
+            this.pendingPdfFile = message.file || null;
+            this.sendMessage();
+        },
+
         // 메시지 전송
         async sendMessage() {
-            if (!this.inputText.trim() || this.isLoading) return;
+            console.log('[WorkAssistantChatPanel] sendMessage 시작, pendingPdfFile:', this.pendingPdfFile);
+            // 텍스트, 이미지, PDF 중 하나라도 있어야 전송 가능
+            const hasText = this.inputText.trim();
+            const hasImages = this.pendingImages && this.pendingImages.length > 0;
+            const hasPdf = this.pendingPdfFile;
+            console.log('[WorkAssistantChatPanel] 조건 체크 - hasText:', !!hasText, 'hasImages:', hasImages, 'hasPdf:', !!hasPdf);
+            
+            // 현재 채팅방이 로딩 중인 경우에만 메시지 전송 차단 (다른 채팅방은 허용)
+            const currentRoomState = this.loadingStates[this.currentRoomId];
+            if ((!hasText && !hasImages && !hasPdf) || currentRoomState?.isLoading) return;
 
-            const userMessage = this.inputText.trim();
+            // 현재 첨부된 이미지/PDF 복사 후 초기화
+            const currentImages = [...this.pendingImages];
+            const currentPdfFile = this.pendingPdfFile;
+            console.log('[WorkAssistantChatPanel] currentPdfFile:', currentPdfFile);
+            this.pendingImages = [];
+            this.pendingPdfFile = null;
+            
+            // 텍스트가 없고 첨부만 있는 경우 기본 메시지 설정
+            let userMessage = this.inputText.trim();
+            if (!userMessage && (currentPdfFile || currentImages.length > 0)) {
+                userMessage = currentPdfFile 
+                    ? 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.' 
+                    : '첨부된 내용을 확인해주세요.';
+            }
             this.inputText = '';
             
-            // 컨설팅 모드인 경우 컨설팅 메시지 전송
-            if (this.isConsultingMode && this.generator) {
-                await this.sendConsultingMessage(userMessage);
-                return;
-            }
+            // 컨설팅 모드는 "사용자 메시지 라우팅"이 아니라,
+            // 에이전트가 start_process_consulting 도구를 호출할 때마다 1회 컨설팅 응답을 생성하는 방식으로 동작합니다.
+            // 따라서 사용자의 다음 답변은 항상 에이전트가 의도 파악(생성/추가 컨설팅/질문)을 하도록 그대로 전달합니다.
 
             // 채팅방이 없으면 메시지 전송 불가
             if (!this.currentRoomId) {
@@ -520,14 +655,34 @@ export default {
                 return;
             }
 
-            // 사용자 메시지 추가
-            const userMsgObj = this.createMessageObj(userMessage, 'user');
+            // ★ 시작 시점의 roomId 캡처 (콜백에서 사용)
+            const targetRoomId = this.currentRoomId;
+            const targetRoom = this.currentRoom;
+
+            // 사용자 메시지 추가 (이미지/PDF 정보 포함)
+            const userMsgObj = this.createMessageObj(userMessage, 'user', {
+                images: currentImages,
+                pdfFile: currentPdfFile
+            });
             this.messages.push(userMsgObj);
             await this.saveMessage(userMsgObj);
             
-            // API 호출
-            this.isLoading = true;
-            this.loadingMessage = '생각 중...';
+            // 기존 방식 유지: 첨부 정보는 [InputData]로 텍스트에 포함시켜 에이전트에게 전달
+            let messageForAgent = userMessage;
+            if ((currentImages && currentImages.length > 0) || currentPdfFile) {
+                const inputData = {};
+                if (currentImages && currentImages.length > 0) inputData.images = currentImages;
+                if (currentPdfFile) inputData.file = currentPdfFile;
+                messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
+                console.log('[WorkAssistantChatPanel] [InputData] 추가됨:', inputData);
+            }
+            console.log('[WorkAssistantChatPanel] messageForAgent:', messageForAgent.substring(0, 200) + '...');
+            
+            // API 호출 - 로딩 상태를 채팅방별로 관리
+            this.loadingStates[targetRoomId] = {
+                isLoading: true,
+                message: '생각 중...'
+            };
 
             this.scrollToBottom();
             
@@ -536,25 +691,30 @@ export default {
                 let fullResponse = '';
                 const toolCalls = [];
                 
-                // Supabase 세션에서 JWT 가져오기
-                const session = await window.$supabase?.auth?.getSession();
-                const userJwt = session?.data?.session?.access_token || '';
+                // Supabase 세션에서 JWT 가져오기 (자동 갱신 포함)
+                const userJwt = await getValidToken() || '';
+
+                // 채팅방별 AbortController 저장 (중지 버튼용)
+                const abortController = new AbortController();
+                this.agentAbortControllers[targetRoomId] = abortController;
                 
                 await workAssistantAgentService.sendMessageStream(
                     {
-                        message: userMessage,
+                        message: messageForAgent,
                         tenant_id: this.tenantId,
                         user_uid: this.userInfo.uid || this.userInfo.id,
                         user_email: this.userInfo.email,
                         user_name: this.userInfo.name || this.userInfo.username,
                         user_jwt: userJwt,
-                        conversation_id: this.currentRoomId  // 채팅방 ID로 세션 유지
+                        conversation_id: targetRoomId  // 캡처된 채팅방 ID 사용
                     },
                     {
                         onToken: (token) => {
                             fullResponse += token;
-                            // 스트리밍 중 표시 업데이트
-                            this.loadingMessage = fullResponse.length === 0 ? '생각 중...' : fullResponse;
+                            // 스트리밍 중 표시 업데이트 (해당 채팅방의 로딩 상태)
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].message = fullResponse.length === 0 ? '생각 중...' : fullResponse;
+                            }
                         },
                         onToolStart: (toolName, input) => {
                             if (toolName === 'work-assistant__ask_user') {
@@ -563,7 +723,10 @@ export default {
                                 }
                             }
                             toolCalls.push({ name: toolName, input });
-                            this.loadingMessage = `🔧 ${this.formatToolName(toolName)} 실행 중...`;
+                            // 해당 채팅방의 로딩 상태 업데이트
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].message = `🔧 ${this.formatToolName(toolName)} 실행 중...`;
+                            }
                         },
                         onToolEnd: (output) => {
                             // 마지막 도구 호출에 결과 저장
@@ -571,61 +734,154 @@ export default {
                                 toolCalls[toolCalls.length - 1].output = output;
                             }
                         },
+                        onAbort: async () => {
+                            // 로딩 상태 해제 (해당 채팅방)
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].isLoading = false;
+                            }
+
+                            // 컨트롤러 정리
+                            delete this.agentAbortControllers[targetRoomId];
+
+                            // 사용자가 직접 중지한 경우: 지금까지 생성된 내용을 최종 답변으로 확정
+                            if (this.agentAbortRequested[targetRoomId]) {
+                                delete this.agentAbortRequested[targetRoomId];
+
+                                // 현재까지 스트리밍된 결과가 있으면 메시지로 저장/표시
+                                const partial = (fullResponse || '').trim();
+                                if (partial) {
+                                    const assistantMsgObj = this.createMessageObj(partial, 'assistant');
+                                    assistantMsgObj.toolCalls = toolCalls;
+
+                                    if (this.currentRoomId === targetRoomId) {
+                                        this.messages.push(assistantMsgObj);
+                                    }
+                                    await this.saveMessageToRoom(assistantMsgObj, targetRoomId);
+                                }
+                            }
+                        },
                         onDone: async (content) => {
-                            this.isLoading = false;
+                            // 로딩 상태 해제 (해당 채팅방)
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].isLoading = false;
+                            }
+
+                            // 컨트롤러 정리
+                            delete this.agentAbortControllers[targetRoomId];
+                            delete this.agentAbortRequested[targetRoomId];
                             
-                            // AI 응답 메시지 추가
+                            // AI 응답 메시지 생성
                             const assistantMsgObj = this.createMessageObj(content, 'assistant');
                             assistantMsgObj.toolCalls = toolCalls;
-                            this.messages.push(assistantMsgObj);
-                            await this.saveMessage(assistantMsgObj);
                             
-                            // 채팅방 이름 업데이트 (첫 메시지인 경우)
-                            if (this.messages.length <= 2 && this.currentRoom) {
-                                this.currentRoom.name = this.truncateText(userMessage, 20);
-                                await this.putObject('chat_rooms', this.currentRoom);
+                            // ★ 현재 채팅방이 요청 시작 채팅방과 같을 때만 UI에 추가
+                            if (this.currentRoomId === targetRoomId) {
+                                this.messages.push(assistantMsgObj);
+                            }
+                            
+                            // DB에는 항상 저장 (targetRoomId 기준)
+                            await this.saveMessageToRoom(assistantMsgObj, targetRoomId);
+                            
+                            // 채팅방 이름 업데이트: 최초(기본값)인 경우에만 첫 사용자 메시지로 고정
+                            if (targetRoom) {
+                                const currentName = (targetRoom.name || '').trim();
+                                const isDefaultName = !currentName || currentName === '새 대화';
+                                if (isDefaultName) {
+                                    targetRoom.name = this.truncateText(userMessage, 20);
+                                    await this.putObject('chat_rooms', targetRoom);
+                                }
                             }
                             
                             // PDF2BPMN 작업 감지 및 events watch 시작
-                            this.checkAndSubscribePdf2Bpmn(content, toolCalls);
+                            this.checkAndSubscribePdf2Bpmn(content, toolCalls, targetRoomId);
                             
                             // 응답 파싱 및 이벤트 발생
-                            const parsed = workAssistantAgentService.parseAgentResponse(content);
+                            let parsed = workAssistantAgentService.parseAgentResponse(content);
+                            
+                            // 파싱 실패 시 toolCalls에서 start_process_consulting / generate_process 결과 직접 확인
+                            if (!parsed) {
+                                const toolCallForParse = toolCalls.find(tc =>
+                                    tc.name?.includes('start_process_consulting') ||
+                                    tc.name?.includes('generate_process')
+                                );
+                                if (toolCallForParse?.output) {
+                                    try {
+                                        parsed = this.parseToolOutput(toolCallForParse.output);
+                                    } catch (e) {
+                                        console.warn('[WorkAssistantChatPanel] tool output 파싱 실패:', e);
+                                    }
+                                }
+                            }
+                            
                             if (parsed) {
-                                // 프로세스 생성 요청인 경우 컨설팅 모드로 전환
-                                if (parsed.action === 'process_created' || 
-                                    (parsed.user_request_type === 'generate_process')) {
-                                    await this.switchToConsultingMode(parsed.data?.user_message || userMessage);
+                                // 1) 프로세스 생성 요청 → 컨설팅 모드로 전환 (현재 채팅방일 때만)
+                                if (parsed.user_request_type === 'start_process_consulting' && this.currentRoomId === targetRoomId) {
+                                    let originalMessage = parsed.user_message || userMessage;
+                                    if (parsed.image_analysis_result) {
+                                        originalMessage = `${originalMessage}\n\n[이미지 분석 결과]\n${parsed.image_analysis_result}`;
+                                    }
+                                    console.log('[WorkAssistantChatPanel] start_process_consulting originalMessage:', originalMessage);
+                                    await this.switchToConsultingMode(originalMessage);
+                                    return;
+                                }
+
+                                // 2) 컨설팅 후 생성 확정 → definitions 생성 화면으로 전환 (현재 채팅방일 때만)
+                                if (parsed.user_request_type === 'generate_process' && this.currentRoomId === targetRoomId) {
+                                    // 현재까지의 대화 내용을 store에 저장
+                                    this.$store.dispatch('updateMessages', this.messages);
+                                    // /definitions/chat로 이동
+                                    this.$router.push('/definitions/chat');
                                     return;
                                 }
                                 
                                 this.$emit('response-parsed', parsed);
                             }
                             
-                            this.scrollToBottom();
+                            // 현재 채팅방일 때만 스크롤
+                            if (this.currentRoomId === targetRoomId) {
+                                this.scrollToBottom();
+                            }
                         },
                         onError: (error) => {
-                            this.isLoading = false;
+                            // 로딩 상태 해제 (해당 채팅방)
+                            if (this.loadingStates[targetRoomId]) {
+                                this.loadingStates[targetRoomId].isLoading = false;
+                            }
+                            // 컨트롤러 정리
+                            delete this.agentAbortControllers[targetRoomId];
+                            delete this.agentAbortRequested[targetRoomId];
                             console.error('에이전트 오류:', error);
                             
-                            // 오류 메시지 추가
+                            // 오류 메시지 추가 (현재 채팅방일 때만 UI에 추가)
                             const errorMsgObj = this.createMessageObj(
                                 '죄송합니다. 요청 처리 중 오류가 발생했습니다. 다시 시도해 주세요.',
                                 'assistant'
                             );
-                            this.messages.push(errorMsgObj);
+                            if (this.currentRoomId === targetRoomId) {
+                                this.messages.push(errorMsgObj);
+                            }
+                            // DB에는 항상 저장
+                            this.saveMessageToRoom(errorMsgObj, targetRoomId);
                         }
                     }
+                    ,
+                    { signal: abortController.signal }
                 );
             } catch (error) {
-                this.isLoading = false;
+                // 로딩 상태 해제 (해당 채팅방)
+                if (this.loadingStates[targetRoomId]) {
+                    this.loadingStates[targetRoomId].isLoading = false;
+                }
+                // 컨트롤러 정리
+                delete this.agentAbortControllers[targetRoomId];
+                delete this.agentAbortRequested[targetRoomId];
                 console.error('메시지 전송 오류:', error);
             }
         },
 
         // 메시지 객체 생성
-        createMessageObj(content, role) {
-            return {
+        createMessageObj(content, role, options = {}) {
+            const obj = {
                 uuid: this.uuid(),
                 content: content,
                 role: role,
@@ -633,25 +889,106 @@ export default {
                 email: role === 'user' ? this.userInfo.email : 'system@uengine.org',
                 timeStamp: Date.now()
             };
+            
+            // 이미지 정보 추가
+            if (options.images && options.images.length > 0) {
+                obj.images = options.images;
+                obj.image = options.images[0].url;
+            }
+            
+            // PDF 파일 정보 추가 (Chat.vue에서 전달된 필드명: fileName, fileUrl, fileType, fileSize)
+            if (options.pdfFile) {
+                obj.pdfFile = {
+                    name: options.pdfFile.fileName || options.pdfFile.name,
+                    url: options.pdfFile.fileUrl || options.pdfFile.url,
+                    size: options.pdfFile.fileSize || options.pdfFile.size,
+                    type: options.pdfFile.fileType || options.pdfFile.type
+                };
+            }
+            
+            return obj;
         },
 
-        // 메시지 저장
+        // MCP 도구 output 파싱 (content='...' name=... 형식 처리)
+        parseToolOutput(outputStr) {
+            if (!outputStr) return null;
+            
+            // content='...' name=... 형식 처리 (Python ToolMessage repr 형식)
+            if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
+                try {
+                    // content=' 이후부터 ' name= 직전까지 추출 (인덱스 기반으로 더 안정적)
+                    const contentStart = "content='".length;
+                    // ' name= 또는 ' tool_call_id= 패턴 찾기 (content 끝 마커)
+                    const endMarkers = [/' name=/, /' tool_call_id=/];
+                    let endIdx = -1;
+                    
+                    for (const marker of endMarkers) {
+                        const match = outputStr.match(marker);
+                        if (match && (endIdx === -1 || match.index < endIdx)) {
+                            endIdx = match.index;
+                        }
+                    }
+                    
+                    if (endIdx > contentStart) {
+                        let jsonStr = outputStr.substring(contentStart, endIdx);
+                        // 이스케이프 처리 (순서 중요!)
+                        // 1. 4중 백슬래시 -> 2중 백슬래시
+                        jsonStr = jsonStr.replace(/\\\\\\\\/g, '\\\\');
+                        // 2. 2중 백슬래시+n -> 실제 개행 (\\n -> \n)
+                        jsonStr = jsonStr.replace(/\\\\n/g, '\n');
+                        // 3. 단일 백슬래시+n -> 실제 개행 (\n -> 개행문자)
+                        jsonStr = jsonStr.replace(/\\n/g, '\n');
+                        // 4. 이스케이프된 따옴표 처리
+                        jsonStr = jsonStr.replace(/\\\\"/g, '\\"');
+                        return JSON.parse(jsonStr);
+                    }
+                } catch (e) {
+                    console.warn('[parseToolOutput] content= 형식 파싱 실패:', e.message);
+                }
+            }
+            
+            // 일반 JSON 문자열
+            if (typeof outputStr === 'string') {
+                try {
+                    return JSON.parse(outputStr);
+                } catch (e) {
+                    console.warn('[parseToolOutput] JSON 파싱 실패:', e.message);
+                    return null;
+                }
+            }
+            
+            // 이미 객체인 경우
+            return outputStr;
+        },
+
+        // 메시지 저장 (현재 채팅방에 저장)
         async saveMessage(msg) {
+            await this.saveMessageToRoom(msg, this.currentRoomId);
+        },
+
+        // 특정 채팅방에 메시지 저장 (비동기 콜백에서 사용)
+        async saveMessageToRoom(msg, roomId) {
+            if (!roomId) {
+                console.error('[WorkAssistantChatPanel] saveMessageToRoom: roomId가 없습니다.');
+                return;
+            }
+            
             const messageData = {
                 uuid: msg.uuid,
-                id: this.currentRoomId,
+                id: roomId,
                 messages: msg
             };
             await this.putObject(`chats/${msg.uuid}`, messageData);
             
             // 채팅방 마지막 메시지 업데이트
-            if (this.currentRoom) {
-                this.currentRoom.message = {
+            const room = this.chatRooms.find(r => r.id === roomId);
+            if (room) {
+                room.message = {
                     msg: typeof msg.content === 'string' ? msg.content.substring(0, 50) : 'New message',
                     type: 'text',
                     createdAt: msg.timeStamp
                 };
-                await this.putObject('chat_rooms', this.currentRoom);
+                await this.putObject('chat_rooms', room);
             }
         },
 
@@ -682,6 +1019,18 @@ export default {
             // 일반 코드 블록 처리
             formatted = formatted.replace(/```(\w*)\s*([\s\S]*?)\s*```/g, '<pre class="code-block">$2</pre>');
             
+            // 마크다운 링크 형식 [텍스트](URL) 처리
+            formatted = formatted.replace(
+                /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+                '<a href="$2" target="_blank" class="message-link">$1</a>'
+            );
+            
+            // 일반 URL을 클릭 가능한 링크로 변환 - href=" 뒤에 있는 URL은 제외
+            formatted = formatted.replace(
+                /(?<!href=")(https?:\/\/[^\s<)\]"]+)/g,
+                '<a href="$1" target="_blank" class="message-link">$1</a>'
+            );
+            
             // 줄바꿈 처리
             formatted = formatted.replace(/\n/g, '<br>');
             
@@ -700,6 +1049,7 @@ export default {
                 'get_instance_list': '인스턴스 목록 조회',
                 'get_todolist': '할일 목록 조회',
                 'get_organization': '조직도 조회',
+                'start_process_consulting': '프로세스 컨설팅 시작',
                 'generate_process': '프로세스 생성'
             };
             
@@ -739,6 +1089,8 @@ export default {
                 isStream: true,
                 preferredLanguage: "Korean"
             });
+            // 컨설팅은 "고정 모드"가 아니라, start_process_consulting 도구 호출 시마다 1회 응답 생성으로 처리합니다.
+            // (사용자 다음 메시지는 항상 에이전트가 받아 의도 판단)
             me.isConsultingMode = true;
             
             // 마지막 시스템 메시지 제거 (work-assistant-agent의 응답)
@@ -746,11 +1098,13 @@ export default {
                 me.messages.pop();
             }
             
-            // 전체 대화 내역을 previousMessages에 추가
+            // 전체 대화 내역을 previousMessages에 추가 (마지막 사용자 메시지 제외)
             let chatMsgs = [];
             if (me.messages && me.messages.length > 0) {
-                me.messages.forEach((msg) => {
-                    if (msg.content && !msg.isLoading) {
+                me.messages.forEach((msg, idx) => {
+                    // 마지막 사용자 메시지는 제외 (합쳐진 userMessage로 대체할 예정)
+                    const isLastUserMsg = idx === me.messages.length - 1 && msg.role === 'user';
+                    if (msg.content && !msg.isLoading && !isLastUserMsg) {
                         chatMsgs.push({
                             role: msg.role,
                             content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
@@ -758,6 +1112,13 @@ export default {
                     }
                 });
             }
+            
+            // 합쳐진 userMessage를 사용자 메시지로 추가
+            chatMsgs.push({
+                role: 'user',
+                content: userMessage
+            });
+            
             me.generator.previousMessages = [me.generator.previousMessages[0], ...chatMsgs];
             
             // 컨설팅 시작
@@ -771,8 +1132,15 @@ export default {
             
             if (!me.generator) return;
             
-            me.isLoading = true;
-            me.loadingMessage = '프로세스를 설계하고 있습니다...';
+            // 컨설팅 모드 시작 시점의 roomId 캡처
+            const targetRoomId = me.currentRoomId;
+            me._consultingTargetRoomId = targetRoomId;  // 콜백에서 사용하기 위해 저장
+            
+            // 로딩 상태를 채팅방별로 관리
+            me.loadingStates[targetRoomId] = {
+                isLoading: true,
+                message: '프로세스를 설계하고 있습니다...'
+            };
             
             // 로딩 메시지 표시
             const loadingMsg = me.createMessageObj('...', 'assistant');
@@ -785,7 +1153,9 @@ export default {
                 await me.generator.generate();
             } catch (error) {
                 console.error('컨설팅 생성 오류:', error);
-                me.isLoading = false;
+                if (me.loadingStates[targetRoomId]) {
+                    me.loadingStates[targetRoomId].isLoading = false;
+                }
                 
                 // 로딩 메시지 제거
                 if (me.messages.length > 0 && me.messages[me.messages.length - 1].isLoading) {
@@ -816,7 +1186,10 @@ export default {
         // AIGenerator에서 호출 - 생성 완료
         async onGenerationFinished(response, chatRoomId = null) {
             const me = this;
-            me.isLoading = false;
+            const targetRoomId = me._consultingTargetRoomId || me.currentRoomId;
+            if (me.loadingStates[targetRoomId]) {
+                me.loadingStates[targetRoomId].isLoading = false;
+            }
             
             // 로딩 상태 제거
             me.messages.forEach((message) => {
@@ -847,6 +1220,11 @@ export default {
             
             // afterGenerationFinished 호출
             await me.afterGenerationFinished(jsonData);
+
+            // 컨설팅 1회 실행 종료: 다음 사용자 메시지는 에이전트가 받도록 컨설팅 상태를 정리
+            me.isConsultingMode = false;
+            me.generator = null;
+            me._consultingTargetRoomId = null;
             
             me.scrollToBottom();
         },
@@ -855,7 +1233,10 @@ export default {
         async onError(error) {
             const me = this;
             console.error('Generator 에러:', error);
-            me.isLoading = false;
+            const targetRoomId = me._consultingTargetRoomId || me.currentRoomId;
+            if (me.loadingStates[targetRoomId]) {
+                me.loadingStates[targetRoomId].isLoading = false;
+            }
             
             // 로딩 메시지 제거
             if (me.messages.length > 0 && me.messages[me.messages.length - 1].isLoading) {
@@ -910,10 +1291,9 @@ export default {
                 
                 // 프로세스 생성 모드로 전환
                 if (responseObj.answerType === 'generateProcessDef') {
-                    // 현재까지의 대화 내용을 store에 저장
+                    // 컨설팅 LLM이 "이미 생성 가능"하다고 판단한 경우에는 생성 화면으로 전환
+                    // (generate_process 도구 호출과 동일하게 처리)
                     me.$store.dispatch('updateMessages', me.messages);
-                    
-                    // /definitions/chat로 이동
                     me.$router.push('/definitions/chat');
                     return;
                 }
@@ -936,19 +1316,38 @@ export default {
         // ===== PDF2BPMN Events Watch =====
         
         /**
-         * 기존 메시지에서 PDF2BPMN 작업 확인 및 구독/표시
+         * roomId 기준으로 PDF2BPMN 진행 상태 객체를 생성/반환
          */
-        async checkExistingPdf2BpmnTask() {
+        _getOrInitPdf2bpmnProgress(roomId) {
+            if (!roomId) return null;
+            if (!this.pdf2bpmnProgressByRoomId[roomId]) {
+                this.pdf2bpmnProgressByRoomId[roomId] = {
+                    isActive: false,
+                    taskId: null,
+                    status: '',
+                    progress: 0,
+                    message: '',
+                    generatedBpmns: []
+                };
+            }
+            return this.pdf2bpmnProgressByRoomId[roomId];
+        },
+
+        /**
+         * 기존 메시지에서 PDF2BPMN 작업 확인 및 구독/표시 (채팅방별)
+         */
+        async checkExistingPdf2BpmnTask(roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
-            // 최근 메시지부터 역순으로 확인
+            // 최근 메시지부터 역순으로 확인 (현재 로드된 messages는 targetRoomId의 메시지)
             for (let i = me.messages.length - 1; i >= 0; i--) {
                 const msg = me.messages[i];
                 
                 // 1. 이미 완료된 결과가 있는 경우 - 메시지에 이미 표시됨
                 if (msg.pdf2bpmnResult) {
                     console.log('[WorkAssistantChatPanel] Found existing pdf2bpmn result in message (already displayed)');
-                    // 메시지 하단에 이미 결과가 표시되므로 별도 처리 불필요
                     return;
                 }
                 
@@ -960,32 +1359,12 @@ export default {
                     
                     if (pdf2bpmnTool && pdf2bpmnTool.output) {
                         try {
-                            let output = null;
-                            const outputStr = pdf2bpmnTool.output;
-                            
-                            // output 파싱
-                            if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
-                                const contentMatch = outputStr.match(/content='(.+?)'\s*name=/s);
-                                if (contentMatch) {
-                                    const jsonStr = contentMatch[1]
-                                        .replace(/\\n/g, '\n')
-                                        .replace(/\\"/g, '"')
-                                        .replace(/\\\\/g, '\\');
-                                    output = JSON.parse(jsonStr);
-                                }
-                            } else if (typeof outputStr === 'string') {
-                                output = JSON.parse(outputStr);
-                            } else {
-                                output = outputStr;
-                            }
-                            
+                            const output = this.parseToolOutput(pdf2bpmnTool.output);
                             if (output) {
                                 const taskId = output.workitem_id || output.task_id || output.todo_id || output.id;
                                 if (taskId) {
-                                    console.log(`[WorkAssistantChatPanel] Found existing pdf2bpmn task: ${taskId}`);
-                                    
-                                    // 작업 상태 확인 후 진행 중이면 구독 시작
-                                    await me.checkTaskStatusAndSubscribe(taskId);
+                                    console.log(`[WorkAssistantChatPanel] Found existing pdf2bpmn task: ${taskId} (room: ${targetRoomId})`);
+                                    await me.checkTaskStatusAndSubscribe(taskId, targetRoomId);
                                     return;
                                 }
                             }
@@ -1000,8 +1379,10 @@ export default {
         /**
          * 작업 상태 확인 후 진행 중이면 구독 시작
          */
-        async checkTaskStatusAndSubscribe(taskId) {
+        async checkTaskStatusAndSubscribe(taskId, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             if (!window.$supabase) return;
             
@@ -1020,7 +1401,7 @@ export default {
                     const resultData = typeof completedEvent.data === 'string' 
                         ? JSON.parse(completedEvent.data) 
                         : completedEvent.data;
-                    me.showCompletedTaskResult(resultData);
+                    await me.showCompletedTaskResult(resultData, targetRoomId);
                     return;
                 }
                 
@@ -1041,10 +1422,10 @@ export default {
                 if (todo) {
                     // 진행 중인 작업이면 구독 시작
                     if (todo.status === 'IN_PROGRESS' || todo.status === 'PENDING') {
-                        me.subscribeToEventsForTask(taskId);
+                        me.subscribeToEventsForTask(taskId, targetRoomId);
                         
                         // 기존 events도 로드
-                        await me.loadExistingEvents(taskId);
+                        await me.loadExistingEvents(taskId, targetRoomId);
                     }
                 }
             } catch (e) {
@@ -1055,8 +1436,10 @@ export default {
         /**
          * 기존 events 로드 (채팅방 재입장 시)
          */
-        async loadExistingEvents(taskId) {
+        async loadExistingEvents(taskId, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             if (!window.$supabase) return;
             
@@ -1078,7 +1461,7 @@ export default {
                     
                     // 각 이벤트 처리 (UI 업데이트)
                     for (const event of events) {
-                        me.handlePdf2BpmnEvent(event);
+                        me.handlePdf2BpmnEvent(event, targetRoomId);
                     }
                 }
             } catch (e) {
@@ -1090,8 +1473,10 @@ export default {
          * 완료된 작업 결과 표시 (events에서 가져온 데이터)
          * 메시지에 결과가 없으면 메시지에 추가
          */
-        async showCompletedTaskResult(resultData) {
+        async showCompletedTaskResult(resultData, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             try {
                 console.log('[WorkAssistantChatPanel] Showing completed result:', resultData);
@@ -1112,6 +1497,7 @@ export default {
                     }
                     
                     // 이미 메시지에 결과가 있는지 확인
+                    // (현재 로드된 messages는 targetRoomId의 메시지)
                     const hasResult = me.messages.some(m => m.pdf2bpmnResult);
                     
                     if (!hasResult && generatedBpmns.length > 0) {
@@ -1126,10 +1512,12 @@ export default {
                             savedProcesses: resultData.saved_processes || [],
                             generatedBpmns: generatedBpmns
                         };
-                        
-                        me.messages.push(msgObj);
-                        await me.saveMessage(msgObj);
-                        me.scrollToBottom();
+                        // UI에는 현재 방일 때만 추가, DB에는 항상 저장
+                        if (me.currentRoomId === targetRoomId) {
+                            me.messages.push(msgObj);
+                            me.scrollToBottom();
+                        }
+                        await me.saveMessageToRoom(msgObj, targetRoomId);
                         
                         console.log('[WorkAssistantChatPanel] Added result message with', generatedBpmns.length, 'BPMNs');
                     }
@@ -1142,8 +1530,10 @@ export default {
         /**
          * todolist에서 최근 pdf2bpmn 작업 감지 후 구독 시작
          */
-        async checkAndWatchPdf2BpmnTodo() {
+        async checkAndWatchPdf2BpmnTodo(roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             if (!window.$supabase) return;
             
@@ -1152,10 +1542,10 @@ export default {
                 const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
                 const { data, error } = await window.$supabase
                     .from('todolist')
-                    .select('id, query, agent_orch, created_at')
+                    .select('id, query, agent_orch, start_date')
                     .eq('agent_orch', 'pdf2bpmn')
-                    .gte('created_at', fiveMinAgo)
-                    .order('created_at', { ascending: false })
+                    .gte('start_date', fiveMinAgo)
+                    .order('start_date', { ascending: false })
                     .limit(1);
                 
                 if (error) {
@@ -1168,8 +1558,9 @@ export default {
                     console.log('[WorkAssistantChatPanel] Found recent pdf2bpmn todo:', todo.id);
                     
                     // 이미 구독 중인지 확인
-                    if (me.pdf2bpmnProgress.taskId !== todo.id) {
-                        me.subscribeToEventsForTask(todo.id);
+                    const currentTaskId = me.pdf2bpmnTaskIdByRoomId[targetRoomId];
+                    if (currentTaskId !== todo.id) {
+                        me.subscribeToEventsForTask(todo.id, targetRoomId);
                     }
                 }
             } catch (e) {
@@ -1181,31 +1572,47 @@ export default {
          * 특정 task_id에 대한 events 테이블 watch 시작
          * PDF2BPMN 에이전트의 진행 상황을 실시간으로 받아옴
          */
-        subscribeToEventsForTask(taskId) {
+        subscribeToEventsForTask(taskId, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
             
             if (!window.$supabase) {
                 console.warn('[WorkAssistantChatPanel] Supabase not available');
                 return;
             }
+
+            // 이미 taskId 구독 중이면 재구독하지 않음
+            if (me.pdf2bpmnEventsChannelByTaskId[taskId]) {
+                console.log(`[WorkAssistantChatPanel] Already subscribed to pdf2bpmn task: ${taskId}`);
+                // roomId 매핑만 보정
+                me.pdf2bpmnTaskIdByRoomId[targetRoomId] = taskId;
+                const progress = me._getOrInitPdf2bpmnProgress(targetRoomId);
+                if (progress) progress.taskId = taskId;
+                return;
+            }
+
+            // 같은 room에 기존 task 구독이 있으면 제거 (room별 1개 작업을 기본 가정)
+            const prevTaskId = me.pdf2bpmnTaskIdByRoomId[targetRoomId];
+            if (prevTaskId && prevTaskId !== taskId) {
+                me.unsubscribePdf2bpmnEventsForTask(prevTaskId);
+            }
+            me.pdf2bpmnTaskIdByRoomId[targetRoomId] = taskId;
+
+            const progress = me._getOrInitPdf2bpmnProgress(targetRoomId);
+            if (progress) {
+                progress.isActive = true;
+                progress.taskId = taskId;
+                progress.status = 'started';
+                progress.progress = Math.max(progress.progress || 0, 0);
+                progress.message = progress.message || 'PDF2BPMN 작업 시작 대기 중...';
+                progress.generatedBpmns = progress.generatedBpmns || [];
+            }
             
-            // 기존 구독 해제
-            me.unsubscribeFromEvents();
-            
-            me.pdf2bpmnProgress = {
-                isActive: true,
-                roomId: me.currentRoomId,  // 현재 채팅방 ID 저장
-                taskId: taskId,
-                status: 'started',
-                progress: 0,
-                message: 'PDF2BPMN 작업 시작 대기 중...',
-                generatedBpmns: []
-            };
-            
-            console.log(`[WorkAssistantChatPanel] Subscribing to events for task: ${taskId} in room: ${me.currentRoomId}`);
+            console.log(`[WorkAssistantChatPanel] Subscribing to events for task: ${taskId} in room: ${targetRoomId}`);
             
             // events 테이블 실시간 구독 (todo_id로 필터링)
-            me.eventsChannel = window.$supabase
+            const channel = window.$supabase
                 .channel(`pdf2bpmn-events-${taskId}`)
                 .on(
                     'postgres_changes',
@@ -1216,29 +1623,55 @@ export default {
                         filter: `todo_id=eq.${taskId}`
                     },
                     (payload) => {
-                        me.handlePdf2BpmnEvent(payload.new);
+                        me.handlePdf2BpmnEvent(payload.new, targetRoomId);
                     }
                 )
                 .subscribe((status) => {
                     console.log(`[WorkAssistantChatPanel] Events subscription status: ${status}`);
                 });
+            
+            me.pdf2bpmnEventsChannelByTaskId[taskId] = channel;
         },
         
         /**
-         * events 구독 해제
+         * 특정 taskId의 events 구독 해제
          */
-        unsubscribeFromEvents() {
-            if (this.eventsChannel) {
-                window.$supabase.removeChannel(this.eventsChannel);
-                this.eventsChannel = null;
+        unsubscribePdf2bpmnEventsForTask(taskId) {
+            try {
+                const channel = this.pdf2bpmnEventsChannelByTaskId?.[taskId];
+                if (channel && window.$supabase) {
+                    window.$supabase.removeChannel(channel);
+                }
+            } catch (e) {
+                // ignore
+            } finally {
+                if (this.pdf2bpmnEventsChannelByTaskId) {
+                    delete this.pdf2bpmnEventsChannelByTaskId[taskId];
+                }
+            }
+        },
+
+        /**
+         * PDF2BPMN 전체 구독 해제 (패널 종료 시)
+         */
+        unsubscribeAllPdf2bpmnEvents() {
+            try {
+                const map = this.pdf2bpmnEventsChannelByTaskId || {};
+                Object.keys(map).forEach((taskId) => this.unsubscribePdf2bpmnEventsForTask(taskId));
+            } catch (e) {
+                // ignore
             }
         },
         
         /**
          * PDF2BPMN 이벤트 처리 (browser_use_agent_executor.py와 동일한 패턴)
          */
-        handlePdf2BpmnEvent(event) {
+        handlePdf2BpmnEvent(event, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
+            const progressState = me._getOrInitPdf2bpmnProgress(targetRoomId);
+            if (!progressState) return;
             
             console.log('[WorkAssistantChatPanel] Received PDF2BPMN event:', event);
             
@@ -1275,26 +1708,29 @@ export default {
                 // 이벤트 타입별 상태 업데이트
                 switch (eventType) {
                     case 'task_started':
-                        me.pdf2bpmnProgress.status = 'started';
-                        me.pdf2bpmnProgress.progress = progress || 5;
-                        me.pdf2bpmnProgress.message = message || 'PDF2BPMN 작업 시작됨';
+                        progressState.isActive = true;
+                        progressState.status = 'started';
+                        progressState.progress = progress || 5;
+                        progressState.message = message || 'PDF2BPMN 작업 시작됨';
                         break;
                         
                     case 'tool_usage_started':
-                        me.pdf2bpmnProgress.status = 'processing';
-                        me.pdf2bpmnProgress.progress = Math.max(me.pdf2bpmnProgress.progress, progress || 10);
-                        me.pdf2bpmnProgress.message = message || '처리 중...';
+                        progressState.isActive = true;
+                        progressState.status = 'processing';
+                        progressState.progress = Math.max(progressState.progress, progress || 10);
+                        progressState.message = message || '처리 중...';
                         break;
                         
                     case 'tool_usage_finished':
-                        me.pdf2bpmnProgress.progress = Math.max(me.pdf2bpmnProgress.progress, progress || 80);
-                        me.pdf2bpmnProgress.message = message || '처리 완료';
+                        progressState.isActive = true;
+                        progressState.progress = Math.max(progressState.progress, progress || 80);
+                        progressState.message = message || '처리 완료';
                         
                         // bpmn_xml이 있으면 generatedBpmns에 추가
                         if (messageData.bpmn_xml && messageData.process_id) {
-                            const existing = me.pdf2bpmnProgress.generatedBpmns.find(b => b.process_id === messageData.process_id);
+                            const existing = progressState.generatedBpmns.find(b => b.process_id === messageData.process_id);
                             if (!existing) {
-                                me.pdf2bpmnProgress.generatedBpmns.push({
+                                progressState.generatedBpmns.push({
                                     process_id: messageData.process_id,
                                     process_name: messageData.process_name || 'Unnamed Process',
                                     bpmn_xml: messageData.bpmn_xml
@@ -1306,38 +1742,44 @@ export default {
                         
                     case 'task_completed':
                     case 'crew_completed':
-                        me.pdf2bpmnProgress.status = 'completed';
-                        me.pdf2bpmnProgress.progress = 100;
-                        me.pdf2bpmnProgress.message = message || '변환 완료!';
+                        progressState.isActive = true;
+                        progressState.status = 'completed';
+                        progressState.progress = 100;
+                        progressState.message = message || '변환 완료!';
                         
                         // 완료 메시지를 채팅에 추가
-                        me.addPdf2BpmnResultMessage(messageData);
+                        me.addPdf2BpmnResultMessage(messageData, targetRoomId);
                         
                         // 잠시 후 진행 상황 패널 숨김
                         setTimeout(() => {
-                            me.pdf2bpmnProgress.isActive = false;
+                            const st = me._getOrInitPdf2bpmnProgress(targetRoomId);
+                            if (st) st.isActive = false;
                         }, 3000);
                         break;
                         
                     case 'error':
-                        me.pdf2bpmnProgress.status = 'failed';
-                        me.pdf2bpmnProgress.message = messageData.error || message || '작업 실패';
+                        progressState.isActive = true;
+                        progressState.status = 'failed';
+                        progressState.message = messageData.error || message || '작업 실패';
                         
                         // 에러 메시지를 채팅에 추가
                         const errorMsg = me.createMessageObj(
                             `PDF2BPMN 변환 실패: ${messageData.error || '알 수 없는 오류'}`,
                             'assistant'
                         );
-                        me.messages.push(errorMsg);
+                        if (me.currentRoomId === targetRoomId) {
+                            me.messages.push(errorMsg);
+                        }
+                        me.saveMessageToRoom(errorMsg, targetRoomId);
                         break;
                         
                     default:
                         // 기타 이벤트는 진행률 업데이트만
                         if (progress > 0) {
-                            me.pdf2bpmnProgress.progress = Math.max(me.pdf2bpmnProgress.progress, progress);
+                            progressState.progress = Math.max(progressState.progress, progress);
                         }
                         if (message) {
-                            me.pdf2bpmnProgress.message = message;
+                            progressState.message = message;
                         }
                 }
                 
@@ -1361,8 +1803,12 @@ export default {
             // lastChunk가 true면 최종 결과
             if (event.lastChunk === true) {
                 console.log('[WorkAssistantChatPanel] Received final artifact (lastChunk=true)');
-                me.pdf2bpmnProgress.status = 'completed';
-                me.pdf2bpmnProgress.progress = 100;
+                const progressState = me._getOrInitPdf2bpmnProgress(me.currentRoomId);
+                if (progressState) {
+                    progressState.isActive = true;
+                    progressState.status = 'completed';
+                    progressState.progress = 100;
+                }
             }
         },
         
@@ -1373,6 +1819,8 @@ export default {
             const me = this;
             
             try {
+                const progressState = me._getOrInitPdf2bpmnProgress(me.currentRoomId);
+                if (!progressState) return;
                 let artifactData = artifact;
                 
                 // 문자열인 경우 파싱
@@ -1391,8 +1839,8 @@ export default {
                     // 저장된 프로세스 정보로 결과 메시지 추가
                     if (artifactData.saved_processes && artifactData.saved_processes.length > 0) {
                         // generatedBpmns가 비어있으면 saved_processes로 대체
-                        if (me.pdf2bpmnProgress.generatedBpmns.length === 0) {
-                            me.pdf2bpmnProgress.generatedBpmns = artifactData.saved_processes.map(proc => ({
+                        if (progressState.generatedBpmns.length === 0) {
+                            progressState.generatedBpmns = artifactData.saved_processes.map(proc => ({
                                 process_id: proc.id,
                                 process_name: proc.name,
                                 bpmn_xml: null, // XML은 별도로 가져와야 함
@@ -1401,8 +1849,9 @@ export default {
                         }
                     }
                     
-                    me.pdf2bpmnProgress.status = 'completed';
-                    me.pdf2bpmnProgress.progress = 100;
+                    progressState.isActive = true;
+                    progressState.status = 'completed';
+                    progressState.progress = 100;
                     return;
                 }
                 
@@ -1414,11 +1863,11 @@ export default {
                                 const bpmnData = JSON.parse(part.text);
                                 if (bpmnData.type === 'bpmn' && bpmnData.bpmn_xml) {
                                     // 중복 체크
-                                    const exists = me.pdf2bpmnProgress.generatedBpmns.some(
+                                    const exists = progressState.generatedBpmns.some(
                                         b => b.process_id === bpmnData.process_id
                                     );
                                     if (!exists) {
-                                        me.pdf2bpmnProgress.generatedBpmns.push({
+                                        progressState.generatedBpmns.push({
                                             process_id: bpmnData.process_id,
                                             process_name: bpmnData.process_name,
                                             bpmn_xml: bpmnData.bpmn_xml,
@@ -1439,12 +1888,14 @@ export default {
                 
                 // 직접 bpmn_xml이 있는 경우
                 if (artifactData.bpmn_xml) {
+                    const progressState = me._getOrInitPdf2bpmnProgress(me.currentRoomId);
+                    if (!progressState) return;
                     // 중복 체크
-                    const exists = me.pdf2bpmnProgress.generatedBpmns.some(
+                    const exists = progressState.generatedBpmns.some(
                         b => b.process_id === artifactData.process_id
                     );
                     if (!exists) {
-                        me.pdf2bpmnProgress.generatedBpmns.push({
+                        progressState.generatedBpmns.push({
                             process_id: artifactData.process_id,
                             process_name: artifactData.process_name,
                             bpmn_xml: artifactData.bpmn_xml,
@@ -1461,10 +1912,14 @@ export default {
         /**
          * PDF2BPMN 결과 메시지 추가
          */
-        async addPdf2BpmnResultMessage(resultData) {
+        async addPdf2BpmnResultMessage(resultData, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
+            if (!targetRoomId) return;
+            const progressState = me._getOrInitPdf2bpmnProgress(targetRoomId);
+            if (!progressState) return;
             
-            const processCount = resultData.process_count || me.pdf2bpmnProgress.generatedBpmns.length;
+            const processCount = resultData.process_count || progressState.generatedBpmns.length;
             const savedProcesses = resultData.saved_processes || [];
             
             let content = `✅ **PDF2BPMN 변환 완료**\n\n`;
@@ -1475,9 +1930,9 @@ export default {
                 savedProcesses.forEach((proc, idx) => {
                     content += `${idx + 1}. ${proc.name} (ID: ${proc.id})\n`;
                 });
-            } else if (me.pdf2bpmnProgress.generatedBpmns.length > 0) {
+            } else if (progressState.generatedBpmns.length > 0) {
                 content += `**생성된 프로세스:**\n`;
-                me.pdf2bpmnProgress.generatedBpmns.forEach((bpmn, idx) => {
+                progressState.generatedBpmns.forEach((bpmn, idx) => {
                     content += `${idx + 1}. ${bpmn.process_name}\n`;
                 });
             }
@@ -1488,12 +1943,15 @@ export default {
             msgObj.pdf2bpmnResult = {
                 processCount: processCount,
                 savedProcesses: savedProcesses,
-                generatedBpmns: me.pdf2bpmnProgress.generatedBpmns
+                generatedBpmns: progressState.generatedBpmns
             };
-            
-            me.messages.push(msgObj);
-            await me.saveMessage(msgObj);
-            me.scrollToBottom();
+
+            // UI에는 현재 방일 때만 추가, DB에는 항상 저장
+            if (me.currentRoomId === targetRoomId) {
+                me.messages.push(msgObj);
+                me.scrollToBottom();
+            }
+            await me.saveMessageToRoom(msgObj, targetRoomId);
             
             // 정의 목록 새로고침 이벤트
             me.EventBus.emit('definitions-updated');
@@ -1529,6 +1987,23 @@ export default {
             
             me.selectedBpmn = bpmn;
             me.bpmnPreviewDialog = true;
+        },
+        
+        /**
+         * 이미지 미리보기 (새 탭에서 열기)
+         */
+        openImagePreview(imageUrl) {
+            if (!imageUrl) return;
+            this.previewImageUrl = imageUrl;
+            this.imagePreviewDialog = true;
+        },
+
+        /**
+         * 외부 URL 열기 (PDF 등)
+         */
+        openExternalUrl(url) {
+            if (!url) return;
+            window.open(url, '_blank');
         },
         
         /**
@@ -1570,7 +2045,7 @@ export default {
         openInModeler() {
             if (this.selectedBpmn && this.selectedBpmn.process_id) {
                 // 현재 접속 주소 기반 모델러 URL
-                const modelerUrl = `${window.location.origin}/definitions/${this.selectedBpmn.process_id}`;
+                const modelerUrl = `${window.location.origin}/definitions/${this.selectedBpmn.process_id}?edit=true`;
                 window.open(modelerUrl, '_blank');
                 this.bpmnPreviewDialog = false;
             }
@@ -1579,8 +2054,9 @@ export default {
         /**
          * 응답에서 PDF2BPMN 작업 감지 및 watch 시작
          */
-        checkAndSubscribePdf2Bpmn(responseText, toolCalls) {
+        checkAndSubscribePdf2Bpmn(responseText, toolCalls, roomId) {
             const me = this;
+            const targetRoomId = roomId || me.currentRoomId;
             
             console.log('[WorkAssistantChatPanel] checkAndSubscribePdf2Bpmn called');
             console.log('[WorkAssistantChatPanel] toolCalls:', JSON.stringify(toolCalls, null, 2));
@@ -1601,27 +2077,7 @@ export default {
                     
                     if (outputStr) {
                         try {
-                            let output = null;
-                            
-                            // output 형식: "content='{...}' name='...' tool_call_id='...'"
-                            if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
-                                // content='...' 부분에서 JSON 추출
-                                const contentMatch = outputStr.match(/content='(.+?)'\s*name=/s);
-                                if (contentMatch) {
-                                    // 이스케이프된 JSON 파싱
-                                    const jsonStr = contentMatch[1]
-                                        .replace(/\\n/g, '\n')
-                                        .replace(/\\"/g, '"')
-                                        .replace(/\\\\/g, '\\');
-                                    output = JSON.parse(jsonStr);
-                                }
-                            } else if (typeof outputStr === 'string') {
-                                // 일반 JSON
-                                output = JSON.parse(outputStr);
-                            } else {
-                                output = outputStr;
-                            }
-                            
+                            const output = me.parseToolOutput(outputStr);
                             console.log('[WorkAssistantChatPanel] parsed output:', output);
                             
                             // workitem_id 추출
@@ -1629,7 +2085,7 @@ export default {
                                 const taskId = output.workitem_id || output.task_id || output.todo_id || output.id;
                                 if (taskId) {
                                     console.log(`[WorkAssistantChatPanel] Detected PDF2BPMN task: ${taskId}`);
-                                    me.subscribeToEventsForTask(taskId);
+                                    me.subscribeToEventsForTask(taskId, targetRoomId);
                                     return true;
                                 }
                             }
@@ -1657,7 +2113,7 @@ export default {
                     if (match) {
                         const taskId = match[1];
                         console.log(`[WorkAssistantChatPanel] Detected PDF2BPMN task from response pattern: ${taskId}`);
-                        me.subscribeToEventsForTask(taskId);
+                        me.subscribeToEventsForTask(taskId, targetRoomId);
                         return true;
                     }
                 }
@@ -1676,11 +2132,104 @@ export default {
             )) {
                 // 약간의 지연 후 todolist 확인 (DB 저장 시간 고려)
                 setTimeout(() => {
-                    me.checkAndWatchPdf2BpmnTodo();
+                    me.checkAndWatchPdf2BpmnTodo(targetRoomId);
                 }, 1000);
             }
             
             return false;
+        },
+        
+        // ===== 음성 인식 =====
+        
+        // 음성 인식 시작
+        async startVoiceRecording() {
+            this.isMicRecording = true;
+            if (!navigator.mediaDevices) {
+                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+                this.isMicRecording = false;
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.micRecorder = new MediaRecorder(stream);
+                this.micAudioChunks = [];
+                this.micRecorder.ondataavailable = e => {
+                    this.micAudioChunks.push(e.data);
+                };
+                this.micRecorder.start();
+            } catch (error) {
+                console.error('마이크 접근 오류:', error);
+                this.isMicRecording = false;
+            }
+        },
+        
+        // 음성 인식 중지
+        stopVoiceRecording() {
+            this.isMicRecording = false;
+            if (this.micRecorder && this.micRecorder.state === 'recording') {
+                this.micRecorder.stop();
+                this.micRecorder.onstop = async () => {
+                    const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
+                    await this.uploadAudio(audioBlob);
+                };
+            }
+        },
+        
+        // 음성 파일 업로드 및 텍스트 변환
+        async uploadAudio(audioBlob) {
+            this.isMicRecorderLoading = true;
+            const formData = new FormData();
+            formData.append('audio', audioBlob);
+            try {
+                const response = await fetch('/completion/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.transcript) {
+                    this.inputText = data.transcript;
+                }
+            } catch (error) {
+                console.error('음성 인식 오류:', error);
+            } finally {
+                this.isMicRecorderLoading = false;
+            }
+        }
+        ,
+
+        /**
+         * 에이전트 스트림 중지 (현재 채팅방 또는 특정 채팅방)
+         */
+        stopAgent(roomId) {
+            if (!roomId) return;
+            const controller = this.agentAbortControllers[roomId];
+            const state = this.loadingStates[roomId];
+            if (!controller || !state?.isLoading) return;
+
+            // 사용자 요청에 의한 중지임을 표시 (onAbort에서 메시지 남김)
+            this.agentAbortRequested[roomId] = true;
+            controller.abort();
+        },
+
+        /**
+         * 패널 종료 시 진행 중인 모든 스트림 중지
+         * (사용자 중지 메시지는 남기지 않음)
+         */
+        abortAllAgentStreams() {
+            try {
+                const controllers = this.agentAbortControllers || {};
+                Object.keys(controllers).forEach((roomId) => {
+                    try {
+                        delete this.agentAbortRequested[roomId];
+                        controllers[roomId]?.abort?.();
+                    } catch (e) {
+                        // ignore
+                    }
+                });
+                this.agentAbortControllers = {};
+            } catch (e) {
+                // ignore
+            }
         }
     }
 };
@@ -1811,6 +2360,17 @@ export default {
     word-break: break-word;
 }
 
+.message-text :deep(.message-link) {
+    color: #3b82f6;
+    text-decoration: underline;
+    cursor: pointer;
+    word-break: break-all;
+}
+
+.message-text :deep(.message-link:hover) {
+    color: #1d4ed8;
+}
+
 .message-text :deep(.json-block),
 .message-text :deep(.code-block) {
     background: #1e293b;
@@ -1849,9 +2409,24 @@ export default {
 
 /* 입력 영역 */
 .chat-input-container {
-    padding: 12px 16px;
+    padding: 8px 16px 12px;
     background: white;
     border-top: 1px solid #e2e8f0;
+}
+
+/* Chat 컴포넌트 내부 스타일 오버라이드 (패널 모드) */
+.chat-input-container :deep(.v-card) {
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+.chat-input-container :deep(.v-textarea) {
+    font-size: 14px;
+}
+
+.chat-input-container :deep(.message-input-box) {
+    min-height: 40px;
 }
 
 .chat-input-wrapper {
@@ -1871,6 +2446,11 @@ export default {
 .send-btn {
     flex-shrink: 0;
     margin-bottom: 2px;
+}
+
+.mic-btn {
+    flex-shrink: 0;
+    margin-right: 4px;
 }
 
 /* PDF2BPMN 진행 상황 */
@@ -2134,8 +2714,20 @@ export default {
 }
 
 /* BPMN 미리보기 */
+.bpmn-view-toggle .bpmn-toggle-btn {
+    min-width: 40px !important;
+    width: 40px !important;
+    height: 36px !important;
+}
+
+.bpmn-diagram-container {
+    height: 450px;
+    background: #f8fafc;
+    position: relative;
+}
+
 .bpmn-preview-container {
-    max-height: 400px;
+    max-height: 450px;
     overflow: auto;
     background: #1e293b;
 }
@@ -2149,6 +2741,36 @@ export default {
     color: #e2e8f0;
     white-space: pre-wrap;
     word-break: break-all;
+}
+
+/* 첨부된 이미지 */
+.attached-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.attached-image-item {
+    position: relative;
+}
+
+.attached-image {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attached-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 첨부된 PDF */
+.attached-pdf {
+    display: inline-block;
 }
 </style>
 

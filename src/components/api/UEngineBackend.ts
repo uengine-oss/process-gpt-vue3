@@ -62,7 +62,7 @@ class UEngineBackend implements Backend {
         __warnUnsupported('getMCPByTenant');
         return {};
     }
-    
+
     async setMCPByTenant(mcp: any) {
         __warnUnsupported('setMCPByTenant');
         return { ok: false };
@@ -192,21 +192,21 @@ class UEngineBackend implements Backend {
                 profile: null,
                 username: 'hong',
                 email: 'hong@uengine.io',
-                is_admin: true 
+                is_admin: true
             },
             {
                 id: 2,
                 profile: null,
                 username: 'lee',
                 email: 'lee@uengine.io',
-                is_admin: true 
+                is_admin: true
             },
             {
                 id: 3,
                 profile: null,
                 username: 'kim',
                 email: 'kim@uengine.io',
-                is_admin: true 
+                is_admin: true
             }
         ];
     }
@@ -223,11 +223,11 @@ class UEngineBackend implements Backend {
     async search(keyword: string) {
         let url = '/definition';
         let result = [];
-    
+
         // 데이터 요청
         const response = await axiosInstance.get(url);
         const definitions = response.data?._embedded?.definitions;
-    
+
         // 데이터 변환
         const formattedData = {
             type: "definition",
@@ -242,17 +242,17 @@ class UEngineBackend implements Backend {
                         definition._links?.raw?.href || ""
                     ].filter(Boolean), // 유효한 값만 포함
                 }))
-                .filter((item: any) => 
-                    item.title.includes(keyword) || 
-                    item.href.includes(keyword) || 
+                .filter((item: any) =>
+                    item.title.includes(keyword) ||
+                    item.href.includes(keyword) ||
                     item.matches.some((match: string) => match.includes(keyword))
                 ) // keyword가 title, href, matches 셋 중 아무거나 포함되면 필터링
         };
-    
+
         result.push(formattedData);
         return result;
     }
-    
+
     // Process Definition Service Impl API
     async listDefinition(basePath: string) {
         let url = '/definition';
@@ -318,8 +318,8 @@ class UEngineBackend implements Backend {
             }
         } else {
             const response = await axiosInstance.get(`/versions/${defId}.${options.type}`, options);
-                console.log(response);
-                return response.data?._embedded?.definitions;
+            console.log(response);
+            return response.data?._embedded?.definitions;
         }
     }
     async getVersion(version: string) {
@@ -371,9 +371,9 @@ class UEngineBackend implements Backend {
     }
     // @ts-ignore
     async getRawDefinition(defPath: string, options) {
-        if(options.type == 'deleted') return null;
+        if (options.type == 'deleted') return null;
         let path = `/definition/raw/${defPath}.${options.type}`;
-        if(options.version) {
+        if (options.version) {
             path = path + `/version/${options.version}`
         }
         const response = await axiosInstance.get(path, options);
@@ -808,6 +808,14 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async getMetricsMap() {
+        return null;
+    }
+
+    async putMetricsMap(metricsMap: any) {
+        return null;
+    }
+
     async getAllInstanceList(page: any, size: any) {
         const response = await axiosInstance.get(`/instances/search/findAll?page=${page}&size=${size}`);
         return response.data._embedded.instances;
@@ -829,32 +837,32 @@ class UEngineBackend implements Backend {
     }
 
     async getInstanceListByRole(roles: string, names: string) {
-        if(!roles && !names) {
+        if (!roles && !names) {
             return this.getInstanceList();
         }
         let patternText = '';
-        if(roles) {
+        if (roles) {
             let pattern = roles
-            .split(',')
-            .map(item => {
-                const trimmedItem = item.trim();
-                return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
-            })
-            .join('|');
+                .split(',')
+                .map(item => {
+                    const trimmedItem = item.trim();
+                    return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+                })
+                .join('|');
             patternText += `rolePattern=${encodeURIComponent(pattern)}`;
         }
 
-        if(names) {
+        if (names) {
             let namePattern = names
-            .split(',')
-            .map(item => {
-                const trimmedItem = item.trim();
-                return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
-            })
-            .join('|');
+                .split(',')
+                .map(item => {
+                    const trimmedItem = item.trim();
+                    return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+                })
+                .join('|');
             patternText += `namePattern=${encodeURIComponent(namePattern)}`;
         }
-        
+
         const response = await axiosInstance.get(`/instances/search/findFilterICanSee?${patternText}`);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
@@ -869,17 +877,17 @@ class UEngineBackend implements Backend {
 
     async getInstanceListByGroup(groups: string) {
         let pattern = groups
-        .split(',')
-        .map(item => {
-            const trimmedItem = item.trim();
-            return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
-        })
-        .join('|');
-    
+            .split(',')
+            .map(item => {
+                const trimmedItem = item.trim();
+                return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+            })
+            .join('|');
+
         const response = await axiosInstance.get(
             `/instances/search/findAllByGroupsRegex?status=Running&pattern=${encodeURIComponent(pattern)}`
         );
-    
+
         return response.data._embedded.instances.map((inst: any) => ({
             instId: inst._links.self.href.split('/').pop(),
             instName: inst.name,
@@ -888,20 +896,20 @@ class UEngineBackend implements Backend {
             defId: inst.defId
         }));
     }
-    
-    
+
+
     // 관리자 페이지 필터링 관련  API
     async getFilteredInstanceList(filters: object, page: number, size: number) {
         const queryParams = new URLSearchParams();
         queryParams.append('page', page.toString());
         queryParams.append('size', size.toString()); // size 추가
-    
+
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '') {
                 queryParams.append(key, value as string);
             }
         });
-    
+
         const request = `/instances/search/findFilterICanSee?${queryParams.toString()}`
         const response = await axiosInstance.get(request);
         if (!response.data) return null;
@@ -964,7 +972,7 @@ class UEngineBackend implements Backend {
         if (!response.data) return null;
         return response.data;
     }
-    
+
 
     async startAndComplete(command: object, isSimulate: string) {
         let config = {
@@ -1021,7 +1029,7 @@ class UEngineBackend implements Backend {
             throw error;
         }
     }
-    
+
     async uploadDefinition(file: File, path: string) {
         const formData = new FormData();
         formData.append('file', file);
@@ -1077,7 +1085,7 @@ class UEngineBackend implements Backend {
     async checkDBConnection() {
         return true;
     }
-    
+
     async saveTask(id: string, name: string, type: string, json: any) {
         console.warn("method is not implemented only use PalModeBackend");
         return null;
@@ -1088,7 +1096,7 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    
+
     async fetchNotifications() {
         console.warn("method is not implemented only use Process-GPT Mode");
         return [];
@@ -1725,7 +1733,7 @@ class UEngineBackend implements Backend {
         console.warn("method is not implemented only use Process-GPT Mode");
         return null;
     }
-    
+
     async updateDataSource(dataSource: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
         return null;
@@ -1810,6 +1818,77 @@ class UEngineBackend implements Backend {
 
     async getMCPLists(): Promise<any> {
         console.warn("method is not implemented only use Process-GPT Mode");
+        return null;
+    }
+
+    // ============================================
+    // Task Catalog API (Process-GPT Mode only)
+    // ============================================
+
+    async getTaskSystems(): Promise<any> {
+        console.warn("getTaskSystems is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async saveTaskSystem(system: any): Promise<any> {
+        console.warn("saveTaskSystem is not implemented - only use Process-GPT Mode");
+        return system;
+    }
+
+    async deleteTaskSystem(id: string): Promise<void> {
+        console.warn("deleteTaskSystem is not implemented - only use Process-GPT Mode");
+    }
+
+    async getTaskCatalogList(options?: any): Promise<any> {
+        console.warn("getTaskCatalogList is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async getTaskCatalog(id: string): Promise<any> {
+        console.warn("getTaskCatalog is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async saveTaskCatalog(item: any): Promise<any> {
+        console.warn("saveTaskCatalog is not implemented - only use Process-GPT Mode");
+        return item;
+    }
+
+    async deleteTaskCatalog(id: string): Promise<void> {
+        console.warn("deleteTaskCatalog is not implemented - only use Process-GPT Mode");
+    }
+
+    async getPropertySchemas(taskType?: string): Promise<any> {
+        console.warn("getPropertySchemas is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async savePropertySchema(schema: any): Promise<any> {
+        console.warn("savePropertySchema is not implemented - only use Process-GPT Mode");
+        return schema;
+    }
+
+    async deletePropertySchema(id: string): Promise<void> {
+        console.warn("deletePropertySchema is not implemented - only use Process-GPT Mode");
+    }
+
+    async getPaletteSettings(): Promise<any> {
+        console.warn("getPaletteSettings is not implemented - only use Process-GPT Mode");
+        return { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+    }
+
+    async savePaletteSettings(settings: any): Promise<any> {
+        console.warn("savePaletteSettings is not implemented - only use Process-GPT Mode");
+        return settings;
+    }
+
+    async getPaletteTaskTypes(): Promise<any> {
+        console.warn("getPaletteTaskTypes is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any> {
+        console.warn("updatePaletteTaskType is not implemented - only use Process-GPT Mode");
         return null;
     }
 

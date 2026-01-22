@@ -114,6 +114,11 @@ const MainRoutes = {
             component: () => import('@/components/ui/AdminDetail.vue'),
         },
         {
+            name: 'TaskCatalogAdmin',
+            path: '/admin/task-catalog',
+            component: () => import('@/components/admin/TaskCatalogAdmin.vue')
+        },
+        {
             name: 'Mega Process Detail',
             path: '/definition-map/mega/:id',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),

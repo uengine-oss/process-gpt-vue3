@@ -61,10 +61,12 @@ class WorkAssistantAgentService {
      * @param {Function} onDone - 완료 콜백
      * @param {Function} onError - 에러 콜백
      * @param {Function} onAskUser - ask_user 응답 감지 콜백 (Human in the Loop)
+     * @param {AbortSignal} options.signal - 요청 중지(Abort)용 시그널
+     * @param {Function} callbacks.onAbort - Abort 발생 시 콜백
      * @returns {Promise<void>}
      */
-    async sendMessageStream(params, callbacks = {}) {
-        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAskUser } = callbacks;
+    async sendMessageStream(params, callbacks = {}, options = {}) {
+        const { onToken, onToolStart, onToolEnd, onDone, onError, onMetadata, onAskUser, onAbort } = callbacks;
 
         try {
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
@@ -72,6 +74,7 @@ class WorkAssistantAgentService {
                 headers: {
                     'Content-Type': 'application/json; charset=utf-8',
                 },
+                signal: options.signal,
                 body: JSON.stringify({
                     message: params.message,
                     tenant_id: params.tenant_id,
@@ -119,6 +122,11 @@ class WorkAssistantAgentService {
                 }
             }
         } catch (error) {
+            // 사용자가 중지 버튼을 누르는 등 Abort 된 경우는 에러로 취급하지 않음
+            if (error?.name === 'AbortError') {
+                if (onAbort) onAbort(error);
+                return;
+            }
             if (onError) {
                 onError(error);
             } else {

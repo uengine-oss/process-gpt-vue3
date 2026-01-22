@@ -1,9 +1,14 @@
 <template>
     <div id="property-panel" style="overflow: auto;"
         class="is-work-height"
+        :class="{ 'view-mode-panel-content': isViewMode }"
     >
-        <v-row class="ma-0 pa-4 pb-0">
-            <v-card-title v-if="isViewMode" class="pa-0">{{ name }}</v-card-title>
+        <v-row class="ma-0 pa-4 pb-0" :class="{ 'view-mode-header': isViewMode }">
+            <v-chip v-if="isViewMode" color="info" variant="tonal" size="x-small" class="mr-2">
+                <v-icon start size="x-small">mdi-eye</v-icon>
+                {{ $t('BpmnPropertyPanel.readOnly') || 'Read Only' }}
+            </v-chip>
+            <v-card-title v-if="isViewMode" class="pa-0 view-mode-title">{{ name }}</v-card-title>
             <v-text-field v-else-if="!isPALMode" v-model="name" :label="$t('BpmnPropertyPanel.name')" 
                 :disabled="isViewMode" ref="cursor" 
                 class="bpmn-property-panel-name mb-3 delete-input-details"
@@ -39,6 +44,14 @@
                 </v-menu>
             </div>
             <v-spacer></v-spacer>
+            <v-tooltip v-if="!isViewMode && isTaskElement" location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-btn v-bind="props" @click="$emit('saveToCatalog')" icon variant="text" density="comfortable" class="panel-close-btn">
+                        <v-icon>mdi-folder-plus</v-icon>
+                    </v-btn>
+                </template>
+                <span>{{ $t('taskCatalog.saveToCatalog') || 'Save to Catalog' }}</span>
+            </v-tooltip>
             <v-btn v-if="!isViewMode" @click="save" icon variant="text" density="comfortable" class="panel-close-btn">
                 <v-icon>mdi-content-save</v-icon>
             </v-btn>
@@ -46,8 +59,11 @@
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-row>
-        <v-card-text class="delete-input-details pa-0 pr-4 pl-4" style="overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);">
-            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" class="pa-4 pb-0">
+        <v-card-text
+            class="delete-input-details pa-0 pr-4 pl-4"
+            :style="isViewMode ? 'overflow: auto; flex: 1;' : 'overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);'"
+        >
+            <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" :class="isViewMode ? 'pa-2 pb-0' : 'pa-4 pb-0'">
                 <ValidationField v-if="checkValidation()" :validation="checkValidation()"></ValidationField>
                 <div class="mb-3" v-if="!panelName.includes('sequence-flow')">{{ $t('BpmnPropertyPanel.role') }}: {{ role.name }}</div>
             </div>
@@ -70,6 +86,17 @@
                 @addUengineVariable="(val) => $emit('addUengineVariable', val)"
                 :key="componentKey"
             ></component>
+
+            <!-- Zeebe Properties Panel (Camunda 8) -->
+            <ZeebePropertiesPanel
+                v-if="hasZeebeProperties"
+                :uengineProperties="uengineProperties"
+                :elementType="element.$type"
+                :isViewMode="isViewMode"
+                ref="zeebePanel"
+                @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
+            />
+
             <v-dialog
                 v-if="isViewMode"
                 v-model="printDialog"
@@ -105,10 +132,13 @@ import { useBpmnStore } from '@/stores/bpmn';
 import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/ValidationField.vue';
 import PDFPreviewer from '@/components/PDFPreviewer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
+import ZeebePropertiesPanel from '@/components/designer/bpmnModeling/bpmn/panel/ZeebePropertiesPanel.vue';
 
+import BusinessRuleTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/BusinessRuleTaskPanel.vue';
 
 export default {
     name: 'bpmn-property-panel',
+    emits: ['close', 'addUengineVariable', 'saveToCatalog'],
     props: {
         element: Object,
         processDefinition: Object,
@@ -143,7 +173,7 @@ export default {
         if( json ) {
             this.uengineProperties = JSON.parse(json);
         }
-        
+
         // customProperties 복원
         if (extensionElement.variables && extensionElement.variables.length > 0) {
             this.uengineProperties.customProperties = extensionElement.variables.map(variable => {
@@ -153,6 +183,9 @@ export default {
                 };
             });
         }
+
+        // Zeebe 속성 마이그레이션 (extension elements -> uengineProperties.zeebe)
+        this.migrateZeebeProperties();
         if (this.element.lanes?.length > 0) {
             this.role = this.element.lanes[0];
         }
@@ -163,7 +196,9 @@ export default {
     },
     components: {
         ValidationField,
-        PDFPreviewer
+        PDFPreviewer,
+        BusinessRuleTaskPanel,
+        ZeebePropertiesPanel
     },
     data() {
         return {
@@ -251,6 +286,19 @@ export default {
                 type = 'gateway';
             }
             return type + '-panel';
+        },
+        isTaskElement() {
+            const type = this.element?.$type || '';
+            return type.includes('Task') || type.includes('Activity');
+        },
+        hasZeebeProperties() {
+            if (!this.element || !this.element.extensionElements || !this.element.extensionElements.values) {
+                return false;
+            }
+            return this.element.extensionElements.values.some(ext => {
+                const type = ext.$type || '';
+                return type.startsWith('zeebe:');
+            });
         }
         // inputData() {
         //     let params = this.uengineProperties.parameters;
@@ -312,9 +360,13 @@ export default {
                 this.$emit('close');
                 return;
             }
+
             if (this.$refs.panelComponent && this.$refs.panelComponent.beforeSave) {
                 await this.$refs.panelComponent.beforeSave();
-                console.log(this.uengineProperties)
+            }
+            // Zeebe 패널 저장
+            if (this.$refs.zeebePanel && this.$refs.zeebePanel.beforeSave) {
+                await this.$refs.zeebePanel.beforeSave();
             }
             const modeling = this.bpmnModeler.get('modeling');
             const elementRegistry = this.bpmnModeler.get('elementRegistry');
@@ -370,26 +422,31 @@ export default {
                 }
             }
 
-            if (elementCopyDeep.extensionElements && elementCopyDeep.extensionElements.values) {
-                elementCopyDeep.extensionElements.values[0].json = json;
-                // variables 업데이트
-                elementCopyDeep.extensionElements.values[0].variables = variables;
-            } else {
-                // uengine:Properties 생성
-                const uengineProps = bpmnFactory.create('uengine:Properties', {
-                    json: json,
-                    variables: variables
-                });
-                
-                elementCopyDeep.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', {
-                    values: [uengineProps]
-                });
+            // ExtensionElements 처리
+            let extensionElements = task.businessObject.extensionElements;
+            let values = [];
+
+            if (extensionElements && extensionElements.values) {
+                // 기존 값들 중 uengine:Properties가 아닌 것들은 유지
+                values = extensionElements.values.filter(value => value.$type !== 'uengine:Properties');
             }
+
+            // 새로운 uengine:Properties 생성
+            const uengineProps = bpmnFactory.create('uengine:Properties', {
+                json: json,
+                variables: variables
+            });
+            values.push(uengineProps);
+
+            // 새로운 ExtensionElements 생성
+            const newExtensionElements = bpmnFactory.create('bpmn:ExtensionElements', {
+                values: values
+            });
 
             if (this.elementCopy.text) elementCopyDeep.text = this.text;
 
             modeling.updateProperties(task, {
-                extensionElements: elementCopyDeep.extensionElements
+                extensionElements: newExtensionElements
             });
 
             this.$emit('close');
@@ -483,11 +540,290 @@ export default {
         },
         closePanel() {
             this.$emit('close');
+        },
+        migrateZeebeProperties() {
+            if (!this.element || !this.element.extensionElements || !this.element.extensionElements.values) {
+                return;
+            }
+
+            const extensionElements = this.element.extensionElements.values;
+            const hasZeebe = extensionElements.some(ext => (ext.$type || '').startsWith('zeebe:'));
+
+            if (!hasZeebe) {
+                return;
+            }
+
+            // Initialize zeebe structure if not exists
+            if (!this.uengineProperties.zeebe) {
+                this.uengineProperties.zeebe = {
+                    taskDefinition: { type: '', retries: '3' },
+                    formDefinition: { formId: '', formKey: '' },
+                    assignmentDefinition: { assignee: '', candidateGroups: '', candidateUsers: '' },
+                    priorityDefinition: { priority: '' },
+                    taskSchedule: { dueDate: '', followUpDate: '' },
+                    calledDecision: { decisionId: '', resultVariable: '' },
+                    calledElement: { processId: '', propagateAllChildVariables: false },
+                    script: { expression: '', resultVariable: '' },
+                    ioMapping: { inputs: [], outputs: [] },
+                    taskHeaders: [],
+                    executionListeners: [],
+                    taskListeners: [],
+                    properties: []
+                };
+            }
+
+            // Extract Zeebe properties from extension elements
+            extensionElements.forEach(ext => {
+                const type = ext.$type || '';
+
+                if (type === 'zeebe:TaskDefinition') {
+                    this.uengineProperties.zeebe.taskDefinition = {
+                        type: ext.type || '',
+                        retries: ext.retries || '3'
+                    };
+                }
+                else if (type === 'zeebe:FormDefinition') {
+                    this.uengineProperties.zeebe.formDefinition = {
+                        formId: ext.formId || '',
+                        formKey: ext.formKey || ''
+                    };
+                }
+                else if (type === 'zeebe:AssignmentDefinition') {
+                    this.uengineProperties.zeebe.assignmentDefinition = {
+                        assignee: ext.assignee || '',
+                        candidateGroups: ext.candidateGroups || '',
+                        candidateUsers: ext.candidateUsers || ''
+                    };
+                }
+                else if (type === 'zeebe:PriorityDefinition') {
+                    this.uengineProperties.zeebe.priorityDefinition = {
+                        priority: ext.priority || ''
+                    };
+                }
+                else if (type === 'zeebe:TaskSchedule') {
+                    this.uengineProperties.zeebe.taskSchedule = {
+                        dueDate: ext.dueDate || '',
+                        followUpDate: ext.followUpDate || ''
+                    };
+                }
+                else if (type === 'zeebe:CalledDecision') {
+                    this.uengineProperties.zeebe.calledDecision = {
+                        decisionId: ext.decisionId || '',
+                        resultVariable: ext.resultVariable || ''
+                    };
+                }
+                else if (type === 'zeebe:CalledElement') {
+                    this.uengineProperties.zeebe.calledElement = {
+                        processId: ext.processId || '',
+                        propagateAllChildVariables: ext.propagateAllChildVariables === true || ext.propagateAllChildVariables === 'true'
+                    };
+                }
+                else if (type === 'zeebe:Script') {
+                    this.uengineProperties.zeebe.script = {
+                        expression: ext.expression || '',
+                        resultVariable: ext.resultVariable || ''
+                    };
+                }
+                else if (type === 'zeebe:IoMapping') {
+                    const inputs = [];
+                    const outputs = [];
+
+                    if (ext.inputParameters) {
+                        ext.inputParameters.forEach(inp => {
+                            inputs.push({ source: inp.source || '', target: inp.target || '' });
+                        });
+                    }
+                    if (ext.outputParameters) {
+                        ext.outputParameters.forEach(out => {
+                            outputs.push({ source: out.source || '', target: out.target || '' });
+                        });
+                    }
+
+                    this.uengineProperties.zeebe.ioMapping = { inputs, outputs };
+                }
+                else if (type === 'zeebe:TaskHeaders') {
+                    const headers = [];
+                    if (ext.values) {
+                        ext.values.forEach(h => {
+                            headers.push({ key: h.key || '', value: h.value || '' });
+                        });
+                    }
+                    this.uengineProperties.zeebe.taskHeaders = headers;
+                }
+                else if (type === 'zeebe:ExecutionListeners') {
+                    const listeners = [];
+                    if (ext.executionListeners) {
+                        ext.executionListeners.forEach(l => {
+                            listeners.push({
+                                eventType: l.eventType || 'start',
+                                type: l.type || '',
+                                retries: l.retries || '3'
+                            });
+                        });
+                    }
+                    this.uengineProperties.zeebe.executionListeners = listeners;
+                }
+                else if (type === 'zeebe:TaskListeners') {
+                    const listeners = [];
+                    if (ext.taskListeners) {
+                        ext.taskListeners.forEach(l => {
+                            listeners.push({
+                                eventType: l.eventType || 'creating',
+                                type: l.type || '',
+                                retries: l.retries || '3'
+                            });
+                        });
+                    }
+                    this.uengineProperties.zeebe.taskListeners = listeners;
+                }
+                else if (type === 'zeebe:Properties') {
+                    const props = [];
+                    if (ext.properties) {
+                        ext.properties.forEach(p => {
+                            props.push({ name: p.name || '', value: p.value || '' });
+                        });
+                    }
+                    this.uengineProperties.zeebe.properties = props;
+                }
+            });
         }
     }
 };
 </script>
 
 <style>
+/* View Mode Panel Styles - Compact */
+.view-mode-panel-content {
+    background: #ffffff;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.view-mode-panel-content > .v-row:first-child {
+    flex-shrink: 0;
+}
+
+.view-mode-panel-content > .v-card-text {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 12px !important;
+}
+
+.view-mode-header {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 4px 10px !important;
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 36px !important;
+    max-height: 36px !important;
+}
+
+.view-mode-title {
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: #1e293b;
+    line-height: 1.2;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.view-mode-header .v-chip {
+    height: 20px !important;
+    font-size: 0.7rem !important;
+}
+
+.view-mode-header .panel-close-btn {
+    width: 24px !important;
+    height: 24px !important;
+}
+
+.view-mode-header .panel-close-btn .v-icon {
+    font-size: 16px !important;
+}
+
+/* All inputs and interactive elements disabled in view mode */
+.view-mode-panel-content .v-field,
+.view-mode-panel-content .v-input,
+.view-mode-panel-content .v-textarea,
+.view-mode-panel-content .v-select,
+.view-mode-panel-content .v-autocomplete,
+.view-mode-panel-content .v-text-field,
+.view-mode-panel-content .v-radio-group,
+.view-mode-panel-content .v-radio,
+.view-mode-panel-content .v-checkbox,
+.view-mode-panel-content .v-switch,
+.view-mode-panel-content .v-slider {
+    pointer-events: none !important;
+}
+
+/* Hide action buttons in view mode (add/delete/edit buttons inside panel) */
+.view-mode-panel-content .v-card .v-btn:not(.panel-close-btn),
+.view-mode-panel-content .v-row .v-btn:not(.panel-close-btn) {
+    display: none !important;
+}
+
+/* But keep the close button visible */
+.view-mode-panel-content .panel-close-btn {
+    display: inline-flex !important;
+    pointer-events: auto !important;
+}
+
+.view-mode-panel-content .v-field--disabled,
+.view-mode-panel-content .v-field {
+    opacity: 1 !important;
+}
+
+.view-mode-panel-content .v-field__input,
+.view-mode-panel-content .v-field textarea {
+    color: #334155 !important;
+}
+
+/* Hide unnecessary elements in view mode */
+.view-mode-panel-content .v-input__append,
+.view-mode-panel-content .v-field__append-inner,
+.view-mode-panel-content .v-field__clearable {
+    display: none !important;
+}
+
+/* View mode card sections */
+.view-mode-panel-content .v-card {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+/* Compact spacing */
+.view-mode-panel-content .mb-6 {
+    margin-bottom: 8px !important;
+}
+
+.view-mode-panel-content .mt-6 {
+    margin-top: 8px !important;
+}
+
+.view-mode-panel-content .pa-4,
+.view-mode-panel-content .pa-2 {
+    padding: 6px !important;
+}
+
+.view-mode-panel-content .mb-3 {
+    margin-bottom: 4px !important;
+}
+
+/* Hide print button in compact view */
+.view-mode-panel-content .panel-download-btn {
+    display: none !important;
+}
+
+/* Compact input fields */
+.view-mode-panel-content .v-input {
+    margin-bottom: 4px !important;
+}
+
+.view-mode-panel-content .v-field {
+    font-size: 0.875rem;
+}
 </style>
 

@@ -735,8 +735,7 @@ export default {
             const compact = { eventSynchronization, businessRuleId, _type };
 
             this.copyUengineProperties = compact;
-            this.$emit('update:uengineProperties', this.copyUengineProperties);
-        }
+        },
     }
 };
 </script>

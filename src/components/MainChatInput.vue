@@ -96,99 +96,31 @@
             </v-menu>
         </div>
 
-        <!-- 선택된 파일 표시 -->
-        <div v-if="selectedFile" class="selected-file-container">
-            <div class="selected-file-chip">
-                <v-icon size="18" color="error" class="mr-2">mdi-file-pdf-box</v-icon>
-                <span class="file-name">{{ selectedFile.name }}</span>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="x-small"
-                    @click="clearSelectedFile"
-                    class="remove-file-btn"
-                >
-                    <v-icon size="16">mdi-close</v-icon>
-                </v-btn>
-            </div>
-        </div>
-
-        <!-- 입력 필드 -->
+        <!-- 입력 필드 - Chat 컴포넌트 사용 -->
         <div class="input-wrapper">
-            <div class="input-field-container">
-                <!-- 숨겨진 파일 입력 -->
-                <input
-                    type="file"
-                    ref="fileInput"
-                    accept=".pdf,application/pdf"
-                    @change="handleFileSelect"
-                    class="d-none"
-                />
-                
-                <!-- 파일 첨부 버튼 -->
-                <v-tooltip text="PDF 파일 첨부">
-                    <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            icon
-                            variant="text"
-                            size="small"
-                            @click="triggerFileSelect"
-                            class="attach-btn mr-1"
-                            :disabled="isUploading"
-                        >
-                            <v-icon size="20" :color="selectedFile ? 'primary' : 'grey'">mdi-paperclip</v-icon>
-                        </v-btn>
-                    </template>
-                </v-tooltip>
-
-                <v-icon class="input-icon" color="primary" size="20">mdi-message-text-outline</v-icon>
-                <input
-                    v-model="inputText"
-                    type="text"
-                    class="main-input"
-                    :placeholder="selectedFile ? $t('mainChat.placeholderWithFile') || 'PDF 파일과 함께 보낼 메시지를 입력하세요...' : $t('mainChat.placeholder')"
-                    @keyup.enter="handleSubmit"
-                    @focus="isFocused = true"
-                    @blur="handleBlur"
-                    ref="inputField"
-                    :disabled="isUploading"
-                />
-                
-                <!-- 업로드 중 로딩 표시 -->
-                <v-progress-circular
-                    v-if="isUploading"
-                    indeterminate
-                    size="20"
-                    width="2"
-                    color="primary"
-                    class="mr-2"
-                ></v-progress-circular>
-                
-                <v-btn
-                    v-else
-                    icon
-                    variant="text"
-                    size="small"
-                    color="primary"
-                    :disabled="!inputText.trim() && !selectedFile"
-                    @click="handleSubmit"
-                    class="send-btn"
-                >
-                    <v-icon>mdi-send</v-icon>
-                </v-btn>
-            </div>
+            <Chat 
+                :workAssistantAgentMode="true"
+                :disableChat="isUploading"
+                :isMobile="false"
+                @sendMessage="handleChatMessage"
+                @recording-mode-change="handleRecordingModeChange"
+            />
         </div>
+        <!-- NOTE: 이미지 첨부/미리보기는 workAssistantAgentMode 모드에서 Chat.vue가 전담 -->
     </div>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import Chat from '@/components/ui/Chat.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'MainChatInput',
+    components: {
+        Chat
+    },
     props: {
         agentInfo: {
             type: Object,
@@ -210,9 +142,14 @@ export default {
             displayLimit: 10,
             showAll: false,
             userInfo: null,
-            // 파일 업로드 관련
-            selectedFile: null,
             isUploading: false,
+            // 음성 인식 관련
+            isMicRecording: false,
+            micRecorder: null,
+            micAudioChunks: [],
+            isMicRecorderLoading: false,
+            recordingMode: false,
+            // NOTE: 이미지 첨부는 Chat.vue가 전담
             examples: [
                 {
                     icon: 'mdi-plus-circle-outline',
@@ -238,6 +175,11 @@ export default {
         };
     },
     computed: {
+        textareaRows() {
+            if (!this.inputText) return 1;
+            const lineCount = (this.inputText.match(/\n/g) || []).length + 1;
+            return Math.min(Math.max(lineCount, 1), 7);
+        },
         displayedHistory() {
             if (this.showAll) {
                 return this.chatHistory;
@@ -265,70 +207,49 @@ export default {
     },
     methods: {
         selectExample(example) {
-            this.inputText = example.text;
-            this.$refs.inputField.focus();
-        },
-        async handleSubmit() {
-            if (!this.inputText.trim() && !this.selectedFile) return;
-            
-            let fileInfo = null;
-            
-            // 파일이 선택되어 있으면 먼저 업로드
-            if (this.selectedFile) {
-                this.isUploading = true;
-                try {
-                    const uploadResult = await backend.uploadFile(this.selectedFile.name, this.selectedFile);
-                    if (uploadResult && uploadResult.publicUrl) {
-                        fileInfo = {
-                            fileName: this.selectedFile.name,
-                            fileUrl: uploadResult.publicUrl,
-                            fileType: this.selectedFile.type,
-                            fileSize: this.selectedFile.size
-                        };
-                    }
-                } catch (error) {
-                    console.error('파일 업로드 오류:', error);
-                    this.$emit('upload-error', error);
-                } finally {
-                    this.isUploading = false;
-                }
-            }
-            
+            // 예시 선택 시 Chat 컴포넌트로 메시지 전달하여 바로 전송
             this.$emit('submit', {
-                text: this.inputText.trim(),
+                text: example.text,
                 timestamp: new Date().toISOString(),
-                file: fileInfo
+                file: null,
+                images: null
             });
-            
-            this.inputText = '';
-            this.selectedFile = null;
         },
+        // Chat 컴포넌트에서 메시지 전송 시 처리
+        async handleChatMessage(message) {
+            console.log('[MainChatInput] handleChatMessage 받음:', message);
+            // Chat은 "입력 UI 트리거"로만 사용하고,
+            // 실제 전송/업로드/첨부 구조는 기존 MainChatInput 로직(handleSubmit)로 유지
+            if (!message || (!message.text && !message.file && (!message.images || message.images.length === 0))) return;
+            this.inputText = (message.text || '').trim();
+
+            const submitPayload = {
+                text: this.inputText,
+                timestamp: new Date().toISOString(),
+                file: message.file || null,
+                images: message.images || null
+            };
+            console.log('[MainChatInput] submit emit:', submitPayload);
+            this.$emit('submit', submitPayload);
+
+            this.inputText = '';
+        },
+        // 음성 대화 모드 변경 처리
+        handleRecordingModeChange(isRecording) {
+            this.recordingMode = isRecording;
+            this.$emit('recording-mode-change', isRecording);
+        },
+        // NOTE: PDF 업로드/선택/미리보기는 Chat.vue로 일원화 (중복 제거)
         handleBlur() {
             this.isFocused = false;
         },
-        // 파일 선택 처리
-        handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) {
-                // PDF 파일만 허용
-                if (file.type === 'application/pdf') {
-                    this.selectedFile = file;
-                } else {
-                    alert('PDF 파일만 업로드할 수 있습니다.');
-                    event.target.value = '';
-                }
-            }
-        },
-        // 선택된 파일 제거
-        clearSelectedFile() {
-            this.selectedFile = null;
-            if (this.$refs.fileInput) {
-                this.$refs.fileInput.value = '';
-            }
-        },
-        // 파일 선택 창 열기
-        triggerFileSelect() {
-            this.$refs.fileInput.click();
+        
+        // 이미지 선택 창 열기
+        // NOTE: 이미지 관련 트리거/처리는 Chat.vue가 전담
+        // 헤드셋(음성 대화) 모드 토글
+        toggleRecordingMode() {
+            this.recordingMode = !this.recordingMode;
+            this.$emit('recording-mode-change', this.recordingMode);
         },
         async loadHistory() {
             if (!this.userInfo) {
@@ -414,6 +335,58 @@ export default {
             }
             // 그 외
             return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+        },
+        // 음성 인식 시작
+        async startVoiceRecording() {
+            this.isMicRecording = true;
+            if (!navigator.mediaDevices) {
+                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+                this.isMicRecording = false;
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.micRecorder = new MediaRecorder(stream);
+                this.micAudioChunks = [];
+                this.micRecorder.ondataavailable = e => {
+                    this.micAudioChunks.push(e.data);
+                };
+                this.micRecorder.start();
+            } catch (error) {
+                console.error('마이크 접근 오류:', error);
+                this.isMicRecording = false;
+            }
+        },
+        // 음성 인식 중지
+        stopVoiceRecording() {
+            this.isMicRecording = false;
+            if (this.micRecorder && this.micRecorder.state === 'recording') {
+                this.micRecorder.stop();
+                this.micRecorder.onstop = async () => {
+                    const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
+                    await this.uploadAudio(audioBlob);
+                };
+            }
+        },
+        // 음성 파일 업로드 및 텍스트 변환
+        async uploadAudio(audioBlob) {
+            this.isMicRecorderLoading = true;
+            const formData = new FormData();
+            formData.append('audio', audioBlob);
+            try {
+                const response = await fetch('/completion/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.transcript) {
+                    this.inputText = data.transcript;
+                }
+            } catch (error) {
+                console.error('음성 인식 오류:', error);
+            } finally {
+                this.isMicRecorderLoading = false;
+            }
         }
     }
 };
@@ -423,9 +396,9 @@ export default {
 .main-chat-input-container {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     border-radius: 16px;
     border: 1px solid #e2e8f0;
+    background-color: rgba(var(--v-theme-primary), 0.1);
 }
 
 /* 히스토리 버튼 */
@@ -540,18 +513,15 @@ export default {
     border: 1px solid #e2e8f0;
     border-radius: 20px;
     font-size: 13px;
-    color: #475569;
+    color: #808080;
     cursor: pointer;
-    transition: all 0.2s ease;
     white-space: nowrap;
 }
 
 .example-chip:hover {
     background: #f1f5f9;
     border-color: #cbd5e1;
-    color: #1e293b;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    color: #808080;
 }
 
 /* 입력 필드 */
@@ -561,11 +531,11 @@ export default {
 
 .input-field-container {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     background: white;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
-    padding: 4px 8px 4px 16px;
+    padding: 8px 8px 8px 16px;
     transition: all 0.2s ease;
 }
 
@@ -577,33 +547,109 @@ export default {
 .input-icon {
     flex-shrink: 0;
     margin-right: 12px;
+    margin-top: 10px;
 }
 
-.main-input {
+.main-input-textarea {
     flex: 1;
-    border: none;
-    outline: none;
     font-size: 15px;
     color: #1e293b;
     background: transparent;
-    padding: 12px 0;
 }
 
-.main-input::placeholder {
+.main-input-textarea :deep(.v-input__control) {
+    min-height: unset !important;
+}
+
+.main-input-textarea :deep(.v-field) {
+    padding: 0 !important;
+    min-height: unset !important;
+}
+
+.main-input-textarea :deep(.v-field__field) {
+    min-height: unset !important;
+}
+
+.main-input-textarea :deep(.v-field__input) {
+    padding: 8px 0 !important;
+    min-height: 24px !important;
+    font-size: 15px;
+    overflow: hidden !important;
+}
+
+.main-input-textarea :deep(textarea) {
+    min-height: 24px !important;
+    line-height: 1.5 !important;
+}
+
+.main-input-textarea :deep(textarea::placeholder) {
     color: #94a3b8;
 }
 
 .send-btn {
     flex-shrink: 0;
     margin-left: 8px;
+    align-self: flex-end;
+    margin-bottom: 2px;
+}
+
+.mic-btn {
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 2px;
 }
 
 /* 파일 첨부 버튼 */
 .attach-btn {
     flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 2px;
 }
 
-/* 선택된 파일 표시 */
+/* 헤드셋 버튼 */
+.headset-btn {
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin-bottom: 2px;
+}
+
+/* 첨부 메뉴 */
+.attach-menu-list {
+    min-width: 160px;
+}
+
+/* 첨부된 이미지 미리보기 */
+.attached-images-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.attached-image-item {
+    position: relative;
+    width: 64px;
+    height: 64px;
+}
+
+.attached-image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.remove-image-btn {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+}
+
+/* 선택된 PDF 파일 표시 */
 .selected-file-container {
     margin-bottom: 12px;
 }
@@ -612,11 +658,11 @@ export default {
     display: inline-flex;
     align-items: center;
     padding: 8px 12px;
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-    border: 1px solid #fecaca;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #93c5fd;
     border-radius: 8px;
     font-size: 13px;
-    color: #991b1b;
+    color: #475569;
 }
 
 .file-name {
@@ -628,7 +674,7 @@ export default {
 
 .remove-file-btn {
     margin-left: 4px;
-    color: #991b1b !important;
+    color: #475569 !important;
 }
 
 /* 모바일 반응형 */

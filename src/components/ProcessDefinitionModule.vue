@@ -1137,19 +1137,24 @@ export default {
                     return (lanesArr || []).map((lane) => {
                         let endpoint = '';
                         let defaultEndpoint = '';
-                        if (!lane.endpoint) {
                         const laneJson = getPropsJson(lane);
-                        if (laneJson?.roleResolutionContext) {
-                            if (laneJson.roleResolutionContext.endpoint) {
-                            endpoint = laneJson.roleResolutionContext.endpoint;
-                            }
-                            if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                        if (laneJson?.roleResolutionContext?._type === 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
+                            endpoint = 'external_customer';
                             defaultEndpoint = endpoint;
-                            }
-                        }
                         } else {
-                            endpoint = lane.endpoint;
-                            defaultEndpoint = endpoint;
+                            if (!lane.endpoint) {
+                                if (laneJson?.roleResolutionContext) {
+                                    if (laneJson.roleResolutionContext.endpoint) {
+                                        endpoint = laneJson.roleResolutionContext.endpoint;
+                                    }
+                                    if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                                        defaultEndpoint = endpoint;
+                                    }
+                                }
+                            } else {
+                                endpoint = lane.endpoint;
+                                defaultEndpoint = endpoint;
+                            }
                         }
                         function isUUID(uuid) {
                             const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1159,14 +1164,14 @@ export default {
                             if (Array.isArray(endpoint)) {
                                 endpoint = endpoint.filter((item) => isUUID(item));
                             } else {
-                                endpoint = isUUID(endpoint) ? endpoint : '';
+                                endpoint = isUUID(endpoint) || endpoint == 'external_customer' ? endpoint : '';
                             }
                         }
                         if (defaultEndpoint && defaultEndpoint.length > 0) {
                             if (Array.isArray(defaultEndpoint)) {
                                 defaultEndpoint = defaultEndpoint.filter((item) => isUUID(item));
                             } else {
-                                defaultEndpoint = isUUID(defaultEndpoint) ? defaultEndpoint : '';
+                                defaultEndpoint = isUUID(defaultEndpoint) || defaultEndpoint == 'external_customer' ? defaultEndpoint : '';
                             }
                         }
                         return {
@@ -1247,19 +1252,24 @@ export default {
                     roles: lanes.map((lane) => {
                         let endpoint = '';
                         let defaultEndpoint = '';
-                        if (!lane.endpoint) {
-                            const laneJson = getPropsJson(lane);
-                            if (laneJson?.roleResolutionContext) {
-                                if (laneJson.roleResolutionContext.endpoint) {
-                                endpoint = laneJson.roleResolutionContext.endpoint;
-                                }
-                                if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
-                                defaultEndpoint = endpoint;
-                                }
-                            }
-                        } else {
-                            endpoint = lane.endpoint;
+                        const laneJson = getPropsJson(lane);
+                        if (laneJson?.roleResolutionContext?._type === 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
+                            endpoint = 'external_customer';
                             defaultEndpoint = endpoint;
+                        } else {
+                            if (!lane.endpoint) {
+                                if (laneJson?.roleResolutionContext) {
+                                    if (laneJson.roleResolutionContext.endpoint) {
+                                        endpoint = laneJson.roleResolutionContext.endpoint;
+                                    }
+                                    if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                                        defaultEndpoint = endpoint;
+                                    }
+                                }
+                            } else {
+                                endpoint = lane.endpoint;
+                                defaultEndpoint = endpoint;
+                            }
                         }
                         function isUUID(uuid) {
                             const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1269,14 +1279,14 @@ export default {
                             if (Array.isArray(endpoint)) {
                                 endpoint = endpoint.filter((item) => isUUID(item));
                             } else {
-                                endpoint = isUUID(endpoint) ? endpoint : '';
+                                endpoint = isUUID(endpoint) || endpoint == 'external_customer' ? endpoint : '';
                             }
                         }
                         if (defaultEndpoint && defaultEndpoint.length > 0) {
                             if (Array.isArray(defaultEndpoint)) {
                                 defaultEndpoint = defaultEndpoint.filter((item) => isUUID(item));
                             } else {
-                                defaultEndpoint = isUUID(defaultEndpoint) ? defaultEndpoint : '';
+                                defaultEndpoint = isUUID(defaultEndpoint) || defaultEndpoint == 'external_customer' ? defaultEndpoint : '';
                             }
                         }
                         return {

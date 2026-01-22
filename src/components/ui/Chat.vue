@@ -1,12 +1,12 @@
 <template>
-    <div v-if="!definitionMapOnlyInput" style="background-color: rgba( 255, 255, 255, 1 );"
+    <div v-if="!workAssistantAgentMode" style="background-color: rgba( 255, 255, 255, 1 );"
         class="chat-info-view-wrapper"
     >
         <div class="chat-info-view-wrapper">
             <div class="chat-info-view-area">
                 <div class="chat-info-view-area" style="position: relative;">
                     <slot name="custom-chat-top"></slot>
-                    <slot name="custom-title" v-if="!definitionMapOnlyInput">
+                    <slot name="custom-title" v-if="!workAssistantAgentMode">
                         <div v-if="name && name !== '' || chatInfo">
                             <div v-if="name && name !== ''" class="d-flex gap-2 align-center">
                                 <div>
@@ -54,7 +54,7 @@
                         </v-icon>
                     </div>
 
-                    <perfect-scrollbar v-if="!definitionMapOnlyInput"
+                    <perfect-scrollbar v-if="!workAssistantAgentMode"
                         class="h-100 chat-view-box"
                         ref="scrollContainer"
                         @scroll="handleScroll"
@@ -715,7 +715,7 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
-                    <div v-if="!definitionMapOnlyInput" style="position:relative; z-index: 9999; margin-bottom: 10px;">
+                    <div v-if="!workAssistantAgentMode" style="position:relative; z-index: 9999; margin-bottom: 10px;">
                         <v-row class="pa-0 ma-0">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
                                 <v-tooltip :text="$t('chat.addImage')">
@@ -788,10 +788,10 @@
                         </v-row>
                     </div>
                 </div>
-                <v-divider v-if="!hideInput && !definitionMapOnlyInput" />
+                <v-divider v-if="!hideInput && !workAssistantAgentMode" />
             </div>
 
-            <div v-if="!hideInput && !definitionMapOnlyInput" style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
+            <div v-if="!hideInput && !workAssistantAgentMode" style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
                 <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
                     <div class="message-info-content">
                         <template v-if="isReply">
@@ -811,12 +811,13 @@
                     </div>
                 </div>
             </div>
-            <v-divider v-if="!hideInput && !definitionMapOnlyInput" />
+            <v-divider v-if="!hideInput && !workAssistantAgentMode" />
 
             <div v-if="!hideInput" class="chat-info-message-input-box">
                 <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
                 <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
                 <div style="z-index: 9999;" class="d-flex flex-wrap">
+                    <!-- 이미지 미리보기 -->
                     <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
                         <img :src="image.url" width="56" height="56" style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />
                         <v-btn
@@ -893,7 +894,7 @@
                                 </template>
                             </v-tooltip>
 
-                            <v-btn v-if="!isLoading"
+                            <v-btn v-if="!(showStopButton || isLoading)"
                                 class="cp-send text-medium-emphasis"
                                 color="primary" 
                                 variant="outlined" 
@@ -914,7 +915,7 @@
                                 icon
                                 size="small"
                                 style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
-                                @click="isLoading = !isLoading"
+                                @click="handleStopClick"
                             >
                                 <Icons :icon="'outline-stop-circle'" :size="16" />
                             </v-btn>
@@ -942,6 +943,13 @@
         <v-card elevation="10" class="pa-4">
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
             <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
+            <input
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                ref="pdfUploader"
+                class="d-none"
+                @change="handlePdfSelect"
+            >
             <div style="z-index: 9999;" class="d-flex flex-wrap">
                 <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
                     <img :src="image.url" width="56" height="56" style="border:1px solid #ccc; border-radius:10px; margin: 8px;" />
@@ -954,6 +962,18 @@
                     >
                         <v-icon color="white" size="14">mdi-close</v-icon>
                     </v-btn>
+                </div>
+                <!-- PDF 미리보기(선택된 파일) -->
+                <div v-if="selectedPdfFile" class="pdf-preview-item" style="position: relative; margin: 8px;">
+                    <v-chip
+                        closable
+                        color="primary"
+                        variant="tonal"
+                        @click:close="clearSelectedPdf"
+                    >
+                        <v-icon start size="16">mdi-file-pdf-box</v-icon>
+                        {{ selectedPdfFile.name }}
+                    </v-chip>
                 </div>
             </div>
             <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
@@ -995,6 +1015,22 @@
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat || isGenerationFinished">
                                             <Icons :icon="'add-media-image'" :size="20" />
+                                        </v-btn>
+                                    </template>
+                                </v-tooltip>
+                                <!-- PDF 업로드 버튼: 메인/패널 공통으로 Chat 내부에서 처리 -->
+                                <v-tooltip text="파일 업로드">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            icon
+                                            variant="text"
+                                            class="text-medium-emphasis"
+                                            v-bind="props"
+                                            style="width:30px; height:30px; margin-left:5px;"
+                                            :disabled="disableChat || isGenerationFinished"
+                                            @click="openChatMenu(); triggerPdfSelect()"
+                                        >
+                                            <v-icon size="20">mdi-file-pdf-box</v-icon>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -1101,7 +1137,7 @@
                         </v-tooltip>
                         <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
 
-                        <v-btn v-if="!isLoading && !isGenerationFinished"
+                        <v-btn v-if="!(showStopButton || isLoading) && !isGenerationFinished"
                             class="cp-send text-medium-emphasis"
                             color="primary" 
                             variant="outlined" 
@@ -1138,7 +1174,7 @@
                             icon
                             size="small"
                             style="border-color: rgb(var(--v-theme-primary), 0.3) !important"
-                            @click="isLoading = !isLoading"
+                            @click="handleStopClick"
                         >
                             <Icons :icon="'outline-stop-circle'" :size="16" />
                         </v-btn>
@@ -1224,7 +1260,7 @@ export default {
             type: Boolean,
             default: false
         },
-        definitionMapOnlyInput: {
+        workAssistantAgentMode: {
             type: Boolean,
             default: false
         },
@@ -1249,6 +1285,12 @@ export default {
             default: false
         },
         showDetailInfo: {
+            type: Boolean,
+            default: false
+        },
+        // workAssistantAgentMode 등에서 외부(부모) 로딩 상태에 따라
+        // 전송 버튼 위치에 "중지" 버튼을 표시하기 위한 플래그
+        showStopButton: {
             type: Boolean,
             default: false
         }
@@ -1304,6 +1346,10 @@ export default {
             isviewJSONStatus: false,
             attachedImages: [],
             delImgBtn: false,
+            // PDF 업로드(정의체계도/패널 공통)
+            selectedPdfFile: null,
+            uploadedPdfInfo: null,
+            isPdfUploading: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
             showNewMessageNotiTimer: null,
@@ -1467,6 +1513,13 @@ export default {
             }
         },
         disableBtn() {
+            if (this.workAssistantAgentMode) {
+                // workAssistantAgentMode에서는 "텍스트/이미지/PDF" 중 하나라도 있으면 전송 활성화
+                const hasText = !!this.newMessage && this.newMessage.trim() !== '';
+                const hasImages = !!this.attachedImages && this.attachedImages.length > 0;
+                const hasPdf = !!this.selectedPdfFile;
+                return !(hasText || hasImages || hasPdf);
+            }
             if (this.disableChat) {
                 return true
             } else {
@@ -1503,6 +1556,19 @@ export default {
         }
     },
     methods: {
+        handleStopClick() {
+            // 전송 버튼 위치의 "중지" 버튼 클릭 처리
+            // - 기존 Chat 로직(animateBorder + stopMessage emit)을 트리거
+            // - 부모(WorkAssistantChatPanel 등)에서 stopMessage를 받아 실제 Abort 처리
+            try {
+                this.isLoading = false;
+            } catch (e) {
+                // ignore
+            }
+            if (this.showStopButton) {
+                this.$emit('stopMessage');
+            }
+        },
         scrollToTop() {
             if (this.$refs.scrollContainer) {
                 this.$refs.scrollContainer.$el.scrollTop = 0;
@@ -1570,7 +1636,7 @@ export default {
             this.$emit('clickedWorkOrder');
         },
         startWorkOrder(){
-            if (this.definitionMapOnlyInput) {
+            if (this.workAssistantAgentMode) {
                 // 정의 맵에서는 chats로 이동하면서 업무지시 다이얼로그 열기
                 this.$router.push({
                     path: '/chats',
@@ -1934,7 +2000,8 @@ export default {
                     this.$emit('stopMessage');
                 }
                 var copyMsg = this.newMessage.replace(/(?:\r\n|\r|\n)/g, '');
-                if (copyMsg.length > 0 || this.attachedImages.length > 0) {
+                const hasPdf = !!this.selectedPdfFile;
+                if (copyMsg.length > 0 || this.attachedImages.length > 0 || hasPdf) {
                     this.isSending = true;
                     this.send();
                 }
@@ -1945,36 +2012,90 @@ export default {
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
             } else {
-                if (this.definitionMapOnlyInput) {
-                    // ProcessDefinitionMap에서 사용하는 경우
-                    // 부모 컴포넌트로 메시지 전달
-                    this.$emit('sendMessage', {
-                        images: this.attachedImages,
-                        text: this.newMessage,
-                        mentionedUsers: this.mentionedUsers
-                    });
-
-                } else {
-                    this.$emit('sendMessage', {
-                        images: this.attachedImages,
-                        text: this.newMessage,
-                        mentionedUsers: this.mentionedUsers
-                    });
+                // PDF가 선택된 경우: 전송 직전 업로드하여 fileInfo 생성
+                if (this.selectedPdfFile && !this.uploadedPdfInfo) {
+                    await this.ensurePdfUploaded();
                 }
+                // 부모 컴포넌트로 메시지 전달 (기존 방식 유지: images에 url(base64 가능) 포함)
+                this.$emit('sendMessage', {
+                    images: this.attachedImages,
+                    text: this.newMessage,
+                    mentionedUsers: this.mentionedUsers,
+                    // PDF는 전송 직전 업로드된 fileInfo 형태로 전달
+                    file: this.uploadedPdfInfo
+                });
             }
             if (this.isReply) this.isReply = false;
             this.attachedImages = [];
+            this.selectedPdfFile = null;
+            this.uploadedPdfInfo = null;
             this.delImgBtn = false;
             this.isAtBottom = true
             setTimeout(() => {
-                if(!this.definitionMapOnlyInput) {
-                    this.newMessage = "";
-                    this.mentionedUsers = [];
-                    this.showUserList = false;
-                    // this.resetMessageHistory(); // 메시지 전송 후 히스토리 초기화
-                }
+                // workAssistantAgentMode 여부와 관계없이 항상 메시지 초기화
+                this.newMessage = "";
+                this.mentionedUsers = [];
+                this.showUserList = false;
                 this.isSending = false;
             }, 100);
+        },
+
+        // ===== PDF (공통) =====
+        triggerPdfSelect() {
+            if (this.$refs.pdfUploader) {
+                this.$refs.pdfUploader.value = '';
+                this.$refs.pdfUploader.click();
+            }
+        },
+        handlePdfSelect(e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            // Allow PDF + common Office + image formats (stored to Supabase, converted/OCR’d server-side).
+            const name = (file.name || '').toLowerCase();
+            const allowedExt = [
+                '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+                '.txt', '.csv',
+                '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'
+            ];
+            const ok = allowedExt.some(ext => name.endsWith(ext));
+            if (!ok) {
+                alert('지원되는 파일 형식이 아닙니다. (PDF/Office/Image/Text)');
+                if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
+                return;
+            }
+            this.selectedPdfFile = file;
+            this.uploadedPdfInfo = null; // 새 파일 선택 시 업로드 정보 초기화
+        },
+        clearSelectedPdf() {
+            this.selectedPdfFile = null;
+            this.uploadedPdfInfo = null;
+            if (this.$refs.pdfUploader) this.$refs.pdfUploader.value = '';
+        },
+        async ensurePdfUploaded() {
+            if (!this.selectedPdfFile) return null;
+            if (this.uploadedPdfInfo) return this.uploadedPdfInfo;
+            if (this.isPdfUploading) return null;
+
+            this.isPdfUploading = true;
+            try {
+                const uploadResult = await backend.uploadFile(this.selectedPdfFile.name, this.selectedPdfFile);
+                if (uploadResult && uploadResult.publicUrl) {
+                    this.uploadedPdfInfo = {
+                        fileName: this.selectedPdfFile.name,
+                        fileUrl: uploadResult.publicUrl,
+                        fileType: this.selectedPdfFile.type,
+                        fileSize: this.selectedPdfFile.size
+                    };
+                    return this.uploadedPdfInfo;
+                }
+                return null;
+            } catch (error) {
+                console.error('[Chat] PDF 업로드 오류:', error);
+                return null;
+            } finally {
+                this.isPdfUploading = false;
+            }
         },
         cancel() {
             this.messages[this.editIndex].content = this.editText
