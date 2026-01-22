@@ -1677,6 +1677,33 @@ class ProcessGPTBackend implements Backend {
         return null as any;
     }
 
+    // =========================
+    // Business Rule Test (룰 테스트 실행)
+    // =========================
+    async executeBusinessRule(ruleId: string, inputs: Record<string, any>): Promise<any> {
+        // ProcessGPT 모드에서는 룰 실행 기능 미지원
+        console.warn(`[ProcessGPT] executeBusinessRule은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
+        return null as any;
+    }
+
+    async saveRuleTestCase(ruleId: string, testCase: any): Promise<void> {
+        // ProcessGPT 모드에서는 테스트 케이스 저장 기능 미지원
+        console.warn(`[ProcessGPT] saveRuleTestCase은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
+        return null as any;
+    }
+
+    async getRuleTestCases(ruleId: string): Promise<any[]> {
+        // ProcessGPT 모드에서는 테스트 케이스 조회 기능 미지원
+        console.warn(`[ProcessGPT] getRuleTestCases은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}`);
+        return [];
+    }
+
+    async deleteRuleTestCase(ruleId: string, testCaseId: string): Promise<void> {
+        // ProcessGPT 모드에서는 테스트 케이스 삭제 기능 미지원
+        console.warn(`[ProcessGPT] deleteRuleTestCase은 ProcessGPT 모드에서 지원되지 않습니다. ruleId: ${ruleId}, testCaseId: ${testCaseId}`);
+        return null as any;
+    }
+
     async filterProcDefMap(map: any) {
         // 사용자 권한에 따라 필터링
         const uid = localStorage.getItem('uid');
