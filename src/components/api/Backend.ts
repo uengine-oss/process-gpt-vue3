@@ -110,6 +110,19 @@ export interface Backend {
     updateSecretByTenant(data: any): Promise<any>;
     updateBrowserUseSecretByTenant(data: any): Promise<any>;
     getMCPLists(): Promise<any>;
+
+    // Business Rule (비즈니스 규칙) - UI에는 기술 개념을 노출하지 않고, 내부 데이터로만 사용한다.
+    // - 백엔드 미구현 환경에서는 mock 구현을 허용한다.
+    listBusinessRules(): Promise<any>;
+    getBusinessRule(ruleId: string): Promise<any>;
+    saveBusinessRule(rule: any): Promise<any>;
+    deleteBusinessRule(ruleId: string): Promise<void>;
+    
+    // Business Rule Test (룰 테스트 실행)
+    executeBusinessRule(ruleId: string, inputs: Record<string, any>): Promise<any>;
+    saveRuleTestCase(ruleId: string, testCase: any): Promise<void>;
+    getRuleTestCases(ruleId: string): Promise<any[]>;
+    deleteRuleTestCase(ruleId: string, testCaseId: string): Promise<void>;
 }
 
 // export type { Backend }

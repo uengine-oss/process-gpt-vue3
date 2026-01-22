@@ -150,19 +150,21 @@
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
                         </div>
-                        <div v-if="isAdmin" v-for="item in organizationItem" :key="item.title">
-                            <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
-                                <template v-slot:activator="{ props }">
-                                    <Icons @click="navigateTo(item.to)" v-bind="props"
-                                        class="ml-2"
-                                        :icon="item.icon"
-                                        :size="item.size || 20"
-                                        :color="'#808080'"
-                                        style="cursor: pointer;"
-                                    />
-                                </template>
-                            </v-tooltip>
-                        </div>
+                        <template v-if="isAdmin">
+                            <div v-for="item in organizationItem" :key="item.title">
+                                <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
+                                    <template v-slot:activator="{ props }">
+                                        <Icons @click="navigateTo(item.to)" v-bind="props"
+                                            class="ml-2"
+                                            :icon="item.icon"
+                                            :size="item.size || 20"
+                                            :color="'#808080'"
+                                            style="cursor: pointer;"
+                                        />
+                                    </template>
+                                </v-tooltip>
+                            </div>
+                        </template>
                     </v-row>
                     <v-col class="pa-0">
                         <AgentList/>
@@ -192,7 +194,13 @@
                                             class="text-medium-emphasis cp-menu"
                                             density="comfortable"
                                         >
-                                            <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />   
+                                            <!-- 룰 정의 버튼은 bpmn-io(bpmn-font) 아이콘 사용 -->
+                                            <span
+                                                v-if="subItem.type === 'rule'"
+                                                class="bpmn-icon-business-rule bpmn-sidebar-icon"
+                                                aria-hidden="true"
+                                            />
+                                            <Icons v-else :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />   
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -369,6 +377,8 @@ export default {
         },
         async loadSidebar(isAdmin) {
             if (isAdmin) {
+                const isUEngineMode = window.$mode === 'uEngine';
+
                 this.definitionItem = [
                     {
                         header: 'definitionManagement.title',
@@ -381,6 +391,20 @@ export default {
                         to: '/definitions/chat',
                         disable: false
                     },
+                    // 비즈니스 룰 정의는 uEngine 모드에서만 노출
+                    ...(isUEngineMode
+                        ? [
+                              {
+                                  title: 'businessRuleDefinition.title',
+                                  // 룰 정의: bpmn-io(bpmn-font) 아이콘 사용(렌더링은 템플릿에서 분기)
+                                  type: 'rule',
+                                  icon: 'bpmn-icon-business-rule',
+                                  BgColor: 'primary',
+                                  to: '/business-rule',
+                                  disable: false
+                              }
+                          ]
+                        : []),
                     {
                         title: 'uiDefinition.title',
                         icon: 'document',
@@ -561,6 +585,11 @@ export default {
                     } else {
                         if (el.name.split('.')[1] == 'form') {
                             obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
+                        } else if (el.name.split('.')[1] == 'rule') {
+                            // rule은 path에 prefix(ex: businessRules/<id>.rule)가 붙을 수 있어 마지막 파일명 기준으로 ruleId만 사용
+                            const fileBase = String(el.path || '').split('/').pop();
+                            const ruleId = String(fileBase || '').split('.')[0];
+                            obj.to = `/business-rule/${ruleId}`;
                         } else {
                             obj.to = `/definitions/${el.path.split('.')[0]}`;
                         }
@@ -613,6 +642,16 @@ export default {
                                     type: 'form'
                                 };
                                 menu.children.push(obj);
+                            } else if (item.path && item.path.includes('.rule')) {
+                                const fileBase = String(item.path || '').split('/').pop();
+                                const ruleId = String(fileBase || '').split('.')[0];
+                                obj = {
+                                    title: item.name,
+                                    to: `/business-rule/${ruleId}`,
+                                    BgColor: 'primary',
+                                    type: 'rule'
+                                };
+                                menu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
                                     title: item.definition.processDefinitionName,
@@ -661,6 +700,16 @@ export default {
                                     to: `/ui-definitions/${item.path.split('.')[0]}`,
                                     BgColor: 'primary',
                                     type: 'form'
+                                };
+                                deletedMenu.children.push(obj);
+                            } else if (item.path && item.path.includes('.rule')) {
+                                const fileBase = String(item.path || '').split('/').pop();
+                                const ruleId = String(fileBase || '').split('.')[0];
+                                obj = {
+                                    title: item.name,
+                                    to: `/business-rule/${ruleId}`,
+                                    BgColor: 'primary',
+                                    type: 'rule'
                                 };
                                 deletedMenu.children.push(obj);
                             } else if (item.definition) {
@@ -752,5 +801,17 @@ export default {
 <style scoped>
 .mobile-no-padding-bottom {
     padding-bottom: 0px !important;
+}
+
+/* bpmn-io(bpmn-font) 아이콘을 사이드바 버튼 크기에 맞춤 */
+.bpmn-sidebar-icon {
+    font-size: 20px;
+    line-height: 1;
+    /* 상단 아이콘 버튼(row)과 동일한 색을 쓰도록 상속 */
+    color: inherit;
+}
+.bpmn-sidebar-icon:before {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 </style>
