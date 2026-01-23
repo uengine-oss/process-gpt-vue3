@@ -396,9 +396,9 @@ export default {
 .main-chat-input-container {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     border-radius: 16px;
     border: 1px solid #e2e8f0;
+    background-color: rgba(var(--v-theme-primary), 0.1);
 }
 
 /* 히스토리 버튼 */
@@ -513,18 +513,15 @@ export default {
     border: 1px solid #e2e8f0;
     border-radius: 20px;
     font-size: 13px;
-    color: #475569;
+    color: #808080;
     cursor: pointer;
-    transition: all 0.2s ease;
     white-space: nowrap;
 }
 
 .example-chip:hover {
     background: #f1f5f9;
     border-color: #cbd5e1;
-    color: #1e293b;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    color: #808080;
 }
 
 /* 입력 필드 */

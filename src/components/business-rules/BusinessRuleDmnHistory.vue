@@ -1,23 +1,23 @@
 <template>
-    <div class="agent-dmn-history">
+    <div class="business-rule-dmn-history">
         <div class="d-flex justify-start align-center pa-4">
-            <h4 class="text-h5">비즈니스 규칙 변경 이력</h4>
+            <h4 class="text-h5">{{ $t('businessRuleDmnHistory.title') }}</h4>
             <p class="text-body-1 text-medium-emphasis ml-4">
-                에이전트의 비즈니스 규칙 변경 내역을 확인할 수 있습니다.
+                {{ $t('businessRuleDmnHistory.description') }}
             </p>
         </div>
         <div>
             <div v-if="historyList.length === 0 && !isLoading" class="text-center py-8">
                 <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-history</v-icon>
-                <h6 class="text-h6 text-grey">변경 이력이 없습니다</h6>
-                <p class="text-body-2 text-grey">비즈니스 규칙이 변경되면 이력이 표시됩니다.</p>
+                <h6 class="text-h6 text-grey">{{ $t('businessRuleDmnHistory.noHistory') }}</h6>
+                <p class="text-body-2 text-grey">{{ $t('businessRuleDmnHistory.noHistoryDescription') }}</p>
             </div>
 
             <div v-else-if="historyList.length === 0 && isLoading">
                 <v-skeleton-loader type="card"></v-skeleton-loader>
             </div>
             
-            <div v-else class="agent-dmn-history-table">
+            <div v-else class="business-rule-dmn-history-table">
                 <v-data-table
                     :headers="headers"
                     :items="historyList"
@@ -54,19 +54,26 @@
                         <div class="text-body-2">
                             <div v-if="item.previous_content || item.new_content || item.feedback_content" class="d-flex flex-column ga-1">
                                 <div v-if="item.previous_content" class="text-truncate" :title="item.previous_content">
-                                    <span class="text-caption text-medium-emphasis">이전: </span>
+                                    <span class="text-caption text-medium-emphasis">{{ $t('businessRuleDmnHistory.previous') }} </span>
                                     {{ item.previous_content.length > 50 ? item.previous_content.substring(0, 50) + '...' : item.previous_content }}
                                 </div>
                                 <div v-if="item.new_content" class="text-truncate" :title="item.new_content">
-                                    <span class="text-caption text-medium-emphasis">새: </span>
+                                    <span class="text-caption text-medium-emphasis">{{ $t('businessRuleDmnHistory.new') }} </span>
                                     {{ item.new_content.length > 50 ? item.new_content.substring(0, 50) + '...' : item.new_content }}
                                 </div>
                                 <div v-if="item.feedback_content" class="text-truncate" :title="item.feedback_content">
-                                    <span class="text-caption text-medium-emphasis">피드백: </span>
+                                    <span class="text-caption text-medium-emphasis">{{ $t('businessRuleDmnHistory.feedback') }} </span>
                                     {{ item.feedback_content }}
                                 </div>
                             </div>
                             <span v-else class="text-medium-emphasis">-</span>
+                        </div>
+                    </template>
+
+                    <!-- 변경자 컬럼 -->
+                    <template v-slot:item.created_by="{ item }">
+                        <div class="text-body-2">
+                            {{ item.created_by || '-' }}
                         </div>
                     </template>
 
@@ -85,59 +92,34 @@
                                 <!-- UPDATE 작업: 이전 내용과 새 내용 diff 표시 -->
                                 <div v-if="item.operation === 'UPDATE' && item.previous_content && item.new_content">
                                     <!-- 사용자 친화적인 DMN 변경사항 표시 -->
-                                    <div v-if="getParsedDmn(item, 'previous') && getParsedDmn(item, 'current')">
+                                    <div v-if="parseDmnXml(item.previous_content) && parseDmnXml(item.new_content)">
                                         <dmn-diff-view 
-                                            :previous="getParsedDmn(item, 'previous')" 
-                                            :current="getParsedDmn(item, 'current')"
-                                        >
-                                            <template v-slot:actions>
-                                                <div v-if="item.operation === 'UPDATE'" class="d-flex ga-2">
-                                                    <v-btn 
-                                                        color="orange" 
-                                                        variant="tonal" 
-                                                        size="small"
-                                                        :loading="item.restoring"
-                                                        @click="restoreVersion(item)"
-                                                    >
-                                                        <v-icon start>mdi-undo</v-icon>
-                                                        변경 사항 되돌리기
-                                                    </v-btn>
-                                                    <v-btn 
-                                                        color="primary" 
-                                                        variant="tonal" 
-                                                        size="small"
-                                                        :loading="item.reapplying"
-                                                        @click="reapplyVersion(item)"
-                                                    >
-                                                        <v-icon start>mdi-redo</v-icon>
-                                                        변경 사항 다시 적용
-                                                    </v-btn>
-                                                </div>
-                                            </template>
-                                        </dmn-diff-view>
+                                            :previous="parseDmnXml(item.previous_content)" 
+                                            :current="parseDmnXml(item.new_content)"
+                                        />
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
                                         <v-tabs :model-value="getXmlViewTab(item)" @update:model-value="setXmlViewTab(item, $event)" class="mb-2">
-                                            <v-tab value="structured">구조화된 변경사항</v-tab>
-                                            <v-tab value="raw">원본 XML</v-tab>
+                                            <v-tab value="structured">{{ $t('businessRuleDmnHistory.structuredChanges') }}</v-tab>
+                                            <v-tab value="raw">{{ $t('businessRuleDmnHistory.rawXml') }}</v-tab>
                                         </v-tabs>
                                         <v-window :model-value="getXmlViewTab(item)">
                                             <v-window-item value="structured">
                                                 <div class="text-body-2 text-medium-emphasis pa-2">
-                                                    XML 파싱에 실패했습니다. 원본 XML 탭에서 확인하세요.
+                                                    {{ $t('businessRuleDmnHistory.xmlParseFailed') }}
                                                 </div>
                                             </v-window-item>
                                             <v-window-item value="raw">
                                                 <v-row class="ma-0">
                                                     <v-col cols="6" class="pa-2">
-                                                        <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
+                                                        <div class="text-caption text-medium-emphasis mb-1">{{ $t('businessRuleDmnHistory.previousContent') }}</div>
                                                         <div class="change-content-box">
                                                             <pre class="change-content-text">{{ item.previous_content }}</pre>
                                                         </div>
                                                     </v-col>
                                                     <v-col cols="6" class="pa-2">
-                                                        <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
+                                                        <div class="text-caption text-medium-emphasis mb-1">{{ $t('businessRuleDmnHistory.newContent') }}</div>
                                                         <div class="change-content-box">
                                                             <pre class="change-content-text">{{ item.new_content }}</pre>
                                                         </div>
@@ -151,12 +133,12 @@
                                 <!-- CREATE 작업: 새 내용만 표시 -->
                                 <div v-else-if="item.operation === 'CREATE' && item.new_content">
                                     <!-- 사용자 친화적인 DMN 표시 -->
-                                    <div v-if="getParsedDmn(item, 'current')">
-                                        <dmn-structure-view :dmn="getParsedDmn(item, 'current')" />
+                                    <div v-if="parseDmnXml(item.new_content)">
+                                        <dmn-structure-view :dmn="parseDmnXml(item.new_content)" />
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
-                                        <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
+                                        <div class="text-caption text-medium-emphasis mb-1">{{ $t('businessRuleDmnHistory.newContent') }}</div>
                                         <div class="change-content-box">
                                             <pre class="change-content-text">{{ item.new_content }}</pre>
                                         </div>
@@ -166,47 +148,21 @@
                                 <!-- DELETE 작업: 이전 내용만 표시 -->
                                 <div v-else-if="item.operation === 'DELETE' && item.previous_content">
                                     <!-- 사용자 친화적인 DMN 표시 -->
-                                    <div v-if="getParsedDmn(item, 'previous')">
-                                        <dmn-structure-view :dmn="getParsedDmn(item, 'previous')" />
+                                    <div v-if="parseDmnXml(item.previous_content)">
+                                        <dmn-structure-view :dmn="parseDmnXml(item.previous_content)" />
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
-                                        <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
+                                        <div class="text-caption text-medium-emphasis mb-1">{{ $t('businessRuleDmnHistory.previousContent') }}</div>
                                         <div class="change-content-box">
                                             <pre class="change-content-text">{{ item.previous_content }}</pre>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <!-- MOVE 작업: 이동 정보 및 내용 표시 -->
-                                <div v-else-if="item.operation === 'MOVE'" class="mt-2">
-                                    <div class="text-caption text-medium-emphasis mb-1">이동 정보</div>
-                                    <div class="text-body-2 mb-2">
-                                        {{ item.moved_from_storage }} → {{ item.moved_to_storage }}
-                                    </div>
-                                    <div v-if="item.previous_content || item.new_content">
-                                        <v-row class="ma-0">
-                                            <v-col cols="6" class="pa-2">
-                                                <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
-                                                <div v-if="item.previous_content" class="change-content-box">
-                                                    <pre class="change-content-text">{{ item.previous_content }}</pre>
-                                                </div>
-                                                <div v-else class="text-body-2 text-medium-emphasis">없음</div>
-                                            </v-col>
-                                            <v-col cols="6" class="pa-2">
-                                                <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
-                                                <div v-if="item.new_content" class="change-content-box">
-                                                    <pre class="change-content-text">{{ item.new_content }}</pre>
-                                                </div>
-                                                <div v-else class="text-body-2 text-medium-emphasis">없음</div>
-                                            </v-col>
-                                        </v-row>
-                                    </div>
-                                </div>
-                                
                                 <!-- 내용이 없는 경우 -->
                                 <div v-else class="mt-2 text-body-2 text-medium-emphasis">
-                                    변경 내용이 없습니다.
+                                    {{ $t('businessRuleDmnHistory.noChangeContent') }}
                                 </div>
                             </v-card>
                         </td>
@@ -224,16 +180,12 @@ import DmnDiffView from '@/components/dmn/DmnDiffView.vue';
 import DmnStructureView from '@/components/dmn/DmnStructureView.vue';
 
 export default {
-    name: 'AgentDmnHistory',
+    name: 'BusinessRuleDmnHistory',
     components: {
         DmnDiffView,
         DmnStructureView
     },
     props: {
-        agentId: {
-            type: String,
-            default: null
-        },
         ruleId: {
             type: String,
             default: null
@@ -250,29 +202,24 @@ export default {
             backend: null,
             page: 1,
             itemsPerPage: 10,
-            xmlViewTabs: {}, // 각 아이템별 탭 상태 관리
-            dmnParsedCache: {}, // 각 아이템별 DMN 파싱 캐시
-            restoringItems: new Set(), // 되돌리기 진행 중인 아이템 ID들
-            reapplyingItems: new Set(), // 다시 적용 진행 중인 아이템 ID들
-            headers: [
-                { title: '비즈니스 규칙', key: 'knowledge_name', sortable: true, width: '25%' },
-                { title: '작업', key: 'operation', sortable: true, width: '10%' },
-                { title: '변경 내용', key: 'change_summary', sortable: false, width: '50%' },
-                { title: '변경 일시', key: 'created_at', sortable: true, width: '15%' }
-            ]
+            xmlViewTabs: {} // 각 아이템별 탭 상태 관리
         };
     },
+    computed: {
+        headers() {
+            return [
+                { title: this.$t('businessRuleDmnHistory.businessRule'), key: 'knowledge_name', sortable: true, width: '20%' },
+                { title: this.$t('businessRuleDmnHistory.operation'), key: 'operation', sortable: true, width: '10%' },
+                { title: this.$t('businessRuleDmnHistory.changeContent'), key: 'change_summary', sortable: false, width: '40%' },
+                { title: this.$t('businessRuleDmnHistory.changer'), key: 'created_by', sortable: true, width: '15%' },
+                { title: this.$t('businessRuleDmnHistory.changeDate'), key: 'created_at', sortable: true, width: '15%' }
+            ];
+        }
+    },
     watch: {
-        agentId: {
-            handler(newVal) {
-                if (newVal && this.backend) {
-                    this.loadHistory();
-                }
-            }
-        },
         ruleId: {
             handler() {
-                if (this.agentId && this.backend) {
+                if (this.backend) {
                     this.loadHistory();
                 }
             }
@@ -282,19 +229,20 @@ export default {
         this.backend = BackendFactory.createBackend();
     },
     async mounted() {
-        if (this.agentId && this.backend) {
+        if (this.ruleId && this.backend) {
             await this.loadHistory();
         }
     },
     methods: {
         async loadHistory() {
-            if (!this.agentId || !this.backend) return;
+            if (!this.ruleId || !this.backend) return;
             
             this.isLoading = true;
             this.historyList = [];
 
             try {
-                const history = await this.backend.getDmnHistory(this.agentId, this.ruleId);
+                // UEngine 모드: ruleId만으로 조회
+                const history = await this.backend.getDmnHistory(this.ruleId, this.ruleId);
                 this.historyList = history || [];
             } catch (error) {
                 console.error('비즈니스 규칙 히스토리 로드 실패:', error);
@@ -316,10 +264,10 @@ export default {
 
         getOperationText(operation) {
             const texts = {
-                'CREATE': '생성',
-                'UPDATE': '수정',
-                'DELETE': '삭제',
-                'MOVE': '이동'
+                'CREATE': this.$t('businessRuleDmnHistory.operationCreate'),
+                'UPDATE': this.$t('businessRuleDmnHistory.operationUpdate'),
+                'DELETE': this.$t('businessRuleDmnHistory.operationDelete'),
+                'MOVE': this.$t('businessRuleDmnHistory.operationMove')
             };
             return texts[operation] || operation;
         },
@@ -368,111 +316,6 @@ export default {
 
         parseDmnXml(xmlString) {
             return parseDmnXml(xmlString);
-        },
-
-        getParsedDmn(item, which) {
-            const key = `${this.getItemKey(item)}:${which}`;
-            const xmlString = which === 'previous' ? item.previous_content : item.new_content;
-            if (!xmlString) return null;
-
-            const cached = this.dmnParsedCache[key];
-            if (cached && cached._src === xmlString) {
-                return cached._parsed;
-            }
-
-            const parsed = parseDmnXml(xmlString);
-            this.dmnParsedCache[key] = { _src: xmlString, _parsed: parsed };
-            return parsed;
-        },
-
-        async restoreVersion(item) {
-            if (!item.id || !item.knowledge_id || !this.agentId) {
-                this.$try({
-                    context: this,
-                    action: () => {},
-                    errorMsg: '되돌리기에 필요한 정보가 없습니다.'
-                });
-                return;
-            }
-
-            // 확인 다이얼로그
-            const confirmed = window.confirm('이전 버전으로 되돌리시겠습니까?');
-            if (!confirmed) return;
-
-            // 되돌리기 진행 중 표시
-            this.restoringItems.add(item.id);
-            item.restoring = true;
-
-            try {
-                const result = await this.backend.restoreDmnVersion(
-                    item.id,
-                    item.knowledge_id,
-                    this.agentId
-                );
-
-                this.$try({
-                    context: this,
-                    action: () => {},
-                    successMsg: result.message || '이전 버전으로 성공적으로 되돌렸습니다.'
-                });
-
-                // 히스토리 다시 로드
-                await this.loadHistory();
-            } catch (error) {
-                this.$try({
-                    context: this,
-                    action: () => {},
-                    errorMsg: error instanceof Error ? error.message : '되돌리기에 실패했습니다.'
-                });
-            } finally {
-                this.restoringItems.delete(item.id);
-                item.restoring = false;
-            }
-        },
-
-        async reapplyVersion(item) {
-            if (!item.id || !item.knowledge_id || !this.agentId) {
-                this.$try({
-                    context: this,
-                    action: () => {},
-                    errorMsg: '다시 적용에 필요한 정보가 없습니다.'
-                });
-                return;
-            }
-
-            // 확인 다이얼로그
-            const confirmed = window.confirm('변경 사항을 다시 적용하시겠습니까?');
-            if (!confirmed) return;
-
-            // 다시 적용 진행 중 표시
-            this.reapplyingItems.add(item.id);
-            item.reapplying = true;
-
-            try {
-                const result = await this.backend.reapplyDmnVersion(
-                    item.id,
-                    item.knowledge_id,
-                    this.agentId
-                );
-
-                this.$try({
-                    context: this,
-                    action: () => {},
-                    successMsg: result.message || '변경 사항을 성공적으로 다시 적용했습니다.'
-                });
-
-                // 히스토리 다시 로드
-                await this.loadHistory();
-            } catch (error) {
-                this.$try({
-                    context: this,
-                    action: () => {},
-                    errorMsg: error instanceof Error ? error.message : '다시 적용에 실패했습니다.'
-                });
-            } finally {
-                this.reapplyingItems.delete(item.id);
-                item.reapplying = false;
-            }
         }
 
     }
@@ -480,12 +323,12 @@ export default {
 </script>
 
 <style scoped>
-.agent-dmn-history {
+.business-rule-dmn-history {
     height: 100%;
     width: 100%;
 }
 
-.agent-dmn-history-table {
+.business-rule-dmn-history-table {
     width: 100%;
 }
 
@@ -513,16 +356,6 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-/* Expand 영역을 테이블과 확실히 구분 */
-.dmn-history-data-table :deep(tr.v-data-table__expanded-row) td {
-    background-color: rgba(var(--v-theme-primary), 0.04);
-}
-
-/* expanded-row 슬롯 내부 카드가 td 배경을 덮어서 차이가 안 보일 수 있어 카드에도 배경만 적용 */
-.expanded-row-content {
-    background-color: rgba(var(--v-theme-primary), 0.04) !important;
 }
 
 .change-content-box {

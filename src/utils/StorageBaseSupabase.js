@@ -413,16 +413,23 @@ export default class StorageBaseSupabase {
 
     async resetPassword(email) {
         try {
-            const baseDomain = getBaseDomain();
-            let url;
-            if (baseDomain.includes('process-gpt')) {
-                url = getMainDomainUrl('/auth/reset-password');
-            } else {
-                url = window.location.origin + '/auth/reset-password';
+            // NOTE:
+            // - 프로덕션은 Supabase Dashboard의 "Site URL / Redirect URLs" 설정을 사용한다.
+            // - 여기서 redirectTo를 강제로 넘기면 대시보드 설정을 덮어써서(특히 멀티테넌트/도메인 환경에서)
+            //   이메일 링크가 "이상한 URL"로 생성될 수 있다.
+            //
+            // 개발 환경(로컬)에서만 redirectTo를 명시적으로 지정한다.
+            const isLocal =
+                window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname === '0.0.0.0';
+
+            const options = {};
+            if (isLocal) {
+                options.redirectTo = new URL('/auth/reset-password', window.location.origin).toString();
             }
-            const result = await window.$supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: url,
-            });
+
+            const result = await window.$supabase.auth.resetPasswordForEmail(email, options);
             return result;
         } catch (e) {
             throw new StorageBaseError('error in resetPassword', e, arguments);

@@ -1,7 +1,7 @@
 <template>
-    <div class="pa-5">
+    <div>
         <!-- Matrix Table -->
-        <v-card elevation="3" class="overflow-x-auto">
+        <div elevation="3" class="overflow-x-auto">
             <v-snackbar
                 v-model="snackbar.show"
                 :color="snackbar.color"
@@ -23,7 +23,7 @@
                             <!-- {{ $t('metricsView.domain') }} -->
                         </th>
                         <th 
-                            v-for="megaProc in value.mega_processes" 
+                            v-for="megaProc in filteredMegaProcesses" 
                             :key="megaProc.id"
                             class="mega-header text-center"
                             style="min-width: 150px;"
@@ -94,7 +94,7 @@
                             </div>
                         </td>
                         <td 
-                            v-for="megaProc in value.mega_processes" 
+                            v-for="megaProc in filteredMegaProcesses" 
                             :key="`${domain.id}-${megaProc.id}`"
                             class="process-cell"
                         >
@@ -200,7 +200,7 @@
                     </tr>
                 </tbody>
             </v-table>
-        </v-card>
+        </div>
 
         <!-- Add/Edit Dialog for Domain, MegaProcess, Process -->
         <v-dialog v-model="dialog.show" max-width="500" persistent>
@@ -391,6 +391,10 @@ export default {
         enableEdit: {
             type: Boolean,
             default: false
+        },
+        searchQuery: {
+            type: String,
+            default: ''
         }
     },
     emits: ['update:value'],
@@ -451,6 +455,24 @@ export default {
                 v => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
                 v => /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
             ];
+        },
+        filteredMegaProcesses() {
+            if (!this.value || !this.value.mega_processes) return [];
+            if (!this.searchQuery || !this.searchQuery.trim()) return this.value.mega_processes;
+
+            const query = this.searchQuery.toLowerCase().trim();
+            const processes = Array.isArray(this.value.processes) ? this.value.processes : [];
+
+            return this.value.mega_processes.filter(mega => {
+                const nameMatch = mega.name && mega.name.toLowerCase().includes(query);
+                const hasMatchingProcess = processes.some(proc => {
+                    if (proc.mega_process_id !== mega.id) return false;
+                    const procNameMatch = proc.name && proc.name.toLowerCase().includes(query);
+                    const subMatch = (proc.sub_proc_list || []).some(sub => sub.name && sub.name.toLowerCase().includes(query));
+                    return procNameMatch || subMatch;
+                });
+                return nameMatch || hasMatchingProcess;
+            });
         }
     },
     methods: {
@@ -503,6 +525,21 @@ export default {
             let processes = this.value.processes.filter(
                 proc => proc.domain_id === domainId && proc.mega_process_id === megaProcessId
             );
+
+            // Apply search query filter if active
+            if (this.searchQuery && this.searchQuery.trim()) {
+                const query = this.searchQuery.toLowerCase().trim();
+                processes = processes.map(proc => {
+                    // Filter sub_proc_list by search query
+                    const filteredSubProcList = (proc.sub_proc_list || []).filter(
+                        sub => sub.name && sub.name.toLowerCase().includes(query)
+                    );
+                    return {
+                        ...proc,
+                        sub_proc_list: filteredSubProcList
+                    };
+                }).filter(proc => proc.sub_proc_list && proc.sub_proc_list.length > 0);
+            }
 
             // Apply organization filter if active
             if (this.filteredProcDefIds !== null) {
