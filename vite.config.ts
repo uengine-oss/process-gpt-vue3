@@ -86,7 +86,7 @@ export default defineConfig({
                 changeOrigin: true
             },
             // Work Assistant Agent API
-            '/agent': {
+            '/agent/': {
                 target: 'http://localhost:8000',
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/agent/, '')

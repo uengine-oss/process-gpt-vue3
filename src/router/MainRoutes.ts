@@ -162,6 +162,21 @@ const MainRoutes = {
             component: () => import('@/components/ui/BSCard.vue')
         },
         {
+            name: 'Business Rules',
+            path: '/business-rule',
+            component: () => import('@/components/business-rules/BusinessRuleDefinitions.vue')
+        },
+        {
+            name: 'Business Rules New',
+            path: '/business-rule/new',
+            component: () => import('@/components/business-rules/BusinessRuleDefinitions.vue')
+        },
+        {
+            name: 'Business Rules Detail',
+            path: '/business-rule/:ruleId',
+            component: () => import('@/components/business-rules/BusinessRuleDefinitions.vue')
+        },
+        {
             name: 'Schedule',
             path: '/schedule',
             component: () => import('@/components/scheduler/ScheduleList.vue')

@@ -1,129 +1,91 @@
 <template>
     <div class="dmn-diff-view">
-        <!-- Decision 정보 및 Hit Policy -->
-        <div v-if="previous.decision || current.decision" class="mb-1">
-            <v-row class="ma-0">
-                <v-col cols="6" class="px-2 py-0">
-                    <div class="text-caption text-medium-emphasis mb-1">이전 버전</div>
-                    <div v-if="previous.decision" class="dmn-header-box">
-                        <div class="text-body-2 font-weight-medium mb-1">{{ previous.decision.name || '-' }}</div>
-                        <div class="text-caption text-medium-emphasis">정책: {{ previous.hitPolicy || 'UNIQUE' }}</div>
-                    </div>
-                    <div v-else class="text-body-2 text-medium-emphasis">없음</div>
-                </v-col>
-                <v-col cols="6" class="px-2 py-0">
-                    <div class="text-caption text-medium-emphasis mb-1">새 버전</div>
-                    <div v-if="current.decision" class="dmn-header-box" 
-                         :class="{ 
-                             'dmn-added': !previous.decision, 
-                             'dmn-modified': previous.decision && (previous.decision.name !== current.decision.name || previous.hitPolicy !== current.hitPolicy)
-                         }">
-                        <div class="text-body-2 font-weight-medium mb-1">{{ current.decision.name || '-' }}</div>
-                        <div class="text-caption text-medium-emphasis">정책: {{ current.hitPolicy || 'UNIQUE' }}</div>
-                    </div>
-                    <div v-else class="text-body-2 text-medium-emphasis">없음</div>
-                </v-col>
-            </v-row>
+        <!-- 단일 컬럼 리포트: expand 시 한번에 전체 변경을 스크롤로 확인 -->
+        <div class="dmn-report">
+            <!-- InputData -->
+            <div v-if="dmnDiff.inputChanges.length > 0" :id="'dmn-section-input'" class="mb-4">
+                <div class="d-flex align-center justify-space-between mb-2">
+                    <div class="text-body-2 font-weight-medium">입력 데이터 (InputData)</div>
+                </div>
+                <div class="dmn-report-list">
+                    <v-card v-for="ch in dmnDiff.inputChanges" :key="'in-card-' + ch.key" elevation="0" class="dmn-report-card">
+                        <div class="d-flex align-center ga-2 mb-2">
+                            <v-chip :color="getChangeColor(ch.type)" size="x-small" variant="flat">{{ getChangeText(ch.type) }}</v-chip>
+                            <div class="text-body-2 font-weight-medium text-truncate">{{ getInputTitle(ch) }}</div>
+                        </div>
+                        <!-- 추가/삭제: 해당 내용만 / 수정: 전후 비교 -->
+                        <div v-if="ch.type === 'added'" class="dmn-info-row">
+                            <div class="text-body-2"><span class="text-medium-emphasis">타입</span> {{ getInputType(ch.current) }}</div>
+                        </div>
+                        <div v-else-if="ch.type === 'removed'" class="dmn-info-row dmn-removed-soft">
+                            <div class="text-body-2"><span class="text-medium-emphasis">타입</span> {{ getInputType(ch.previous) }}</div>
+                        </div>
+                        <div v-else>
+                            <key-value-diff-table :diffs="getInputDiffs(ch)" :labels="{ name: '이름', typeRef: '타입' }" />
+                        </div>
+                    </v-card>
+                </div>
+            </div>
+
+            <!-- Decision -->
+            <div v-if="dmnDiff.decisionChanges.length > 0" :id="'dmn-section-decision'" class="mb-4">
+                <div class="d-flex align-center justify-space-between mb-2">
+                    <div class="text-body-2 font-weight-medium">결정 (Decision)</div>
+                </div>
+                <div class="dmn-report-list">
+                    <v-card v-for="ch in dmnDiff.decisionChanges" :key="'dec-card-' + ch.key" elevation="0" class="dmn-report-card">
+                        <div class="d-flex align-center ga-2 mb-2">
+                            <v-chip :color="getChangeColor(ch.type)" size="x-small" variant="flat">{{ getChangeText(ch.type) }}</v-chip>
+                            <div class="text-body-2 font-weight-medium text-truncate">{{ getDecisionTitle(ch) }}</div>
+                            <v-chip v-if="(ch.current?.decisionTable || ch.previous?.decisionTable)" color="info" size="x-small" variant="tonal">DecisionTable</v-chip>
+                            <v-chip v-else-if="(ch.current?.literalExpression || ch.previous?.literalExpression)" color="info" size="x-small" variant="tonal">Expression</v-chip>
+                        </div>
+
+                        <!-- (금지사항 준수) 요구관계/표현식은 raw 데이터 노출 금지: 요약만 표시 -->
+                        <div
+                            v-if="decisionNameChangeText(ch) || reqSummaryText(ch) || expressionSummaryText(ch)"
+                            class="dmn-meta-block mb-2"
+                        >
+                            <div v-if="decisionNameChangeText(ch)" class="text-body-2">
+                                <span class="text-medium-emphasis">이름</span> {{ decisionNameChangeText(ch) }}
+                            </div>
+                            <div v-if="reqSummaryText(ch)" class="text-body-2 mt-1">
+                                <span class="text-medium-emphasis">요구 관계</span> {{ reqSummaryText(ch) }}
+                            </div>
+                            <div v-if="expressionSummaryText(ch)" class="text-body-2 mt-1">
+                                <span class="text-medium-emphasis">표현식</span> {{ expressionSummaryText(ch) }}
+                            </div>
+                        </div>
+
+                        <!-- DecisionTable: 수정은 전/후 비교, 추가/삭제는 한쪽만 -->
+                        <decision-table-diff
+                            v-if="(ch.current?.decisionTable || ch.previous?.decisionTable)"
+                            :previous="ch.type === 'added' ? null : (ch.previous?.decisionTable || null)"
+                            :current="ch.type === 'removed' ? null : (ch.current?.decisionTable || null)"
+                        />
+                    </v-card>
+                </div>
+            </div>
+
         </div>
 
-        <!-- Decision Table 비교 -->
-        <div class="dmn-table-comparison">
-            <v-row class="ma-0">
-                <!-- 이전 버전 테이블 -->
-                <v-col cols="6" class="px-2 py-0">
-                    <div v-if="previous.rules?.length > 0 || previous.inputs?.length > 0 || previous.outputs?.length > 0" class="dmn-table-container">
-                        <v-table density="compact" class="dmn-decision-table">
-                            <thead>
-                                <tr>
-                                    <th v-for="(input, idx) in previous.inputs" :key="'prev-input-' + idx" class="dmn-input-header">
-                                        {{ input.label || input.expression || input.name || `조건${idx + 1}` }}
-                                    </th>
-                                    <th v-for="(output, idx) in previous.outputs" :key="'prev-output-' + idx" class="dmn-output-header">
-                                        {{ output.label || output.name || `결과${idx + 1}` }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(rule, ruleIdx) in previous.rules" :key="'prev-rule-' + ruleIdx" class="dmn-rule-row">
-                                    <td v-for="(input, inputIdx) in previous.inputs" :key="'prev-cell-' + ruleIdx + '-' + inputIdx" class="dmn-input-cell">
-                                        {{ getRuleInputValue(rule, inputIdx) }}
-                                    </td>
-                                    <td v-for="(output, outputIdx) in previous.outputs" :key="'prev-output-cell-' + ruleIdx + '-' + outputIdx" class="dmn-output-cell">
-                                        {{ getRuleOutputValue(rule, outputIdx) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </v-table>
-                    </div>
-                    <div v-else class="text-body-2 text-medium-emphasis pa-4 text-center">규칙이 없습니다</div>
-                </v-col>
-
-                <!-- 새 버전 테이블 -->
-                <v-col cols="6" class="px-2 py-0">
-                    <div v-if="current.rules?.length > 0 || current.inputs?.length > 0 || current.outputs?.length > 0" class="dmn-table-container">
-                        <v-table density="compact" class="dmn-decision-table">
-                            <thead>
-                                <tr>
-                                    <th v-for="(input, idx) in current.inputs" :key="'curr-input-' + idx" 
-                                        class="dmn-input-header"
-                                        :class="{ 
-                                            'dmn-added': !previous.inputs || idx >= previous.inputs.length || !previous.inputs[idx],
-                                            'dmn-modified': previous.inputs && previous.inputs[idx] && (previous.inputs[idx].label !== input.label || previous.inputs[idx].expression !== input.expression)
-                                        }">
-                                        {{ input.label || input.expression || `조건${idx + 1}` }}
-                                    </th>
-                                    <th v-for="(output, idx) in current.outputs" :key="'curr-output-' + idx" 
-                                        class="dmn-output-header"
-                                        :class="{ 
-                                            'dmn-added': !previous.outputs || idx >= previous.outputs.length || !previous.outputs[idx],
-                                            'dmn-modified': previous.outputs && previous.outputs[idx] && (previous.outputs[idx].label !== output.label || previous.outputs[idx].name !== output.name)
-                                        }">
-                                        {{ output.label || output.name || `결과${idx + 1}` }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(rule, ruleIdx) in current.rules" 
-                                    :key="'curr-rule-' + ruleIdx" 
-                                    class="dmn-rule-row"
-                                    :class="getRuleRowClass(rule, ruleIdx)">
-                                    <td v-for="(input, inputIdx) in current.inputs" 
-                                        :key="'curr-cell-' + ruleIdx + '-' + inputIdx" 
-                                        class="dmn-input-cell"
-                                        :class="getRuleCellClass(rule, ruleIdx, inputIdx, 'input')">
-                                        {{ getRuleInputValue(rule, inputIdx) }}
-                                    </td>
-                                    <td v-for="(output, outputIdx) in current.outputs" 
-                                        :key="'curr-output-cell-' + ruleIdx + '-' + outputIdx" 
-                                        class="dmn-output-cell"
-                                        :class="getRuleCellClass(rule, ruleIdx, outputIdx, 'output')">
-                                        {{ getRuleOutputValue(rule, outputIdx) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </v-table>
-                    </div>
-                    <div v-else class="text-body-2 text-medium-emphasis pa-4 text-center">규칙이 없습니다</div>
-                </v-col>
-            </v-row>
-        </div>
-
-        <!-- 변경 요약 -->
-        <div v-if="changeSummary" class="mt-2">
+        <!-- 변경 요약 (기존처럼 하단 1회만 표시) -->
+        <div class="mt-2">
             <div class="d-flex align-center justify-space-between">
                 <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium mb-1">변경 요약</div>
-                    <v-chip-group>
-                        <v-chip v-if="changeSummary.addedRules > 0" color="success" size="small">
-                            추가: {{ changeSummary.addedRules }}개
+                    <div class="summary-chips">
+                        <v-chip
+                            v-for="c in elementSummaryChips"
+                            :key="c.key"
+                            :color="c.color"
+                            size="small"
+                            variant="tonal"
+                        >
+                            {{ c.text }}
                         </v-chip>
-                        <v-chip v-if="changeSummary.modifiedRules > 0" color="warning" size="small">
-                            수정: {{ changeSummary.modifiedRules }}개
-                        </v-chip>
-                        <v-chip v-if="changeSummary.removedRules > 0" color="error" size="small">
-                            삭제: {{ changeSummary.removedRules }}개
-                        </v-chip>
-                    </v-chip-group>
+                        <span v-if="elementSummaryChips.length === 0" class="text-caption text-medium-emphasis">-</span>
+                    </div>
                 </div>
                 <div class="ml-4">
                     <slot name="actions"></slot>
@@ -134,10 +96,16 @@
 </template>
 
 <script>
-import { isRuleEqual } from '@/utils/dmnParser';
+import { diffDmn } from '@/utils/dmnParser';
+import KeyValueDiffTable from '@/components/dmn/KeyValueDiffTable.vue';
+import DecisionTableDiff from '@/components/dmn/DecisionTableDiff.vue';
 
 export default {
     name: 'DmnDiffView',
+    components: {
+        KeyValueDiffTable,
+        DecisionTableDiff
+    },
     props: {
         previous: {
             type: Object,
@@ -149,94 +117,213 @@ export default {
         }
     },
     computed: {
-        changeSummary() {
-            const summary = {
-                addedRules: 0,
-                modifiedRules: 0,
-                removedRules: 0
+        dmnDiff() {
+            return diffDmn(this.previous, this.current);
+        },
+        elementSummaryChips() {
+            const countByType = (list) => ({
+                added: (list || []).filter((c) => c.type === 'added').length,
+                modified: (list || []).filter((c) => c.type === 'modified').length,
+                removed: (list || []).filter((c) => c.type === 'removed').length
+            });
+
+            const inputCounts = countByType(this.dmnDiff.inputChanges || []);
+            const decisionCounts = countByType(this.dmnDiff.decisionChanges || []);
+
+            // DecisionTable Rule 변경 개수 (Decision별 tableDiff에서 집계)
+            const ruleCounts = { added: 0, modified: 0, removed: 0 };
+            (this.dmnDiff.decisionChanges || []).forEach((ch) => {
+                const td = ch?.tableDiff;
+                if (!td || !td.summary) return;
+                ruleCounts.added += td.summary.addedRules || 0;
+                ruleCounts.modified += td.summary.modifiedRules || 0;
+                ruleCounts.removed += td.summary.removedRules || 0;
+            });
+
+            const defChanged = (this.dmnDiff.definitionsDiffs || []).length > 0;
+            const definitionCounts = { added: 0, modified: defChanged ? 1 : 0, removed: 0 };
+
+            const items = [
+                { key: 'definitions', label: 'Definitions', counts: definitionCounts },
+                { key: 'inputData', label: 'InputData', counts: inputCounts },
+                { key: 'decision', label: 'Decision', counts: decisionCounts },
+                { key: 'rule', label: 'Rule', counts: ruleCounts }
+            ];
+
+            const chips = [];
+            const push = (k, type, n) => {
+                if (!n || n <= 0) return;
+                const color = type === 'added' ? 'success' : type === 'modified' ? 'warning' : 'error';
+                const sign = type === 'added' ? '+' : type === 'modified' ? '~' : '-';
+                chips.push({
+                    key: `${k}:${type}`,
+                    color,
+                    text: `${k} ${sign}${n}`
+                });
             };
 
-            if (!this.previous.rules || !this.current.rules) {
-                if (this.current.rules?.length > 0) {
-                    summary.addedRules = this.current.rules.length;
-                }
-                if (this.previous.rules?.length > 0) {
-                    summary.removedRules = this.previous.rules.length;
-                }
-                return summary;
-            }
+            items.forEach((it) => {
+                push(it.label, 'added', it.counts.added);
+                push(it.label, 'modified', it.counts.modified);
+                push(it.label, 'removed', it.counts.removed);
+            });
 
-            // 규칙 비교
-            const maxRules = Math.max(this.previous.rules.length, this.current.rules.length);
-            for (let i = 0; i < maxRules; i++) {
-                const prevRule = this.previous.rules[i];
-                const currRule = this.current.rules[i];
-
-                if (!prevRule && currRule) {
-                    summary.addedRules++;
-                } else if (prevRule && !currRule) {
-                    summary.removedRules++;
-                } else if (prevRule && currRule && !isRuleEqual(prevRule, currRule)) {
-                    summary.modifiedRules++;
-                }
-            }
-
-            return summary;
+            return chips;
         }
     },
     methods: {
-        getRuleInputValue(rule, inputIndex) {
-            if (!rule || !rule.inputs || inputIndex >= rule.inputs.length) {
-                return '-';
-            }
-            const value = rule.inputs[inputIndex]?.value || '';
-            return value || '-';
+        getChangeColor(type) {
+            if (type === 'added') return 'success';
+            if (type === 'removed') return 'error';
+            if (type === 'modified') return 'warning';
+            return 'default';
         },
-
-        getRuleOutputValue(rule, outputIndex) {
-            if (!rule || !rule.outputs || outputIndex >= rule.outputs.length) {
-                return '-';
-            }
-            const value = rule.outputs[outputIndex]?.value || '';
-            return value || '-';
+        getChangeText(type) {
+            if (type === 'added') return '추가';
+            if (type === 'removed') return '삭제';
+            if (type === 'modified') return '수정';
+            return type;
         },
-
-        getRuleRowClass(rule, ruleIdx) {
-            const prevRule = this.previous.rules?.[ruleIdx];
-            
-            if (!prevRule) {
-                return 'dmn-row-added';
+        getInputTitle(ch) {
+            const obj = ch.current || ch.previous || {};
+            return `${obj.name || '-'} (${obj.id || ch.key})`;
+        },
+        getDecisionTitle(ch) {
+            const obj = ch.current || ch.previous || {};
+            return `${obj.name || '-'} (${obj.id || ch.key})`;
+        },
+        buildDiffsForAddedRemoved(type, obj, fields) {
+            const res = [];
+            (fields || []).forEach((f) => {
+                if (type === 'added') res.push({ field: f, previous: null, current: obj?.[f] });
+                else if (type === 'removed') res.push({ field: f, previous: obj?.[f], current: null });
+            });
+            return res;
+        },
+        getInputDiffs(ch) {
+            // variable/요구관계 같은 raw object 노출 금지 → 해석 가능한 필드만
+            const prev = ch.previous || null;
+            const curr = ch.current || null;
+            if (ch.type === 'modified') {
+                const diffs = [];
+                if ((prev?.name || '') !== (curr?.name || '')) diffs.push({ field: 'name', previous: prev?.name || null, current: curr?.name || null });
+                if ((prev?.variable?.typeRef || '') !== (curr?.variable?.typeRef || '')) diffs.push({ field: 'typeRef', previous: prev?.variable?.typeRef || null, current: curr?.variable?.typeRef || null });
+                return diffs;
             }
-            
-            if (!isRuleEqual(prevRule, rule)) {
-                return 'dmn-row-modified';
+            if (ch.type === 'added') {
+                return [
+                    { field: 'name', previous: null, current: curr?.name || null },
+                    { field: 'typeRef', previous: null, current: curr?.variable?.typeRef || null }
+                ];
             }
-            
+            if (ch.type === 'removed') {
+                return [
+                    { field: 'name', previous: prev?.name || null, current: null },
+                    { field: 'typeRef', previous: prev?.variable?.typeRef || null, current: null }
+                ];
+            }
+            return [];
+        },
+        getInputType(inputData) {
+            if (!inputData) return '-';
+            return inputData.variable?.typeRef || '-';
+        },
+        decisionNameChangeText(ch) {
+            if (!ch) return '';
+            if (ch.type === 'modified') {
+                const prev = ch.previous?.name || '';
+                const curr = ch.current?.name || '';
+                if (prev && curr && prev !== curr) return `${prev} → ${curr}`;
+                return '';
+            }
             return '';
         },
+        buildIdNameMapFromDmn(dmn) {
+            const map = {};
+            (dmn?.inputData || []).forEach((i) => { if (i?.id) map[i.id] = i.name || i.id; });
+            (dmn?.decisions || []).forEach((d) => { if (d?.id) map[d.id] = d.name || d.id; });
+            return map;
+        },
+        hrefToId(href) {
+            if (!href) return '';
+            const s = String(href);
+            if (s.startsWith('#')) return s.slice(1);
+            return s;
+        },
+        extractReqIds(decision) {
+            const reqs = decision?.informationRequirements || [];
+            const inputs = [];
+            const decisions = [];
+            reqs.forEach((r) => {
+                const inId = this.hrefToId(r.requiredInputHref);
+                const decId = this.hrefToId(r.requiredDecisionHref);
+                if (inId) inputs.push(inId);
+                if (decId) decisions.push(decId);
+            });
+            return { inputs, decisions };
+        },
+        reqSummaryText(ch) {
+            // raw 구조 JSON 노출 금지: 사용자에게 의미 있는 "무엇을 참조하는지"만 보여줌
+            const prev = ch.previous || null;
+            const curr = ch.current || null;
+            const prevIds = this.extractReqIds(prev);
+            const currIds = this.extractReqIds(curr);
 
-        getRuleCellClass(rule, ruleIdx, cellIdx, type) {
-            const prevRule = this.previous.rules?.[ruleIdx];
-            
-            if (!prevRule) {
-                return 'dmn-cell-added';
+            const prevSet = new Set([...prevIds.inputs.map((x) => `I:${x}`), ...prevIds.decisions.map((x) => `D:${x}`)]);
+            const currSet = new Set([...currIds.inputs.map((x) => `I:${x}`), ...currIds.decisions.map((x) => `D:${x}`)]);
+
+            const added = Array.from(currSet).filter((k) => !prevSet.has(k));
+            const removed = Array.from(prevSet).filter((k) => !currSet.has(k));
+
+            const mapPrev = this.buildIdNameMapFromDmn(this.previous);
+            const mapCurr = this.buildIdNameMapFromDmn(this.current);
+            const resolve = (k) => {
+                const [t, id] = k.split(':');
+                const name = (mapCurr[id] || mapPrev[id]) || id;
+                return `${t === 'I' ? '입력' : '결정'} ${name}`;
+            };
+
+            if (ch.type === 'added') {
+                const all = Array.from(currSet).map(resolve);
+                return all.length ? all.join(', ') : '';
             }
-            
-            if (type === 'input') {
-                const prevValue = this.getRuleInputValue(prevRule, cellIdx);
-                const currValue = this.getRuleInputValue(rule, cellIdx);
-                if (prevValue !== currValue) {
-                    return 'dmn-cell-modified';
-                }
-            } else if (type === 'output') {
-                const prevValue = this.getRuleOutputValue(prevRule, cellIdx);
-                const currValue = this.getRuleOutputValue(rule, cellIdx);
-                if (prevValue !== currValue) {
-                    return 'dmn-cell-modified';
-                }
+            if (ch.type === 'removed') {
+                const all = Array.from(prevSet).map(resolve);
+                return all.length ? all.join(', ') : '';
             }
-            
+            if (ch.type === 'modified') {
+                if (added.length === 0 && removed.length === 0) return '';
+                const parts = [];
+                if (added.length) parts.push(`+${added.map(resolve).join(', ')}`);
+                if (removed.length) parts.push(`-${removed.map(resolve).join(', ')}`);
+                return parts.join(' · ');
+            }
             return '';
+        },
+        expressionSummaryText(ch) {
+            // raw FEEL/Expression text는 그대로 노출하지 않음(금지). 상태 변화만 요약.
+            const prev = ch.previous?.literalExpression || null;
+            const curr = ch.current?.literalExpression || null;
+            const prevText = prev?.text || '';
+            const currText = curr?.text || '';
+
+            if (ch.type === 'added') return curr ? '추가됨' : '';
+            if (ch.type === 'removed') return prev ? '삭제됨' : '';
+            if (ch.type === 'modified') {
+                if (!!prev !== !!curr) return curr ? '추가됨' : '삭제됨';
+                if (prev && curr && prevText !== currText) return '변경됨';
+            }
+            return '';
+        },
+        scrollToSection(id) {
+            try {
+                const el = document.getElementById(id);
+                if (el && el.scrollIntoView) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } catch (e) {
+                // ignore
+            }
         }
     }
 };
@@ -245,6 +332,7 @@ export default {
 <style scoped>
 .dmn-diff-view {
     width: 100%;
+    background-color: rgba(var(--v-theme-primary), 0.04);
 }
 
 .dmn-header-box {
@@ -350,6 +438,68 @@ export default {
 .dmn-modified {
     background-color: rgba(255, 152, 0, 0.1) !important;
     border-left: 3px solid rgba(255, 152, 0, 0.5) !important;
+}
+
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dmn-report-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dmn-report-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dmn-report-card {
+    background-color: rgba(var(--v-theme-surface), 1);
+    border-radius: 6px;
+    padding: 12px;
+    border: 1px solid rgba(var(--v-border-color), 0.12);
+}
+
+.dmn-meta-block {
+    background-color: rgba(var(--v-theme-background), 1);
+    border-radius: 6px;
+    padding: 10px;
+    border: 1px solid rgba(var(--v-border-color), 0.08);
+}
+
+.dmn-info-row .text-medium-emphasis {
+    display: inline-block;
+    min-width: 40px;
+    margin-right: 8px;
+}
+
+.dmn-removed-soft {
+    opacity: 0.85;
+}
+
+.dmn-report-sublist {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dmn-report-subcard {
+    background-color: rgba(var(--v-theme-background), 1);
+    border-radius: 6px;
+    padding: 10px;
+    border: 1px solid rgba(var(--v-border-color), 0.08);
+}
+
+.summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
 }
 </style>
 

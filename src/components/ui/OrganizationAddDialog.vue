@@ -66,7 +66,7 @@
                     </v-btn>
                 </div>
             </v-card-title>
-            <v-card-text class="pa-4 pb-0"
+            <v-card-text class="pa-4 pb-0 pt-0"
                 style="max-height: calc(100vh - 374px);
                 overflow: auto;"
             >
@@ -86,6 +86,7 @@
                             chips 
                             closable-chips 
                             small-chips
+                            hide-details
                         >
                             <template v-slot:chip="{ props, item }">
                                 <v-chip v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" :text="item.raw.data.name"></v-chip>
@@ -102,11 +103,13 @@
                             </template>
                         </v-autocomplete>
 
+                        <!-- 기존 조직도에서 신규 사용자 추가할 때 사용하던 UI -->
                         <v-checkbox 
                             v-model="isNewUser" 
                             :label="$t('organizationChartDefinition.addNewUser')"
                             color="primary" 
                             density="compact"
+                            hide-details
                         ></v-checkbox>
 
                         <div v-if="isNewUser">

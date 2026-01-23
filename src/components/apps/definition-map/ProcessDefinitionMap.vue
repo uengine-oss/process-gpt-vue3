@@ -28,17 +28,19 @@
                 />
             </div>
             
-            <div v-if="componentName != 'SubProcessDetail'" class="pa-0 pl-6 pt-4 pr-6 d-flex align-center"
-                style="position: sticky; top: 0; z-index:2; background-color:white"
+            <!-- 헤더 영역 -->
+            <div v-if="componentName != 'SubProcessDetail'" class="header-section"
+                style="position: sticky; top: 0; z-index:2; background-color:white; border-bottom: 1px solid rgba(0,0,0,0.08);"
             >
-                <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.title') }}</h5>
-                <v-row v-else class="ma-0 pa-0">
-                    <!-- 수정: public 경로부터 시작하는 favicon 이미지 추가 -->
+                <div class="d-flex align-center justify-space-between pa-4 pl-6 pr-6" style="gap: 16px;">
+                    <!-- 왼쪽: 제목 및 주요 액션 -->
+                    <div class="d-flex align-center" style="gap: 12px; flex: 1; min-width: 0;">
+                        <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold ma-0 flex-shrink-0">{{ $t('processDefinitionMap.title') }}</h5>
+                    <v-row v-else class="ma-0 pa-0 align-center flex-shrink-0">
                     <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
-                    <h5 class="text-h5 font-weight-semibold">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
+                        <h5 class="text-h5 font-weight-semibold ma-0">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
                 </v-row>
-
-                <!-- 액션 버튼 -->
+                    <!-- 마켓플레이스 버튼 -->
                 <v-btn
                     v-for="(card, index) in actionCards"
                     :key="index"
@@ -47,45 +49,90 @@
                     color="primary"
                     variant="flat"
                     density="compact"
-                    class="rounded-pill ml-2"
+                                class="rounded-pill flex-shrink-0"
                 >
                     <template v-slot:prepend>
                         <Icons :icon="card.icon" color="white" :size="16" />
                     </template>
                     {{ card.title }}
                 </v-btn>
-                <DetailComponent class="ml-2"
-                    :title="$t('processDefinitionMap.usageGuide.title')"
-                    :details="usageGuideDetails"
-                />
-                <v-btn v-if="!isExecutionByProject && $route.path !== '/definition-map'" style="margin-left: 3px; margin-top: 1px;" icon variant="text" 
-                    size="24" @click="goProcessMap">
-                    <Icons :icon="'arrow-go-back'"/>
-                </v-btn>
-                
-                <!-- buttons -->
-                <div class="ml-auto d-flex">
-                    <!-- View Mode Toggle -->
-                    <v-btn-toggle
+                    
+                    <!-- 검색 기능 (Searchbar 스타일 참고) -->
+                    <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5"
+                        style="max-width: 280px; min-width: 160px;"
+                    >
+                        <Icons :icon="'magnifer-linear'" :size="20" />
+                        <v-text-field
+                            ref="searchInput"
+                            :model-value="searchInputValue"
+                            @update:model-value="searchInputValue = $event"
+                            variant="plain"
+                            density="compact"
+                            class="position-relative pt-0 ml-3 custom-placeholer-color"
+                            :placeholder="$t('processDefinitionMap.searchProcess') || '정의체계도 검색 (예: 보험, 신청)'"
+                            single-line
+                            hide-details
+                            @keyup.enter="handleSearch"
+                        />
+                    </div>
+                    <DetailComponent
+                        class="flex-shrink-0"
+                        :title="$t('processDefinitionMap.usageGuide.title')"
+                        :details="usageGuideDetails"
+                    />
+                    
+                    <v-btn 
+                        v-if="!isExecutionByProject && $route.path !== '/definition-map'" 
+                        icon 
+                        variant="text" 
+                        size="24" 
+                        class="flex-shrink-0"
+                        @click="goProcessMap"
+                    >
+                        <Icons :icon="'arrow-go-back'"/>
+                    </v-btn>
+                </div>
+                <!-- 오른쪽: 뷰 모드 토글 + 액션 버튼들 -->
+                <div class="d-flex align-center flex-shrink-0" style="gap: 8px;">
+                    <!-- 뷰 모드 토글 -->
+                    <v-tabs
                         v-if="componentName === 'DefinitionMapList' && mode === 'ProcessGPT'"
                         v-model="viewMode"
-                        mandatory
-                        density="compact"
                         color="primary"
-                        class="mr-4"
+                        align-tabs="start"
+                        hide-slider
+                        density="compact"
                     >
-                        <v-btn value="proc_map" size="small">
+                        <v-tab
+                            value="proc_map"
+                            class="premium-tab mr-2"
+                            rounded="lg"
+                            variant="flat"
+                        >
                             <v-icon start size="16">mdi-view-grid</v-icon>
                             {{ $t('processDefinitionMap.cardView') || '카드' }}
-                        </v-btn>
-                        <v-btn value="metrics" size="small">
+                        </v-tab>
+                        <v-tab
+                            value="metrics"
+                            class="premium-tab mr-2"
+                            rounded="lg"
+                            variant="flat"
+                        >
                             <v-icon start size="16">mdi-table</v-icon>
                             {{ $t('processDefinitionMap.matrixView') || '매트릭스' }}
-                        </v-btn>
-                    </v-btn-toggle>
-                    <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode" >
+                        </v-tab>
+                    </v-tabs>
+                        
+                    <!-- 액션 버튼 그룹 -->
+                    <div class="d-flex align-center" style="gap: 4px;">
+                        <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2 cp-unlock" @click="openAlertDialog">
+                                <v-btn v-bind="props"
+                                    @click="openAlertDialog"
+                                    class="mr-2"
+                                    icon variant="text"
+                                    size="32"
+                                >
                                 <Icons :icon="'pencil'" :size="18" />
                             </v-btn>
                         </template>
@@ -94,7 +141,7 @@
 
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2 cp-lock" @click="openAlertDialog">
+                                <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
                                 <Icons :icon="'save'" :size="24" />
                             </v-btn>
                         </template>
@@ -103,7 +150,7 @@
 
                     <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="ml-2" @click="openAlertDialog">
+                                <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
                                 <LockIcon width="24" height="24" />
                             </v-btn>
                         </template>
@@ -125,12 +172,9 @@
                         <span>{{ $t('processDefinitionMap.save') }}</span>
                     </v-tooltip>
 
-                    <span v-if="useLock && lock && userName && userName != editUser" class="ml-1">
-                        {{ $t('processDefinitionMap.editingUser', {name: editUser}) }}
-                    </span>
                     <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="capturePng">
+                                        <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
                                 <Icons :icon="'image-download'" />
                             </v-btn>
                         </template>
@@ -138,22 +182,18 @@
 
                     <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" class="ml-3"
-                                @click="closePDM()" icon variant="text" :size="24">
+                                        <v-btn v-bind="props" icon variant="text" size="24" @click="closePDM()">
                                 <Icons :icon="'close'" :size="20"/>
                             </v-btn>
                         </template>
                     </v-tooltip>
-
-                    <!-- 프로세스 정의 체계도 캔버스 확대 축소 버튼 및 아이콘 -->
-                    <!-- <v-tooltip v-if="!isExecutionByProject && componentName != 'SubProcessDetail' && !globalIsMobile.value" :text="$t('processDefinition.zoom')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" class="ml-3"
-                                @click="$globalState.methods.toggleZoom()" icon variant="text" :size="24">
-                                <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
-                            </v-btn>
-                        </template>
-                    </v-tooltip> -->
+                        </div>
+                        
+                        <!-- 편집 사용자 표시 -->
+                        <span v-if="useLock && lock && userName && userName != editUser" class="text-caption text-grey-darken-1 ml-2 flex-shrink-0">
+                            {{ $t('processDefinitionMap.editingUser', {name: editUser}) }}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -166,124 +206,136 @@
                     <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" :isAdmin="isAdmin" />
                 </div>
                 <div v-else>
+                    <!-- 필터 및 탭 영역 -->
                     <div v-if="viewMode === 'proc_map' && metricsValue.domains && metricsValue.domains.length > 0" 
-                        class="px-6 py-3 d-flex align-center glass-tab-container"
+                        class="filter-tab-section glass-tab-container"
                     >
-                        <v-tabs
-                            v-model="selectedDomain"
-                            color="primary"
-                            align-tabs="start"
-                            hide-slider
-                            class="premium-tabs"
-                        >
-                            <!-- 전체 탭 -->
-                            <v-tab
-                                :value="null"
-                                class="premium-tab all-tab mr-2"
-                                rounded="lg"
-                                variant="flat"
-                            >
-                                <div class="d-flex align-center">
-                                    <span class="tab-text">{{ $t('processDefinitionMap.allDomains') || '전체' }}</span>
-                                    <span
-                                        v-if="getTotalProcessCount() > 0"
-                                        class="domain-count-badge ml-2"
+                        <div class="px-6 py-3 d-flex align-center" style="gap: 16px; flex-wrap: wrap;">
+                            <!-- 왼쪽: 조직 필터 + 도메인 탭 -->
+                            <div class="d-flex align-center" style="gap: 8px; flex: 1; min-width: 0;">
+                                <!-- 조직 필터 -->
+                                <div class="d-flex align-center flex-shrink-0">
+                                    <v-autocomplete
+                                        v-if="organizationOptions.length > 0"
+                                        v-model="selectedOrganization"
+                                        :items="organizationOptions"
+                                        :label="$t('processDefinitionMap.filterByOrganization') || '조직 필터'"
+                                        item-title="name"
+                                        item-value="id"
+                                        return-object
+                                        clearable
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        class="org-filter-select"
+                                        style="min-width: 200px; max-width: 300px; width: auto;"
+                                        :loading="loadingOrganizations"
                                     >
-                                        {{ getTotalProcessCount() }}
-                                    </span>
+                                        <template v-slot:prepend-inner>
+                                            <v-icon size="18" color="grey">mdi-account-group</v-icon>
+                                        </template>
+                                        <template v-slot:item="{ item, props }">
+                                            <v-list-item v-bind="props">
+                                                <template v-slot:prepend>
+                                                    <v-icon :color="item.raw.type === 'group' ? 'primary' : 'grey'" size="18" class="mr-2">
+                                                        {{ item.raw.type === 'group' ? 'mdi-account-group' : 'mdi-account-multiple' }}
+                                                    </v-icon>
+                                                </template>
+                                                <template v-slot:append>
+                                                    <v-chip size="x-small" :color="item.raw.type === 'group' ? 'primary' : 'grey'" variant="tonal">
+                                                        {{ item.raw.type === 'group' ? $t('LanePanel.group') : $t('LanePanel.team') }}
+                                                    </v-chip>
+                                                </template>
+                                            </v-list-item>
+                                        </template>
+                                    </v-autocomplete>
                                 </div>
-                            </v-tab>
-                            <v-tab
-                                v-for="domain in metricsValue.domains"
-                                :key="domain.id"
-                                :value="domain.name"
-                                class="premium-tab mr-2"
-                                :class="{ 'domain-colored-tab': domain.color && selectedDomain === domain.name }"
-                                :style="getTabStyle(domain)"
-                                rounded="lg"
-                                variant="flat"
-                            >
-                                <div class="d-flex align-center">
-                                    <span class="tab-text">{{ domain.name }}</span>
-                                    <span
-                                        v-if="getDomainProcessCount(domain.id) > 0"
-                                        class="domain-count-badge ml-2"
+                                
+                                <!-- 도메인 칩 -->
+                                <div class="d-flex align-center flex-wrap" style="gap: 6px; flex: 1; min-width: 0; hover: pointer;">
+                                    <!-- 전체 칩 -->
+                                    <v-chip
+                                        :class="selectedDomain === null ? 'domain-chip-selected' : ''"
+                                        :variant="selectedDomain === null ? 'flat' : 'outlined'"
+                                        size="default"
+                                        class="domain-chip"
+                                        clickable
+                                        @click="selectedDomain = null"
+                                    >{{ $t('processDefinitionMap.allDomains') || '전체' }}
+                                        <v-chip
+                                            v-if="getTotalProcessCount() > 0"
+                                            :color="selectedDomain === null ? 'white' : 'default'"
+                                            size="x-small"
+                                            class="ml-2 count-chip"
+                                            :variant="selectedDomain === null ? 'flat' : 'text'"
+                                        >{{ getTotalProcessCount() }}
+                                        </v-chip>
+                                    </v-chip>
+                                    
+                                    <!-- 도메인 칩 -->
+                                    <v-chip
+                                        v-for="domain in metricsValue.domains"
+                                        :key="domain.id"
+                                        :class="selectedDomain === domain.name ? 'domain-chip-selected' : ''"
+                                        :variant="selectedDomain === domain.name ? 'flat' : 'outlined'"
+                                        size="default"
+                                        class="domain-chip"
+                                        clickable
+                                        @click="selectedDomain = domain.name"
                                     >
-                                        {{ getDomainProcessCount(domain.id) }}
-                                    </span>
+                                        {{ domain.name }}
+                                        <v-chip
+                                            v-if="getDomainProcessCount(domain.id) > 0"
+                                            :color="selectedDomain === domain.name ? 'white' : 'default'"
+                                            size="x-small"
+                                            class="ml-2 count-chip"
+                                            :variant="selectedDomain === domain.name ? 'flat' : 'text'"
+                                        >{{ getDomainProcessCount(domain.id) }}
+                                        </v-chip>
+                                        
                                     <!-- 편집 모드일 때 수정/삭제 버튼 -->
-                                    <div v-if="enableEdit && selectedDomain === domain.name" class="domain-actions ml-2">
+                                        <template v-if="enableEdit && selectedDomain === domain.name">
                                         <v-btn
                                             icon
                                             variant="text"
                                             size="x-small"
+                                                class="ml-1"
+                                                style="min-width: 20px; width: 20px; height: 20px;"
                                             @click.stop="editDomain(domain)"
                                         >
-                                            <v-icon size="14">mdi-pencil</v-icon>
+                                                <v-icon size="12" color="white">mdi-pencil</v-icon>
                                         </v-btn>
                                         <v-btn
                                             icon
                                             variant="text"
                                             size="x-small"
-                                            color="error"
+                                                class="ml-1"
+                                                style="min-width: 20px; width: 20px; height: 20px;"
                                             @click.stop="deleteDomain(domain)"
                                         >
-                                            <v-icon size="14">mdi-delete</v-icon>
+                                                <v-icon size="12" color="white">mdi-delete</v-icon>
                                         </v-btn>
-                                    </div>
+                                        </template>
+                                    </v-chip>
+                                    
+                                    <!-- 도메인 추가 버튼 -->
+                                    <v-btn
+                                        v-if="enableEdit"
+                                        icon
+                                        variant="tonal"
+                                                    size="32"
+                                        color="primary"
+                                                    class="flex-shrink-0"
+                                        @click="openDomainDialog('add')"
+                                    >
+                                        <v-icon size="18">mdi-plus</v-icon>
+                                    </v-btn>
                                 </div>
-                            </v-tab>
-                        </v-tabs>
-                        <v-btn
-                            v-if="enableEdit"
-                            icon
-                            variant="tonal"
-                            size="36"
-                            color="primary"
-                            class="ml-4 add-domain-btn"
-                            @click="openDomainDialog('add')"
-                        >
-                            <v-icon size="20">mdi-plus</v-icon>
-                        </v-btn>
-
-                        <!-- Organization Filter -->
-                        <v-autocomplete
-                            v-if="organizationOptions.length > 0"
-                            v-model="selectedOrganization"
-                            :items="organizationOptions"
-                            :label="$t('processDefinitionMap.filterByOrganization') || '조직 필터'"
-                            item-title="name"
-                            item-value="id"
-                            return-object
-                            clearable
-                            density="compact"
-                            variant="outlined"
-                            hide-details
-                            class="ml-4 org-filter-select"
-                            style="max-width: 200px;"
-                            :loading="loadingOrganizations"
-                        >
-                            <template v-slot:prepend-inner>
-                                <v-icon size="18" color="grey">mdi-account-group</v-icon>
-                            </template>
-                            <template v-slot:item="{ item, props }">
-                                <v-list-item v-bind="props">
-                                    <template v-slot:prepend>
-                                        <v-icon :color="item.raw.type === 'group' ? 'primary' : 'grey'" size="18" class="mr-2">
-                                            {{ item.raw.type === 'group' ? 'mdi-account-group' : 'mdi-account-multiple' }}
-                                        </v-icon>
-                                    </template>
-                                    <template v-slot:append>
-                                        <v-chip size="x-small" :color="item.raw.type === 'group' ? 'primary' : 'grey'" variant="tonal">
-                                            {{ item.raw.type === 'group' ? $t('LanePanel.group') : $t('LanePanel.team') }}
-                                        </v-chip>
-                                    </template>
-                                </v-list-item>
-                            </template>
-                        </v-autocomplete>
+                            </div>
+                        </div>
                     </div>
-                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue.domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
-                    <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue" :enableEdit="enableEdit" @update:value="updateMetricsValue" :filteredProcDefIds="filteredProcDefIds"/>
+                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue.domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds" :searchQuery="searchQuery"/>
+                    <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue" :enableEdit="enableEdit" @update:value="updateMetricsValue" :filteredProcDefIds="filteredProcDefIds" :searchQuery="searchQuery"/>
                 </div>
             </div>
 
@@ -618,6 +670,8 @@ export default {
         organizationOptions: [],
         loadingOrganizations: false,
         filteredProcDefIds: null,  // null means no filter, [] means filter active but no matches
+        searchQuery: '',  // 실제 필터링에 사용되는 검색어 (엔터키 입력 시 업데이트)
+        searchInputValue: '',  // 입력 중인 검색어 (화면 표시용)
         domainDialog: {
             show: false,
             mode: 'add', // 'add' or 'edit'
@@ -1407,6 +1461,16 @@ export default {
             traverse(node);
             return teams;
         },
+        handleSearch() {
+            // 엔터키 입력 시에만 검색 실행
+            this.searchQuery = this.searchInputValue || '';
+            console.log('[검색] 검색 실행:', this.searchQuery);
+        },
+        clearSearch() {
+            this.searchInputValue = '';
+            this.searchQuery = '';
+            console.log('[검색] 검색 초기화');
+        },
         async updateMetricsValue(newValue) {
             this.metricsValue = newValue;
             // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
@@ -1523,21 +1587,6 @@ export default {
                 '--domain-color': domain.color,
                 '--domain-text-color': textColor,
                 '--badge-bg': textColor === '#FFFFFF' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)'
-            };
-        },
-        getBadgeStyle(domain) {
-            // 도메인 색상이 있으면 그에 맞는 대비색
-            if (domain?.color) {
-                const textColor = this.getContrastTextColor(domain.color);
-                return {
-                    backgroundColor: textColor === '#FFFFFF' ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.3)',
-                    color: textColor
-                };
-            }
-            // 색상 없는 도메인: 어두운 텍스트
-            return {
-                backgroundColor: 'rgba(0,0,0,0.1)',
-                color: '#555'
             };
         },
         updatePermissionsFromDiff(diff) {
@@ -1757,9 +1806,8 @@ export default {
     background: #ffffff;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     position: sticky;
-    top: 60px; /* Adjust based on header height */
+    top: 73px; /* Adjust based on header height */
     z-index: 10;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .premium-tabs :deep(.v-slide-group__content) {
@@ -1770,9 +1818,7 @@ export default {
     text-transform: none !important;
     font-weight: 600 !important;
     letter-spacing: -0.01em !important;
-    color: #555 !important;
     background: rgba(0, 0, 0, 0.04);
-    transition: all 0.2s ease !important;
     border: none !important;
     height: 36px !important;
     min-width: auto !important;
@@ -1780,6 +1826,35 @@ export default {
     padding: 0 14px !important;
     overflow: hidden !important;
     flex-shrink: 0 !important;
+}
+
+/* 선택된 탭 회색 배경 */
+.premium-tab.v-tab--selected {
+    background-color: #757575 !important;
+    color: white !important;
+}
+
+/* 선택되지 않은 도메인 칩 기본 색상 */
+.domain-chip {
+    border-color: #808080 !important;
+    color: #808080 !important;
+}
+
+/* 선택된 도메인 칩 회색 배경 */
+.domain-chip-selected {
+    background-color: #757575 !important;
+    color: white !important;
+}
+
+/* 카운트 칩 스타일 */
+.count-chip {
+    font-weight: 600;
+}
+
+/* 선택되지 않은 카운트 칩 연한 회색 배경 */
+.domain-chip .count-chip:not(.v-chip--variant-flat) {
+    background-color: rgba(128, 128, 128, 0.15) !important;
+    color: #808080 !important;
 }
 
 .premium-tab .d-flex {
@@ -1793,31 +1868,6 @@ export default {
     max-width: 120px;
 }
 
-.premium-tab:not(.domain-colored-tab):hover {
-    background: rgba(0, 0, 0, 0.08) !important;
-}
-
-/* 전체 탭 - 활성화 시 그라데이션 */
-.premium-tab.all-tab.v-tab--selected {
-    background: linear-gradient(135deg, rgb(var(--v-theme-primary)), #6366f1) !important;
-    color: white !important;
-}
-
-/* 색상 없는 도메인 탭 - 활성화 시 */
-.premium-tab.v-tab--selected:not(.domain-colored-tab):not(.all-tab) {
-    background: rgb(var(--v-theme-primary)) !important;
-    color: white !important;
-}
-
-/* 색상 있는 도메인 탭 - CSS 변수로 배경색 적용 */
-.premium-tab.domain-colored-tab {
-    background: var(--domain-color) !important;
-    color: var(--domain-text-color) !important;
-}
-
-.premium-tab.domain-colored-tab:hover {
-    filter: brightness(0.92);
-}
 
 .tab-text {
     font-size: 0.875rem;
@@ -1840,25 +1890,13 @@ export default {
 /* 비활성 탭 배지 기본 스타일 */
 .premium-tab .domain-count-badge {
     background-color: rgba(0,0,0,0.1);
-    color: #555;
+    color: inherit;
 }
 
-/* 전체 탭 활성화 시 배지 흰색 */
-.premium-tab.all-tab.v-tab--selected .domain-count-badge {
-    background-color: rgba(255,255,255,0.25) !important;
-    color: #fff !important;
-}
-
-/* 색상 없는 도메인 탭 활성화 시 배지 */
-.premium-tab.v-tab--selected:not(.domain-colored-tab):not(.all-tab) .domain-count-badge {
-    background-color: rgba(255,255,255,0.25) !important;
-    color: #fff !important;
-}
-
-/* 색상 있는 도메인 탭 배지 - CSS 변수 사용 */
-.premium-tab.domain-colored-tab .domain-count-badge {
-    background-color: var(--badge-bg) !important;
-    color: var(--domain-text-color) !important;
+/* 선택된 탭 배지 스타일 */
+.premium-tab.v-tab--selected .domain-count-badge {
+    background-color: rgba(255,255,255,0.25);
+    color: white;
 }
 
 .add-domain-btn {
@@ -1927,7 +1965,6 @@ export default {
 .definition-map-card {
     flex: 1;
     min-width: 0;
-    transition: width 0.2s ease;
 }
 
 /* 채팅 리사이저 */
