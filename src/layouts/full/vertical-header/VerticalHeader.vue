@@ -54,6 +54,13 @@ const sidebarItems = ref<SidebarItem[]>([
         isVisible: window.$mode === 'ProcessGPT' && !window.$pal
     },
     {
+        title: 'chats.groupChat',
+        icon: 'users-group-rounded-line-duotone',
+        to: '/chats/group',
+        disable: false,
+        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
+    },
+    {
         title: 'headerMenu.todoList',
         icon: 'overview',
         to: '/todolist',

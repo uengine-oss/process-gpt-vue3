@@ -354,6 +354,73 @@ create table if not exists public.chat_attachments (
     constraint chat_attachments_tenant_id_fkey foreign KEY (tenant_id) references tenants (id)
 ) TABLESPACE pg_default;
 
+-- 그룹 채팅 메시지 테이블 (일반 채팅과 분리)
+create table if not exists public.group_chat_messages (
+    id bigserial not null,
+    chat_room_id text not null,
+    content text,
+    email text,
+    name text,
+    role text,
+    time_stamp bigint not null,
+    profile text,
+    json_content jsonb,
+    json_data jsonb,
+    intervention_status text,
+    image text,
+    images jsonb,
+    thread_id text null,
+    tenant_id text null default public.tenant_id(),
+    created_at timestamp with time zone not null default now(),
+    constraint group_chat_messages_pkey primary key (id),
+    constraint group_chat_messages_chat_room_id_fkey foreign key (chat_room_id) references chat_rooms (id) on update cascade on delete cascade,
+    constraint group_chat_messages_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
+) tablespace pg_default;
+
+-- 인덱스 생성 (성능 최적화)
+create index if not exists idx_group_chat_messages_id on public.group_chat_messages(id);
+create index if not exists idx_group_chat_messages_chat_room_id on public.group_chat_messages(chat_room_id);
+create index if not exists idx_group_chat_messages_tenant_id on public.group_chat_messages(tenant_id);
+create index if not exists idx_group_chat_messages_time_stamp on public.group_chat_messages(time_stamp);
+create index if not exists idx_group_chat_messages_email on public.group_chat_messages(email);
+create index if not exists idx_group_chat_messages_created_at on public.group_chat_messages(created_at);
+create index if not exists idx_group_chat_messages_intervention_status on public.group_chat_messages(intervention_status);
+
+-- 에이전트 개입 로그 (그룹채팅용)
+create table if not exists public.agent_intervention_logs (
+    id uuid not null default gen_random_uuid(),
+    tenant_id text not null,
+    chat_room_id text not null,
+    message_id bigint not null,
+    user_id text,
+    user_message text,
+    user_message_length integer,
+    context_info jsonb,
+    should_intervene boolean,
+    intervention_reason text,
+    decision_confidence double precision,
+    selected_agent_id text,
+    selected_agent_name text,
+    agent_selection_reason text,
+    agent_selection_confidence double precision,
+    agent_response_content text,
+    agent_response_length integer,
+    agent_response_type text,
+    status text default 'checking',
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    completed_at timestamp with time zone null,
+    constraint agent_intervention_logs_pkey primary key (id),
+    constraint agent_intervention_logs_message_id_fkey foreign key (message_id) references group_chat_messages (id) on update cascade on delete cascade,
+    constraint agent_intervention_logs_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade,
+    constraint agent_intervention_logs_chat_room_id_fkey foreign key (chat_room_id) references chat_rooms (id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create unique index if not exists idx_agent_intervention_logs_tenant_message on public.agent_intervention_logs(tenant_id, message_id);
+create index if not exists idx_agent_intervention_logs_chat_room on public.agent_intervention_logs(chat_room_id);
+create index if not exists idx_agent_intervention_logs_status on public.agent_intervention_logs(status);
+create index if not exists idx_agent_intervention_logs_updated_at on public.agent_intervention_logs(updated_at);
+
 create table if not exists public.calendar (
     uid text not null,
     data jsonb null,
@@ -1219,6 +1286,8 @@ CREATE POLICY project_delete_policy ON project FOR DELETE TO authenticated USING
 
 -- Enable Realtime for specific tables
 alter publication supabase_realtime add table chats;
+alter publication supabase_realtime add table group_chat_messages;
+alter publication supabase_realtime add table agent_intervention_logs;
 alter publication supabase_realtime add table notifications;
 alter publication supabase_realtime add table todolist;
 alter publication supabase_realtime add table bpm_proc_inst;
