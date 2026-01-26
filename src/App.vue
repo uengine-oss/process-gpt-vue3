@@ -169,6 +169,19 @@ export default {
         },
     },
     methods: {
+        getChatRoomIdFromUrl(url) {
+            if (!url || typeof url !== 'string') return null;
+            try {
+                // 상대/절대 URL 모두 처리
+                const parsed = new URL(url, window.location.origin);
+                const id = parsed.searchParams.get('id');
+                return id ? decodeURIComponent(id) : null;
+            } catch (e) {
+                // URL() 파싱이 실패하는 경우(구형/비정상 문자열) fallback
+                const match = url.match(/[?&]id=([^&]+)/);
+                return match ? decodeURIComponent(match[1]) : null;
+            }
+        },
         closeSnackbarOnEvent() {
             // 스낵바가 열려있을 때만 클릭 카운트
             if (this.snackbar) {
@@ -189,14 +202,15 @@ export default {
                     notiHeader = 'New Todo';
                     notiBody = notification.title || '새 할 일 목록 추가';
                 } else if(notification.type === 'chat') {
-                    if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
+                    const notiChatRoomId = this.getChatRoomIdFromUrl(notification.url);
+                    if (!this.currentChatRoomId || !notiChatRoomId || (this.currentChatRoomId && notiChatRoomId !== this.currentChatRoomId)) {
                         notiHeader = notification.from_user_id || '알 수 없는 사용자';
                         const chatRoomName = notification.description || '채팅방';
                         const messageContent = notification.title || '새 메시지';
                         notiBody = `${chatRoomName}\n${messageContent}`;
 
                         window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                            detail: { type: 'chat', value: true, id: notification.url.replace('/chats?id=', '')}
+                            detail: { type: 'chat', value: true, id: notiChatRoomId || notification.url.replace('/chats?id=', '')}
                         }));
                     }
                 }

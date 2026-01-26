@@ -1119,30 +1119,38 @@ export default {
         handleAgentResponse(response) {
             console.log('[ProcessDefinitionMap] 에이전트 응답:', response);
             
-            if (!response || !response.action) return;
+            if (!response || !response.name) return;
             
-            switch (response.action) {
-                case 'process_created':
+            // 파싱된 action이 아니라 toolCalls의 name(예: work-assistant__execute_process) 기준으로 처리
+            const toolName = response.name || '';
+
+            switch (true) {
+                case toolName.includes('start_process_consulting'):
                     // 프로세스 생성 요청 - WorkAssistantChatPanel에서 직접 컨설팅 모드로 전환됨
                     // 별도 처리 불필요
                     break;
                     
-                case 'process_executed':
+                case toolName.includes('execute_process'):
                     // 프로세스 실행 완료 - 인스턴스 업데이트 알림
                     this.EventBus.emit('instances-updated');
                     break;
                     
-                case 'query_result':
+                case toolName.includes('get_instance_list'):
+                case toolName.includes('get_todolist'):
                     // 조회 결과 - 필요 시 추가 처리
                     break;
                     
-                case 'organization_info':
+                case toolName.includes('get_organization'):
                     // 조직도 정보 - 필요 시 추가 처리
                     break;
                     
-                case 'error':
+                case toolName.includes('error'):
                     // 오류 처리
                     console.error('에이전트 오류:', response.message);
+                    break;
+                
+                default:
+                    // 기타 도구는 기본 동작 없음
                     break;
             }
             

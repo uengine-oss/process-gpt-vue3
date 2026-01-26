@@ -147,20 +147,66 @@
                                     </template>
                                 </div>
                                 
-                                <!-- CREATE 작업: 새 내용만 표시 -->
+                                <!-- CREATE 작업: JSON이면 파일별로 표시, 아니면 전체 내용 -->
                                 <div v-else-if="item.operation === 'CREATE' && item.new_content" class="mt-2">
-                                    <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
-                                    <div class="change-content-box">
-                                        <pre class="change-content-text">{{ item.new_content }}</pre>
-                                    </div>
+                                    <!-- JSON 형식: 파일별 expansion panel -->
+                                    <template v-if="getFileContentPairs(item, 'CREATE').length > 0">
+                                        <v-expansion-panels variant="accordion" class="skill-history-file-diff-panels">
+                                            <v-expansion-panel
+                                                v-for="file in getFileContentPairs(item, 'CREATE')"
+                                                :key="file.filePath"
+                                                class="skill-history-file-panel"
+                                            >
+                                                <v-expansion-panel-title class="text-body-2 font-weight-medium">
+                                                    <v-icon size="small" class="mr-2">mdi-file-document-outline</v-icon>
+                                                    {{ file.filePath }}
+                                                </v-expansion-panel-title>
+                                                <v-expansion-panel-text>
+                                                    <div class="change-content-box">
+                                                        <pre class="change-content-text">{{ file.content }}</pre>
+                                                    </div>
+                                                </v-expansion-panel-text>
+                                            </v-expansion-panel>
+                                        </v-expansion-panels>
+                                    </template>
+                                    <!-- 일반 텍스트: 전체 내용 -->
+                                    <template v-else>
+                                        <div class="text-caption text-medium-emphasis mb-1">새 내용</div>
+                                        <div class="change-content-box">
+                                            <pre class="change-content-text">{{ item.new_content }}</pre>
+                                        </div>
+                                    </template>
                                 </div>
                                 
-                                <!-- DELETE 작업: 이전 내용만 표시 -->
+                                <!-- DELETE 작업: JSON이면 파일별로 표시, 아니면 전체 내용 -->
                                 <div v-else-if="item.operation === 'DELETE' && item.previous_content" class="mt-2">
-                                    <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
-                                    <div class="change-content-box">
-                                        <pre class="change-content-text">{{ item.previous_content }}</pre>
-                                    </div>
+                                    <!-- JSON 형식: 파일별 expansion panel -->
+                                    <template v-if="getFileContentPairs(item, 'DELETE').length > 0">
+                                        <v-expansion-panels variant="accordion" class="skill-history-file-diff-panels">
+                                            <v-expansion-panel
+                                                v-for="file in getFileContentPairs(item, 'DELETE')"
+                                                :key="file.filePath"
+                                                class="skill-history-file-panel"
+                                            >
+                                                <v-expansion-panel-title class="text-body-2 font-weight-medium">
+                                                    <v-icon size="small" class="mr-2">mdi-file-document-outline</v-icon>
+                                                    {{ file.filePath }}
+                                                </v-expansion-panel-title>
+                                                <v-expansion-panel-text>
+                                                    <div class="change-content-box">
+                                                        <pre class="change-content-text">{{ file.content }}</pre>
+                                                    </div>
+                                                </v-expansion-panel-text>
+                                            </v-expansion-panel>
+                                        </v-expansion-panels>
+                                    </template>
+                                    <!-- 일반 텍스트: 전체 내용 -->
+                                    <template v-else>
+                                        <div class="text-caption text-medium-emphasis mb-1">이전 내용</div>
+                                        <div class="change-content-box">
+                                            <pre class="change-content-text">{{ item.previous_content }}</pre>
+                                        </div>
+                                    </template>
                                 </div>
                                 
                                 <!-- 내용이 없는 경우 -->
@@ -317,10 +363,28 @@ export default {
 
         /** 이력 행의 변경 요약 문구 (JSON이면 "N개 파일 변경", 아니면 이전/새 요약) */
         getChangeSummary(item) {
-            const pairs = this.getFileDiffPairs(item);
-            if (pairs.length > 0) {
-                return `${pairs.length}개 파일 변경`;
+            // UPDATE: JSON이면 파일 개수 표시
+            if (item.operation === 'UPDATE') {
+                const pairs = this.getFileDiffPairs(item);
+                if (pairs.length > 0) {
+                    return `${pairs.length}개 파일 변경`;
+                }
             }
+            // CREATE: JSON이면 파일 개수 표시
+            if (item.operation === 'CREATE') {
+                const files = this.getFileContentPairs(item, 'CREATE');
+                if (files.length > 0) {
+                    return `${files.length}개 파일 생성`;
+                }
+            }
+            // DELETE: JSON이면 파일 개수 표시
+            if (item.operation === 'DELETE') {
+                const files = this.getFileContentPairs(item, 'DELETE');
+                if (files.length > 0) {
+                    return `${files.length}개 파일 삭제`;
+                }
+            }
+            // 일반 텍스트: 기존 방식
             if (item.previous_content || item.new_content) {
                 const parts = [];
                 if (item.previous_content) {
@@ -363,6 +427,21 @@ export default {
                 if (o != null && typeof o === 'object' && !Array.isArray(o)) return o;
             } catch (_) { /* ignore */ }
             return null;
+        },
+
+        /**
+         * CREATE/DELETE 작업의 JSON 파일 내용을 파싱
+         * CREATE: new_content, DELETE: previous_content
+         * [{ filePath, content }] 반환. JSON이 아니면 [].
+         */
+        getFileContentPairs(item, operation) {
+            const content = operation === 'CREATE' ? item?.new_content : item?.previous_content;
+            const jsonObj = this._parseJsonFileContents(content);
+            if (!jsonObj) return [];
+            return Object.keys(jsonObj).map((filePath) => ({
+                filePath,
+                content: String(jsonObj[filePath] ?? '')
+            }));
         },
 
         /** 파일 경로 확장자에 따른 vue-diff language */
