@@ -353,11 +353,12 @@
                                         :variant="isMobile ? 'outlined' : 'flat'"
                                         :icon="isMobile"
                                         density="comfortable"
-                                        size="small"
+                                        :size="isMobile ? 'small' : 'default'"
+                                        :rounded="!isMobile"
                                         @click="openRealtimeAssistant"
                                     >
                                         <v-icon>mdi-robot</v-icon>
-                                        <span v-if="!isMobile" class="ms-1">LLM 자동 작성</span>
+                                        <span v-if="!isMobile" class="ms-1">Voice Agent</span>
                                     </v-btn>
                                     <v-btn v-if="hasGeneratedContent && (!selectedResearchMethod || selectedResearchMethod === 'default')"
                                         @click="resetGeneratedContent"

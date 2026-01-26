@@ -15,7 +15,7 @@
             >
                 <div class="ai-chat-header" @mousedown="startDrag">
                     <div class="ai-chat-title">
-                        LLM 자동 작성
+                        Voice Agent
                         <span v-if="connected" class="ai-chat-status success">연결됨</span>
                         <span v-else class="ai-chat-status warn">{{ connecting ? '연결 중' : '연결 안 됨' }}</span>
                         <span v-if="assistantStreaming" class="ai-chat-status">응답 중</span>
@@ -176,7 +176,12 @@ const dialogStyle = computed(() => ({
 let messageSeq = 0;
 let assistantBuffer = '';
 
-const targetWsUrl = computed(() => props.wsUrl || 'ws://localhost:3000/ws/realtime');
+const targetWsUrl = computed(() => {
+    if (props.wsUrl) return props.wsUrl;
+    const isHttps = window.location.protocol === 'https:';
+    const host = window.location.host;
+    return `${isHttps ? 'wss' : 'ws'}://${host}/voice/ws`;
+});
 const audioContext = ref(null);
 const processor = ref(null);
 const mediaStream = ref(null);
@@ -242,6 +247,24 @@ const pushMessage = (role, text) => {
     messages.value = [...messages.value, { id: messageSeq += 1, role, text }];
 };
 
+const sendUserInfo = (socket) => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const payload = {
+        type: 'user_info',
+        email: props.currentUserEmail || localStorage.getItem('email') || '',
+        user_name: props.currentUserName || '',
+        user_uid: props.currentUserUid || '',
+        process_name: props.processName || '',
+        activity_name: props.activityName || '',
+        tenant_id: window.$tenantName || '',
+    };
+    try {
+        socket.send(JSON.stringify(payload));
+    } catch (e) {
+        console.error('user_info 전송 실패', e);
+    }
+};
+
 const connectAndBootstrap = async () => {
     cleanupWs();
     errorMessage.value = '';
@@ -255,6 +278,7 @@ const connectAndBootstrap = async () => {
         socket.onopen = () => {
             connected.value = true;
             connecting.value = false;
+            sendUserInfo(socket);
             bootstrapSession(socket);
         };
         socket.onclose = () => {
