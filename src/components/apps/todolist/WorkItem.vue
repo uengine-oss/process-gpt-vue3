@@ -526,7 +526,6 @@
             :current-user-name="currentUserName"
             :current-user-email="currentUserEmail"
             :current-user-uid="currentUserUid"
-            :ws-url="realtimeAssistWsUrl"
             :process-name="processDefinition ? processDefinition.processDefinitionName : ''"
             :activity-name="activityName || ''"
             :activity-instruction="assistantInstruction"
@@ -652,7 +651,6 @@ export default {
         inFormNameTabs: [],
         inFormValues: [],
         showRealtimeAssistant: false,
-        realtimeAssistWsUrl: import.meta.env.VITE_REALTIME_ASSIST_WS || 'ws://localhost:3000/ws/realtime',
         assistantRefForms: [],
 
         isFinishedAgentGeneration: false,
