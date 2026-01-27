@@ -296,10 +296,15 @@ export default {
                 this.isLoading = false;
                 if (data && data.skills_added && data.skills_added.length > 0) {
                     await this.loadSkillFiles();
+                } else {
+                    // 스킬이 추가되지 않았어도 데이터 정합성을 위해 동기화
+                    await this.syncTenantSkills();
                 }
             } catch (error) {
                 console.error('스킬 업로드 실패:', error);
                 this.isLoading = false;
+                // 에러 발생 시에도 데이터 정합성을 위해 동기화 시도
+                await this.syncTenantSkills();
             }
         },
         async loadSkillFiles() {
@@ -440,6 +445,36 @@ export default {
                     console.error('유효한 스킬 저장 실패:', saveError);
                 }
             }
+
+            // 데이터 정합성을 위해 tenants 테이블의 skills 동기화
+            // 유효한 스킬 목록을 사용하여 동기화 (유효하지 않은 스킬 제외)
+            await this.syncTenantSkills(validSkills.length > 0 ? validSkills : null);
+        },
+
+        /**
+         * tenants 테이블의 skills를 실제 스킬 목록과 동기화
+         * getTenantSkills로 가져온 스킬 목록을 tenants 테이블에 반영하여 데이터 정합성 유지
+         * @param {Array<string>|null} skillNames - 동기화할 스킬명 배열. null이면 this.skills 사용
+         */
+        async syncTenantSkills(skillNames = null) {
+            try {
+                let skillsToSync = skillNames;
+                
+                // skillNames가 제공되지 않으면 this.skills 사용
+                if (!skillsToSync) {
+                    // this.skills가 객체 배열인 경우 스킬명 배열로 변환
+                    skillsToSync = Array.isArray(this.skills) 
+                        ? this.skills.map(skill => typeof skill === 'string' ? skill : skill.name).filter(Boolean)
+                        : [];
+                }
+                
+                // 스킬 목록이 있으면 tenants 테이블에 동기화
+                if (skillsToSync.length > 0 || skillNames !== null) {
+                    await this.backend.saveSkills(skillsToSync, true);
+                }
+            } catch (updateError) {
+                console.error('테넌트 스킬 목록 동기화 실패:', updateError);
+            }
         },
 
         /**
@@ -484,8 +519,14 @@ export default {
             const options = {
                 skillName: this.selectedNodeId,
             }
-            await this.backend.deleteSkills(options);
-            await this.loadSkillFiles();
+            try {
+                await this.backend.deleteSkills(options);
+                await this.loadSkillFiles();
+            } catch (error) {
+                console.error('스킬 삭제 실패:', error);
+                // 에러 발생 시에도 데이터 정합성을 위해 동기화 시도
+                await this.syncTenantSkills();
+            }
         },
         addNode(type) {
             let newNode = null;
