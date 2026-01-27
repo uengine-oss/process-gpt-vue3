@@ -178,9 +178,11 @@ let assistantBuffer = '';
 
 const targetWsUrl = computed(() => {
     if (props.wsUrl) return props.wsUrl;
+    const envUrl = import.meta.env.VITE_REALTIME_ASSIST_WS;
+    if (envUrl) return envUrl;
     const isHttps = window.location.protocol === 'https:';
     const host = window.location.host;
-    return `${isHttps ? 'wss' : 'ws'}://${host}/voice/ws`;
+    return `${isHttps ? 'wss' : 'ws'}://${host}/voice/ws/realtime`;
 });
 const audioContext = ref(null);
 const processor = ref(null);
