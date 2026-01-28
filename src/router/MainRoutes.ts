@@ -391,6 +391,18 @@ const MainRoutes = {
             name: 'API Test',
             path: '/api/test',
             component: () => import('@/components/TestPage.vue')
+        },
+
+        // ============== Analytics Routes ==============
+        {
+            name: 'Analytics Dashboard',
+            path: '/analytics',
+            component: () => import('@/views/analytics/Dashboard.vue')
+        },
+        {
+            name: 'Heatmap',
+            path: '/analytics/heatmap',
+            component: () => import('@/views/analytics/BottleneckAnalysis.vue')
         }
     ]
 };
