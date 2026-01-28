@@ -196,7 +196,7 @@ class ProcessGPTBackend implements Backend {
             });
             if (procDef) {
                 procDef.isdeleted = false;
-                return await storage.putObject('proc_def', procDef,{ onConflict: 'id,tenant_id' });
+                return await storage.putObject('proc_def', procDef);
             }
         } catch (e) {
             throw new Error(e.message);
@@ -6062,7 +6062,7 @@ class ProcessGPTBackend implements Backend {
         // proc_def 테이블만 업데이트 (proc_def_version과 agent_knowledge_history는 수정하지 않음)
         currentDmn.bpmn = newContent;
         currentDmn.prod_version = targetVersionNumber;
-        await storage.putObject('proc_def', currentDmn, { onConflict: 'id,tenant_id' });
+        await storage.putObject('proc_def', currentDmn);
 
         return {
             success: true,

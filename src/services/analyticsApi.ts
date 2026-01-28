@@ -108,7 +108,7 @@ export const olapApi = {
   /**
    * 병목 분석 (Activity-level Wait/Processing Time)
    */
-  async getBottleneckAnalysis(params: { process_key?: number; year?: number; quarter?: number } = {}) {
+  async getBottleneckAnalysis(params: { process_key?: number; proc_def_id?: string; year?: number; quarter?: number } = {}) {
     const response = await api.get('/analytics/bottleneck', { params })
     return response.data
   },

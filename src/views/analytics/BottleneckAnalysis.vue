@@ -371,28 +371,14 @@ async function loadExecutionData() {
     await loadFteConfig()
 
     // ETL 데이터에서 병목 분석 데이터 조회
-    const params: any = {}
-
-    // 연도/분기 필터 설정
-    if (selectedPeriod.value > 0) {
-      const now = dayjs()
-      params.year = now.year()
-      if (selectedPeriod.value <= 90) {
-        params.quarter = Math.ceil((now.month() + 1) / 3)
-      }
+    const params: any = {
+      proc_def_id: defId  // 프로세스 정의 ID로 서버에서 필터링
     }
 
     let data: any[] = []
     try {
       const result = await olapApi.getBottleneckAnalysis(params)
       data = Array.isArray(result) ? result : []
-
-      // 선택된 프로세스로 필터링 (process_name이나 proc_def_id로)
-      data = data.filter((item: any) => {
-        const procName = item.process_name || ''
-        const procDefId = item.proc_def_id || ''
-        return procName.includes(defId) || procDefId.includes(defId) || defId.includes(procName)
-      })
     } catch (err) {
       console.error('[BottleneckAnalysis] olapApi.getBottleneckAnalysis error:', err)
       data = []
