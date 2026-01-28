@@ -148,11 +148,13 @@ export interface Backend {
         properties: any;
         executorEmail?: string;
     }): Promise<any>;
+    
     updateTaskExecutionCompletion(params: {
         procInstId: string;
         activityId: string;
         status: 'COMPLETED' | 'CANCELLED' | 'FAILED';
     }): Promise<any>;
+
     getTaskExecutionProperties(options?: {
         procDefId?: string;
         systemName?: string;
