@@ -921,7 +921,7 @@ class ProcessGPTBackend implements Backend {
             if (formId) {
                 data = await storage.getObject('form_def', {
                     match: {
-                        formid: formId,
+                        id: formId,
                         tenant_id: window.$tenantName
                     }
                 });
