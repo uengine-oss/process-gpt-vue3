@@ -3117,7 +3117,7 @@ class ProcessGPTBackend implements Backend {
                 if (isOwner) {
                     putObj.is_admin = true;
                 }
-                await storage.putObject('users', putObj, { onConflict: 'id' });
+                await storage.putObject('users', putObj);
                 await storage.refreshSession();
                 return await storage.isConnection();
             } else {
