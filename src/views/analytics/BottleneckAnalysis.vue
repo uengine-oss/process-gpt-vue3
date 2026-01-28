@@ -6,6 +6,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import BackendFactory from '@/components/api/BackendFactory'
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue'
+import { olapApi } from '@/services/analyticsApi'
 import dayjs from 'dayjs'
 
 const backend = BackendFactory.createBackend() as any  // FTE API 포함
@@ -155,28 +156,57 @@ const showFteSettings = ref(false)                        // FTE 설정 다이�
 const defaultStandardMinutes = ref(30)                    // 기본 표준 작업시간 (분)
 const defaultAvailableFte = ref(5)                        // 기본 가용 FTE
 
-// Summary Statistics
+// Summary Statistics (supports both ETL and legacy data)
 const summaryStats = computed(() => {
   if (!executionData.value || executionData.value.length === 0) {
-    return { instances: 0, activities: 0, avgDuration: '-', completionRate: 0 }
+    return { instances: 0, activities: 0, avgDuration: '-', completionRate: 0, agentTasks: 0, humanTasks: 0 }
   }
 
-  const uniqueInstances = new Set(executionData.value.map(e => e.proc_inst_id))
-  const completed = executionData.value.filter(e => e.execution_status === 'COMPLETED').length
-  const total = executionData.value.length
+  // ETL 데이터 형식 체크 (execution_count 필드가 있으면 ETL 데이터)
+  const isEtlData = executionData.value[0]?.execution_count !== undefined
 
-  const durations = executionData.value
-    .filter(e => e.actual_duration)
-    .map(e => parseDuration(e.actual_duration))
-  const avgSeconds = durations.length > 0
-    ? durations.reduce((a, b) => a + b, 0) / durations.length
-    : 0
+  if (isEtlData) {
+    // ETL 데이터: 이미 집계된 데이터
+    const totalExecutions = executionData.value.reduce((sum, e) => sum + (e.execution_count || 0), 0)
+    const totalErrors = executionData.value.reduce((sum, e) => sum + (e.total_errors || 0), 0)
+    const agentTasks = executionData.value.reduce((sum, e) => sum + (e.agent_executions || 0), 0)
+    const humanTasks = executionData.value.reduce((sum, e) => sum + (e.human_executions || 0), 0)
 
-  return {
-    instances: uniqueInstances.size,
-    activities: activityMetrics.value.size,
-    avgDuration: formatDuration(avgSeconds),
-    completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
+    // 가중 평균 소요시간
+    const totalWeightedDuration = executionData.value.reduce(
+      (sum, e) => sum + ((e.avg_processing_time_sec || 0) * (e.execution_count || 0)), 0
+    )
+    const avgSeconds = totalExecutions > 0 ? totalWeightedDuration / totalExecutions : 0
+
+    return {
+      instances: totalExecutions,
+      activities: activityMetrics.value.size,
+      avgDuration: formatDuration(avgSeconds),
+      completionRate: totalExecutions > 0 ? Math.round(((totalExecutions - totalErrors) / totalExecutions) * 100) : 0,
+      agentTasks,
+      humanTasks
+    }
+  } else {
+    // Legacy 데이터: 개별 실행 레코드
+    const uniqueInstances = new Set(executionData.value.map(e => e.proc_inst_id))
+    const completed = executionData.value.filter(e => e.execution_status === 'COMPLETED').length
+    const total = executionData.value.length
+
+    const durations = executionData.value
+      .filter(e => e.actual_duration)
+      .map(e => parseDuration(e.actual_duration))
+    const avgSeconds = durations.length > 0
+      ? durations.reduce((a, b) => a + b, 0) / durations.length
+      : 0
+
+    return {
+      instances: uniqueInstances.size,
+      activities: activityMetrics.value.size,
+      avgDuration: formatDuration(avgSeconds),
+      completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+      agentTasks: 0,
+      humanTasks: 0
+    }
   }
 })
 
@@ -329,36 +359,47 @@ async function loadFteConfig() {
   }
 }
 
-// Load execution data
+// Load execution data from ETL (dw.fact_task)
 async function loadExecutionData() {
   if (!selectedProcess.value) return
 
   loadingMetrics.value = true
   try {
     const defId = selectedProcess.value.replace('.bpmn', '')
-    const options: any = { procDefId: defId }
-
-    if (selectedPeriod.value > 0) {
-      options.dateFrom = dayjs().subtract(selectedPeriod.value, 'day').toISOString()
-    }
 
     // FTE 설정 로드
     await loadFteConfig()
 
+    // ETL 데이터에서 병목 분석 데이터 조회
+    const params: any = {}
+
+    // 연도/분기 필터 설정
+    if (selectedPeriod.value > 0) {
+      const now = dayjs()
+      params.year = now.year()
+      if (selectedPeriod.value <= 90) {
+        params.quarter = Math.ceil((now.month() + 1) / 3)
+      }
+    }
+
     let data: any[] = []
     try {
-      const result = await backend.getTaskExecutionProperties(options)
+      const result = await olapApi.getBottleneckAnalysis(params)
       data = Array.isArray(result) ? result : []
+
+      // 선택된 프로세스로 필터링 (process_name이나 proc_def_id로)
+      data = data.filter((item: any) => {
+        const procName = item.process_name || ''
+        const procDefId = item.proc_def_id || ''
+        return procName.includes(defId) || procDefId.includes(defId) || defId.includes(procName)
+      })
     } catch (err) {
+      console.error('[BottleneckAnalysis] olapApi.getBottleneckAnalysis error:', err)
       data = []
     }
 
-    if (selectedStatus.value !== 'all' && data.length > 0) {
-      data = data.filter((item: any) => item.execution_status === selectedStatus.value)
-    }
-
     executionData.value = data
-    calculateActivityMetrics()
+    calculateActivityMetricsFromETL()
     setTimeout(() => applyHeatmapOverlay(), 800)
   } catch (e) {
     console.error('[BottleneckAnalysis] loadExecutionData error:', e)
@@ -368,7 +409,93 @@ async function loadExecutionData() {
   }
 }
 
-// Calculate metrics
+// Calculate metrics from ETL data (pre-aggregated)
+function calculateActivityMetricsFromETL() {
+  const metricsMap = new Map<string, any>()
+  if (!executionData.value || executionData.value.length === 0) {
+    activityMetrics.value = metricsMap
+    return
+  }
+
+  // 기간 내 가용 시간 계산 (시간 단위)
+  const periodDays = selectedPeriod.value > 0 ? selectedPeriod.value : 30
+  const availableHoursInPeriod = periodDays * 8 // 일 8시간 기준
+
+  // ETL 데이터는 이미 Activity별로 집계되어 있음
+  executionData.value.forEach((item: any) => {
+    const activityId = item.activity_id
+    const frequency = item.execution_count || 0
+    const avgDuration = item.avg_processing_time_sec || 0  // 이미 초 단위
+    const waitingTime = item.avg_wait_time_sec || 0
+
+    // 오류율 기반 rework 추정
+    const errorRate = item.error_rate_pct || 0
+    const reworkRate = errorRate  // 오류율을 재작업률로 사용
+
+    // 병목 점수 계산
+    const bottleneckScore = frequency * avgDuration
+
+    // FTE 계산
+    const config = activityConfig.value.get(activityId) || {
+      standardMinutes: defaultStandardMinutes.value,
+      roleName: 'Default',
+      complexityFactor: 1.0
+    }
+    const capacity = fteCapacity.value.get(config.roleName) || fteCapacity.value.get('Default') || {
+      availableFte: defaultAvailableFte.value,
+      hoursPerDay: 8
+    }
+
+    // Workload FTE = (실행횟수 × 표준작업시간(분)) / (가용시간(분))
+    const standardMinutes = config.standardMinutes * config.complexityFactor
+    const totalWorkMinutes = frequency * standardMinutes
+    const workloadFte = totalWorkMinutes / (availableHoursInPeriod * 60)
+
+    // Peak FTE 추정 (ETL에서는 동시 실행 정보 없음, 평균 기반 추정)
+    const peakFte = Math.ceil(workloadFte * 1.5)  // 평균의 1.5배로 추정
+
+    // Load Ratio = 필요 FTE / 가용 FTE × 100
+    const loadRatio = (workloadFte / capacity.availableFte) * 100
+
+    // 완료율 계산 (총 오류 대비)
+    const totalErrors = item.total_errors || 0
+    const completionRate = frequency > 0 ? ((frequency - totalErrors) / frequency) * 100 : 0
+
+    metricsMap.set(activityId, {
+      activityName: item.activity_name || activityId,
+      frequency,
+      avgDuration,
+      maxDuration: avgDuration * 2,  // 추정치 (ETL에는 max가 없음)
+      minDuration: avgDuration * 0.5,  // 추정치
+      reworkRate,
+      bottleneckScore,
+      completionRate,
+      waitingTime,
+      // Agent vs Human 정보
+      agentExecutions: item.agent_executions || 0,
+      humanExecutions: item.human_executions || 0,
+      totalErrors,
+      // FTE 지표
+      standardMinutes,
+      totalWorkMinutes,
+      workloadFte,
+      peakFte,
+      loadRatio,
+      roleName: config.roleName,
+      capacityFte: capacity.availableFte
+    })
+  })
+
+  // 정규화된 병목 점수 계산
+  const maxBottleneck = Math.max(...Array.from(metricsMap.values()).map(m => m.bottleneckScore), 1)
+  metricsMap.forEach(m => {
+    m.normalizedBottleneck = (m.bottleneckScore / maxBottleneck) * 100
+  })
+
+  activityMetrics.value = metricsMap
+}
+
+// Calculate metrics (legacy - for task_execution_properties)
 function calculateActivityMetrics() {
   const metricsMap = new Map<string, any>()
   if (!executionData.value || executionData.value.length === 0) {
