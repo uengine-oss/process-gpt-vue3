@@ -148,6 +148,14 @@ spring:
                       - RewritePath=/voice/?(?<segment>.*), /$\{segment}
                   order: 40
 
+                - id: analytic
+                  uri: http://analytic-service:8000
+                  predicates:
+                      - Path=/api/analytics/**
+                  filters:
+                      - RewritePath=/api/analytics/?(?<segment>.*), /api/$\{segment}
+                  order: 44
+
                 # Work Assistant Agent 서비스 (SSE 스트리밍 지원)
                 - id: agent
                   uri: http://work-assistant-agent-service:8000
