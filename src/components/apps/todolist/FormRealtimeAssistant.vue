@@ -236,6 +236,24 @@ watch(
     }
 );
 
+const chatBody = ref(null);
+
+const scrollToBottom = () => {
+    nextTick(() => {
+        if (chatBody.value) {
+            chatBody.value.scrollTop = chatBody.value.scrollHeight;
+        }
+    });
+};
+
+watch(
+    () => messages.value,
+    () => {
+        scrollToBottom();
+    },
+    { deep: true }
+);
+
 onMounted(() => {
     dragDelta.value = clampDragDelta(0, 0);
 });
@@ -977,6 +995,8 @@ const base64ToArrayBuffer = (base64) => {
 
 .ai-chat-body {
     flex: 1;
+    min-height: 0;
+    max-height: 400px;
     overflow-y: auto;
     padding: 12px;
     background: #fafafa;
