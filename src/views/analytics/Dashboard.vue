@@ -417,7 +417,30 @@ const doughnutOptions = {
   maintainAspectRatio: true,
   aspectRatio: 1.5,
   plugins: {
-    legend: { display: false },
+    legend: {
+      display: true,
+      position: 'right',
+      labels: {
+        boxWidth: 12,
+        padding: 16,
+        font: { size: 13 },
+        color: '#2A3547',
+        generateLabels: (chart) => {
+          const data = chart.data
+          if (data.labels && data.datasets.length) {
+            return data.labels.map((label, i) => ({
+              text: `${label}: ${data.datasets[0].data[i] || 0}`,
+              fillStyle: data.datasets[0].backgroundColor[i],
+              strokeStyle: data.datasets[0].backgroundColor[i],
+              lineWidth: 0,
+              hidden: false,
+              index: i
+            }))
+          }
+          return []
+        }
+      }
+    },
     tooltip: {
       backgroundColor: '#2A3547',
       titleColor: '#fff',
@@ -731,18 +754,6 @@ async function syncDepartments() {
                 <div class="text-center">
                   <v-icon icon="mdi-chart-donut" size="48" color="grey-lighten-1" class="mb-2" />
                   <p class="text-body-2 text-grey100 mb-0">데이터가 없습니다</p>
-                </div>
-              </div>
-              <div v-if="hasTaskDistributionData" class="d-flex justify-center ga-6 mt-4">
-                <div class="d-flex align-center ga-2">
-                  <span class="legend-dot bg-primary"></span>
-                  <span class="text-body-2 text-grey100">Agent</span>
-                  <span class="text-body-2 font-weight-bold text-textPrimary">{{ safeTaskDistributionData.datasets[0]?.data[0] || 0 }}</span>
-                </div>
-                <div class="d-flex align-center ga-2">
-                  <span class="legend-dot bg-indigo"></span>
-                  <span class="text-body-2 text-grey100">Human</span>
-                  <span class="text-body-2 font-weight-bold text-textPrimary">{{ safeTaskDistributionData.datasets[0]?.data[1] || 0 }}</span>
                 </div>
               </div>
             </v-card-text>
@@ -1159,9 +1170,12 @@ async function syncDepartments() {
 <style scoped>
 /* Chart container - Chart.js requires position: relative */
 .doughnut-wrapper {
-  height: 160px;
+  height: 180px;
   position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Chart wrapper class for line/bar charts */
