@@ -96,28 +96,16 @@ const sidebarItem: menu[] = [
         header: 'Analytics'
     },
     {
-        title: "대시보드",
-        icon: 'chart-square-linear',
+        title: "Dashboard",
+        icon: 'dashboard',
         BgColor: 'primary',
         to: "/analytics",
     },
     {
-        title: "피벗 테이블",
-        icon: 'tuning-square-2-linear',
+        title: "Heatmap",
+        icon: 'ibm-process-mining',
         BgColor: 'primary',
-        to: "/analytics/pivot",
-    },
-    {
-        title: "퍼포먼스",
-        icon: 'graph-up-linear',
-        BgColor: 'primary',
-        to: "/analytics/performance",
-    },
-    {
-        title: "자연어 질의",
-        icon: 'chat-round-line-linear',
-        BgColor: 'primary',
-        to: "/analytics/query",
+        to: "/analytics/heatmap",
     },
 ]
 
