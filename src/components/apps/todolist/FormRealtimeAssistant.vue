@@ -318,6 +318,42 @@ const connectAndBootstrap = async () => {
     }
 };
 
+// rawItems 속성을 파싱하여 options로 변환하는 함수
+const parseRawItemsToOptions = (rawItems) => {
+    if (!rawItems) return [];
+    try {
+        // items="[{'python':'파이썬'},{'vibecoding':'바이브코딩'}]" 형태를 파싱
+        const parsed = JSON.parse(rawItems.replace(/'/g, '"'));
+        if (Array.isArray(parsed)) {
+            return parsed.map(item => {
+                const key = Object.keys(item)[0];
+                const value = Object.values(item)[0];
+                return { label: value, value: key };
+            });
+        }
+    } catch (e) {
+        // 파싱 실패 시 빈 배열 반환
+    }
+    return [];
+};
+
+// formSchema에서 rawItems를 options로 변환한 스키마 생성
+const enrichFormSchema = (schema) => {
+    if (!Array.isArray(schema)) return [];
+    return schema.map(field => {
+        // options가 없고 rawItems가 있으면 파싱하여 options로 변환
+        if ((!field.options || field.options.length === 0) && field.rawItems) {
+            const parsedOptions = parseRawItemsToOptions(field.rawItems);
+            if (parsedOptions.length > 0) {
+                return { ...field, options: parsedOptions, rawItems: undefined };
+            }
+        }
+        // rawItems는 전송 시 제외
+        const { rawItems, ...rest } = field;
+        return rest;
+    });
+};
+
 const bootstrapSession = (socket) => {
     const now = new Date();
     const localIsoDate = now.toISOString().slice(0, 10);
@@ -332,6 +368,8 @@ const bootstrapSession = (socket) => {
         values: item?.formData || {},
     }));
     const activityInstruction = props.activityInstruction || '';
+    // rawItems를 options로 변환한 스키마 사용
+    const enrichedSchema = enrichFormSchema(props.formSchema || []);
     const instructions = [
         '너는 프로세스 작업 폼 작성 보조 어시스턴트다.',
         '필수 규칙: 아래 스키마에 없는 필드는 언급/질문/제안하지 말 것. 임의 필드 추가 금지.',
@@ -351,7 +389,7 @@ const bootstrapSession = (socket) => {
             : '사용자 정보: 미제공',
         `현재 로컬 날짜/시간: ${localIsoDate} ${localTime} (timezone ${tz})`,
         '제출 규칙: 사용자가 "제출", "완료", "등록" 등 명시적으로 제출을 요청한 경우에만 submit_form을 호출한다.',
-        `폼 스키마(JSON): ${JSON.stringify(props.formSchema || [])}`,
+        `폼 스키마(JSON): ${JSON.stringify(enrichedSchema)}`,
         `현재 값(JSON): ${JSON.stringify(props.formDataSnapshot || {})}`,
         `참조 폼 데이터(JSON): ${JSON.stringify(refFormsForPrompt)}`,
     ].join('\n');
@@ -364,7 +402,7 @@ const bootstrapSession = (socket) => {
             output_audio_format: 'pcm16',
             voice: 'alloy',
             modalities: ['text', 'audio'],
-            tools: buildToolsFromSchema(props.formSchema || []),
+            tools: buildToolsFromSchema(enrichedSchema),
             tool_choice: 'auto',
         },
     };
