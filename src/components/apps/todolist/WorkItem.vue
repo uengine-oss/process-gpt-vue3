@@ -1121,6 +1121,7 @@ export default {
                         placeholder,
                         value: Object.prototype.hasOwnProperty.call(formData || {}, name) ? formData[name] : null,
                         options: options.length ? options : undefined,
+                        rawItems: el.getAttribute('items') || undefined,
                     });
                 });
                 return fields;
