@@ -424,9 +424,9 @@ function calculateActivityMetricsFromETL() {
     const errorRate = item.error_rate_pct || 0
     const reworkRate = errorRate  // 오류율을 재작업률로 사용
 
-    // 병목 점수 = 빈도 × (평균소요시간 + 평균대기시간)
-    // 대기시간이 큰 Activity가 실제 병목
-    const bottleneckScore = frequency * (avgDuration + waitingTime)
+    // 병목 점수 = 총 처리시간 (자동 실행 구조에서는 처리시간이 병목)
+    // total_processing_time_sec 사용, 없으면 frequency × avgDuration
+    const bottleneckScore = item.total_processing_time_sec || (frequency * avgDuration)
 
     // FTE 계산
     const config = activityConfig.value.get(activityId) || {
@@ -479,10 +479,10 @@ function calculateActivityMetricsFromETL() {
     })
   })
 
-  // 정규화된 병목 점수 계산
-  const maxBottleneck = Math.max(...Array.from(metricsMap.values()).map(m => m.bottleneckScore), 1)
+  // 병목 점수를 전체 합계 대비 비율로 계산 (합이 100%가 되도록)
+  const totalBottleneck = Array.from(metricsMap.values()).reduce((sum, m) => sum + m.bottleneckScore, 0) || 1
   metricsMap.forEach(m => {
-    m.normalizedBottleneck = (m.bottleneckScore / maxBottleneck) * 100
+    m.normalizedBottleneck = (m.bottleneckScore / totalBottleneck) * 100
   })
 
   activityMetrics.value = metricsMap
@@ -566,9 +566,10 @@ function calculateActivityMetrics() {
     })
   })
 
-  const maxBottleneck = Math.max(...Array.from(metricsMap.values()).map(m => m.bottleneckScore), 1)
+  // 병목 점수를 전체 합계 대비 비율로 계산 (합이 100%가 되도록)
+  const totalBottleneck = Array.from(metricsMap.values()).reduce((sum, m) => sum + m.bottleneckScore, 0) || 1
   metricsMap.forEach(m => {
-    m.normalizedBottleneck = (m.bottleneckScore / maxBottleneck) * 100
+    m.normalizedBottleneck = (m.bottleneckScore / totalBottleneck) * 100
   })
 
   activityMetrics.value = metricsMap
