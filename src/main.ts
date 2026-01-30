@@ -320,7 +320,7 @@ async function setupTenant() {
 async function initializeApp() {
     await setupSupabase();
     await setupTenant();
-    setupAuthAuditLogging();
+    // setupAuthAuditLogging();
     
     // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 자동 감지)
     const savedLocale = localStorage.getItem('locale');
