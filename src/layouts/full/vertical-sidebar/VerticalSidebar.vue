@@ -699,7 +699,7 @@ export default {
                                 menu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
-                                    title: item.definition.processDefinitionName,
+                                    title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
                                     type: 'bpmn'
@@ -759,7 +759,7 @@ export default {
                                 deletedMenu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
-                                    title: item.definition.processDefinitionName,
+                                    title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
                                     type: 'bpmn'

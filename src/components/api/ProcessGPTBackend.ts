@@ -289,7 +289,8 @@ class ProcessGPTBackend implements Backend {
 
             if (procDef) {
                 procDef.bpmn = xml;
-                procDef.name = options.name;
+                // name이 유효한 경우에만 업데이트 (null로 덮어쓰기 방지)
+                if (options.name) procDef.name = options.name;
             } else {
                 procDef = {
                     id: defId,
