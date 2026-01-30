@@ -2137,10 +2137,42 @@ export default {
         },
         async changeImage(e) {
             const me = this;
-            const imageFile = e.target.files[0];
+            const imageFile = e?.target?.files?.[0];
+            if (!imageFile) return;
             
             if (window.location.hostname !== 'localhost') {
-                const fileName = `uploads/${Date.now()}_${imageFile.name}`;
+                const originalName = imageFile.name || '';
+                const lastDot = originalName.lastIndexOf('.');
+                const extRaw = lastDot > -1 ? originalName.slice(lastDot) : '';
+                const ext = /^\.[0-9A-Za-z]+$/.test(extRaw) ? extRaw : '';
+                // supabase 저장 경로에 한글/특수문자(공백 포함)가 있으면 400 오류가 발생할 수 있어 UUID로 대체
+                const hasUnsafeChars = !originalName || /[^0-9A-Za-z._-]/.test(originalName);
+                const uuid = (() => {
+                    try {
+                        if (typeof crypto !== 'undefined') {
+                            if (crypto.randomUUID) return crypto.randomUUID();
+                            if (crypto.getRandomValues) {
+                                const buf = new Uint8Array(16);
+                                crypto.getRandomValues(buf);
+                                // RFC4122 v4
+                                buf[6] = (buf[6] & 0x0f) | 0x40;
+                                buf[8] = (buf[8] & 0x3f) | 0x80;
+                                const hex = Array.from(buf, (b) => b.toString(16).padStart(2, '0'));
+                                return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10, 16).join('')}`;
+                            }
+                        }
+                    } catch (err) {}
+                    // 최후 fallback (형식만 UUID v4 형태)
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                        const r = (Math.random() * 16) | 0;
+                        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                        return v.toString(16);
+                    });
+                })();
+
+                const fileName = hasUnsafeChars
+                    ? `uploads/${uuid}${ext}`
+                    : `uploads/${originalName}`;
                 const data = await backend.uploadImage(fileName, imageFile);
                 if (data && data.path) {
                     const imageUrl = await backend.getImageUrl(data.path);

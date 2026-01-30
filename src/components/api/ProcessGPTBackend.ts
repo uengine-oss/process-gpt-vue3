@@ -174,7 +174,7 @@ class ProcessGPTBackend implements Backend {
                 // });
                 // if (procDef) {
                 //     procDef.isdeleted = true;
-                //     await storage.putObject('proc_def', procDef);
+                //     await storage.putObject('proc_def', procDef, { onConflict: 'id,tenant_id' });
                 // }
             }
         } catch (e) {
@@ -1397,7 +1397,7 @@ class ProcessGPTBackend implements Backend {
                 value: updatedProcMap,
                 tenant_id: window.$tenantName
             }
-            await storage.putObject('configuration', putObj);
+            await storage.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1451,7 +1451,7 @@ class ProcessGPTBackend implements Backend {
                 value: metricsData,
                 tenant_id: window.$tenantName
             }
-            await storage.putObject('configuration', putObj);
+            await storage.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1559,7 +1559,7 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName
             };
 
-            await storage.putObject('configuration', putObj);
+            await storage.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3118,7 +3118,7 @@ class ProcessGPTBackend implements Backend {
                 if (isOwner) {
                     putObj.is_admin = true;
                 }
-                await storage.putObject('users', putObj, { onConflict: 'id' });
+                await storage.putObject('users', putObj);
                 await storage.refreshSession();
                 return await storage.isConnection();
             } else {
@@ -6116,6 +6116,326 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             console.error('DMN 버전 다시 적용 실패:', error);
             throw new Error(error instanceof Error ? error.message : 'DMN 버전 적용에 실패했습니다.');
+        }
+    }
+        // ============================================
+    // Task Execution Properties API (분석용)
+    // ============================================
+
+    /**
+     * Task 실행 시작 시 속성 저장
+     */
+    async saveTaskExecutionProperties(params: {
+        procDefId: string;
+        procInstId: string;
+        activityId: string;
+        activityName?: string;
+        todoId?: string;
+        properties: any;
+        executorEmail?: string;
+    }): Promise<any> {
+        const storage = StorageBaseFactory.getStorage();
+        const props = params.properties || {};
+
+        const data = {
+            id: this.uuid(),
+            tenant_id: window.$tenantName,
+            proc_def_id: params.procDefId,
+            proc_inst_id: params.procInstId,
+            activity_id: params.activityId,
+            activity_name: params.activityName,
+            todo_id: params.todoId,
+
+            // Task 속성
+            role: props.role,
+            duration: props.duration,
+            instruction: props.instruction,
+            description: props.description,
+            checkpoints: props.checkpoints,
+
+            // AI/Agent 속성
+            agent_id: props.agent,
+            agent_mode: props.agentMode !== 'none' ? props.agentMode : null,
+            orchestration: props.orchestration,
+            tool: props.tool,
+
+            // 시스템 정보
+            system_name: props.systemName,
+            menu_name: props.menuName,
+
+            // JSONB 데이터
+            input_data: props.inputData || [],
+            custom_properties: props.customProperties || [],
+
+            // 실행 정보
+            execution_status: 'STARTED',
+            executor_email: params.executorEmail || localStorage.getItem('email')
+        };
+
+        await storage.putObject('task_execution_properties', data);
+        return data;
+    }
+
+    /**
+     * Task 완료 시 상태 업데이트
+     */
+    async updateTaskExecutionCompletion(params: {
+        procInstId: string;
+        activityId: string;
+        status: 'COMPLETED' | 'CANCELLED' | 'FAILED';
+    }): Promise<any> {
+        const storage = StorageBaseFactory.getStorage();
+
+        // 기존 STARTED 상태 레코드 찾기
+        const existingRecord = await storage.getObject('task_execution_properties', {
+            match: {
+                proc_inst_id: params.procInstId,
+                activity_id: params.activityId,
+                execution_status: 'STARTED',
+                tenant_id: window.$tenantName
+            }
+        });
+
+        if (existingRecord && existingRecord.id) {
+            const completedAt = new Date().toISOString();
+            const startedAt = new Date(existingRecord.started_at);
+            const durationMs = new Date(completedAt).getTime() - startedAt.getTime();
+            const durationSeconds = Math.floor(durationMs / 1000);
+
+            await storage.putObject('task_execution_properties', {
+                id: existingRecord.id,
+                execution_status: params.status,
+                completed_at: completedAt,
+                actual_duration: `${durationSeconds} seconds`
+            }, { onConflict: 'id' });
+
+            return { ...existingRecord, execution_status: params.status, completed_at: completedAt };
+        }
+        return null;
+    }
+
+    /**
+     * Task 실행 속성 목록 조회 (분석용)
+     */
+    async getTaskExecutionProperties(options?: {
+        procDefId?: string;
+        systemName?: string;
+        agentMode?: string;
+        dateFrom?: string;
+        dateTo?: string;
+        limit?: number;
+    }): Promise<any[]> {
+        const storage = StorageBaseFactory.getStorage();
+        const queryOptions: any = {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'started_at',
+            sort: 'desc'
+        };
+
+        if (options?.procDefId) queryOptions.match.proc_def_id = options.procDefId;
+        if (options?.systemName) queryOptions.match.system_name = options.systemName;
+        if (options?.agentMode) queryOptions.match.agent_mode = options.agentMode;
+        if (options?.limit) queryOptions.size = options.limit;
+
+        const result = await storage.list('task_execution_properties', queryOptions);
+        return result || [];
+    }
+
+    // ============================================
+    // FTE Heatmap API
+    // ============================================
+
+    /**
+     * Activity별 FTE 설정 조회
+     */
+    async getActivityConfig(procDefId: string): Promise<any[]> {
+        const storage = StorageBaseFactory.getStorage();
+        try {
+            const result = await storage.list('activity_config', {
+                match: {
+                    tenant_id: window.$tenantName,
+                    proc_def_id: procDefId
+                }
+            });
+            return result || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getActivityConfig error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Activity FTE 설정 저장/업데이트
+     */
+    async saveActivityConfig(config: {
+        procDefId: string;
+        activityId: string;
+        activityName?: string;
+        standardMinutes: number;
+        roleName?: string;
+        complexityFactor?: number;
+    }): Promise<any> {
+        const storage = StorageBaseFactory.getStorage();
+        const data = {
+            tenant_id: window.$tenantName,
+            proc_def_id: config.procDefId,
+            activity_id: config.activityId,
+            activity_name: config.activityName || config.activityId,
+            standard_minutes: config.standardMinutes,
+            role_name: config.roleName || 'Default',
+            complexity_factor: config.complexityFactor || 1.0
+        };
+
+        try {
+            // Upsert using putObject
+            return await storage.putObject('activity_config', data);
+        } catch (e) {
+            console.error('[ProcessGPTBackend] saveActivityConfig error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Activity FTE 설정 일괄 저장
+     */
+    async saveActivityConfigBatch(procDefId: string, configs: Array<{
+        activityId: string;
+        activityName?: string;
+        standardMinutes: number;
+        roleName?: string;
+    }>): Promise<void> {
+        for (const config of configs) {
+            await this.saveActivityConfig({
+                procDefId,
+                ...config
+            });
+        }
+    }
+
+    /**
+     * Role별 FTE 용량 조회
+     */
+    async getFteCapacity(): Promise<any[]> {
+        const storage = StorageBaseFactory.getStorage();
+        try {
+            const result = await storage.list('fte_capacity', {
+                match: { tenant_id: window.$tenantName }
+            });
+            return result || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getFteCapacity error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Role FTE 용량 저장/업데이트
+     */
+    async saveFteCapacity(capacity: {
+        roleName: string;
+        availableFte: number;
+        hoursPerDay?: number;
+        workingDaysPerMonth?: number;
+    }): Promise<any> {
+        const storage = StorageBaseFactory.getStorage();
+        const data = {
+            tenant_id: window.$tenantName,
+            role_name: capacity.roleName,
+            available_fte: capacity.availableFte,
+            hours_per_day: capacity.hoursPerDay || 8.0,
+            working_days_per_month: capacity.workingDaysPerMonth || 20
+        };
+
+        try {
+            // Upsert using putObject
+            return await storage.putObject('fte_capacity', data);
+        } catch (e) {
+            console.error('[ProcessGPTBackend] saveFteCapacity error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Role FTE 용량 삭제
+     */
+    async deleteFteCapacity(roleName: string): Promise<void> {
+        const storage = StorageBaseFactory.getStorage();
+        try {
+            const existing = await storage.list('fte_capacity', {
+                match: {
+                    tenant_id: window.$tenantName,
+                    role_name: roleName
+                }
+            });
+
+            if (existing && existing.length > 0) {
+                await storage.delete('fte_capacity', existing[0].id);
+            }
+        } catch (e) {
+            console.error('[ProcessGPTBackend] deleteFteCapacity error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * FTE 스냅샷 저장 (일별 집계)
+     */
+    async saveFteSnapshot(snapshot: {
+        procDefId: string;
+        activityId: string;
+        snapshotDate: string;
+        instanceCount: number;
+        totalWorkMinutes: number;
+        workloadFte: number;
+        peakConcurrent: number;
+        peakFte: number;
+        loadRatio: number;
+    }): Promise<any> {
+        const storage = StorageBaseFactory.getStorage();
+        const data = {
+            tenant_id: window.$tenantName,
+            proc_def_id: snapshot.procDefId,
+            activity_id: snapshot.activityId,
+            snapshot_date: snapshot.snapshotDate,
+            instance_count: snapshot.instanceCount,
+            total_work_minutes: snapshot.totalWorkMinutes,
+            workload_fte: snapshot.workloadFte,
+            peak_concurrent: snapshot.peakConcurrent,
+            peak_fte: snapshot.peakFte,
+            load_ratio: snapshot.loadRatio
+        };
+
+        try {
+            // Upsert using putObject
+            return await storage.putObject('fte_snapshot', data);
+        } catch (e) {
+            console.error('[ProcessGPTBackend] saveFteSnapshot error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * FTE 스냅샷 조회
+     */
+    async getFteSnapshots(options: {
+        procDefId: string;
+        dateFrom?: string;
+        dateTo?: string;
+    }): Promise<any[]> {
+        const storage = StorageBaseFactory.getStorage();
+        try {
+            const result = await storage.list('fte_snapshot', {
+                match: {
+                    tenant_id: window.$tenantName,
+                    proc_def_id: options.procDefId
+                },
+                orderBy: 'snapshot_date',
+                sort: 'desc'
+            });
+            return result || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getFteSnapshots error:', e);
+            return [];
         }
     }
 }

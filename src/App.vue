@@ -114,7 +114,14 @@ export default {
                         }
                         alert(window.$tenantName + " 존재하지 않는 경로입니다.");
                         if (localStorage.getItem('email')) {
-                            window.location.href = getMainDomainUrl('/tenant/manage');
+                            // NOTE:
+                            // - 테넌트 서브도메인(uengine.process-gpt.io 등) → 메인 도메인(process-gpt.io) 이동 시
+                            //   "메인 도메인 localStorage.tenantId" 때문에 TenantManagePage가 자동으로 다시 서브도메인으로 보내며
+                            //   무한 리다이렉션이 발생할 수 있다. (로컬스토리지는 도메인 간 공유되지 않음)
+                            // - TenantManagePage는 clear=true 파라미터가 있으면 "메인 도메인"의 tenantId를 지우도록 구현되어 있으므로 이를 활용한다.
+                            // - 아래 removeItem은 현재 오리진의 키를 지우는 정도의 의미만 있고, 루프 차단의 핵심은 clear=true다.
+                            localStorage.removeItem('tenantId');
+                            window.location.href = getMainDomainUrl('/tenant/manage?clear=true');
                         } else {
                             window.location.href = getMainDomainUrl('/auth/login');
                         }
@@ -131,7 +138,10 @@ export default {
                                     this.$try({}, null, {
                                         errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
                                     })
-                                    window.location.href = getMainDomainUrl('/tenant/manage');
+                                    // setTenant 실패 시에도 "메인 도메인 localStorage.tenantId" 때문에
+                                    // TenantManagePage가 다시 서브도메인으로 자동 이동하며 루프가 생길 수 있어 clear=true로 진입한다.
+                                    localStorage.removeItem('tenantId'); // 현재 오리진 키 제거(부수 효과 최소화)
+                                    window.location.href = getMainDomainUrl('/tenant/manage?clear=true');
                                 }
                             } else {
                                 this.$router.push('/auth/login');
@@ -169,6 +179,19 @@ export default {
         },
     },
     methods: {
+        getChatRoomIdFromUrl(url) {
+            if (!url || typeof url !== 'string') return null;
+            try {
+                // 상대/절대 URL 모두 처리
+                const parsed = new URL(url, window.location.origin);
+                const id = parsed.searchParams.get('id');
+                return id ? decodeURIComponent(id) : null;
+            } catch (e) {
+                // URL() 파싱이 실패하는 경우(구형/비정상 문자열) fallback
+                const match = url.match(/[?&]id=([^&]+)/);
+                return match ? decodeURIComponent(match[1]) : null;
+            }
+        },
         closeSnackbarOnEvent() {
             // 스낵바가 열려있을 때만 클릭 카운트
             if (this.snackbar) {
@@ -189,14 +212,15 @@ export default {
                     notiHeader = 'New Todo';
                     notiBody = notification.title || '새 할 일 목록 추가';
                 } else if(notification.type === 'chat') {
-                    if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
+                    const notiChatRoomId = this.getChatRoomIdFromUrl(notification.url);
+                    if (!this.currentChatRoomId || !notiChatRoomId || (this.currentChatRoomId && notiChatRoomId !== this.currentChatRoomId)) {
                         notiHeader = notification.from_user_id || '알 수 없는 사용자';
                         const chatRoomName = notification.description || '채팅방';
                         const messageContent = notification.title || '새 메시지';
                         notiBody = `${chatRoomName}\n${messageContent}`;
 
                         window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                            detail: { type: 'chat', value: true, id: notification.url.replace('/chats?id=', '')}
+                            detail: { type: 'chat', value: true, id: notiChatRoomId || notification.url.replace('/chats?id=', '')}
                         }));
                     }
                 }

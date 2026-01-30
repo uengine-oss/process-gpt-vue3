@@ -527,30 +527,16 @@ export default {
             this.analyticsItem = [
                 {
                     title: 'analytics.dashboard',
-                    icon: 'chart-square-linear',
+                    icon: 'dashboard',
                     BgColor: 'primary',
                     to: '/analytics',
                     disable: false
                 },
                 {
-                    title: 'analytics.pivot',
-                    icon: 'tuning-square-2-linear',
+                    title: 'analytics.heatmap',
+                    icon: 'ibm-process-mining',
                     BgColor: 'primary',
-                    to: '/analytics/pivot',
-                    disable: false
-                },
-                {
-                    title: 'analytics.performance',
-                    icon: 'graph-up-linear',
-                    BgColor: 'primary',
-                    to: '/analytics/performance',
-                    disable: false
-                },
-                {
-                    title: 'analytics.query',
-                    icon: 'chat-round-line-linear',
-                    BgColor: 'primary',
-                    to: '/analytics/query',
+                    to: '/analytics/heatmap',
                     disable: false
                 },
             ];

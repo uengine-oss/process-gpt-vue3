@@ -585,7 +585,8 @@ export default class StorageBaseSupabase {
             let result;
             if (options && options.match) {
                 result = await window.$supabase.from(obj.table).upsert(value).match(options.match);
-
+            } else if (options && options.onConflict) {
+                result = await window.$supabase.from(obj.table).upsert(value, { onConflict: options.onConflict });
             } else if (obj.searchVal) {
                 result = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
             } else {
