@@ -91,6 +91,35 @@
 
 ---
 
+## 탭
+
+### [BLOCK:tabs.v1]
+| 환경 | 컴포넌트 | 선택 스타일 |
+|------|----------|-------------|
+| 데스크톱 | `<v-tabs>` + `<v-tab>` | `color="primary"` |
+| 모바일 | `<v-btn>` 반복 | `background: #808080; color: white;` |
+
+```vue
+<!-- 데스크톱: v-if="!isMobile" -->
+<v-tabs v-model="tab" color="primary">
+    <v-tab v-for="item in tabItems" :key="item.value" :value="item.value">
+        {{ $t(item.label) }}
+    </v-tab>
+</v-tabs>
+
+<!-- 모바일: v-else -->
+<div class="d-flex flex-wrap ga-2">
+    <v-btn v-for="item in tabItems" :key="item.value"
+        :variant="tab === item.value ? 'flat' : 'text'"
+        :style="tab === item.value ? 'background: #808080; color: white;' : ''"
+        size="small" @click="tab = item.value">
+        {{ $t(item.label) }}
+    </v-btn>
+</div>
+```
+
+---
+
 ## 다이얼로그
 
 ### [BLOCK:dialog.container.v1]
