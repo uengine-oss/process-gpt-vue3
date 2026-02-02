@@ -163,6 +163,13 @@ export interface Backend {
         dateTo?: string;
         limit?: number;
     }): Promise<any[]>;
+
+    // Agent Knowledge API
+    setupAgentKnowledge(params: {
+        agent_id: string;
+        goal?: string | null;
+        persona?: string | null;
+    }): Promise<any>;
 }
 
 // export type { Backend }

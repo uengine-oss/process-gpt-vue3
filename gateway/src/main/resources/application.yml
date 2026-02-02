@@ -31,6 +31,12 @@ spring:
                       - Path=/memento/**,
                   filters:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                - id: agent-feedback
+                  uri: http://localhost:6789
+                  predicates:
+                      - Path=/api/agent-feedback/**,
+                  filters:
+                      - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
                 - id: voice
                   uri: http://localhost:3000
                   predicates:
@@ -165,6 +171,14 @@ spring:
                       - RewritePath=/agent/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
                   order: 45
+
+                - id: agent-feedback
+                  uri: http://agent-feedback-service:6789
+                  predicates:
+                      - Path=/api/agent-feedback/**
+                  filters:
+                      - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
+                  order: 46
 
                 # VNC 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
                 - id: vnc-0-dev
