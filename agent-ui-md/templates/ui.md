@@ -34,6 +34,8 @@
 
 ## 버튼
 
+**배치 규칙**: 추가/생성 버튼은 기본적으로 **우측 배치** (`<v-spacer />` or 상위 컴포넌트가 d-flex일 때 class="ml-auto" 활용)
+
 ### [BLOCK:button.primary.v1]
 주요 액션 버튼 (저장, 확인, 추가 등).
 
@@ -236,7 +238,7 @@
 ### [BLOCK:card.container.v1]
 
 ```vue
-<v-card class="pa-0" variant="outlined">
+<v-card class="pa-0" elevation="10">
     <!-- 기존 내용 유지 -->
 </v-card>
 ```
