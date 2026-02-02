@@ -1,12 +1,16 @@
 <template>
     <v-card>
-        <v-card-title class="d-flex justify-space-between">
+        <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
             <div class="d-flex align-center">{{ $t('ProcessDefinitionMarketPlaceDialog.title') }}</div>
-            <v-btn @click="close" icon variant="text" density="comfortable">
-                <Icons :icon="'close'" :size="16" />
+            <v-btn @click="close"
+                variant="text" 
+                density="compact"
+                icon
+            >
+                <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-card-title>
-        <v-card-text class="add-marketplace-dialog-input-box">
+        <v-card-text class="add-marketplace-dialog-input-box pa-4 pb-0">
             <v-text-field v-model="newDefinition.id" :label="$t('ProcessDefinitionMarketPlaceDialog.processId')"
                 disabled
             />
@@ -27,6 +31,7 @@
                 closable-chips
                 variant="outlined"
                 :items="availableTags"
+                hide-details="auto"
             />
             
             <!-- 이미지 미리보기 및 컨트롤 섹션 -->
@@ -47,7 +52,7 @@
                         </div>
                     </div>
                     <div v-else 
-                         class="no-image-placeholder mb-2 d-flex flex-column align-center justify-center clickable" 
+                         class="no-image-placeholder d-flex flex-column align-center justify-center clickable" 
                          :class="{ 'drag-over': isDragOver }"
                          @click="handleImageUpload"
                          @dragover.prevent="handleDragOver"
@@ -66,7 +71,7 @@
                 </div>
             </div>
         </v-card-text>
-        <v-card-actions class="d-flex justify-space-between align-center">
+        <v-card-actions class="d-flex justify-space-between align-center pa-4">
             <div v-if="isDuplicateId" class="text-error text-body-2">
                 {{ $t('ProcessDefinitionMarketPlaceDialog.duplicateIdError') }}
             </div>

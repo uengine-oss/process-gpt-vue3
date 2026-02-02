@@ -491,9 +491,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.settings-container {
-    padding: 24px;
-}
 
 /* Info Banner */
 .info-banner {

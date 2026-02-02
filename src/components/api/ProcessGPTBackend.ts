@@ -2972,6 +2972,20 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    async setupAgentKnowledge(params: {
+        agent_id: string;
+        goal?: string | null;
+        persona?: string | null;
+    }): Promise<any> {
+        try {
+            const response = await axios.post('/api/agent-feedback/setup-agent-knowledge', params);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getUserInfo() {
         try {
             const user = await storage.getUserInfo();

@@ -1913,6 +1913,11 @@ class UEngineBackend implements Backend {
         return [];
     }
 
+    async setupAgentKnowledge(params: any): Promise<any> {
+        console.warn("setupAgentKnowledge is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
 }
 
 export default UEngineBackend;

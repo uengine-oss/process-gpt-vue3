@@ -1,45 +1,50 @@
 <template>
-    <div class="settings-container">
-        <!-- Info Banner -->
-        <div class="info-banner">
-            <v-icon size="18" color="primary">mdi-information-outline</v-icon>
-            <span>{{ $t('taskCatalog.schemasDescription') }}</span>
-        </div>
+    <div>
+        <!-- Info Banner [BLOCK:alert.info.v1] -->
+        <v-alert dense outlined type="info" color="gray" class="pa-4 pt-2 pb-2">
+            <v-row class="ma-0 pa-0">
+                <span class="text-body-1">{{ $t('taskCatalog.schemasDescription') }}</span>
+            </v-row>
+        </v-alert>
 
         <!-- Filter Row -->
-        <div class="filter-row">
-            <div class="filter-select-wrapper">
-                <v-select
-                    v-model="selectedTaskType"
-                    :items="availableTaskTypes"
-                    :label="$t('taskCatalog.selectTaskType')"
-                    item-title="label"
-                    item-value="value"
-                    clearable
-                    variant="outlined"
-                    density="compact"
-                    hide-details
-                    class="flat-select"
-                />
-            </div>
-            <div class="filter-actions">
-                <button
-                    class="preview-btn"
-                    :class="{ active: showLayoutPreview }"
-                    @click="showLayoutPreview = !showLayoutPreview"
+        <div class="d-flex align-center justify-space-between pa-0 pt-4 pb-4">
+            <v-select
+                v-model="selectedTaskType"
+                :items="availableTaskTypes"
+                :label="$t('taskCatalog.selectTaskType')"
+                item-title="label"
+                item-value="value"
+                clearable
+                variant="outlined"
+                density="compact"
+                hide-details
+                class="flex-grow-0"
+                style="min-width: 250px;"
+            />
+            <div class="d-flex ga-2">
+                <!-- [BLOCK:button.secondary.v1] -->
+                <v-btn
+                    color="gray"
+                    rounded="pill"
+                    variant="flat"
                     :disabled="!selectedTaskType || filteredSchemas.length === 0"
+                    @click="showLayoutPreview = !showLayoutPreview"
                 >
-                    <v-icon size="16">mdi-eye</v-icon>
+                    <v-icon start size="16">{{ showLayoutPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                     {{ $t('taskCatalog.layoutPreview') }}
-                </button>
-                <button
-                    class="add-btn"
-                    @click="openDialog()"
+                </v-btn>
+                <!-- [BLOCK:button.primary.v1] -->
+                <v-btn
+                    color="primary"
+                    rounded
+                    variant="flat"
                     :disabled="!selectedTaskType"
+                    @click="openDialog()"
                 >
-                    <v-icon size="16">mdi-plus</v-icon>
+                    <v-icon start size="16">mdi-plus</v-icon>
                     {{ $t('taskCatalog.addProperty') }}
-                </button>
+                </v-btn>
             </div>
         </div>
 
@@ -99,9 +104,9 @@
             </div>
         </v-expand-transition>
 
-        <!-- Flat Table -->
-        <div class="flat-table-container">
-            <table class="flat-table">
+        <!-- [BLOCK:table.simple.v1] -->
+        <v-card class="pa-0" variant="outlined">
+            <v-table density="comfortable">
                 <thead>
                     <tr>
                         <th>{{ $t('taskCatalog.propertyKey') }}</th>
@@ -109,44 +114,45 @@
                         <th>{{ $t('taskCatalog.propertyType') }}</th>
                         <th>{{ $t('taskCatalog.mandatory') }}</th>
                         <th>{{ $t('taskCatalog.order') }}</th>
-                        <th style="width: 100px; text-align: right;">{{ $t('taskCatalog.actions') }}</th>
+                        <th style="width: 100px;">{{ $t('taskCatalog.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-if="loading">
-                        <td colspan="6" class="loading-cell">
-                            <v-progress-circular indeterminate size="24" color="primary" />
+                        <td colspan="6" class="text-center pa-8">
+                            <v-progress-circular indeterminate size="32" color="primary" />
                         </td>
                     </tr>
                     <tr v-else-if="filteredSchemas.length === 0">
-                        <td colspan="6" class="empty-cell">
+                        <td colspan="6" class="text-center pa-8 text-medium-emphasis">
                             {{ selectedTaskType ? $t('taskCatalog.noSchemas') : $t('taskCatalog.selectTaskTypeFirst') }}
                         </td>
                     </tr>
                     <tr v-else v-for="item in filteredSchemas" :key="item.id">
-                        <td class="key-cell">{{ item.property_key }}</td>
+                        <td class="text-caption text-grey font-weight-medium">{{ item.property_key }}</td>
                         <td>{{ item.property_label }}</td>
                         <td>
-                            <span class="type-badge">{{ item.property_type }}</span>
+                            <v-chip size="small" variant="tonal">{{ item.property_type }}</v-chip>
                         </td>
                         <td>
-                            <span class="mandatory-badge" :class="item.is_mandatory ? 'required' : 'optional'">
+                            <v-chip :color="item.is_mandatory ? 'error' : 'grey'" size="small" variant="tonal">
                                 {{ item.is_mandatory ? $t('taskCatalog.mandatory') : $t('taskCatalog.optional') }}
-                            </span>
+                            </v-chip>
                         </td>
-                        <td class="order-cell">{{ item.display_order }}</td>
-                        <td class="actions-cell">
-                            <button class="action-btn action-edit" @click="openDialog(item)">
+                        <td class="text-center text-medium-emphasis">{{ item.display_order }}</td>
+                        <td>
+                            <!-- [BLOCK:button.icon.v1] -->
+                            <v-btn variant="text" density="compact" icon @click="openDialog(item)">
                                 <v-icon size="16">mdi-pencil</v-icon>
-                            </button>
-                            <button class="action-btn action-delete" @click="confirmDelete(item)">
+                            </v-btn>
+                            <v-btn variant="text" density="compact" icon color="error" @click="confirmDelete(item)">
                                 <v-icon size="16">mdi-delete</v-icon>
-                            </button>
+                            </v-btn>
                         </td>
                     </tr>
                 </tbody>
-            </table>
-        </div>
+            </v-table>
+        </v-card>
 
         <!-- Add/Edit Dialog -->
         <PropertySchemaDialog
@@ -157,29 +163,26 @@
         />
 
         <!-- Delete Confirmation Dialog -->
-        <v-dialog v-model="deleteDialogOpen" max-width="400">
+        <v-dialog v-model="deleteDialogOpen" max-width="400" persistent>
             <v-card>
-                <v-card-title>
-                    {{ $t('taskCatalog.confirmDelete') }}
+                <!-- [BLOCK:dialog.header.v1] -->
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    <div class="d-flex align-center">{{ $t('taskCatalog.confirmDelete') }}</div>
+                    <v-btn variant="text" density="compact" icon @click="deleteDialogOpen = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
                 </v-card-title>
 
-                <v-card-text>
+                <v-card-text class="pa-4">
                     {{ $t('taskCatalog.deleteSchemaConfirm', { name: deletingSchema?.property_label }) }}
                 </v-card-text>
 
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn
-                        variant="text"
-                        @click="deleteDialogOpen = false"
-                    >
+                <!-- [BLOCK:dialog.footer.actions.v1] -->
+                <v-card-actions class="d-flex justify-end align-center pa-4 pt-0">
+                    <v-btn variant="text" @click="deleteDialogOpen = false">
                         {{ $t('taskCatalog.cancel') }}
                     </v-btn>
-                    <v-btn
-                        color="error"
-                        :loading="loading"
-                        @click="deleteSchema"
-                    >
+                    <v-btn color="error" rounded variant="flat" :loading="loading" @click="deleteSchema">
                         {{ $t('taskCatalog.delete') }}
                     </v-btn>
                 </v-card-actions>
@@ -324,102 +327,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.settings-container {
-    padding: 24px;
-}
-
-/* Info Banner */
-.info-banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    background: #eff6ff;
-    border: 1px solid #dbeafe;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 13px;
-    color: #1e40af;
-}
-
-/* Filter Row */
-.filter-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    gap: 16px;
-}
-
-.filter-select-wrapper {
-    flex: 1;
-    max-width: 300px;
-}
-
-.flat-select :deep(.v-field) {
-    border-radius: 6px;
-}
-
-.filter-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.preview-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #ffffff;
-    color: #6b7280;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.preview-btn:hover:not(:disabled) {
-    border-color: #3b82f6;
-    color: #3b82f6;
-}
-
-.preview-btn.active {
-    background: #eff6ff;
-    border-color: #3b82f6;
-    color: #3b82f6;
-}
-
-.preview-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.add-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.add-btn:hover:not(:disabled) {
-    background: #2563eb;
-}
-
-.add-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 /* Layout Preview */
 .layout-preview-container {
     background: #f9fafb;
@@ -427,16 +334,16 @@ export default defineComponent({
     padding: 16px;
 }
 
-.layout-section-header {
+.section-header {
     font-size: 14px;
     font-weight: 600;
-    color: #3b82f6;
+    color: rgb(var(--v-theme-primary));
     margin: 16px 0 12px 0;
     padding-bottom: 4px;
     border-bottom: 1px solid #e5e7eb;
 }
 
-.layout-section-header:first-child {
+.section-header:first-child {
     margin-top: 0;
 }
 
@@ -450,7 +357,7 @@ export default defineComponent({
 
 .field-label {
     font-size: 12px;
-    color: #3b82f6;
+    color: rgb(var(--v-theme-primary));
     margin-bottom: 4px;
     font-weight: 500;
 }
@@ -502,135 +409,5 @@ export default defineComponent({
     border-radius: 50%;
     top: 2px;
     left: 2px;
-}
-
-/* Flat Table */
-.flat-table-container {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.flat-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.flat-table thead {
-    background: #f9fafb;
-}
-
-.flat-table th {
-    padding: 12px 16px;
-    text-align: left;
-    font-weight: 600;
-    color: #374151;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.flat-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #f3f4f6;
-    color: #4b5563;
-}
-
-.flat-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.flat-table tbody tr:hover {
-    background: #f9fafb;
-}
-
-.key-cell {
-    font-family: monospace;
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.order-cell {
-    color: #9ca3af;
-    text-align: center;
-}
-
-.actions-cell {
-    text-align: right;
-    display: flex;
-    justify-content: flex-end;
-    gap: 4px;
-}
-
-.loading-cell,
-.empty-cell {
-    text-align: center;
-    padding: 40px 16px !important;
-    color: #9ca3af;
-}
-
-/* Badges */
-.type-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-    color: #6b7280;
-}
-
-.mandatory-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.mandatory-badge.required {
-    background: #fef2f2;
-    color: #dc2626;
-}
-
-.mandatory-badge.optional {
-    background: #f3f4f6;
-    color: #6b7280;
-}
-
-/* Action Buttons */
-.action-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s ease;
-}
-
-.action-btn:hover {
-    background-color: #f3f4f6;
-}
-
-.action-edit {
-    color: #6b7280;
-}
-
-.action-edit:hover {
-    color: #3b82f6;
-    background-color: #eff6ff;
-}
-
-.action-delete {
-    color: #9ca3af;
-}
-
-.action-delete:hover {
-    color: #ef4444;
-    background-color: #fef2f2;
 }
 </style>

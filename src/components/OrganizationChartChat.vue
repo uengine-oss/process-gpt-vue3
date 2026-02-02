@@ -412,14 +412,50 @@ export default {
                 id: newAgent.id,
                 name: newAgent.name,
                 data: newAgent
-            }
+            };
             this.editNode.children.push(agent);
+
+            // 1) 에이전트 정보를 DB(users 테이블)에 저장
             await this.backend.putAgent(newAgent);
+
+            // 2) 에이전트 초기 지식 셋업 API 호출
+            await this.setupAgentKnowledge(newAgent);
+
+            // 3) 조직도 및 UI 갱신
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
             
             // AgentList 실시간 업데이트를 위한 이벤트 발생
             this.EventBus.emit('agentAdded', newAgent);
+        },
+        async setupAgentKnowledge(newAgent) {
+            const payload = {
+                agent_id: newAgent.id,
+                goal: newAgent.goal || null,
+                persona: newAgent.persona || null
+            };
+
+            let toastInstance = null;
+            if (this.$toast) {
+                // 값이 리턴될 때까지 유지되는 안내 토스트
+                toastInstance = this.$toast.info('에이전트 초기 지식을 설정하는 중입니다...', {
+                    timeout: false,
+                    position: 'top-left'
+                });
+            }
+
+            try {
+                await this.backend.setupAgentKnowledge(payload);
+
+                if (this.$toast) {
+                    this.$toast.success('에이전트 초기 지식이 성공적으로 설정되었습니다.');
+                }
+            } catch (error) {
+                console.error('[OrganizationChartChat] setup-agent-knowledge 호출 실패:', error);
+                if (this.$toast) {
+                    this.$toast.error('에이전트 초기 지식 설정에 실패했습니다.');
+                }
+            }
         },
         deleteNode(obj, children) {
             if (children && children.some(item => item.id == obj.id)) {

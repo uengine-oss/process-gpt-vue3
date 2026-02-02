@@ -58,7 +58,7 @@
                     
                     <!-- 검색 기능 (Searchbar 스타일 참고) -->
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5"
-                        style="max-width: 280px; min-width: 160px;"
+                        style="max-width: 246px; min-width: 160px;"
                     >
                         <Icons :icon="'magnifer-linear'" :size="20" />
                         <v-text-field
