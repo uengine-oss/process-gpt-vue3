@@ -2583,11 +2583,15 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async watchChats(callback: (payload: any) => void) {
+    async watchChats(callback: (payload: any) => void, options: any = {}) {
         try {
+            const channel =
+                options?.channel ||
+                `chats-${Date.now()}-${Math.random().toString(16).slice(2)}`;
             return await storage._watch({
-                channel: 'chats',
+                channel,
                 table: 'chats',
+                filter: options?.filter || null,
             }, (payload) => {
                 callback(payload);
             });

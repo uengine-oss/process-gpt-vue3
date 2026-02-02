@@ -58,27 +58,28 @@ export default defineConfig({
                 changeOrigin: true,
             },
             '/complete': {
-                target: 'http://localhost:8000',
+                // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
+                target: 'http://127.0.0.1:8000',
                 changeOrigin: true,
             },
             '/vision-complete': {
-                target: 'http://localhost:8000',
+                target: 'http://127.0.0.1:8000',
                 changeOrigin: true,
             },
             '/process-db-schema': {
-                target: 'http://localhost:8000',
+                target: 'http://127.0.0.1:8000',
                 changeOrigin: true,
             },
             '/drop-process-table': {
-                target: 'http://localhost:8000',
+                target: 'http://127.0.0.1:8000',
                 changeOrigin: true,
             },
             '/process-search': {
-                target: 'http://localhost:8000',
+                target: 'http://127.0.0.1:8000',
                 changeOrigin: true,
             },
             '/vision-process-search': {
-                target: 'http://localhost:8000',
+                target: 'http://127.0.0.1:8000',
                 changeOrigin: true,
             },
             '/langchain-chat': {
@@ -87,8 +88,11 @@ export default defineConfig({
             },
             // Work Assistant Agent API
             '/agent/': {
-                target: 'http://localhost:8000',
+                // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
+                target: 'http://127.0.0.1:8000',
                 changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/agent/, '')
             }
         }

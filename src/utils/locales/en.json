@@ -1454,6 +1454,8 @@
         "instanceList": "Instance",
         "projectList": "Project",
         "agentList": "Agent",
+        "userList": "Users",
+        "userLoading": "Loading...",
         "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
@@ -1462,7 +1464,10 @@
         "newProject": "Create New Project",
         "addProject": "Add Project",
         "showMore": "Show More",
-        "showLess": "Show Less"
+        "showLess": "Show Less",
+        "chatList": "Conversations",
+        "chatLoading": "Loading...",
+        "chatEmpty": "No chats."
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
@@ -2227,6 +2232,7 @@
             "goal": "Agent goal is not configured yet."
         },
         "tabs": {
+            "chat": "Conversation",
             "learning": "Learning Mode",
             "question": "Question Mode",
             "actions": "Action Mode",

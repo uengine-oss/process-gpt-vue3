@@ -165,14 +165,6 @@
                                                 </div>
 
                                                 <div v-else>
-                                                    <div class="d-flex justify-end align-center mb-1">
-                                                        <v-avatar size="32" class="mr-2">
-                                                            <v-img :src="currentUserPicture" :alt="currentUserName" />
-                                                        </v-avatar>
-                                                        <div class="user-name">
-                                                            {{ currentUserName }}
-                                                        </div>
-                                                    </div>
                                                     <div class="d-flex justify-end">
                                                         <slot name="custom-message-actions" :message="message"></slot>
                                                         <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1">
@@ -308,15 +300,20 @@
                                                     class="ma-0 pa-0"
                                                 >
                                                     <v-row class="ma-0 pa-0 d-flex align-center mb-2">
-                                                        <v-avatar size="40" style="margin-right:10px;">
+                                                        <v-avatar size="28" style="margin-right:8px;">
                                                             <img v-if="message.role == 'system'"
-                                                                src="@/assets/images/chat/chat-icon.png" height="40"
-                                                                width="40" />
-                                                            <v-img v-else :src="getProfile(message)" :alt="message.name"
-                                                                height="40" width="40" />
+                                                                src="@/assets/images/chat/chat-icon.png" height="28"
+                                                                width="28" />
+                                                            <v-img
+                                                                v-else
+                                                                :src="getProfile(message)"
+                                                                :alt="(message.name || message.userName || message.username || message.email || 'User')"
+                                                                height="28"
+                                                                width="28"
+                                                            />
                                                         </v-avatar>
                                                         <div class="user-name">
-                                                            {{ message.role == 'system' ? 'System' : message.name }}
+                                                            {{ message.role == 'system' ? 'System' : (message.name || message.userName || message.username || message.email) }}
                                                         </div>
                                                     </v-row>
                                                 </v-row>
@@ -2246,9 +2243,6 @@ export default {
         shouldDisplayMessageTimestamp(message, index) {
             
             const prevMessage = this.filteredMessages[index - 1];
-            
-            // 이메일(보낸사람)이 다르면 true 반환
-            if (prevMessage && message.email !== prevMessage.email) return true;
             
             // 다음 메시지가 있는지 확인
             const nextMessage = index < this.filteredMessages.length - 1 ? this.filteredMessages[index + 1] : null;

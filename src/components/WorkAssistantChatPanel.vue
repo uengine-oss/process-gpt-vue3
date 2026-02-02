@@ -1,39 +1,6 @@
 <template>
     <div class="work-assistant-chat-panel">
-        <!-- 채팅방 탭 -->
-        <div class="chat-tabs-container">
-            <div class="chat-tabs">
-                <div 
-                    v-for="room in chatRooms" 
-                    :key="room.id"
-                    class="chat-tab"
-                    :class="{ 'active': currentRoomId === room.id }"
-                    @click="selectRoom(room)"
-                >
-                    <v-icon size="16" class="mr-1">mdi-message-text-outline</v-icon>
-                    <span class="tab-title">{{ room.name || '새 대화' }}</span>
-                    <v-btn
-                        v-if="chatRooms.length > 1"
-                        icon
-                        variant="text"
-                        size="x-small"
-                        class="tab-close"
-                        @click.stop="deleteRoom(room.id)"
-                    >
-                        <v-icon size="14">mdi-close</v-icon>
-                    </v-btn>
-                </div>
-            </div>
-            <v-btn
-                icon
-                variant="text"
-                size="small"
-                class="new-chat-btn"
-                @click="createNewRoom"
-            >
-                <v-icon>mdi-plus</v-icon>
-            </v-btn>
-        </div>
+        <!-- 채팅방 목록 UI는 좌측 패널(사이드바)로 이동 -->
 
         <!-- PDF2BPMN 진행 상황은 메시지 내부에 표시됨 -->
 
@@ -467,6 +434,7 @@ export default {
                     
                     // 자동 선택은 하지 않음 (initialMessage나 openHistoryRoom에서 처리)
                 }
+                this.EventBus.emit('chat-rooms-updated');
             } catch (error) {
                 console.error('채팅방 로드 오류:', error);
             }
@@ -544,6 +512,7 @@ export default {
             this.chatRooms.unshift(room);
             this.currentRoomId = roomId;
             this.EventBus.emit('chat-room-selected', roomId);
+            this.EventBus.emit('chat-rooms-updated');
             this.updateChatAccessPage(roomId);
             this.messages = [];
 
@@ -557,6 +526,7 @@ export default {
                 await backend.delete(`chat_rooms/${roomId}`, { key: 'id' });
                 
                 this.chatRooms = this.chatRooms.filter(r => r.id !== roomId);
+                this.EventBus.emit('chat-rooms-updated');
                 
                 if (this.currentRoomId === roomId) {
                     if (this.chatRooms.length > 0) {
@@ -564,6 +534,7 @@ export default {
                     } else {
                         this.currentRoomId = null;
                         this.messages = [];
+                        this.EventBus.emit('chat-room-unselected');
                     }
                 }
             } catch (error) {
@@ -1097,6 +1068,9 @@ export default {
                     createdAt: msg.timeStamp
                 };
                 await this.putObject('chat_rooms', room);
+                // 최신 메시지 기준으로 정렬하여 "최신이 상단" 유지
+                this.chatRooms.sort((a, b) => new Date(b.message?.createdAt || 0) - new Date(a.message?.createdAt || 0));
+                this.EventBus.emit('chat-rooms-updated');
             }
         },
 
