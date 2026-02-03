@@ -1,5 +1,11 @@
 {
     "message": "ko",
+    "leadTime": {
+        "title": "소요 시간",
+        "days": "일",
+        "hours": "시간",
+        "minutes": "분"
+    },
     "validation": {
         "title": "BPMN 검증 결과",
         "warningMessage": "프로세스 정의에 다음 문제가 발견되었습니다:",
@@ -10,78 +16,6 @@
         "noIncomingConnection": "들어오는 연결이 없습니다.",
         "noOutgoingConnection": "나가는 연결이 없습니다.",
         "gatewayNeedsBranches": "게이트웨이에 최소 2개의 분기가 필요합니다."
-    },
-    "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
-    "successMsg": {
-        "simulatedProcess": "Process 시뮬레이션 완료",
-        "runningTheProcess": "Process 실행",
-        "formGenerationCompleted": "폼 생성 완료",
-        "processGenerationCompleted": "프로세스 생성 완료",
-        "processExecutionCompleted": "프로세스 실행 완료",
-        "workCompleted": "해당 업무 완료",
-        "save": "저장되었습니다.",
-        "intermediate": "중간 저장 완료",
-        "delete": "삭제되었습니다.",
-        "instanceDelete": "인스턴스가 삭제되었습니다.",
-        "completed": "실행 완료",
-        "savedMarketplace": "마켓플레이스에 등록되었습니다.",
-        "reworkRequested": "재작업이 요청되었습니다."
-    },
-    "errorMsg": {
-        "isBackendConnected": "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
-        "languageChangeFailed": "언어 설정 변경에 실패했습니다."
-    },
-    "App": {
-        "view": "자세히 보기"
-    },
-    "mainPage": {
-        "login": "로그인",
-        "logout": "로그아웃",
-        "demo": "데모",
-        "pricing": "가격",
-        "documentation": "사용 설명서",
-        "support": "고객 지원",
-        "start": "베타 테스트하기",
-        "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
-        "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
-    },
-    "headerMenu": {
-        "sidebar": "사이드바 접기/펼치기",
-        "dashboard": "대시보드",
-        "todoList": "나의 업무",
-        "schedule": "스케줄러",
-        "calendar": "달력",
-        "layoutSetting": "레이아웃 설정",
-        "admin": "관리자 페이지",
-        "setting": "설정",
-        "search": "검색",
-        "searchResult": "검색 결과",
-        "searchKeyword": "검색하고자 하는 키워드 입력 후 엔터를 눌러주세요.",
-        "searching": "검색 중",
-        "noSearchResult": "검색 결과가 없습니다.",
-        "agent": "에이전트",
-        "pricing": "가격 정보"
-    },
-    "DashboardTodoList": {
-        "todo": "나의 업무",
-        "inProgress": "진행 중",
-        "done": "완료"
-    },
-    "DashboardUpcomingScheduls": {
-        "title": "다가오는 일정",
-        "schedule": "일정",
-        "dateAndTime": "일시",
-        "category": "구분"
-    },
-    "DefaultWorkItem": {
-        "intermediateSave": "중간 저장",
-        "complete": "완료"
-    },
-    "dashboard": {
-        "title": "대시보드",
-        "startProcess": "프로세스 시작",
-        "startProcessDescription": "프로세스 시작을 눌러 프로세스를 시작 할 수 있습니다.",
-        "welcome": "환영합니다."
     },
     "businessRuleDefinition": {
         "title": "룰 정의(비즈니스 규칙)",
@@ -229,6 +163,78 @@
         "operationDelete": "삭제",
         "operationMove": "이동"
     },
+    "changePath": "저장되지 않은 변경사항이 있습니다. 이동하시겠습니까?",
+    "successMsg": {
+        "simulatedProcess": "Process 시뮬레이션 완료",
+        "runningTheProcess": "Process 실행",
+        "formGenerationCompleted": "폼 생성 완료",
+        "processGenerationCompleted": "프로세스 생성 완료",
+        "processExecutionCompleted": "프로세스 실행 완료",
+        "workCompleted": "해당 업무 완료",
+        "save": "저장되었습니다.",
+        "intermediate": "중간 저장 완료",
+        "delete": "삭제되었습니다.",
+        "instanceDelete": "인스턴스가 삭제되었습니다.",
+        "completed": "실행 완료",
+        "savedMarketplace": "마켓플레이스에 등록되었습니다.",
+        "reworkRequested": "재작업이 요청되었습니다."
+    },
+    "errorMsg": {
+        "isBackendConnected": "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
+        "languageChangeFailed": "언어 설정 변경에 실패했습니다."
+    },
+    "App": {
+        "view": "자세히 보기"
+    },
+    "mainPage": {
+        "login": "로그인",
+        "logout": "로그아웃",
+        "demo": "데모",
+        "pricing": "가격",
+        "documentation": "사용 설명서",
+        "support": "고객 지원",
+        "start": "베타 테스트하기",
+        "title": "AI를 기반한 프로세스 관리에서 실행까지를 손쉽게 시작하세요",
+        "subTitle": "프로세스 정의, 조직도 관리, To-Do 관리, 프로세스 실행, 프로세스 모니터링, 프로세스 분석"
+    },
+    "headerMenu": {
+        "sidebar": "사이드바 접기/펼치기",
+        "dashboard": "대시보드",
+        "todoList": "나의 업무",
+        "schedule": "스케줄러",
+        "calendar": "달력",
+        "layoutSetting": "레이아웃 설정",
+        "admin": "관리자 페이지",
+        "setting": "설정",
+        "search": "검색",
+        "searchResult": "검색 결과",
+        "searchKeyword": "검색하고자 하는 키워드 입력 후 엔터를 눌러주세요.",
+        "searching": "검색 중",
+        "noSearchResult": "검색 결과가 없습니다.",
+        "agent": "에이전트",
+        "pricing": "가격 정보"
+    },
+    "DashboardTodoList": {
+        "todo": "나의 업무",
+        "inProgress": "진행 중",
+        "done": "완료"
+    },
+    "DashboardUpcomingScheduls": {
+        "title": "다가오는 일정",
+        "schedule": "일정",
+        "dateAndTime": "일시",
+        "category": "구분"
+    },
+    "DefaultWorkItem": {
+        "intermediateSave": "중간 저장",
+        "complete": "완료"
+    },
+    "dashboard": {
+        "title": "대시보드",
+        "startProcess": "프로세스 시작",
+        "startProcessDescription": "프로세스 시작을 눌러 프로세스를 시작 할 수 있습니다.",
+        "welcome": "환영합니다."
+    },
     "todoList": {
         "title": "업무 목록",
         "todo": "예정업무",
@@ -366,7 +372,7 @@
         "title": "조직도 추가 및 관리",
         "cardTitle": "조직도 관리",
         "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다.",
-        "addTeam": "팀 추가",
+        "addTeam": "팀 생성",
         "deleteTeam": "팀 삭제",
         "editTeam": "팀 수정",
         "teamId": "팀 ID",
@@ -383,10 +389,11 @@
         "add": "추가",
         "delete": "삭제",
         "close": "닫기",
-        "addNewUser": "신규 사용자(팀원) 추가",
-        "addNewAgent": "신규 에이전트 추가",
-        "addNewA2A": "A2A 에이전트 추가",
-        "addNewPGAgent": "ProcessGPT 에이전트 추가",
+        "addNewUser": "팀원 추가",
+        "createAgentTab": "에이전트 생성",
+        "addNewAgent": "신규 에이전트",
+        "addNewA2A": "A2A 에이전트",
+        "addNewPGAgent": "ProcessGPT 에이전트",
         "userName": "이름",
         "userEmail": "이메일",
         "idRequired": "ID를 입력해주세요.",
@@ -465,6 +472,7 @@
         "download": "다운로드",
         "uncategorized": "미분류",
         "searchProcess": "정의체계도 검색 (예: 보험, 신청)",
+        "isDeployable": "배포",
         "closeConsulting": "저장하지 않은 정보는 모두 유실됩니다. 컨설팅을 종료하시겠습니까?",
         "closeConsultingInPreview": "저장하지 않은 정보는 모두 유실됩니다.\n저장하시려면 우측 저장 버튼을 클릭하여 저장하실 수 있습니다.\n\n컨설팅을 종료하시겠습니까?",
         "checkInDBError": "DB 연결이 끊어졌습니다. 수정된 데이터를 다운로드하여 저장하고 관리자에게 문의주세요.",
@@ -472,10 +480,11 @@
         "checkInMessage": "편집을 종료하시겠습니까? \n저장하지 않을 경우, 수정된 내용은 반영되지 않습니다.",
         "checkOutMessage": "프로세스 정의 체계도를 수정하시겠습니까?",
         "forcedCheckOutMessage": "현재 {name} 님께서 수정 중입니다. 편집을 진행하는 경우 {name}님이 수정한 내용은 손상되어 저장되지 않습니다. \n편집을 진행 하시겠습니까?",
+        "forceCheckoutNotification": "{name} 님이 수정을 시작하여, 현재까지 작업 내용이 저장된 후 수정이 종료됩니다.",
+        "forceCheckoutError": "강제 체크아웃 처리 중 오류가 발생했습니다.",
         "settingPermission": "권한 설정",
         "isReadable": "열람",
         "isWritable": "개정",
-        "isDeployable": "배포",
         "marketplace": "마켓플레이스",
         "marketplaceExplanation": "비즈니스 프로세스 템플릿을 찾아보세요",
         "treeView": "트리 뷰로 보기",
@@ -485,7 +494,36 @@
         "duplicateName": "동일한 이름의 프로세스가 이미 존재합니다.",
         "allDomains": "전체",
         "selectColor": "색상 선택",
-        "filterByOrganization": "조직 필터"
+        "filterByOrganization": "조직 필터",
+        "editingEnded": "{name} 님이 수정을 완료했습니다. 이제 수정할 수 있습니다."
+    },
+    "permissionDialog": {
+        "title": "접근 권한 설정",
+        "permissionLevel": "권한 적용 범위",
+        "levelSub": "현재 프로세스만",
+        "levelMajor": "Major 프로세스 전체 (하위 Sub 포함)",
+        "levelMega": "Mega 프로세스 전체 (하위 Major/Sub 포함)",
+        "levelDomain": "Domain 전체 (해당 도메인의 모든 프로세스)",
+        "publicAccess": "모두에게 공개 (아래 설정 무시)",
+        "addTarget": "대상 추가",
+        "tabUser": "사용자",
+        "tabOrganization": "조직",
+        "tabOrgGroup": "조직 그룹",
+        "searchUser": "사용자 검색",
+        "searchOrganization": "조직 검색",
+        "searchOrgGroup": "조직 그룹 검색",
+        "permissionList": "권한 목록",
+        "name": "이름",
+        "type": "유형",
+        "view": "조회",
+        "execute": "실행",
+        "edit": "수정",
+        "noPermissions": "설정된 권한이 없습니다. 위에서 대상을 추가해주세요.",
+        "typeUser": "사용자",
+        "typeOrg": "조직",
+        "typeGroup": "그룹",
+        "save": "저장",
+        "cancel": "취소"
     },
     "metricsView": {
         "domain": "Domain",
@@ -821,6 +859,7 @@
         "logOut": "로그아웃"
     },
     "BpmnPropertyPanel": {
+        "readOnly": "읽기 전용",
         "name": "이름",
         "subProcessNamePattern": "서브프로세스명 패턴",
         "condition": "조건",
@@ -878,7 +917,9 @@
         "schemaProperties": "일반 속성",
         "taskColor": "작업 색상",
         "customColor": "사용자 정의 색상",
-        "resetColor": "초기화"
+        "resetColor": "초기화",
+        "systemName": "시스템명",
+        "menuName": "메뉴명"
     },
     "KeyValueField": {
         "add": "추가",
@@ -1205,6 +1246,13 @@
         "EndEvent": "종료 이벤트 생성",
         "ExclusiveGateway": "독점 게이트웨이 생성",
         "Task": "작업 생성",
+        "UserTask": "사용자 작업 생성",
+        "ManualTask": "수동 작업 생성",
+        "ServiceTask": "서비스 작업 생성",
+        "ScriptTask": "스크립트 작업 생성",
+        "BusinessRuleTask": "비즈니스 규칙 작업 생성",
+        "SendTask": "전송 작업 생성",
+        "ReceiveTask": "수신 작업 생성",
         "SubProcess": "하위 프로세스 생성",
         "DataStoreReference": "데이터 저장소 생성",
         "DataObjectReference": "데이터 객체 생성",
@@ -1567,6 +1615,8 @@
         "instanceList": "인스턴스",
         "projectList": "프로젝트",
         "agentList": "에이전트",
+        "userList": "유저 목록",
+        "userLoading": "불러오는 중...",
         "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
         "downloadDefinitionList": "정의 내보내기",
@@ -1575,7 +1625,10 @@
         "newProject": "새로운 프로젝트 생성",
         "addProject": "프로젝트 추가",
         "showMore": "더보기",
-        "showLess": "접기"
+        "showLess": "접기",
+        "chatList": "대화목록",
+        "chatLoading": "불러오는 중...",
+        "chatEmpty": "채팅방이 없습니다."
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "프로세스 실행실적",
@@ -1713,16 +1766,16 @@
         "searchResultTitle": "검색 결과",
         "searchingTitle": "검색 중...",
         "relatedTemplates": "관련 템플릿",
+        "previewButton": "미리보기",
+        "previewDialogTitle": "프로세스 미리보기",
         "addedButton": "추가됨",
         "addButton": "추가",
         "deleteButton": "삭제",
-        "previewButton": "미리보기",
         "otherCategory": "기타",
         "deleteDialogTitle": "프로세스 삭제 확인",
         "deleteDialogMessage": "정말로 \"{name}\" 프로세스를 마켓플레이스에서 삭제하시겠습니까?",
         "deleteDialogWarning": "이 작업은 되돌릴 수 없습니다.",
         "deleteDialogConfirmMessage": "계속하려면 프로세스 이름을 정확히 입력해주세요:",
-        "previewDialogTitle": "프로세스 미리보기",
         "countUnit": "개",
         "allTemplates": "전체 템플릿"
     },
@@ -1863,6 +1916,7 @@
         "title2": "실행은 Process GPT가 맡습니다.",
         "description1": "전략 목표에 맞춰 AI 에이전트들이 업무 흐름을 구성하고 실행합니다. 사람은 필요한 판단만 개입하고, 프로세스는 자동으로 이어집니다.",
         "betaTestButton": "베타 테스트하기",
+        "galleryButton": "갤러리 보기",
         "educationButton": "교육과정 보기",
         "technicalReportLink": "Technical Report 보기"
     },
@@ -1991,6 +2045,18 @@
         "processExample1Title": "ERP 시스템을 연동한 주문처리 프로세스",
         "processExample2Title": "Browser Use 기능을 활용한 영업제안서 작성 프로세스",
         "processExample3Title": "VIP 맞춤 뉴스레터 자동화 프로세스",
+        "coreDistinctionTitle": "Process GPT의 핵심 차별점",
+        "coreDistinctionDescription": "Process GPT는 기존 AI 에이전트 시스템과 달리 비즈니스 프로세스를 자동으로 식별하고 구현하는 혁신적인 접근 방식을 제공합니다. 사용자는 코딩 지식 없이도 자연어 대화만으로 복잡한 비즈니스 프로세스를 정의하고 실행할 수 있습니다.",
+        "feature1Title": "코딩 지식 불필요",
+        "feature1Description": "일반 사용자가 프로그래밍 개념 없이도 프로세스 흐름의 적합성만 피드백하면 AI가 내부적으로 BPMN 기반 프로세스를 정의합니다.",
+        "feature2Title": "자가 학습 및 개선",
+        "feature2Description": "업무 프로세스 인스턴스가 발생할 때 사용자 피드백을 통해 자동으로 프로세스가 개선되며 지속적인 발전이 이루어집니다.",
+        "feature3Title": "프로세스 컨설팅 서비스",
+        "feature3Description": "사용자와의 대화를 통해 비즈니스 프로세스를 도출하고, 자동 투어를 통해 피드백을 수집하며 프로세스를 정립합니다.",
+        "feature4Title": "자동화된 에이전트 배치",
+        "feature4Description": "프로세스에 필요한 에이전트를 자동으로 식별하여 BPMN의 SwimLane(업무 역할)에 매핑하고 프롬프트를 자동 생성합니다.",
+        "feature5Title": "BPMN 기반 표준 프로세스 표기법",
+        "feature5Description": "약 20년 동안 축적된 비즈니스 프로세스 표기법을 활용하여 업계 표준을 준수하는 프로세스를 구현합니다.",
         "tabTitle1": "대화로 프로세스 정의",
         "tabDescription1": "생성형 AI를 통한 프로세스 정의 생성과 함께 가시화가 가능합니다. 생성 후에 관리자가 세부 수정을 할 수 있으며, 세부 수정사항도 자연어로 기술할 수 있습니다.",
         "tabItem1_1": "생성형 AI를 통한 프로세스 정의",
@@ -2268,7 +2334,7 @@
         "noData": "아직 기록된 메시지가 없습니다.",
         "streaming": "실시간 로그 수신 중...",
         "unknownSender": "알 수 없음",
-        "systemSender": "시스템"
+                "systemSender": "시스템"
     },
     "ActivityInputData": {
         "previousInput": "이전 작업 입력 내역",
@@ -2376,6 +2442,7 @@
             "goal": "에이전트의 목표가 설정되지 않았습니다."
         },
         "tabs": {
+            "chat": "대화 모드",
             "learning": "학습 모드",
             "question": "질의 모드",
             "actions": "액션 모드",
@@ -2436,7 +2503,8 @@
         "duplicate": "복제",
         "copySuffix": "복사",
         "duplicateSuccess": "프로세스가 복사되었습니다.",
-        "duplicateFailed": "프로세스 복사에 실패했습니다."
+        "duplicateFailed": "프로세스 복사에 실패했습니다.",
+        "duplicatePartialSuccess": "프로세스가 복사되었으나 세부내용은 복제되지 않았습니다."
     },
     "agentChat": {
         "learningModeInfo": "학습 모드: 에이전트가 사용자의 지침을 학습하여 이후 작업에 반영합니다. \n 예를 들어, \n ‘제안서 작성 시 각 회사의 CI에 맞는 컬러를 사용해.’ \n ‘정부·공공기관 대상 제안서는 반드시 한글(HWP) 형식으로 작성해.’ \n ‘B2C 제안서는 고객 이해를 돕기 위해 시각 자료를 우선 활용해.’ \n 와 같은 가이드를 학습시킬 수 있습니다.",
@@ -2688,6 +2756,7 @@
     "analytics": {
         "title": "Analytics",
         "dashboard": "대시보드",
+        "heatmap": "Heatmap",
         "pivot": "피벗 테이블",
         "performance": "퍼포먼스",
         "query": "자연어 질의",

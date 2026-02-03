@@ -1,24 +1,30 @@
 <template>
     <div>
-        <v-dialog v-model="isOpen" max-width="400" persistent>
-            <v-card class="ma-0 pa-0">
-                <v-row class="ma-0 pa-4 pb-0 align-center">
-                    <v-card-title class="ma-0 pa-0"
-                    >{{ isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title2') }}
-                    </v-card-title>
-
-                    <DetailComponent class="ml-2"
-                        :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
-                        :details="displayVersionHelpDetails"
-                    />
-                    <v-spacer></v-spacer>
-                    <v-btn @click="close()" icon variant="text" density="comfortable"
-                        style="width: 16px; height: 16px;"
-                    >
-                        <Icons :icon="'close'" :size="16" />
+        <!-- [BLOCK:dialog.container.v1] -->
+        <v-dialog
+            v-model="isOpen"
+            :fullscreen="isMobile"
+            :max-width="isMobile ? '100%' : '400'"
+            persistent
+            transition="dialog-transition"
+        >
+            <v-card>
+                <!-- [BLOCK:dialog.header.v1] -->
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    <div class="d-flex align-center">
+                        {{ isNew ? $t('ProcessDefinitionVersionDialog.title') : $t('ProcessDefinitionVersionDialog.title2') }}
+                        <DetailComponent
+                            class="ml-2"
+                            :title="$t('ProcessDefinitionVersionDialog.versionDescriptionTitle')"
+                            :details="displayVersionHelpDetails"
+                        />
+                    </div>
+                    <v-btn variant="text" density="compact" icon @click="close()">
+                        <v-icon>mdi-close</v-icon>
                     </v-btn>
-                </v-row>
-                <v-card-text class="ma-0 pa-4 pb-4 pt-0">
+                </v-card-title>
+                <!-- [BLOCK:dialog.body.form.v1] -->
+                <v-card-text class="pa-4 pb-0">
                     <div v-if="mode == 'ProcessGPT'">
                         <div v-if="isNew">
                             <v-text-field
@@ -153,17 +159,19 @@
                         ></v-checkbox>
                     </div>
                 </v-card-text>
-                <v-row class="ma-0 pa-4 pt-0">
-                    <v-spacer></v-spacer>
-                    <!-- <v-progress-circular v-if="!loading" color="primary" :size="25" indeterminate style="margin: 5px"></v-progress-circular> -->
-                    <v-btn @click="save()"
-                        :disabled="!validate()"
+                <!-- [BLOCK:dialog.footer.actions.v1] [BLOCK:button.primary.v1] -->
+                <v-card-actions class="d-flex justify-space-between align-center pa-4">
+                    <v-spacer />
+                    <v-btn
                         color="primary"
-                        variant="flat" 
-                        rounded 
-                    >{{ $t('ProcessDefinitionVersionDialog.save') }}
+                        rounded
+                        variant="flat"
+                        :disabled="!validate()"
+                        @click="save()"
+                    >
+                        {{ $t('ProcessDefinitionVersionDialog.save') }}
                     </v-btn>
-                </v-row>
+                </v-card-actions>
             </v-card>
         </v-dialog>
     </div>
@@ -209,6 +217,7 @@ export default {
             releaseName: null
         },
         isOpen: false, // inner var
+        isMobile: window.innerWidth <= 768,
         checkOptimize: false,
         isGeneratingName: false, // AI 이름 생성 중 여부
         isGeneratingId: false, // AI ID 생성 중 여부
@@ -384,6 +393,11 @@ export default {
     },
     mounted() {
         this.checkOptimize = this.useOptimize;
+        this._onResize = () => { this.isMobile = window.innerWidth <= 768; };
+        window.addEventListener('resize', this._onResize);
+    },
+    beforeUnmount() {
+        if (this._onResize) window.removeEventListener('resize', this._onResize);
     },
     methods: {
         /**

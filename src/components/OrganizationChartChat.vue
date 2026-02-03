@@ -241,7 +241,7 @@ export default {
                     if (this.organizationChartId) {
                         putObj.uuid = this.organizationChartId;
                     }
-                    await this.putObject("configuration", putObj);
+                    await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
                 }
 
                 const newMessage = this.messages[this.messages.length - 1];
@@ -275,10 +275,11 @@ export default {
                     }
                     const result = await me.backend.createUser(userInfo);
                     if (!result.error) {
+                        const newUserId = result.user.id;
                         me.editNode.children.push({
-                            id: result.user.id,
+                            id: newUserId,
                             data: {
-                                id: result.user.id,
+                                id: newUserId,
                                 img: "/images/defaultUser.png",
                                 name: user.name,
                                 email: user.email,
@@ -287,6 +288,14 @@ export default {
                             },
                             name: user.name,
                         });
+
+                        // 새 사용자의 department_id 설정
+                        const teamId = me.editNode?.id;
+                        const teamName = me.editNode?.data?.name || me.editNode?.name;
+                        if (teamId && newUserId) {
+                            await me.updateUsersDepartment([{ id: newUserId }], teamId, teamName);
+                        }
+
                         await me.updateNode();
                         me.$refs.organizationChart.drawTree();
                     }
@@ -305,7 +314,7 @@ export default {
             if (this.organizationChartId) {
                 putObj.uuid = this.organizationChartId;
             }
-            await this.putObject("configuration", putObj);
+            await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
         },
         async updateTeam(type, editNode, newTeam) {
             console.log('OrganizationChartChat - updateTeam 호출');
@@ -350,9 +359,52 @@ export default {
             }
             if (addUserList && addUserList.length > 0) {
                 this.editNode.children = addUserList;
+
+                // 사용자들의 department_id 업데이트
+                const teamId = selectedTeam.id;
+                const teamName = selectedTeam.data?.name || selectedTeam.name;
+                await this.updateUsersDepartment(addUserList, teamId, teamName);
             }
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
+        },
+
+        /**
+         * 사용자들의 department_id를 업데이트
+         * @param {Array} userList - 업데이트할 사용자 목록
+         * @param {string} departmentId - 부서(팀) ID
+         * @param {string} departmentName - 부서(팀) 이름
+         */
+        async updateUsersDepartment(userList, departmentId, departmentName) {
+            if (!userList || userList.length === 0) return;
+
+            try {
+                const supabase = window.$supabase;
+                if (!supabase) return;
+
+                // 각 사용자의 department_id 업데이트
+                const userIds = userList
+                    .filter(u => u.id && !u.data?.isAgent && !u.isAgent)
+                    .map(u => u.id);
+
+                if (userIds.length > 0) {
+                    const { error } = await supabase
+                        .from('users')
+                        .update({
+                            department_id: departmentId,
+                            department_name: departmentName
+                        })
+                        .in('id', userIds);
+
+                    if (error) {
+                        console.error('[OrganizationChartChat] updateUsersDepartment error:', error);
+                    } else {
+                        console.log(`[OrganizationChartChat] Updated ${userIds.length} users with department: ${departmentName}`);
+                    }
+                }
+            } catch (e) {
+                console.error('[OrganizationChartChat] updateUsersDepartment error:', e);
+            }
         },
         async addAgent(selectedTeam, newAgent) {
             this.editNode = selectedTeam;
@@ -360,14 +412,50 @@ export default {
                 id: newAgent.id,
                 name: newAgent.name,
                 data: newAgent
-            }
+            };
             this.editNode.children.push(agent);
+
+            // 1) 에이전트 정보를 DB(users 테이블)에 저장
             await this.backend.putAgent(newAgent);
+
+            // 2) 에이전트 초기 지식 셋업 API 호출
+            await this.setupAgentKnowledge(newAgent);
+
+            // 3) 조직도 및 UI 갱신
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
             
             // AgentList 실시간 업데이트를 위한 이벤트 발생
             this.EventBus.emit('agentAdded', newAgent);
+        },
+        async setupAgentKnowledge(newAgent) {
+            const payload = {
+                agent_id: newAgent.id,
+                goal: newAgent.goal || null,
+                persona: newAgent.persona || null
+            };
+
+            let toastInstance = null;
+            if (this.$toast) {
+                // 값이 리턴될 때까지 유지되는 안내 토스트
+                toastInstance = this.$toast.info('에이전트 초기 지식을 설정하는 중입니다...', {
+                    timeout: false,
+                    position: 'top-left'
+                });
+            }
+
+            try {
+                await this.backend.setupAgentKnowledge(payload);
+
+                if (this.$toast) {
+                    this.$toast.success('에이전트 초기 지식이 성공적으로 설정되었습니다.');
+                }
+            } catch (error) {
+                console.error('[OrganizationChartChat] setup-agent-knowledge 호출 실패:', error);
+                if (this.$toast) {
+                    this.$toast.error('에이전트 초기 지식 설정에 실패했습니다.');
+                }
+            }
         },
         deleteNode(obj, children) {
             if (children && children.some(item => item.id == obj.id)) {

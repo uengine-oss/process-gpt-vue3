@@ -292,6 +292,7 @@ ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS participants jsonb;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS message jsonb;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS name text;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
+ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS primary_agent_id text;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS chat_type text DEFAULT 'single';
 
 -- chats table

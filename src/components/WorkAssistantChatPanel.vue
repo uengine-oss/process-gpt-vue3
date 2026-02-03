@@ -1,39 +1,6 @@
 <template>
     <div class="work-assistant-chat-panel">
-        <!-- 채팅방 탭 -->
-        <div class="chat-tabs-container">
-            <div class="chat-tabs">
-                <div 
-                    v-for="room in chatRooms" 
-                    :key="room.id"
-                    class="chat-tab"
-                    :class="{ 'active': currentRoomId === room.id }"
-                    @click="selectRoom(room)"
-                >
-                    <v-icon size="16" class="mr-1">mdi-message-text-outline</v-icon>
-                    <span class="tab-title">{{ room.name || '새 대화' }}</span>
-                    <v-btn
-                        v-if="chatRooms.length > 1"
-                        icon
-                        variant="text"
-                        size="x-small"
-                        class="tab-close"
-                        @click.stop="deleteRoom(room.id)"
-                    >
-                        <v-icon size="14">mdi-close</v-icon>
-                    </v-btn>
-                </div>
-            </div>
-            <v-btn
-                icon
-                variant="text"
-                size="small"
-                class="new-chat-btn"
-                @click="createNewRoom"
-            >
-                <v-icon>mdi-plus</v-icon>
-            </v-btn>
-        </div>
+        <!-- 채팅방 목록 UI는 좌측 패널(사이드바)로 이동 -->
 
         <!-- PDF2BPMN 진행 상황은 메시지 내부에 표시됨 -->
 
@@ -467,6 +434,7 @@ export default {
                     
                     // 자동 선택은 하지 않음 (initialMessage나 openHistoryRoom에서 처리)
                 }
+                this.EventBus.emit('chat-rooms-updated');
             } catch (error) {
                 console.error('채팅방 로드 오류:', error);
             }
@@ -477,6 +445,9 @@ export default {
             this.currentRoomId = room.id;
             // App.vue에 현재 채팅방 알림 (알림 중복 방지용)
             this.EventBus.emit('chat-room-selected', room.id);
+            // DB 트리거(알림 생성)에서 "현재 채팅방에 있음"을 판단하는 access_page 갱신
+            // Chats.vue와 동일하게 chat:<roomId> 형태로 기록
+            this.updateChatAccessPage(room.id);
             await this.loadMessages(room.id);
         },
 
@@ -514,7 +485,7 @@ export default {
             const roomId = this.uuid();
             const room = {
                 id: roomId,
-                name: initialMessage ? this.truncateText(initialMessage, 20) : '새 대화',
+                name: initialMessage && typeof initialMessage === 'string' ? this.truncateText(initialMessage, 20) : '새 대화',
                 participants: [
                     {
                         email: 'system@uengine.org',
@@ -541,6 +512,8 @@ export default {
             this.chatRooms.unshift(room);
             this.currentRoomId = roomId;
             this.EventBus.emit('chat-room-selected', roomId);
+            this.EventBus.emit('chat-rooms-updated');
+            this.updateChatAccessPage(roomId);
             this.messages = [];
 
             return room;
@@ -553,6 +526,7 @@ export default {
                 await backend.delete(`chat_rooms/${roomId}`, { key: 'id' });
                 
                 this.chatRooms = this.chatRooms.filter(r => r.id !== roomId);
+                this.EventBus.emit('chat-rooms-updated');
                 
                 if (this.currentRoomId === roomId) {
                     if (this.chatRooms.length > 0) {
@@ -560,6 +534,7 @@ export default {
                     } else {
                         this.currentRoomId = null;
                         this.messages = [];
+                        this.EventBus.emit('chat-room-unselected');
                     }
                 }
             } catch (error) {
@@ -658,6 +633,8 @@ export default {
             // ★ 시작 시점의 roomId 캡처 (콜백에서 사용)
             const targetRoomId = this.currentRoomId;
             const targetRoom = this.currentRoom;
+            // 알림 트리거 억제용 access_page 갱신 (5분 윈도우 내 유지)
+            this.updateChatAccessPage(targetRoomId);
 
             // 사용자 메시지 추가 (이미지/PDF 정보 포함)
             const userMsgObj = this.createMessageObj(userMessage, 'user', {
@@ -795,46 +772,65 @@ export default {
                             // PDF2BPMN 작업 감지 및 events watch 시작
                             this.checkAndSubscribePdf2Bpmn(content, toolCalls, targetRoomId);
                             
-                            // 응답 파싱 및 이벤트 발생
-                            let parsed = workAssistantAgentService.parseAgentResponse(content);
-                            
-                            // 파싱 실패 시 toolCalls에서 start_process_consulting / generate_process 결과 직접 확인
-                            if (!parsed) {
-                                const toolCallForParse = toolCalls.find(tc =>
-                                    tc.name?.includes('start_process_consulting') ||
-                                    tc.name?.includes('generate_process')
-                                );
-                                if (toolCallForParse?.output) {
-                                    try {
-                                        parsed = this.parseToolOutput(toolCallForParse.output);
-                                    } catch (e) {
-                                        console.warn('[WorkAssistantChatPanel] tool output 파싱 실패:', e);
+                            // ===== 파싱 없이 toolCalls.name 기반으로 분기 =====
+                            const lastToolCall = Array.isArray(toolCalls) && toolCalls.length > 0 ? toolCalls[toolCalls.length - 1] : null;
+                            const directiveToolCall = Array.isArray(toolCalls)
+                                ? [...toolCalls].reverse().find(tc =>
+                                    typeof tc?.name === 'string' && (
+                                        tc.name.includes('start_process_consulting') ||
+                                        tc.name.includes('generate_process')
+                                    )
+                                )
+                                : null;
+
+                            // 1) 프로세스 생성 요청 → 컨설팅 모드로 전환 (현재 채팅방일 때만)
+                            if (directiveToolCall?.name?.includes('start_process_consulting') && this.currentRoomId === targetRoomId) {
+                                // 1) 먼저 toolCall.output을 파싱해서 image_analysis_result만 추출 시도
+                                // 2) 실패하면 toolCall.output 전체를 그대로 전달 (파싱 없이)
+                                let imageAnalysis = null;
+                                try {
+                                    const parsed = this.parseToolOutput(directiveToolCall.output);
+                                    if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
+                                        imageAnalysis = parsed.image_analysis_result;
                                     }
-                                }
-                            }
-                            
-                            if (parsed) {
-                                // 1) 프로세스 생성 요청 → 컨설팅 모드로 전환 (현재 채팅방일 때만)
-                                if (parsed.user_request_type === 'start_process_consulting' && this.currentRoomId === targetRoomId) {
-                                    let originalMessage = parsed.user_message || userMessage;
-                                    if (parsed.image_analysis_result) {
-                                        originalMessage = `${originalMessage}\n\n[이미지 분석 결과]\n${parsed.image_analysis_result}`;
-                                    }
-                                    console.log('[WorkAssistantChatPanel] start_process_consulting originalMessage:', originalMessage);
-                                    await this.switchToConsultingMode(originalMessage);
-                                    return;
+                                } catch (e) {
+                                    // ignore → fallback 사용
                                 }
 
-                                // 2) 컨설팅 후 생성 확정 → definitions 생성 화면으로 전환 (현재 채팅방일 때만)
-                                if (parsed.user_request_type === 'generate_process' && this.currentRoomId === targetRoomId) {
-                                    // 현재까지의 대화 내용을 store에 저장
-                                    this.$store.dispatch('updateMessages', this.messages);
-                                    // /definitions/chat로 이동
-                                    this.$router.push('/definitions/chat');
-                                    return;
+                                let originalMessage;
+                                if (imageAnalysis) {
+                                    originalMessage =
+                                        `${userMessage || ''}\n\n` +
+                                        `[이미지 분석 결과]\n${imageAnalysis}`;
+                                } else {
+                                    // 중요: input을 재구성하지 않고, toolCall.output "전체"를 파싱 없이 그대로 넘김
+                                    originalMessage =
+                                        `${userMessage || ''}\n\n` +
+                                        `[전체 요청 및 첨부 이미지 분석 내용]: ${JSON.stringify(directiveToolCall.output ?? null)}`;
                                 }
-                                
-                                this.$emit('response-parsed', parsed);
+
+                                console.log('[WorkAssistantChatPanel] start_process_consulting originalMessage:', originalMessage);
+                                await this.switchToConsultingMode(originalMessage);
+                                return;
+                            }
+
+                            // 2) 컨설팅 후 생성 확정 → definitions 생성 화면으로 전환 (현재 채팅방일 때만)
+                            if (directiveToolCall?.name?.includes('generate_process') && this.currentRoomId === targetRoomId) {
+                                // 현재까지의 대화 내용을 store에 저장
+                                this.$store.dispatch('updateMessages', this.messages);
+                                // /definitions/chat로 이동
+                                this.$router.push('/definitions/chat');
+                                return;
+                            }
+
+                            // 3) 기타 도구 호출 결과는 name 기반으로 상위 컴포넌트에 전달
+                            if (lastToolCall?.name) {
+                                this.$emit('response-parsed', {
+                                    name: lastToolCall.name,
+                                    input: lastToolCall.input || null,
+                                    output: lastToolCall.output || null,
+                                    toolCalls
+                                });
                             }
                             
                             // 현재 채팅방일 때만 스크롤
@@ -912,6 +908,56 @@ export default {
         // MCP 도구 output 파싱 (content='...' name=... 형식 처리)
         parseToolOutput(outputStr) {
             if (!outputStr) return null;
+
+            // 파싱 전, JSON 바깥(따옴표 밖)에 섞인 불필요 토큰 정리:
+            // - 실제 개행/탭 문자
+            // - content='{\\n ... \\n}' 처럼 JSON 포맷팅용으로 들어간 "\\n", "\\r", "\\t" (따옴표 밖)
+            //   ※ 따옴표 안의 "\\n"은 의미가 있을 수 있으므로 건드리지 않음
+            const sanitizeForJsonParse = (s) => {
+                if (typeof s !== 'string') return s;
+                let out = '';
+                let inString = false;
+                let escaped = false;
+
+                for (let i = 0; i < s.length; i++) {
+                    const ch = s[i];
+
+                    // 실제 개행/탭은 위치와 무관하게 제거 (JSON 파싱 안정화)
+                    if (ch === '\n' || ch === '\r' || ch === '\t') continue;
+
+                    if (inString) {
+                        out += ch;
+                        if (escaped) {
+                            escaped = false;
+                        } else if (ch === '\\') {
+                            escaped = true;
+                        } else if (ch === '"') {
+                            inString = false;
+                        }
+                        continue;
+                    }
+
+                    // 문자열 시작
+                    if (ch === '"') {
+                        inString = true;
+                        out += ch;
+                        continue;
+                    }
+
+                    // 문자열 밖에서의 "\\n" / "\\r" / "\\t" 제거 (pdf2bpmn 등)
+                    if (ch === '\\') {
+                        const next = s[i + 1];
+                        if (next === 'n' || next === 'r' || next === 't') {
+                            i++; // 다음 문자도 소비
+                            continue;
+                        }
+                    }
+
+                    out += ch;
+                }
+
+                return out.trim();
+            };
             
             // content='...' name=... 형식 처리 (Python ToolMessage repr 형식)
             if (typeof outputStr === 'string' && outputStr.startsWith('content=')) {
@@ -930,17 +976,50 @@ export default {
                     }
                     
                     if (endIdx > contentStart) {
-                        let jsonStr = outputStr.substring(contentStart, endIdx);
-                        // 이스케이프 처리 (순서 중요!)
-                        // 1. 4중 백슬래시 -> 2중 백슬래시
-                        jsonStr = jsonStr.replace(/\\\\\\\\/g, '\\\\');
-                        // 2. 2중 백슬래시+n -> 실제 개행 (\\n -> \n)
-                        jsonStr = jsonStr.replace(/\\\\n/g, '\n');
-                        // 3. 단일 백슬래시+n -> 실제 개행 (\n -> 개행문자)
-                        jsonStr = jsonStr.replace(/\\n/g, '\n');
-                        // 4. 이스케이프된 따옴표 처리
-                        jsonStr = jsonStr.replace(/\\\\"/g, '\\"');
-                        return JSON.parse(jsonStr);
+                        const raw = outputStr.substring(contentStart, endIdx);
+
+                        // 중요:
+                        // - 여기서 \\n(문자열 이스케이프)을 실제 개행 문자로 바꾸면 JSON 문자열 내부에 "control character"가 생겨 JSON.parse가 실패함
+                        // - 따라서 JSON.parse 이후(파싱된 필드 값)에 대해서만 필요한 경우 개행 정규화를 수행
+
+                        const normalizeNewlines = (val) => {
+                            if (typeof val !== 'string') return val;
+                            // "\\\\n" -> "\\n" -> "\n" 순으로 정규화
+                            return val
+                                .replace(/\\\\\\\\n/g, '\\\\n')
+                                .replace(/\\\\n/g, '\n');
+                        };
+
+                        // 1) 처음부터 불필요 토큰 제거 후 파싱 시도
+                        const rawSanitized = sanitizeForJsonParse(raw);
+                        try {
+                            const parsed = JSON.parse(rawSanitized);
+                            if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
+                                parsed.image_analysis_result = normalizeNewlines(parsed.image_analysis_result);
+                            }
+                            return parsed;
+                        } catch (e1) {
+                            // 2) ToolMessage repr에서 이스케이프가 과하게 들어온 경우만 보정 후 재시도
+                            // - 4중 백슬래시 -> 2중 백슬래시 (repr에서 흔히 발생)
+                            // - \\\" -> \" 형태로 줄여 파싱 가능성 확보
+                            let jsonStr = raw.replace(/\\\\\\\\/g, '\\\\').replace(/\\\\"/g, '\\"');
+                            try {
+                                const parsed = JSON.parse(sanitizeForJsonParse(jsonStr));
+                                if (parsed && typeof parsed === 'object' && typeof parsed.image_analysis_result === 'string') {
+                                    parsed.image_analysis_result = normalizeNewlines(parsed.image_analysis_result);
+                                }
+                                return parsed;
+                            } catch (e2) {
+                                // 3) 최후의 보루: 파싱은 실패했지만 타입만이라도 감지
+                                if (outputStr.includes('"user_request_type": "start_process_consulting"')) {
+                                    return { user_request_type: 'start_process_consulting' };
+                                }
+                                if (outputStr.includes('"user_request_type": "generate_process"')) {
+                                    return { user_request_type: 'generate_process' };
+                                }
+                                throw e2;
+                            }
+                        }
                     }
                 } catch (e) {
                     console.warn('[parseToolOutput] content= 형식 파싱 실패:', e.message);
@@ -950,7 +1029,7 @@ export default {
             // 일반 JSON 문자열
             if (typeof outputStr === 'string') {
                 try {
-                    return JSON.parse(outputStr);
+                    return JSON.parse(sanitizeForJsonParse(outputStr));
                 } catch (e) {
                     console.warn('[parseToolOutput] JSON 파싱 실패:', e.message);
                     return null;
@@ -989,6 +1068,9 @@ export default {
                     createdAt: msg.timeStamp
                 };
                 await this.putObject('chat_rooms', room);
+                // 최신 메시지 기준으로 정렬하여 "최신이 상단" 유지
+                this.chatRooms.sort((a, b) => new Date(b.message?.createdAt || 0) - new Date(a.message?.createdAt || 0));
+                this.EventBus.emit('chat-rooms-updated');
             }
         },
 
@@ -998,6 +1080,21 @@ export default {
                 await backend.putObject(`db://${path}`, obj, options);
             } catch (error) {
                 console.error('저장 오류:', error);
+            }
+        },
+
+        // 현재 사용자가 어떤 채팅방을 보고 있는지 DB(user_devices)에 기록
+        // - notifications 트리거(handle_chat_insert)가 이 값을 보고 "알림을 만들지" 결정함
+        async updateChatAccessPage(roomId) {
+            try {
+                const email = this.userInfo?.email;
+                if (!email || !roomId) return;
+                if (backend?.saveAccessPage) {
+                    await backend.saveAccessPage(email, `chat:${roomId}`);
+                }
+            } catch (e) {
+                // 알림 억제용 부가 기능이므로 실패해도 UX를 막지 않음
+                console.warn('[WorkAssistantChatPanel] saveAccessPage 실패:', e);
             }
         },
 

@@ -463,9 +463,11 @@ export default {
             this.toolList = tools;
         },
         async getSkills() {
-            const tenantInfo = await this.backend.getTenantInfo(window.$tenantName);
-            if (tenantInfo && tenantInfo.skills) {
-                this.skills = tenantInfo.skills;
+            const tenantSkills = await this.backend.getTenantSkills(window.$tenantName);
+            if (tenantSkills && tenantSkills.skills) {
+                const skills = tenantSkills.skills.map(skill => skill.name);
+                console.log(skills);
+                this.skills = skills;
             }
         },
         async fetchAgentData() {

@@ -1892,6 +1892,32 @@ class UEngineBackend implements Backend {
         return null;
     }
 
+    // Task Execution Properties - Not implemented in UEngine mode
+    async getUserInfo(): Promise<any> {
+        console.warn("getUserInfo is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async saveTaskExecutionProperties(params: any): Promise<any> {
+        console.warn("saveTaskExecutionProperties is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async updateTaskExecutionCompletion(params: any): Promise<any> {
+        console.warn("updateTaskExecutionCompletion is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async getTaskExecutionProperties(options?: any): Promise<any[]> {
+        console.warn("getTaskExecutionProperties is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async setupAgentKnowledge(params: any): Promise<any> {
+        console.warn("setupAgentKnowledge is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
 }
 
 export default UEngineBackend;

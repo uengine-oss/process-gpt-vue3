@@ -165,14 +165,6 @@
                                                 </div>
 
                                                 <div v-else>
-                                                    <div class="d-flex justify-end align-center mb-1">
-                                                        <v-avatar size="32" class="mr-2">
-                                                            <v-img :src="currentUserPicture" :alt="currentUserName" />
-                                                        </v-avatar>
-                                                        <div class="user-name">
-                                                            {{ currentUserName }}
-                                                        </div>
-                                                    </div>
                                                     <div class="d-flex justify-end">
                                                         <slot name="custom-message-actions" :message="message"></slot>
                                                         <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1">
@@ -308,15 +300,20 @@
                                                     class="ma-0 pa-0"
                                                 >
                                                     <v-row class="ma-0 pa-0 d-flex align-center mb-2">
-                                                        <v-avatar size="40" style="margin-right:10px;">
+                                                        <v-avatar size="28" style="margin-right:8px;">
                                                             <img v-if="message.role == 'system'"
-                                                                src="@/assets/images/chat/chat-icon.png" height="40"
-                                                                width="40" />
-                                                            <v-img v-else :src="getProfile(message)" :alt="message.name"
-                                                                height="40" width="40" />
+                                                                src="@/assets/images/chat/chat-icon.png" height="28"
+                                                                width="28" />
+                                                            <v-img
+                                                                v-else
+                                                                :src="getProfile(message)"
+                                                                :alt="(message.name || message.userName || message.username || message.email || 'User')"
+                                                                height="28"
+                                                                width="28"
+                                                            />
                                                         </v-avatar>
                                                         <div class="user-name">
-                                                            {{ message.role == 'system' ? 'System' : message.name }}
+                                                            {{ message.role == 'system' ? 'System' : (message.name || message.userName || message.username || message.email) }}
                                                         </div>
                                                     </v-row>
                                                 </v-row>
@@ -2137,10 +2134,42 @@ export default {
         },
         async changeImage(e) {
             const me = this;
-            const imageFile = e.target.files[0];
+            const imageFile = e?.target?.files?.[0];
+            if (!imageFile) return;
             
             if (window.location.hostname !== 'localhost') {
-                const fileName = `uploads/${Date.now()}_${imageFile.name}`;
+                const originalName = imageFile.name || '';
+                const lastDot = originalName.lastIndexOf('.');
+                const extRaw = lastDot > -1 ? originalName.slice(lastDot) : '';
+                const ext = /^\.[0-9A-Za-z]+$/.test(extRaw) ? extRaw : '';
+                // supabase 저장 경로에 한글/특수문자(공백 포함)가 있으면 400 오류가 발생할 수 있어 UUID로 대체
+                const hasUnsafeChars = !originalName || /[^0-9A-Za-z._-]/.test(originalName);
+                const uuid = (() => {
+                    try {
+                        if (typeof crypto !== 'undefined') {
+                            if (crypto.randomUUID) return crypto.randomUUID();
+                            if (crypto.getRandomValues) {
+                                const buf = new Uint8Array(16);
+                                crypto.getRandomValues(buf);
+                                // RFC4122 v4
+                                buf[6] = (buf[6] & 0x0f) | 0x40;
+                                buf[8] = (buf[8] & 0x3f) | 0x80;
+                                const hex = Array.from(buf, (b) => b.toString(16).padStart(2, '0'));
+                                return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10, 16).join('')}`;
+                            }
+                        }
+                    } catch (err) {}
+                    // 최후 fallback (형식만 UUID v4 형태)
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                        const r = (Math.random() * 16) | 0;
+                        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                        return v.toString(16);
+                    });
+                })();
+
+                const fileName = hasUnsafeChars
+                    ? `uploads/${uuid}${ext}`
+                    : `uploads/${originalName}`;
                 const data = await backend.uploadImage(fileName, imageFile);
                 if (data && data.path) {
                     const imageUrl = await backend.getImageUrl(data.path);
@@ -2214,9 +2243,6 @@ export default {
         shouldDisplayMessageTimestamp(message, index) {
             
             const prevMessage = this.filteredMessages[index - 1];
-            
-            // 이메일(보낸사람)이 다르면 true 반환
-            if (prevMessage && message.email !== prevMessage.email) return true;
             
             // 다음 메시지가 있는지 확인
             const nextMessage = index < this.filteredMessages.length - 1 ? this.filteredMessages[index + 1] : null;
