@@ -197,11 +197,8 @@ export default {
         },
         
         goToAgentChat(agentId) {
-            // 로컬스토리지에 최근 열람 정보 저장
+            // 로컬스토리지에 최근 열람 정보 저장 (화면 전환/새로고침 시 정렬에 사용)
             this.saveRecentlyViewedAgent(agentId);
-            
-            // 에이전트 목록 재정렬
-            this.agentList = this.sortAgentsByRecentlyViewed([...this.agentList]);
             
             // AgentBadgesDiagram.vue의 goToAgentChat 메서드와 동일한 방식으로 라우터 이동
             this.$router.push(`/agent-chat/${agentId}`);

@@ -289,7 +289,8 @@ class ProcessGPTBackend implements Backend {
 
             if (procDef) {
                 procDef.bpmn = xml;
-                procDef.name = options.name;
+                // name이 유효한 경우에만 업데이트 (null로 덮어쓰기 방지)
+                if (options.name) procDef.name = options.name;
             } else {
                 procDef = {
                     id: defId,
@@ -2582,11 +2583,15 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async watchChats(callback: (payload: any) => void) {
+    async watchChats(callback: (payload: any) => void, options: any = {}) {
         try {
+            const channel =
+                options?.channel ||
+                `chats-${Date.now()}-${Math.random().toString(16).slice(2)}`;
             return await storage._watch({
-                channel: 'chats',
+                channel,
                 table: 'chats',
+                filter: options?.filter || null,
             }, (payload) => {
                 callback(payload);
             });
@@ -2960,6 +2965,20 @@ class ProcessGPTBackend implements Backend {
     async fetchAgentData(endpoint: string) {
         try {
             const response = await axios.get(`/completion/multi-agent/fetch-data?agent_url=${encodeURIComponent(endpoint)}`);
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    async setupAgentKnowledge(params: {
+        agent_id: string;
+        goal?: string | null;
+        persona?: string | null;
+    }): Promise<any> {
+        try {
+            const response = await axios.post('/api/agent-feedback/setup-agent-knowledge', params);
             return response.data;
         } catch (error) {
             //@ts-ignore

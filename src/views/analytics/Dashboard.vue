@@ -415,15 +415,38 @@ const statsCards = computed(() => {
 const doughnutOptions = {
   responsive: true,
   maintainAspectRatio: true,
-  aspectRatio: 1.5,
+  aspectRatio: 1,
   plugins: {
-    legend: { display: false },
+    legend: {
+      display: true,
+      position: 'bottom',
+      labels: {
+        boxWidth: 10,
+        padding: 12,
+        font: { size: 12, weight: '500' },
+        color: '#2A3547',
+        generateLabels: (chart) => {
+          const data = chart.data
+          if (data.labels && data.datasets.length) {
+            return data.labels.map((label, i) => ({
+              text: `${label}: ${data.datasets[0].data[i]?.toLocaleString() || 0}`,
+              fillStyle: data.datasets[0].backgroundColor[i],
+              strokeStyle: data.datasets[0].backgroundColor[i],
+              lineWidth: 0,
+              hidden: false,
+              index: i
+            }))
+          }
+          return []
+        }
+      }
+    },
     tooltip: {
       backgroundColor: '#2A3547',
       titleColor: '#fff',
       bodyColor: '#fff',
-      padding: 12,
-      cornerRadius: 8
+      padding: 10,
+      cornerRadius: 6
     }
   }
 }
@@ -431,7 +454,7 @@ const doughnutOptions = {
 const lineChartOptions = {
   responsive: true,
   maintainAspectRatio: true,
-  aspectRatio: 2.5,
+  aspectRatio: 3,
   interaction: {
     intersect: false,
     mode: 'index'
@@ -442,19 +465,19 @@ const lineChartOptions = {
       backgroundColor: '#2A3547',
       titleColor: '#fff',
       bodyColor: '#fff',
-      padding: 12,
-      cornerRadius: 8
+      padding: 10,
+      cornerRadius: 6
     }
   },
   scales: {
     x: {
-      grid: { color: 'rgba(0, 0, 0, 0.05)' },
-      ticks: { color: '#707a82' }
+      grid: { color: 'rgba(0, 0, 0, 0.04)' },
+      ticks: { color: '#707a82', font: { size: 11 } }
     },
     y: {
       beginAtZero: true,
-      grid: { color: 'rgba(0, 0, 0, 0.05)' },
-      ticks: { color: '#707a82' }
+      grid: { color: 'rgba(0, 0, 0, 0.04)' },
+      ticks: { color: '#707a82', font: { size: 11 } }
     }
   }
 }
@@ -709,14 +732,14 @@ async function syncDepartments() {
       </v-row>
 
       <!-- Charts Row 1 -->
-      <v-row class="mb-2">
+      <v-row class="mb-2" align="stretch">
         <!-- Task Distribution -->
         <v-col cols="12" md="4">
-          <v-card variant="outlined" class="rounded-lg fill-height">
-            <v-card-text class="pa-5">
-              <div class="d-flex justify-space-between align-center mb-4">
-                <h3 class="text-h6 font-weight-semibold text-textPrimary">Task 배분</h3>
-                <v-chip size="small" color="primary" variant="tonal">Agent vs Human</v-chip>
+          <v-card variant="outlined" class="rounded-lg task-distribution-card">
+            <v-card-text class="pa-4">
+              <div class="d-flex justify-space-between align-center mb-3">
+                <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">Task 배분</h3>
+                <v-chip size="x-small" color="primary" variant="tonal">Agent vs Human</v-chip>
               </div>
               <div v-if="canRenderTaskDistribution && hasTaskDistributionData" class="doughnut-wrapper">
                 <Doughnut
@@ -724,25 +747,13 @@ async function syncDepartments() {
                   :chartOptions="doughnutOptions"
                 />
               </div>
-              <div v-else-if="loading" class="d-flex align-center justify-center" style="height: 180px;">
+              <div v-else-if="loading" class="d-flex align-center justify-center" style="height: 200px;">
                 <v-progress-circular indeterminate color="primary" />
               </div>
-              <div v-else class="d-flex align-center justify-center" style="height: 180px;">
+              <div v-else class="d-flex align-center justify-center" style="height: 200px;">
                 <div class="text-center">
-                  <v-icon icon="mdi-chart-donut" size="48" color="grey-lighten-1" class="mb-2" />
+                  <v-icon icon="mdi-chart-donut" size="40" color="grey-lighten-1" class="mb-2" />
                   <p class="text-body-2 text-grey100 mb-0">데이터가 없습니다</p>
-                </div>
-              </div>
-              <div v-if="hasTaskDistributionData" class="d-flex justify-center ga-6 mt-4">
-                <div class="d-flex align-center ga-2">
-                  <span class="legend-dot bg-primary"></span>
-                  <span class="text-body-2 text-grey100">Agent</span>
-                  <span class="text-body-2 font-weight-bold text-textPrimary">{{ safeTaskDistributionData.datasets[0]?.data[0] || 0 }}</span>
-                </div>
-                <div class="d-flex align-center ga-2">
-                  <span class="legend-dot bg-indigo"></span>
-                  <span class="text-body-2 text-grey100">Human</span>
-                  <span class="text-body-2 font-weight-bold text-textPrimary">{{ safeTaskDistributionData.datasets[0]?.data[1] || 0 }}</span>
                 </div>
               </div>
             </v-card-text>
@@ -751,11 +762,11 @@ async function syncDepartments() {
 
         <!-- Monthly Trend -->
         <v-col cols="12" md="8">
-          <v-card variant="outlined" class="rounded-lg fill-height">
-            <v-card-text class="pa-5">
-              <div class="d-flex justify-space-between align-center mb-4">
-                <h3 class="text-h6 font-weight-semibold text-textPrimary">월별 Task 추이</h3>
-                <v-chip size="small" color="info" variant="tonal">최근 6개월</v-chip>
+          <v-card variant="outlined" class="rounded-lg">
+            <v-card-text class="pa-4">
+              <div class="d-flex justify-space-between align-center mb-3">
+                <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">월별 Task 추이</h3>
+                <v-chip size="x-small" color="info" variant="tonal">최근 6개월</v-chip>
               </div>
               <div v-if="canRenderMonthlyTrend" class="chart-wrapper">
                 <Line
@@ -768,7 +779,7 @@ async function syncDepartments() {
               </div>
               <div v-else class="d-flex align-center justify-center" style="height: 150px;">
                 <div class="text-center">
-                  <v-icon icon="mdi-chart-line" size="48" color="grey-lighten-1" class="mb-2" />
+                  <v-icon icon="mdi-chart-line" size="40" color="grey-lighten-1" class="mb-2" />
                   <p class="text-body-2 text-grey100 mb-0">월별 데이터가 없습니다</p>
                 </div>
               </div>
@@ -1157,11 +1168,17 @@ async function syncDepartments() {
 </template>
 
 <style scoped>
+/* Task Distribution Card - compact layout */
+.task-distribution-card {
+  height: auto !important;
+}
+
 /* Chart container - Chart.js requires position: relative */
 .doughnut-wrapper {
-  height: 160px;
   position: relative;
   width: 100%;
+  max-width: 220px;
+  margin: 0 auto;
 }
 
 /* Chart wrapper class for line/bar charts */

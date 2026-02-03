@@ -142,6 +142,9 @@
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
+
+                    <!-- 대화목록 -->
+                    <ChatList />
                 </v-col>
 
 
@@ -169,6 +172,27 @@
                     </v-row>
                     <v-col class="pa-0">
                         <AgentList/>
+                    </v-col>
+                </div>
+
+                <!-- 유저 목록 (에이전트 목록 하단) -->
+                <div v-if="mode !== 'uEngine'" class="mb-4">
+                    <v-row class="align-center pa-0 ma-0">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                            {{ $t('VerticalSidebar.userList') || '유저 목록' }}
+                        </div>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                            icon
+                            variant="text"
+                            density="comfortable"
+                            @click="toggleSidebarUserSearch"
+                        >
+                            <v-icon size="18">mdi-magnify</v-icon>
+                        </v-btn>
+                    </v-row>
+                    <v-col class="pa-0">
+                        <SidebarUserList ref="sidebarUserList" />
                     </v-col>
                 </div>
 
@@ -293,6 +317,8 @@ import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
 import AgentList from '@/components/ui/AgentList.vue';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
+import SidebarUserList from '@/components/ui/SidebarUserList.vue';
+import ChatList from '@/components/ui/ChatList.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
 
@@ -312,9 +338,11 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         ProcessInstanceList,
+        ChatList,
         ProjectList,
         ProjectCreationForm,
         AgentList,
+        SidebarUserList,
         ExpandableList,
         Logo,
         NavCollapse,
@@ -398,6 +426,16 @@ export default {
     methods: {
         closeChatPanelIfOpen() {
             this.EventBus.emit('close-chat-panel');
+        },
+        toggleSidebarUserSearch() {
+            try {
+                const comp = this.$refs.sidebarUserList;
+                if (comp && typeof comp.toggleSearch === 'function') {
+                    comp.toggleSearch();
+                }
+            } catch (e) {
+                // ignore
+            }
         },
         updateNotiCount(count) {
             this.notiCount = count;
@@ -699,7 +737,7 @@ export default {
                                 menu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
-                                    title: item.definition.processDefinitionName,
+                                    title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
                                     type: 'bpmn'
@@ -759,7 +797,7 @@ export default {
                                 deletedMenu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
-                                    title: item.definition.processDefinitionName,
+                                    title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
                                     type: 'bpmn'

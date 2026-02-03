@@ -378,7 +378,9 @@ async function loadExecutionData() {
     let data: any[] = []
     try {
       const result = await olapApi.getBottleneckAnalysis(params)
-      data = Array.isArray(result) ? result : []
+      // API 응답: { success: true, data: [...] }
+      data = result?.data || []
+      console.log('[BottleneckAnalysis] ETL data loaded:', data.length, 'activities for', defId)
     } catch (err) {
       console.error('[BottleneckAnalysis] olapApi.getBottleneckAnalysis error:', err)
       data = []
@@ -414,12 +416,17 @@ function calculateActivityMetricsFromETL() {
     const avgDuration = item.avg_processing_time_sec || 0  // 이미 초 단위
     const waitingTime = item.avg_wait_time_sec || 0
 
+    // API에서 제공하는 min/max 값 사용 (없으면 추정)
+    const maxDuration = item.max_processing_time_sec ?? (avgDuration * 2)
+    const minDuration = item.min_processing_time_sec ?? (avgDuration * 0.5)
+
     // 오류율 기반 rework 추정
     const errorRate = item.error_rate_pct || 0
     const reworkRate = errorRate  // 오류율을 재작업률로 사용
 
-    // 병목 점수 계산
-    const bottleneckScore = frequency * avgDuration
+    // 병목 점수 = 총 처리시간 (자동 실행 구조에서는 처리시간이 병목)
+    // total_processing_time_sec 사용, 없으면 frequency × avgDuration
+    const bottleneckScore = item.total_processing_time_sec || (frequency * avgDuration)
 
     // FTE 계산
     const config = activityConfig.value.get(activityId) || {
@@ -451,8 +458,8 @@ function calculateActivityMetricsFromETL() {
       activityName: item.activity_name || activityId,
       frequency,
       avgDuration,
-      maxDuration: avgDuration * 2,  // 추정치 (ETL에는 max가 없음)
-      minDuration: avgDuration * 0.5,  // 추정치
+      maxDuration,
+      minDuration,
       reworkRate,
       bottleneckScore,
       completionRate,
@@ -472,10 +479,10 @@ function calculateActivityMetricsFromETL() {
     })
   })
 
-  // 정규화된 병목 점수 계산
-  const maxBottleneck = Math.max(...Array.from(metricsMap.values()).map(m => m.bottleneckScore), 1)
+  // 병목 점수를 전체 합계 대비 비율로 계산 (합이 100%가 되도록)
+  const totalBottleneck = Array.from(metricsMap.values()).reduce((sum, m) => sum + m.bottleneckScore, 0) || 1
   metricsMap.forEach(m => {
-    m.normalizedBottleneck = (m.bottleneckScore / maxBottleneck) * 100
+    m.normalizedBottleneck = (m.bottleneckScore / totalBottleneck) * 100
   })
 
   activityMetrics.value = metricsMap
@@ -559,9 +566,10 @@ function calculateActivityMetrics() {
     })
   })
 
-  const maxBottleneck = Math.max(...Array.from(metricsMap.values()).map(m => m.bottleneckScore), 1)
+  // 병목 점수를 전체 합계 대비 비율로 계산 (합이 100%가 되도록)
+  const totalBottleneck = Array.from(metricsMap.values()).reduce((sum, m) => sum + m.bottleneckScore, 0) || 1
   metricsMap.forEach(m => {
-    m.normalizedBottleneck = (m.bottleneckScore / maxBottleneck) * 100
+    m.normalizedBottleneck = (m.bottleneckScore / totalBottleneck) * 100
   })
 
   activityMetrics.value = metricsMap

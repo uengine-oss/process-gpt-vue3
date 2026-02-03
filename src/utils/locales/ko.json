@@ -372,7 +372,7 @@
         "title": "조직도 추가 및 관리",
         "cardTitle": "조직도 관리",
         "organizationChartExplanation": "대화형으로 조직도를 관리하십시오.\n 팀(부서) 롤(역할), 직원들을 등록 수정 삭제할 수 있습니다. \n예를 들어, '개발팀, 관리팀을 등록하고, 홍길동님을 신입사원으로 관리팀에 등록해줘. 역할은 개발자로 들어오셨어. 관리팀의 팀장은 아무개 팀장님이야.' 와 같은 명령을 할 수 있습니다.",
-        "addTeam": "팀 추가",
+        "addTeam": "팀 생성",
         "deleteTeam": "팀 삭제",
         "editTeam": "팀 수정",
         "teamId": "팀 ID",
@@ -389,10 +389,11 @@
         "add": "추가",
         "delete": "삭제",
         "close": "닫기",
-        "addNewUser": "신규 사용자(팀원) 추가",
-        "addNewAgent": "신규 에이전트 추가",
-        "addNewA2A": "A2A 에이전트 추가",
-        "addNewPGAgent": "ProcessGPT 에이전트 추가",
+        "addNewUser": "팀원 추가",
+        "createAgentTab": "에이전트 생성",
+        "addNewAgent": "신규 에이전트",
+        "addNewA2A": "A2A 에이전트",
+        "addNewPGAgent": "ProcessGPT 에이전트",
         "userName": "이름",
         "userEmail": "이메일",
         "idRequired": "ID를 입력해주세요.",
@@ -1630,6 +1631,8 @@
         "instanceList": "인스턴스",
         "projectList": "프로젝트",
         "agentList": "에이전트",
+        "userList": "유저 목록",
+        "userLoading": "불러오는 중...",
         "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
         "downloadDefinitionList": "정의 내보내기",
@@ -1638,7 +1641,10 @@
         "newProject": "새로운 프로젝트 생성",
         "addProject": "프로젝트 추가",
         "showMore": "더보기",
-        "showLess": "접기"
+        "showLess": "접기",
+        "chatList": "대화목록",
+        "chatLoading": "불러오는 중...",
+        "chatEmpty": "채팅방이 없습니다."
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "프로세스 실행실적",
@@ -2452,6 +2458,7 @@
             "goal": "에이전트의 목표가 설정되지 않았습니다."
         },
         "tabs": {
+            "chat": "대화 모드",
             "learning": "학습 모드",
             "question": "질의 모드",
             "actions": "액션 모드",
