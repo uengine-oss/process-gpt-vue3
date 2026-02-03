@@ -82,6 +82,8 @@ CREATE TYPE event_type_enum AS ENUM (
   'crew_completed',
   'human_asked',
   'human_response',
+  'human_checked',
+  'task_working',
   'error'
 );
 -- 이벤트 상태 enum
