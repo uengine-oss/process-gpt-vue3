@@ -1615,6 +1615,8 @@
         "instanceList": "인스턴스",
         "projectList": "프로젝트",
         "agentList": "에이전트",
+        "userList": "유저 목록",
+        "userLoading": "불러오는 중...",
         "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
         "downloadDefinitionList": "정의 내보내기",
@@ -1623,7 +1625,10 @@
         "newProject": "새로운 프로젝트 생성",
         "addProject": "프로젝트 추가",
         "showMore": "더보기",
-        "showLess": "접기"
+        "showLess": "접기",
+        "chatList": "대화목록",
+        "chatLoading": "불러오는 중...",
+        "chatEmpty": "채팅방이 없습니다."
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "프로세스 실행실적",
@@ -2437,6 +2442,7 @@
             "goal": "에이전트의 목표가 설정되지 않았습니다."
         },
         "tabs": {
+            "chat": "대화 모드",
             "learning": "학습 모드",
             "question": "질의 모드",
             "actions": "액션 모드",

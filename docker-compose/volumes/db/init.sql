@@ -328,6 +328,7 @@ create table if not exists public.chat_rooms (
     participants jsonb not null,
     message jsonb null,
     name text null,
+    primary_agent_id text null,
     tenant_id text null default public.tenant_id(),
     constraint chat_rooms_pkey primary key (id),
     constraint chat_rooms_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade

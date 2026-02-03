@@ -50,6 +50,7 @@ import { RouterView } from 'vue-router';
 import BackendFactory from "@/components/api/BackendFactory";
 import partialParse from "partial-json-parser";
 import { getMainDomainUrl } from "@/utils/domainUtils";
+import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
     components: {
@@ -68,7 +69,8 @@ export default {
         currentChatRoomId: null,
         notificationChannel: null,
         backend: null,
-        clickCount: 0
+        clickCount: 0,
+        defaultSetting: useDefaultSetting(),
     }),
     watch: {
         $route(to, from) {
@@ -203,6 +205,114 @@ export default {
                 }
             }
         },
+        async openChatFromNotification(notification) {
+            try {
+                const roomId = this.getChatRoomIdFromUrl(notification?.url) || notification?.url?.replace('/chats?id=', '');
+                if (!roomId) {
+                    if (notification?.url) this.$router.push(notification.url);
+                    return;
+                }
+
+                // 캐시 우선 사용
+                let room = null;
+                try {
+                    const idx = JSON.parse(localStorage.getItem('chatRoomIndex') || '{}');
+                    room = idx && idx[roomId] ? idx[roomId] : null;
+                } catch (e) {}
+
+                // 캐시에 없으면 fallback 조회
+                if (!room && this.backend && typeof this.backend.getChatRoom === 'function') {
+                    room = await this.backend.getChatRoom(roomId);
+                }
+
+                // 그래도 없으면 url fallback
+                if (!room) {
+                    if (notification?.url) this.$router.push(notification.url);
+                    return;
+                }
+
+                const participants = Array.isArray(room.participants) ? room.participants : [];
+                const myEmail = localStorage.getItem('email');
+                const myId = localStorage.getItem('uid') || localStorage.getItem('id');
+
+                const hasSystem = participants.some((p) => p?.id === 'system_id' || p?.email === 'system@uengine.org');
+                if (hasSystem) {
+                    const path = this.$route?.path || '';
+                    if (!path.startsWith('/definition-map')) {
+                        await this.$router.push({ path: '/definition-map' });
+                        setTimeout(() => this.EventBus.emit('open-history-room', room), 0);
+                    } else {
+                        this.EventBus.emit('open-history-room', room);
+                    }
+                } else {
+                    const explicitPrimaryAgentId = room.primary_agent_id || room.primaryAgentId || null;
+                    if (explicitPrimaryAgentId) {
+                        await this.$router.push({
+                            path: `/agent-chat/${explicitPrimaryAgentId}`,
+                            query: { roomId: room.id },
+                            hash: '#chat'
+                        });
+                    } else {
+                        const agentIds = participants
+                            .map((p) => p?.id)
+                            .filter(Boolean)
+                            .filter((id) => !!this.defaultSetting?.getAgentById?.(id));
+                        if (agentIds.length === 1) {
+                            await this.$router.push({
+                                path: `/agent-chat/${agentIds[0]}`,
+                                query: { roomId: room.id },
+                                hash: '#chat'
+                            });
+                        } else {
+                            const others = participants.filter((p) => {
+                                if (!p) return false;
+                                if (myEmail && p.email && p.email === myEmail) return false;
+                                if (myId && p.id && p.id === myId) return false;
+                                return true;
+                            });
+                            // 1:1 유저 채팅
+                            if (others.length === 1 && !this.defaultSetting?.getAgentById?.(others[0]?.id)) {
+                                const path = this.$route?.path || '';
+                                const payload = { user: others[0], roomId: room.id };
+                                if (!path.startsWith('/definition-map')) {
+                                    await this.$router.push({ path: '/definition-map' });
+                                    setTimeout(() => this.EventBus.emit('open-user-conversation', payload), 0);
+                                } else {
+                                    this.EventBus.emit('open-user-conversation', payload);
+                                }
+                            } else {
+                                // 그룹/다중 에이전트는 메인 패널로 열기
+                                const path = this.$route?.path || '';
+                                if (!path.startsWith('/definition-map')) {
+                                    await this.$router.push({ path: '/definition-map' });
+                                    setTimeout(() => this.EventBus.emit('open-history-room', room), 0);
+                                } else {
+                                    this.EventBus.emit('open-history-room', room);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 상단 채팅 noti badge에서 제거
+                window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                    detail: { type: 'chat', value: false, id: room.id || roomId }
+                }));
+                // NOTE: new 해제는 실제로 방이 열려 선택(chat-room-selected)된 시점에만 처리
+
+                // DB 알림 체크 처리(가능한 경우)
+                try {
+                    if (this.backend && typeof this.backend.setNotifications === 'function') {
+                        await this.backend.setNotifications(notification);
+                    }
+                } catch (e) {}
+            } catch (e) {
+                // 최후 fallback: 기존 url
+                try {
+                    if (notification?.url) this.$router.push(notification.url);
+                } catch (e2) {}
+            }
+        },
         showNotifications(notification){
             const email = localStorage.getItem('email');
             if (notification.user_id === email && (Notification && Notification.permission === 'granted')) {
@@ -233,15 +343,23 @@ export default {
                             console.log(e);
                         }
                     }
-                    new Notification(notiHeader, {
+                    const browserNoti = new Notification(notiHeader, {
                         body: notiBody,
                         icon: '/process-gpt-favicon.png',
                         badge: '/process-gpt-favicon.png',
                         tag: `noti-${notification.id || Date.now()}`,
                         data: { url: notification.url }
-                    }).onclick = function() {
+                    });
+                    browserNoti.onclick = async () => {
+                        // 클릭 시에도 닫기 버튼과 동일하게 즉시 닫기
+                        try { browserNoti.close(); } catch (e) {}
                         window.focus();
-                        window.location.href = notification.url;
+                        // 새로고침/전체 이동 금지: 좌측 채팅목록 클릭과 동일 동작
+                        if (notification?.type === 'chat') {
+                            await this.openChatFromNotification(notification);
+                        } else if (notification?.url) {
+                            this.$router.push(notification.url);
+                        }
                     };
                 }
             }
