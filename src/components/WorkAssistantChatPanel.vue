@@ -106,19 +106,14 @@
                 class="message-item"
                 :class="{ 'user-message': msg.role === 'user', 'assistant-message': msg.role === 'assistant' || msg.role === 'system' }"
             >
-                <div class="message-avatar">
-                    <v-avatar size="32" :color="msg.role === 'user' ? 'primary' : 'grey-lighten-2'">
-                        <v-icon size="18" :color="msg.role === 'user' ? 'white' : 'grey-darken-1'">
-                            {{ msg.role === 'user' ? 'mdi-account' : 'mdi-robot-outline' }}
-                        </v-icon>
-                    </v-avatar>
-                </div>
-                <div class="message-content">
+                <v-sheet 
+                    class="rounded-md px-3 py-3 mb-1"
+                    :class="{ 'bg-lightprimary': msg.role === 'user' }"
+                >
                     <div class="message-header">
-                        <span class="message-sender">{{ msg.role === 'user' ? '나' : 'AI 어시스턴트' }}</span>
                         <span class="message-time">{{ formatTime(msg.timeStamp) }}</span>
                     </div>
-                    <div class="message-text" v-html="formatMessage(msg.content)"></div>
+                    <div v-html="formatMessage(msg.content)" class="markdown-content"></div>
                     
                     <!-- 첨부된 이미지 표시 -->
                     <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
@@ -175,7 +170,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </v-sheet>
             </div>
 
             <!-- PDF2BPMN 진행 상황 카드 (메시지 영역 내부, 현재 채팅방) -->
@@ -272,6 +267,7 @@ import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import { getValidToken } from '@/utils/supabaseAuth.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from '@/components/ui/Chat.vue';
+import { marked } from 'marked';
 
 const backend = BackendFactory.createBackend();
 
@@ -1102,36 +1098,109 @@ export default {
         formatMessage(content) {
             if (!content) return '';
             
-            // JSON 코드 블록 처리
-            let formatted = content.replace(/```json\s*([\s\S]*?)\s*```/g, (match, json) => {
+            const trimmedText = content.trim();
+            
+            // "AI 생성중..." 텍스트 감지
+            if (trimmedText === 'AI 생성중...') {
+                const loadingText = 'AI 생성 중...';
+                const animatedChars = loadingText.split('').map((char, index) => {
+                    const safeChar = char === ' ' ? '&nbsp;' : char;
+                    return `<span class="thinking-char" style="animation-delay: ${index * 0.1}s">${safeChar}</span>`;
+                }).join('');
+                
+                return `<div class="thinking-wave-text" style="font-weight: bold;">${animatedChars}</div>`;
+            }
+            
+            const isLoadingPlaceholder = trimmedText === '...' || trimmedText === '….';
+            
+            let processedText = content;
+            
+            // JSON 객체 형식 감지 및 messageForUser 추출
+            if (trimmedText.startsWith('{') && trimmedText.endsWith('}')) {
                 try {
-                    const parsed = JSON.parse(json);
-                    return `<pre class="json-block">${JSON.stringify(parsed, null, 2)}</pre>`;
-                } catch {
-                    return `<pre class="code-block">${json}</pre>`;
+                    const jsonData = JSON.parse(trimmedText);
+                    if (jsonData.messageForUser) {
+                        processedText = jsonData.messageForUser;
+                    }
+                } catch (e) {
+                    // JSON 파싱 실패 시 원본 텍스트 사용
                 }
+            }
+            
+            // JSON 배열 형식 감지 (프로세스/인스턴스 목록)
+            if (trimmedText.startsWith('[') && trimmedText.endsWith(']')) {
+                try {
+                    const jsonArray = JSON.parse(trimmedText);
+                    if (Array.isArray(jsonArray) && jsonArray.length > 0) {
+                        return this.formatInstanceList(jsonArray);
+                    }
+                } catch (e) {
+                    // JSON 파싱 실패 시 원본 텍스트 사용
+                }
+            }
+            
+            // JSON 블록 감지
+            if (!isLoadingPlaceholder && (content.includes('processDefinitionId') || content.includes('elements'))) {
+                const codeBlockStart = content.indexOf('```');
+                if (codeBlockStart !== -1) {
+                    processedText = content.substring(0, codeBlockStart).trim();
+                }
+            }
+            
+            // marked 설정
+            marked.setOptions({
+                breaks: true,
+                gfm: true
             });
-            // let formatted = content.replace(/```json\s*([\s\S]*?)\s*```/g, "");
             
-            // 일반 코드 블록 처리
-            formatted = formatted.replace(/```(\w*)\s*([\s\S]*?)\s*```/g, '<pre class="code-block">$2</pre>');
+            // 마크다운 렌더링
+            let renderedHtml = isLoadingPlaceholder ? '' : marked(processedText);
             
-            // 마크다운 링크 형식 [텍스트](URL) 처리
-            formatted = formatted.replace(
-                /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-                '<a href="$2" target="_blank" class="message-link">$1</a>'
-            );
+            return renderedHtml;
+        },
+        
+        // 인스턴스 목록 포맷팅
+        formatInstanceList(instances) {
+            const statusMap = {
+                'RUNNING': { text: '실행중', color: '#22c55e', icon: '🟢' },
+                'COMPLETED': { text: '완료', color: '#3b82f6', icon: '🔵' },
+                'SUSPENDED': { text: '일시중지', color: '#f59e0b', icon: '🟡' },
+                'TERMINATED': { text: '종료', color: '#ef4444', icon: '🔴' }
+            };
             
-            // 일반 URL을 클릭 가능한 링크로 변환 - href=" 뒤에 있는 URL은 제외
-            formatted = formatted.replace(
-                /(?<!href=")(https?:\/\/[^\s<)\]"]+)/g,
-                '<a href="$1" target="_blank" class="message-link">$1</a>'
-            );
+            let html = '<div class="instance-list">';
             
-            // 줄바꿈 처리
-            formatted = formatted.replace(/\n/g, '<br>');
+            instances.forEach((instance, index) => {
+                const status = statusMap[instance.status] || { text: instance.status, color: '#94a3b8', icon: '⚪' };
+                const startDate = instance.startDate ? new Date(instance.startDate).toLocaleDateString('ko-KR') : '-';
+                
+                html += `
+                    <div class="instance-card">
+                        <div class="instance-card-header">
+                            <span class="instance-number">${index + 1}.</span>
+                            <span class="instance-name">${instance.instanceName || instance.processName || '-'}</span>
+                            <span class="instance-status" style="color: ${status.color};">${status.icon} ${status.text}</span>
+                        </div>
+                        <div class="instance-card-body">
+                            <div class="instance-info-row">
+                                <span class="instance-label">프로세스명:</span>
+                                <span class="instance-value">${instance.processName || '-'}</span>
+                            </div>
+                            <div class="instance-info-row">
+                                <span class="instance-label">시작일:</span>
+                                <span class="instance-value">${startDate}</span>
+                            </div>
+                            <div class="instance-info-row">
+                                <span class="instance-label">현재 활동:</span>
+                                <span class="instance-value">${instance.currentActivity || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
             
-            return formatted;
+            html += '</div>';
+            return html;
         },
 
         // 도구 이름 포맷팅
@@ -2337,7 +2406,6 @@ export default {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #f8fafc;
 }
 
 /* 채팅방 탭 */
@@ -2420,16 +2488,19 @@ export default {
 
 .message-item {
     display: flex;
-    gap: 12px;
+    margin-bottom: 12px;
 }
 
-.message-avatar {
-    flex-shrink: 0;
+.message-item.user-message {
+    justify-content: flex-end;
 }
 
-.message-content {
-    flex: 1;
-    min-width: 0;
+.message-item.assistant-message {
+    justify-content: flex-start;
+}
+
+.user-message .chat-message-bubble {
+    max-width: 70%;
 }
 
 .message-header {
@@ -2439,37 +2510,75 @@ export default {
     margin-bottom: 4px;
 }
 
-.message-sender {
-    font-weight: 600;
-    font-size: 13px;
-    color: #1e293b;
-}
-
 .message-time {
     font-size: 11px;
     color: #94a3b8;
 }
 
-.message-text {
+.markdown-content {
     font-size: 14px;
     line-height: 1.6;
     color: #334155;
     word-break: break-word;
 }
 
-.message-text :deep(.message-link) {
-    color: #3b82f6;
-    text-decoration: underline;
-    cursor: pointer;
-    word-break: break-all;
+.markdown-content :deep(p) {
+    margin: 0 0 8px 0;
 }
 
-.message-text :deep(.message-link:hover) {
-    color: #1d4ed8;
+.markdown-content :deep(p:last-child) {
+    margin-bottom: 0;
 }
 
-.message-text :deep(.json-block),
-.message-text :deep(.code-block) {
+.markdown-content :deep(h1),
+.markdown-content :deep(h2),
+.markdown-content :deep(h3),
+.markdown-content :deep(h4),
+.markdown-content :deep(h5),
+.markdown-content :deep(h6) {
+    margin: 12px 0 8px 0;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.markdown-content :deep(h1) {
+    font-size: 1.5em;
+}
+
+.markdown-content :deep(h2) {
+    font-size: 1.3em;
+}
+
+.markdown-content :deep(h3) {
+    font-size: 1.1em;
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol) {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.markdown-content :deep(li) {
+    margin: 4px 0;
+}
+
+.markdown-content :deep(blockquote) {
+    border-left: 3px solid #e2e8f0;
+    padding-left: 12px;
+    margin: 8px 0;
+    color: #64748b;
+}
+
+.markdown-content :deep(code) {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9em;
+}
+
+.markdown-content :deep(pre) {
     background: #1e293b;
     color: #e2e8f0;
     padding: 12px;
@@ -2478,6 +2587,103 @@ export default {
     font-size: 12px;
     overflow-x: auto;
     margin: 8px 0;
+}
+
+.markdown-content :deep(pre code) {
+    background: transparent;
+    padding: 0;
+}
+
+.markdown-content :deep(a) {
+    color: #3b82f6;
+    text-decoration: underline;
+    cursor: pointer;
+    word-break: break-all;
+}
+
+.markdown-content :deep(a:hover) {
+    color: #1d4ed8;
+}
+
+.markdown-content :deep(table) {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0;
+}
+
+.markdown-content :deep(th),
+.markdown-content :deep(td) {
+    border: 1px solid #e2e8f0;
+    padding: 8px;
+    text-align: left;
+}
+
+.markdown-content :deep(th) {
+    background: #f8fafc;
+    font-weight: 600;
+}
+
+.markdown-content :deep(hr) {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 12px 0;
+}
+
+/* 인스턴스 목록 스타일 */
+.markdown-content :deep(.instance-list) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.markdown-content :deep(.instance-card) {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.markdown-content :deep(.instance-card-header) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.markdown-content :deep(.instance-number) {
+    font-weight: 600;
+    color: #64748b;
+}
+
+.markdown-content :deep(.instance-name) {
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+}
+
+.markdown-content :deep(.instance-status) {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.markdown-content :deep(.instance-card-body) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.markdown-content :deep(.instance-info-row) {
+    display: flex;
+    font-size: 13px;
+}
+
+.markdown-content :deep(.instance-label) {
+    color: #64748b;
+    min-width: 80px;
+}
+
+.markdown-content :deep(.instance-value) {
+    color: #334155;
 }
 
 .tool-calls {

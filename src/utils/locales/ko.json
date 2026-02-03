@@ -1426,7 +1426,7 @@
                 }
             },
             "crewaiDeepResearch": {
-                "title": "CrewAI 협업 연구",
+                "title": "CrewAI 딥리서치",
                 "description": "다중 에이전트가 협업하여 심층적인 연구와 분석을 진행. ex) 문서 분석, 데이터 수집, 보고서 작성 (5~15분 소요)",
                 "detailDesc": {
                     "title": "여러 AI 전문가가 팀을 이루어 연구",

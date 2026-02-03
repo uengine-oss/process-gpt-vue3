@@ -471,15 +471,22 @@
                     </template>
                 </div>
                 <div class="d-flex align-center" style="gap: 4px;">
-                    <v-btn
-                        icon
-                        variant="text"
-                        size="small"
-                        :disabled="!currentChatRoomId"
-                        @click="deleteCurrentChatRoom"
-                    >
-                        <v-icon>mdi-delete-outline</v-icon>
-                    </v-btn>
+                    <v-tooltip location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                class="text-medium-emphasis"
+                                density="comfortable"
+                                :disabled="!currentChatRoomId"
+                                @click="deleteCurrentChatRoom"
+                            >
+                                <v-icon color="error">mdi-delete-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        {{ $t('chatListing.deleteChatRoom') }}
+                    </v-tooltip>
                     <v-btn
                         icon
                         variant="text"

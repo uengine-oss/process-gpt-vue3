@@ -68,7 +68,7 @@
             >
                 <div class="d-flex flex-wrap">
                     <v-btn v-for="item in agentSubTabItems"
-                        class="mr-1"
+                        class="mr-2"
                         :key="item.value"
                         variant="text"
                         color="default"

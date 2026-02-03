@@ -80,11 +80,14 @@
 ### [BLOCK:button.icon.action.v1]
 아이콘 버튼 - 삭제, 복원 등 액션 (툴팁 + mdi 아이콘).
 
+**삭제 버튼**: 아이콘 `mdi-delete-outline`, `color="error"` 적용.
+
 ```vue
 <v-tooltip location="bottom">
     <template v-slot:activator="{ props }">
         <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable">
-            <!-- 기존 @click, 아이콘 유지 -->
+            <!-- 삭제: <v-icon color="error">mdi-delete-outline</v-icon> -->
+            <!-- 기존 @click, 그 외 아이콘 유지 -->
         </v-btn>
     </template>
     <!-- 기존 툴팁 텍스트 유지 -->

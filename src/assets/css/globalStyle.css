@@ -1,3 +1,14 @@
+/* 사이드바 리스트 호버/활성화 백그라운드 (일괄 관리) */
+.sidebar-list-hover-bg:hover,
+.sidebar-list-hover-bg.sidebar-list-hover-bg--active {
+    background: rgba(var(--v-theme-primary), 0.10);
+    border-radius: 8px;
+    transform: translateX(2px);
+}
+.sidebar-list-hover-bg.sidebar-list-hover-bg--active .v-list-item-title {
+    color: rgba(0, 0, 0, 0.87);
+}
+
 h1, h2, h3, h4, h5, h6 {
     margin:0px !important;
 }
