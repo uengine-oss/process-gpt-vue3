@@ -104,6 +104,9 @@ ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials;
 ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials_updated_at;
 ALTER TABLE public.users DROP COLUMN IF EXISTS url;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alias text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS prefer_contact text DEFAULT 'none';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone_number text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone_verified boolean DEFAULT false;
 
 
 -- configuration table

@@ -138,6 +138,9 @@ create table if not exists public.users (
     agent_type text null,
     model text null,
     alias text null,
+    prefer_contact text null default 'none',
+    phone_number text null,
+    phone_verified boolean not null default false,
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -2780,3 +2783,36 @@ BEGIN
     FROM jsonb_array_elements(COALESCE(p_events, '[]'::jsonb)) AS e;
 END;
 $$;
+
+-- ==========================================
+-- Outbound Call Queue (음성/SMS 발신 대기열)
+-- ==========================================
+
+-- outbound_call_queue 테이블
+-- status 값: PENDING, RINGING, CONNECTED, COMPLETED, DISCONNECTED, NO_ANSWER, REJECTED, FAILED, EXPIRED, CANCELLED
+CREATE TABLE IF NOT EXISTS public.outbound_call_queue (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    workitem_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    tenant_id text NOT NULL,
+    status text DEFAULT 'PENDING' NOT NULL,
+    channel text NOT NULL CHECK (channel IN ('phone', 'sms')),
+    trigger_reason text,
+    scheduled_at timestamp with time zone,
+    expires_at timestamp with time zone,
+    started_at timestamp with time zone,
+    connected_at timestamp with time zone,
+    ended_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    error_message text,
+    CONSTRAINT outbound_call_queue_pkey PRIMARY KEY (id),
+    CONSTRAINT outbound_call_queue_workitem_fkey FOREIGN KEY (workitem_id) REFERENCES public.todolist(id) ON DELETE CASCADE,
+    CONSTRAINT outbound_call_queue_tenant_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_outbound_call_queue_workitem ON public.outbound_call_queue(workitem_id);
+CREATE INDEX IF NOT EXISTS idx_outbound_call_queue_user ON public.outbound_call_queue(user_id);
+CREATE INDEX IF NOT EXISTS idx_outbound_call_queue_status ON public.outbound_call_queue(status);
+CREATE INDEX IF NOT EXISTS idx_outbound_call_queue_tenant_status ON public.outbound_call_queue(tenant_id, status);

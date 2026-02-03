@@ -381,7 +381,9 @@ export default class StorageBaseSupabase {
                             profile: userData.profile,
                             uid: userData.id,
                             role: userData.role,
-                            tenant_id: userData.tenant_id
+                            tenant_id: userData.tenant_id,
+                            phone_number: userData.phone_number,
+                            prefer_contact: userData.prefer_contact
                         }
                     } else if (error) {
                         throw new StorageBaseError('error in getUserInfo', error, arguments);
