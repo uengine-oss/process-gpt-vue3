@@ -490,7 +490,8 @@
                     <v-btn
                         icon
                         variant="text"
-                        size="small"
+                        class="text-medium-emphasis"
+                        density="comfortable"
                         @click="closeChatPanel"
                     >
                         <v-icon>mdi-close</v-icon>
