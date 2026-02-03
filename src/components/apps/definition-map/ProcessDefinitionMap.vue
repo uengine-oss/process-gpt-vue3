@@ -480,13 +480,36 @@
                                 class="text-medium-emphasis"
                                 density="comfortable"
                                 :disabled="!currentChatRoomId"
-                                @click="deleteCurrentChatRoom"
+                                @click="deleteChatRoomDialog = true"
                             >
                                 <v-icon color="error">mdi-delete-outline</v-icon>
                             </v-btn>
                         </template>
                         {{ $t('chatListing.deleteChatRoom') }}
                     </v-tooltip>
+
+                    <!-- 삭제 확인 다이얼로그 -->
+                    <v-dialog v-model="deleteChatRoomDialog" max-width="400px" persistent>
+                        <v-card>
+                            <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                                {{ $t('chatListing.deleteChatRoom') }}
+                                <v-btn variant="text" density="compact" icon @click="deleteChatRoomDialog = false">
+                                    <v-icon>mdi-close</v-icon>
+                                </v-btn>
+                            </v-card-title>
+                            <v-card-text class="pa-4 pb-0">
+                                {{ $t('chatListing.deleteChatRoomConfirm') }}
+                            </v-card-text>
+                            <v-card-actions class="d-flex justify-end align-center pa-4">
+                                <v-btn variant="text" @click="deleteChatRoomDialog = false">
+                                    {{ $t('common.cancel') }}
+                                </v-btn>
+                                <v-btn color="error" rounded variant="flat" @click="confirmDeleteChatRoom">
+                                    {{ $t('common.delete') }}
+                                </v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-dialog>
                     <v-btn
                         icon
                         variant="text"
@@ -772,6 +795,7 @@ export default {
         selectedChatUser: null,
         pendingUserRoomId: null,
         currentChatRoomId: null,
+        deleteChatRoomDialog: false,
         chatPanelWidth: 500,
         isResizing: false,
         mainChatAgentInfo: {
@@ -1205,6 +1229,11 @@ export default {
         },
         handleChatRoomUnselected() {
             this.currentChatRoomId = null;
+        },
+
+        async confirmDeleteChatRoom() {
+            this.deleteChatRoomDialog = false;
+            await this.deleteCurrentChatRoom();
         },
 
         async deleteCurrentChatRoom() {

@@ -1113,8 +1113,9 @@
         "create": "Create",
         "cancel": "Cancel",
         "setting": "Setting",
-        "deleteChatRoom": "Delete Chat Room",
+        "deleteChatRoom": "Delete Chat",
         "confirmDeleteChatRoom": "Are you sure you want to delete this chat room?",
+        "deleteChatRoomConfirm": "Are you sure you want to delete this chat? Deleted chats cannot be recovered.",
         "enterChatRoomName": "Please enter a chat room name.",
         "selectAtLeastOneParticipant": "Please select at least one participant."
     },

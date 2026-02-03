@@ -163,7 +163,6 @@
 ```vue
 <v-card-actions class="d-flex justify-end align-center pa-4">
     <!-- 기존 @click, :disabled, 텍스트 유지 -->
-    <v-btn variant="text"><!-- 취소 --></v-btn>
     <v-btn color="primary" rounded variant="flat"><!-- 확인 --></v-btn>
 </v-card-actions>
 ```

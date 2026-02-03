@@ -1,15 +1,15 @@
 <template>
     <!-- 대화 목록 -->
     <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-3 ml-2">
-        {{ $t('VerticalSidebar.chatList') || '대화목록' }}
+        {{ $t('VerticalSidebar.chatList')}}
     </div>
     <div class="chat-room-list">
         <div v-if="isLoadingChatRooms" class="d-flex align-center pl-4 pr-4 py-2 text-caption text-grey">
             <v-progress-circular indeterminate color="primary" :size="16" />
-            <span class="ml-2">{{ $t('VerticalSidebar.chatLoading') || '불러오는 중...' }}</span>
+            <span class="ml-2">{{ $t('VerticalSidebar.chatLoading')}}</span>
         </div>
         <div v-else-if="chatRooms.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
-            {{ $t('VerticalSidebar.chatEmpty') || '대화가 없습니다.' }}
+            {{ $t('VerticalSidebar.chatEmpty')}}
         </div>
         <ExpandableList
             v-else
@@ -33,7 +33,7 @@
                         <template v-slot:prepend>
                             <v-avatar size="28" color="grey-lighten-3" class="chat-room-avatar">
                                 <template v-if="isHumanPrimaryRoom(room)">
-                                    <v-icon size="16" color="primary">mdi-account</v-icon>
+                                    <v-icon size="16" color="primary">mdi-chat-outline</v-icon>
                                 </template>
                                 <template v-else>
                                     <v-icon size="16" color="primary">mdi-robot-outline</v-icon>
