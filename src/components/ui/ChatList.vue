@@ -355,8 +355,18 @@ export default {
                     return true;
                 });
                 if (others.length === 1 && !this.defaultSetting?.getAgentById?.(others[0]?.id)) {
+                    let targetUser = others[0];
+                    if (!targetUser.profile && targetUser.email) {
+                        try {
+                            const userList = await backend.getUserList(null);
+                            const foundUser = userList?.find(u => u.email === targetUser.email);
+                            if (foundUser?.profile) {
+                                targetUser = { ...targetUser, profile: foundUser.profile };
+                            }
+                        } catch (e) {}
+                    }
                     const path = this.$route?.path || '';
-                    const payload = { user: others[0], roomId: room.id };
+                    const payload = { user: targetUser, roomId: room.id };
                     if (!path.startsWith('/definition-map')) {
                         await this.$router.push({ path: '/definition-map' });
                         setTimeout(() => this.EventBus.emit('open-user-conversation', payload), 0);
