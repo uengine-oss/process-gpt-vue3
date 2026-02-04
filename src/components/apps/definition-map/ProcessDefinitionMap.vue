@@ -501,9 +501,6 @@
                                 {{ $t('chatListing.deleteChatRoomConfirm') }}
                             </v-card-text>
                             <v-card-actions class="d-flex justify-end align-center pa-4">
-                                <v-btn variant="text" @click="deleteChatRoomDialog = false">
-                                    {{ $t('common.cancel') }}
-                                </v-btn>
                                 <v-btn color="error" rounded variant="flat" @click="confirmDeleteChatRoom">
                                     {{ $t('common.delete') }}
                                 </v-btn>
