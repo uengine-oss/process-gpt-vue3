@@ -15,68 +15,6 @@
                         <v-icon>mdi-alert-circle</v-icon>
                         <div class="ml-1">{{ $t('processDefinition.isReadOnlyMode') }}</div>
                     </v-row>
-                    <v-row class="ma-0 pa-0 button-container">
-                        <!-- <v-tooltip :text="description">
-                            <template v-slot:activator="{ props }">
-                                <Icons :icon="'info-line'" v-bind="props" :width="32" :height="32" />
-                            </template>
-                        </v-tooltip> -->
-                        <!-- <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
-                            <template v-slot:activator="{ props }">
-                                <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
-                            </template>
-                        </v-tooltip> -->
-                        <!-- 프로세스 실행 버튼  -->
-                        <!-- <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" @click="executeProcess" class="btn-execute"
-                                    icon variant="text"
-                                >
-                                    <Icons :icon="'play'" :width="32" :height="32" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip> -->
-                        <!-- 자동 레이아웃 버튼 -->
-                        <v-tooltip v-if="!isViewMode" :text="$t('PaletteProvider.autoLayout')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="applyAutoLayout" v-bind="props" class="btn-auto-layout"
-                                    icon variant="text"
-                                >
-                                    <v-icon class="mdi mdi-auto-fix" size="24"></v-icon>
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                        <!-- 방향 변경 버튼 -->
-                        <v-tooltip v-if="!isViewMode" :text="$t('PaletteProvider.changeOrientation')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="changeOrientation" v-bind="props" class="btn-change-orientation"
-                                    icon variant="text"
-                                >
-                                    <v-icon class="mdi mdi-crop-rotate" size="24"></v-icon>
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                        <!-- 프로세스 변수 추가 버튼 -->
-                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="openProcessVariables" v-bind="props" class="cp-process-variables btn-variables"
-                                    icon variant="text"
-                                >
-                                    <Icons :icon="'variable'" :size="24" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                        <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom"
-                                    icon variant="text"
-                                >
-                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="24" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                    </v-row>
                     <div v-show="isBpmnLoading">
                         <v-skeleton-loader
                             type="image"
@@ -112,6 +50,7 @@
                         v-on:done="handleBpmnDone"
                         @changeElement="changeElement"
                         @update:isAIGenerated="updateIsAIGenerated"
+                        @openProcessVariables="openProcessVariables"
                         :onLoadStart="onBpmnLoadStart"
                         :onLoadEnd="onBpmnLoadEnd"
                             style="height: 100%"

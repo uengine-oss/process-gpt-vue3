@@ -33,10 +33,10 @@
                         <template v-slot:prepend>
                             <v-avatar size="28" color="grey-lighten-3" class="chat-room-avatar">
                                 <template v-if="isHumanPrimaryRoom(room)">
-                                    <v-icon size="16" color="primary">mdi-chat-outline</v-icon>
+                                    <v-icon size="24" color="primary">mdi-chat-outline</v-icon>
                                 </template>
                                 <template v-else>
-                                    <v-icon size="16" color="primary">mdi-robot-outline</v-icon>
+                                    <v-icon size="24" color="primary">mdi-robot-outline</v-icon>
                                 </template>
                             </v-avatar>
                         </template>
@@ -441,14 +441,5 @@ export default {
 .chat-room-date {
     font-size: 11px;
     white-space: nowrap;
-}
-.chat-room-item :deep(.v-list-item__prepend) {
-    margin-inline-end: 8px !important;
-}
-.chat-room-item :deep(.v-list-item__append) {
-    margin-inline-start: 8px !important;
-}
-.chat-room-item :deep(.v-list-item__content) {
-    padding-inline-end: 0 !important;
 }
 </style>

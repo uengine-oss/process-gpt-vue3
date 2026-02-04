@@ -199,7 +199,7 @@
                 <!-- Analytics 타이틀 + 목록 -->
                 <div v-if="analyticsItem.length > 0" class="mb-4">
                     <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
-                        Analytics
+                        {{ $t('verticalSidebar.analytics') }}
                     </div>
                     <v-col class="pa-0">
                         <v-list-item
@@ -208,7 +208,8 @@
                             :to="item.to"
                             :disabled="item.disable"
                             density="compact"
-                            class="leftPadding"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': isAnalyticsItemActive(item) }"
                         >
                             <template v-slot:prepend>
                                 <Icons :icon="item.icon" :size="20" class="mr-2" />
@@ -424,6 +425,10 @@ export default {
         });
     },
     methods: {
+        isAnalyticsItemActive(item) {
+            if (!item || !item.to) return false;
+            return this.$route?.path === item.to;
+        },
         closeChatPanelIfOpen() {
             this.EventBus.emit('close-chat-panel');
         },
