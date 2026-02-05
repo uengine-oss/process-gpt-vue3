@@ -5,10 +5,15 @@
                 <AgentChatInfo 
                     :agentInfo="agentInfo" 
                     :activeTab="activeTab"
+                    :selectedDmnId="selectedDmnId"
                     :dmnList="dmnList"
                     :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
                     @openSkillFile="openSkillFile"
+                    @deleteAgent="handleDeleteAgent"
+                    @tabChange="activeTab = $event"
+                    @dmnChange="onDmnChange"
+                    @openNewDmn="onOpenNewDmn"
                 />
             </template>
             <template v-slot:rightpart>
@@ -23,11 +28,16 @@
                 <AgentChatInfo 
                     :agentInfo="agentInfo" 
                     :activeTab="activeTab"
+                    :selectedDmnId="selectedDmnId"
                     :isMobile="true"
                     :dmnList="dmnList"
                     :isSkillLoading="isSkillLoading"
                     @agentUpdated="handleAgentUpdated"
                     @openSkillFile="openSkillFile"
+                    @deleteAgent="handleDeleteAgent"
+                    @tabChange="activeTab = $event"
+                    @dmnChange="onDmnChange"
+                    @openNewDmn="onOpenNewDmn"
                 />
             </template>
         </AppBaseCard>
@@ -110,6 +120,12 @@ export default {
         // skill edit
         skillFile: null,
         isSkillLoading: false,
+
+        // agent id 변경 시 해시 무시하고 기본 탭만 사용
+        idJustChanged: false,
+
+        // proc_def 리얼타임 구독 (에이전트별 DMN 목록 갱신용)
+        dmnRealtimeChannel: null,
     }),
     computed: {
         id() {
@@ -131,35 +147,39 @@ export default {
     watch: {
         "$route": {
             async handler(newRoute, oldRoute) {
-                if (newRoute.query && newRoute.query.dmnId) {
-                    this.selectedDmnId = newRoute.query.dmnId;
-                } else {
-                    this.selectedDmnId = null;
+                const isAgentChat = (r) => r?.path?.startsWith?.('/agent-chat/');
+
+                if (!isAgentChat(newRoute)) {
+                    // 다른 라우트로 나가는 경우: 정리만, replace/로딩 금지
+                    this.unsubscribeDmnRealtime();
+                    return;
                 }
-                if (newRoute.hash) this.activeTab = newRoute.hash.replace('#', '');
-                
-                // agent ID가 변경된 경우에만 agentInfo와 init 호출
-                if (newRoute.params.id !== oldRoute.params.id) {
+
+                // 이하: newRoute는 반드시 /agent-chat/:id
+                const idChanged = isAgentChat(oldRoute) && (oldRoute.params?.id !== newRoute.params?.id);
+
+                if (idChanged) {
+                    // 에이전트 채팅 내부에서 id만 변경: 쿼리/해시 없이 path만 유지
+                    this.selectedDmnId = null;
+                    this.idJustChanged = true;
+                    await this.$router.replace({
+                        path: `/agent-chat/${newRoute.params.id}`
+                    }).catch(() => {});
+                }
+
+                if (idChanged) {
                     this.agentInfo = this.defaultSetting.getAgentById(newRoute.params.id);
                     if (!this.agentInfo) {
                         this.agentInfo = await this.backend.getUserById(newRoute.params.id);
                     }
                     await this.init();
+                    this.subscribeDmnRealtime(newRoute.params.id);
                 }
             },
             deep: true
         },
         activeTab: {
-            async handler(newVal, oldVal) {
-                // 초기 로딩이 아닌 경우에만 URL 해시 업데이트
-                // 하지만 이미 $router.push로 변경된 경우는 제외
-                if (newVal && oldVal !== '' && !this.isInitializing) {
-                    const currentHash = window.location.hash.replace('#', '');
-                    if (currentHash !== newVal) {
-                        window.location.hash = newVal;
-                    }
-                }
-                
+            async handler(newVal) {
                 const handler = this.tabHandlers?.[newVal];
                 if (handler && typeof handler.activate === 'function') {
                     await handler.activate();
@@ -190,16 +210,25 @@ export default {
         this.setupTabHandlers();
         this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
         await this.init();
+        this.subscribeDmnRealtime(this.id);
 
-        this.EventBus.on('dmn-saved', async (data) => {
+        this.EventBus.on('dmn-saved', (data) => {
+            // 현재 에이전트 소유의 DMN 저장일 때만 탭 전환 (클릭 없이 다른 에이전트 화면이 바뀌지 않도록)
+            if (data?.owner != null && data.owner !== this.agentInfo?.id) return;
             this.selectedDmnId = data.id;
-            this.$router.push({ query: { dmnId: data.id }, hash: '#dmn-modeling' });
+            this.activeTab = 'dmn-modeling';
         });
 
-        this.EventBus.on('dmn-deleted', () => {
+        this.EventBus.on('dmn-deleted', (data) => {
+            // 현재 에이전트 소유의 DMN 삭제일 때만 탭/목록 갱신
+            if (data?.owner != null && data.owner !== this.agentInfo?.id) return;
             this.selectedDmnId = null;
-            this.$router.push({ query: {}, hash: '#' + this.activeTab });
+            this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
+            this.getDMNList();
         });
+    },
+    beforeUnmount() {
+        this.unsubscribeDmnRealtime();
     },
     methods: {
         /**
@@ -302,37 +331,68 @@ export default {
         },
 
         async init() {
-            // 중복 호출 방지
             if (this.isInitializing) return;
             this.isInitializing = true;
-            
             try {
-                let selectedTab = '';
-                if (this.$route.query && this.$route.query.dmnId) {
-                    this.selectedDmnId = this.$route.query.dmnId;
-                    selectedTab = 'dmn-modeling';
-                } else {
-                    // URL 해시가 있으면 해당 탭으로, 없으면 기본 탭으로 설정
-                    const hashTab = window.location.hash.replace('#', '');
-                    
-                    // 해시가 있고 유효한 탭이면 해시 우선
-                    if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
-                        selectedTab = hashTab;
-                    } else {
-                        // 해시가 없거나 유효하지 않으면 기본 탭
-                        selectedTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
-                        // 기본 탭으로 설정할 때는 해시도 업데이트 (router.push 사용)
-                        this.$router.push({ hash: '#' + selectedTab });
-                    }
+                const defaultTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
+                if (this.idJustChanged) {
+                    this.idJustChanged = false;
+                    this.selectedDmnId = null;
                 }
-
-                // activeTab 설정
-                this.activeTab = selectedTab;
-                
+                this.activeTab = defaultTab;
                 await this.getDMNList();
             } finally {
                 this.isInitializing = false;
             }
+        },
+
+        /** 탭 내 클릭으로 DMN 선택 시에만 비즈니스 규칙 화면으로 전환 (init/에이전트 전환 시 자동 호출 방지) */
+        onDmnChange(dmnId) {
+            this.selectedDmnId = dmnId;
+            if (dmnId != null) {
+                this.activeTab = 'dmn-modeling';
+            }
+        },
+        /** 새 비즈니스 규칙 만들기(plus) 클릭 시에만 호출 */
+        onOpenNewDmn() {
+            this.selectedDmnId = null;
+            this.activeTab = 'dmn-modeling';
+        },
+
+        /** 에이전트 삭제 (에이전트 페이지 편집 화면에서 삭제 버튼 확인 시) */
+        async handleDeleteAgent(editNode) {
+            const agentId = editNode?.data?.id || editNode?.id;
+            if (!agentId) return;
+            const ok = await this.deleteAgent(agentId);
+            if (!ok) return;
+            // 저장된 조직도(configuration)에서도 해당 에이전트 노드 제거 (조직도 페이지 로드 시 반영되도록)
+            try {
+                const data = await this.backend.getData('db://configuration', { match: { key: 'organization' } });
+                if (data && data.value && data.value.chart && data.value.chart.children) {
+                    const chart = data.value.chart;
+                    chart.children = this.removeNodeFromTree(chart.children, agentId);
+                    const putObj = {
+                        key: 'organization',
+                        value: { chart },
+                        ...(data.uuid && { uuid: data.uuid })
+                    };
+                    await this.backend.putObject('db://configuration', putObj, { onConflict: 'key,tenant_id' });
+                }
+            } catch (e) {
+                console.error('[AgentChat] 조직도에서 에이전트 노드 제거 실패:', e);
+            }
+            this.$router.push('/organization');
+        },
+        /** 트리에서 targetId 노드 제거 후 반환 (재귀) */
+        removeNodeFromTree(children, targetId) {
+            if (!children) return children;
+            if (children.some(item => item.id === targetId)) {
+                return children.filter(item => item.id !== targetId);
+            }
+            return children.map(item => ({
+                ...item,
+                children: item.children ? this.removeNodeFromTree(item.children, targetId) : item.children
+            }));
         },
 
         // agent update handler
@@ -391,6 +451,32 @@ export default {
             } else {
                 this.dmnList = [];
             }
+        },
+
+        /** proc_def 리얼타임 구독: backend.watchData 재사용, 해당 에이전트의 DMN 추가/삭제 시 목록 갱신 */
+        async subscribeDmnRealtime(agentId) {
+            this.unsubscribeDmnRealtime();
+            if (!agentId || typeof this.backend.watchData !== 'function') return;
+            try {
+                const channel = `agent-dmn-${agentId}-${Date.now()}`;
+                const callback = (payload) => {
+                    const isDmn = (row) => row && row.type === 'dmn';
+                    if (isDmn(payload.new) || isDmn(payload.old)) {
+                        this.getDMNList();
+                    }
+                };
+                this.dmnRealtimeChannel = await this.backend.watchData('proc_def', channel, callback, { filter: `owner=eq.${agentId}` });
+            } catch (e) {
+                console.warn('[AgentChat] watchData(proc_def) 실패:', e);
+            }
+        },
+
+        /** proc_def 리얼타임 구독 해제 (window.$supabase 사용 가능) */
+        unsubscribeDmnRealtime() {
+            if (this.dmnRealtimeChannel && window.$supabase) {
+                window.$supabase.removeChannel(this.dmnRealtimeChannel);
+            }
+            this.dmnRealtimeChannel = null;
         },
 
         // skills

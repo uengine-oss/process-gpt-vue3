@@ -366,6 +366,10 @@ export default {
         if (this.selectedTeam) {
             this.selectTeam();
         }
+        this.EventBus.on('agentAdded', this.resetAgentForm);
+    },
+    beforeUnmount() {
+        this.EventBus.off('agentAdded', this.resetAgentForm);
     },
     methods: {
         openTeamDialog(type) {
@@ -470,6 +474,28 @@ export default {
             this.$emit('closeDialog');
             this.dialogReset = true;
             // 다음 tick에서 false로 설정하여 다음 dialog open을 위해 준비
+            this.$nextTick(() => {
+                this.dialogReset = false;
+            });
+        },
+        resetAgentForm() {
+            // 에이전트 추가 후 좌측 입력 필드 초기화 (새 에이전트 연속 생성 가능)
+            Object.assign(this.newAgent, {
+                id: '',
+                name: '',
+                role: '',
+                goal: '',
+                persona: '',
+                endpoint: '',
+                description: '',
+                tools: '',
+                alias: '',
+                type: 'agent'
+            });
+            this.newAgent.pid = this.selectedTeam ? this.selectedTeam.id : '';
+            this.newAgent.img = '/images/chat-icon.png';
+            this.newAgent.isAgent = true;
+            this.dialogReset = true;
             this.$nextTick(() => {
                 this.dialogReset = false;
             });

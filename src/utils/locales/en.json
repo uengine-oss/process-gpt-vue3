@@ -271,7 +271,7 @@
         "addTeamFailed": "Failed to add team.",
         "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
         "agent": "Agent",
-        "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
+        "deleteAgentExplanation": "Are you sure you want to delete? When you delete, this agent will also be removed from the organization chart. Deleted agents cannot be recovered.",
         "oauth": "OAuth Settings",
         "aliasRequired": "Please enter your alias.",
         "aliasAlreadyExists": "Alias already exists."
@@ -591,7 +591,6 @@
         "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?",
         "skills": "Skills",
         "taskCatalog": "Task Catalog",
-        "tenantManage": "Tenant Manage",
         "orgChartGroup": "Org Groups"
     },
     "orgChartGroup": {
@@ -1454,6 +1453,8 @@
         "instanceList": "Instance",
         "projectList": "Project",
         "agentList": "Agent",
+        "skills": "Skills",
+        "addSkill": "Add skill",
         "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
@@ -2210,6 +2211,29 @@
         "empty": "No registered agents",
         "loadFailed": "Failed to load agent list"
     },
+    "SkillList": {
+        "title": "Skill List",
+        "loading": "Loading skills...",
+        "empty": "No registered skills",
+        "loadFailed": "Failed to load skill list"
+    },
+    "SkillDetail": {
+        "title": "Skill Detail",
+        "loading": "Loading skill...",
+        "loadError": "Failed to load skill",
+        "noFiles": "No files in this skill",
+        "selectFile": "Select a file from the tree to edit",
+        "addFolder": "Add folder",
+        "addFile": "Add file",
+        "filesTab": "Files",
+        "graphTab": "Graph",
+        "graphLoading": "Building reference graph...",
+        "graphLoadError": "Failed to build reference graph",
+        "graphEmpty": "No reference graph (no markdown files or links)",
+        "usedByTitle": "Used by agents",
+        "usedByLoading": "Loading agents...",
+        "usedByEmpty": "No agents are using this skill."
+    },
     "AgentChatInfo": {
         "expand": "Show more",
         "collapse": "Show less",
@@ -2345,7 +2369,10 @@
         "tools": "Tools & Skills",
         "knowledge": "Knowledge Ontology",
         "achievements": "Achievements & Badges",
-        "settings": "Settings"
+        "settings": "Settings",
+        "knowledgeSetupPending": "Setting up initial knowledge...",
+        "knowledgeSetupSuccess": "Initial knowledge has been set.",
+        "knowledgeSetupError": "Failed to set initial knowledge."
     },
     "Gantt": {
         "description": "Description",
@@ -2456,7 +2483,6 @@
         "addTask": "Add Task",
         "editTask": "Edit Task",
         "taskName": "Task Name",
-        "taskType": "Task Type",
         "system": "System (OSS)",
         "level": "Level",
         "properties": "Properties",
@@ -2553,5 +2579,34 @@
         "queryPlaceholder": "e.g., Show me the number of completed instances this month",
         "generatedSql": "Generated SQL",
         "queryResult": "Query Result"
+    },
+    "SkillsManagement": {
+        "title": "Skills List Management",
+        "description": "Add or remove skills here. Click a skill to open it and edit its files.",
+        "viewAs": "View as",
+        "viewTable": "Table",
+        "viewCard": "Card",
+        "viewTableHint": "Show skills in a table",
+        "viewCardHint": "Show skills as cards",
+        "addSkill": "Add skill",
+        "addFromZip": "Upload ZIP",
+        "addFromZipHint": "Upload a .zip file containing skill files",
+        "addFromRepo": "From Repository",
+        "addFromRepoHint": "Add from a Git repository URL",
+        "repositoryUrl": "Repository URL",
+        "skillName": "Skill name",
+        "skillDescription": "Skill description",
+        "usedByAgents": "Used by",
+        "usedByAgentsSuffix": "agents",
+        "empty": "Add your first skill using one of the options below.",
+        "emptyTitle": "No skills yet",
+        "openSkill": "Open and edit files",
+        "openToEdit": "Open to edit",
+        "deleteTitle": "Delete skill",
+        "deleteMessage": "This skill will be removed. This cannot be undone.",
+        "uploading": "Uploading skill...",
+        "uploadSuccess": "Skill added successfully.",
+        "deleting": "Deleting...",
+        "deleteSuccess": "Skill deleted successfully."
     }
 }
