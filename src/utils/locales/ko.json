@@ -1936,7 +1936,9 @@
         "cancel": "취소"
     },
     "Checkpoints": {
-        "checkpoints": "체크포인트"
+        "checkpoints": "체크포인트",
+        "pleaseCheckAll": "체크포인트를 모두 확인해주세요.",
+        "checkBottomArea": "작업영역 하단의 체크포인트를 확인해 주세요."
     },
     "auth": {
         "emailRateLimitExceeded": "연결된 Supabase 의 SMTP 설정을 변경하여 이메일 전송 한도를 변경하거나 잠시 뒤에 다시 시도해주세요.\n\nSMTP 설정은 Supabase 대시보드의 Project Settings > Authentication > SMTP Settings 섹션에서 확인하실 수 있습니다.",
@@ -2699,12 +2701,23 @@
         "download": "다운로드",
         "delete": "삭제",
         "uploadComplete": "업로드 완료",
-        "uploading": "업로드 중",
+        "uploading": "업로드중...",
+        "complete": "완료",
+        "failed": "실패",
         "close": "닫기",
         "uploadSuccess": "파일이 업로드되었습니다.",
         "unsupportedFileType": "은 지원되지 않는 파일 형식입니다.",
         "fileTooLarge": "파일이 너무 큽니다. (최대 50MB)",
         "fileDeleted": "파일이 삭제되었습니다."
+    },
+    "FormRealtimeAssistant": {
+        "title": "음성 에이전트",
+        "connected": "연결됨",
+        "connecting": "연결 중",
+        "disconnected": "연결 안 됨",
+        "responding": "응답 중",
+        "micOn": "마이크 ON",
+        "inputPlaceholder": "메시지를 입력하거나 마이크로 말해보세요."
     },
     "processDialog": {
         "editProcess": "프로세스 수정",

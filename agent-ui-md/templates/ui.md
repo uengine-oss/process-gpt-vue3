@@ -226,6 +226,56 @@
 
 ---
 
+## 칩
+
+### [BLOCK:chip.status.v1]
+상태 표시용 칩 (완료, 실패, 경고 등).
+
+```vue
+<v-chip size="small" color="success" variant="tonal">완료</v-chip>
+<v-chip size="small" color="error" variant="tonal">실패</v-chip>
+<v-chip size="small" color="warning" variant="tonal">경고</v-chip>
+<v-chip size="small" color="info" variant="tonal">정보</v-chip>
+```
+
+### [BLOCK:chip.count.v1]
+카운트 표시용 칩 (i18n 파라미터 활용).
+
+```vue
+<v-chip size="small" color="warning" variant="tonal">
+    {{ $t('namespace.totalCount', { count: items.length }) }}
+</v-chip>
+```
+
+### [BLOCK:chip.label.v1]
+라벨/태그용 칩 (x-small 사이즈).
+
+```vue
+<v-chip size="x-small" color="primary" variant="tonal">라벨</v-chip>
+```
+
+---
+
+## 프로그레스 바
+
+### [BLOCK:progress.linear.wave.v1]
+업로드/로딩 진행률 표시 (물결 애니메이션 포함).
+
+- **클래스**: `progress-wave-animation` (globalStyle.css 정의)
+- **진행률 매핑**: 업로드 0~100% → 표시 0~95%, 서버 응답 완료 시 100%
+
+```vue
+<v-progress-linear
+    :model-value="progress"
+    color="primary"
+    height="8"
+    rounded
+    class="progress-wave-animation"
+></v-progress-linear>
+```
+
+---
+
 ## 레이아웃
 
 ### [BLOCK:alert.info.v1]

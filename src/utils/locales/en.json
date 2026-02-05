@@ -1776,7 +1776,9 @@
         "cancel": "Cancel"
     },
     "Checkpoints": {
-        "checkpoints": "Checkpoints"
+        "checkpoints": "Checkpoints",
+        "pleaseCheckAll": "Please check all checkpoints.",
+        "checkBottomArea": "Please review the checkpoints at the bottom of the work area."
     },
     "auth": {
         "emailRateLimitExceeded": "Please change the SMTP settings of the connected Supabase to adjust the email sending limit or try again later.\n\nYou can find the SMTP settings in the Supabase dashboard under Project Settings > Authentication > SMTP Settings.",
@@ -2490,12 +2492,23 @@
         "download": "Download",
         "delete": "Delete",
         "uploadComplete": "Upload Complete",
-        "uploading": "Uploading",
+        "uploading": "Uploading...",
+        "complete": "Done",
+        "failed": "Failed",
         "close": "Close",
         "uploadSuccess": "File uploaded successfully.",
         "unsupportedFileType": " is an unsupported file type.",
         "fileTooLarge": "File is too large. (Maximum 50MB)",
         "fileDeleted": "File deleted successfully."
+    },
+    "FormRealtimeAssistant": {
+        "title": "Voice Agent",
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "disconnected": "Disconnected",
+        "responding": "Responding",
+        "micOn": "Mic ON",
+        "inputPlaceholder": "Type a message or speak with the microphone."
     },
     "processDialog": {
         "editProcess": "Edit Process",

@@ -8,13 +8,13 @@
             </div>
         </div>
         <!-- Edit mode controls -->
-        <div v-if="!isViewMode" class="font-size-controls ga-4">
+        <div v-if="!isViewMode" class="font-size-controls ga-3">
             <v-icon @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-decrease</v-icon>
             <span class="font-size-value">{{ labelFontSize }}px</span>
             <v-icon @click="increaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-increase</v-icon>
             <span class="controls-divider">|</span>
             <v-icon @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
-            <v-icon @click="applyAutoLayout" style="color: #444; cursor: pointer;" size="20">mdi-auto-fix</v-icon>
+            <v-icon @click="applyAutoLayout" style="color: #444; cursor: pointer; padding-bottom: 3px;" size="20">mdi-auto-fix</v-icon>
             <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
             <v-icon @click="$emit('openProcessVariables')" style="color: #444; cursor: pointer;" size="20">mdi-variable</v-icon>
             <Icons @click="$globalState.methods.toggleZoom()" :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="20" style="cursor: pointer;" />
@@ -1555,10 +1555,9 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.7); /* opacity 적용된 백그라운드 */
   padding: 4px 8px;
   border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   z-index: 10;
 }
 

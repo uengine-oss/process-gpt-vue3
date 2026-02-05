@@ -8,7 +8,7 @@
             <v-spacer></v-spacer>
             <div v-if="!allChecked && showWarning" class="text-warning font-weight-medium">
                 <v-icon class="mr-1" size="small">mdi-alert</v-icon>
-                체크포인트를 모두 확인해주세요.
+                {{ $t('Checkpoints.pleaseCheckAll') }}
             </div>
         </v-row>
         <div v-for="(checkpoint, index) in checkpoints" :key="index" class="mt-2">

@@ -660,7 +660,11 @@ export default {
                 if(this.isSimulate == 'true') {
                     this.isLoading = false;
                 }
-                // 경고 메시지 표시
+                // 경고 메시지 표시 (스낵바)
+                this.$try({
+                    action: async () => {},
+                    warningMsg: this.$t('Checkpoints.checkBottomArea')
+                });
                 this.$refs.checkpoints.showWarning = true;
                 // 체크포인트 컴포넌트로 스크롤
                 this.$nextTick(() => {
