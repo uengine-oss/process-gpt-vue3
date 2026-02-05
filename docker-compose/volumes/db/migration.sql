@@ -1916,3 +1916,26 @@ BEGIN
         RAISE NOTICE 'todolist.agent_orch is already text or column does not exist';
     END IF;
 END $$;
+
+
+
+
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS skill_name TEXT;
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+insert into public.agent_skills (user_id, tenant_id, skill_name)
+select distinct
+  u.id,
+  u.tenant_id,
+  trim(s) as skill_name
+from public.users u,
+     unnest(string_to_array(u.skills, ',')) as s
+where u.agent_type = 'agent'
+  and u.is_agent = true
+  and u.skills is not null
+  and trim(u.skills) <> ''
+  and trim(s) <> ''
+on conflict (user_id, tenant_id, skill_name) do nothing;

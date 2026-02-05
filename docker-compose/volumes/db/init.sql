@@ -2780,3 +2780,18 @@ BEGIN
     FROM jsonb_array_elements(COALESCE(p_events, '[]'::jsonb)) AS e;
 END;
 $$;
+
+
+-- Agent Skills 테이블 생성
+create table if not exists public.agent_skills (
+  user_id uuid not null,
+  tenant_id text not null,
+  skill_name text not null,
+  created_at timestamptz null default now(),
+  constraint agent_skills_pkey primary key (user_id, tenant_id, skill_name),
+  constraint agent_skills_user_fkey foreign key (user_id, tenant_id)
+    references public.users (id, tenant_id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_agent_skills_tenant_skill
+  on public.agent_skills (tenant_id, skill_name);

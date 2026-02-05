@@ -1,3 +1,5 @@
+# Process-GPT + Supabase
+
 services:
   frontend:
     image: ghcr.io/uengine-oss/process-gpt:latest
@@ -18,7 +20,7 @@ services:
       SUPABASE_KEY: ${SERVICE_ROLE_KEY}
       SUPABASE_JWT_SECRET: ${JWT_SECRET}
       DB_NAME: ${DB_NAME:-${POSTGRES_DB}}
-      DB_USER: ${DB_USER:-${POSTGRES_USER}}
+      DB_USER: supabase_admin
       DB_PASSWORD: ${DB_PASSWORD:-${POSTGRES_PASSWORD}}
       DB_HOST: ${DB_HOST:-${POSTGRES_HOST}}
       DB_PORT: ${DB_PORT:-${POSTGRES_PORT}}
@@ -27,6 +29,9 @@ services:
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USERNAME: ${SMTP_USERNAME:-${SMTP_USER}}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-${SMTP_PASS}}
+    depends_on:
+      - db
+      - rest
 
   polling-service:
     image: ghcr.io/uengine-oss/process-gpt-polling-service:latest
@@ -47,6 +52,7 @@ services:
     depends_on:
       - completion
       - memento
+      - db
 
   memento:
     image: ghcr.io/uengine-oss/process-gpt-memento:latest
@@ -56,6 +62,9 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SERVICE_ROLE_KEY}
+    depends_on:
+      - db
+      - rest
 
   crewai-action:
     image: ghcr.io/uengine-oss/crewai-action:latest
@@ -63,14 +72,60 @@ services:
       - "8001:8000"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SERVICE_ROLE_KEY}
+      ENV: ${ENV}
+      DB_NAME: ${DB_NAME:-${POSTGRES_DB}}
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${DB_PASSWORD:-${POSTGRES_PASSWORD}}
+      DB_HOST: ${DB_HOST:-${POSTGRES_HOST}}
+      DB_PORT: ${DB_PORT:-${POSTGRES_PORT}}
+    depends_on:
+      - db
+      - rest
 
   crewai-deep-research:
-    image: ghcr.io/uengine-oss/crewai-deep-research:latest
+    image: ghcr.io/uengine-oss/crewai-deep-research:b82f8b0
     ports:
       - "8002:8002"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SERVICE_ROLE_KEY}
+      ENV: ${ENV}
+      DB_NAME: ${DB_NAME:-${POSTGRES_DB}}
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${DB_PASSWORD:-${POSTGRES_PASSWORD}}
+      DB_HOST: ${DB_HOST:-${POSTGRES_HOST}}
+      DB_PORT: ${DB_PORT:-${POSTGRES_PORT}}
+    depends_on:
+      - db
+      - rest
 
+  fcm-service:
+    image: ghcr.io/uengine-oss/fcm-service:latest
+    ports:
+      - "8666:8666"
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SERVICE_ROLE_KEY}
+      SUPABASE_JWT_SECRET: ${JWT_SECRET}
+      DB_NAME: ${DB_NAME:-${POSTGRES_DB}}
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${DB_PASSWORD:-${POSTGRES_PASSWORD}}
+      DB_HOST: ${DB_HOST:-${POSTGRES_HOST}}
+      DB_PORT: ${DB_PORT:-${POSTGRES_PORT}}
+      ENV: ${ENV}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8666/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - db
+      - rest
+    
   openai-deep-research:
     image: ghcr.io/uengine-oss/openai-deep-research:latest
     ports:
@@ -86,6 +141,9 @@ services:
       DB_HOST: ${DB_HOST:-${POSTGRES_HOST}}
       DB_PORT: ${DB_PORT:-${POSTGRES_PORT}}
       ENV: ${ENV}
+    depends_on:
+      - db
+      - rest
 
   browser-use:
     image: ghcr.io/uengine-oss/process-gpt-browser-server:latest
@@ -104,6 +162,9 @@ services:
       SUPABASE_KEY: ${SERVICE_ROLE_KEY}
       SUPABASE_ANON_KEY: ${ANON_KEY}
       ENV: ${ENV}
+    depends_on:
+      - db
+      - rest
 
   react-voice-agent:
     image: ghcr.io/uengine-oss/react-voice-agent:latest
@@ -113,6 +174,9 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_KEY: ${SERVICE_ROLE_KEY}
+    depends_on:
+      - db
+      - rest
 
   work-assistant-agent:
     image: ghcr.io/uengine-oss/work-assistant-agent:latest
@@ -134,6 +198,9 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    depends_on:
+      - db
+      - rest
 
   claude-skills:
     image: ghcr.io/uengine-oss/claude-skills:latest
@@ -166,8 +233,13 @@ services:
       - "6789:6789"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SERVICE_ROLE_KEY}
+    depends_on:
+      - db
+      - rest
 
-  analytic:
+  process-gpt-analytic:
     image: ghcr.io/uengine-oss/process-gpt-analytic:latest
     ports:
       - "8009:8000"
@@ -186,27 +258,9 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
-
-  fcm-service:
-    image: ghcr.io/uengine-oss/fcm-service:latest
-    ports:
-      - "8666:8666"
-    environment:
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_KEY: ${SERVICE_ROLE_KEY}
-      SUPABASE_JWT_SECRET: ${JWT_SECRET}
-      DB_NAME: ${DB_NAME:-${POSTGRES_DB}}
-      DB_USER: ${DB_USER:-${POSTGRES_USER}}
-      DB_PASSWORD: ${DB_PASSWORD:-${POSTGRES_PASSWORD}}
-      DB_HOST: ${DB_HOST:-${POSTGRES_HOST}}
-      DB_PORT: ${DB_PORT:-${POSTGRES_PORT}}
-      ENV: ${ENV}
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8666/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+    depends_on:
+      - db
+      - rest
 
   langchain-react:
     image: ghcr.io/uengine-oss/langchain-react:latest
@@ -225,9 +279,12 @@ services:
       DB_PORT: ${DB_PORT:-${POSTGRES_PORT}}
       PERPLEXITY_MODEL: "sonar"
       MODEL: "gpt-4.1"
+    depends_on:
+      - db
+      - rest
 
-  pdf2bpmn-api:
-    image: ghcr.io/uengine-oss/pdf2bpmn:latest
+  bpmn-extractor:
+    image: ghcr.io/uengine-oss/process-gpt-bpmn-extractor:main
     command: ["python", "run.py", "api", "--host", "0.0.0.0", "--port", "8001"]
     ports:
       - "8012:8001"
@@ -249,6 +306,9 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    depends_on:
+      - db
+      - rest
 
   nginx:
     image: nginx:latest
@@ -267,7 +327,8 @@ services:
       - claude-skills
       - fcm-service
       - langchain-react
-      - pdf2bpmn-api
+      - bpmn-extractor
+      - process-gpt-analytic
 
   # Supabase
   studio:
@@ -328,6 +389,9 @@ services:
   auth:
     container_name: supabase-auth
     image: supabase/gotrue:v2.177.0
+    depends_on:
+      - db
+      - nginx
     healthcheck:
       test:
         [
@@ -376,6 +440,17 @@ services:
       GOTRUE_MAILER_URLPATHS_RECOVERY: ${MAILER_URLPATHS_RECOVERY}
       GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: ${MAILER_URLPATHS_EMAIL_CHANGE}
 
+      # Custom email subjects (optional)
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: ${MAILER_SUBJECTS_CONFIRMATION}
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: ${MAILER_SUBJECTS_RECOVERY}
+      GOTRUE_MAILER_SUBJECTS_INVITE: ${MAILER_SUBJECTS_INVITE}
+      GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: ${MAILER_SUBJECTS_EMAIL_CHANGE}
+      # Custom email template URLs (Auth fetches HTML from these; internal URL for nginx-served templates)
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: ${MAILER_TEMPLATES_CONFIRMATION}
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: ${MAILER_TEMPLATES_RECOVERY}
+      GOTRUE_MAILER_TEMPLATES_INVITE: ${MAILER_TEMPLATES_INVITE}
+      GOTRUE_MAILER_TEMPLATES_EMAIL_CHANGE: ${MAILER_TEMPLATES_EMAIL_CHANGE}
+
       GOTRUE_EXTERNAL_PHONE_ENABLED: ${ENABLE_PHONE_SIGNUP}
       GOTRUE_SMS_AUTOCONFIRM: ${ENABLE_PHONE_AUTOCONFIRM}
 
@@ -392,6 +467,9 @@ services:
       PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
       PGRST_APP_SETTINGS_JWT_EXP: ${JWT_EXPIRY}
     command: "postgrest"
+    depends_on:
+      - db
+      - realtime
 
   realtime:
     container_name: realtime-dev.supabase-realtime
@@ -417,7 +495,7 @@ services:
       PORT: 4000
       DB_HOST: ${POSTGRES_HOST}
       DB_PORT: ${POSTGRES_PORT}
-      DB_USER: ${POSTGRES_USER}
+      DB_USER: supabase_admin
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: ${POSTGRES_DB}
       DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
@@ -490,7 +568,7 @@ services:
       PG_META_DB_HOST: ${POSTGRES_HOST}
       PG_META_DB_PORT: ${POSTGRES_PORT}
       PG_META_DB_NAME: ${POSTGRES_DB}
-      PG_META_DB_USER: ${POSTGRES_USER}
+      PG_META_DB_USER: supabase_admin
       PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
 
   functions:
@@ -522,7 +600,7 @@ services:
     restart: unless-stopped
     environment:
       LOGFLARE_NODE_HOST: 127.0.0.1
-      DB_USERNAME: ${POSTGRES_USER}
+      DB_USERNAME: supabase_admin
       DB_DATABASE: _supabase
       DB_HOSTNAME: ${POSTGRES_HOST}
       DB_PORT: ${POSTGRES_PORT}
@@ -532,7 +610,7 @@ services:
       LOGFLARE_SINGLE_TENANT: true
       LOGFLARE_SUPABASE_MODE: true
       LOGFLARE_MIN_CLUSTER_SIZE: 1
-      POSTGRES_BACKEND_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/_supabase
+      POSTGRES_BACKEND_URL: postgresql://supabase_admin:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/_supabase
       POSTGRES_BACKEND_SCHEMA: _analytics
       LOGFLARE_FEATURE_FLAG_OVERRIDE: multibackend=true
     ports:
@@ -572,9 +650,8 @@ services:
       - ./volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
       - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
       - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
+      - ./volumes/db/init.sql:/docker-entrypoint-initdb.d/init-scripts/100-init.sql:Z
       - db-config:/etc/postgresql-custom
-      - ./volumes/db/init.sql:/docker-entrypoint-initdb.d/init.sql
-
 
 volumes:
   db-config:
