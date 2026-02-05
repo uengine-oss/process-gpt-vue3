@@ -486,7 +486,7 @@ export default {
             this.loadDmnId = id;
             this.isLoadedDmn = true;
 
-            this.EventBus.emit('dmn-saved', { id: id, name: name });
+            this.EventBus.emit('dmn-saved', { id: id, name: name, owner: this.owner || null });
         },
         
         async loadData() {
@@ -724,7 +724,7 @@ export default {
                     if (me.$route.path.startsWith('/dmn/')) {
                         await me.$router.push('/dmn/chat');
                     } else {
-                        me.EventBus.emit('dmn-deleted');
+                        me.EventBus.emit('dmn-deleted', { owner: me.owner || null });
                         me.loadDmnId = null;
                         me.loadData();
                     }

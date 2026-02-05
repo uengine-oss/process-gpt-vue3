@@ -2943,6 +2943,152 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // agent_skills
+    /**
+     * agent_skills 조회 (tenant_id 기본 적용)
+     */
+    async getAgentSkills(options?: {
+        tenantId?: string;
+        userId?: string;
+        skillName?: string;
+        orderBy?: string;
+        sort?: 'asc' | 'desc';
+    }): Promise<any[]> {
+        try {
+            const tenantId = options?.tenantId || window.$tenantName;
+            const match: any = { tenant_id: tenantId };
+            if (options?.userId) match.user_id = options.userId;
+            if (options?.skillName) match.skill_name = options.skillName;
+
+            const result = await storage.list('agent_skills', {
+                match,
+                ...(options?.orderBy ? { orderBy: options.orderBy } : {}),
+                ...(options?.sort ? { sort: options.sort } : {})
+            });
+            return Array.isArray(result) ? result : (result || []);
+        } catch (error) {
+            console.error('[ProcessGPTBackend] getAgentSkills error:', error);
+            return [];
+        }
+    }
+
+    /**
+     * 특정 스킬을 사용하는 agent_skills 행 조회
+     */
+    async getAgentSkillsBySkill(skillName: string, tenantId?: string): Promise<any[]> {
+        return await this.getAgentSkills({
+            tenantId: tenantId || window.$tenantName,
+            skillName,
+            orderBy: 'created_at',
+            sort: 'desc'
+        });
+    }
+
+    /**
+     * 특정 에이전트(user_id)의 스킬 목록(agent_skills 기준)
+     */
+    async getAgentSkillsByUser(userId: string, tenantId?: string): Promise<any[]> {
+        return await this.getAgentSkills({
+            tenantId: tenantId || window.$tenantName,
+            userId,
+            orderBy: 'created_at',
+            sort: 'desc'
+        });
+    }
+
+    /**
+     * agent_skills 단건 upsert (user_id, tenant_id, skill_name 기준)
+     */
+    async upsertAgentSkill(params: {
+        userId: string;
+        skillName: string;
+        tenantId?: string;
+    }): Promise<any> {
+        try {
+            const tenantId = params.tenantId || window.$tenantName;
+            const row: any = {
+                user_id: params.userId,
+                tenant_id: tenantId,
+                skill_name: params.skillName,
+                created_at: new Date().toISOString()
+            };
+            // onConflict 지원(다른 테이블에서도 사용 중) — 없더라도 storage 구현에 따라 무시될 수 있음
+            return await storage.putObject('agent_skills', row, { onConflict: 'user_id,tenant_id,skill_name' });
+        } catch (error) {
+            console.error('[ProcessGPTBackend] upsertAgentSkill error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 에이전트의 스킬을 agent_skills 기준으로 "덮어쓰기" 동기화
+     * - 기존 user_id/tenant_id 매핑 전부 삭제 후
+     * - 전달된 skills를 upsert
+     */
+    async replaceAgentSkills(params: {
+        userId: string;
+        skills: string[];
+        tenantId?: string;
+    }): Promise<void> {
+        const tenantId = params.tenantId || window.$tenantName;
+        const skills = Array.isArray(params.skills) ? params.skills : [];
+        const normalized = skills.map((s) => String(s).trim()).filter(Boolean);
+
+        try {
+            await storage.delete('agent_skills', { match: { user_id: params.userId, tenant_id: tenantId } });
+            for (const skillName of normalized) {
+                await this.upsertAgentSkill({ userId: params.userId, tenantId, skillName });
+            }
+        } catch (error) {
+            console.error('[ProcessGPTBackend] replaceAgentSkills error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * agent_skills 단건 삭제
+     */
+    async deleteAgentSkill(params: {
+        userId: string;
+        skillName: string;
+        tenantId?: string;
+    }): Promise<void> {
+        try {
+            const tenantId = params.tenantId || window.$tenantName;
+            await storage.delete('agent_skills', {
+                match: {
+                    user_id: params.userId,
+                    tenant_id: tenantId,
+                    skill_name: params.skillName
+                }
+            });
+        } catch (error) {
+            console.error('[ProcessGPTBackend] deleteAgentSkill error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 특정 스킬에 대한 agent_skills 매핑 전체 삭제 (예: 스킬 삭제 시 정리)
+     */
+    async deleteAgentSkillsBySkill(params: {
+        skillName: string;
+        tenantId?: string;
+    }): Promise<void> {
+        try {
+            const tenantId = params.tenantId || window.$tenantName;
+            await storage.delete('agent_skills', {
+                match: {
+                    tenant_id: tenantId,
+                    skill_name: params.skillName
+                }
+            });
+        } catch (error) {
+            console.error('[ProcessGPTBackend] deleteAgentSkillsBySkill error:', error);
+            throw error;
+        }
+    }
+
     async checkAgentAlias(alias: string, id: string) {
         try {
             const options = {
@@ -3305,13 +3451,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFile(fileName: string, file: File, options?: any) {
+    async uploadFile(fileName: string, file: File, options?: any, onProgress?: (progress: number) => void) {
         try {
             let result: any = null;
             if (!options) {
                 return await storage.uploadFile(fileName, file);
             }
-            await this.uploadFileToStorage(file, options).then(async (response) => {
+            await this.uploadFileToStorage(file, options, onProgress).then(async (response) => {
                 if (response) {
                     await this.putInstanceSource({
                         id: options.file_id,
@@ -3348,7 +3494,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFileToStorage(file: File, options?: any) {
+    async uploadFileToStorage(file: File, options?: any, onProgress?: (progress: number) => void) {
         try {
             const formData = new FormData();
             formData.append('file', file);
@@ -3358,6 +3504,12 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/memento/save-to-storage', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
+                },
+                onUploadProgress: (progressEvent) => {
+                    if (onProgress && progressEvent.total) {
+                        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        onProgress(percent);
+                    }
                 }
             });
 

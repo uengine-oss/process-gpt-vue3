@@ -175,7 +175,7 @@
                     </v-col>
                 </div>
 
-                <!-- 유저 목록 (에이전트 목록 하단) -->
+                <!-- 유저 목록 -->
                 <div v-if="mode !== 'uEngine'" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
@@ -196,10 +196,35 @@
                     </v-col>
                 </div>
 
+                <!-- 스킬 타이틀 + 목록 -->
+                <div v-if="mode !== 'uEngine'" class="mb-4">
+                    <v-row class="align-center pa-0 ma-0">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                            {{ $t('VerticalSidebar.skills') }}
+                        </div>
+                        <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
+                            <template v-slot:activator="{ props }">
+                                <Icons
+                                    v-bind="props"
+                                    class="ml-2"
+                                    icon="plus"
+                                    :size="12"
+                                    :color="'#808080'"
+                                    style="cursor: pointer;"
+                                    @click="navigateTo('/skills')"
+                                />
+                            </template>
+                        </v-tooltip>
+                    </v-row>
+                    <v-col class="pa-0">
+                        <SkillList/>
+                    </v-col>
+                </div>
+
                 <!-- Analytics 타이틀 + 목록 -->
                 <div v-if="analyticsItem.length > 0" class="mb-4">
                     <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
-                        Analytics
+                        {{ $t('VerticalSidebar.analytics') }}
                     </div>
                     <v-col class="pa-0">
                         <v-list-item
@@ -208,7 +233,8 @@
                             :to="item.to"
                             :disabled="item.disable"
                             density="compact"
-                            class="leftPadding"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': isAnalyticsItemActive(item) }"
                         >
                             <template v-slot:prepend>
                                 <Icons :icon="item.icon" :size="20" class="mr-2" />
@@ -316,6 +342,7 @@ import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
 import AgentList from '@/components/ui/AgentList.vue';
+import SkillList from '@/components/ui/SkillList.vue';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
 import SidebarUserList from '@/components/ui/SidebarUserList.vue';
 import ChatList from '@/components/ui/ChatList.vue';
@@ -342,6 +369,7 @@ export default {
         ProjectList,
         ProjectCreationForm,
         AgentList,
+        SkillList,
         SidebarUserList,
         ExpandableList,
         Logo,
@@ -424,6 +452,10 @@ export default {
         });
     },
     methods: {
+        isAnalyticsItemActive(item) {
+            if (!item || !item.to) return false;
+            return this.$route?.path === item.to;
+        },
         closeChatPanelIfOpen() {
             this.EventBus.emit('close-chat-panel');
         },

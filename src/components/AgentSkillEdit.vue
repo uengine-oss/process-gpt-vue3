@@ -10,7 +10,7 @@
                     style="min-width: 300px; flex: 1;"
                     density="compact"
                 ></v-text-field>
-                <span v-else>{{ fileName }}</span>
+                <span v-else class="ml-3">{{ fileName }}</span>
             </div>
             <div class="d-flex align-center gap-2 mr-2">
                 <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon size="small">
@@ -54,10 +54,10 @@
             <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn @click="deleteDialog = false" variant="flat" color="error" rounded>
-                    {{ $t('Common.cancel') }}
+                    {{ $t('common.cancel') }}
                 </v-btn>
                 <v-btn @click="deleteSkillFile" variant="flat" color="primary" rounded>
-                    {{ $t('Common.delete') }}
+                    {{ $t('common.delete') }}
                 </v-btn>
             </v-card-actions>
 
@@ -75,10 +75,6 @@ export default {
         skillFile: {
             type: Object,
             default: () => ({})
-        },
-        isLoading: {
-            type: Boolean,
-            default: false
         }
     },
     data() {
@@ -93,7 +89,8 @@ export default {
                 formatOnPaste: true
             },
             deleteDialog: false,
-            
+            isLoading: false,
+
             // markdown preview
             markdownPreview: false,
             markdownContent: ''
@@ -160,27 +157,43 @@ export default {
         }
     },
     methods: {
-        async saveSkillFile() {
-            await this.backend.putSkillFile(this.skillName, this.fileName, this.skillContent);
-            this.$try({
-                context: this,
-                action: () => {},
-                successMsg: '스킬 파일이 성공적으로 저장되었습니다.'
-            });
+        saveSkillFile() {
+            this.isLoading = true;
+            this.backend
+                .putSkillFile(this.skillName, this.fileName, this.skillContent)
+                .then(() => {
+                    this.$try({
+                        context: this,
+                        action: () => {
+                            this.$emit('file-saved');
+                        },
+                        successMsg: '스킬 파일이 성공적으로 저장되었습니다.'
+                    });
+                })
+                .finally(() => {
+                    this.isLoading = false;
+                });
         },
         async deleteSkillFile() {
             this.deleteDialog = false;
-            await this.backend.deleteSkillFile(this.skillName, this.fileName);
-            this.$try({
-                context: this,
-                action: () => {},
-                successMsg: '스킬 파일이 성공적으로 삭제되었습니다.'
-            });
+            this.isLoading = true;
+            try {
+                await this.backend.deleteSkillFile(this.skillName, this.fileName);
+                this.$try({
+                    context: this,
+                    action: () => {
+                        this.$emit('file-deleted');
+                    },
+                    successMsg: '스킬 파일이 성공적으로 삭제되었습니다.'
+                });
+            } finally {
+                this.isLoading = false;
+            }
         },
         handleMount(editor) {
             // Monaco Editor 마운트 후 높이 설정
             if (editor) {
-                editor.layout({ height: 365, width: editor.getLayoutInfo().width });
+                editor.layout({ height: 320, width: editor.getLayoutInfo().width });
             }
         },
         toggleMarkdownPreview() {

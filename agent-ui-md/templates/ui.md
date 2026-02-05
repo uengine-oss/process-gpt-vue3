@@ -80,11 +80,14 @@
 ### [BLOCK:button.icon.action.v1]
 아이콘 버튼 - 삭제, 복원 등 액션 (툴팁 + mdi 아이콘).
 
+**삭제 버튼**: 아이콘 `mdi-delete-outline`, `color="error"` 적용.
+
 ```vue
 <v-tooltip location="bottom">
     <template v-slot:activator="{ props }">
         <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable">
-            <!-- 기존 @click, 아이콘 유지 -->
+            <!-- 삭제: <v-icon color="error">mdi-delete-outline</v-icon> -->
+            <!-- 기존 @click, 그 외 아이콘 유지 -->
         </v-btn>
     </template>
     <!-- 기존 툴팁 텍스트 유지 -->
@@ -160,7 +163,6 @@
 ```vue
 <v-card-actions class="d-flex justify-end align-center pa-4">
     <!-- 기존 @click, :disabled, 텍스트 유지 -->
-    <v-btn variant="text"><!-- 취소 --></v-btn>
     <v-btn color="primary" rounded variant="flat"><!-- 확인 --></v-btn>
 </v-card-actions>
 ```
@@ -220,6 +222,56 @@
 <v-combobox multiple chips clearable closable-chips variant="outlined" hide-details="auto">
     <!-- 기존 v-model, :label, :items 유지 -->
 </v-combobox>
+```
+
+---
+
+## 칩
+
+### [BLOCK:chip.status.v1]
+상태 표시용 칩 (완료, 실패, 경고 등).
+
+```vue
+<v-chip size="small" color="success" variant="tonal">완료</v-chip>
+<v-chip size="small" color="error" variant="tonal">실패</v-chip>
+<v-chip size="small" color="warning" variant="tonal">경고</v-chip>
+<v-chip size="small" color="info" variant="tonal">정보</v-chip>
+```
+
+### [BLOCK:chip.count.v1]
+카운트 표시용 칩 (i18n 파라미터 활용).
+
+```vue
+<v-chip size="small" color="warning" variant="tonal">
+    {{ $t('namespace.totalCount', { count: items.length }) }}
+</v-chip>
+```
+
+### [BLOCK:chip.label.v1]
+라벨/태그용 칩 (x-small 사이즈).
+
+```vue
+<v-chip size="x-small" color="primary" variant="tonal">라벨</v-chip>
+```
+
+---
+
+## 프로그레스 바
+
+### [BLOCK:progress.linear.wave.v1]
+업로드/로딩 진행률 표시 (물결 애니메이션 포함).
+
+- **클래스**: `progress-wave-animation` (globalStyle.css 정의)
+- **진행률 매핑**: 업로드 0~100% → 표시 0~95%, 서버 응답 완료 시 100%
+
+```vue
+<v-progress-linear
+    :model-value="progress"
+    color="primary"
+    height="8"
+    rounded
+    class="progress-wave-animation"
+></v-progress-linear>
 ```
 
 ---

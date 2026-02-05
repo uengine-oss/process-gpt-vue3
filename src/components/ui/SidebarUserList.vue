@@ -49,7 +49,7 @@
                         <template v-slot:activator="{ props }">
                             <div
                                 v-bind="props"
-                                class="user-item"
+                                class="user-item sidebar-list-hover-bg"
                                 @click="openUserConversation(user)"
                             >
                                 <div class="user-avatar">
@@ -214,11 +214,6 @@ export default {
     cursor: pointer;
     transition: all 0.2s ease;
     gap: 12px;
-}
-
-.user-item:hover {
-    background-color: #e3f2fd;
-    transform: translateX(2px);
 }
 
 .user-avatar {

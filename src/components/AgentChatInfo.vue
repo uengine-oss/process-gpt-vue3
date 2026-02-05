@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div v-if="agentInfo">
         <div v-if="!editDialog && !editSkills">
             <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
             <div class="text-left">
@@ -207,9 +207,9 @@
                     
                     <v-divider class="mb-4"></v-divider>
                     
-                    <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 -->
+                    <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 (클릭으로만 전환, 해시/쿼리 미사용) -->
                     <v-tabs
-                        v-model="activeTab"
+                        :model-value="activeTab"
                         direction="vertical"
                         color="primary"
                         class="agent-tabs"
@@ -226,7 +226,7 @@
                         <v-divider class="mb-4"></v-divider>
                         <div class="d-flex align-center mb-1">
                             <span class="text-body-2 font-weight-medium mr-1">{{ $t('AgentChatInfo.businessRule') }}</span>
-                            <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
+                            <v-btn size="x-small" variant="text" icon @click="$emit('openNewDmn')">
                                 <v-icon>mdi-plus</v-icon>
                             </v-btn>
                             <v-btn
@@ -245,13 +245,18 @@
                         </div>
                         <v-tabs
                             v-if="dmnList.length > 0"
-                            v-model="selectedDmnId"
+                            :model-value="selectedDmnId"
                             direction="vertical"
                             color="primary"
                             class="agent-tabs"
-                            @update:model-value="handleDmnChange"
                         >
-                            <v-tab v-for="dmn in dmnTabList" :key="dmn.id" :value="dmn.id" class="text-left justify-start" @click="handleDmnChange(dmn.id)">
+                            <v-tab
+                                v-for="dmn in dmnTabList"
+                                :key="dmn.id"
+                                :value="dmn.id"
+                                class="text-left justify-start"
+                                @click="handleDmnClick(dmn.id)"
+                            >
                                 <Icons :icon="dmn.icon" :size="16" class="mr-2"/>
                                 {{ dmn.label }}
                             </v-tab>
@@ -278,6 +283,7 @@
                 :editNode="editNode"
                 @updateNode="updateAgent"
                 @closeDialog="closeEditDialog"
+                @deleteAgent="onDeleteAgent"
             />
         </div>
 
@@ -319,6 +325,10 @@ export default {
         isSkillLoading: {
             type: Boolean,
             default: false
+        },
+        selectedDmnId: {
+            type: String,
+            default: null
         }
     },
     data() {
@@ -367,7 +377,6 @@ export default {
                 }
             },
             agentType: 'agent',
-            selectedDmnId: null,
             selectedSkillsFile: null
         }
     },
@@ -453,14 +462,6 @@ export default {
             deep: true,
             immediate: true
         },
-        $route: {
-            handler(newVal) {
-                if (newVal.query.dmnId) {
-                    this.selectedDmnId = newVal.query.dmnId;
-                }
-            },
-            deep: true
-        }
     },
     methods: {
         toggleEdit(type) {
@@ -471,18 +472,11 @@ export default {
         },
 
         handleTabChange(newTab) {
-            this.$router.push({ hash: '#' + newTab });
-            this.selectedDmnId = null;
+            this.$emit('tabChange', newTab);
         },
 
-        handleDmnChange(dmnId) {
-            if (dmnId) {
-                this.selectedDmnId = dmnId;
-                this.$router.push({ query: { dmnId: dmnId }, hash: '#dmn-modeling' });
-            } else {
-                this.selectedDmnId = null;
-                this.$router.push({ query: {}, hash: '#dmn-modeling' });
-            }
+        handleDmnClick(dmnId) {
+            this.$emit('dmnChange', dmnId);
         },
         
         initializeImage() {
@@ -582,6 +576,9 @@ export default {
             this.$emit('agentUpdated', editNode.data);
             this.closeEditDialog();
         },
+        onDeleteAgent(editNode) {
+            this.$emit('deleteAgent', editNode);
+        },
 
         getTruncatedText(text, maxLength) {
             if (!text || text.length <= maxLength) {
@@ -615,11 +612,11 @@ export default {
         },
 
         openSkillHistory() {
-            this.$router.push({ hash: '#skill-history' });
+            this.$emit('tabChange', 'skill-history');
         },
 
         openDmnHistory() {
-            this.$router.push({ hash: '#dmn-history' });
+            this.$emit('tabChange', 'dmn-history');
         }
 
     }
