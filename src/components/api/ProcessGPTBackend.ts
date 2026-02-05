@@ -3305,13 +3305,13 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFile(fileName: string, file: File, options?: any) {
+    async uploadFile(fileName: string, file: File, options?: any, onProgress?: (progress: number) => void) {
         try {
             let result: any = null;
             if (!options) {
                 return await storage.uploadFile(fileName, file);
             }
-            await this.uploadFileToStorage(file, options).then(async (response) => {
+            await this.uploadFileToStorage(file, options, onProgress).then(async (response) => {
                 if (response) {
                     await this.putInstanceSource({
                         id: options.file_id,
@@ -3348,7 +3348,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async uploadFileToStorage(file: File, options?: any) {
+    async uploadFileToStorage(file: File, options?: any, onProgress?: (progress: number) => void) {
         try {
             const formData = new FormData();
             formData.append('file', file);
@@ -3358,6 +3358,12 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/memento/save-to-storage', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
+                },
+                onUploadProgress: (progressEvent) => {
+                    if (onProgress && progressEvent.total) {
+                        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        onProgress(percent);
+                    }
                 }
             });
 
