@@ -24,7 +24,6 @@
                     :agentInfo="mainChatAgentInfo"
                     :userId="userInfo.uid || userInfo.id"
                     @submit="handleMainChatSubmit"
-                    @open-history="handleOpenHistory"
                 />
             </div>
             
@@ -59,7 +58,7 @@
                     
                     <!-- 검색 기능 (Searchbar 스타일 참고) -->
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5"
-                        style="max-width: 280px; min-width: 160px;"
+                        style="max-width: 246px; min-width: 160px;"
                     >
                         <Icons :icon="'magnifer-linear'" :size="20" />
                         <v-text-field
@@ -454,28 +453,90 @@
             <!-- 채팅 헤더 -->
             <div class="chat-panel-header">
                 <div class="header-left">
-                    <v-icon color="primary" class="mr-2">mdi-robot-outline</v-icon>
-                    <span class="header-title">AI 어시스턴트</span>
+                    <template v-if="chatPanelMode === 'user'">
+                        <v-avatar color="#f0f5f9" size="28" class="mr-2">
+                            <img
+                                v-if="userChatHeaderProfile"
+                                :src="userChatHeaderProfile"
+                                :alt="userChatHeaderTitle"
+                                style="width: 100%; height: 100%; object-fit: cover;"
+                            />
+                            <v-icon v-else size="18">mdi-account</v-icon>
+                        </v-avatar>
+                        <span class="header-title">{{ userChatHeaderTitle }}</span>
+                    </template>
+                    <template v-else>
+                        <v-icon color="primary" class="mr-2">mdi-robot-outline</v-icon>
+                        <span class="header-title">AI 어시스턴트</span>
+                    </template>
                 </div>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="small"
-                    @click="closeChatPanel"
-                >
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
+                <div class="d-flex align-center" style="gap: 4px;">
+                    <v-tooltip location="bottom">
+                        <template v-slot:activator="{ props }">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                class="text-medium-emphasis"
+                                density="comfortable"
+                                :disabled="!currentChatRoomId"
+                                @click="deleteChatRoomDialog = true"
+                            >
+                                <v-icon color="error">mdi-delete-outline</v-icon>
+                            </v-btn>
+                        </template>
+                        {{ $t('chatListing.deleteChatRoom') }}
+                    </v-tooltip>
+
+                    <!-- 삭제 확인 다이얼로그 -->
+                    <v-dialog v-model="deleteChatRoomDialog" max-width="400px" persistent>
+                        <v-card>
+                            <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                                {{ $t('chatListing.deleteChatRoom') }}
+                                <v-btn variant="text" density="compact" icon @click="deleteChatRoomDialog = false">
+                                    <v-icon>mdi-close</v-icon>
+                                </v-btn>
+                            </v-card-title>
+                            <v-card-text class="pa-4 pb-0">
+                                {{ $t('chatListing.deleteChatRoomConfirm') }}
+                            </v-card-text>
+                            <v-card-actions class="d-flex justify-end align-center pa-4">
+                                <v-btn color="error" rounded variant="flat" @click="confirmDeleteChatRoom">
+                                    {{ $t('common.delete') }}
+                                </v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-dialog>
+                    <v-btn
+                        icon
+                        variant="text"
+                        class="text-medium-emphasis"
+                        density="comfortable"
+                        @click="closeChatPanel"
+                    >
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </div>
             </div>
 
             <!-- 채팅 컨텐츠 -->
             <div class="chat-panel-content">
-                <WorkAssistantChatPanel
-                    ref="workAssistantChatPanel"
-                    :initialMessage="pendingChatMessage"
-                    :userInfo="userInfo"
-                    :openHistoryRoom="pendingHistoryRoom"
-                    @response-parsed="handleAgentResponse"
-                />
+                <template v-if="chatPanelMode === 'user'">
+                    <UserChatRooms
+                        ref="userChatRooms"
+                        :targetUser="selectedChatUser"
+                        :initialRoomId="pendingUserRoomId"
+                    />
+                </template>
+                <template v-else>
+                    <WorkAssistantChatPanel
+                        ref="workAssistantChatPanel"
+                        :initialMessage="pendingChatMessage"
+                        :userInfo="userInfo"
+                        :openHistoryRoom="pendingHistoryRoom"
+                        @response-parsed="handleAgentResponse"
+                    />
+                </template>
             </div>
         </v-card>
 
@@ -597,6 +658,7 @@ import MainChatInput from '@/components/MainChatInput.vue';
 import FullScreenChatDialog from '@/components/FullScreenChatDialog.vue';
 import AgentChatActions from '@/components/AgentChatActions.vue';
 import WorkAssistantChatPanel from '@/components/WorkAssistantChatPanel.vue';
+import UserChatRooms from '@/components/UserChatRooms.vue';
 import ChatModule from '@/components/ChatModule.vue';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
@@ -624,7 +686,8 @@ export default {
         MainChatInput,
         FullScreenChatDialog,
         AgentChatActions,
-        WorkAssistantChatPanel
+        WorkAssistantChatPanel,
+        UserChatRooms
     },
     props: {
         componentName: {
@@ -725,6 +788,11 @@ export default {
         showFullScreenChat: false,
         pendingChatMessage: null,
         pendingHistoryRoom: null,
+        chatPanelMode: 'assistant', // 'assistant' | 'user'
+        selectedChatUser: null,
+        pendingUserRoomId: null,
+        currentChatRoomId: null,
+        deleteChatRoomDialog: false,
         chatPanelWidth: 500,
         isResizing: false,
         mainChatAgentInfo: {
@@ -851,6 +919,22 @@ export default {
         mode() {
             return window.$mode;
         }
+        ,
+        userChatHeaderTitle() {
+            const u = this.selectedChatUser;
+            return (u && (u.username || u.name || u.email)) ? (u.username || u.name || u.email) : '대화';
+        },
+        userChatHeaderProfile() {
+            const u = this.selectedChatUser;
+            if (!u) return null;
+            let basePath = window.location.port == '' ? window.location.origin : '';
+            if (u.email === 'system@uengine.org') return `${basePath}/images/chat-icon.png`;
+            if (u.profile) {
+                if (String(u.profile).includes('defaultUser.png')) return `${basePath}/images/defaultUser.png`;
+                return u.profile;
+            }
+            return `${basePath}/images/defaultUser.png`;
+        }
     },
     watch: {
         enableEdit(newVal, oldVal) {
@@ -877,6 +961,12 @@ export default {
     },
     async created() {
         var me = this;
+        // 좌측 패널/사이드바에서 열기 이벤트를 놓치지 않도록 created 단계에서 구독
+        this.EventBus.on('close-chat-panel', this.closeChatPanel);
+        this.EventBus.on('open-history-room', this.handleOpenHistory);
+        this.EventBus.on('open-user-conversation', this.handleOpenUserConversation);
+        this.EventBus.on('chat-room-selected', this.handleChatRoomSelected);
+        this.EventBus.on('chat-room-unselected', this.handleChatRoomUnselected);
         me.$try({
             action: async () => {
                 me.userName = localStorage.getItem("userName");
@@ -913,12 +1003,13 @@ export default {
                 this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
             }
         });
-        
-        // 채팅 패널 닫기 이벤트 수신
-        this.EventBus.on('close-chat-panel', this.closeChatPanel);
     },
     beforeUnmount() {
         this.EventBus.off('close-chat-panel', this.closeChatPanel);
+        this.EventBus.off('open-history-room', this.handleOpenHistory);
+        this.EventBus.off('open-user-conversation', this.handleOpenUserConversation);
+        this.EventBus.off('chat-room-selected', this.handleChatRoomSelected);
+        this.EventBus.off('chat-room-unselected', this.handleChatRoomUnselected);
     },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
@@ -1100,6 +1191,22 @@ export default {
         handleOpenHistory(room) {
             this.pendingChatMessage = null;
             this.pendingHistoryRoom = room;
+            this.chatPanelMode = 'assistant';
+            this.selectedChatUser = null;
+            this.pendingUserRoomId = null;
+            this.showFullScreenChat = true;
+        },
+
+        // 유저 대화 열기 (사이드바 유저 목록)
+        handleOpenUserConversation(payload) {
+            const user = payload?.user || null;
+            const roomId = payload?.roomId || null;
+            if (!user) return;
+            this.pendingChatMessage = null;
+            this.pendingHistoryRoom = null;
+            this.chatPanelMode = 'user';
+            this.selectedChatUser = user;
+            this.pendingUserRoomId = roomId;
             this.showFullScreenChat = true;
         },
 
@@ -1108,6 +1215,40 @@ export default {
             this.showFullScreenChat = false;
             this.pendingChatMessage = null;
             this.pendingHistoryRoom = null;
+            this.chatPanelMode = 'assistant';
+            this.selectedChatUser = null;
+            this.pendingUserRoomId = null;
+            this.currentChatRoomId = null;
+        },
+
+        handleChatRoomSelected(roomId) {
+            this.currentChatRoomId = roomId || null;
+        },
+        handleChatRoomUnselected() {
+            this.currentChatRoomId = null;
+        },
+
+        async confirmDeleteChatRoom() {
+            this.deleteChatRoomDialog = false;
+            await this.deleteCurrentChatRoom();
+        },
+
+        async deleteCurrentChatRoom() {
+            try {
+                const roomId = this.currentChatRoomId;
+                if (!roomId) return;
+                if (this.chatPanelMode === 'user') {
+                    const panel = this.$refs.userChatRooms;
+                    if (!panel || typeof panel.deleteRoom !== 'function') return;
+                    await panel.deleteRoom(roomId);
+                    return;
+                }
+                const panel = this.$refs.workAssistantChatPanel;
+                if (!panel || typeof panel.deleteRoom !== 'function') return;
+                await panel.deleteRoom(roomId);
+            } catch (e) {
+                console.error('채팅방 삭제 실패:', e);
+            }
         },
 
         // 의도 분석 결과 처리

@@ -1,6 +1,6 @@
 <template>
     <div class="main-chat-input-container">
-        <!-- 예시 문구들 + 히스토리 버튼 -->
+        <!-- 예시 문구들 -->
         <div class="example-prompts">
             <div 
                 v-for="(example, index) in examples" 
@@ -11,89 +11,6 @@
                 <v-icon size="16" class="mr-1">{{ example.icon }}</v-icon>
                 <span>{{ example.text }}</span>
             </div>
-            
-            <!-- 히스토리 버튼 -->
-            <v-menu 
-                v-model="showHistory" 
-                :close-on-content-click="false"
-                location="bottom end"
-            >
-                <template v-slot:activator="{ props }">
-                    <v-btn
-                        v-bind="props"
-                        icon
-                        variant="text"
-                        size="small"
-                        class="history-btn"
-                        :class="{ 'active': showHistory }"
-                    >
-                        <v-icon>mdi-history</v-icon>
-                    </v-btn>
-                </template>
-                
-                <!-- 히스토리 드롭다운 -->
-                <v-card class="history-dropdown" min-width="320" max-width="380">
-                    <v-card-title class="history-dropdown-title pa-3 pb-2">
-                        <v-icon size="18" class="mr-2">mdi-chat-outline</v-icon>
-                        <span>{{ $t('mainChat.history.title') }}</span>
-                    </v-card-title>
-                    <v-divider></v-divider>
-                    
-                    <div v-if="isLoadingHistory" class="history-loading pa-4">
-                        <v-progress-circular indeterminate size="20" color="primary"></v-progress-circular>
-                        <span class="ml-2">{{ $t('mainChat.history.loading') }}</span>
-                    </div>
-                    
-                    <div v-else-if="chatHistory.length === 0" class="history-empty pa-4 text-center">
-                        <v-icon size="40" color="grey-lighten-1">mdi-chat-outline</v-icon>
-                        <p class="text-caption text-grey mt-2 mb-0">{{ $t('mainChat.history.empty') }}</p>
-                    </div>
-                    
-                    <div v-else class="history-list-container">
-                        <v-list density="compact" class="pa-0">
-                            <v-list-item
-                                v-for="room in displayedHistory"
-                                :key="room.id"
-                                @click="openHistoryItem(room)"
-                                class="history-list-item"
-                            >
-                                <template v-slot:prepend>
-                                    <v-avatar size="36" color="grey-lighten-3">
-                                        <v-icon size="20" color="primary">mdi-robot-outline</v-icon>
-                                    </v-avatar>
-                                </template>
-                                <v-list-item-title class="history-item-title">
-                                    {{ room.name || '새 대화' }}
-                                </v-list-item-title>
-                                <v-list-item-subtitle class="history-item-subtitle">
-                                    {{ truncateMessage(room.message?.msg) }}
-                                </v-list-item-subtitle>
-                                <template v-slot:append>
-                                    <span class="history-item-date text-caption text-grey">
-                                        {{ formatDate(room.message?.createdAt) }}
-                                    </span>
-                                </template>
-                            </v-list-item>
-                        </v-list>
-                        
-                        <!-- 더보기 버튼 -->
-                        <div v-if="hasMoreHistory" class="more-history-container">
-                            <v-divider></v-divider>
-                            <v-btn
-                                variant="text"
-                                color="primary"
-                                block
-                                size="small"
-                                class="more-history-btn"
-                                @click="showAllHistory"
-                            >
-                                <v-icon size="16" class="mr-1">mdi-chevron-down</v-icon>
-                                {{ $t('mainChat.history.showMore') || '더보기' }} ({{ remainingCount }}개)
-                            </v-btn>
-                        </div>
-                    </div>
-                </v-card>
-            </v-menu>
         </div>
 
         <!-- 입력 필드 - Chat 컴포넌트 사용 -->
@@ -111,10 +28,7 @@
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
 import Chat from '@/components/ui/Chat.vue';
-
-const backend = BackendFactory.createBackend();
 
 export default {
     name: 'MainChatInput',
@@ -135,13 +49,6 @@ export default {
         return {
             inputText: '',
             isFocused: false,
-            showHistory: false,
-            isLoadingHistory: false,
-            chatHistory: [],
-            totalHistoryCount: 0,
-            displayLimit: 10,
-            showAll: false,
-            userInfo: null,
             isUploading: false,
             // 음성 인식 관련
             isMicRecording: false,
@@ -173,37 +80,6 @@ export default {
                 }
             ]
         };
-    },
-    computed: {
-        textareaRows() {
-            if (!this.inputText) return 1;
-            const lineCount = (this.inputText.match(/\n/g) || []).length + 1;
-            return Math.min(Math.max(lineCount, 1), 7);
-        },
-        displayedHistory() {
-            if (this.showAll) {
-                return this.chatHistory;
-            }
-            return this.chatHistory.slice(0, this.displayLimit);
-        },
-        hasMoreHistory() {
-            return !this.showAll && this.chatHistory.length > this.displayLimit;
-        },
-        remainingCount() {
-            return this.chatHistory.length - this.displayLimit;
-        }
-    },
-    watch: {
-        showHistory(val) {
-            if (val) {
-                this.showAll = false;
-                this.loadHistory();
-            }
-        }
-    },
-    async mounted() {
-        // 사용자 정보 로드
-        this.userInfo = await backend.getUserInfo();
     },
     methods: {
         selectExample(example) {
@@ -399,102 +275,6 @@ export default {
     border-radius: 16px;
     border: 1px solid #e2e8f0;
     background-color: rgba(var(--v-theme-primary), 0.1);
-}
-
-/* 히스토리 버튼 */
-.history-btn {
-    margin-left: auto;
-    color: #64748b;
-    transition: all 0.2s ease;
-    position: relative;
-}
-
-.history-btn:hover,
-.history-btn.active {
-    color: rgb(var(--v-theme-primary));
-    background: rgba(var(--v-theme-primary), 0.1);
-}
-
-.history-badge {
-    font-size: 10px;
-}
-
-/* 히스토리 드롭다운 */
-.history-dropdown {
-    max-height: 450px;
-    overflow: hidden;
-}
-
-.history-dropdown-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1e293b;
-    display: flex;
-    align-items: center;
-}
-
-.history-loading,
-.history-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #64748b;
-    min-height: 100px;
-}
-
-.history-list-container {
-    max-height: 350px;
-    overflow-y: auto;
-}
-
-.history-list-item {
-    cursor: pointer;
-    border-bottom: 1px solid #f1f5f9;
-    padding: 12px 16px !important;
-}
-
-.history-list-item:last-child {
-    border-bottom: none;
-}
-
-.history-list-item:hover {
-    background: #f8fafc;
-}
-
-.history-item-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1e293b;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.history-item-subtitle {
-    font-size: 12px;
-    color: #64748b;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-top: 2px;
-}
-
-.history-item-date {
-    font-size: 11px;
-    white-space: nowrap;
-    color: #94a3b8;
-}
-
-.more-history-container {
-    position: sticky;
-    bottom: 0;
-    background: white;
-}
-
-.more-history-btn {
-    text-transform: none;
-    font-size: 13px;
 }
 
 /* 예시 문구들 */

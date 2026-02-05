@@ -50,6 +50,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import AgentChatInfo from "@/components/AgentChatInfo.vue";
 
 // Agent Chat 탭 컴포넌트
+import AgentChatRooms from "@/components/AgentChatRooms.vue";
 import AgentChatLearning from "@/components/AgentChatLearning.vue";
 import AgentChatQuestion from "@/components/AgentChatQuestion.vue";
 import AgentChatActions from "@/components/AgentChatActions.vue";
@@ -70,6 +71,7 @@ export default {
     components: {
         AppBaseCard,
         AgentChatInfo,
+        AgentChatRooms,
         AgentChatLearning,
         AgentChatQuestion,
         AgentChatActions,
@@ -95,7 +97,7 @@ export default {
             model: '',
             is_default: false,
         },
-        activeTab: 'actions',
+        activeTab: 'chat',
 
         // knowledge management
         knowledges: [],
@@ -208,7 +210,14 @@ export default {
         }
         // agentInfo 로드 후 탭 핸들러 재구성
         this.setupTabHandlers();
-        this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
+        // 최초 진입은 항상 채팅 모드 (해시가 유효하면 해시 우선)
+        const hashTab = window.location.hash.replace('#', '');
+        if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
+            this.activeTab = hashTab;
+        } else {
+            this.activeTab = 'chat';
+            this.$router.push({ hash: '#chat' });
+        }
         await this.init();
         this.subscribeDmnRealtime(this.id);
 
@@ -241,6 +250,18 @@ export default {
 
             // tabList에 따라 조건부로 탭 핸들러 구성
             if (agentType === 'agent') {
+                // 채팅 모드 (최상단)
+                handlers['chat'] = {
+                    component: 'AgentChatRooms',
+                    props: (vm) => ({
+                        agentInfo: vm.agentInfo
+                    }),
+                    events: () => ({}),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                    }
+                };
+
                 // 학습 모드
                 handlers['learning'] = {
                     component: 'AgentChatLearning',
@@ -312,6 +333,20 @@ export default {
                     }),
                     events: () => ({}),
                     activate: () => {}
+                };
+            }
+
+            // 채팅 모드 (모든 agent_type 공통)
+            if (!handlers['chat']) {
+                handlers['chat'] = {
+                    component: 'AgentChatRooms',
+                    props: (vm) => ({
+                        agentInfo: vm.agentInfo
+                    }),
+                    events: () => ({}),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                    }
                 };
             }
 

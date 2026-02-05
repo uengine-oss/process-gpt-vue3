@@ -47,20 +47,30 @@
                         <div v-if="chatMode != 'consulting' && fullPath != 'chat'" class="playwright-chat-header-delete-icon ml-4 flex-shrink-0  align-start">
                             <v-tooltip v-if="isDeleted" location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
-                                        density="comfortable" @click="beforeRestore"
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="beforeRestore"
                                     >
-                                    <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
+                                        <v-icon>mdi-refresh</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('processDefinition.restoreProcess') }}</span>
                             </v-tooltip>
                             <v-tooltip v-else location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
-                                        density="comfortable" @click="beforeDelete"
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="beforeDelete"
                                     >
-                                        <TrashIcon size="24" style="color:#FB977D"/>
+                                        <v-icon color="error">mdi-delete-outline</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('processDefinition.deleteProcess') }}</span>
