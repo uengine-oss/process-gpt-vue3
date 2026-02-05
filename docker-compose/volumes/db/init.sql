@@ -138,6 +138,7 @@ create table if not exists public.users (
     agent_type text null,
     model text null,
     alias text null,
+    last_used_at timestamp with time zone null default now(),
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;

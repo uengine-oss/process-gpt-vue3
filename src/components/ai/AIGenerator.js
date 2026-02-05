@@ -212,7 +212,7 @@ export default class AIGenerator {
 
     async checkBackendConnection() {
         try {
-            // return true;
+            return true;
             let response = await fetch(`${this.backendUrl}/sanity-check`);
             if(response.status == 401){
                 // access_token이 만료되어서 접속이 안되는 경우가 있기 때문에 이런 경우, 강재로 세션을 갱신 후, 재시도
@@ -269,64 +269,64 @@ export default class AIGenerator {
         let responseCnt = 0;
 
         me.gptResponseId = null;
-        const url = `${this.backendUrl}/messages`;
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', url);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-
-        // const apiProvider = await storage.getObject('api_key', {
-        //     match: {
-        //         key: 'api_provider'
-        //     }
-        // });
-
-        // this.provider = apiProvider?.value || 'openai';
-        
-        // const response = await storage.getObject('api_key', {
-        //     match: {
-        //         key: this.provider
-        //     }
-        // }); 
-        // const apiToken = response?.value || null;
-        // if(!apiToken){
-        //     const errorMessage = `${this.provider.toUpperCase()} API 키가 설정되지 않았습니다. 관리자에게 문의하세요.`;
-        //     console.error(errorMessage);
-        //     if (me.client.onError)
-        //         me.client.onError({ message: errorMessage });
-        //     me.state = 'error';
-        //     return;
-        // }
-        // // Provider에 따라 URL과 헤더 설정
-        // let url, headers;
-        // if (this.provider === 'azure') {
-            
-        //     this.azureEndpoint = "https://multiagent-openai-service.openai.azure.com";
-        //     this.azureDeployment = "gpt-4.1-mini";
-        //     this.azureApiVersion = "2024-02-15-preview";
-
-        //     url = `${this.azureEndpoint}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=${this.azureApiVersion}`;
-        //     headers = {
-        //         "Content-Type": "application/json",
-        //         "api-key": apiToken
-        //     };
-        // } else {
-        //     // // OpenAI 엔드포인트 (Gateway를 통한 LiteLLM Proxy)
-        //     // url = "/litellm/v1/chat/completions";
-        //     // OpenAI 엔드포인트
-        //     url = "https://api.openai.com/v1/chat/completions";
-        //     headers = {
-        //         "Content-Type": "application/json",
-        //         "Authorization": "Bearer " + apiToken
-        //     };
-        // }
-        
+        // const url = `${this.backendUrl}/messages`;
         // const xhr = new XMLHttpRequest();
-        // xhr.open("POST", url);
+        // xhr.open('POST', url);
+        // xhr.setRequestHeader('Content-Type', 'application/json');
+
+        const apiProvider = await storage.getObject('api_key', {
+            match: {
+                key: 'api_provider'
+            }
+        });
+
+        this.provider = apiProvider?.value || 'openai';
         
-        // // 헤더 설정
-        // Object.keys(headers).forEach(key => {
-        //     xhr.setRequestHeader(key, headers[key]);
-        // });
+        const response = await storage.getObject('api_key', {
+            match: {
+                key: this.provider
+            }
+        }); 
+        const apiToken = response?.value || null;
+        if(!apiToken){
+            const errorMessage = `${this.provider.toUpperCase()} API 키가 설정되지 않았습니다. 관리자에게 문의하세요.`;
+            console.error(errorMessage);
+            if (me.client.onError)
+                me.client.onError({ message: errorMessage });
+            me.state = 'error';
+            return;
+        }
+        // Provider에 따라 URL과 헤더 설정
+        let url, headers;
+        if (this.provider === 'azure') {
+            
+            this.azureEndpoint = "https://multiagent-openai-service.openai.azure.com";
+            this.azureDeployment = "gpt-4.1-mini";
+            this.azureApiVersion = "2024-02-15-preview";
+
+            url = `${this.azureEndpoint}/openai/deployments/${this.azureDeployment}/chat/completions?api-version=${this.azureApiVersion}`;
+            headers = {
+                "Content-Type": "application/json",
+                "api-key": apiToken
+            };
+        } else {
+            // // OpenAI 엔드포인트 (Gateway를 통한 LiteLLM Proxy)
+            // url = "/litellm/v1/chat/completions";
+            // OpenAI 엔드포인트
+            url = "https://api.openai.com/v1/chat/completions";
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + apiToken
+            };
+        }
+        
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url);
+        
+        // 헤더 설정
+        Object.keys(headers).forEach(key => {
+            xhr.setRequestHeader(key, headers[key]);
+        });
         
         if(this.client.chatRoomId){
             xhr.originalChatRoomId = this.client.chatRoomId;
@@ -478,20 +478,20 @@ export default class AIGenerator {
 
         this._addDetailHighToImageUrl(messages);
         const data = {
-            vendor: this.forced_vendor || this.vendor,  // OpenAI API에서는 불필요
+            // vendor: this.forced_vendor || this.vendor,  // OpenAI API에서는 불필요
             model: this.forced_model || this.model,
             messages: messages,
             stream: this.options.isStream || true,
-            modelConfig: this.forced_model_config || this.modelConfig  // OpenAI API에서는 불필요
-            // temperature: this.forced_model_config?.temperature || this.modelConfig.temperature,
-            // top_p: this.forced_model_config?.top_p || 0.9,
-            // frequency_penalty: this.forced_model_config?.frequency_penalty || this.modelConfig.frequency_penalty,
-            // presence_penalty: this.forced_model_config?.presence_penalty || this.modelConfig.presence_penalty
+            // modelConfig: this.forced_model_config || this.modelConfig  // OpenAI API에서는 불필요
+            temperature: this.forced_model_config?.temperature || this.modelConfig.temperature,
+            top_p: this.forced_model_config?.top_p || 0.9,
+            frequency_penalty: this.forced_model_config?.frequency_penalty || this.modelConfig.frequency_penalty,
+            presence_penalty: this.forced_model_config?.presence_penalty || this.modelConfig.presence_penalty
         };
 
         if (this.model.includes('vision')) {
-            data.modelConfig.max_tokens = 4096;
-            // data.max_tokens = 4096;
+            // data.modelConfig.max_tokens = 4096;
+            data.max_tokens = 4096;
         }
 
         if (me.stopSignaled) {

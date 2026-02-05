@@ -14,6 +14,7 @@
             <template v-slot:rightpart>
                 <component 
                     :is="currentTabComponent" 
+                    :key="id + ':' + activeTab"
                     v-bind="currentTabProps"
                     v-on="currentTabEvents"
                 />
@@ -40,7 +41,7 @@ import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 import AgentChatInfo from "@/components/AgentChatInfo.vue";
 
 // Agent Chat 탭 컴포넌트
-import AgentChatRooms from "@/components/AgentChatRooms.vue";
+import ChatRoomPage from "@/views/chat/ChatRoomPage.vue";
 import AgentChatLearning from "@/components/AgentChatLearning.vue";
 import AgentChatQuestion from "@/components/AgentChatQuestion.vue";
 import AgentChatActions from "@/components/AgentChatActions.vue";
@@ -61,7 +62,7 @@ export default {
     components: {
         AppBaseCard,
         AgentChatInfo,
-        AgentChatRooms,
+        ChatRoomPage,
         AgentChatLearning,
         AgentChatQuestion,
         AgentChatActions,
@@ -133,6 +134,15 @@ export default {
     watch: {
         "$route": {
             async handler(newRoute, oldRoute) {
+                const path = newRoute?.path || '';
+                const isAgentChatRoute = path.startsWith('/agent-chat');
+
+                // agent-chat 화면을 벗어날 때는 해시/로직 부작용 방지
+                if (!isAgentChatRoute) {
+                    try { if (window.location.hash) window.location.hash = ''; } catch (e) {}
+                    return;
+                }
+
                 if (newRoute.query && newRoute.query.dmnId) {
                     this.selectedDmnId = newRoute.query.dmnId;
                 } else {
@@ -141,10 +151,12 @@ export default {
                 if (newRoute.hash) this.activeTab = newRoute.hash.replace('#', '');
                 
                 // agent ID가 변경된 경우에만 agentInfo와 init 호출
-                if (newRoute.params.id !== oldRoute.params.id) {
-                    this.agentInfo = this.defaultSetting.getAgentById(newRoute.params.id);
+                const newId = newRoute?.params?.id;
+                const oldId = oldRoute?.params?.id;
+                if (newId && newId !== oldId) {
+                    this.agentInfo = this.defaultSetting.getAgentById(newId);
                     if (!this.agentInfo) {
-                        this.agentInfo = await this.backend.getUserById(newRoute.params.id);
+                        this.agentInfo = await this.backend.getUserById(newId);
                     }
                     await this.init();
                 }
@@ -156,6 +168,9 @@ export default {
                 // 초기 로딩이 아닌 경우에만 URL 해시 업데이트
                 // 하지만 이미 $router.push로 변경된 경우는 제외
                 if (newVal && oldVal !== '' && !this.isInitializing) {
+                    // agent-chat 화면에서만 해시를 관리 (다른 화면으로 이동 시 /chat#chat 등 부작용 방지)
+                    const path = this.$route?.path || '';
+                    if (!path.startsWith('/agent-chat')) return;
                     const currentHash = window.location.hash.replace('#', '');
                     if (currentHash !== newVal) {
                         window.location.hash = newVal;
@@ -190,13 +205,12 @@ export default {
         }
         // agentInfo 로드 후 탭 핸들러 재구성
         this.setupTabHandlers();
-        // 최초 진입은 항상 채팅 모드 (해시가 유효하면 해시 우선)
+        // 최초 진입은 해시가 유효하면 해시 우선
         const hashTab = window.location.hash.replace('#', '');
         if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
             this.activeTab = hashTab;
         } else {
             this.activeTab = 'chat';
-            this.$router.push({ hash: '#chat' });
         }
         await this.init();
 
@@ -223,9 +237,11 @@ export default {
             if (agentType === 'agent') {
                 // 채팅 모드 (최상단)
                 handlers['chat'] = {
-                    component: 'AgentChatRooms',
+                    component: 'ChatRoomPage',
                     props: (vm) => ({
-                        agentInfo: vm.agentInfo
+                        embedded: true,
+                        contextAgentId: vm.id,
+                        initialRoomId: vm.$route?.query?.roomId || null
                     }),
                     events: () => ({}),
                     activate: async () => {
@@ -310,9 +326,11 @@ export default {
             // 채팅 모드 (모든 agent_type 공통)
             if (!handlers['chat']) {
                 handlers['chat'] = {
-                    component: 'AgentChatRooms',
+                    component: 'ChatRoomPage',
                     props: (vm) => ({
-                        agentInfo: vm.agentInfo
+                        embedded: true,
+                        contextAgentId: vm.id,
+                        initialRoomId: vm.$route?.query?.roomId || null
                     }),
                     events: () => ({}),
                     activate: async () => {

@@ -1265,7 +1265,7 @@
     },
     "chatListing": {
         "title": "채팅방 설정",
-        "search": "검색",
+        "search": "채팅방/참가자명 검색",
         "chatRoomName": "채팅방 이름",
         "selectParticipants": "참여자 선택",
         "save": "저장",
@@ -1615,7 +1615,7 @@
         "instanceList": "인스턴스",
         "projectList": "프로젝트",
         "agentList": "에이전트",
-        "userList": "유저 목록",
+        "userList": "유저",
         "userLoading": "불러오는 중...",
         "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
@@ -1626,7 +1626,7 @@
         "addProject": "프로젝트 추가",
         "showMore": "더보기",
         "showLess": "접기",
-        "chatList": "대화목록",
+        "chatList": "채팅",
         "chatLoading": "불러오는 중...",
         "chatEmpty": "채팅방이 없습니다."
     },

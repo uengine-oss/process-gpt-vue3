@@ -117,7 +117,7 @@ export default {
             if (value.type == 'workitem') {
                 this.$router.push('/todolist');
             } else {
-                // chat 알림은 방 타입에 맞게 라우팅 (메인/에이전트/유저)
+                // chat 알림은 통합 채팅 화면(/chat)로 라우팅
                 if (value.type === 'chat') {
                     const roomId = this.getChatRoomIdFromUrl(value.url) || value.url?.replace('/chats?id=', '');
                     if (roomId) {
@@ -131,77 +131,10 @@ export default {
                             room = await backend.getChatRoom(roomId);
                         }
                         if (room && room.id) {
-                            const participants = Array.isArray(room.participants) ? room.participants : [];
-                            const myEmail = localStorage.getItem('email');
-                            const myId = localStorage.getItem('uid') || localStorage.getItem('id');
-
-                            const hasSystem = participants.some((p) => p?.id === 'system_id' || p?.email === 'system@uengine.org');
-                            if (hasSystem) {
-                                const path = this.$route?.path || '';
-                                if (!path.startsWith('/definition-map')) {
-                                    await this.$router.push({ path: '/definition-map' });
-                                    setTimeout(() => this.EventBus.emit('open-history-room', room), 0);
-                                } else {
-                                    this.EventBus.emit('open-history-room', room);
-                                }
-                            } else {
-                                const explicitPrimaryAgentId = room.primary_agent_id || room.primaryAgentId || null;
-                                if (explicitPrimaryAgentId) {
-                                    await this.$router.push({
-                                        path: `/agent-chat/${explicitPrimaryAgentId}`,
-                                        query: { roomId: room.id },
-                                        hash: '#chat'
-                                    });
-                                } else {
-                                    const agentIds = participants
-                                        .map((p) => p?.id)
-                                        .filter(Boolean)
-                                        .filter((id) => {
-                                            const agent = this.defaultSetting?.getAgentById?.(id);
-                                            return !!agent;
-                                        });
-                                    if (agentIds.length === 1) {
-                                        await this.$router.push({
-                                            path: `/agent-chat/${agentIds[0]}`,
-                                            query: { roomId: room.id },
-                                            hash: '#chat'
-                                        });
-                                    } else {
-                                        const others = participants.filter((p) => {
-                                            if (!p) return false;
-                                            if (myEmail && p.email && p.email === myEmail) return false;
-                                            if (myId && p.id && p.id === myId) return false;
-                                            return true;
-                                        });
-                                        // 1:1 유저 채팅
-                                        if (others.length === 1 && !this.defaultSetting?.getAgentById?.(others[0]?.id)) {
-                                            const path = this.$route?.path || '';
-                                            const payload = { user: others[0], roomId: room.id };
-                                            if (!path.startsWith('/definition-map')) {
-                                                await this.$router.push({ path: '/definition-map' });
-                                                setTimeout(() => this.EventBus.emit('open-user-conversation', payload), 0);
-                                            } else {
-                                                this.EventBus.emit('open-user-conversation', payload);
-                                            }
-                                        } else {
-                                            // 다중 에이전트/그룹은 일단 메인 패널로 열기
-                                            const path = this.$route?.path || '';
-                                            if (!path.startsWith('/definition-map')) {
-                                                await this.$router.push({ path: '/definition-map' });
-                                                setTimeout(() => this.EventBus.emit('open-history-room', room), 0);
-                                            } else {
-                                                this.EventBus.emit('open-history-room', room);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            // 상단 채팅 noti badge에서 제거
+                            await this.$router.push({ path: '/chat', query: { roomId: room.id }, hash: '' });
                             window.dispatchEvent(new CustomEvent('update-notification-badge', {
                                 detail: { type: 'chat', value: false, id: room.id }
                             }));
-                            // NOTE: new 해제는 실제로 방이 열려 선택(chat-room-selected)된 시점에만 처리
                         } else {
                             // 방 조회 실패 시 기존 url로 fallback
                             this.$router.push(value.url);

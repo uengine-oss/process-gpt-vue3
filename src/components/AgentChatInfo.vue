@@ -7,9 +7,9 @@
                     <v-avatar size="24" class="mr-2 flex-shrink-0">
                         <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
                         <v-img 
-                            v-if="agentInfo.profile && imageLoaded && !isDefaultImage(agentInfo.profile)"
-                            :src="agentInfo.profile" 
-                            :alt="agentInfo.username || $t('AgentChatInfo.defaultAgentName')"
+                            v-if="agentInfo?.profile && imageLoaded && !isDefaultImage(agentInfo?.profile)"
+                            :src="agentInfo?.profile" 
+                            :alt="agentInfo?.username || $t('AgentChatInfo.defaultAgentName')"
                             cover
                             @error="handleImageError"
                             @load="handleImageLoad"
@@ -19,7 +19,7 @@
                         <v-img 
                             v-else
                             src="/images/chat-icon.png" 
-                            :alt="agentInfo.username || $t('AgentChatInfo.defaultAgentName')"
+                            :alt="agentInfo?.username || $t('AgentChatInfo.defaultAgentName')"
                             cover
                         >
                             <template v-slot:error>
@@ -28,13 +28,13 @@
                         </v-img>
                     </v-avatar>
                     <div class="agent-name-wrapper">
-                        <h5 v-if="!isMobile" class="text-h6 font-weight-bold agent-name-text">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h5>
-                        <h6 v-else class="text-subtitle-1 font-weight-bold agent-name-text">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h6>
+                        <h5 v-if="!isMobile" class="text-h6 font-weight-bold agent-name-text">{{ agentInfo?.username || $t('AgentChatInfo.defaultAgentName') }}</h5>
+                        <h6 v-else class="text-subtitle-1 font-weight-bold agent-name-text">{{ agentInfo?.username || $t('AgentChatInfo.defaultAgentName') }}</h6>
                     </div>
                     
                     <!-- 수정 버튼 -->
                     <v-btn 
-                        v-if="!agentInfo.is_default"
+                        v-if="!agentInfo?.is_default"
                         @click="openEditDialog"
                         variant="text"
                         :size="20"
@@ -52,9 +52,9 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.goal') }}</span>
                     </div>
                     <p v-if="isSectionVisible('goal')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ getDisplayText(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 'goal', 50) }}
+                        {{ getDisplayText(agentInfo?.goal || $t('AgentChatInfo.fallback.goal'), 'goal', 50) }}
                         <v-btn
-                            v-if="shouldShowToggleButton(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 50)"
+                            v-if="shouldShowToggleButton(agentInfo?.goal || $t('AgentChatInfo.fallback.goal'), 50)"
                             @click="toggleTextExpansion('goal')"
                             variant="text"
                             size="small"
@@ -72,9 +72,9 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.persona') }}</span>
                     </div>
                     <p v-if="isSectionVisible('persona')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ getDisplayText(agentInfo.persona, 'persona', 50) }}
+                        {{ getDisplayText(agentInfo?.persona, 'persona', 50) }}
                         <v-btn
-                            v-if="shouldShowToggleButton(agentInfo.persona, 50)"
+                            v-if="shouldShowToggleButton(agentInfo?.persona, 50)"
                             @click="toggleTextExpansion('persona')"
                             variant="text"
                             size="small"
@@ -123,9 +123,9 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.endpoint') }}</span>
                     </div>
                     <p v-if="isSectionVisible('endpoint')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ getDisplayText(agentInfo.endpoint, 'endpoint', 50) }}
+                        {{ getDisplayText(agentInfo?.endpoint, 'endpoint', 50) }}
                         <v-btn
-                            v-if="shouldShowToggleButton(agentInfo.endpoint, 50)"
+                            v-if="shouldShowToggleButton(agentInfo?.endpoint, 50)"
                             @click="toggleTextExpansion('endpoint')"
                             variant="text"
                             size="small"
@@ -143,9 +143,9 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.description') }}</span>
                     </div>
                     <p v-if="isSectionVisible('description')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ getDisplayText(agentInfo.description, 'description', 50) }}
+                        {{ getDisplayText(agentInfo?.description, 'description', 50) }}
                         <v-btn
-                            v-if="shouldShowToggleButton(agentInfo.description, 50)"
+                            v-if="shouldShowToggleButton(agentInfo?.description, 50)"
                             @click="toggleTextExpansion('description')"
                             variant="text" size="small" color="primary" class="pa-0 text-caption ml-1" style="min-width: auto; height: auto; vertical-align: baseline;">
                             {{ expandedTexts.description ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
@@ -158,7 +158,7 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.alias') }}</span>
                     </div>
                     <p v-if="isSectionVisible('alias')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo.alias }}
+                        {{ agentInfo?.alias }}
                     </p>
 
                     <!-- Skills Section (agent / a2a / pgagent) -->
@@ -193,7 +193,7 @@
                         </v-chip>
                     </v-chip-group>
                     <p v-else-if="isSectionVisible('skills') && !editSkills && !parsedSkills" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo.skills }}
+                        {{ agentInfo?.skills }}
                     </p>
 
                     <!-- Model Section (agent only) -->
@@ -202,7 +202,7 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.model') }}</span>
                     </div>
                     <p v-if="isSectionVisible('model')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo.model }}
+                        {{ agentInfo?.model }}
                     </p>
                     
                     <v-divider class="mb-4"></v-divider>
@@ -376,7 +376,7 @@ export default {
     },
     computed: {
         tabList() {
-            if (this.agentInfo.agent_type == 'agent') {
+            if (this.agentInfo?.agent_type == 'agent') {
                 this.agentType = 'agent';
                 return [
                     { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
@@ -386,7 +386,7 @@ export default {
                     { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' },
                 ]
             } else {
-                this.agentType = this.agentInfo.agent_type;
+                this.agentType = this.agentInfo?.agent_type;
                 return [
                     { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
@@ -395,35 +395,35 @@ export default {
         },
         
         parsedTools() {
-            if (!this.agentInfo.tools) return [];
+            if (!this.agentInfo?.tools) return [];
             
             // tools가 문자열인 경우 (쉼표로 구분된 값들)
-            if (typeof this.agentInfo.tools === 'string') {
-                return this.agentInfo.tools
+            if (typeof this.agentInfo?.tools === 'string') {
+                return this.agentInfo?.tools
                     .split(',')
                     .map(tool => tool.trim())
                     .filter(tool => tool.length > 0);
             }
             
             // tools가 배열인 경우
-            if (Array.isArray(this.agentInfo.tools)) {
-                return this.agentInfo.tools.filter(tool => tool && tool.trim().length > 0);
+            if (Array.isArray(this.agentInfo?.tools)) {
+                return this.agentInfo?.tools.filter(tool => tool && tool.trim().length > 0);
             }
             
             return [];
         },
 
         parsedSkills() {
-            if (!this.agentInfo.skills || this.agentInfo.skills === '' || this.agentInfo.agent_type === 'pgagent') return null;
+            if (!this.agentInfo?.skills || this.agentInfo?.skills === '' || this.agentInfo?.agent_type === 'pgagent') return null;
 
-            if (typeof this.agentInfo.skills === 'string') {
-                if (this.agentInfo.skills.includes(',')) {
-                    return this.agentInfo.skills
+            if (typeof this.agentInfo?.skills === 'string') {
+                if (this.agentInfo?.skills.includes(',')) {
+                    return this.agentInfo?.skills
                         .split(',')
                         .map(skill => skill.trim())
                         .filter(skill => skill.length > 0);
                 } else {
-                    return [this.agentInfo.skills.trim()];
+                    return [this.agentInfo?.skills.trim()];
                 }
             }
         },
@@ -486,7 +486,7 @@ export default {
         },
         
         initializeImage() {
-            const profileUrl = this.agentInfo.profile;
+            const profileUrl = this.agentInfo?.profile;
             
             // 기본 이미지이거나 URL이 없으면 바로 기본 이미지 표시
             if (this.isDefaultImage(profileUrl)) {
@@ -547,7 +547,7 @@ export default {
         },
 
         getCurrentAgentType() {
-            return this.agentInfo && this.agentInfo.agent_type ? this.agentInfo.agent_type : this.agentType || 'agent';
+            return this.agentInfo && this.agentInfo?.agent_type ? this.agentInfo?.agent_type : this.agentType || 'agent';
         },
 
         isSectionVisible(section) {
@@ -563,9 +563,9 @@ export default {
             this.editNode = {
                 data: {
                     ...this.agentInfo,
-                    name: this.agentInfo.username || this.agentInfo.name || this.$t('AgentChatInfo.defaultAgentName'),
-                    img: this.agentInfo.profile || this.agentInfo.img || '',
-                    type: this.agentInfo.agent_type || this.agentInfo.type || 'agent',
+                    name: this.agentInfo?.username || this.agentInfo?.name || this.$t('AgentChatInfo.defaultAgentName'),
+                    img: this.agentInfo?.profile || this.agentInfo?.img || '',
+                    type: this.agentInfo?.agent_type || this.agentInfo?.type || 'agent',
                     isAgent: true
                 }
             };

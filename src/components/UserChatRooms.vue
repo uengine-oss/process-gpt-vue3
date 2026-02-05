@@ -25,25 +25,69 @@
                 </v-tab>
             </v-tabs>
             <div>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="small"
-                    class="participants-btn"
-                    @click="openParticipantsDialog"
+                <v-menu
+                    v-model="chatRoomSettingsMenu"
+                    location="bottom end"
+                    :close-on-content-click="true"
                 >
-                    <v-icon>mdi-account-multiple-plus-outline</v-icon>
-                </v-btn>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="small"
-                    class="add-tab-btn"
-                    @click="addNewRoom()"
-                >
-                    <v-icon>mdi-plus</v-icon>
-                </v-btn>
-                <v-tooltip activator="parent" location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-btn
+                            v-bind="props"
+                            icon
+                            variant="text"
+                            size="small"
+                            class="settings-btn"
+                            :disabled="!tabs || tabs.length === 0"
+                        >
+                            <v-icon>mdi-cog-outline</v-icon>
+                        </v-btn>
+                    </template>
+                    <v-card min-width="260" class="pa-2">
+                        <div class="text-caption text-medium-emphasis px-2 pt-1 pb-1">
+                            {{ $t('chatListing.setting') || '설정' }}
+                        </div>
+                        <v-list density="compact" class="pa-0">
+                            <v-list-item @click="openChatRoomRenameDialog">
+                                <template v-slot:prepend>
+                                    <v-icon size="18">mdi-pencil-outline</v-icon>
+                                </template>
+                                <v-list-item-title>
+                                    {{ $t('chatListing.chatRoomName') || '채팅방 이름 변경' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                            <v-list-item @click="openChatRoomParticipantsFromSettings">
+                                <template v-slot:prepend>
+                                    <v-icon size="18">mdi-account-multiple-plus-outline</v-icon>
+                                </template>
+                                <v-list-item-title>
+                                    {{ $t('chatListing.selectParticipants') || '참가자 변경' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                            <v-divider class="my-1" />
+                            <v-list-item @click="openChatRoomDeleteConfirm">
+                                <template v-slot:prepend>
+                                    <v-icon size="18" color="error">mdi-delete-outline</v-icon>
+                                </template>
+                                <v-list-item-title class="text-error">
+                                    {{ $t('chatListing.delete') || '삭제' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                    </v-card>
+                </v-menu>
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-btn
+                            v-bind="props"
+                            icon
+                            variant="text"
+                            size="small"
+                            class="add-tab-btn"
+                            @click="addNewRoom()"
+                        >
+                            <v-icon>mdi-plus</v-icon>
+                        </v-btn>
+                    </template>
                     <span>새 대화 시작</span>
                 </v-tooltip>
             </div>
@@ -51,6 +95,7 @@
 
         <div class="chat-body">
             <Chat
+                ref="chatView"
                 :messages="messages"
                 :userInfo="userInfo"
                 :userList="userList"
@@ -58,6 +103,18 @@
                 :chatRoomId="currentRoomId || ''"
                 type="chats"
                 :disableChat="false"
+                :hideInput="true"
+                @sendMessage="beforeSendMessage"
+            />
+        </div>
+
+        <div class="input-area">
+            <UnifiedChatInput
+                variant="inline"
+                :showExamples="false"
+                :disableChat="false"
+                :userList="userList"
+                :currentChatRoom="currentChatRoom"
                 @sendMessage="beforeSendMessage"
             />
         </div>
@@ -113,18 +170,82 @@
                 </v-row>
             </v-card>
         </v-dialog>
+
+        <!-- 채팅방 설정: 이름 변경 -->
+        <v-dialog v-model="chatRoomRenameDialog" max-width="520" persistent>
+            <v-card class="pa-2" style="border-radius: 16px;">
+                <v-card-title class="d-flex align-center pa-3 pb-1">
+                    <div class="text-subtitle-1 font-weight-bold">
+                        {{ $t('chatListing.chatRoomName') || '채팅방 이름' }}
+                    </div>
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" @click="chatRoomRenameDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-3 pt-2">
+                    <v-text-field
+                        v-model="chatRoomRenameDraft"
+                        :label="$t('chatListing.chatRoomName') || '채팅방 이름'"
+                        density="compact"
+                        variant="outlined"
+                        hide-details
+                        autofocus
+                    />
+                    <div class="text-caption text-medium-emphasis mt-2">
+                        - 최대 50자까지 저장됩니다.
+                    </div>
+                </v-card-text>
+                <v-card-actions class="pa-3 pt-0">
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="chatRoomRenameDialog = false">취소</v-btn>
+                    <v-btn color="primary" variant="flat" rounded @click="confirmChatRoomRename">
+                        {{ $t('chatListing.save') || '저장' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- 채팅방 설정: 삭제 확인 -->
+        <v-dialog v-model="chatRoomDeleteDialog" max-width="520" persistent>
+            <v-card class="pa-2" style="border-radius: 16px;">
+                <v-card-title class="d-flex align-center pa-3 pb-1">
+                    <div class="text-subtitle-1 font-weight-bold">
+                        {{ $t('chatListing.deleteChatRoom') || '채팅방 삭제' }}
+                    </div>
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" @click="chatRoomDeleteDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-3 pt-2">
+                    "{{ getCurrentChatRoomName() }}" {{ $t('chatListing.confirmDeleteChatRoom') || '채팅방을 삭제하시겠습니까?' }}
+                    <div class="text-caption text-medium-emphasis mt-2">
+                        - 삭제하면 복구할 수 없습니다.
+                    </div>
+                </v-card-text>
+                <v-card-actions class="pa-3 pt-0">
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="chatRoomDeleteDialog = false">취소</v-btn>
+                    <v-btn color="error" variant="flat" rounded @click="confirmChatRoomDelete">
+                        {{ $t('chatListing.delete') || '삭제' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import Chat from '@/components/ui/Chat.vue';
+import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'UserChatRooms',
-    components: { Chat },
+    components: { Chat, UnifiedChatInput },
     props: {
         targetUser: {
             type: Object,
@@ -153,7 +274,13 @@ export default {
             isLoadingRooms: false,
 
             participantsDialog: false,
-            participantsDraft: []
+            participantsDraft: [],
+
+            // 채팅방 설정 메뉴/다이얼로그
+            chatRoomSettingsMenu: false,
+            chatRoomRenameDialog: false,
+            chatRoomRenameDraft: '',
+            chatRoomDeleteDialog: false
         };
     },
     watch: {
@@ -197,6 +324,102 @@ export default {
         this.EventBus.emit('chat-room-unselected');
     },
     methods: {
+        scrollToBottomSafe() {
+            try {
+                this.$refs.chatView?.scrollToBottom?.();
+            } catch (e) {}
+        },
+        getCurrentTab() {
+            const idx = this.currentTabIndex ?? 0;
+            return (Array.isArray(this.tabs) && this.tabs[idx]) ? this.tabs[idx] : null;
+        },
+        getCurrentChatRoomName() {
+            const tab = this.getCurrentTab();
+            const name = (this.currentChatRoom?.name || tab?.title || '').toString().trim();
+            return name || '새 대화';
+        },
+        openChatRoomRenameDialog() {
+            this.chatRoomSettingsMenu = false;
+            this.chatRoomRenameDraft = this.getCurrentChatRoomName();
+            this.chatRoomRenameDialog = true;
+        },
+        async confirmChatRoomRename() {
+            const tab = this.getCurrentTab();
+            const roomId = tab?.roomId || null;
+            const nextName = String(this.chatRoomRenameDraft || '').trim().substring(0, 50);
+            if (!nextName || !tab) {
+                this.chatRoomRenameDialog = false;
+                return;
+            }
+            // 드래프트/실방 모두 renameRoom로 통일
+            await this.renameRoom(roomId, nextName);
+            this.chatRoomRenameDialog = false;
+        },
+        openChatRoomParticipantsFromSettings() {
+            this.chatRoomSettingsMenu = false;
+            this.openParticipantsDialog();
+        },
+        openChatRoomDeleteConfirm() {
+            this.chatRoomSettingsMenu = false;
+            this.chatRoomDeleteDialog = true;
+        },
+        async confirmChatRoomDelete() {
+            this.chatRoomDeleteDialog = false;
+            const tab = this.getCurrentTab();
+            const roomId = tab?.roomId || null;
+            // 드래프트면 탭만 제거, 실제 방이면 기존 deleteRoom 사용
+            if (!roomId) {
+                if (this.tabs.length === 1) {
+                    tab.title = '새 대화';
+                    tab.participants = this.defaultParticipants();
+                    this.currentRoomId = null;
+                    this.currentChatRoom = { id: null, name: tab.title, participants: tab.participants };
+                    this.messages = [];
+                    this.EventBus.emit('chat-room-unselected');
+                    return;
+                }
+                this.tabs.splice(this.currentTabIndex, 1);
+                if (this.currentTabIndex >= this.tabs.length) this.currentTabIndex = this.tabs.length - 1;
+                const next = this.tabs[this.currentTabIndex];
+                if (next?.roomId) await this.selectRoomById(next.roomId);
+                else {
+                    this.currentRoomId = null;
+                    this.currentChatRoom = { id: null, name: next?.title || '새 대화', participants: next?.participants || [] };
+                    this.messages = [];
+                    this.EventBus.emit('chat-room-unselected');
+                }
+                this.EventBus.emit('chat-rooms-updated');
+                return;
+            }
+            await this.deleteRoom(roomId);
+        },
+        async renameRoom(roomId, newName) {
+            const trimmed = String(newName || '').trim();
+            if (!trimmed) return;
+            const nextName = trimmed.substring(0, 50);
+
+            // 탭 타이틀 업데이트
+            const tabIdx = roomId ? this.tabs.findIndex(t => t.roomId === roomId) : this.currentTabIndex;
+            const tab = tabIdx !== -1 ? this.tabs[tabIdx] : null;
+            if (tab) {
+                tab.title = this.truncateText(nextName);
+            }
+
+            // 현재 채팅방 상태 업데이트
+            if (this.currentChatRoom && (!roomId || this.currentChatRoom.id === roomId)) {
+                this.currentChatRoom.name = nextName;
+            }
+
+            // 실제 방이면 DB 저장
+            if (roomId) {
+                const room = this.chatRooms.find(r => r.id === roomId);
+                if (room) {
+                    room.name = nextName;
+                    await this.putObject('chat_rooms', room);
+                }
+                this.EventBus.emit('chat-rooms-updated');
+            }
+        },
         async subscribeToCurrentRoom(roomId) {
             try {
                 if (this.chatsWatchRef && typeof this.chatsWatchRef.unsubscribe === 'function') {
@@ -235,6 +458,7 @@ export default {
                 }
                 this.messages.push(incoming);
                 this.messages.sort((a, b) => new Date(a.timeStamp) - new Date(b.timeStamp));
+                this.$nextTick(() => this.scrollToBottomSafe());
             } catch (e) {
                 // ignore
             }
@@ -410,6 +634,7 @@ export default {
                 all.sort((a, b) => new Date(a.timeStamp) - new Date(b.timeStamp));
                 this.messages = all;
             }
+            this.$nextTick(() => this.scrollToBottomSafe());
         },
 
         openParticipantsDialog() {
@@ -529,6 +754,7 @@ export default {
 
             this.messages.push(msg);
             this.EventBus.emit('chat-rooms-updated');
+            this.$nextTick(() => this.scrollToBottomSafe());
         },
 
         async removeRoom(index) {
@@ -633,9 +859,17 @@ export default {
     flex: 1;
     overflow: hidden;
     background: #f8fafc;
+    min-height: 0;
 }
 
-.participants-btn,
+.input-area {
+    padding: 12px;
+    border-top: 1px solid #e2e8f0;
+    background: white;
+    flex-shrink: 0;
+}
+
+.settings-btn,
 .add-tab-btn {
     margin-left: 4px;
 }

@@ -53,6 +53,11 @@ const MainRoutes = {
             component: () => import('@/views/apps/chat/Chats.vue')
         },
         {
+            name: 'Chat Room',
+            path: '/chat',
+            component: () => import('@/views/chat/ChatRoomPage.vue')
+        },
+        {
             name: 'Proposals',
             path: '/proposals',
             component: () => import('@/views/apps/proposal/Proposals.vue')

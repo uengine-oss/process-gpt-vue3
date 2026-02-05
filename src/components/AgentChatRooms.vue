@@ -25,25 +25,69 @@
                 </v-tab>
             </v-tabs>
             <div>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="small"
-                    class="participants-btn"
-                    @click="openParticipantsDialog"
+                <v-menu
+                    v-model="chatRoomSettingsMenu"
+                    location="bottom end"
+                    :close-on-content-click="true"
                 >
-                    <v-icon>mdi-account-multiple-plus-outline</v-icon>
-                </v-btn>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="small"
-                    class="add-tab-btn"
-                    @click="addNewRoom()"
-                >
-                    <v-icon>mdi-plus</v-icon>
-                </v-btn>
-                <v-tooltip activator="parent" location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-btn
+                            v-bind="props"
+                            icon
+                            variant="text"
+                            size="small"
+                            class="settings-btn"
+                            :disabled="!tabs || tabs.length === 0"
+                        >
+                            <v-icon>mdi-cog-outline</v-icon>
+                        </v-btn>
+                    </template>
+                    <v-card min-width="260" class="pa-2">
+                        <div class="text-caption text-medium-emphasis px-2 pt-1 pb-1">
+                            {{ $t('chatListing.setting') || '설정' }}
+                        </div>
+                        <v-list density="compact" class="pa-0">
+                            <v-list-item @click="openChatRoomRenameDialog">
+                                <template v-slot:prepend>
+                                    <v-icon size="18">mdi-pencil-outline</v-icon>
+                                </template>
+                                <v-list-item-title>
+                                    {{ $t('chatListing.chatRoomName') || '채팅방 이름 변경' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                            <v-list-item @click="openChatRoomParticipantsFromSettings">
+                                <template v-slot:prepend>
+                                    <v-icon size="18">mdi-account-multiple-plus-outline</v-icon>
+                                </template>
+                                <v-list-item-title>
+                                    {{ $t('chatListing.selectParticipants') || '참가자 변경' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                            <v-divider class="my-1" />
+                            <v-list-item @click="openChatRoomDeleteConfirm">
+                                <template v-slot:prepend>
+                                    <v-icon size="18" color="error">mdi-delete-outline</v-icon>
+                                </template>
+                                <v-list-item-title class="text-error">
+                                    {{ $t('chatListing.delete') || '삭제' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                    </v-card>
+                </v-menu>
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-btn
+                            v-bind="props"
+                            icon
+                            variant="text"
+                            size="small"
+                            class="add-tab-btn"
+                            @click="addNewRoom()"
+                        >
+                            <v-icon>mdi-plus</v-icon>
+                        </v-btn>
+                    </template>
                     <span>새 대화 시작</span>
                 </v-tooltip>
             </div>
@@ -51,6 +95,7 @@
 
         <div class="chat-body">
             <Chat
+                ref="chatView"
                 :messages="messages"
                 :userInfo="userInfo"
                 :userList="userList"
@@ -58,6 +103,18 @@
                 :chatRoomId="currentRoomId || ''"
                 type="chats"
                 :disableChat="false"
+                :hideInput="true"
+                @sendMessage="beforeSendMessage"
+            />
+        </div>
+
+        <div class="input-area">
+            <UnifiedChatInput
+                variant="inline"
+                :showExamples="false"
+                :disableChat="false"
+                :userList="userList"
+                :currentChatRoom="currentChatRoom"
                 @sendMessage="beforeSendMessage"
             />
         </div>
@@ -113,18 +170,84 @@
                 </v-row>
             </v-card>
         </v-dialog>
+
+        <!-- 채팅방 설정: 이름 변경 -->
+        <v-dialog v-model="chatRoomRenameDialog" max-width="520" persistent>
+            <v-card class="pa-2" style="border-radius: 16px;">
+                <v-card-title class="d-flex align-center pa-3 pb-1">
+                    <div class="text-subtitle-1 font-weight-bold">
+                        {{ $t('chatListing.chatRoomName') || '채팅방 이름' }}
+                    </div>
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" @click="chatRoomRenameDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-3 pt-2">
+                    <v-text-field
+                        v-model="chatRoomRenameDraft"
+                        :label="$t('chatListing.chatRoomName') || '채팅방 이름'"
+                        density="compact"
+                        variant="outlined"
+                        hide-details
+                        autofocus
+                    />
+                    <div class="text-caption text-medium-emphasis mt-2">
+                        - 최대 50자까지 저장됩니다.
+                    </div>
+                </v-card-text>
+                <v-card-actions class="pa-3 pt-0">
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="chatRoomRenameDialog = false">취소</v-btn>
+                    <v-btn color="primary" variant="flat" rounded @click="confirmChatRoomRename">
+                        {{ $t('chatListing.save') || '저장' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- 채팅방 설정: 삭제 확인 -->
+        <v-dialog v-model="chatRoomDeleteDialog" max-width="520" persistent>
+            <v-card class="pa-2" style="border-radius: 16px;">
+                <v-card-title class="d-flex align-center pa-3 pb-1">
+                    <div class="text-subtitle-1 font-weight-bold">
+                        {{ $t('chatListing.deleteChatRoom') || '채팅방 삭제' }}
+                    </div>
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" @click="chatRoomDeleteDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-3 pt-2">
+                    "{{ getCurrentChatRoomName() }}" {{ $t('chatListing.confirmDeleteChatRoom') || '채팅방을 삭제하시겠습니까?' }}
+                    <div class="text-caption text-medium-emphasis mt-2">
+                        - 삭제하면 복구할 수 없습니다.
+                    </div>
+                </v-card-text>
+                <v-card-actions class="pa-3 pt-0">
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="chatRoomDeleteDialog = false">취소</v-btn>
+                    <v-btn color="error" variant="flat" rounded @click="confirmChatRoomDelete">
+                        {{ $t('chatListing.delete') || '삭제' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import Chat from '@/components/ui/Chat.vue';
+import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
+import agentRouterService from '@/services/AgentRouterService';
+import { getValidToken } from '@/utils/supabaseAuth';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     name: 'AgentChatRooms',
-    components: { Chat },
+    components: { Chat, UnifiedChatInput },
     props: {
         agentInfo: {
             type: Object,
@@ -138,6 +261,7 @@ export default {
             userList: [],
             isLoadingUsers: false,
             chatsWatchRef: null,
+            agentStatuses: {}, // { [agentId]: { state, message, updatedAt } }
 
             chatRooms: [],
             tabs: [],
@@ -151,7 +275,46 @@ export default {
 
             participantsDialog: false,
             participantsDraft: [],
+
+            // 채팅방 설정 메뉴/다이얼로그
+            chatRoomSettingsMenu: false,
+            chatRoomRenameDialog: false,
+            chatRoomRenameDraft: '',
+            chatRoomDeleteDialog: false,
         };
+    },
+    computed: {
+        agentParticipants() {
+            const parts = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
+            // 참가자 중 "agent" 타입만 대상으로 상태를 보여줌 (내 계정은 제외)
+            const agents = parts
+                .map(p => this.normalizeParticipant(p))
+                .filter(p => p && (p.id || p.email))
+                .filter(p => p.agent_type === 'agent' || p.is_agent === true || p.isAgent === true);
+
+            // 중복 제거(id 기준)
+            const uniq = new Map();
+            agents.forEach(a => {
+                const key = a.id || a.email;
+                if (!uniq.has(key)) uniq.set(key, a);
+            });
+
+            // 기본적으로 "현재 화면의 agentUser"를 가장 앞에 오도록 정렬
+            const primaryId = this.agentUser?.id || this.agentInfo?.id || null;
+            return Array.from(uniq.values()).sort((a, b) => {
+                if (primaryId && a.id === primaryId) return -1;
+                if (primaryId && b.id === primaryId) return 1;
+                return (a.username || '').localeCompare((b.username || ''), 'ko');
+            });
+        },
+        primaryAgentId() {
+            return this.agentUser?.id || this.agentInfo?.id || null;
+        },
+        primaryStatus() {
+            const id = this.primaryAgentId;
+            if (!id) return { state: 'unknown', message: '' };
+            return this.getAgentStatus(id);
+        }
     },
     watch: {
         '$route.query.roomId': {
@@ -189,6 +352,154 @@ export default {
         this.EventBus.emit('chat-room-unselected');
     },
     methods: {
+        scrollToBottomSafe() {
+            try {
+                this.$refs.chatView?.scrollToBottom?.();
+            } catch (e) {}
+        },
+        getCurrentTab() {
+            const idx = this.currentTabIndex ?? 0;
+            return (Array.isArray(this.tabs) && this.tabs[idx]) ? this.tabs[idx] : null;
+        },
+        getCurrentChatRoomName() {
+            const tab = this.getCurrentTab();
+            const name = (this.currentChatRoom?.name || tab?.title || '').toString().trim();
+            return name || '새 대화';
+        },
+        openChatRoomRenameDialog() {
+            this.chatRoomSettingsMenu = false;
+            this.chatRoomRenameDraft = this.getCurrentChatRoomName();
+            this.chatRoomRenameDialog = true;
+        },
+        async confirmChatRoomRename() {
+            const tab = this.getCurrentTab();
+            const roomId = tab?.roomId || null;
+            const nextName = String(this.chatRoomRenameDraft || '').trim().substring(0, 50);
+            if (!nextName || !tab) {
+                this.chatRoomRenameDialog = false;
+                return;
+            }
+            // 탭/현재방 이름 반영
+            tab.title = this.truncateText(nextName, 20);
+            if (this.currentChatRoom) this.currentChatRoom.name = nextName;
+
+            // 실제 방이면 DB 업데이트
+            if (roomId) {
+                const room = this.chatRooms.find((r) => r.id === roomId);
+                if (room) {
+                    room.name = nextName;
+                    await this.putObject('chat_rooms', room);
+                    this.currentChatRoom = room;
+                }
+                this.EventBus.emit('chat-rooms-updated');
+            }
+            this.chatRoomRenameDialog = false;
+        },
+        openChatRoomParticipantsFromSettings() {
+            this.chatRoomSettingsMenu = false;
+            this.openParticipantsDialog();
+        },
+        openChatRoomDeleteConfirm() {
+            this.chatRoomSettingsMenu = false;
+            this.chatRoomDeleteDialog = true;
+        },
+        async confirmChatRoomDelete() {
+            this.chatRoomDeleteDialog = false;
+            const tab = this.getCurrentTab();
+            const roomId = tab?.roomId || null;
+            await this.deleteRoom(roomId);
+        },
+        async deleteRoom(roomId) {
+            const idx = this.currentTabIndex ?? 0;
+            const tab = this.tabs?.[idx] || null;
+            if (!tab) return;
+
+            // 드래프트 탭 삭제: 방이 없으므로 탭만 정리
+            if (!roomId) {
+                if (this.tabs.length === 1) {
+                    // 마지막이면 "새 대화" 상태로 리셋
+                    tab.title = '새 대화';
+                    tab.participants = this.defaultParticipants();
+                    this.currentRoomId = null;
+                    this.currentChatRoom = { id: null, name: tab.title, participants: tab.participants };
+                    this.messages = [];
+                    this.EventBus.emit('chat-room-unselected');
+                    return;
+                }
+                this.tabs.splice(idx, 1);
+            } else {
+                // 실제 방 삭제(DB + 탭/목록 정리)
+                try {
+                    await backend.delete(`chats/${roomId}`, { key: 'id' });
+                    await backend.delete(`chat_rooms/${roomId}`, { key: 'id' });
+                } catch (e) {
+                    // ignore
+                }
+                this.chatRooms = (this.chatRooms || []).filter(r => r.id !== roomId);
+                const tabIdx = this.tabs.findIndex(t => t.roomId === roomId);
+                if (tabIdx !== -1) this.tabs.splice(tabIdx, 1);
+            }
+
+            // 다음 탭/상태 조정
+            if (!this.tabs || this.tabs.length === 0) {
+                this.addDraftTab();
+                this.currentRoomId = null;
+                this.currentChatRoom = { id: null, name: this.tabs[0].title, participants: this.tabs[0].participants };
+                this.messages = [];
+                this.EventBus.emit('chat-room-unselected');
+            } else {
+                if (this.currentTabIndex >= this.tabs.length) {
+                    this.currentTabIndex = this.tabs.length - 1;
+                }
+                const next = this.tabs[this.currentTabIndex];
+                if (next?.roomId) {
+                    await this.selectRoomById(next.roomId);
+                } else {
+                    this.currentRoomId = null;
+                    this.currentChatRoom = { id: null, name: next?.title || '새 대화', participants: next?.participants || [] };
+                    this.messages = [];
+                    this.EventBus.emit('chat-room-unselected');
+                }
+            }
+
+            this.EventBus.emit('chat-rooms-updated');
+        },
+        statusLabel(state) {
+            switch (state) {
+                case 'warming': return '준비 중 (파드 생성/시작)';
+                case 'streaming': return '응답 생성 중';
+                case 'ready': return '연결됨';
+                case 'error': return '연결 오류';
+                case 'unknown':
+                default: return '대기';
+            }
+        },
+        statusColor(state) {
+            switch (state) {
+                case 'warming': return 'warning';
+                case 'streaming': return 'primary';
+                case 'ready': return 'success';
+                case 'error': return 'error';
+                case 'unknown':
+                default: return 'grey';
+            }
+        },
+        getAgentStatus(agentId) {
+            const v = this.agentStatuses?.[agentId];
+            return v || { state: 'unknown', message: '' };
+        },
+        setAgentStatus(agentId, next) {
+            if (!agentId) return;
+            const prev = this.agentStatuses?.[agentId] || {};
+            this.agentStatuses = {
+                ...(this.agentStatuses || {}),
+                [agentId]: {
+                    ...prev,
+                    ...next,
+                    updatedAt: new Date().toISOString()
+                }
+            };
+        },
         async subscribeToCurrentRoom(roomId) {
             try {
                 if (this.chatsWatchRef && typeof this.chatsWatchRef.unsubscribe === 'function') {
@@ -226,6 +537,7 @@ export default {
                 }
                 this.messages.push(incoming);
                 this.messages.sort((a, b) => new Date(a.timeStamp) - new Date(b.timeStamp));
+                this.$nextTick(() => this.scrollToBottomSafe());
             } catch (e) {
                 // ignore
             }
@@ -234,7 +546,12 @@ export default {
             this.userInfo = await backend.getUserInfo();
             // agentInfo에 email/username이 없을 수 있어 보완
             try {
-                this.agentUser = this.agentInfo?.email ? this.agentInfo : await backend.getUserById(this.agentInfo?.id);
+                if (!this.agentInfo?.id && !this.agentInfo?.uid) {
+                    this.agentUser = this.agentInfo;
+                } else {
+                    const agentId = this.agentInfo?.id || this.agentInfo?.uid;
+                    this.agentUser = this.agentInfo?.email ? this.agentInfo : await backend.getUserById(agentId);
+                }
             } catch (e) {
                 this.agentUser = this.agentInfo;
             }
@@ -245,6 +562,10 @@ export default {
                 // 최초 진입 시: 방을 만들지 않고 드래프트 탭만 생성
                 this.addDraftTab();
             }
+
+            // 방/탭과 무관하게: 에이전트 화면 접속 시 즉시 warmup 시작(상단 배너에 표시)
+            this.warmupAgentsForCurrentRoom();
+
             const roomIdFromRoute = this.$route?.query?.roomId;
             if (roomIdFromRoute) {
                 await this.openRoomFromRoute(roomIdFromRoute);
@@ -257,6 +578,43 @@ export default {
                 this.currentRoomId = null;
                 this.currentChatRoom = { id: null, name: tab?.title || '새 대화', participants: tab?.participants || [] };
             }
+        },
+
+        async warmupAgent(agentId) {
+            if (!agentId) return;
+            // 이미 warming/ready/streaming이면 중복 warmup 스킵
+            const current = this.getAgentStatus(agentId);
+            if (current.state === 'warming' || current.state === 'ready' || current.state === 'streaming') return;
+
+            this.setAgentStatus(agentId, { state: 'warming', message: '' });
+            try {
+                await agentRouterService.warmup(agentId);
+                this.setAgentStatus(agentId, { state: 'ready', message: '' });
+            } catch (e) {
+                // warmup 실패해도 UI가 멈추지 않게만 처리 (전송 시 재시도)
+                this.setAgentStatus(agentId, { state: 'error', message: '에이전트 준비 실패 (재시도 가능)' });
+            }
+        },
+
+        warmupAgentsForCurrentRoom() {
+            // currentChatRoom이 없으면 primary agent만 warmup
+            const primaryId = this.primaryAgentId;
+            if (!this.currentChatRoom) {
+                if (primaryId) this.warmupAgent(primaryId);
+                return;
+            }
+            // 참가자 중 agent 타입들 warmup (primary 포함)
+            const ids = this.agentParticipants
+                .map(p => p.id)
+                .filter(Boolean);
+            if (ids.length === 0 && primaryId) ids.push(primaryId);
+            ids.forEach(id => this.warmupAgent(id));
+        },
+
+        async ensureAgentReady(agentId) {
+            if (!agentId) return null;
+            await this.warmupAgent(agentId);
+            return agentId;
         },
 
         async openRoomFromRoute(roomId) {
@@ -307,7 +665,10 @@ export default {
                 id: p?.id || p?.uid || null,
                 email: p?.email || null,
                 username: p?.username || p?.name || p?.email || '',
-                profile: p?.profile || null
+                profile: p?.profile || null,
+                // 에이전트 판별/상태 표시용(가능한 값 보존)
+                agent_type: p?.agent_type || p?.agentType || null,
+                is_agent: p?.is_agent ?? p?.isAgent ?? null
             };
         },
 
@@ -392,6 +753,7 @@ export default {
             this.currentChatRoom = room;
             await this.loadMessages(roomId);
             await this.subscribeToCurrentRoom(roomId);
+            this.warmupAgentsForCurrentRoom();
         },
 
         async loadMessages(roomId) {
@@ -409,6 +771,7 @@ export default {
                 }
             } finally {
             }
+            this.$nextTick(() => this.scrollToBottomSafe());
         },
 
         addDraftTab() {
@@ -497,10 +860,12 @@ export default {
                     await this.putObject('chat_rooms', room);
                     this.currentChatRoom = room;
                     this.EventBus.emit('chat-rooms-updated');
+                    this.warmupAgentsForCurrentRoom();
                 }
             } else {
                 // 드래프트 탭: 메모리만 업데이트
                 this.currentChatRoom = { id: null, name: tab.title, participants: tab.participants };
+                this.warmupAgentsForCurrentRoom();
             }
         },
 
@@ -590,6 +955,136 @@ export default {
 
             this.messages.push(msg);
             this.EventBus.emit('chat-rooms-updated');
+            this.$nextTick(() => this.scrollToBottomSafe());
+
+            // ---- Multi-agent response (mentions / all) ----
+            // 첨부 정보는 [InputData]로 전달(WorkAssistantChatPanel과 동일 방식)
+            const buildMessageForAgent = (userText, policy) => {
+                let messageForAgent = userText || '';
+                if ((payload?.images && payload.images.length > 0) || payload?.file) {
+                    const inputData = {};
+                    if (payload?.images && payload.images.length > 0) inputData.images = payload.images;
+                    if (payload?.file) inputData.file = payload.file;
+                    messageForAgent += `\n\n[InputData]\n${JSON.stringify(inputData)}`;
+                }
+                return messageForAgent;
+            };
+
+            const parseMentions = (t) => {
+                const s = (t || '').toString();
+                const out = [];
+                const re = /@([0-9A-Za-z가-힣._-]+)/g;
+                let m;
+                while ((m = re.exec(s)) !== null) {
+                    const raw = (m[1] || '').trim();
+                    if (raw) out.push(raw);
+                }
+                return Array.from(new Set(out));
+            };
+
+            const mentions = parseMentions(msg.content || '');
+            const norm = (v) => (v || '').toString().toLowerCase().replace(/\s+/g, '');
+
+            // 후보 에이전트: 현재 방의 agentParticipants + primary(누락 시)
+            const candidates = Array.isArray(this.agentParticipants) ? [...this.agentParticipants] : [];
+            const primaryId = this.primaryAgentId;
+            if (primaryId && !candidates.some(p => p?.id === primaryId)) {
+                candidates.unshift({ id: primaryId, username: this.agentUser?.username || 'Agent', email: this.agentUser?.email || null });
+            }
+
+            const targets =
+                mentions.length > 0
+                    ? candidates
+                        .filter(p => p?.id && [p?.username, p?.name, p?.email, p?.id].filter(Boolean).map(norm).some(k => mentions.map(norm).includes(k)))
+                        .map(p => ({ ...p, policy: 'must_reply' }))
+                    : candidates
+                        .filter(p => p?.id)
+                        .map(p => ({ ...p, policy: 'must_reply' }));
+
+            if (!targets || targets.length === 0) return;
+
+            const userJwt = await getValidToken() || '';
+            const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
+
+            await Promise.all(targets.map(async (t) => {
+                const agentId = t.id;
+                if (!agentId) return;
+                await this.ensureAgentReady(agentId);
+
+                const assistantUuid = this.uuid();
+                const assistantMsg = {
+                    uuid: assistantUuid,
+                    role: 'assistant',
+                    content: '...',
+                    contentType: 'markdown',
+                    isLoading: true,
+                    timeStamp: new Date().toISOString(),
+                    email: t.email || `agent:${agentId}`,
+                    name: t.username || t.name || t.email || agentId,
+                    userName: t.username || t.name || t.email || agentId,
+                    agentId
+                };
+                this.messages.push(assistantMsg);
+                const assistantIndex = this.messages.length - 1;
+
+                let full = '';
+                this.setAgentStatus(agentId, { state: 'streaming', message: '' });
+                await agentRouterService.sendMessageStream(
+                    agentId,
+                    {
+                        message: buildMessageForAgent(msg.content || '', t.policy),
+                        tenant_id: tenantId,
+                        user_uid: this.userInfo?.uid || this.userInfo?.id,
+                        user_email: this.userInfo?.email,
+                        user_name: this.userInfo?.name || this.userInfo?.username,
+                        user_jwt: userJwt,
+                        conversation_id: roomId
+                    },
+                    {
+                        onToken: (token) => {
+                            full += token;
+                            if (this.messages[assistantIndex]) {
+                                this.messages[assistantIndex].content = full;
+                            }
+                        },
+                        onDone: async (content) => {
+                            const finalContent = (content || full || '').toString().trim();
+                            const safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
+
+                            if (this.messages[assistantIndex]) {
+                                this.messages[assistantIndex].content = safeFinal || full || '';
+                                this.messages[assistantIndex].isLoading = false;
+                            }
+                            this.setAgentStatus(agentId, { state: 'ready', message: '' });
+
+                            await this.putObject(`chats/${assistantUuid}`, {
+                                uuid: assistantUuid,
+                                id: roomId,
+                                messages: { ...(this.messages[assistantIndex] || assistantMsg), content: safeFinal || full || '', isLoading: false }
+                            });
+
+                            const r = this.chatRooms.find((x) => x.id === roomId) || this.currentChatRoom;
+                            if (r) {
+                                r.message = {
+                                    msg: (safeFinal || '').substring(0, 50),
+                                    type: 'text',
+                                    createdAt: new Date().toISOString()
+                                };
+                                await this.putObject('chat_rooms', r);
+                            }
+                            this.EventBus.emit('chat-rooms-updated');
+                        },
+                        onError: async () => {
+                            this.setAgentStatus(agentId, { state: 'error', message: '응답 오류' });
+                            if (this.messages[assistantIndex]) {
+                                const current = (this.messages[assistantIndex].content || '').toString();
+                                this.messages[assistantIndex].content = current && current !== '...' ? current : '(에이전트 연결/응답 오류)';
+                                this.messages[assistantIndex].isLoading = false;
+                            }
+                        }
+                    }
+                );
+            }));
         }
     }
 };
@@ -610,6 +1105,10 @@ export default {
     padding: 8px 8px 0 8px;
 }
 
+.settings-btn {
+    margin-right: 2px;
+}
+
 .room-tabs {
     flex: 1;
 }
@@ -628,6 +1127,13 @@ export default {
     white-space: nowrap;
 }
 
+.input-area {
+    padding: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    background: white;
+    flex-shrink: 0;
+}
+
 .tab-close-btn {
     opacity: 0.7;
 }
@@ -637,5 +1143,60 @@ export default {
     flex-direction: column;
     flex: 1;
     min-height: 0;
+}
+
+.agent-connection-banner {
+    padding: 12px 12px 10px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: linear-gradient(180deg, rgba(var(--v-theme-primary), 0.06) 0%, rgba(255, 255, 255, 1) 100%);
+}
+
+.banner-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.banner-title {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.75);
+    white-space: nowrap;
+}
+
+.banner-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.status-message {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+
+.agent-status-chips {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.chip-name {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip-dot {
+    margin: 0 6px;
+    opacity: 0.6;
 }
 </style>

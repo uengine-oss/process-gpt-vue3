@@ -1,17 +1,19 @@
 <template>
     <div class="user-list-container">
-        <div v-if="!isLoading && users.length > 0 && isSearchOpen" class="px-2 pb-2">
-            <v-text-field
-                v-model="searchValue"
-                variant="solo-filled"
-                density="compact"
-                hide-details
-                clearable
-                prepend-inner-icon="mdi-magnify"
-                :placeholder="$t('userListing.search') || '유저 검색'"
-                ref="searchInput"
-            />
-        </div>
+        <v-expand-transition>
+            <div v-show="!isLoading && users.length > 0 && isSearchOpen" class="px-2 pb-2">
+                <v-text-field
+                    v-model="searchValue"
+                    variant="solo-filled"
+                    density="compact"
+                    hide-details
+                    clearable
+                    prepend-inner-icon="mdi-magnify"
+                    :placeholder="$t('userListing.search') || '유저 검색'"
+                    ref="searchInput"
+                />
+            </div>
+        </v-expand-transition>
 
         <div v-if="isLoading" class="loading-state">
             <v-progress-circular indeterminate size="24" color="primary"></v-progress-circular>
@@ -164,14 +166,11 @@ export default {
         },
 
         async openUserConversation(user) {
-            if (!user || !user.id) return;
-            const path = this.$route?.path || '';
-            if (!path.startsWith('/definition-map')) {
-                await this.$router.push({ path: '/definition-map' });
-                setTimeout(() => this.EventBus.emit('open-user-conversation', { user }), 0);
-            } else {
-                this.EventBus.emit('open-user-conversation', { user });
-            }
+            const id = user?.id || user?.uid || null;
+            if (!id) return;
+            // 에이전트 화면에서 넘어올 때 남아있는 hash(#chat) 제거
+            try { if (window.location.hash) window.location.hash = ''; } catch (e) {}
+            await this.$router.push({ path: '/chat', query: { userId: id }, hash: '' });
         },
 
         handleImageError(event) {
