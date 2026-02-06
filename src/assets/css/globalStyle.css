@@ -1431,11 +1431,11 @@ hr {
     }
 
     .manage-access-tab-table-box .v-data-table {
-        height: calc(100vh - 160px) !important;
+        height: 100% !important;
     }
     
     .mcp-server-list-box {
-        height: calc(100vh - 200px) !important;
+        height: 100% !important;
         overflow: auto;
     }
 
@@ -1561,6 +1561,7 @@ hr {
     
     .is-work-height {
         height: 100vh;
+        overflow: auto;
     }
 
     

@@ -228,12 +228,12 @@ const rightPartStyle = computed(() => {
                         @click="sDrawer = !sDrawer" 
                         variant="text" 
                         class="mobile-menu-toggle-btn d-lg-none"
+                        :style="menuButtonStyle"
                         v-bind="tooltipProps"
                     >
                         <Icons :icon="'list-bold-duotone'"
                             :size="16"
                             :color="'#ffffff'"
-                            :style="menuButtonStyle"
                         />
                     </v-btn>
                 </template>
