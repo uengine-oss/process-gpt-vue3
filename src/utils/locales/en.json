@@ -2831,6 +2831,16 @@
         "generatedSql": "Generated SQL",
         "queryResult": "Query Result"
     },
+    "ProcessInstanceTable": {
+        "status": "Status",
+        "completedWork": "Completed Work",
+        "nextWork": "Next Work",
+        "time": "Time",
+        "userInput": "User Input",
+        "noFormContent": "No form content available.",
+        "stepFeedback": "Feedback for this step",
+        "processing": "Processing..."
+    },
     "SkillsManagement": {
         "title": "Skills List Management",
         "description": "Add or remove skills here. Click a skill to open it and edit its files.",

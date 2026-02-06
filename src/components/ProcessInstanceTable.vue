@@ -3,12 +3,12 @@
         <v-card flat class="log-card ma-0 pa-0 w-100">
             <v-skeleton-loader
                 v-if="isLoading"
-                type="table"
+                :type="isMobile ? 'card' : 'table'"
                 class="w-100"
             ></v-skeleton-loader>
 
             <v-data-table
-                v-else
+                v-else-if="!isMobile"
                 :headers="tableHeaders"
                 :items="tableRows"
                 :items-per-page="10"
@@ -95,7 +95,7 @@
                                     <div class="pa-4 bg-blue-lighten-5">
                                         <div class="d-flex align-center mb-3">
                                             <v-icon size="small" color="primary" class="mr-2">mdi-account</v-icon>
-                                            <span class="font-weight-bold text-body-1">사용자 입력</span>
+                                            <span class="font-weight-bold text-body-1">{{ $t('ProcessInstanceTable.userInput') }}</span>
                                             <v-chip size="x-small" color="primary" variant="tonal" class="ml-2">
                                                 {{ item.performer }}
                                             </v-chip>
@@ -107,7 +107,7 @@
                                             :modelValue="item.userMessage.jsonContent || {}"
                                         />
                                         <div v-else class="text-medium-emphasis text-caption">
-                                            입력 폼 내용이 없습니다.
+                                            {{ $t('ProcessInstanceTable.noFormContent') }}
                                         </div>
 
                                         <!-- Feedback for this item -->
@@ -116,7 +116,7 @@
                                                 <div class="d-flex align-center justify-space-between pa-2 bg-grey-lighten-4" style="border-radius: 6px;">
                                                     <div class="d-flex align-center">
                                                         <v-icon size="small" class="mr-2">mdi-comment-question-outline</v-icon>
-                                                        <span class="text-body-2 font-weight-medium">이 단계에 대한 피드백</span>
+                                                        <span class="text-body-2 font-weight-medium">{{ $t('ProcessInstanceTable.stepFeedback') }}</span>
                                                     </div>
                                                     <div class="d-flex" style="gap: 6px;">
                                                         <v-btn
@@ -156,7 +156,7 @@
                                 <div v-if="item.streaming && (item.streamingLog || (item.systemMessage && item.systemMessage.log))" class="pa-4 bg-amber-lighten-5">
                                     <div class="d-flex align-center mb-2">
                                         <v-icon size="small" color="warning" class="mr-2 rotating-icon">mdi-loading</v-icon>
-                                        <span class="font-weight-bold text-body-1">처리중...</span>
+                                        <span class="font-weight-bold text-body-1">{{ $t('ProcessInstanceTable.processing') }}</span>
                                     </div>
                                     <v-card variant="tonal" color="warning" class="pa-3">
                                         <pre class="text-body-2 ma-0">{{ item.streamingLog || item.systemMessage.log }}</pre>
@@ -177,6 +177,161 @@
                 </template>
             </v-data-table>
 
+            <!-- 모바일: 카드 레이아웃 -->
+            <div v-else class="process-instance-mobile-cards pa-3">
+                <template v-if="tableRows.length === 0">
+                    <div class="no-data-cell">
+                        <v-icon size="large" color="medium-emphasis">mdi-inbox-outline</v-icon>
+                        <div class="text-body-2 text-medium-emphasis mt-2">
+                            {{ $t('ProcessInstanceLog.noData') }}
+                        </div>
+                    </div>
+                </template>
+                <v-card
+                    v-for="item in tableRows"
+                    :key="item.id"
+                    variant="outlined"
+                    class="process-instance-mobile-card mb-3"
+                    @click="toggleRow($event, { item })"
+                >
+                    <v-card-text class="pa-4">
+                        <div class="d-flex align-center justify-space-between mb-3">
+                            <div class="d-flex align-center">
+                                <v-tooltip v-if="item.status" location="top">
+                                    <template #activator="{ props }">
+                                        <v-icon
+                                            v-bind="props"
+                                            :color="getStatusColor(item.status)"
+                                            :class="{ 'rotating-icon': item.status === 'PROCESSING' }"
+                                            size="small"
+                                            class="mr-2"
+                                        >
+                                            {{ getStatusIcon(item.status) }}
+                                        </v-icon>
+                                    </template>
+                                    <span>{{ item.status }}</span>
+                                </v-tooltip>
+                                <span v-else class="text-medium-emphasis text-caption mr-2">-</span>
+                                <v-icon size="small" class="text-medium-emphasis mr-1">mdi-clock-outline</v-icon>
+                                <span class="text-caption">{{ formatTimestamp(item.time) }}</span>
+                            </div>
+                            <v-icon size="small" class="text-medium-emphasis">
+                                {{ expandedRows.includes(item.id) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                            </v-icon>
+                        </div>
+                        <div class="process-instance-mobile-card-row">
+                            <span class="process-instance-mobile-card-label text-caption text-medium-emphasis">{{ $t('ProcessInstanceTable.completedWork') }}</span>
+                            <div v-if="item.completedActivityName" class="work-name">
+                                {{ item.completedActivityName }}
+                            </div>
+                            <div v-else class="text-medium-emphasis text-caption">-</div>
+                            <div v-if="item.performer" class="work-performer mt-1">
+                                <v-avatar size="16" class="mr-1">
+                                    <v-img
+                                        v-if="item.performerProfile"
+                                        :src="item.performerProfile"
+                                        alt="profile"
+                                    />
+                                    <v-icon v-else size="x-small">mdi-account</v-icon>
+                                </v-avatar>
+                                <span>{{ item.performer }}</span>
+                            </div>
+                        </div>
+                        <div class="process-instance-mobile-card-row mt-2 pt-2">
+                            <span class="process-instance-mobile-card-label text-caption text-medium-emphasis">{{ $t('ProcessInstanceTable.nextWork') }}</span>
+                            <div v-if="item.nextActivityName" class="work-name">
+                                {{ item.nextActivityName }}
+                            </div>
+                            <div v-else class="text-medium-emphasis text-caption">-</div>
+                            <div v-if="item.nextPerformer" class="work-performer mt-1">
+                                <v-avatar size="16" class="mr-1">
+                                    <v-img
+                                        v-if="item.nextPerformerProfile"
+                                        :src="item.nextPerformerProfile"
+                                        alt="profile"
+                                    />
+                                    <v-icon v-else size="x-small">mdi-account</v-icon>
+                                </v-avatar>
+                                <span>{{ item.nextPerformer }}</span>
+                            </div>
+                        </div>
+                    </v-card-text>
+                    <v-expand-transition>
+                        <div v-if="expandedRows.includes(item.id)">
+                            <v-divider></v-divider>
+                            <div class="expanded-content pa-0">
+                                <div v-if="item.userMessage" class="user-input-section">
+                                    <div class="pa-4 bg-blue-lighten-5">
+                                        <div class="d-flex align-center mb-3">
+                                            <v-icon size="small" color="primary" class="mr-2">mdi-account</v-icon>
+                                            <span class="font-weight-bold text-body-1">{{ $t('ProcessInstanceTable.userInput') }}</span>
+                                            <v-chip size="x-small" color="primary" variant="tonal" class="ml-2">
+                                                {{ item.performer }}
+                                            </v-chip>
+                                        </div>
+                                        <DynamicForm
+                                            v-if="item.userMessage.htmlContent"
+                                            :formHTML="item.userMessage.htmlContent"
+                                            :readonly="true"
+                                            :modelValue="item.userMessage.jsonContent || {}"
+                                        />
+                                        <div v-else class="text-medium-emphasis text-caption">
+                                            {{ $t('ProcessInstanceTable.noFormContent') }}
+                                        </div>
+                                        <div class="mt-2 pt-2" style="border-top: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));">
+                                            <div v-if="!getRowFeedbackState(item.id).showInput">
+                                                <div class="d-flex align-center justify-space-between flex-wrap pa-2 bg-grey-lighten-4" style="border-radius: 6px; gap: 8px;">
+                                                    <div class="d-flex align-center">
+                                                        <v-icon size="small" class="mr-2">mdi-comment-question-outline</v-icon>
+                                                        <span class="text-body-2 font-weight-medium">{{ $t('ProcessInstanceTable.stepFeedback') }}</span>
+                                                    </div>
+                                                    <div class="d-flex" style="gap: 6px;">
+                                                        <v-btn
+                                                            variant="tonal"
+                                                            size="small"
+                                                            color="success"
+                                                            @click.stop="selectRowFeedback(item, 'good')"
+                                                        >
+                                                            <v-icon start size="small">mdi-thumb-up</v-icon>
+                                                            Good
+                                                        </v-btn>
+                                                        <v-btn
+                                                            variant="tonal"
+                                                            size="small"
+                                                            color="error"
+                                                            @click.stop="selectRowFeedback(item, 'bad')"
+                                                        >
+                                                            <v-icon start size="small">mdi-thumb-down</v-icon>
+                                                            Bad
+                                                        </v-btn>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div v-if="getRowFeedbackState(item.id).showInput" class="mt-1">
+                                                <ProcessFeedback
+                                                    :lastMessage="item.systemMessage || item.userMessage"
+                                                    :task="getRowFeedbackState(item.id).task"
+                                                    @closeFeedback="closeRowFeedback(item)"
+                                                    @applyFeedback="applyRowFeedback"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-if="item.streaming && (item.streamingLog || (item.systemMessage && item.systemMessage.log))" class="pa-4 bg-amber-lighten-5">
+                                    <div class="d-flex align-center mb-2">
+                                        <v-icon size="small" color="warning" class="mr-2 rotating-icon">mdi-loading</v-icon>
+                                        <span class="font-weight-bold text-body-1">{{ $t('ProcessInstanceTable.processing') }}</span>
+                                    </div>
+                                    <v-card variant="tonal" color="warning" class="pa-3">
+                                        <pre class="text-body-2 ma-0 process-instance-mobile-pre">{{ item.streamingLog || item.systemMessage.log }}</pre>
+                                    </v-card>
+                                </div>
+                            </div>
+                        </div>
+                    </v-expand-transition>
+                </v-card>
+            </div>
         </v-card>
     </div>
 </template>
@@ -230,12 +385,15 @@ export default {
         rowFeedbackStates: {}, // { rowId: { showInput: false, task: null } }
     }),
     computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
         tableHeaders() {
             return [
-                { title: "상태", key: "status", sortable: false, width: "100", align: "center" },
-                { title: "완료된 업무", key: "completedWork", sortable: false, width: "35%", align: "start" },
-                { title: "다음 업무", key: "nextWork", sortable: false, width: "30%", align: "start" },
-                { title: "시간", key: "time", sortable: true, width: "130", align: "start" },
+                { title: this.$t('ProcessInstanceTable.status'), key: "status", sortable: false, width: "100", align: "center" },
+                { title: this.$t('ProcessInstanceTable.completedWork'), key: "completedWork", sortable: false, width: "35%", align: "start" },
+                { title: this.$t('ProcessInstanceTable.nextWork'), key: "nextWork", sortable: false, width: "30%", align: "start" },
+                { title: this.$t('ProcessInstanceTable.time'), key: "time", sortable: true, width: "130", align: "start" },
             ];
         },
         effectiveMessages() {
@@ -941,11 +1099,6 @@ export default {
     line-height: 1.5;
 }
 
-/* Expanded Content */
-.expanded-content {
-    border-top: 2px solid rgba(var(--v-theme-primary), 0.2);
-}
-
 .user-input-section {
     border-bottom: 1px solid rgba(var(--v-theme-divider), 0.12);
 }
@@ -971,5 +1124,32 @@ export default {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* 모바일 카드 레이아웃 */
+.process-instance-mobile-cards {
+    max-width: 100%;
+}
+
+.process-instance-mobile-card {
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+.process-instance-mobile-card-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.process-instance-mobile-card-label {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.process-instance-mobile-pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+    max-width: 100%;
 }
 </style>

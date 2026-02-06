@@ -3108,6 +3108,16 @@
         "instruction": "지시사항",
         "conditionExamples": "조건 예시"
     },
+    "ProcessInstanceTable": {
+        "status": "상태",
+        "completedWork": "완료된 업무",
+        "nextWork": "다음 업무",
+        "time": "시간",
+        "userInput": "사용자 입력",
+        "noFormContent": "입력 폼 내용이 없습니다.",
+        "stepFeedback": "이 단계에 대한 피드백",
+        "processing": "처리중..."
+    },
     "SkillsManagement": {
         "title": "스킬 목록 관리",
         "description": "여기서 스킬을 추가하거나 삭제할 수 있습니다. 스킬을 클릭하면 열어서 파일을 편집할 수 있습니다.",
