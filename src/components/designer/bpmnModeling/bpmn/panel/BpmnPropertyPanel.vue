@@ -60,6 +60,7 @@
                 :roles="roles"
                 :process-variables="processVariables"
                 :element="element"
+                :isForCompensation="isForCompensation"
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
                 @update:text="(val) => (text = val)"
@@ -243,7 +244,7 @@ export default {
                 type = 'pal-user-task';
             }
             if (this.isGPTMode) {
-                if(type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task') {
+                if(type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task' || type == 'lane') {
                     type = 'gpt-' + type;
                 }
             }
@@ -251,6 +252,10 @@ export default {
                 type = 'gateway';
             }
             return type + '-panel';
+        },
+        isForCompensation() {
+            if(!this.element) return false;
+            return this.element.isForCompensation ? true : false;
         }
         // inputData() {
         //     let params = this.uengineProperties.parameters;

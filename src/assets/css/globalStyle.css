@@ -272,6 +272,17 @@ hr {
     fill: #68369a !important;
 }
 
+/* SKIPPED(건너뜀) - 보라색 계열(완료와 구분되도록 점선) */
+.skipped.djs-connection .djs-visual > path {
+    stroke: #9c6ade !important;
+    stroke-dasharray: 6, 4 !important;
+}
+
+.skipped.djs-connection .djs-visual > defs > marker > path {
+    stroke: #9c6ade !important;
+    fill: #9c6ade !important;
+}
+
 .running-task-line.djs-connection .djs-visual > path {
     stroke-width: 3px !important;
     stroke-dasharray: 18, 12 !important;
@@ -294,6 +305,12 @@ hr {
     stroke: #68369A !important;
 }
 
+.skipped:not(.djs-connection) .djs-visual > :nth-child(1) {
+    stroke-width: 5px !important;
+    stroke: #9c6ade !important;
+    stroke-dasharray: 6, 4 !important;
+}
+
 .stopped:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 5px !important;
     stroke: #e53935 !important;
@@ -301,6 +318,12 @@ hr {
 
 .cancelled:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 5px !important;
+    stroke: #e53935 !important;
+}
+
+.failed:not(.djs-connection):not(.generated) .djs-visual > :nth-child(2) {
+    stroke-width: 5px !important;
+    stroke-dasharray: 20, 20 !important;
     stroke: #e53935 !important;
 }
 

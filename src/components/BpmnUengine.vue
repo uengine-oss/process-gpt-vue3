@@ -148,7 +148,9 @@ export default {
                 event: 0,
                 sequenceflow: 0,
                 participant: 0
-            }
+            },
+            // compensate boundaryEvent ↔ 보상 task 연결 시 자동으로 compensateTask 채움
+            compensateAutoFillInstalled: false
         };
     },
     computed: {
@@ -300,6 +302,119 @@ export default {
         },
     },
     methods: {
+        hasCompensateEventDefinition(element) {
+            const defs = element?.businessObject?.eventDefinitions || [];
+            return Array.isArray(defs) && defs.some((d) => d?.$type === 'bpmn:CompensateEventDefinition');
+        },
+        isCompensationHandlerTask(element) {
+            return element?.businessObject?.isForCompensation === true;
+        },
+        ensureUengineJsonOnElement(element) {
+            const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
+            const bo = element?.businessObject;
+            if (!bo) return { bo: null, uengineProps: null, jsonObj: {} };
+
+            if (!bo.extensionElements) {
+                bo.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+            }
+            if (!bo.extensionElements.values) {
+                bo.extensionElements.values = [];
+            }
+            if (bo.extensionElements.values.length === 0) {
+                bo.extensionElements.values.push(
+                    bpmnFactory.create('uengine:Properties', {
+                        json: '{}',
+                        variables: []
+                    })
+                );
+            }
+
+            const uengineProps = bo.extensionElements.values[0];
+            if (typeof uengineProps.json !== 'string') uengineProps.json = '{}';
+
+            let jsonObj = {};
+            try {
+                jsonObj = JSON.parse(uengineProps.json || '{}');
+            } catch (e) {
+                jsonObj = {};
+            }
+
+            return { bo, uengineProps, jsonObj };
+        },
+        applyCompensateTaskAutoFillFromConnection(connection) {
+            if (!connection || connection?.businessObject?.$type !== 'bpmn:Association') return;
+
+            const a = connection.source;
+            const b = connection.target;
+
+            // 양방향 케이스 모두 지원
+            let boundary = null;
+            let handlerTask = null;
+
+            if (this.hasCompensateEventDefinition(a) && this.isCompensationHandlerTask(b)) {
+                boundary = a;
+                handlerTask = b;
+            } else if (this.hasCompensateEventDefinition(b) && this.isCompensationHandlerTask(a)) {
+                boundary = b;
+                handlerTask = a;
+            } else {
+                return;
+            }
+
+            const modeling = this.bpmnViewer.get('modeling');
+            const { bo, uengineProps, jsonObj } = this.ensureUengineJsonOnElement(boundary);
+            if (!bo || !uengineProps) return;
+
+            jsonObj.compensateTask = {
+                name: handlerTask?.businessObject?.name || '',
+                tracingTag: handlerTask?.businessObject?.id || handlerTask?.id || ''
+            };
+
+            uengineProps.json = JSON.stringify(jsonObj);
+
+            // 모델에 반영 (저장 시 XML에도 반영됨)
+            modeling.updateProperties(boundary, {
+                extensionElements: bo.extensionElements
+            });
+        },
+        clearCompensateTaskIfAssociationRemoved(connection) {
+            if (!connection || connection?.businessObject?.$type !== 'bpmn:Association') return;
+            const a = connection.source;
+            const b = connection.target;
+
+            // association이 제거될 때, source/target 중 compensate boundaryEvent가 있으면 compensateTask를 비움
+            const boundary = this.hasCompensateEventDefinition(a) ? a : this.hasCompensateEventDefinition(b) ? b : null;
+            if (!boundary) return;
+
+            const modeling = this.bpmnViewer.get('modeling');
+            const { bo, uengineProps, jsonObj } = this.ensureUengineJsonOnElement(boundary);
+            if (!bo || !uengineProps) return;
+
+            // 연결이 사라졌으니 초기화(기존 null 형태와 호환)
+            jsonObj.compensateTask = null;
+            uengineProps.json = JSON.stringify(jsonObj);
+            modeling.updateProperties(boundary, {
+                extensionElements: bo.extensionElements
+            });
+        },
+        setupCompensateAutoFillListeners() {
+            // 뷰어가 없거나 이미 설치했으면 스킵
+            if (!this.bpmnViewer || this.compensateAutoFillInstalled) return;
+            // 편집 모드에서만 자동 채움 (읽기모드에서는 불필요)
+            if (this.isViewMode) return;
+
+            const eventBus = this.bpmnViewer.get('eventBus');
+
+            const onConnCreate = (e) => this.applyCompensateTaskAutoFillFromConnection(e?.context?.connection);
+            const onReconnect = (e) => this.applyCompensateTaskAutoFillFromConnection(e?.context?.connection);
+            const onDelete = (e) => this.clearCompensateTaskIfAssociationRemoved(e?.context?.connection);
+
+            eventBus.on('commandStack.connection.create.executed', onConnCreate);
+            eventBus.on('commandStack.connection.reconnectEnd.executed', onReconnect);
+            eventBus.on('commandStack.connection.delete.executed', onDelete);
+
+            this.compensateAutoFillInstalled = true;
+        },
         applyAutoLayout() {
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
@@ -657,6 +772,10 @@ export default {
                     self.addTestClassToElement(element, canvas);
                 }, 100);
             });
+
+            // compensate boundaryEvent ↔ 보상 task 연결 시 compensateTask 자동 채움
+            // (association 연결 시 target의 name/id를 boundaryEvent uengine:json.compensateTask로 저장)
+            this.setupCompensateAutoFillListeners();
         },
         initializeViewer() {
             var container = this.$refs.container;

@@ -14,7 +14,9 @@
         "instanceDelete": "The instance has been deleted.",
         "completed": "Completed",
         "savedMarketplace": "Saved to marketplace.",
-        "reworkRequested": "Rework has been requested."
+        "reworkRequested": "Rework has been requested.",
+        "taskReturned": "Task has been returned.",
+        "taskSkipped": "Task has been skipped."
     },
     "errorMsg": {
         "isBackendConnected": "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
@@ -63,8 +65,32 @@
         "category": "Category"
     },
     "DefaultWorkItem": {
+        "assignTask": "Claim",
+        "unAssignTask": "Unclaim",
+        "returnTask": "Return",
         "intermediateSave": "Intermediate Save",
-        "complete": "Complete"
+        "skip": "SKIP",
+        "skipChecking": "Checking if SKIP is available...",
+        "skipEnabledHelp": "You can skip this task.",
+        "skipDisabledRequired": "This task must be completed and cannot be skipped.",
+        "skipDialogTitle": "Skip Task",
+        "skipReason": "Reason",
+        "skipReasonPlaceholder": "Enter a reason for skipping.",
+        "skipCancel": "Cancel",
+        "skipSubmit": "Skip",
+        "complete": "Complete",
+        "getTaskSuccess": "Task obtained successfully.",
+        "unAssignTaskSuccess": "Claim released successfully."
+    },
+    "TaskReturn": {
+        "title": "Return Task",
+        "selectTarget": "Select return target (previous step)",
+        "reason": "Reason (optional)",
+        "reasonPlaceholder": "Describe what needs to be corrected or reprocessed.",
+        "notAllowed": "This task cannot be returned.",
+        "fetchFailed": "Unable to load.",
+        "cancel": "Cancel",
+        "submit": "Request Return"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -179,12 +205,19 @@
     "adminDetail": {
         "processVariables": "Process Variables",
         "properties": "Properties",
+        "history": "History",
+        "participants": "Participants",
         "noProcessDefinition": "No Process Definition",
         "key": "Key",
         "value": "Value",
         "tools": "Tools",
         "edit": "Edit",
         "save": "Save",
+        "role": "Role",
+        "endpoint": "Endpoint",
+        "resourceName": "Name",
+        "participantsSearch": "Search (role/id/name)",
+        "noParticipants": "No participant information.",
         "rollback": "Rollback",
         "rollbackMessage": "Do you want to roll back to this point?",
         "start": "Start",
@@ -812,7 +845,7 @@
     "UserTaskPanel": {
         "default": "Default",
         "defaultInfo": "All users assigned to this task role can view this task. The first user to select the task will be assigned as the assignee.",
-        "sharedGroupInfo": "All users in the selected shared group can view this task. The first user to select the task becomes the assignee. e.g., Author, Reviewer",
+        "racingInfo": "All users in the selected shared group can view this task. The first user to select the task becomes the assignee. e.g., Author, Reviewer",
         "assigneeInfo": "This task is assigned only to the specified user. Other users cannot view it.",
         "loadBalancingInfo": "Tasks are automatically distributed among users in the designated group. You can select a distribution strategy.",
         "expressionInfo": "The assignee is dynamically determined at runtime based on an expression. e.g., ${initiatorManager}",
@@ -824,8 +857,16 @@
         "radioSelectDescriptionTitle": "Select data processing method: basic data processing, custom screen creation, or external system integration.",
         "radioSelectDescriptionSubTitle1": "1. Basic: Use default data\n2. Form: Use a screen created in the screen definition\n3. External Application: Create a field to enter the business screen URL",
         "assignmentType": "Assignment Method",
+        "useCompetingMode": "Use Competing Mode",
+        "useCompetingModeHint": "Use Competing Mode",
+        "assignType": "Assignment Method",
+        "assignTypeHint": "Assignment Method",
+        "claim": "Claim",
+        "claimDescription": "Claim Assignment",
+        "direct": "Direct Assignment",
+        "directDescription": "Direct Assignment",
         "assignee": "Assign User",
-        "sharedGroup": "Shared Group",
+        "racing": "Shared Group",
         "expression": "Expression-based",
         "loadBalancing": "Load Balancing",
         "taskType": "Task Type",
@@ -887,14 +928,31 @@
     "LanePanel": {
         "selectRoleType": "Select Role Type",
         "none": "None",
+        "UserRole": "User Role",
         "IAMScope": "Role Resolution By IAM Scope",
         "DirecUser": "Role Resolution By Direct user",
+        "Department": "Department",
+        "Group": "Group",
         "resolutionRule": "Resolution Rule",
         "scopeName": "Scope Name",
         "userID": "User ID",
+        "userId": "User ID",
+        "userIds": "Select Users",
+        "userIdsHint": "Select users from the list or type directly. Single user will be saved as userId, multiple users as userIds.",
+        "groupName": "Group Name",
+        "resourceName": "Resource Name",
         "externalCustomer": "External Customer",
+        "dispatchingOption": "Dispatching Option",
+        "dispatchingOptionAll": "All",
+        "dispatchingOptionAllDescription": "Assigns to all users simultaneously.",
+        "dispatchingOptionRacing": "Racing",
+        "dispatchingOptionRacingDescription": "The first user to claim the task processes it.",
+        "dispatchingOptionLoadBalanced": "Load Balanced",
+        "dispatchingOptionLoadBalancedDescription": "Distributes tasks evenly among users.",
+        "dispatchingOptionAuto": "Auto",
+        "dispatchingOptionAutoDescription": "Automatically determined based on the number of users. (IAM Role only)",
         "radioDescriptionTitle": "Select the role you want to add.",
-        "radioDescriptionSubTitle": "None: Selecting this option does not assign a specific role to the task. All users can perform this task.\nSelect by Role Name: Selecting this option allows you to choose from a predefined list of roles. Only users belonging to the selected role can perform this task.\nSelect Users Directly: Selecting this option allows you to designate specific users. Only designated users can perform this task."
+        "radioDescriptionSubTitle": "User Role: Directly specify specific users. You can select a single user or multiple users.\n\nGroup: Assign roles based on Keycloak groups. All members of the group are included.\n\nIAM Scope: Assign roles based on Keycloak roles (Scope). All users with that role are included.\n\nDirect User: Legacy method to directly specify specific users.\n\nDepartment: Assign roles based on departments.\n\nExternal Customer: Assign roles to external customers."
     },
     "MessageEventDefinitionPanel": {
         "correlationKey": "Correlation Key",
@@ -2019,7 +2077,8 @@
         "inProgress": "In Progress",
         "pending": "Pending",
         "cancelled": "Cancelled",
-        "completed": "Completed"
+        "completed": "Completed",
+        "skipped": "Skipped"
     },
     "SubProcess": {
         "execute": "Execute"

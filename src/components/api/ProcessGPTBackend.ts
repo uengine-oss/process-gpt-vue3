@@ -841,6 +841,48 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 태스크 반송(이전 단계 담당자에게 재처리 요청) - uEngine 모드에서 구현됨
+     * ProcessGPT 모드에서도 필요하다면 아래 2개 메서드를 ProcessGPT 백엔드 사양에 맞게 구현하세요.
+     *
+     * - 조회: GET  `/work-item/{taskId}/return/availability`
+     * - 실행: POST `/work-item/{taskId}/return`
+     */
+    async getTaskReturnAvailability(taskId: string): Promise<any> {
+        throw new Error(
+            "[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. " +
+            "ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/return/availability`)를 먼저 제공한 뒤 구현해주세요."
+        );
+    }
+
+    async returnTask(taskId: string, payload: any): Promise<any> {
+        throw new Error(
+            "[ProcessGPTBackend] 태스크 반송 기능은 현재 uEngine 모드에서 구현되었습니다. " +
+            "ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/return`)를 먼저 제공한 뒤 구현해주세요."
+        );
+    }
+
+    /**
+     * 태스크 SKIP(건너뛰기) - uEngine 모드에서 구현됨
+     * ProcessGPT 모드에서도 필요하다면 아래 2개 메서드를 ProcessGPT 백엔드 사양에 맞게 구현하세요.
+     *
+     * - 조회: GET  `/work-item/{taskId}/skip/availability`
+     * - 실행: POST `/work-item/{taskId}/skip`
+     */
+    async getTaskSkipAvailability(taskId: string): Promise<any> {
+        throw new Error(
+            "[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. " +
+            "ProcessGPT 모드에서는 백엔드 API(예: GET `/work-item/{taskId}/skip/availability`)를 먼저 제공한 뒤 구현해주세요."
+        );
+    }
+
+    async skipTask(taskId: string, payload: any): Promise<any> {
+        throw new Error(
+            "[ProcessGPTBackend] 태스크 SKIP 기능은 현재 uEngine 모드에서 구현되었습니다. " +
+            "ProcessGPT 모드에서는 백엔드 API(예: POST `/work-item/{taskId}/skip`)를 먼저 제공한 뒤 구현해주세요."
+        );
+    }
+
     async getTask(taskId: string) {
         try {
             const task = await storage.getObject('todolist', { key: 'id', match: { id: taskId } });
@@ -2072,6 +2114,7 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
+
 
     async getFilteredInstanceList(filters: object, page: number) {
         //TODO: 인스턴스 목록 관리자 페이지 필터 결과
@@ -5411,6 +5454,10 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             throw new Error(error.detail);
         }
+    }
+
+    async claimWorkItem(taskId: string, data: any){
+        throw new Error("Method not implemented.");
     }
 }
 

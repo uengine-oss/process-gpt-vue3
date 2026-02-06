@@ -74,7 +74,7 @@
                 :definition="copyDefinition"
             />
         </div>
-        <div class="mt-3">
+        <div class="mt-3" v-if="mode == 'ProcessGPT'">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
@@ -139,30 +139,81 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         element: Object,
-        definition: Object
+        definition: Object,
+        isForCompensation: Boolean
     },
     async created() {
         this.isLoading = true;
+        this.copyUengineProperties = {};
+
         if (this.uengineProperties) {
             this.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
+        }
+        // _type 고정
+        this.copyUengineProperties._type = 'org.uengine.kernel.bpmn.ServiceTask';
+
+        // role 정규화 (저장 시 Role 객체 형태로 들어가야 함)
+        const laneRoleName = this.element?.lanes?.[0]?.name || '';
+        if (!this.copyUengineProperties.role || typeof this.copyUengineProperties.role === 'string') {
+            const name = typeof this.copyUengineProperties.role === 'string' ? this.copyUengineProperties.role : laneRoleName;
+            this.copyUengineProperties.role = {
+                _type: 'org.uengine.kernel.Role',
+                name: name || ''
+            };
         } else {
-            this.copyUengineProperties = {};
+            if (!this.copyUengineProperties.role._type) this.copyUengineProperties.role._type = 'org.uengine.kernel.Role';
+            if (typeof this.copyUengineProperties.role.name !== 'string') this.copyUengineProperties.role.name = laneRoleName || '';
         }
 
-        if(!this.copyUengineProperties) this.copyUengineProperties = {}
-        if(!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{"name": "Content-Type", "value":"application/json"}]
-        if(!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET'
-        if(!this.copyUengineProperties.outputMapping) this.copyUengineProperties.outputMapping = {} 
-        if(!this.copyUengineProperties.outputMapping.attributes) this.copyUengineProperties.outputMapping.attributes = []
-        if(!this.copyUengineProperties.outputMapping.mappingContext) this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] }        
-        if(!this.copyUengineProperties.outputMapping.mappingContext) this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] }        
-        if(!this.tempOutputMapping) this.tempOutputMapping = {}
-        this.tempOutputMapping.eventSynchronization = JSON.parse(JSON.stringify(this.copyUengineProperties.outputMapping)) 
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [{key: 'test', value: 'value'}]; 
-
-       if(typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
-            this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
+        // uriTemplate / method / payloadTemplate
+        if (typeof this.copyUengineProperties.uriTemplate !== 'string') this.copyUengineProperties.uriTemplate = this.copyUengineProperties.uriTemplate ? String(this.copyUengineProperties.uriTemplate) : '';
+        if (!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET';
+        this.copyUengineProperties.method = String(this.copyUengineProperties.method).toUpperCase();
+        if (typeof this.copyUengineProperties.inputPayloadTemplate !== 'string') {
+            this.copyUengineProperties.inputPayloadTemplate =
+                this.copyUengineProperties.inputPayloadTemplate == null ? '' : JSON.stringify(this.copyUengineProperties.inputPayloadTemplate);
         }
+
+        // flags
+        if (typeof this.copyUengineProperties.noValidationForSSL !== 'boolean') this.copyUengineProperties.noValidationForSSL = false;
+        if (typeof this.copyUengineProperties.skipIfNotFound !== 'boolean') this.copyUengineProperties.skipIfNotFound = false;
+
+        // headers 정규화 (HttpHeader[])
+        if (!Array.isArray(this.copyUengineProperties.headers)) {
+            this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }];
+        } else if (this.copyUengineProperties.headers.length === 0) {
+            this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }];
+        } else {
+            this.copyUengineProperties.headers = this.copyUengineProperties.headers.map((h) => ({
+                name: h?.name ?? h?.key ?? '',
+                value: h?.value ?? '',
+                _type: 'org.uengine.kernel.bpmn.HttpHeader'
+            }));
+        }
+
+        // outputMapping(EventSynchronization) 초기화
+        if (!this.copyUengineProperties.outputMapping || typeof this.copyUengineProperties.outputMapping !== 'object') {
+            this.copyUengineProperties.outputMapping = {};
+        }
+        if (typeof this.copyUengineProperties.outputMapping.eventType !== 'string') this.copyUengineProperties.outputMapping.eventType = '';
+        if (!Array.isArray(this.copyUengineProperties.outputMapping.attributes)) this.copyUengineProperties.outputMapping.attributes = [];
+        if (!this.copyUengineProperties.outputMapping.mappingContext || typeof this.copyUengineProperties.outputMapping.mappingContext !== 'object') {
+            this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] };
+        }
+        if (!Array.isArray(this.copyUengineProperties.outputMapping.mappingContext.mappingElements)) {
+            this.copyUengineProperties.outputMapping.mappingContext.mappingElements = [];
+        }
+
+        if (!this.tempOutputMapping) this.tempOutputMapping = {};
+        this.tempOutputMapping.eventSynchronization = JSON.parse(JSON.stringify(this.copyUengineProperties.outputMapping));
+
+        // ProcessGPT 모드에서만 쓰는 사용자 속성
+        if (window.$mode === 'ProcessGPT') {
+            if (!Array.isArray(this.copyUengineProperties.customProperties)) this.copyUengineProperties.customProperties = [];
+        } else if (this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('customProperties')) {
+            delete this.copyUengineProperties.customProperties;
+        }
+
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
@@ -315,10 +366,54 @@ export default {
             // this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
         beforeSave() {
-            this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization
-            const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties } = this.copyUengineProperties;
-            this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties };
-            this.$emit('update:uEngineProperties', this.copyUengineProperties);
+            // ServiceTask.java(backend) 구조에 맞춰 저장:
+            // - _type: org.uengine.kernel.bpmn.ServiceTask
+            // - role(Role), method, uriTemplate, inputPayloadTemplate, headers(HttpHeader[]),
+            //   noValidationForSSL, skipIfNotFound, outputMapping(EventSynchronization)
+            this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization;
+
+            const roleName =
+                this.element?.lanes?.[0]?.name ||
+                this.copyUengineProperties?.role?.name ||
+                this.copyUengineProperties?.role ||
+                '';
+
+            const headers = Array.isArray(this.copyUengineProperties.headers)
+                ? this.copyUengineProperties.headers.map((h) => ({
+                      name: h?.name ?? '',
+                      value: h?.value ?? '',
+                  }))
+                : [];
+
+            const method = this.copyUengineProperties.method || 'GET';
+            const uriTemplate = this.copyUengineProperties.uriTemplate || '';
+            const inputPayloadTemplate = this.copyUengineProperties.inputPayloadTemplate || '';
+            const outputMapping = this.copyUengineProperties.outputMapping || { attributes: [], mappingContext: { mappingElements: [] } };
+            const isProcessGPT = window.$mode === 'ProcessGPT';
+            const customProperties = isProcessGPT && Array.isArray(this.copyUengineProperties.customProperties)
+                ? this.copyUengineProperties.customProperties
+                : undefined;
+            const noValidationForSSL = !!this.copyUengineProperties.noValidationForSSL;
+            const skipIfNotFound = !!this.copyUengineProperties.skipIfNotFound;
+
+            this.copyUengineProperties = {
+                _type: 'org.uengine.kernel.bpmn.ServiceTask',
+                role: {
+                    _type: 'org.uengine.kernel.Role',
+                    name: roleName
+                },
+                uriTemplate,
+                inputPayloadTemplate,
+                headers,
+                method,
+                noValidationForSSL,
+                outputMapping,
+                skipIfNotFound
+            };
+            if (isProcessGPT) {
+                this.copyUengineProperties.customProperties = customProperties || [];
+            }
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         generateAPI() {
             this.$try({
