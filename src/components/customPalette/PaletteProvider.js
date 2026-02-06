@@ -157,6 +157,7 @@ PaletteProvider.prototype.adjustParticipantBoundsByLanes = function(participant,
 }
 
 PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onLoadEnd = () => {}) {
+  if (typeof window !== 'undefined' && window.$pal) return;
   var injector = this._injector;
   var elementFactory = this._elementFactory;
   var eventBus = this._eventBus;
@@ -200,6 +201,7 @@ PaletteProvider.prototype._rotateRelativePosition = function(relativeX, relative
 
 // 함수 정의를 getPaletteEntries 바깥으로 옮긴다
 PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event, element, onLoadStart = () => {}, onLoadEnd = () => {}) {
+  if (typeof window !== 'undefined' && window.$pal) { onLoadEnd(); return; }
   onLoadStart();
   const modeling = this._modeling;
   const logPrefix = '[changeParticipantOrientation]';
@@ -423,6 +425,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
 };
 
 PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event, element, onLoadStart = () => {}, onLoadEnd = () => {}) {
+  if (typeof window !== 'undefined' && window.$pal) { onLoadEnd(); return; }
   onLoadStart();
   const modeling = this._modeling;
   const logPrefix = '[changeParticipantOrientation]';

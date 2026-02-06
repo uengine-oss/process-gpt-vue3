@@ -749,16 +749,66 @@ export default {
                 console.warn('프로세스 정의가 없거나 activities가 정의되지 않았습니다.');
                 return;
             }
-            
+            if (window.$pal && window.$mode === 'uEngine') {
+                try {
+                    const store = useBpmnStore();
+                    const modeler = store.getModeler;
+                    if (!modeler) return;
+                    const elementRegistry = modeler.get('elementRegistry');
+                    const bpmnFactory = modeler.get('bpmnFactory');
+                    for (const activity of me.processDefinition.activities) {
+                        const el = elementRegistry.get(activity.id);
+                        if (!el?.businessObject) continue;
+                        let ext = el.businessObject.get('extensionElements');
+                        if (!ext) {
+                            ext = bpmnFactory.create('bpmn:ExtensionElements');
+                            el.businessObject.set('extensionElements', ext);
+                        }
+                        let values = ext.get('values');
+                        if (!values) {
+                            values = [];
+                            ext.set('values', values);
+                        }
+                        let uprops = values.find((v) => v.$type === 'uengine:Properties');
+                        if (!uprops) {
+                            uprops = bpmnFactory.create('uengine:Properties', { json: '{}' });
+                            values.push(uprops);
+                        }
+                        let existing = {};
+                        try {
+                            if (uprops.json) existing = JSON.parse(uprops.json);
+                        } catch (_) {}
+                        const merged = {
+                            ...existing,
+                            description: activity.description,
+                            instruction: activity.instruction,
+                            role: activity.role,
+                            process: activity.process,
+                            inputData: activity.inputData || [],
+                            outputData: activity.outputData || [],
+                            properties: activity.properties,
+                            duration: activity.duration,
+                            tool: activity.tool
+                        };
+                        uprops.json = JSON.stringify(merged);
+                    }
+                    console.log('uenginePal: PAL 태스크가 BPMN extensionElements에 반영되었습니다.');
+                } catch (error) {
+                    console.error('PAL 태스크 BPMN 반영 중 오류:', error);
+                }
+                return;
+            }
+            if (window.$mode === 'uEngine') {
+                return;
+            }
             try {
                 for (let activity of me.processDefinition.activities) {
                     const taskId = activity.uuid;
-                    
                     const task = await backend.saveTask(
-                        taskId,                
-                        activity.name,         
-                        activity.type,        
-                        JSON.stringify({       
+                        taskId,
+                        activity.name,
+                        activity.type,
+                        JSON.stringify({
                             description: activity.description,
                             instruction: activity.instruction,
                             role: activity.role,
@@ -770,9 +820,10 @@ export default {
                             tool: activity.tool
                         })
                     );
-                    activity.uuid = task.id;
+                    if (task && task.id) {
+                        activity.uuid = task.id;
+                    }
                 }
-                
                 console.log('모든 PAL 태스크가 저장되었습니다.');
             } catch (error) {
                 console.error('PAL 태스크 저장 중 오류가 발생했습니다:', error);

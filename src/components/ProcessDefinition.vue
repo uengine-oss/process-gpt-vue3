@@ -37,7 +37,7 @@
                             </template>
                         </v-tooltip> -->
                         <!-- 자동 레이아웃 버튼 -->
-                        <v-tooltip v-if="!isViewMode" :text="$t('PaletteProvider.autoLayout')">
+                        <v-tooltip v-if="!isViewMode && !isPalUengine" :text="$t('PaletteProvider.autoLayout')">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="applyAutoLayout" v-bind="props" class="btn-auto-layout"
                                     icon variant="text"
@@ -47,7 +47,7 @@
                             </template>
                         </v-tooltip>
                         <!-- 방향 변경 버튼 -->
-                        <v-tooltip v-if="!isViewMode" :text="$t('PaletteProvider.changeOrientation')">
+                        <v-tooltip v-if="!isViewMode && !isPalUengine" :text="$t('PaletteProvider.changeOrientation')">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="changeOrientation" v-bind="props" class="btn-change-orientation"
                                     icon variant="text"
@@ -116,9 +116,9 @@
                         :onLoadEnd="onBpmnLoadEnd"
                             style="height: 100%"
                         ></BpmnuEngine>
-                        <!-- Task Catalog Section for drag & drop -->
+                        <!-- Task Catalog Section -->
                         <TaskCatalogSection
-                            v-if="!isViewMode"
+                            v-if="!isViewMode && mode !== 'uEngine'"
                             :bpmnModeler="$refs.bpmnVue?.bpmnViewer"
                             class="task-catalog-floating-panel"
                         />
@@ -128,9 +128,9 @@
                             :element="element"
                             @saved="onSavedToCatalog"
                         />
-                        <!-- View Mode Property Panel (inside canvas) -->
+                        <!-- View Mode Property Panel -->
                         <Transition name="slide-panel">
-                            <div v-if="panel && isViewMode" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
+                            <div v-if="panel && isViewMode && !isPal" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
                                 <div class="resize-handle" @mousedown="startResize"></div>
                                 <v-card elevation="4" class="view-mode-panel-card">
                                     <bpmn-property-panel
@@ -192,8 +192,8 @@
                     <!-- {{ definition }} -->
                 </v-card>
             </div>
-            <div v-else-if="panel && isPal && isViewMode" style="position: fixed; z-index: 999; right: 0; top:123px; height: 100%">
-                <v-card elevation="1">
+            <div v-else-if="panel && isPal && isViewMode" class="pal-view-mode-panel" style="position: fixed; z-index: 999; right: 0; top: 123px; width: 40vw; min-width: 360px; max-width: 560px; height: calc(100vh - 123px);">
+                <v-card elevation="1" class="pal-view-mode-panel-card">
                     <bpmn-property-panel
                         ref="bpmnPropertyPanel"
                         :element="element"
@@ -447,6 +447,9 @@ export default {
         isPal() {
             return window.$pal;
         },
+        isPalUengine() {
+            return !!(window.$pal && window.$mode === 'uEngine');
+        },
         thisDefinition() {
             return {
                 processVariables: this.processVariables
@@ -631,6 +634,7 @@ export default {
             this.isBpmnLoading = false;
         },
         applyAutoLayout() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             const store = useBpmnStore();
             const modeler = store.getModeler;
             
@@ -646,6 +650,7 @@ export default {
             }
         },
         changeOrientation() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             const store = useBpmnStore();
             const modeler = store.getModeler;
             
@@ -1310,6 +1315,25 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+.pal-view-mode-panel {
+    display: flex;
+    flex-direction: column;
+}
+.pal-view-mode-panel-card {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 8px 0 0 8px !important;
+}
+.pal-view-mode-panel-card #property-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
 }
 
 /* Slide Panel Animation */

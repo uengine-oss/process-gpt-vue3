@@ -23,6 +23,8 @@ export interface Backend {
     getInstanceListByGroup(group: string): Promise<any>;
     getFilteredInstanceList(filters: object, page: number, size: number): Promise<any>;
     backToHere(instanceId: string, tracingTag: string): Promise<any>;
+    advanceToActivity?(instanceId: string, tracingTag: string, body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }): Promise<any>;
+    startFromActivity?(instanceId: string, tracingTag: string, body?: { variables?: Record<string, any> }): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
     getVariable(instId: string, varName: string): Promise<any>;
     getVariableWithTaskId(instId: string, taskId: string, varName: string): Promise<any>;

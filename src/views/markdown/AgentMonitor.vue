@@ -888,6 +888,7 @@ export default {
         // 📡 실시간 구독 및 이벤트 처리
         // ========================================
         setupRealtimeSubscription(taskId) {
+            if (window.$mode === 'uEngine') return;
             try {
                 const validEventTypes = [
                     'task_started',
@@ -1139,6 +1140,7 @@ export default {
             }
         },
         async fetchTodoStatus() {
+            if (window.$mode === 'uEngine') return;
             var me = this;
             const taskId = this.validateTaskId();
             if (!taskId) return;

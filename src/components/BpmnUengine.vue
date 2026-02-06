@@ -7,7 +7,7 @@
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
                 <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
-                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
@@ -202,6 +202,9 @@ export default {
         },
         isPal() {
             return window.$pal;
+        },
+        isPalUengine() {
+            return !!(window.$pal && window.$mode === 'uEngine');
         },
     },
     async mounted() {
@@ -426,6 +429,7 @@ export default {
             }
         },
         applyAutoLayout() {
+            if (window.$pal) return;
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
@@ -550,6 +554,7 @@ export default {
             });
         },
         changeOrientation() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
@@ -748,7 +753,7 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated) {
+                if(self.isAIGenerated && !(window.$pal && window.$mode === 'uEngine')) {
                     if(self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
@@ -760,7 +765,9 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
-                self.applyAutoLayout();
+                if (!(window.$pal && window.$mode === 'uEngine')) {
+                    self.applyAutoLayout();
+                }
                 self.resetZoom();
             });
             

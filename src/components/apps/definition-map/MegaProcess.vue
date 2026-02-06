@@ -52,7 +52,7 @@
             </div>
         </div>
         <!-- Add Major Process Dialog: 특정 도메인 탭에서만 표시 -->
-        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && selectedDomain"
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -94,6 +94,9 @@ export default {
         hover: false,
     }),
     computed: {
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
         filteredMajorProcList() {
             if (!this.selectedDomain || !this.value.major_proc_list) {
                 return this.value.major_proc_list || [];

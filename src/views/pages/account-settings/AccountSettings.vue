@@ -19,7 +19,7 @@
                                 <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
-                                <v-tab value="TaskCatalog">
+                                <v-tab v-if="!isUEngineMode" value="TaskCatalog">
                                     <v-icon class="mr-2" size="20">mdi-folder-cog</v-icon> {{ $t('accountTab.taskCatalog') }}
                                 </v-tab>
                                 <v-tab value="OrgChartGroup">
@@ -130,6 +130,7 @@
                                 <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
                             </v-btn>
                             <v-btn
+                                v-if="!isUEngineMode"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -254,7 +255,7 @@
                                 <SkillsTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="TaskCatalog">
+                        <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
                             <div
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
@@ -356,7 +357,7 @@ export default {
     },
     methods: {
         ensureVisibleTab() {
-            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'Skills', 'ConnectionInfo']);
+            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'Skills', 'ConnectionInfo', 'TaskCatalog']);
             if (!this.tab) {
                 this.tab = 'Account';
                 return;

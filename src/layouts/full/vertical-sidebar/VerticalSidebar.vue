@@ -418,12 +418,10 @@ export default {
                         to: '/definitions/chat',
                         disable: false
                     },
-                    // 비즈니스 룰 정의는 uEngine 모드에서만 노출
-                    ...(isUEngineMode
+                    ...(isUEngineMode && !this.pal
                         ? [
                               {
                                   title: 'businessRuleDefinition.title',
-                                  // 룰 정의: bpmn-io(bpmn-font) 아이콘 사용(렌더링은 템플릿에서 분기)
                                   type: 'rule',
                                   icon: 'bpmn-icon-business-rule',
                                   BgColor: 'primary',
@@ -496,6 +494,13 @@ export default {
                         item.title !== 'definitionManagement.release'
                     );
                 }
+                if (this.pal) {
+                    this.definitionItem = this.definitionItem.filter((item) => 
+                        item.title !== 'uiDefinition.title' && 
+                        item.title !== 'definitionManagement.defaultForm' &&
+                        item.title !== 'systemDefinition.title'
+                    );
+                }
                 this.getDefinitionList();
             }
 
@@ -523,7 +528,6 @@ export default {
                 ];
             }
 
-            // Analytics 메뉴
             this.analyticsItem = [
                 {
                     title: 'analytics.dashboard',
@@ -532,13 +536,15 @@ export default {
                     to: '/analytics',
                     disable: false
                 },
-                {
-                    title: 'analytics.heatmap',
-                    icon: 'ibm-process-mining',
-                    BgColor: 'primary',
-                    to: '/analytics/heatmap',
-                    disable: false
-                },
+                ...(this.pal ? [] : [
+                    {
+                        title: 'analytics.heatmap',
+                        icon: 'ibm-process-mining',
+                        BgColor: 'primary',
+                        to: '/analytics/heatmap',
+                        disable: false
+                    }
+                ]),
             ];
 
             if (!this.JMS) {
@@ -848,7 +854,6 @@ export default {
     padding-bottom: 0px !important;
 }
 
-/* bpmn-io(bpmn-font) 아이콘을 사이드바 버튼 크기에 맞춤 */
 .bpmn-sidebar-icon {
     font-size: 20px;
     line-height: 1;

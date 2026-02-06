@@ -1034,14 +1034,14 @@ export default {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {
                     this.loadAssigneeInfo();
                     this.enableReworkButton = await this.backend.enableRework(newVal);
-                    // 에이전트 상태 초기화
-                    this.checkInitialAgentBusyState();
-
-                    this.selectedAgent = {
-                        agent: newVal.worklist.endpoint || "",
-                        agentMode: newVal.worklist.agentMode.toLowerCase() || "none",
-                        orchestration: newVal.worklist.orchestration || null
-                    };
+                    if (window.$mode !== 'uEngine') {
+                        this.checkInitialAgentBusyState();
+                        this.selectedAgent = {
+                            agent: newVal.worklist.endpoint || "",
+                            agentMode: (newVal.worklist.agentMode || "").toLowerCase() || "none",
+                            orchestration: newVal.worklist.orchestration || null
+                        };
+                    }
                 }
             },
             deep: true
@@ -1436,6 +1436,10 @@ export default {
             this.isAgentBusy = isBusy;
         },
         async checkInitialAgentBusyState() {
+            if (window.$mode === 'uEngine') {
+                this.isAgentBusy = false;
+                return;
+            }
             // workItem의 상태를 기반으로 에이전트가 진행 중인지 확인
             if (!this.workItem || !this.workItem.worklist || this.isStarted) {
                 this.isAgentBusy = false;
