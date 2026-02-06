@@ -205,7 +205,7 @@
                 </div>
                 <div v-else>
                     <!-- 필터 및 탭 영역 -->
-                    <div v-if="viewMode === 'proc_map' && metricsValue.domains && metricsValue.domains.length > 0" 
+                    <div v-if="viewMode === 'proc_map' && metricsValue?.domains && metricsValue.domains.length > 0" 
                         class="filter-tab-section glass-tab-container"
                     >
                         <div class="px-6 py-3 d-flex align-center" style="gap: 16px; flex-wrap: wrap;">
@@ -272,7 +272,7 @@
                                     
                                     <!-- 도메인 칩 -->
                                     <v-chip
-                                        v-for="domain in metricsValue.domains"
+                                        v-for="domain in (metricsValue?.domains ?? [])"
                                         :key="domain.id"
                                         :class="selectedDomain === domain.name ? 'domain-chip-selected' : ''"
                                         :variant="selectedDomain === domain.name ? 'flat' : 'outlined'"
@@ -332,8 +332,8 @@
                             </div>
                         </div>
                     </div>
-                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue.domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds" :searchQuery="searchQuery"/>
-                    <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue" :enableEdit="enableEdit" @update:value="updateMetricsValue" :filteredProcDefIds="filteredProcDefIds" :searchQuery="searchQuery"/>
+                    <DefinitionMapList v-if="viewMode === 'proc_map'" :value="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="metricsValue?.domains ?? []" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds" :searchQuery="searchQuery"/>
+                    <MetricsView v-else-if="viewMode === 'metrics'" :value="metricsValue ?? { domains: [], mega_processes: [], processes: [] }" :enableEdit="enableEdit" @update:value="updateMetricsValue" :filteredProcDefIds="filteredProcDefIds" :searchQuery="searchQuery"/>
                 </div>
             </div>
 
@@ -705,11 +705,13 @@ export default {
     }),
     computed: {
         useLock() {
-            if(window.$mode == "ProcessGPT"){
-                return true;
-            } else {
-                return this.isViewMode;
+            if (window.$pal && window.$mode === 'uEngine') {
+                return false;
             }
+            if (window.$mode == "ProcessGPT") {
+                return true;
+            }
+            return this.isViewMode;
         },
         isMobile() {
             return window.innerWidth <= 768;
@@ -1510,8 +1512,8 @@ export default {
             this.value = this.normalizeProcessMap(res);
         },
         async getMetricsMap() {
-            this.metricsValue = await backend.getMetricsMap();
-            // selectedDomain은 null로 유지하여 "전체" 탭이 기본 선택됨
+            const raw = await backend.getMetricsMap();
+            this.metricsValue = raw ?? { domains: [], mega_processes: [], processes: [] };
         },
         async loadOrganizationOptions() {
             console.log('[ProcessDefinitionMap.loadOrganizationOptions] Starting...');

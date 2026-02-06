@@ -136,7 +136,7 @@ const MainRoutes = {
         },
         {
             name: 'Sub Process Detail',
-            path: '/definition-map/sub/:id',
+            path: '/definition-map/sub/:pathMatch(.*)*',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
             props: { componentName: 'SubProcessDetail' }
         },

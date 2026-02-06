@@ -689,9 +689,11 @@ export default {
                     };
                     this.$emit("modelCreated", processInfo);
 
-                    me.disableChat = true;
-                    me.isViewMode = true;
-                    me.lock = true; // 잠금처리 ( 수정 불가 )
+                    if (window.$mode !== 'uEngine') {
+                        me.disableChat = true;
+                        me.isViewMode = true;
+                        me.lock = true; // 잠금처리 ( 수정 불가 )
+                    }
                     me.definitionChangeCount++;
 
                     me.loading = false;
@@ -1070,13 +1072,17 @@ export default {
                     task.orchestration = '';
                     task.attachments = [];
                     task.inputData = [];
+                    task.outputData = [];
                     task.tool = 'formHandler:defaultform';
+                    task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
+                    if (window.$pal && window.$mode === 'uEngine') {
+                        task.uuid = activity.id;
+                    }
 
                     task.role = normalizeRole(resolveRole(activity.id, lanesForRole, parentLanes));
 
                     const propsJson = getPropsJson(activity) || {};
                     if (propsJson) {
-                        // task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
                         if (Object.prototype.hasOwnProperty.call(propsJson, 'role')) {
                             task.role = normalizeRole(propsJson.role) || task.role;
                         }
@@ -1089,6 +1095,7 @@ export default {
                         task.orchestration = propsJson.orchestration || task.orchestration;
                         task.attachments = propsJson.attachments || task.attachments;
                         task.inputData = propsJson.inputData || task.inputData;
+                        task.outputData = propsJson.outputData || task.outputData;
                         task.tool = propsJson.tool || task.tool;
                     }
                     

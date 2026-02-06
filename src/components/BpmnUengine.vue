@@ -2,19 +2,12 @@
     <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal, 'mini-preview': isPreviewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop">
         <!-- View mode controls -->
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
-            <div class="pa-1 ga-3" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
-                    </template>
-                    <span>{{ $t('BpmnUengine.resetZoom') }}</span>
-                </v-tooltip>
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="changeOrientation" style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
-                    </template>
-                    <span>{{ $t('BpmnUengine.changeOrientation') }}</span>
-                </v-tooltip>
+            <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
+                <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
+                <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
+                <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
+                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Edit mode controls -->
@@ -218,6 +211,9 @@ export default {
         },
         isPal() {
             return window.$pal;
+        },
+        isPalUengine() {
+            return !!(window.$pal && window.$mode === 'uEngine');
         },
     },
     async mounted() {
@@ -442,6 +438,7 @@ export default {
             }
         },
         applyAutoLayout() {
+            if (window.$pal) return;
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
@@ -566,6 +563,7 @@ export default {
             });
         },
         changeOrientation() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
@@ -764,7 +762,7 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated) {
+                if(self.isAIGenerated && !(window.$pal && window.$mode === 'uEngine')) {
                     if(self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
@@ -776,7 +774,9 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
-                self.applyAutoLayout();
+                if (!(window.$pal && window.$mode === 'uEngine')) {
+                    self.applyAutoLayout();
+                }
                 self.resetZoom();
             });
             

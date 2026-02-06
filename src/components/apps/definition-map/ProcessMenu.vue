@@ -1,8 +1,8 @@
 <template>
     <div>
         <div v-if="enableEdit" class="proc-menu-btn-box text-right">
-            <!-- Add button for mega/major types: 특정 도메인 탭에서만 표시 -->
-            <v-tooltip v-if="(type === 'mega' || type === 'major') && selectedDomain" :text="addTooltipText">
+            <!-- Add button for mega/major types -->
+            <v-tooltip v-if="(type === 'mega' || type === 'major') && (selectedDomain || isPal)" :text="addTooltipText">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="addProcess"
                         icon v-bind="props"
@@ -95,7 +95,7 @@ export default {
             }
         },
         isPal() {
-            return window.$pal;
+            return typeof window !== 'undefined' && window.$pal;
         },
         addTooltipText() {
             if (this.type === 'mega') {

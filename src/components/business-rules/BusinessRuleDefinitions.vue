@@ -1304,7 +1304,7 @@ export default {
 
                 // ID 제거하여 새 룰로 저장
                 delete copiedRule.id;
-                const result = await this.backend.saveBusinessRule(copiedRule);
+                const result = await this.backend.saveBusinessRule(copiedRule, { isNew: true });
                 const savedId = result?.id || newId;
 
                 // 목록 갱신

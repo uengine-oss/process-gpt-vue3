@@ -3,6 +3,7 @@
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0 align-center">
                 <div  @click="handleClick"
+                    @dblclick="handleDoubleClick"
                     class="ma-0 pa-0 d-flex align-center"
                     style="flex: 1; min-width: 0; gap: 4px;"
                 >
@@ -93,6 +94,13 @@ export default {
             if(!this.checkedProcess.includes(this.value.id)) {
                 this.checkedProcess.push(this.value.id);
                 localStorage.setItem('checkedProcess', JSON.stringify(this.checkedProcess));
+            }
+        },
+        handleDoubleClick() {
+            if (this.isExecutionByProject) return;
+            if (window.$mode === 'uEngine') {
+                const path = this.value.id ?? this.value.path;
+                if (path) this.goProcess(path, 'sub');
             }
         },
         deleteProcess() {
