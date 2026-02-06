@@ -832,7 +832,8 @@ export default {
             }
         },
         /**
-         * 포커싱 대상 태스크들의 중간 지점으로 뷰를 이동
+         * 포커싱 대상 태스크들의 중간 지점을 현재 뷰포트 정중앙으로 스크롤
+         * bpmn_util centerElement 방식: viewbox(false)로 갱신 후 scroll(dx, dy) 픽셀 단위 이동
          * 최초 로딩 시 한 번만 호출되도록 initialFocusDone 플래그로 제어
          */
         focusOnTasks(taskIds = []) {
@@ -849,7 +850,7 @@ export default {
 
                 if (elements.length === 0) return;
 
-                // 모든 대상 태스크들의 bounding box 계산
+                // 모든 대상 태스크들의 bounding box 중심 (다이어그램 좌표)
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 elements.forEach(el => {
                     const x1 = el.x;
@@ -869,24 +870,24 @@ export default {
                 const targetCenterX = (minX + maxX) / 2;
                 const targetCenterY = (minY + maxY) / 2;
 
+                // viewbox는 캐시 쓰지 않고 현재 보이는 영역 기준으로 재계산 (bpmn_util 포커싱.md)
+                canvas.viewbox(false);
                 const viewbox = canvas.viewbox();
                 if (!viewbox || !Number.isFinite(viewbox.width) || !Number.isFinite(viewbox.height)) {
                     return;
                 }
 
-                // 선택된 태스크들이 화면 중앙에 오도록 하면서, 기존 대비 2배 확대
-                const scaleFactor = 1.2;
-                const newWidth = viewbox.width / scaleFactor;
-                const newHeight = viewbox.height / scaleFactor;
+                const zoom = canvas.zoom();
+                const viewportCenterX = viewbox.x + viewbox.width / 2;
+                const viewportCenterY = viewbox.y + viewbox.height / 2;
+                const dxDiagram = targetCenterX - viewportCenterX;
+                const dyDiagram = targetCenterY - viewportCenterY;
 
-                const newViewbox = Object.assign({}, viewbox, {
-                    width: newWidth,
-                    height: newHeight,
-                    x: targetCenterX - newWidth / 2,
-                    y: targetCenterY - newHeight / 2
+                // 스크롤량은 다이어그램 좌표 차이 × zoom 으로 픽셀 변환 후 scroll 호출
+                canvas.scroll({
+                    dx: -dxDiagram * zoom,
+                    dy: -dyDiagram * zoom
                 });
-
-                canvas.viewbox(newViewbox);
             } catch (e) {
                 // 포커싱 실패 시에는 조용히 무시
                 console.warn('focusOnTasks error:', e);
@@ -980,6 +981,10 @@ export default {
         onContainerResizeFinished() {
             const container = this.$refs.container;
             if (!container || this.isAIGenerated || !container.getBoundingClientRect) return;
+
+            // 리사이즈 시 diagram-js에 알려 viewbox/zoom 재계산 (bpmn_util 포커싱.md 4.2)
+            const canvas = this.bpmnViewer?.get('canvas');
+            if (canvas) canvas.resized();
 
             const { width, height } = container.getBoundingClientRect();
 
