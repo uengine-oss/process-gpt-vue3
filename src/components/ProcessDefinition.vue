@@ -16,26 +16,6 @@
                         <div class="ml-1">{{ $t('processDefinition.isReadOnlyMode') }}</div>
                     </v-row>
                     <v-row class="ma-0 pa-0 button-container">
-                        <!-- <v-tooltip :text="description">
-                            <template v-slot:activator="{ props }">
-                                <Icons :icon="'info-line'" v-bind="props" :width="32" :height="32" />
-                            </template>
-                        </v-tooltip> -->
-                        <!-- <v-tooltip v-if="executable" :text="$t('processDefinition.simulate')">
-                            <template v-slot:activator="{ props }">
-                                <v-switch color="primary" v-bind="props" v-model="isSimulate" false-value="false" true-value="true" class="btn-simulate"></v-switch>
-                            </template>
-                        </v-tooltip> -->
-                        <!-- 프로세스 실행 버튼  -->
-                        <!-- <v-tooltip v-if="executable" :text="$t('processDefinition.execution')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" @click="executeProcess" class="btn-execute"
-                                    icon variant="text"
-                                >
-                                    <Icons :icon="'play'" :width="32" :height="32" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip> -->
                         <!-- 자동 레이아웃 버튼 -->
                         <v-tooltip v-if="!isViewMode && !isPalUengine" :text="$t('PaletteProvider.autoLayout')">
                             <template v-slot:activator="{ props }">
@@ -66,7 +46,7 @@
                                 </v-btn>
                             </template>
                         </v-tooltip>
-                        <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                        <!-- zoom -->
                         <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
                             <template v-slot:activator="{ props }">
                                 <v-btn v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom"
@@ -112,6 +92,7 @@
                         v-on:done="handleBpmnDone"
                         @changeElement="changeElement"
                         @update:isAIGenerated="updateIsAIGenerated"
+                        @openProcessVariables="openProcessVariables"
                         :onLoadStart="onBpmnLoadStart"
                         :onLoadEnd="onBpmnLoadEnd"
                             style="height: 100%"

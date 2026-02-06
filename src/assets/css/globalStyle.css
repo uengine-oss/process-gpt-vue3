@@ -1,3 +1,14 @@
+/* 사이드바 리스트 호버/활성화 백그라운드 (일괄 관리) */
+.sidebar-list-hover-bg:hover,
+.sidebar-list-hover-bg.sidebar-list-hover-bg--active {
+    background: rgba(var(--v-theme-primary), 0.10);
+    border-radius: 8px;
+    transform: translateX(2px);
+}
+.sidebar-list-hover-bg.sidebar-list-hover-bg--active .v-list-item-title {
+    color: rgba(0, 0, 0, 0.87);
+}
+
 h1, h2, h3, h4, h5, h6 {
     margin:0px !important;
 }
@@ -5,6 +16,43 @@ h1, h2, h3, h4, h5, h6 {
 hr {
     opacity: 1 !important;
 }
+
+
+/* ============================================
+   공통 프로그레스 바 스타일
+   ============================================ */
+
+/* 물결 애니메이션 프로그레스 바 */
+.progress-wave-animation .v-progress-linear__determinate {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-wave-animation .v-progress-linear__determinate::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        transparent 100%
+    );
+    animation: progress-wave-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-wave-shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
 
 .agent-chat-info-content {
     height: calc(100vh - 205px);
@@ -1574,6 +1622,4 @@ hr {
         height:185px !important;
     }
 }
-
-
 

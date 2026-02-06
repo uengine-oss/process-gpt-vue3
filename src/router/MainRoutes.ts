@@ -53,6 +53,11 @@ const MainRoutes = {
             component: () => import('@/views/apps/chat/Chats.vue')
         },
         {
+            name: 'Chat Room',
+            path: '/chat',
+            component: () => import('@/views/chat/ChatRoomPage.vue')
+        },
+        {
             name: 'Proposals',
             path: '/proposals',
             component: () => import('@/views/apps/proposal/Proposals.vue')
@@ -144,6 +149,17 @@ const MainRoutes = {
             name: 'Account Setting',
             path: '/account-settings',
             component: () => import('@/views/pages/account-settings/AccountSettings.vue')
+        },
+        
+        {
+            name: 'Skills Management',
+            path: '/skills',
+            component: () => import('@/components/SkillsManagement.vue')
+        },
+        {
+            name: 'Skill Detail',
+            path: '/skills/:id',
+            component: () => import('@/components/SkillDetail.vue')
         },
         // 기존 페이지 방식으로 띄울 때 사용하던 이용약관 주석
         // {

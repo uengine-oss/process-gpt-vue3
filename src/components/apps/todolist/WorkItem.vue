@@ -358,7 +358,7 @@
                                         @click="openRealtimeAssistant"
                                     >
                                         <v-icon>mdi-robot</v-icon>
-                                        <span v-if="!isMobile" class="ms-1">Voice Agent</span>
+                                        <span v-if="!isMobile" class="ms-1">{{ $t('FormRealtimeAssistant.title') }}</span>
                                     </v-btn>
                                     <v-btn v-if="hasGeneratedContent && (!selectedResearchMethod || selectedResearchMethod === 'default')"
                                         @click="resetGeneratedContent"

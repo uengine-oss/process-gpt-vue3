@@ -1,39 +1,6 @@
 <template>
     <div class="work-assistant-chat-panel">
-        <!-- 채팅방 탭 -->
-        <div class="chat-tabs-container">
-            <div class="chat-tabs">
-                <div 
-                    v-for="room in chatRooms" 
-                    :key="room.id"
-                    class="chat-tab"
-                    :class="{ 'active': currentRoomId === room.id }"
-                    @click="selectRoom(room)"
-                >
-                    <v-icon size="16" class="mr-1">mdi-message-text-outline</v-icon>
-                    <span class="tab-title">{{ room.name || '새 대화' }}</span>
-                    <v-btn
-                        v-if="chatRooms.length > 1"
-                        icon
-                        variant="text"
-                        size="x-small"
-                        class="tab-close"
-                        @click.stop="deleteRoom(room.id)"
-                    >
-                        <v-icon size="14">mdi-close</v-icon>
-                    </v-btn>
-                </div>
-            </div>
-            <v-btn
-                icon
-                variant="text"
-                size="small"
-                class="new-chat-btn"
-                @click="createNewRoom"
-            >
-                <v-icon>mdi-plus</v-icon>
-            </v-btn>
-        </div>
+        <!-- 채팅방 목록 UI는 좌측 패널(사이드바)로 이동 -->
 
         <!-- PDF2BPMN 진행 상황은 메시지 내부에 표시됨 -->
 
@@ -120,169 +87,18 @@
             </v-card>
         </v-dialog>
 
-        <!-- 채팅 내역 -->
-        <div class="chat-messages" ref="messagesContainer">
-            <!-- 히스토리 로딩 중 -->
-            <div v-if="isLoadingHistory" class="empty-chat">
-                <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
-                <p class="mt-2 text-grey">대화 내역을 불러오는 중...</p>
-            </div>
-            <!-- 메시지 없음 -->
-            <div v-else-if="messages.length === 0" class="empty-chat">
-                <v-icon size="48" color="grey-lighten-1">mdi-robot-outline</v-icon>
-                <p class="mt-2 text-grey">무엇을 도와드릴까요?</p>
-            </div>
-            
-            <div 
-                v-for="(msg, index) in messages" 
-                :key="msg.uuid || index"
-                class="message-item"
-                :class="{ 'user-message': msg.role === 'user', 'assistant-message': msg.role === 'assistant' || msg.role === 'system' }"
-            >
-                <div class="message-avatar">
-                    <v-avatar size="32" :color="msg.role === 'user' ? 'primary' : 'grey-lighten-2'">
-                        <v-icon size="18" :color="msg.role === 'user' ? 'white' : 'grey-darken-1'">
-                            {{ msg.role === 'user' ? 'mdi-account' : 'mdi-robot-outline' }}
-                        </v-icon>
-                    </v-avatar>
-                </div>
-                <div class="message-content">
-                    <div class="message-header">
-                        <span class="message-sender">{{ msg.role === 'user' ? '나' : 'AI 어시스턴트' }}</span>
-                        <span class="message-time">{{ formatTime(msg.timeStamp) }}</span>
-                    </div>
-                    <div class="message-text" v-html="formatMessage(msg.content)"></div>
-                    
-                    <!-- 첨부된 이미지 표시 -->
-                    <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
-                        <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
-                            <img :src="image.url" class="attached-image" @click="openImagePreview(image.url)" />
-                        </div>
-                    </div>
-                    
-                    <!-- 첨부된 PDF 파일 표시 -->
-                    <div v-if="msg.pdfFile" class="attached-pdf mt-2">
-                        <v-chip
-                            color="primary"
-                            variant="tonal"
-                            size="small"
-                            @click="msg.pdfFile.url && openExternalUrl(msg.pdfFile.url)"
-                        >
-                            <v-icon start size="14">mdi-file-pdf-box</v-icon>
-                            {{ msg.pdfFile.name }}
-                        </v-chip>
-                    </div>
-                    
-                    <!-- 도구 호출 표시 -->
-                    <div v-if="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls">
-                        <div v-for="(tool, idx) in msg.toolCalls" :key="idx" class="tool-call-item">
-                            <v-icon size="14" color="primary" class="mr-1">mdi-wrench</v-icon>
-                            <span class="tool-name">{{ formatToolName(tool.name) }}</span>
-                        </div>
-                    </div>
-                    
-                    <!-- PDF2BPMN 결과 표시 (메시지 하단) -->
-                    <div v-if="msg.pdf2bpmnResult && msg.pdf2bpmnResult.generatedBpmns && msg.pdf2bpmnResult.generatedBpmns.length > 0" 
-                         class="pdf2bpmn-result-container mt-3">
-                        <div class="result-header">
-                            <v-icon size="18" color="success" class="mr-2">mdi-check-circle</v-icon>
-                            <span class="result-title">생성된 BPMN 프로세스 ({{ msg.pdf2bpmnResult.generatedBpmns.length }}개)</span>
-                        </div>
-                        <div class="bpmn-cards">
-                            <div 
-                                v-for="(bpmn, idx) in msg.pdf2bpmnResult.generatedBpmns" 
-                                :key="idx" 
-                                class="bpmn-card"
-                                @click="showBpmnPreview(bpmn)"
-                            >
-                                <div class="bpmn-card-icon">
-                                    <v-icon size="24" color="primary">mdi-sitemap</v-icon>
-                                </div>
-                                <div class="bpmn-card-content">
-                                    <div class="bpmn-card-title">{{ bpmn.process_name }}</div>
-                                    <div class="bpmn-card-subtitle">ID: {{ bpmn.process_id }}</div>
-                                </div>
-                                <v-btn icon variant="text" size="small" class="bpmn-card-action">
-                                    <v-icon size="18">mdi-eye</v-icon>
-                                </v-btn>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PDF2BPMN 진행 상황 카드 (메시지 영역 내부, 현재 채팅방) -->
-            <div v-if="currentPdf2bpmnProgress.isActive" class="message-item assistant-message">
-                <div class="message-avatar">
-                    <v-avatar size="32" color="blue-lighten-4">
-                        <v-icon size="18" color="blue-darken-1">mdi-file-document-outline</v-icon>
-                    </v-avatar>
-                </div>
-                <div class="message-content">
-                    <div class="message-header">
-                        <span class="message-sender">PDF → BPMN 변환</span>
-                        <v-chip size="x-small" :color="getProgressChipColor(currentPdf2bpmnProgress.status)" class="ml-2">
-                            {{ currentPdf2bpmnProgress.status }}
-                        </v-chip>
-                    </div>
-                    
-                    <div class="pdf2bpmn-progress-card">
-                        <v-progress-linear 
-                            :model-value="currentPdf2bpmnProgress.progress" 
-                            :color="currentPdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'" 
-                            height="8"
-                            rounded
-                            class="mb-2"
-                        ></v-progress-linear>
-                        
-                        <div class="progress-info">
-                            <span class="progress-message">{{ currentPdf2bpmnProgress.message }}</span>
-                            <span class="progress-percent">{{ currentPdf2bpmnProgress.progress }}%</span>
-                            <v-progress-circular v-if="currentPdf2bpmnProgress.status === 'processing'" style="margin-left: 3px; margin-bottom: 3px;" indeterminate size="12" width="2" color="primary" />
-                        </div>
-
-                        <!-- 생성된 BPMN 목록 (스크롤 가능) -->
-                        <div v-if="currentPdf2bpmnProgress.generatedBpmns.length > 0" class="generated-bpmns-scroll mt-3">
-                            <div class="bpmn-list-title">
-                                <v-icon size="14" class="mr-1">mdi-sitemap</v-icon>
-                                생성된 프로세스 ({{ currentPdf2bpmnProgress.generatedBpmns.length }})
-                            </div>
-                            <div class="bpmn-cards-scroll">
-                                <div 
-                                    v-for="(bpmn, idx) in currentPdf2bpmnProgress.generatedBpmns" 
-                                    :key="idx" 
-                                    class="bpmn-card-mini"
-                                    @click="showBpmnPreview(bpmn)"
-                                >
-                                    <div class="bpmn-card-mini-icon">
-                                        <v-icon size="18" color="success">mdi-check-circle</v-icon>
-                                    </div>
-                                    <div class="bpmn-card-mini-content">
-                                        <div class="bpmn-card-mini-title">{{ bpmn.process_name }}</div>
-                                    </div>
-                                    <v-icon size="14" color="grey">mdi-eye</v-icon>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 로딩 표시 -->
-            <div v-if="isLoading" class="message-item assistant-message">
-                <div class="message-avatar">
-                    <v-avatar size="32" color="grey-lighten-2">
-                        <v-icon size="18" color="grey-darken-1">mdi-robot-outline</v-icon>
-                    </v-avatar>
-                </div>
-                <div class="message-content">
-                    <div class="loading-indicator">
-                        <v-progress-circular indeterminate size="16" width="2" color="primary"></v-progress-circular>
-                        <span class="ml-2">{{ loadingMessage }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <ChatThread
+            ref="thread"
+            :messages="messages"
+            :currentUserEmail="userInfo?.email || ''"
+            :isLoadingHistory="isLoadingHistory"
+            :isLoading="isLoading"
+            :loadingMessage="loadingMessage"
+            :pdf2bpmnProgress="currentPdf2bpmnProgress"
+            @preview-image="openImagePreview"
+            @preview-bpmn="showBpmnPreview"
+            @open-external-url="openExternalUrl"
+        />
 
         <!-- 입력 영역 - Chat 컴포넌트 사용 -->
         <div class="chat-input-container">
@@ -295,6 +111,68 @@
                 @sendMessage="handleChatInputMessage"
             />
         </div>
+
+        <!-- 참가자(초대) 관리 -->
+        <v-dialog v-model="participantsDialog" persistent max-width="600px">
+            <v-card class="pa-4">
+                <v-row class="ma-0 pa-0">
+                    <v-card-title class="pa-0">
+                        {{ $t('chatListing.selectParticipants') || '참여자 변경' }}
+                    </v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        @click="participantsDialog = false"
+                        icon
+                        variant="text"
+                        density="comfortable"
+                        style="margin-top:-8px;"
+                    >
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-card-text class="ma-0 pa-0 pb-2 pt-4">
+                    <v-autocomplete
+                        v-model="participantsDraft"
+                        :items="userList"
+                        chips
+                        closable-chips
+                        item-title="username"
+                        :item-value="item => item"
+                        multiple
+                        :label="$t('chatListing.selectParticipants') || '참여자 선택'"
+                        small-chips
+                        :loading="isLoadingUsers"
+                    >
+                        <template v-slot:chip="{ props, item }">
+                            <v-chip v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
+                            <v-chip v-else-if="item.raw.id == 'system_id'" v-bind="props" prepend-avatar="/images/chat-icon.png" text="System"></v-chip>
+                            <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
+                        </template>
+
+                        <template v-slot:item="{ props, item }">
+                            <v-list-item v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :title="item.raw.username ? item.raw.username:item.raw.email"
+                                :subtitle="item.raw.email"></v-list-item>
+                            <v-list-item v-else-if="item.raw.id == 'system_id'" v-bind="props" prepend-avatar="/images/chat-icon.png" title="System"></v-list-item>
+                            <v-list-item v-else v-bind="props" :title="item.raw.username ? item.raw.username:item.raw.email"
+                                :subtitle="item.raw.email">
+                                <template v-slot:prepend>
+                                    <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
+                                </template>
+                            </v-list-item>
+                        </template>
+                    </v-autocomplete>
+                    <div class="text-caption text-grey mt-2">
+                        - 시스템과 내 계정은 항상 참가자로 유지됩니다.
+                    </div>
+                </v-card-text>
+                <v-row class="ma-0 pa-0">
+                    <v-spacer></v-spacer>
+                    <v-btn color="primary" rounded @click="saveParticipants" variant="flat">
+                        {{ $t('chatListing.save') || '저장' }}
+                    </v-btn>
+                </v-row>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -305,6 +183,7 @@ import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import { getValidToken } from '@/utils/supabaseAuth.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from '@/components/ui/Chat.vue';
+import ChatThread from '@/components/chat/ChatThread.vue';
 
 const backend = BackendFactory.createBackend();
 
@@ -312,7 +191,8 @@ export default {
     name: 'WorkAssistantChatPanel',
     components: {
         ProcessDefinition,
-        Chat
+        Chat,
+        ChatThread
     },
     props: {
         // 초기 메시지 - 문자열 또는 { text, images, file } 객체
@@ -372,7 +252,13 @@ export default {
             pendingPdfFile: null,
             // 이미지 미리보기
             imagePreviewDialog: false,
-            previewImageUrl: null
+            previewImageUrl: null,
+
+            // 참가자 관리
+            participantsDialog: false,
+            participantsDraft: [],
+            userList: [],
+            isLoadingUsers: false
         };
     },
     computed: {
@@ -444,6 +330,98 @@ export default {
         this.abortAllAgentStreams();
     },
     methods: {
+        normalizeParticipant(p) {
+            if (!p) return null;
+            return {
+                id: p?.id || p?.uid || null,
+                email: p?.email || null,
+                username: p?.username || p?.name || p?.email || '',
+                profile: p?.profile || null
+            };
+        },
+        participantMatches(a, b) {
+            if (!a || !b) return false;
+            if (a.email && b.email && a.email === b.email) return true;
+            if (a.id && b.id && a.id === b.id) return true;
+            return false;
+        },
+        ensureBaseParticipants(list) {
+            const system = { email: 'system@uengine.org', id: 'system_id', username: 'AI 어시스턴트' };
+            const me = this.normalizeParticipant(this.userInfo);
+
+            const normalized = (Array.isArray(list) ? list : [])
+                .map(this.normalizeParticipant)
+                .filter(Boolean);
+
+            const hasSystem = normalized.some(p => p.id === 'system_id' || p.email === 'system@uengine.org');
+            const hasMe = me ? normalized.some(p => this.participantMatches(p, me)) : false;
+
+            const next = [...normalized];
+            if (!hasSystem) next.unshift(system);
+            if (me && !hasMe) next.push(me);
+
+            const seen = new Set();
+            return next.filter((p) => {
+                const key = p.email ? `e:${p.email}` : (p.id ? `i:${p.id}` : null);
+                if (!key) return false;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        },
+        async loadInviteUserList() {
+            this.isLoadingUsers = true;
+            try {
+                const list = await backend.getUserList(null);
+                this.userList = Array.isArray(list) ? list : [];
+            } catch (e) {
+                this.userList = [];
+            } finally {
+                this.isLoadingUsers = false;
+            }
+        },
+        async openParticipantsDialog() {
+            if (!this.currentRoomId) return;
+            if (!this.userList || this.userList.length === 0) {
+                await this.loadInviteUserList();
+            }
+            const room = this.chatRooms.find(r => r.id === this.currentRoomId);
+            const current = room?.participants || [];
+            this.participantsDraft = [...current];
+            this.participantsDialog = true;
+        },
+        async saveParticipants() {
+            if (!this.currentRoomId) {
+                this.participantsDialog = false;
+                return;
+            }
+            const room = this.chatRooms.find(r => r.id === this.currentRoomId);
+            if (!room) {
+                this.participantsDialog = false;
+                return;
+            }
+            const next = this.ensureBaseParticipants(this.participantsDraft);
+            room.participants = next;
+            try {
+                await this.putObject('chat_rooms', room);
+                this.EventBus.emit('chat-rooms-updated');
+            } catch (e) {
+                // ignore
+            } finally {
+                this.participantsDialog = false;
+            }
+        },
+        async renameRoom(roomId, newName) {
+            const trimmed = String(newName || '').trim();
+            if (!roomId || !trimmed) return;
+            const nextName = trimmed.substring(0, 50);
+            const room = this.chatRooms.find(r => r.id === roomId);
+            if (room) {
+                room.name = nextName;
+                await this.putObject('chat_rooms', room);
+                this.EventBus.emit('chat-rooms-updated');
+            }
+        },
         // UUID 생성
         uuid() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -467,6 +445,7 @@ export default {
                     
                     // 자동 선택은 하지 않음 (initialMessage나 openHistoryRoom에서 처리)
                 }
+                this.EventBus.emit('chat-rooms-updated');
             } catch (error) {
                 console.error('채팅방 로드 오류:', error);
             }
@@ -544,6 +523,7 @@ export default {
             this.chatRooms.unshift(room);
             this.currentRoomId = roomId;
             this.EventBus.emit('chat-room-selected', roomId);
+            this.EventBus.emit('chat-rooms-updated');
             this.updateChatAccessPage(roomId);
             this.messages = [];
 
@@ -557,6 +537,7 @@ export default {
                 await backend.delete(`chat_rooms/${roomId}`, { key: 'id' });
                 
                 this.chatRooms = this.chatRooms.filter(r => r.id !== roomId);
+                this.EventBus.emit('chat-rooms-updated');
                 
                 if (this.currentRoomId === roomId) {
                     if (this.chatRooms.length > 0) {
@@ -564,6 +545,7 @@ export default {
                     } else {
                         this.currentRoomId = null;
                         this.messages = [];
+                        this.EventBus.emit('chat-room-unselected');
                     }
                 }
             } catch (error) {
@@ -1097,6 +1079,9 @@ export default {
                     createdAt: msg.timeStamp
                 };
                 await this.putObject('chat_rooms', room);
+                // 최신 메시지 기준으로 정렬하여 "최신이 상단" 유지
+                this.chatRooms.sort((a, b) => new Date(b.message?.createdAt || 0) - new Date(a.message?.createdAt || 0));
+                this.EventBus.emit('chat-rooms-updated');
             }
         },
 
@@ -1195,12 +1180,9 @@ export default {
 
         // 스크롤 하단으로
         scrollToBottom() {
-            this.$nextTick(() => {
-                const container = this.$refs.messagesContainer;
-                if (container) {
-                    container.scrollTop = container.scrollHeight;
-                }
-            });
+            try {
+                this.$refs.thread?.scrollToBottom?.();
+            } catch (e) {}
         },
 
         // 컨설팅 모드로 전환 (프로세스 생성용)

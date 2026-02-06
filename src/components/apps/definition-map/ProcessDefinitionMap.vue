@@ -2,7 +2,6 @@
     <div class="definition-map-wrapper">
         <!-- 좌측: 정의체계도 -->
         <v-card 
-            v-show="!showFullScreenChat"
             elevation="10" :style="[
             !$globalState.state.isZoomed ? '' : 'height:100vh;',
             'width: 100%'
@@ -19,12 +18,11 @@
                     @sendMessage="handleMainChatMessage"
                 />
             </div> -->
-            <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog && !showFullScreenChat" class="pa-4">
+            <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <MainChatInput 
                     :agentInfo="mainChatAgentInfo"
                     :userId="userInfo.uid || userInfo.id"
                     @submit="handleMainChatSubmit"
-                    @open-history="handleOpenHistory"
                 />
             </div>
             
@@ -59,7 +57,7 @@
                     
                     <!-- 검색 기능 (Searchbar 스타일 참고) -->
                     <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5"
-                        style="max-width: 280px; min-width: 160px;"
+                        style="max-width: 246px; min-width: 160px;"
                     >
                         <Icons :icon="'magnifer-linear'" :size="20" />
                         <v-text-field
@@ -444,41 +442,6 @@
             </v-row> -->
         </v-card>
 
-        <!-- 전체 화면: 채팅 패널 -->
-        <v-card 
-            v-if="showFullScreenChat"
-            elevation="10"
-            class="is-work-height chat-panel-card"
-            style="width: 100%"
-        >
-            <!-- 채팅 헤더 -->
-            <div class="chat-panel-header">
-                <div class="header-left">
-                    <v-icon color="primary" class="mr-2">mdi-robot-outline</v-icon>
-                    <span class="header-title">AI 어시스턴트</span>
-                </div>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="small"
-                    @click="closeChatPanel"
-                >
-                    <v-icon>mdi-close</v-icon>
-                </v-btn>
-            </div>
-
-            <!-- 채팅 컨텐츠 -->
-            <div class="chat-panel-content">
-                <WorkAssistantChatPanel
-                    ref="workAssistantChatPanel"
-                    :initialMessage="pendingChatMessage"
-                    :userInfo="userInfo"
-                    :openHistoryRoom="pendingHistoryRoom"
-                    @response-parsed="handleAgentResponse"
-                />
-            </div>
-        </v-card>
-
          <v-dialog v-if="mode !== 'uEngine'" v-model="openConsultingDialog"
             :style="ProcessPreviewMode ? (isSimulateMode ? 'max-width: 3px; max-height: 3px;' : '') : 'max-width: 1000px;'"
             :fullscreen="isMobile"
@@ -594,13 +557,12 @@ import Chat from '@/components/ui/Chat.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import MetricsView from './MetricsView.vue';
 import MainChatInput from '@/components/MainChatInput.vue';
-import FullScreenChatDialog from '@/components/FullScreenChatDialog.vue';
 import AgentChatActions from '@/components/AgentChatActions.vue';
-import WorkAssistantChatPanel from '@/components/WorkAssistantChatPanel.vue';
 import ChatModule from '@/components/ChatModule.vue';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
+import { processGptAgent } from '@/constants/processGptAgent';
 
 import * as jsondiff from 'jsondiffpatch';
 var jsondiffpatch = jsondiff.create({
@@ -622,9 +584,7 @@ export default {
         DetailComponent,
         MetricsView,
         MainChatInput,
-        FullScreenChatDialog,
         AgentChatActions,
-        WorkAssistantChatPanel
     },
     props: {
         componentName: {
@@ -722,11 +682,6 @@ export default {
         ],
         generator: null,
         initialConsultingMessage: null,
-        showFullScreenChat: false,
-        pendingChatMessage: null,
-        pendingHistoryRoom: null,
-        chatPanelWidth: 500,
-        isResizing: false,
         mainChatAgentInfo: {
             id: "0e9a546b-9ae0-48ef-1e9e-f0e95d5bc028",
             username: "업무 지원 에이전트",
@@ -853,6 +808,22 @@ export default {
         mode() {
             return window.$mode;
         }
+        ,
+        userChatHeaderTitle() {
+            const u = this.selectedChatUser;
+            return (u && (u.username || u.name || u.email)) ? (u.username || u.name || u.email) : '대화';
+        },
+        userChatHeaderProfile() {
+            const u = this.selectedChatUser;
+            if (!u) return null;
+            let basePath = window.location.port == '' ? window.location.origin : '';
+            if (u.email === 'system@uengine.org') return `${basePath}/images/chat-icon.png`;
+            if (u.profile) {
+                if (String(u.profile).includes('defaultUser.png')) return `${basePath}/images/defaultUser.png`;
+                return u.profile;
+            }
+            return `${basePath}/images/defaultUser.png`;
+        }
     },
     watch: {
         enableEdit(newVal, oldVal) {
@@ -915,12 +886,8 @@ export default {
                 this.isAdmin = event.detail.value === 'true' || event.detail.value === true;
             }
         });
-        
-        // 채팅 패널 닫기 이벤트 수신
-        this.EventBus.on('close-chat-panel', this.closeChatPanel);
     },
     beforeUnmount() {
-        this.EventBus.off('close-chat-panel', this.closeChatPanel);
     },
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
@@ -932,6 +899,150 @@ export default {
         }
     },
     methods: {
+        uuid() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
+        normalizeParticipant(p) {
+            if (!p) return null;
+            return {
+                id: p?.id || p?.uid || null,
+                email: p?.email || null,
+                username: p?.username || p?.name || p?.email || '',
+                profile: p?.profile || null,
+                agent_type: p?.agent_type || p?.agentType || null,
+                is_agent: p?.is_agent ?? p?.isAgent ?? null
+            };
+        },
+        participantMatches(a, b) {
+            if (!a || !b) return false;
+            if (a.email && b.email && a.email === b.email) return true;
+            if (a.id && b.id && a.id === b.id) return true;
+            return false;
+        },
+        async createRoomAndNavigateFromMainChat(message) {
+            const userInfo = this.userInfo || await backend.getUserInfo();
+            const me = this.normalizeParticipant(userInfo);
+
+            const text = (message?.text || '').toString().trim();
+            const hasImages = Array.isArray(message?.images) && message.images.length > 0;
+            const hasFile = !!message?.file;
+
+            const roomId = this.uuid();
+            const nowIso = new Date().toISOString();
+            const roomName = (text ? text.substring(0, 50) : '').trim() || '새 대화';
+
+            const participants = [
+                me,
+                // 가상 에이전트는 DB에 저장되지 않으며 방 참가자에만 포함
+                this.normalizeParticipant(processGptAgent) || processGptAgent
+            ].filter(Boolean);
+
+            const room = {
+                id: roomId,
+                name: roomName,
+                // primary_agent_id는 DB에 실제로 존재하는 에이전트가 아닐 수 있어 저장하지 않음
+                participants,
+                message: { msg: 'NEW', type: 'text', createdAt: nowIso }
+            };
+
+            await backend.putObject('db://chat_rooms', room);
+
+            const msgUuid = this.uuid();
+            const msg = {
+                uuid: msgUuid,
+                role: 'user',
+                content: text || (hasFile ? '첨부된 파일을 확인해주세요.' : (hasImages ? '첨부된 내용을 확인해주세요.' : '')),
+                timeStamp: nowIso,
+                email: userInfo?.email || null,
+                name: userInfo?.username || userInfo?.name || userInfo?.email || '',
+                userName: userInfo?.username || userInfo?.name || userInfo?.email || '',
+                images: message?.images || [],
+                pdfFile: message?.file || null
+            };
+
+            await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
+            // last message update
+            room.message = { msg: (msg.content || '').substring(0, 50), type: 'text', createdAt: nowIso };
+            await backend.putObject('db://chat_rooms', room);
+
+            // ChatRoomPage에서 첫 메시지에 대한 에이전트 응답만 kick-off 하도록 sessionStorage에 전달
+            try {
+                sessionStorage.setItem(`chatKickoff:${roomId}`, JSON.stringify({
+                    roomId,
+                    msgUuid,
+                    text,
+                    images: message?.images || [],
+                    file: message?.file || null,
+                    createdAt: nowIso
+                }));
+            } catch (e) {}
+
+            // definition-map 패널은 열지 않고 /chat으로 이동
+            this.showFullScreenChat = false;
+            this.pendingChatMessage = null;
+            this.pendingHistoryRoom = null;
+            await this.$router.push({ path: '/chat', query: { roomId } });
+        },
+        getActiveChatPanel() {
+            return this.chatPanelMode === 'user' ? this.$refs.userChatRooms : this.$refs.workAssistantChatPanel;
+        },
+        getCurrentChatRoomName() {
+            try {
+                const panel = this.getActiveChatPanel();
+                const room = panel?.currentChatRoom || panel?.currentRoom || null;
+                const name = room?.name || '';
+                return name || '새 대화';
+            } catch (e) {
+                return '새 대화';
+            }
+        },
+        openChatRoomRenameDialog() {
+            this.chatRoomRenameDraft = this.getCurrentChatRoomName();
+            this.chatRoomSettingsMenu = false;
+            this.chatRoomRenameDialog = true;
+        },
+        async confirmChatRoomRename() {
+            const roomId = this.currentChatRoomId;
+            const nextName = String(this.chatRoomRenameDraft || '').trim().substring(0, 50);
+            if (!roomId || !nextName) {
+                this.chatRoomRenameDialog = false;
+                return;
+            }
+            try {
+                const panel = this.getActiveChatPanel();
+                if (panel && typeof panel.renameRoom === 'function') {
+                    await panel.renameRoom(roomId, nextName);
+                }
+                this.EventBus.emit('chat-rooms-updated');
+            } catch (e) {
+                // ignore
+            } finally {
+                this.chatRoomRenameDialog = false;
+            }
+        },
+        openChatRoomParticipantsDialog() {
+            this.chatRoomSettingsMenu = false;
+            try {
+                const panel = this.getActiveChatPanel();
+                if (panel && typeof panel.openParticipantsDialog === 'function') {
+                    panel.openParticipantsDialog();
+                }
+            } catch (e) {
+                // ignore
+            }
+        },
+        openChatRoomDeleteConfirm() {
+            this.chatRoomSettingsMenu = false;
+            this.chatRoomDeleteDialog = true;
+        },
+        async confirmChatRoomDelete() {
+            this.chatRoomDeleteDialog = false;
+            await this.deleteCurrentChatRoom();
+        },
         async syncCardToMetrics() {
             if (!this.value || !this.value.mega_proc_list) return;
 
@@ -1082,7 +1193,7 @@ export default {
             };
         },
         // 메인 채팅 입력 처리
-        handleMainChatSubmit(message) {
+        async handleMainChatSubmit(message) {
             console.log('[ProcessDefinitionMap] handleMainChatSubmit 받음:', message);
             // 파일만 있거나 텍스트만 있거나 둘 다 있는 경우 처리
             if (!message || (!message.text && !message.file && !message.images)) return;
@@ -1091,17 +1202,31 @@ export default {
             if (!message.text && (message.file || message.images)) {
                 message.text = message.file ? 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.' : '첨부된 내용을 확인해주세요.';
             }
-            
-            // 전체 화면 채팅 다이얼로그 열기 (message 객체 전체 전달 - 패널에서 [InputData] 처리)
-            this.pendingChatMessage = message;
-            console.log('[ProcessDefinitionMap] pendingChatMessage 설정:', this.pendingChatMessage);
-            this.showFullScreenChat = true;
+
+            // 메인 채팅 전송 시: process-gpt-agent(가상) + 나 로 방 생성 후 /chat으로 이동
+            await this.createRoomAndNavigateFromMainChat(message);
         },
 
         // 히스토리 항목 열기
         handleOpenHistory(room) {
             this.pendingChatMessage = null;
             this.pendingHistoryRoom = room;
+            this.chatPanelMode = 'assistant';
+            this.selectedChatUser = null;
+            this.pendingUserRoomId = null;
+            this.showFullScreenChat = true;
+        },
+
+        // 유저 대화 열기 (사이드바 유저 목록)
+        handleOpenUserConversation(payload) {
+            const user = payload?.user || null;
+            const roomId = payload?.roomId || null;
+            if (!user) return;
+            this.pendingChatMessage = null;
+            this.pendingHistoryRoom = null;
+            this.chatPanelMode = 'user';
+            this.selectedChatUser = user;
+            this.pendingUserRoomId = roomId;
             this.showFullScreenChat = true;
         },
 
@@ -1110,6 +1235,35 @@ export default {
             this.showFullScreenChat = false;
             this.pendingChatMessage = null;
             this.pendingHistoryRoom = null;
+            this.chatPanelMode = 'assistant';
+            this.selectedChatUser = null;
+            this.pendingUserRoomId = null;
+            this.currentChatRoomId = null;
+        },
+
+        handleChatRoomSelected(roomId) {
+            this.currentChatRoomId = roomId || null;
+        },
+        handleChatRoomUnselected() {
+            this.currentChatRoomId = null;
+        },
+
+        async deleteCurrentChatRoom() {
+            try {
+                const roomId = this.currentChatRoomId;
+                if (!roomId) return;
+                if (this.chatPanelMode === 'user') {
+                    const panel = this.$refs.userChatRooms;
+                    if (!panel || typeof panel.deleteRoom !== 'function') return;
+                    await panel.deleteRoom(roomId);
+                    return;
+                }
+                const panel = this.$refs.workAssistantChatPanel;
+                if (!panel || typeof panel.deleteRoom !== 'function') return;
+                await panel.deleteRoom(roomId);
+            } catch (e) {
+                console.error('채팅방 삭제 실패:', e);
+            }
         },
 
         // 의도 분석 결과 처리

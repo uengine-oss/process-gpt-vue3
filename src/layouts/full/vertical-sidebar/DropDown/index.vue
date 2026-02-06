@@ -1,6 +1,10 @@
 <script setup>
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+
 const props = defineProps({ item: Object, level: Number });
+const route = useRoute();
+
 const useI18n = computed(() => {
     if (props.level > 0) {
         return false;
@@ -35,10 +39,16 @@ function getIconColor(item) {
         return '';
     }
 }
+
+function isItemActive(item) {
+    if (!item || !item.to) return false;
+    const itemPath = typeof item.to === 'object' ? item.to.path : item.to;
+    return route.path === itemPath;
+}
 </script>
 
 <template>
-    <div class="mb-0 item-hover">
+    <div class="mb-0 item-hover sidebar-list-hover-bg" :class="{ 'sidebar-list-hover-bg--active': isItemActive(item) }">
         <!---Single Item-->
         <v-list-item
             :to="item.to"
