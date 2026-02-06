@@ -1,10 +1,9 @@
 <template>
     <div class="settings-container pa-4">
         <!-- Info Banner -->
-        <div class="info-banner">
-            <v-icon size="18" color="primary">mdi-information-outline</v-icon>
-            <span>{{ $t('orgChartGroup.description') }}</span>
-        </div>
+        <v-alert dense outlined type="info" color="gray" class="mb-4 pa-4 pt-2 pb-2">
+            <span class="text-body-1">{{ $t('orgChartGroup.description') }}</span>
+        </v-alert>
 
         <!-- Header with Add Button -->
         <div class="section-header">
