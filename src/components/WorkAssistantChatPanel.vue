@@ -87,164 +87,18 @@
             </v-card>
         </v-dialog>
 
-        <!-- 채팅 내역 -->
-        <div class="chat-messages" ref="messagesContainer">
-            <!-- 히스토리 로딩 중 -->
-            <div v-if="isLoadingHistory" class="empty-chat">
-                <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
-                <p class="mt-2 text-grey">대화 내역을 불러오는 중...</p>
-            </div>
-            <!-- 메시지 없음 -->
-            <div v-else-if="messages.length === 0" class="empty-chat">
-                <v-icon size="48" color="grey-lighten-1">mdi-robot-outline</v-icon>
-                <p class="mt-2 text-grey">무엇을 도와드릴까요?</p>
-            </div>
-            
-            <div 
-                v-for="(msg, index) in messages" 
-                :key="msg.uuid || index"
-                class="message-item"
-                :class="{ 'user-message': msg.role === 'user', 'assistant-message': msg.role === 'assistant' || msg.role === 'system' }"
-            >
-                <v-sheet 
-                    class="rounded-md px-3 py-3 mb-1"
-                    :class="{ 'bg-lightprimary': msg.role === 'user' }"
-                >
-                    <div class="message-header">
-                        <span class="message-time">{{ formatTime(msg.timeStamp) }}</span>
-                    </div>
-                    <div v-html="formatMessage(msg.content)" class="markdown-content"></div>
-                    
-                    <!-- 첨부된 이미지 표시 -->
-                    <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
-                        <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
-                            <img :src="image.url" class="attached-image" @click="openImagePreview(image.url)" />
-                        </div>
-                    </div>
-                    
-                    <!-- 첨부된 PDF 파일 표시 -->
-                    <div v-if="msg.pdfFile" class="attached-pdf mt-2">
-                        <v-chip
-                            color="primary"
-                            variant="tonal"
-                            size="small"
-                            @click="msg.pdfFile.url && openExternalUrl(msg.pdfFile.url)"
-                        >
-                            <v-icon start size="14">mdi-file-pdf-box</v-icon>
-                            {{ msg.pdfFile.name }}
-                        </v-chip>
-                    </div>
-                    
-                    <!-- 도구 호출 표시 -->
-                    <div v-if="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls">
-                        <div v-for="(tool, idx) in msg.toolCalls" :key="idx" class="tool-call-item">
-                            <v-icon size="14" color="primary" class="mr-1">mdi-wrench</v-icon>
-                            <span class="tool-name">{{ formatToolName(tool.name) }}</span>
-                        </div>
-                    </div>
-                    
-                    <!-- PDF2BPMN 결과 표시 (메시지 하단) -->
-                    <div v-if="msg.pdf2bpmnResult && msg.pdf2bpmnResult.generatedBpmns && msg.pdf2bpmnResult.generatedBpmns.length > 0" 
-                         class="pdf2bpmn-result-container mt-3">
-                        <div class="result-header">
-                            <v-icon size="18" color="success" class="mr-2">mdi-check-circle</v-icon>
-                            <span class="result-title">생성된 BPMN 프로세스 ({{ msg.pdf2bpmnResult.generatedBpmns.length }}개)</span>
-                        </div>
-                        <div class="bpmn-cards">
-                            <div 
-                                v-for="(bpmn, idx) in msg.pdf2bpmnResult.generatedBpmns" 
-                                :key="idx" 
-                                class="bpmn-card"
-                                @click="showBpmnPreview(bpmn)"
-                            >
-                                <div class="bpmn-card-icon">
-                                    <v-icon size="24" color="primary">mdi-sitemap</v-icon>
-                                </div>
-                                <div class="bpmn-card-content">
-                                    <div class="bpmn-card-title">{{ bpmn.process_name }}</div>
-                                    <div class="bpmn-card-subtitle">ID: {{ bpmn.process_id }}</div>
-                                </div>
-                                <v-btn icon variant="text" size="small" class="bpmn-card-action">
-                                    <v-icon size="18">mdi-eye</v-icon>
-                                </v-btn>
-                            </div>
-                        </div>
-                    </div>
-                </v-sheet>
-            </div>
-
-            <!-- PDF2BPMN 진행 상황 카드 (메시지 영역 내부, 현재 채팅방) -->
-            <div v-if="currentPdf2bpmnProgress.isActive" class="message-item assistant-message">
-                <div class="message-avatar">
-                    <v-avatar size="32" color="blue-lighten-4">
-                        <v-icon size="18" color="blue-darken-1">mdi-file-document-outline</v-icon>
-                    </v-avatar>
-                </div>
-                <div class="message-content">
-                    <div class="message-header">
-                        <span class="message-sender">PDF → BPMN 변환</span>
-                        <v-chip size="x-small" :color="getProgressChipColor(currentPdf2bpmnProgress.status)" class="ml-2">
-                            {{ currentPdf2bpmnProgress.status }}
-                        </v-chip>
-                    </div>
-                    
-                    <div class="pdf2bpmn-progress-card">
-                        <v-progress-linear 
-                            :model-value="currentPdf2bpmnProgress.progress" 
-                            :color="currentPdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'" 
-                            height="8"
-                            rounded
-                            class="mb-2"
-                        ></v-progress-linear>
-                        
-                        <div class="progress-info">
-                            <span class="progress-message">{{ currentPdf2bpmnProgress.message }}</span>
-                            <span class="progress-percent">{{ currentPdf2bpmnProgress.progress }}%</span>
-                            <v-progress-circular v-if="currentPdf2bpmnProgress.status === 'processing'" style="margin-left: 3px; margin-bottom: 3px;" indeterminate size="12" width="2" color="primary" />
-                        </div>
-
-                        <!-- 생성된 BPMN 목록 (스크롤 가능) -->
-                        <div v-if="currentPdf2bpmnProgress.generatedBpmns.length > 0" class="generated-bpmns-scroll mt-3">
-                            <div class="bpmn-list-title">
-                                <v-icon size="14" class="mr-1">mdi-sitemap</v-icon>
-                                생성된 프로세스 ({{ currentPdf2bpmnProgress.generatedBpmns.length }})
-                            </div>
-                            <div class="bpmn-cards-scroll">
-                                <div 
-                                    v-for="(bpmn, idx) in currentPdf2bpmnProgress.generatedBpmns" 
-                                    :key="idx" 
-                                    class="bpmn-card-mini"
-                                    @click="showBpmnPreview(bpmn)"
-                                >
-                                    <div class="bpmn-card-mini-icon">
-                                        <v-icon size="18" color="success">mdi-check-circle</v-icon>
-                                    </div>
-                                    <div class="bpmn-card-mini-content">
-                                        <div class="bpmn-card-mini-title">{{ bpmn.process_name }}</div>
-                                    </div>
-                                    <v-icon size="14" color="grey">mdi-eye</v-icon>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 로딩 표시 -->
-            <div v-if="isLoading" class="message-item assistant-message">
-                <div class="message-avatar">
-                    <v-avatar size="32" color="grey-lighten-2">
-                        <v-icon size="18" color="grey-darken-1">mdi-robot-outline</v-icon>
-                    </v-avatar>
-                </div>
-                <div class="message-content">
-                    <div class="loading-indicator">
-                        <v-progress-circular indeterminate size="16" width="2" color="primary"></v-progress-circular>
-                        <span class="ml-2">{{ loadingMessage }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <ChatThread
+            ref="thread"
+            :messages="messages"
+            :currentUserEmail="userInfo?.email || ''"
+            :isLoadingHistory="isLoadingHistory"
+            :isLoading="isLoading"
+            :loadingMessage="loadingMessage"
+            :pdf2bpmnProgress="currentPdf2bpmnProgress"
+            @preview-image="openImagePreview"
+            @preview-bpmn="showBpmnPreview"
+            @open-external-url="openExternalUrl"
+        />
 
         <!-- 입력 영역 - Chat 컴포넌트 사용 -->
         <div class="chat-input-container">
@@ -257,6 +111,68 @@
                 @sendMessage="handleChatInputMessage"
             />
         </div>
+
+        <!-- 참가자(초대) 관리 -->
+        <v-dialog v-model="participantsDialog" persistent max-width="600px">
+            <v-card class="pa-4">
+                <v-row class="ma-0 pa-0">
+                    <v-card-title class="pa-0">
+                        {{ $t('chatListing.selectParticipants') || '참여자 변경' }}
+                    </v-card-title>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        @click="participantsDialog = false"
+                        icon
+                        variant="text"
+                        density="comfortable"
+                        style="margin-top:-8px;"
+                    >
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-row>
+                <v-card-text class="ma-0 pa-0 pb-2 pt-4">
+                    <v-autocomplete
+                        v-model="participantsDraft"
+                        :items="userList"
+                        chips
+                        closable-chips
+                        item-title="username"
+                        :item-value="item => item"
+                        multiple
+                        :label="$t('chatListing.selectParticipants') || '참여자 선택'"
+                        small-chips
+                        :loading="isLoadingUsers"
+                    >
+                        <template v-slot:chip="{ props, item }">
+                            <v-chip v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
+                            <v-chip v-else-if="item.raw.id == 'system_id'" v-bind="props" prepend-avatar="/images/chat-icon.png" text="System"></v-chip>
+                            <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
+                        </template>
+
+                        <template v-slot:item="{ props, item }">
+                            <v-list-item v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :title="item.raw.username ? item.raw.username:item.raw.email"
+                                :subtitle="item.raw.email"></v-list-item>
+                            <v-list-item v-else-if="item.raw.id == 'system_id'" v-bind="props" prepend-avatar="/images/chat-icon.png" title="System"></v-list-item>
+                            <v-list-item v-else v-bind="props" :title="item.raw.username ? item.raw.username:item.raw.email"
+                                :subtitle="item.raw.email">
+                                <template v-slot:prepend>
+                                    <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
+                                </template>
+                            </v-list-item>
+                        </template>
+                    </v-autocomplete>
+                    <div class="text-caption text-grey mt-2">
+                        - 시스템과 내 계정은 항상 참가자로 유지됩니다.
+                    </div>
+                </v-card-text>
+                <v-row class="ma-0 pa-0">
+                    <v-spacer></v-spacer>
+                    <v-btn color="primary" rounded @click="saveParticipants" variant="flat">
+                        {{ $t('chatListing.save') || '저장' }}
+                    </v-btn>
+                </v-row>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -267,7 +183,7 @@ import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import { getValidToken } from '@/utils/supabaseAuth.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import Chat from '@/components/ui/Chat.vue';
-import { marked } from 'marked';
+import ChatThread from '@/components/chat/ChatThread.vue';
 
 const backend = BackendFactory.createBackend();
 
@@ -275,7 +191,8 @@ export default {
     name: 'WorkAssistantChatPanel',
     components: {
         ProcessDefinition,
-        Chat
+        Chat,
+        ChatThread
     },
     props: {
         // 초기 메시지 - 문자열 또는 { text, images, file } 객체
@@ -335,7 +252,13 @@ export default {
             pendingPdfFile: null,
             // 이미지 미리보기
             imagePreviewDialog: false,
-            previewImageUrl: null
+            previewImageUrl: null,
+
+            // 참가자 관리
+            participantsDialog: false,
+            participantsDraft: [],
+            userList: [],
+            isLoadingUsers: false
         };
     },
     computed: {
@@ -407,6 +330,98 @@ export default {
         this.abortAllAgentStreams();
     },
     methods: {
+        normalizeParticipant(p) {
+            if (!p) return null;
+            return {
+                id: p?.id || p?.uid || null,
+                email: p?.email || null,
+                username: p?.username || p?.name || p?.email || '',
+                profile: p?.profile || null
+            };
+        },
+        participantMatches(a, b) {
+            if (!a || !b) return false;
+            if (a.email && b.email && a.email === b.email) return true;
+            if (a.id && b.id && a.id === b.id) return true;
+            return false;
+        },
+        ensureBaseParticipants(list) {
+            const system = { email: 'system@uengine.org', id: 'system_id', username: 'AI 어시스턴트' };
+            const me = this.normalizeParticipant(this.userInfo);
+
+            const normalized = (Array.isArray(list) ? list : [])
+                .map(this.normalizeParticipant)
+                .filter(Boolean);
+
+            const hasSystem = normalized.some(p => p.id === 'system_id' || p.email === 'system@uengine.org');
+            const hasMe = me ? normalized.some(p => this.participantMatches(p, me)) : false;
+
+            const next = [...normalized];
+            if (!hasSystem) next.unshift(system);
+            if (me && !hasMe) next.push(me);
+
+            const seen = new Set();
+            return next.filter((p) => {
+                const key = p.email ? `e:${p.email}` : (p.id ? `i:${p.id}` : null);
+                if (!key) return false;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        },
+        async loadInviteUserList() {
+            this.isLoadingUsers = true;
+            try {
+                const list = await backend.getUserList(null);
+                this.userList = Array.isArray(list) ? list : [];
+            } catch (e) {
+                this.userList = [];
+            } finally {
+                this.isLoadingUsers = false;
+            }
+        },
+        async openParticipantsDialog() {
+            if (!this.currentRoomId) return;
+            if (!this.userList || this.userList.length === 0) {
+                await this.loadInviteUserList();
+            }
+            const room = this.chatRooms.find(r => r.id === this.currentRoomId);
+            const current = room?.participants || [];
+            this.participantsDraft = [...current];
+            this.participantsDialog = true;
+        },
+        async saveParticipants() {
+            if (!this.currentRoomId) {
+                this.participantsDialog = false;
+                return;
+            }
+            const room = this.chatRooms.find(r => r.id === this.currentRoomId);
+            if (!room) {
+                this.participantsDialog = false;
+                return;
+            }
+            const next = this.ensureBaseParticipants(this.participantsDraft);
+            room.participants = next;
+            try {
+                await this.putObject('chat_rooms', room);
+                this.EventBus.emit('chat-rooms-updated');
+            } catch (e) {
+                // ignore
+            } finally {
+                this.participantsDialog = false;
+            }
+        },
+        async renameRoom(roomId, newName) {
+            const trimmed = String(newName || '').trim();
+            if (!roomId || !trimmed) return;
+            const nextName = trimmed.substring(0, 50);
+            const room = this.chatRooms.find(r => r.id === roomId);
+            if (room) {
+                room.name = nextName;
+                await this.putObject('chat_rooms', room);
+                this.EventBus.emit('chat-rooms-updated');
+            }
+        },
         // UUID 생성
         uuid() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -1098,109 +1113,36 @@ export default {
         formatMessage(content) {
             if (!content) return '';
             
-            const trimmedText = content.trim();
-            
-            // "AI 생성중..." 텍스트 감지
-            if (trimmedText === 'AI 생성중...') {
-                const loadingText = 'AI 생성 중...';
-                const animatedChars = loadingText.split('').map((char, index) => {
-                    const safeChar = char === ' ' ? '&nbsp;' : char;
-                    return `<span class="thinking-char" style="animation-delay: ${index * 0.1}s">${safeChar}</span>`;
-                }).join('');
-                
-                return `<div class="thinking-wave-text" style="font-weight: bold;">${animatedChars}</div>`;
-            }
-            
-            const isLoadingPlaceholder = trimmedText === '...' || trimmedText === '….';
-            
-            let processedText = content;
-            
-            // JSON 객체 형식 감지 및 messageForUser 추출
-            if (trimmedText.startsWith('{') && trimmedText.endsWith('}')) {
+            // JSON 코드 블록 처리
+            let formatted = content.replace(/```json\s*([\s\S]*?)\s*```/g, (match, json) => {
                 try {
-                    const jsonData = JSON.parse(trimmedText);
-                    if (jsonData.messageForUser) {
-                        processedText = jsonData.messageForUser;
-                    }
-                } catch (e) {
-                    // JSON 파싱 실패 시 원본 텍스트 사용
+                    const parsed = JSON.parse(json);
+                    return `<pre class="json-block">${JSON.stringify(parsed, null, 2)}</pre>`;
+                } catch {
+                    return `<pre class="code-block">${json}</pre>`;
                 }
-            }
-            
-            // JSON 배열 형식 감지 (프로세스/인스턴스 목록)
-            if (trimmedText.startsWith('[') && trimmedText.endsWith(']')) {
-                try {
-                    const jsonArray = JSON.parse(trimmedText);
-                    if (Array.isArray(jsonArray) && jsonArray.length > 0) {
-                        return this.formatInstanceList(jsonArray);
-                    }
-                } catch (e) {
-                    // JSON 파싱 실패 시 원본 텍스트 사용
-                }
-            }
-            
-            // JSON 블록 감지
-            if (!isLoadingPlaceholder && (content.includes('processDefinitionId') || content.includes('elements'))) {
-                const codeBlockStart = content.indexOf('```');
-                if (codeBlockStart !== -1) {
-                    processedText = content.substring(0, codeBlockStart).trim();
-                }
-            }
-            
-            // marked 설정
-            marked.setOptions({
-                breaks: true,
-                gfm: true
             });
+            // let formatted = content.replace(/```json\s*([\s\S]*?)\s*```/g, "");
             
-            // 마크다운 렌더링
-            let renderedHtml = isLoadingPlaceholder ? '' : marked(processedText);
+            // 일반 코드 블록 처리
+            formatted = formatted.replace(/```(\w*)\s*([\s\S]*?)\s*```/g, '<pre class="code-block">$2</pre>');
             
-            return renderedHtml;
-        },
-        
-        // 인스턴스 목록 포맷팅
-        formatInstanceList(instances) {
-            const statusMap = {
-                'RUNNING': { text: '실행중', color: '#22c55e', icon: '🟢' },
-                'COMPLETED': { text: '완료', color: '#3b82f6', icon: '🔵' },
-                'SUSPENDED': { text: '일시중지', color: '#f59e0b', icon: '🟡' },
-                'TERMINATED': { text: '종료', color: '#ef4444', icon: '🔴' }
-            };
+            // 마크다운 링크 형식 [텍스트](URL) 처리
+            formatted = formatted.replace(
+                /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+                '<a href="$2" target="_blank" class="message-link">$1</a>'
+            );
             
-            let html = '<div class="instance-list">';
+            // 일반 URL을 클릭 가능한 링크로 변환 - href=" 뒤에 있는 URL은 제외
+            formatted = formatted.replace(
+                /(?<!href=")(https?:\/\/[^\s<)\]"]+)/g,
+                '<a href="$1" target="_blank" class="message-link">$1</a>'
+            );
             
-            instances.forEach((instance, index) => {
-                const status = statusMap[instance.status] || { text: instance.status, color: '#94a3b8', icon: '⚪' };
-                const startDate = instance.startDate ? new Date(instance.startDate).toLocaleDateString('ko-KR') : '-';
-                
-                html += `
-                    <div class="instance-card">
-                        <div class="instance-card-header">
-                            <span class="instance-number">${index + 1}.</span>
-                            <span class="instance-name">${instance.instanceName || instance.processName || '-'}</span>
-                            <span class="instance-status" style="color: ${status.color};">${status.icon} ${status.text}</span>
-                        </div>
-                        <div class="instance-card-body">
-                            <div class="instance-info-row">
-                                <span class="instance-label">프로세스명:</span>
-                                <span class="instance-value">${instance.processName || '-'}</span>
-                            </div>
-                            <div class="instance-info-row">
-                                <span class="instance-label">시작일:</span>
-                                <span class="instance-value">${startDate}</span>
-                            </div>
-                            <div class="instance-info-row">
-                                <span class="instance-label">현재 활동:</span>
-                                <span class="instance-value">${instance.currentActivity || '-'}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+            // 줄바꿈 처리
+            formatted = formatted.replace(/\n/g, '<br>');
             
-            html += '</div>';
-            return html;
+            return formatted;
         },
 
         // 도구 이름 포맷팅
@@ -1238,12 +1180,9 @@ export default {
 
         // 스크롤 하단으로
         scrollToBottom() {
-            this.$nextTick(() => {
-                const container = this.$refs.messagesContainer;
-                if (container) {
-                    container.scrollTop = container.scrollHeight;
-                }
-            });
+            try {
+                this.$refs.thread?.scrollToBottom?.();
+            } catch (e) {}
         },
 
         // 컨설팅 모드로 전환 (프로세스 생성용)
@@ -2406,6 +2345,7 @@ export default {
     display: flex;
     flex-direction: column;
     height: 100%;
+    background: #f8fafc;
 }
 
 /* 채팅방 탭 */
@@ -2488,19 +2428,16 @@ export default {
 
 .message-item {
     display: flex;
-    margin-bottom: 12px;
+    gap: 12px;
 }
 
-.message-item.user-message {
-    justify-content: flex-end;
+.message-avatar {
+    flex-shrink: 0;
 }
 
-.message-item.assistant-message {
-    justify-content: flex-start;
-}
-
-.user-message .chat-message-bubble {
-    max-width: 70%;
+.message-content {
+    flex: 1;
+    min-width: 0;
 }
 
 .message-header {
@@ -2510,75 +2447,37 @@ export default {
     margin-bottom: 4px;
 }
 
+.message-sender {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1e293b;
+}
+
 .message-time {
     font-size: 11px;
     color: #94a3b8;
 }
 
-.markdown-content {
+.message-text {
     font-size: 14px;
     line-height: 1.6;
     color: #334155;
     word-break: break-word;
 }
 
-.markdown-content :deep(p) {
-    margin: 0 0 8px 0;
+.message-text :deep(.message-link) {
+    color: #3b82f6;
+    text-decoration: underline;
+    cursor: pointer;
+    word-break: break-all;
 }
 
-.markdown-content :deep(p:last-child) {
-    margin-bottom: 0;
+.message-text :deep(.message-link:hover) {
+    color: #1d4ed8;
 }
 
-.markdown-content :deep(h1),
-.markdown-content :deep(h2),
-.markdown-content :deep(h3),
-.markdown-content :deep(h4),
-.markdown-content :deep(h5),
-.markdown-content :deep(h6) {
-    margin: 12px 0 8px 0;
-    font-weight: 600;
-    line-height: 1.3;
-}
-
-.markdown-content :deep(h1) {
-    font-size: 1.5em;
-}
-
-.markdown-content :deep(h2) {
-    font-size: 1.3em;
-}
-
-.markdown-content :deep(h3) {
-    font-size: 1.1em;
-}
-
-.markdown-content :deep(ul),
-.markdown-content :deep(ol) {
-    margin: 8px 0;
-    padding-left: 20px;
-}
-
-.markdown-content :deep(li) {
-    margin: 4px 0;
-}
-
-.markdown-content :deep(blockquote) {
-    border-left: 3px solid #e2e8f0;
-    padding-left: 12px;
-    margin: 8px 0;
-    color: #64748b;
-}
-
-.markdown-content :deep(code) {
-    background: #f1f5f9;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Fira Code', monospace;
-    font-size: 0.9em;
-}
-
-.markdown-content :deep(pre) {
+.message-text :deep(.json-block),
+.message-text :deep(.code-block) {
     background: #1e293b;
     color: #e2e8f0;
     padding: 12px;
@@ -2587,103 +2486,6 @@ export default {
     font-size: 12px;
     overflow-x: auto;
     margin: 8px 0;
-}
-
-.markdown-content :deep(pre code) {
-    background: transparent;
-    padding: 0;
-}
-
-.markdown-content :deep(a) {
-    color: #3b82f6;
-    text-decoration: underline;
-    cursor: pointer;
-    word-break: break-all;
-}
-
-.markdown-content :deep(a:hover) {
-    color: #1d4ed8;
-}
-
-.markdown-content :deep(table) {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 8px 0;
-}
-
-.markdown-content :deep(th),
-.markdown-content :deep(td) {
-    border: 1px solid #e2e8f0;
-    padding: 8px;
-    text-align: left;
-}
-
-.markdown-content :deep(th) {
-    background: #f8fafc;
-    font-weight: 600;
-}
-
-.markdown-content :deep(hr) {
-    border: none;
-    border-top: 1px solid #e2e8f0;
-    margin: 12px 0;
-}
-
-/* 인스턴스 목록 스타일 */
-.markdown-content :deep(.instance-list) {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.markdown-content :deep(.instance-card) {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-}
-
-.markdown-content :deep(.instance-card-header) {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.markdown-content :deep(.instance-number) {
-    font-weight: 600;
-    color: #64748b;
-}
-
-.markdown-content :deep(.instance-name) {
-    font-weight: 600;
-    color: #1e293b;
-    flex: 1;
-}
-
-.markdown-content :deep(.instance-status) {
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.markdown-content :deep(.instance-card-body) {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.markdown-content :deep(.instance-info-row) {
-    display: flex;
-    font-size: 13px;
-}
-
-.markdown-content :deep(.instance-label) {
-    color: #64748b;
-    min-width: 80px;
-}
-
-.markdown-content :deep(.instance-value) {
-    color: #334155;
 }
 
 .tool-calls {

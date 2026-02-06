@@ -94,6 +94,19 @@ export default defineConfig({
                 timeout: 0,
                 proxyTimeout: 0,
                 rewrite: (path) => path.replace(/^\/agent/, '')
+            },
+            // Agent Router API (per-agent pod warmup/proxy)
+            '/agent-router/': {
+                target: 'http://127.0.0.1:8001',
+                changeOrigin: true,
+                timeout: 0,
+                proxyTimeout: 0,
+                // agent-router는 자체적으로 /agent-router prefix를 지원한다.
+                // 따라서 여기서는 /agent-router prefix만 제거해서 그대로 전달한다.
+                // - /agent-router/<agentId>/warmup -> /<agentId>/warmup
+                // - /agent-router/route -> /route
+                // - (레거시) /agent-router/agents/<agentId>/... -> /agents/<agentId>/...
+                rewrite: (path) => path.replace(/^\/agent-router/, '')
             }
         }
     },
