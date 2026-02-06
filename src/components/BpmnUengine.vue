@@ -3,21 +3,66 @@
         <!-- View mode controls -->
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1 ga-3" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <v-icon @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
-                <v-icon @click="changeOrientation"  style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
+                    </template>
+                    <span>{{ $t('BpmnUengine.resetZoom') }}</span>
+                </v-tooltip>
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-icon v-bind="props" @click="changeOrientation" style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
+                    </template>
+                    <span>{{ $t('BpmnUengine.changeOrientation') }}</span>
+                </v-tooltip>
             </div>
         </div>
         <!-- Edit mode controls -->
         <div v-if="!isViewMode" class="font-size-controls ga-3">
-            <v-icon @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-decrease</v-icon>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-decrease</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.decreaseFontSize') }}</span>
+            </v-tooltip>
             <span class="font-size-value">{{ labelFontSize }}px</span>
-            <v-icon @click="increaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-increase</v-icon>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-increase</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.increaseFontSize') }}</span>
+            </v-tooltip>
             <span class="controls-divider">|</span>
-            <v-icon @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
-            <v-icon @click="applyAutoLayout" style="color: #444; cursor: pointer; padding-bottom: 3px;" size="20">mdi-auto-fix</v-icon>
-            <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
-            <v-icon @click="$emit('openProcessVariables')" style="color: #444; cursor: pointer;" size="20">mdi-variable</v-icon>
-            <Icons @click="$globalState.methods.toggleZoom()" :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="20" style="cursor: pointer;" />
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.resetZoom') }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="applyAutoLayout" style="color: #444; cursor: pointer; padding-bottom: 3px;" size="20">mdi-auto-fix</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.autoLayout') }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="changeOrientation" style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.changeOrientation') }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="$emit('openProcessVariables')" style="color: #444; cursor: pointer;" size="20">mdi-variable</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.processVariables') }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <Icons v-bind="props" @click="$globalState.methods.toggleZoom()" :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="20" style="cursor: pointer;" />
+                </template>
+                <span>{{ !$globalState.state.isZoomed ? $t('BpmnUengine.zoomIn') : $t('BpmnUengine.zoomOut') }}</span>
+            </v-tooltip>
         </div>
     </div>
     <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">

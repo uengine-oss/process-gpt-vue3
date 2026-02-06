@@ -2566,9 +2566,12 @@
     "BpmnUengine": {
         "decreaseFontSize": "Decrease Font Size",
         "increaseFontSize": "Increase Font Size",
-        "resetZoom": "Fit to Screen (Ctrl+0)",
-        "zoomIn": "Zoom In (Ctrl++)",
-        "zoomOut": "Zoom Out (Ctrl+-)"
+        "resetZoom": "Fit to Screen",
+        "zoomIn": "Zoom In Canvas",
+        "zoomOut": "Zoom Out Canvas",
+        "autoLayout": "Auto Layout",
+        "changeOrientation": "Toggle Horizontal/Vertical",
+        "processVariables": "Process Variables"
     },
     "BpmnUengineViewer": {
         "viewParticipants": "View Participants"

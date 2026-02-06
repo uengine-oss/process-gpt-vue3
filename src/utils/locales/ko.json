@@ -2776,9 +2776,12 @@
     "BpmnUengine": {
         "decreaseFontSize": "글꼴 크기 축소",
         "increaseFontSize": "글꼴 크기 확대",
-        "resetZoom": "화면에 맞춤 (Ctrl+0)",
-        "zoomIn": "확대 (Ctrl++)",
-        "zoomOut": "축소 (Ctrl+-)"
+        "resetZoom": "화면에 맞춤",
+        "zoomIn": "캔버스 확대",
+        "zoomOut": "캔버스 축소",
+        "autoLayout": "자동 레이아웃",
+        "changeOrientation": "가로세로 방향 전환",
+        "processVariables": "프로세스 변수"
     },
     "BpmnUengineViewer": {
         "viewParticipants": "참여자 보기"
