@@ -24,11 +24,11 @@
 
 ---
 
-## isMobile 우선순위
+## isMobile의 사용은 Computed 내부에 아래와 같이
 
-1. `this.globalIsMobile?.value` (main.ts)
-2. `computed(() => window.innerWidth <= 768)`
-3. `useDisplay().mobile`
+isMobile() {
+    return window.innerWidth <= 768;
+},
 
 ---
 

@@ -10,8 +10,8 @@
                 >
                     <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
                 </v-col>
-                <!-- MegaProcess 추가 카드: 특정 도메인 탭에서만 표시 -->
-                <v-col v-if="selectedDomain" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
+                <!-- MegaProcess 추가 카드 -->
+                <v-col v-if="selectedDomain || isPalUengine" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
                     <v-card v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
                         class="cp-add-mega"
@@ -83,6 +83,9 @@ export default {
         }
     },
     computed: {
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
         // 검색어로 필터링된 값 반환
         filteredValue() {
             if (!this.searchQuery || !this.searchQuery.trim()) {

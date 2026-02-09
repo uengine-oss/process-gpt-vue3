@@ -1488,7 +1488,7 @@ export default {
             const me = this;
             const targetRoomId = roomId || me.currentRoomId;
             if (!targetRoomId) return;
-            
+            if (window.$mode === 'uEngine') return;
             if (!window.$supabase) return;
             
             try {
@@ -1545,7 +1545,7 @@ export default {
             const me = this;
             const targetRoomId = roomId || me.currentRoomId;
             if (!targetRoomId) return;
-            
+            if (window.$mode === 'uEngine') return;
             if (!window.$supabase) return;
             
             try {
@@ -1639,7 +1639,7 @@ export default {
             const me = this;
             const targetRoomId = roomId || me.currentRoomId;
             if (!targetRoomId) return;
-            
+            if (window.$mode === 'uEngine') return;
             if (!window.$supabase) return;
             
             try {

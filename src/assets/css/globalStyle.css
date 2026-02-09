@@ -1011,7 +1011,7 @@ hr {
 .mobile-left-menu {
     display: flex;
     flex-direction: column;
-    height: 100%
+    height: 100%;
 }
 .feedback-form {
     position: fixed;
@@ -1431,11 +1431,11 @@ hr {
     }
 
     .manage-access-tab-table-box .v-data-table {
-        height: calc(100vh - 160px) !important;
+        height: 100% !important;
     }
     
     .mcp-server-list-box {
-        height: calc(100vh - 200px) !important;
+        height: 100% !important;
         overflow: auto;
     }
 
@@ -1561,12 +1561,14 @@ hr {
     
     .is-work-height {
         height: 100vh;
+        overflow: auto;
     }
 
     
 
     .leftSidebar {
-        width: 350px !important;
+        width: 100% !important;
+        max-width: 100vw !important;
     }
 
     .instance-card-kanban-board-box {
@@ -1583,7 +1585,7 @@ hr {
     }
     .mobile-menu-nav {
         top:0px !important;
-        height: calc(100% - 90px) !important;
+        height: 100vh !important;
         border-radius: 10px !important;
         width: 100vw !important;
     }

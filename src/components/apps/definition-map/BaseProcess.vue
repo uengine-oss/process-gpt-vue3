@@ -67,7 +67,7 @@ export default {
             this.processDialogStatus = false;
         },
         async goProcess(path, type) {
-            if (this.enableEdit) {
+            if (this.enableEdit && window.$mode !== 'uEngine') {
                 return;
             }
             if (!path && !type) {

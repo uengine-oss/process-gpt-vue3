@@ -19,7 +19,7 @@
                                 <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
-                                <v-tab value="TaskCatalog">
+                                <v-tab v-if="!isUEngineMode" value="TaskCatalog">
                                     <v-icon class="mr-2" size="20">mdi-folder-cog</v-icon> {{ $t('accountTab.taskCatalog') }}
                                 </v-tab>
                                 <v-tab value="OrgChartGroup">
@@ -130,6 +130,7 @@
                                 <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
                             </v-btn>
                             <v-btn
+                                v-if="!isUEngineMode"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -192,7 +193,7 @@
                         <v-window-item value="Account">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <AccountTab />
                             </div>
@@ -202,7 +203,7 @@
                         <v-window-item value="ManageAccess">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <ManageAccessTab :editable="superAdmin" />
                             </div>
@@ -212,7 +213,7 @@
                         <v-window-item v-if="!isUEngineMode" value="Drive">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <DriveTab />
                             </div>
@@ -222,7 +223,7 @@
                         <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <ConnectionInfoTab />
                             </div>
@@ -239,7 +240,7 @@
                         <v-window-item v-if="!isUEngineMode" value="MCP-Environments">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <MCPEnvSecretTab />
                             </div>
@@ -249,15 +250,15 @@
                         <v-window-item v-if="!isUEngineMode" value="Skills">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <SkillsTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="TaskCatalog">
+                        <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
                             <div
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <TaskCatalogAdmin />
                             </div>
@@ -265,7 +266,7 @@
                         <v-window-item value="OrgChartGroup">
                             <div
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <OrgChartGroupTab />
                             </div>
@@ -356,7 +357,7 @@ export default {
     },
     methods: {
         ensureVisibleTab() {
-            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'Skills', 'ConnectionInfo']);
+            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'Skills', 'ConnectionInfo', 'TaskCatalog']);
             if (!this.tab) {
                 this.tab = 'Account';
                 return;

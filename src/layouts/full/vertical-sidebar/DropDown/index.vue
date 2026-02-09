@@ -31,6 +31,8 @@ function getIconColor(item) {
         return '#64B5F6';
     } else if (item.type && item.type.includes('dmn')) {
         return '#BA68C8';
+    } else if (item.type && item.type.includes('rule')) {
+        return '#BA68C8';
     } else if (item.type && item.type.includes('form')) {
         return '#81C784';
     } else {
@@ -63,7 +65,13 @@ function isItemActive(item) {
                 <div :color="item.BgColor"
                     class="mr-2"
                 >
+                    <span
+                        v-if="item.type && item.type.includes('rule')"
+                        class="bpmn-icon-business-rule bpmn-sidebar-icon"
+                        aria-hidden="true"
+                    />
                     <Icons
+                        v-else
                         :icon="getIcon(item)"
                         :color="getIconColor(item)"
                     />
@@ -101,4 +109,19 @@ function isItemActive(item) {
 </template>
 
 <style scoped>
+.item-hover:hover {
+    border-radius: 8px;
+    background-color: #e3f2fd;
+    transform: translateX(2px);
+}
+
+.bpmn-sidebar-icon {
+    font-size: 20px;
+    line-height: 1;
+    color: #BA68C8;
+}
+.bpmn-sidebar-icon:before {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
 </style>
