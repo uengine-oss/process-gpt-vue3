@@ -2925,7 +2925,8 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName,
                 is_agent: newAgent.isAgent,
                 agent_type: newAgent.type,
-                alias: newAgent.alias
+                alias: newAgent.alias,
+                tool_priority: newAgent.tool_priority ?? null
             }
             await storage.putObject('users', putObj);
         } catch (error) {

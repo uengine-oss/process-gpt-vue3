@@ -141,6 +141,7 @@ create table if not exists public.users (
     model text null,
     alias text null,
     last_used_at timestamp with time zone null default now(),
+    tool_priority jsonb null,
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -2799,3 +2800,140 @@ create table if not exists public.agent_skills (
 
 create index if not exists idx_agent_skills_tenant_skill
   on public.agent_skills (tenant_id, skill_name);
+
+
+
+create table
+  public.agent_knowledge_history (
+    id uuid not null default gen_random_uuid (),
+    knowledge_type text not null,
+    knowledge_id text not null,
+    knowledge_name text null,
+    agent_id uuid not null,
+    tenant_id text null,
+    operation text not null,
+    previous_content text null,
+    new_content text null,
+    moved_from_storage text null,
+    moved_to_storage text null,
+    feedback_content text null,
+    batch_job_id text null,
+    created_at timestamp with time zone not null default now(),
+    constraint agent_knowledge_history_pkey primary key (id),
+    constraint agent_knowledge_history_agent_id_fkey foreign key (agent_id, tenant_id) references users (id, tenant_id) on update cascade on delete cascade,
+    constraint agent_knowledge_history_knowledge_type_check check (
+      (
+        knowledge_type = any (
+          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+        )
+      )
+    ),
+    constraint agent_knowledge_history_operation_check check (
+      (
+        operation = any (
+          array[
+            'CREATE'::text,
+            'UPDATE'::text,
+            'DELETE'::text,
+            'MOVE'::text
+          ]
+        )
+      )
+    ),
+    constraint agent_knowledge_history_moved_from_storage_check check (
+      (
+        moved_from_storage = any (
+          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+        )
+      )
+    ),
+    constraint agent_knowledge_history_moved_to_storage_check check (
+      (
+        moved_to_storage = any (
+          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+        )
+      )
+    )
+  ) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_agent_id on public.agent_knowledge_history using btree (agent_id) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_tenant_id on public.agent_knowledge_history using btree (tenant_id) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_operation on public.agent_knowledge_history using btree (operation) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_created_at on public.agent_knowledge_history using btree (created_at desc) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_batch_job_id on public.agent_knowledge_history using btree (batch_job_id) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_knowledge_type on public.agent_knowledge_history using btree (knowledge_type) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_knowledge_id on public.agent_knowledge_history using btree (knowledge_id) tablespace pg_default;
+
+
+create table
+  public.agent_knowledge_history (
+    id uuid not null default gen_random_uuid (),
+    knowledge_type text not null,
+    knowledge_id text not null,
+    knowledge_name text null,
+    agent_id uuid not null,
+    tenant_id text null,
+    operation text not null,
+    previous_content text null,
+    new_content text null,
+    moved_from_storage text null,
+    moved_to_storage text null,
+    feedback_content text null,
+    batch_job_id text null,
+    created_at timestamp with time zone not null default now(),
+    constraint agent_knowledge_history_pkey primary key (id),
+    constraint agent_knowledge_history_agent_id_fkey foreign key (agent_id, tenant_id) references users (id, tenant_id) on update cascade on delete cascade,
+    constraint agent_knowledge_history_knowledge_type_check check (
+      (
+        knowledge_type = any (
+          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+        )
+      )
+    ),
+    constraint agent_knowledge_history_operation_check check (
+      (
+        operation = any (
+          array[
+            'CREATE'::text,
+            'UPDATE'::text,
+            'DELETE'::text,
+            'MOVE'::text
+          ]
+        )
+      )
+    ),
+    constraint agent_knowledge_history_moved_from_storage_check check (
+      (
+        moved_from_storage = any (
+          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+        )
+      )
+    ),
+    constraint agent_knowledge_history_moved_to_storage_check check (
+      (
+        moved_to_storage = any (
+          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+        )
+      )
+    )
+  ) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_agent_id on public.agent_knowledge_history using btree (agent_id) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_tenant_id on public.agent_knowledge_history using btree (tenant_id) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_operation on public.agent_knowledge_history using btree (operation) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_created_at on public.agent_knowledge_history using btree (created_at desc) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_batch_job_id on public.agent_knowledge_history using btree (batch_job_id) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_knowledge_type on public.agent_knowledge_history using btree (knowledge_type) tablespace pg_default;
+
+create index if not exists idx_agent_knowledge_history_knowledge_id on public.agent_knowledge_history using btree (knowledge_id) tablespace pg_default;
