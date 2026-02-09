@@ -74,7 +74,7 @@
 </template>
 
 <script>
-const TOOL_PRIORITY_FIXED = ['dmn_rule', 'mem0', '*'];
+const TOOL_PRIORITY_CATEGORIES = ['skill', 'dmn_rule', 'mem0', '*'];
 
 export default {
     name: 'AgentToolPriority',
@@ -96,17 +96,12 @@ export default {
         };
     },
     computed: {
-        dynamicResources() {
+        agentSkills() {
             const agent = this.agentInfo || {};
-            const tools = (agent.tools || '')
+            return (agent.skills || '')
                 .split(',')
                 .map((x) => x.trim())
                 .filter(Boolean);
-            const skills = (agent.skills || '')
-                .split(',')
-                .map((x) => x.trim())
-                .filter(Boolean);
-            return [...new Set([...tools, ...skills])];
         }
     },
     watch: {
@@ -114,14 +109,6 @@ export default {
             if (val) {
                 this.rebuildOrder();
             }
-        },
-        dynamicResources: {
-            handler() {
-                if (this.modelValue) {
-                    this.rebuildOrder();
-                }
-            },
-            deep: true
         }
     },
     mounted() {
@@ -131,40 +118,62 @@ export default {
     },
     methods: {
         getDisplayLabel(id) {
+            if (id === 'skill') return this.$t('agentField.resourceLabelSkill');
             if (id === 'dmn_rule') return this.$t('agentField.resourceLabelDmnRule');
             if (id === 'mem0') return this.$t('agentField.resourceLabelMem0');
             if (id === '*') return this.$t('agentField.resourceLabelOthers');
             return id;
         },
         getLineLabel(id) {
-            if (id === 'dmn_rule' || id === 'mem0' || id === '*') {
-                return this.getDisplayLabel(id);
-            }
-            return this.$t('agentField.resourceLabelSkill');
+            return this.getDisplayLabel(id);
         },
         getDisplayDescription(id) {
+            if (id === 'skill') return this.$t('agentField.resourceDescSkill');
             if (id === 'dmn_rule') return this.$t('agentField.resourceDescDmnRule');
             if (id === 'mem0') return this.$t('agentField.resourceDescMem0');
             if (id === '*') return this.$t('agentField.resourceDescOthers');
-            return this.$t('agentField.resourceDescSkill');
+            return '';
         },
         rebuildOrder() {
-            const dynamic = this.dynamicResources;
-            const allItems = [...dynamic, ...TOOL_PRIORITY_FIXED];
             const saved = this.agentInfo?.tool_priority;
+            const categories = [...TOOL_PRIORITY_CATEGORIES];
+
+            // 기존 포맷(스킬 이름/도구 이름이 섞여 있는 배열)을
+            // 새 포맷(카테고리 배열)으로 매핑
+            const skills = new Set(this.agentSkills || []);
+            const order = [];
+            const seen = new Set();
+
             if (Array.isArray(saved) && saved.length > 0) {
-                const order = [...saved];
-                const seen = new Set(order);
-                for (const item of allItems) {
-                    if (!seen.has(item)) {
-                        order.push(item);
-                        seen.add(item);
+                for (const item of saved) {
+                    let cat = null;
+
+                    if (item === 'skill' || item === 'dmn_rule' || item === 'mem0' || item === '*') {
+                        cat = item;
+                    } else if (skills.has(item)) {
+                        // 예전 포맷에서 스킬 이름 → skill 카테고리로 매핑
+                        cat = 'skill';
+                    } else {
+                        // 예전 포맷에서 스킬/고정값이 아닌 나머지 → others 로 매핑
+                        cat = '*';
+                    }
+
+                    if (cat && !seen.has(cat)) {
+                        order.push(cat);
+                        seen.add(cat);
                     }
                 }
-                this.toolPriorityOrder = order.filter((x) => allItems.includes(x));
-            } else {
-                this.toolPriorityOrder = [...allItems];
             }
+
+            // 누락된 카테고리는 기본 순서대로 뒤에 추가
+            for (const cat of categories) {
+                if (!seen.has(cat)) {
+                    order.push(cat);
+                    seen.add(cat);
+                }
+            }
+
+            this.toolPriorityOrder = order;
         },
         moveUp(index) {
             if (index <= 0) return;
@@ -179,13 +188,34 @@ export default {
             this.toolPriorityOrder = arr;
         },
         save() {
+            // 카테고리 배열(this.toolPriorityOrder)을 실제 저장 포맷으로 변환
+            // - skill: 에이전트가 가진 스킬명을 지정된 스킬 우선순위대로 펼침
+            // - dmn_rule, mem0, *: 그대로 한 칸씩 추가
+            const expandedPriority = [];
+            const skills = this.agentSkills || [];
+
+            for (const item of this.toolPriorityOrder) {
+                if (item === 'skill') {
+                    // 스킬 카테고리는 실제 스킬 ID 배열로 확장
+                    for (const s of skills) {
+                        if (!expandedPriority.includes(s)) {
+                            expandedPriority.push(s);
+                        }
+                    }
+                } else {
+                    if (!expandedPriority.includes(item)) {
+                        expandedPriority.push(item);
+                    }
+                }
+            }
+
             const payload = {
                 ...this.agentInfo,
                 name: this.agentInfo?.username || this.agentInfo?.name,
                 img: this.agentInfo?.profile || this.agentInfo?.img,
                 type: this.agentInfo?.agent_type || this.agentInfo?.type || 'agent',
                 isAgent: true,
-                tool_priority: this.toolPriorityOrder.length > 0 ? [...this.toolPriorityOrder] : null
+                tool_priority: expandedPriority.length > 0 ? expandedPriority : null
             };
             this.$emit('agentUpdated', payload);
             this.$toast?.success?.('도구 우선순위가 저장되었습니다.');
