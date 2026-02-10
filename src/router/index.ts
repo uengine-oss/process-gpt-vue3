@@ -72,6 +72,11 @@ export const router = createRouter({
 // 라우터 에러 상태 추적
 let hasRouterError = false;
 
+function hasRecoveryTokenInHash(): boolean {
+    if (typeof window === 'undefined' || !window.location.hash) return false;
+    return /type=recovery|access_token=/.test(window.location.hash);
+}
+
 router.beforeEach(async (to: any, from: any, next: any) => {
     try {
         // 라우터 에러 상태가 있으면 상태 리셋 후 계속 진행
@@ -80,12 +85,21 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             hasRouterError = false;
         }
 
+        // 이메일 복구 링크가 루트(/) 등 다른 경로로 열렸을 때 비밀번호 재설정 페이지로 보냄
+        if (hasRecoveryTokenInHash() && !to.path.includes('/auth/reset-password')) {
+            return next({ path: '/auth/reset-password', hash: window.location.hash });
+        }
+
         if (window.$mode !== 'uEngine') {
             if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms')) {
                 return next();
             } else {
                 if (window.$isTenantServer) {
+                    // 비밀번호 재설정(복구) 플로우 중에는 세션이 있어도 테넌트 관리로 보내지 않음
                     if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {
+                        if (to.path === '/auth/reset-password' || hasRecoveryTokenInHash()) {
+                            return next();
+                        }
                         return next('/tenant/manage');
                     } else if (to.fullPath === '/' || 
                         to.matched.some((record) => TenantRoutes.children.includes(record as any))) {
