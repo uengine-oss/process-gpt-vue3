@@ -129,7 +129,9 @@ export default {
                 text: (message.text || '').trim(),
                 timestamp: new Date().toISOString(),
                 file: message.file || null,
-                images: message.images || null
+                images: message.images || null,
+                // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)
+                reply: message.reply || null
             });
         }
     }

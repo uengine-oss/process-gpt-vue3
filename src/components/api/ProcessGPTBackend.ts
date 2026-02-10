@@ -5014,13 +5014,37 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getMessages(chatRoomId: string) {
+    /**
+     * 채팅 메시지 조회 (페이지네이션 지원)
+     *
+     * chats 테이블 스키마에는 created_at 같은 정렬 컬럼이 없고 uuid는 랜덤이라
+     * messages->>'timeStamp' (ISO 문자열) 기준으로 정렬/커서를 잡는다.
+     *
+     * options:
+     * - size: number (가져올 개수)
+     * - sort: 'asc' | 'desc' (기본 'desc' = 최신부터)
+     * - orderBy: string (기본 "messages->>timeStamp")
+     * - endBefore: string (timeStamp ISO) - 이 값보다 "이전" 메시지들
+     * - startAfter: string (timeStamp ISO) - 이 값보다 "이후" 메시지들
+     */
+    async getMessages(chatRoomId: string, options: any = {}) {
         try {
-            let messages = await storage.list('chats', {
-                match: {
-                    id: chatRoomId
-                }
-            });
+            const sizeRaw = options?.size ?? options?.limit ?? null;
+            const size = Number(sizeRaw);
+            const orderBy = (options?.orderBy || `messages->>timeStamp`).toString();
+            const sort = (options?.sort || 'desc').toString();
+
+            const listOptions: any = {
+                match: { id: chatRoomId },
+                orderBy,
+                sort,
+            };
+            if (Number.isFinite(size) && size > 0) listOptions.size = size;
+            if (options?.endBefore) listOptions.endBefore = options.endBefore;
+            if (options?.startAfter) listOptions.startAfter = options.startAfter;
+            if (options?.range) listOptions.range = options.range;
+
+            const messages = await storage.list('chats', listOptions);
             return messages;
         } catch (error) {
             throw new Error(error.message);

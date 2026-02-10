@@ -104,7 +104,13 @@
                                     </v-row>
                                 </div>
                                 
-                                <div v-for="(message, index) in filteredMessages" :key="index" class="py-1 px-3">
+                                <div
+                                    v-for="(message, index) in filteredMessages"
+                                    :key="index"
+                                    class="py-1 px-3 chat-message-row"
+                                    :class="{ 'chat-message-row--highlight': highlightedMessageUuid && message && message.uuid === highlightedMessageUuid }"
+                                    :data-msg-uuid="message && message.uuid ? message.uuid : ''"
+                                >
                                     <!-- 날짜 구분선 표시 -->
                                     <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
                                         <v-divider class="date-separator-line"></v-divider>
@@ -188,56 +194,67 @@
                                         </div>
                                     </div>
 
+                                    <!-- 자동 추천(초대) 카드 -->
+                                    <div v-else-if="message && message.__agentInviteRecommendation">
+                                        <div class="message-bubble-wrap message-bubble-wrap--other">
+                                            <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
+                                                <div class="pa-3">
+                                                    <div class="text-body-2 font-weight-bold mb-1">적절한 담당자를 초대해볼까요?</div>
+                                                    <div
+                                                        v-if="(message.__agentInviteRecommendation.reason || '').toString().trim()"
+                                                        class="text-caption text-medium-emphasis mb-3"
+                                                    >
+                                                        {{ message.__agentInviteRecommendation.reason }}
+                                                    </div>
+
+                                                    <div
+                                                        v-for="agent in (message.__agentInviteRecommendation.recommendedAgents || [])"
+                                                        :key="agent.id"
+                                                        class="d-flex align-center justify-space-between mb-2"
+                                                        style="gap: 12px;"
+                                                    >
+                                                        <div class="d-flex align-center" style="gap: 10px; min-width: 0;">
+                                                            <v-avatar size="26" color="grey-lighten-3">
+                                                                <v-img :src="agent.profile || '/images/chat-icon.png'" cover />
+                                                            </v-avatar>
+                                                            <div style="min-width: 0;">
+                                                                <div class="text-body-2 font-weight-medium">
+                                                                    {{ agent.username || agent.id }}
+                                                                </div>
+                                                                <div
+                                                                    class="text-caption text-medium-emphasis"
+                                                                    style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                                >
+                                                                    {{ agent.role || agent.description || agent.goal || '' }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <v-btn
+                                                            size="small"
+                                                            variant="tonal"
+                                                            color="primary"
+                                                            :disabled="isRecommendationInvited(message, agent.id)"
+                                                            @click="inviteAgentFromRecommendation(message, agent)"
+                                                        >
+                                                            {{ isRecommendationInvited(message, agent.id) ? '초대됨' : '초대' }}
+                                                        </v-btn>
+                                                    </div>
+
+                                                    <div class="text-caption text-medium-emphasis mt-1">
+                                                        초대하면 에이전트가 준비된 뒤 방금 요청을 자동으로 처리합니다.
+                                                    </div>
+                                                </div>
+                                            </v-sheet>
+                                        </div>
+                                    </div>
+
                                     <AgentsChat v-else-if="message && message._template === 'agent'" :message="message"
                                         :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"
                                     />
                                     <div v-else>
                                         <div>
                                             <div v-if="message.email == userInfo.email && message.role != 'system'">
-                                                <v-row class="ma-0 pa-0">
-                                                    <v-spacer></v-spacer>
-                                                    
-                                                    <!-- 단일 이미지 표시 (기존 호환성) -->
-                                                    <v-sheet v-if="message.image && !message.images" class="mb-1">
-                                                        <img
-                                                            :src="message.image"
-                                                            class="rounded-md"
-                                                            alt="pro"
-                                                            width="250"
-                                                            style="cursor: pointer;"
-                                                            @click="emitPreviewImage(message.image)"
-                                                        />
-                                                    </v-sheet>
-                                                    
-                                                    <!-- 다중 이미지 표시 -->
-                                                    <div v-if="message.images && message.images.length > 0" class="d-flex flex-wrap mb-1">
-                                                        <v-sheet v-for="(image, imgIndex) in message.images" :key="imgIndex" class="ma-1">
-                                                            <img
-                                                                :src="image.url || image"
-                                                                class="rounded-md"
-                                                                alt="pro"
-                                                                width="250"
-                                                                style="cursor: pointer;"
-                                                                @click="emitPreviewImage(image.url || image)"
-                                                            />
-                                                        </v-sheet>
-                                                    </div>
-                                                    
-                                                    <!-- PDF 첨부 표시 (ChatRoomPage 메시지 호환) -->
-                                                    <div v-if="message.pdfFile && (message.pdfFile.url || message.pdfFile.fileUrl)" class="mb-2 d-flex justify-end">
-                                                        <v-chip
-                                                            size="small"
-                                                            color="primary"
-                                                            variant="tonal"
-                                                            style="cursor: pointer;"
-                                                            @click="emitOpenExternalUrl(message.pdfFile.url || message.pdfFile.fileUrl)"
-                                                        >
-                                                            <v-icon start size="14">mdi-file-pdf-box</v-icon>
-                                                            {{ message.pdfFile.name || message.pdfFile.fileName || 'PDF' }}
-                                                        </v-chip>
-                                                    </div>
-                                                </v-row>
-
                                                 <div v-if="editIndex === index" class="d-flex justify-end">
                                                     <div class="bg-lightprimary chat-room-edit-wrap" style="border-radius:10px;">
                                                         <v-textarea v-model="messages[index].content"
@@ -321,11 +338,82 @@
                                                             <v-sheet class="chat-message-bubble bg-lightprimary rounded-md px-3 py-3 mb-1">
                                                                 <div 
                                                                 >
-                                                                    <pre class="text-body-1"
-                                                                        v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                                    <pre class="text-body-1"
-                                                                        v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                                    <v-divider v-if="message.replyContent"></v-divider>
+                                                                    <div
+                                                                        v-if="message.replyUserName || message.replyContent"
+                                                                        class="reply-quote reply-quote--mine"
+                                                                        role="button"
+                                                                        tabindex="0"
+                                                                        @click.stop="scrollToOriginalMessage(message.replyUuid)"
+                                                                    >
+                                                                        <div class="reply-quote__body">
+                                                                            <div class="reply-quote__title">
+                                                                                {{ (message.replyUserName || '').toString() }}{{ message.replyUserName ? '에게 답장' : '답장' }}
+                                                                            </div>
+                                                                            <div class="reply-quote__text">
+                                                                                {{ message.replyContent || '' }}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- 첨부(이미지/파일): content가 비어도 메시지 박스로 표시/답장 가능 -->
+                                                                    <div v-if="message.image || (message.images && message.images.length > 0) || (message.pdfFile && (message.pdfFile.url || message.pdfFile.fileUrl))" class="mb-2">
+                                                                        <!-- 단일 이미지 표시 (기존 호환성) -->
+                                                                        <v-sheet v-if="message.image && !message.images" class="mb-1">
+                                                                            <img
+                                                                                :src="message.image"
+                                                                                class="rounded-md"
+                                                                                alt="pro"
+                                                                                width="250"
+                                                                                style="cursor: pointer;"
+                                                                                @click="emitPreviewImage(message.image)"
+                                                                            />
+                                                                        </v-sheet>
+
+                                                                        <!-- 다중 이미지 표시 -->
+                                                                        <div v-if="message.images && message.images.length > 0" class="d-flex flex-wrap mb-1">
+                                                                            <v-sheet v-for="(image, imgIndex) in message.images" :key="imgIndex" class="ma-1">
+                                                                                <img
+                                                                                    :src="image.url || image"
+                                                                                    class="rounded-md"
+                                                                                    alt="pro"
+                                                                                    width="250"
+                                                                                    style="cursor: pointer;"
+                                                                                    @click="emitPreviewImage(image.url || image)"
+                                                                                />
+                                                                            </v-sheet>
+                                                                        </div>
+
+                                                                        <!-- 파일 첨부 -->
+                                                                        <div v-if="message.pdfFile && (message.pdfFile.url || message.pdfFile.fileUrl)" class="mb-1 d-flex justify-end">
+                                                                            <v-sheet
+                                                                                rounded="lg"
+                                                                                class="pa-2 d-inline-flex align-center"
+                                                                                style="gap: 10px; cursor: pointer; border: 1px solid rgba(0,0,0,0.08); background: white; max-width: min(520px, 80vw);"
+                                                                                @click="emitOpenExternalUrl(message.pdfFile.url || message.pdfFile.fileUrl)"
+                                                                            >
+                                                                                <div style="width:28px; height:28px; border-radius:10px; display:flex; align-items:center; justify-content:center; background: rgba(var(--v-theme-primary), 0.12);">
+                                                                                    <v-icon size="18" color="primary">mdi-file-outline</v-icon>
+                                                                                </div>
+                                                                                <div style="min-width:0; flex:1 1 auto;">
+                                                                                    <div style="font-size:13px; font-weight:700; color: rgba(0,0,0,0.78); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                                                        {{ message.pdfFile.name || message.pdfFile.fileName || '첨부파일' }}
+                                                                                    </div>
+                                                                                    <div style="font-size:11px; color: rgba(0,0,0,0.55); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                                                        {{ formatAttachmentSub(message.pdfFile) }}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <v-btn
+                                                                                    icon
+                                                                                    size="x-small"
+                                                                                    variant="tonal"
+                                                                                    :disabled="!(message.pdfFile.url || message.pdfFile.fileUrl)"
+                                                                                    @click.stop="downloadAttachment(message.pdfFile.url || message.pdfFile.fileUrl, message.pdfFile.name || message.pdfFile.fileName)"
+                                                                                >
+                                                                                    <v-icon size="14">mdi-download</v-icon>
+                                                                                </v-btn>
+                                                                            </v-sheet>
+                                                                        </div>
+                                                                    </div>
         
                                                                     <div v-if="message.contentType && message.contentType == 'html'" class="w-100">
                                                                         <SummaryButton>
@@ -338,6 +426,22 @@
                                                                         </SummaryButton>
                                                                     </div>
 
+                                                                    <!-- 메시지 내 멘션 표시(Primary) -->
+                                                                    <div
+                                                                        v-if="message.mentionedUsers && message.mentionedUsers.length > 0"
+                                                                        class="message-mention-chip-row"
+                                                                    >
+                                                                        <v-chip
+                                                                            v-for="u in message.mentionedUsers"
+                                                                            :key="u.id || u.email || u.username"
+                                                                            color="primary"
+                                                                            variant="tonal"
+                                                                            size="x-small"
+                                                                            class="message-mention-chip"
+                                                                        >
+                                                                            @{{ u.username || u.mentionText || u.email || u.id }}
+                                                                        </v-chip>
+                                                                    </div>
                                                                     <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
 
                                                                     <pre v-if="message.jsonContent && message.contentType != 'html'"
@@ -354,11 +458,77 @@
                                                                     @mouseover="hoverIndex = index"
                                                                     @mouseleave="hoverIndex = -1"
                                                                 >
-                                                                    <pre class="text-body-1"
-                                                                        v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                                    <pre class="text-body-1"
-                                                                        v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                                    <v-divider v-if="message.replyContent"></v-divider>
+                                                                <div
+                                                                        v-if="message.replyUserName || message.replyContent"
+                                                                        class="reply-quote reply-quote--mine"
+                                                                    role="button"
+                                                                    tabindex="0"
+                                                                    @click.stop="scrollToOriginalMessage(message.replyUuid)"
+                                                                    >
+                                                                        <div class="reply-quote__body">
+                                                                            <div class="reply-quote__title">
+                                                                            {{ (message.replyUserName || '').toString() }}{{ message.replyUserName ? '에게 답장' : '답장' }}
+                                                                            </div>
+                                                                            <div class="reply-quote__text">
+                                                                                {{ message.replyContent || '' }}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <!-- 첨부(이미지/파일): content가 비어도 메시지 박스로 표시 -->
+                                                                    <div v-if="message.image || (message.images && message.images.length > 0) || (message.pdfFile && (message.pdfFile.url || message.pdfFile.fileUrl))" class="mb-2">
+                                                                        <v-sheet v-if="message.image && !message.images" class="mb-1">
+                                                                            <img
+                                                                                :src="message.image"
+                                                                                class="rounded-md"
+                                                                                alt="pro"
+                                                                                width="250"
+                                                                                style="cursor: pointer;"
+                                                                                @click="emitPreviewImage(message.image)"
+                                                                            />
+                                                                        </v-sheet>
+                                                                        <div v-if="message.images && message.images.length > 0" class="d-flex flex-wrap mb-1">
+                                                                            <v-sheet v-for="(image, imgIndex) in message.images" :key="imgIndex" class="ma-1">
+                                                                                <img
+                                                                                    :src="image.url || image"
+                                                                                    class="rounded-md"
+                                                                                    alt="pro"
+                                                                                    width="250"
+                                                                                    style="cursor: pointer;"
+                                                                                    @click="emitPreviewImage(image.url || image)"
+                                                                                />
+                                                                            </v-sheet>
+                                                                        </div>
+                                                                        <div v-if="message.pdfFile && (message.pdfFile.url || message.pdfFile.fileUrl)" class="mb-1 d-flex justify-end">
+                                                                            <v-sheet
+                                                                                rounded="lg"
+                                                                                class="pa-2 d-inline-flex align-center"
+                                                                                style="gap: 10px; cursor: pointer; border: 1px solid rgba(0,0,0,0.08); background: rgba(var(--v-theme-primary), 0.06); max-width: min(520px, 80vw);"
+                                                                                @click="emitOpenExternalUrl(message.pdfFile.url || message.pdfFile.fileUrl)"
+                                                                            >
+                                                                                <div style="width:28px; height:28px; border-radius:10px; display:flex; align-items:center; justify-content:center; background: rgba(var(--v-theme-primary), 0.12);">
+                                                                                    <v-icon size="18" color="primary">mdi-file-outline</v-icon>
+                                                                                </div>
+                                                                                <div style="min-width:0; flex:1 1 auto;">
+                                                                                    <div style="font-size:13px; font-weight:700; color: rgba(0,0,0,0.78); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                                                        {{ message.pdfFile.name || message.pdfFile.fileName || '첨부파일' }}
+                                                                                    </div>
+                                                                                    <div style="font-size:11px; color: rgba(0,0,0,0.55); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                                                        {{ formatAttachmentSub(message.pdfFile) }}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <v-btn
+                                                                                    icon
+                                                                                    size="x-small"
+                                                                                    variant="tonal"
+                                                                                    :disabled="!(message.pdfFile.url || message.pdfFile.fileUrl)"
+                                                                                    @click.stop="downloadAttachment(message.pdfFile.url || message.pdfFile.fileUrl, message.pdfFile.name || message.pdfFile.fileName)"
+                                                                                >
+                                                                                    <v-icon size="14">mdi-download</v-icon>
+                                                                                </v-btn>
+                                                                            </v-sheet>
+                                                                        </div>
+                                                                    </div>
         
                                                                     <div v-if="message.contentType && message.contentType == 'html'" class="w-100">
                                                                         <SummaryButton>
@@ -371,6 +541,22 @@
                                                                         </SummaryButton>
                                                                     </div>
 
+                                                                    <!-- 메시지 내 멘션 표시(Primary) -->
+                                                                    <div
+                                                                        v-if="message.mentionedUsers && message.mentionedUsers.length > 0"
+                                                                        class="message-mention-chip-row"
+                                                                    >
+                                                                        <v-chip
+                                                                            v-for="u in message.mentionedUsers"
+                                                                            :key="u.id || u.email || u.username"
+                                                                            color="primary"
+                                                                            variant="tonal"
+                                                                            size="x-small"
+                                                                            class="message-mention-chip"
+                                                                        >
+                                                                            @{{ u.username || u.mentionText || u.email || u.id }}
+                                                                        </v-chip>
+                                                                    </div>
                                                                     <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
 
                                                                     <pre v-if="message.jsonContent && message.contentType != 'html'"
@@ -580,46 +766,6 @@
                                                 </div>
 
                                                 <div v-else class="w-100 pb-3">
-                                                    <!-- 단일 이미지 표시 (기존 호환성) -->
-                                                    <v-sheet v-if="message.image && !message.images" class="mb-1">
-                                                        <img
-                                                            :src="message.image"
-                                                            class="rounded-md"
-                                                            alt="pro"
-                                                            width="250"
-                                                            style="cursor: pointer;"
-                                                            @click="emitPreviewImage(message.image)"
-                                                        />
-                                                    </v-sheet>
-                                                    
-                                                    <!-- 다중 이미지 표시 -->
-                                                    <div v-if="message.images && message.images.length > 0" class="d-flex flex-wrap mb-1">
-                                                        <v-sheet v-for="(image, imgIndex) in message.images" :key="imgIndex" class="ma-1">
-                                                            <img
-                                                                :src="image.url || image"
-                                                                class="rounded-md"
-                                                                alt="pro"
-                                                                width="250"
-                                                                style="cursor: pointer;"
-                                                                @click="emitPreviewImage(image.url || image)"
-                                                            />
-                                                        </v-sheet>
-                                                    </div>
-                                                    
-                                                    <!-- PDF 첨부 표시 (ChatRoomPage 메시지 호환) -->
-                                                    <div v-if="message.pdfFile && (message.pdfFile.url || message.pdfFile.fileUrl)" class="mb-2">
-                                                        <v-chip
-                                                            size="small"
-                                                            color="primary"
-                                                            variant="tonal"
-                                                            style="cursor: pointer;"
-                                                            @click="emitOpenExternalUrl(message.pdfFile.url || message.pdfFile.fileUrl)"
-                                                        >
-                                                            <v-icon start size="14">mdi-file-pdf-box</v-icon>
-                                                            {{ message.pdfFile.name || message.pdfFile.fileName || 'PDF' }}
-                                                        </v-chip>
-                                                    </div>
-
                                                     <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }" >
                                                         <template
                                                             v-if="message.role == 'system' && filteredMessages.length - 1 == index">
@@ -628,7 +774,7 @@
                                                                 :key="n"></div>
                                                         </template>
                                                         <div
-                                                            v-if="message.content"
+                                                            v-if="shouldRenderMessageBubble(message)"
                                                             class="message-bubble-wrap message-bubble-wrap--other"
                                                             @mouseenter="replyIndex = index"
                                                             @mouseleave="replyIndex = -1"
@@ -656,9 +802,81 @@
                                                             :class="showTeamMemberSelector === index ? 'chat-message-bubble-select-team-member' : 'chat-message-bubble'"
                                                         >
                                                             <div class="pa-2">
-                                                                <pre class="text-body-1" v-if="message.replyUserName">{{ message.replyUserName }}</pre>
-                                                                <pre class="text-body-1" v-if="message.replyContent">{{ message.replyContent }}</pre>
-                                                                <v-divider v-if="message.replyContent"></v-divider>
+                                                                <!-- 첨부(이미지/파일): content가 비어도 메시지로 렌더링 + 답장 가능 -->
+                                                                <div v-if="message.image || (message.images && message.images.length > 0) || (message.pdfFile && (message.pdfFile.url || message.pdfFile.fileUrl))" class="mb-2">
+                                                                    <!-- 단일 이미지 표시 (기존 호환성) -->
+                                                                    <v-sheet v-if="message.image && !message.images" class="mb-1">
+                                                                        <img
+                                                                            :src="message.image"
+                                                                            class="rounded-md"
+                                                                            alt="pro"
+                                                                            width="250"
+                                                                            style="cursor: pointer;"
+                                                                            @click="emitPreviewImage(message.image)"
+                                                                        />
+                                                                    </v-sheet>
+                                                                    
+                                                                    <!-- 다중 이미지 표시 -->
+                                                                    <div v-if="message.images && message.images.length > 0" class="d-flex flex-wrap mb-1">
+                                                                        <v-sheet v-for="(image, imgIndex) in message.images" :key="imgIndex" class="ma-1">
+                                                                            <img
+                                                                                :src="image.url || image"
+                                                                                class="rounded-md"
+                                                                                alt="pro"
+                                                                                width="250"
+                                                                                style="cursor: pointer;"
+                                                                                @click="emitPreviewImage(image.url || image)"
+                                                                            />
+                                                                        </v-sheet>
+                                                                    </div>
+                                                                    
+                                                                    <!-- 파일 첨부 -->
+                                                                    <div v-if="message.pdfFile && (message.pdfFile.url || message.pdfFile.fileUrl)" class="mb-1">
+                                                                        <v-sheet
+                                                                            rounded="lg"
+                                                                            class="pa-2 d-inline-flex align-center"
+                                                                            style="gap: 10px; cursor: pointer; border: 1px solid rgba(0,0,0,0.08); background: rgba(var(--v-theme-primary), 0.06); max-width: min(520px, 80vw);"
+                                                                            @click="emitOpenExternalUrl(message.pdfFile.url || message.pdfFile.fileUrl)"
+                                                                        >
+                                                                            <div style="width:28px; height:28px; border-radius:10px; display:flex; align-items:center; justify-content:center; background: rgba(var(--v-theme-primary), 0.12);">
+                                                                                <v-icon size="18" color="primary">mdi-file-outline</v-icon>
+                                                                            </div>
+                                                                            <div style="min-width:0; flex:1 1 auto;">
+                                                                                <div style="font-size:13px; font-weight:700; color: rgba(0,0,0,0.78); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                                                    {{ message.pdfFile.name || message.pdfFile.fileName || '첨부파일' }}
+                                                                                </div>
+                                                                                <div style="font-size:11px; color: rgba(0,0,0,0.55); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                                                                    {{ formatAttachmentSub(message.pdfFile) }}
+                                                                                </div>
+                                                                            </div>
+                                                                            <v-btn
+                                                                                icon
+                                                                                size="x-small"
+                                                                                variant="tonal"
+                                                                                :disabled="!(message.pdfFile.url || message.pdfFile.fileUrl)"
+                                                                                @click.stop="downloadAttachment(message.pdfFile.url || message.pdfFile.fileUrl, message.pdfFile.name || message.pdfFile.fileName)"
+                                                                            >
+                                                                                <v-icon size="14">mdi-download</v-icon>
+                                                                            </v-btn>
+                                                                        </v-sheet>
+                                                                    </div>
+                                                                </div>
+                                                                <div
+                                                                    v-if="message.replyUserName || message.replyContent"
+                                                                    class="reply-quote reply-quote--other"
+                                                                    role="button"
+                                                                    tabindex="0"
+                                                                    @click.stop="scrollToOriginalMessage(message.replyUuid)"
+                                                                >
+                                                                    <div class="reply-quote__body">
+                                                                        <div class="reply-quote__title">
+                                                                            {{ (message.replyUserName || '').toString() }}{{ message.replyUserName ? '에게 답장' : '답장' }}
+                                                                        </div>
+                                                                        <div class="reply-quote__text">
+                                                                            {{ message.replyContent || '' }}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
 
                                                                 <pre v-if="message.disableMsg" class="text-body-1">{{ "..." }}</pre>
                                                                 <div v-else-if="message.htmlContent" v-html="message.htmlContent" class="text-body-1"></div>
@@ -1102,18 +1320,26 @@
                         </v-row>
                     </div>
                 </div>
-                <v-divider v-if="!hideInput && !workAssistantAgentMode" />
+                <v-divider v-if="!hideInput && !workAssistantAgentMode && !inputOnly" />
             </div>
 
-            <div v-if="!hideInput && !workAssistantAgentMode" style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
+            <div v-if="!hideInput && !workAssistantAgentMode && !inputOnly" style="position: absolute; bottom: 15.1%; left: 24.3%; right: 0px; width: 75%;">
                 <div class="message-info-box" v-if="isReply || (!isAtBottom && previewMessage)">
                     <div class="message-info-content">
                         <template v-if="isReply">
-                            <div class="message-info-header">
-                                <div>{{ replyUser.role == 'system' ? $t('chat.systemReply') : $t('chat.userReply', { name: replyUser.name }) }}</div>
-                                <v-icon @click="cancelReply()" size="small">mdi-close</v-icon>
+                            <div class="reply-banner reply-banner--primary">
+                                <div class="reply-banner__main">
+                                    <div class="reply-banner__top">
+                                        <div class="reply-banner__to">
+                                            {{ (replyUser?.name || replyUser?.userName || replyUser?.email || '') }}{{ (replyUser?.name || replyUser?.userName || replyUser?.email) ? '에게 답장' : '답장' }}
+                                        </div>
+                                        <v-btn icon variant="text" size="x-small" @click="cancelReply()" class="reply-banner__close">
+                                            <v-icon size="16">mdi-close</v-icon>
+                                        </v-btn>
+                                    </div>
+                                    <div class="reply-banner__text">{{ replyPreviewText(replyUser) }}</div>
+                                </div>
                             </div>
-                            <div class="message-info-text">{{ replyUser.content }}</div>
                         </template>
                         <template v-else>
                             <div class="message-info-header">
@@ -1125,9 +1351,27 @@
                     </div>
                 </div>
             </div>
-            <v-divider v-if="!hideInput && !workAssistantAgentMode" />
+            <v-divider v-if="!hideInput && !workAssistantAgentMode && !inputOnly" />
 
             <div v-if="!hideInput" class="chat-info-message-input-box">
+                <!-- 답장 UI: inputOnly/workAssistantAgentMode에서도 정상 표시 -->
+                <div class="message-info-box message-info-box--reply" v-if="isReply">
+                    <div class="message-info-content message-info-content--reply">
+                        <div class="reply-banner reply-banner--primary">
+                            <div class="reply-banner__main">
+                                <div class="reply-banner__top">
+                                    <div class="reply-banner__to">
+                                        {{ (replyUser?.name || replyUser?.userName || replyUser?.email || '') }}{{ (replyUser?.name || replyUser?.userName || replyUser?.email) ? '에게 답장' : '답장' }}
+                                    </div>
+                                    <v-btn icon variant="text" size="x-small" @click="cancelReply()" class="reply-banner__close">
+                                        <v-icon size="16">mdi-close</v-icon>
+                                    </v-btn>
+                                </div>
+                                <div class="reply-banner__text">{{ replyPreviewText(replyUser) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
                 <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
                 <div style="z-index: 9999;" class="d-flex flex-wrap">
@@ -1145,14 +1389,55 @@
                         </v-btn>
                     </div>
                 </div>
-                <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
-                    <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                        class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
-                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
-                        @input="handleTextareaInput"
-                        @paste="handlePaste"
-                    >
-                    </v-textarea>
+                <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;' : 'position:relative;'" class="d-flex flex-column align-center pa-0">
+                    <div class="mention-autocomplete-wrap">
+                        <!-- 선택된 멘션 표시(Primary) -->
+                        <div v-if="mentionedUsers && mentionedUsers.length > 0" class="mention-chip-row">
+                            <v-chip
+                                v-for="u in mentionedUsers"
+                                :key="u.id || u.email || u.username"
+                                color="primary"
+                                variant="tonal"
+                                size="small"
+                                closable
+                                @click:close="removeMentionedUser(u)"
+                                class="mention-chip"
+                            >
+                                @{{ u.username || u.mentionText || u.email || u.id }}
+                            </v-chip>
+                        </div>
+                        <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
+                            class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
+                            auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
+                            @input="handleTextareaInput"
+                            @keyup="handleTextareaCaretMove"
+                            @click="handleTextareaCaretMove"
+                            @paste="handlePaste"
+                        >
+                        </v-textarea>
+                        
+                        <div v-if="showUserList" class="user-list mention-autocomplete-list" :style="mentionDropdownStyle">
+                            <template v-if="!filteredUserList || filteredUserList.length === 0">
+                                <div class="mention-autocomplete-empty">
+                                    멘션할 수 있는 참여자가 없습니다.
+                                </div>
+                            </template>
+                            <template v-else>
+                                <div
+                                    v-for="user in filteredUserList"
+                                    :key="user.id"
+                                    @click="selectUser(user)"
+                                    class="user-item mention-autocomplete-item"
+                                >
+                                    <img :src="user.profile" alt="profile" class="mention-autocomplete-avatar">
+                                    <div class="mention-autocomplete-meta">
+                                        <div class="mention-autocomplete-name">{{ user.username }}</div>
+                                        <div class="mention-autocomplete-sub">{{ user.email }}</div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                     
                     <div class="d-flex justify-space-between align-center w-100 pa-2">
                         <v-row class="ma-0 pa-0 align-center">
@@ -1191,7 +1476,7 @@
                             >
                                 <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
-                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
+                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" style="flex-shrink: 0;" />
                             <v-tooltip :text="$t('chat.headset')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn @click="openChatMenu(); recordingModeChange()"
@@ -1235,18 +1520,6 @@
                             </v-btn>
                         </div>
                     </div>
-                    
-                    <div v-if="showUserList" class="user-list user-list--dropup">
-                        <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
-                            style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
-                            <img :src="user.profile" alt="profile"
-                                style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                            <div>
-                                <div>{{ user.username }}</div>
-                                <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
-                            </div>
-                        </div>
-                    </div>
                 </form>
             </div>
         </div>
@@ -1255,7 +1528,7 @@
     <div v-else>
         <v-card
             :elevation="inputOnly ? 0 : 10"
-            :class="inputOnly ? 'pa-0 chat-input-card--inline' : 'pa-4'"
+            :class="['chat-input-card', inputOnly ? 'pa-0 chat-input-card--inline' : 'pa-4']"
             :style="inputOnly ? 'background: transparent; border-radius: 0; box-shadow: none;' : ''"
         >
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
@@ -1288,19 +1561,78 @@
                         variant="tonal"
                         @click:close="clearSelectedPdf"
                     >
-                        <v-icon start size="16">mdi-file-pdf-box</v-icon>
+                        <v-icon start size="16">mdi-file-outline</v-icon>
                         {{ selectedPdfFile.name }}
                     </v-chip>
                 </div>
             </div>
-            <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;':''" class="d-flex flex-column align-center pa-0">
-                <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                    class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="resolvedPlaceholder"
-                    auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
-                    @input="handleTextareaInput"
-                    @paste="handlePaste"
-                >
-                </v-textarea>
+            <form :style="type == 'consulting' ? 'position:relative; z-index: 9999;' : 'position:relative;'" class="d-flex flex-column align-center pa-0">
+                <!-- 답장 UI (workAssistantAgentMode/inputOnly에서도 표시) -->
+                <div class="message-info-box message-info-box--reply" v-if="isReply" style="width: 100%; margin-bottom: 8px;">
+                    <div class="message-info-content message-info-content--reply">
+                        <div class="reply-banner reply-banner--primary">
+                            <div class="reply-banner__main">
+                                <div class="reply-banner__top">
+                                    <div class="reply-banner__to">
+                                        {{ (replyUser?.name || replyUser?.userName || replyUser?.email || '') }}{{ (replyUser?.name || replyUser?.userName || replyUser?.email) ? '에게 답장' : '답장' }}
+                                    </div>
+                                    <v-btn icon variant="text" size="x-small" @click="cancelReply()" class="reply-banner__close">
+                                        <v-icon size="16">mdi-close</v-icon>
+                                    </v-btn>
+                                </div>
+                                <div class="reply-banner__text">{{ replyPreviewText(replyUser) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mention-autocomplete-wrap">
+                    <!-- 선택된 멘션 표시(Primary) -->
+                    <div v-if="mentionedUsers && mentionedUsers.length > 0" class="mention-chip-row">
+                        <v-chip
+                            v-for="u in mentionedUsers"
+                            :key="u.id || u.email || u.username"
+                            color="primary"
+                            variant="tonal"
+                            size="small"
+                            closable
+                            @click:close="removeMentionedUser(u)"
+                            class="mention-chip"
+                        >
+                            @{{ u.username || u.mentionText || u.email || u.id }}
+                        </v-chip>
+                    </div>
+                    <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
+                        class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="resolvedPlaceholder"
+                        auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
+                        @input="handleTextareaInput"
+                        @keyup="handleTextareaCaretMove"
+                        @click="handleTextareaCaretMove"
+                        @paste="handlePaste"
+                    >
+                    </v-textarea>
+                    
+                    <div v-if="showUserList" class="user-list mention-autocomplete-list" :style="mentionDropdownStyle">
+                        <template v-if="!filteredUserList || filteredUserList.length === 0">
+                            <div class="mention-autocomplete-empty">
+                                멘션할 수 있는 참여자가 없습니다.
+                            </div>
+                        </template>
+                        <template v-else>
+                            <div
+                                v-for="user in filteredUserList"
+                                :key="user.id"
+                                @click="selectUser(user)"
+                                class="user-item mention-autocomplete-item"
+                            >
+                                <img :src="user.profile" alt="profile" class="mention-autocomplete-avatar">
+                                <div class="mention-autocomplete-meta">
+                                    <div class="mention-autocomplete-name">{{ user.username }}</div>
+                                    <div class="mention-autocomplete-sub">{{ user.email }}</div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
                 <div class="d-flex justify-space-between align-center w-100 pl-1">
                     <div :style="type == 'consulting' ? 'position:relative; z-index: 9999;':'position:relative;'">
                         <v-row class="pa-0 ma-0">
@@ -1347,7 +1679,7 @@
                                             :disabled="disableChat || isGenerationFinished"
                                             @click="openChatMenu(); triggerPdfSelect()"
                                         >
-                                            <v-icon size="20">mdi-file-pdf-box</v-icon>
+                                            <v-icon size="20">mdi-file-outline</v-icon>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -1429,28 +1761,21 @@
                             </v-btn>
                         </template>
                         <template v-else>
-                        <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                        <v-btn
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"
                             icon
                             variant="outlined"
                             size="small"
                             style="border-color: #e0e0e0 !important;"
-                            :disabled="isGenerationFinished"
+                            :disabled="isGenerationFinished || isMicRecorderLoading"
+                            @click="isMicRecording ? stopVoiceRecording() : startVoiceRecording()"
                         >
-                            <Icons :icon="'sharp-mic'" :size="'16'" />
+                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" :size="'16'" />
+                            <Icons v-else-if="isMicRecording" :icon="'stop'" :size="'16'" />
+                            <Icons v-else :icon="'sharp-mic'" :size="'16'" />
                         </v-btn>
-                        <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
-                            class="mr-1 text-medium-emphasis"
-                            density="comfortable"
-                            icon
-                            variant="outlined"
-                            size="small"
-                            style="border-color: #e0e0e0 !important;"
-                            :disabled="isGenerationFinished"
-                        >
-                            <Icons :icon="'stop'" :size="'16'" />
-                        </v-btn>
+                        
                         <v-tooltip :text="$t('chat.headset')">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="openChatMenu(); recordingModeChange()"
@@ -1467,8 +1792,7 @@
                                 </v-btn>
                             </template>
                         </v-tooltip>
-                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
-
+                        
                         <v-btn v-if="!(showStopButton || isLoading) && !isGenerationFinished"
                             class="cp-send text-medium-emphasis"
                             color="primary" 
@@ -1511,19 +1835,6 @@
                             <Icons :icon="'outline-stop-circle'" :size="16" />
                         </v-btn>
                         </template>
-                    </div>
-                </div>
-                
-                <div v-if="showUserList" class="user-list"
-                    style="position: absolute; bottom: 16%; left: 0; background-color: white; z-index: 100;">
-                    <div v-for="user in filteredUserList" :key="user.id" @click="selectUser(user)" class="user-item"
-                        style="display: flex; align-items: center; padding: 10px; cursor: pointer;">
-                        <img :src="user.profile" alt="profile"
-                            style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;">
-                        <div>
-                            <div>{{ user.username }}</div>
-                            <div style="font-size: 0.8em; color: #666;">{{ user.email }}</div>
-                        </div>
                     </div>
                 </div>
             </form>
@@ -1717,9 +2028,12 @@ export default {
             showNewMessageNotiTimer: null,
             showUserList: false,
             mentionStartIndex: null,
+            mentionQuery: '',
             mentionedUsers: [], // Mention된 유저들의 정보를 저장할 배열
             file: null,
             isRender: false,
+            highlightedMessageUuid: null,
+            _highlightTimer: null,
             
             // assistantChat
             checked: true,
@@ -1743,6 +2057,9 @@ export default {
             showTeamMemberSelector: null, // 팀원 선택 UI를 표시할 메시지 인덱스
             selectedTeamMembersByMessage: {}, // 메시지별 선택된 팀원들
             teamMemberSearch: '', // 팀원 검색 텍스트
+
+            // mention dropdown position (anchored near '@')
+            mentionDropdownStyle: {},
             
             // 사용자 정보
             currentUserName: localStorage.getItem('userName') || '사용자',
@@ -1792,6 +2109,10 @@ export default {
     beforeUnmount() {
         // 컴포넌트 제거 시 이벤트 리스너 제거
         window.removeEventListener('resize', this.handleResize);
+        try {
+            if (this._highlightTimer) clearTimeout(this._highlightTimer);
+        } catch (e) {}
+        this._highlightTimer = null;
     },
     watch: {
         prompt(newVal, oldVal) {
@@ -1820,8 +2141,21 @@ export default {
                 return [];
             }
             const participants = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
-            const participantIds = new Set(participants.map(p => p?.id).filter(Boolean));
-            const participantEmails = new Set(participants.map(p => p?.email).filter(Boolean));
+            // participants는 {id,email} 객체 배열일 수도 있고, id(string) 배열일 수도 있음
+            const participantIds = new Set();
+            const participantEmails = new Set();
+            participants.forEach((p) => {
+                if (!p) return;
+                if (typeof p === 'string') {
+                    const s = p.toString();
+                    // 간단한 이메일 형태면 email로도 추가
+                    if (s.includes('@')) participantEmails.add(s);
+                    participantIds.add(s);
+                    return;
+                }
+                if (p?.id) participantIds.add(p.id);
+                if (p?.email) participantEmails.add(p.email);
+            });
             const myEmail = this.userInfo?.email || null;
             const myId = this.userInfo?.id || this.userInfo?.uid || null;
 
@@ -1850,9 +2184,15 @@ export default {
                 ];
             }
 
-            const query = this.newMessage.substring(this.mentionStartIndex + 1).toLowerCase();
+            const query = (this.mentionQuery || '').toString().toLowerCase().replace(/\s+/g, '');
             // 이미 mention된 유저는 리스트에서 제외
-            return userList.filter(user => user.username.toLowerCase().includes(query) && !this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id));
+            return userList.filter(user => {
+                const username = (user?.username || '').toString();
+                const normalized = username.toLowerCase().replace(/\s+/g, '');
+                const okQuery = query ? normalized.includes(query) : true;
+                const notMentioned = !this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id);
+                return okQuery && notMentioned;
+            });
         },
         filteredMessages() {
             var list = [];
@@ -1866,7 +2206,13 @@ export default {
                         data.formValues = {};
                     }
                     
-                    if (data.content || data.jsonContent || data.image) {
+                    const hasText = !!data.content || !!data.jsonContent || !!data.htmlContent;
+                    const hasImage = !!data.image;
+                    const hasImages = Array.isArray(data.images) && data.images.length > 0;
+                    const f = data.pdfFile;
+                    const hasFile = !!f && !!(f.url || f.fileUrl || f.publicUrl || f.signedUrl || f.name || f.fileName);
+
+                    if (hasText || hasImage || hasImages || hasFile) {
                         list.push(data);
                     }
                 });
@@ -1973,6 +2319,95 @@ export default {
         emitOpenExternalUrl(url) {
             if (!url) return;
             this.$emit('open-external-url', url);
+        },
+        isRecommendationInvited(message, agentId) {
+            try {
+                const rec = message?.__agentInviteRecommendation || null;
+                const invited = rec?.invited || {};
+                const id = (agentId || '').toString();
+                if (!id) return false;
+                return !!invited?.[id];
+            } catch (e) {
+                return false;
+            }
+        },
+        inviteAgentFromRecommendation(message, agent) {
+            try {
+                const agentId = (agent?.id || '').toString();
+                if (!agentId) return;
+                // optimistic UI update: mark invited immediately
+                if (message && message.__agentInviteRecommendation) {
+                    if (!message.__agentInviteRecommendation.invited) message.__agentInviteRecommendation.invited = {};
+                    message.__agentInviteRecommendation.invited[agentId] = true;
+                }
+                this.$emit('invite-agent', { messageUuid: message?.uuid || null, agentId });
+            } catch (e) {
+                // ignore
+            }
+        },
+        formatBytes(bytes) {
+            const b = Number(bytes);
+            if (!Number.isFinite(b) || b <= 0) return '';
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), units.length - 1);
+            const v = b / Math.pow(1024, i);
+            const fixed = v >= 10 || i === 0 ? 0 : 1;
+            return `${v.toFixed(fixed)}${units[i]}`;
+        },
+        formatAttachmentSub(fileObj) {
+            try {
+                const size = this.formatBytes(fileObj?.size || fileObj?.fileSize);
+                const type = (fileObj?.type || fileObj?.fileType || '').toString();
+                const parts = [size, type].filter(Boolean);
+                return parts.join(' · ') || ' ';
+            } catch (e) {
+                return ' ';
+            }
+        },
+        shouldRenderMessageBubble(message) {
+            try {
+                const text = (message?.content ?? '').toString().trim();
+                const hasText = !!text || !!message?.htmlContent || !!message?.jsonContent;
+                const hasImage = !!message?.image;
+                const hasImages = Array.isArray(message?.images) && message.images.length > 0;
+                const f = message?.pdfFile;
+                const hasFile = !!f && !!(f.url || f.fileUrl || f.publicUrl || f.signedUrl || f.name || f.fileName);
+                return hasText || hasImage || hasImages || hasFile;
+            } catch (e) {
+                return !!message?.content;
+            }
+        },
+        getFilenameFromUrl(url) {
+            try {
+                const u = new URL(url);
+                const pathname = (u.pathname || '').toString();
+                const last = pathname.split('/').filter(Boolean).pop();
+                return last ? decodeURIComponent(last) : '';
+            } catch (e) {
+                return '';
+            }
+        },
+        async downloadAttachment(url, filename) {
+            if (!url) return;
+            const name = filename || this.getFilenameFromUrl(url) || 'download';
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const objectUrl = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = name;
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            } catch (e) {
+                this.emitOpenExternalUrl(url);
+            }
         },
         getProgressChipColor(status) {
             if (status === 'completed') return 'success';
@@ -2122,19 +2557,37 @@ export default {
             }
         },
         async startVoiceRecording() {
-            this.isMicRecording = true;
-
             if (!navigator.mediaDevices) {
-                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+                this.$try({
+                    action: async () => { throw new Error(); },
+                    errorMsg: this.$t('chat.micPermission.notSupported')
+                });
                 return;
             }
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.micRecorder = new MediaRecorder(stream);
-            this.micAudioChunks = [];
-            this.micRecorder.ondataavailable = e => {
-                this.micAudioChunks.push(e.data);
-            };
-            this.micRecorder.start();
+            try {
+                const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+                if (permissionStatus.state === 'denied') {
+                    this.$try({
+                        action: async () => { throw new Error(); },
+                        errorMsg: this.$t('chat.micPermission.denied')
+                    });
+                    return;
+                }
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.isMicRecording = true;
+                this.micRecorder = new MediaRecorder(stream);
+                this.micAudioChunks = [];
+                this.micRecorder.ondataavailable = e => {
+                    this.micAudioChunks.push(e.data);
+                };
+                this.micRecorder.start();
+            } catch (error) {
+                this.isMicRecording = false;
+                this.$try({
+                    action: async () => { throw new Error(); },
+                    errorMsg: this.$t('chat.micPermission.denied')
+                });
+            }
         },
         stopVoiceRecording() {
             this.isMicRecording = false;
@@ -2212,17 +2665,41 @@ export default {
             this.$emit('openVerMangerDialog', true)
         },
         handleTextareaInput(event) {
-            const text = event.target.value;
-            const atIndex = text.lastIndexOf('@');
-            if (atIndex !== -1) {
-                this.showUserList = true;
-                this.mentionStartIndex = atIndex;
-            } else {
+            // Vuetify/Vue 이벤트 형태가 케이스별로 다름:
+            // - native input event: event.target.value
+            // - update:modelValue 형태로 값(string)이 직접 넘어오는 경우도 있음
+            const text = (typeof event === 'string')
+                ? event
+                : (event?.target?.value ?? this.newMessage ?? '');
+            const textarea = this.getActiveTextareaEl(event);
+            const caretPos = (textarea && Number.isFinite(textarea.selectionStart)) ? textarea.selectionStart : text.length;
+            const ctx = this.getMentionContext(text, caretPos);
+            if (ctx) {
+                this.mentionStartIndex = ctx.startIndex;
+                this.mentionQuery = ctx.query;
+                // 위치 계산 전에 showUserList가 켜지면 (스타일 비어있는 상태로) 좌상단에 잠깐 뜨는 플래시가 발생할 수 있음
                 this.showUserList = false;
+                this.mentionDropdownStyle = { visibility: 'hidden' };
+                this.$nextTick(() => {
+                    this.updateMentionDropdownPosition(event);
+                    this.showUserList = true;
+                });
+            } else {
+                this.mentionStartIndex = null;
+                this.mentionQuery = '';
+                this.showUserList = false;
+                this.mentionDropdownStyle = {};
             }
-            this.mentionedUsers = this.mentionedUsers.filter(user => {
-                const regex = new RegExp(`@${user.username}`, 'g');
-                return text.match(regex);
+
+            // 텍스트에서 사라진 멘션은 chips에서도 제거
+            this.mentionedUsers = (Array.isArray(this.mentionedUsers) ? this.mentionedUsers : []).filter((u) => {
+                const mentionText = (u?.mentionText || u?.username || '').toString();
+                if (!mentionText) return false;
+                // 한글/공백 포함 이름도 안정적으로 유지:
+                // - "@<이름>"이 그대로 포함되면 유지
+                // - 뒤에는 공백/구두점/줄바꿈/끝이 와야 멘션으로 간주
+                const re = new RegExp(`@${this.escapeRegExp(mentionText)}(?=$|[\\s\\n\\r\\t.,;:!?()\\[\\]{}"'\\\`~<>/\\\\|])`, 'u');
+                return re.test(text || '');
             });
 
             if (text.startsWith('>') || text.startsWith('!')) {
@@ -2234,14 +2711,196 @@ export default {
             //     this.resetMessageHistory();
             // }
         },
-        selectUser(user) {
-            const beforeMention = this.newMessage.substring(0, this.mentionStartIndex);
-            this.newMessage = `${beforeMention}@${user.username} `;
+        handleTextareaCaretMove(event) {
+            // caret 이동/클릭 시에도 위치 업데이트
+            if (!this.showUserList) return;
+            this.$nextTick(() => {
+                this.updateMentionDropdownPosition(event);
+            });
+        },
+        getActiveTextareaEl(event) {
+            if (event?.target && (event.target.tagName || '').toLowerCase() === 'textarea') return event.target;
+            // Vuetify v-textarea 내부 textarea를 현재 wrap 기준으로 탐색
+            try {
+                const wrap = this.$el?.querySelector?.('.mention-autocomplete-wrap');
+                const ta = wrap?.querySelector?.('textarea');
+                return ta || null;
+            } catch (e) {
+                return null;
+            }
+        },
+        getTextareaCaretCoordinates(textarea, position) {
+            if (!textarea) return { left: 0, top: 0, height: 0 };
+            const pos = Math.max(0, Math.min(position ?? 0, (textarea.value || '').length));
+            const style = window.getComputedStyle(textarea);
+
+            const div = document.createElement('div');
+            div.style.position = 'absolute';
+            div.style.visibility = 'hidden';
+            div.style.whiteSpace = 'pre-wrap';
+            div.style.wordWrap = 'break-word';
+            div.style.top = '0';
+            div.style.left = '-9999px';
+
+            // mirror textarea styles that affect layout
+            const props = [
+                'boxSizing',
+                'width',
+                'height',
+                'overflowX',
+                'overflowY',
+                'borderTopWidth',
+                'borderRightWidth',
+                'borderBottomWidth',
+                'borderLeftWidth',
+                'paddingTop',
+                'paddingRight',
+                'paddingBottom',
+                'paddingLeft',
+                'fontStyle',
+                'fontVariant',
+                'fontWeight',
+                'fontStretch',
+                'fontSize',
+                'fontSizeAdjust',
+                'lineHeight',
+                'fontFamily',
+                'textAlign',
+                'textTransform',
+                'textIndent',
+                'textDecoration',
+                'letterSpacing',
+                'wordSpacing',
+                'tabSize',
+                'MozTabSize'
+            ];
+            props.forEach((p) => {
+                try {
+                    div.style[p] = style[p];
+                } catch (e) {}
+            });
+
+            // content up to position
+            const before = (textarea.value || '').substring(0, pos);
+            div.textContent = before;
+
+            const span = document.createElement('span');
+            // ensure span has some content so it has dimensions
+            span.textContent = (textarea.value || '').substring(pos) || '.';
+            div.appendChild(span);
+
+            document.body.appendChild(div);
+            // reflect scroll
+            div.scrollTop = textarea.scrollTop;
+            div.scrollLeft = textarea.scrollLeft;
+
+            const left = span.offsetLeft;
+            const top = span.offsetTop;
+            const lh = parseFloat(style.lineHeight) || (parseFloat(style.fontSize) * 1.2) || 16;
+
+            document.body.removeChild(div);
+            return { left, top, height: lh };
+        },
+        updateMentionDropdownPosition(event) {
+            // showUserList가 true가 되기 전에도 위치 계산이 가능해야 플래시를 방지할 수 있음
+            if (this.mentionStartIndex == null) return;
+            const textarea = this.getActiveTextareaEl(event);
+            if (!textarea) return;
+
+            const wrap = textarea.closest?.('.mention-autocomplete-wrap') || this.$el?.querySelector?.('.mention-autocomplete-wrap');
+            if (!wrap) return;
+
+            // anchor at '@' position (not at current caret)
+            const anchorPos = Math.max(0, Math.min(this.mentionStartIndex, (textarea.value || '').length));
+            const caret = this.getTextareaCaretCoordinates(textarea, anchorPos);
+
+            const wrapRect = wrap.getBoundingClientRect();
+            const taRect = textarea.getBoundingClientRect();
+
+            // position in wrap's coordinate space
+            let left = (taRect.left - wrapRect.left) + caret.left - textarea.scrollLeft;
+            let top = (taRect.top - wrapRect.top - 20) + caret.top - textarea.scrollTop + caret.height;
+
+            // clamp horizontally within wrap
+            const maxLeft = Math.max(0, (wrap.clientWidth || 0) - 80);
+            left = Math.max(8, Math.min(left, maxLeft));
+
+            this.mentionDropdownStyle = {
+                position: 'absolute',
+                left: `${left}px`,
+                top: `${top}px`,
+                transform: 'translateY(-100%)',
+                marginTop: '-8px',
+                visibility: 'visible'
+            };
+        },
+        escapeRegExp(str) {
+            return (str || '').toString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        },
+        getMentionContext(text, caretPos) {
+            const s = (text || '').toString();
+            const pos = Math.max(0, Math.min(Number(caretPos ?? 0), s.length));
+            const beforeCaret = s.slice(0, pos);
+            // "@..."는 공백/줄바꿈 등으로 끊긴다. 문장 중간에서도 직전 토큰이 @로 시작할 때만 활성화.
+            // 예: "안녕 @jae" (활성), "안녕 @jae " (비활성), "안녕@jae" (비활성)
+            const m = /(^|[\s([{"'`])@([0-9A-Za-z가-힣._-]*)$/.exec(beforeCaret);
+            if (!m) return null;
+            const at = beforeCaret.lastIndexOf('@');
+            if (at < 0) return null;
+            const query = (m[2] || '').toString();
+            return { startIndex: at, query };
+        },
+        removeMentionedUser(user) {
+            if (!user) return;
+            const id = user?.id;
+            this.mentionedUsers = (Array.isArray(this.mentionedUsers) ? this.mentionedUsers : []).filter(u => u?.id !== id);
+            const mentionText = (user?.mentionText || user?.username || '').toString();
+            if (mentionText) {
+                // "@token" 제거 (토큰 뒤 공백도 같이 정리)
+                const re = new RegExp(`(^|\\s)@${this.escapeRegExp(mentionText)}(?=$|[\\s\\n\\r\\t.,;:!?()\\[\\]{}"'\\\`~<>/\\\\|])\\s*`, 'gu');
+                this.newMessage = (this.newMessage || '').replace(re, '$1').replace(/\s{2,}/g, ' ').trimStart();
+            }
             this.showUserList = false;
+            this.mentionStartIndex = null;
+            this.mentionQuery = '';
+            this.mentionDropdownStyle = {};
+        },
+        selectUser(user) {
+            if (!user) return;
+            if (this.mentionStartIndex == null) return;
+
+            const textarea = this.getActiveTextareaEl();
+            const caretPos = (textarea && Number.isFinite(textarea.selectionStart)) ? textarea.selectionStart : (this.newMessage || '').length;
+
+            const start = Math.max(0, Math.min(this.mentionStartIndex, (this.newMessage || '').length));
+            const before = (this.newMessage || '').substring(0, start);
+            const after = (this.newMessage || '').substring(caretPos);
+
+            // 일반적인 멘션 UX: 화면에 보이는 이름 그대로 textarea에 넣는다(공백 포함).
+            // 라우팅은 payload.mentionedUsers(id) 기반이므로, 텍스트의 정규식 파싱에 의존하지 않는다.
+            const mentionText = (user.username || user.email || user.id || '').toString().replace(/[@\r\n]/g, '').trim();
+            this.newMessage = `${before}@${mentionText} ${after}`;
+
+            this.showUserList = false;
+            this.mentionStartIndex = null;
+            this.mentionQuery = '';
+            this.mentionDropdownStyle = {};
+
             // Mention된 유저의 정보를 mentionedUsers 배열에 추가
             if (!this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id)) {
-                this.mentionedUsers.push(user);
+                this.mentionedUsers.push({ ...user, mentionText });
             }
+
+            // caret를 멘션 뒤로 이동
+            this.$nextTick(() => {
+                try {
+                    const ta = this.getActiveTextareaEl();
+                    if (!ta) return;
+                    const nextPos = (before.length + 1 + mentionText.length + 1); // "@"+mentionText+" "
+                    ta.focus?.();
+                    ta.setSelectionRange?.(nextPos, nextPos);
+                } catch (e) {}
+            });
         },
         clickToScroll() {
             this.isAtBottom = true
@@ -2393,6 +3052,54 @@ export default {
             this.isReply = true;
             this.replyUser = message;
         },
+        replyPreviewText(message) {
+            try {
+                const text = (message?.content || '').toString().trim();
+                if (text) return text;
+                const f = message?.pdfFile;
+                if (f && (f.name || f.fileName)) return `[첨부파일] ${(f.name || f.fileName).toString()}`;
+                const images = Array.isArray(message?.images) ? message.images : [];
+                if (images.length > 0) return `[이미지] ${images.length}장`;
+                if (message?.image) return `[이미지] 1장`;
+                return '';
+            } catch (e) {
+                return (message?.content || '').toString();
+            }
+        },
+        scrollToOriginalMessage(uuid) {
+            const targetUuid = (uuid || '').toString();
+            if (!targetUuid) return;
+
+            try {
+                const container = this.$refs?.scrollContainer?.$el || this.$refs?.scrollContainer || null;
+                if (!container || typeof container.querySelector !== 'function') return;
+
+                const el = container.querySelector(`[data-msg-uuid="${CSS.escape(targetUuid)}"]`);
+                if (!el) return;
+
+                // 스크롤(컨테이너 기준) - 중앙에 오도록
+                const cRect = container.getBoundingClientRect();
+                const eRect = el.getBoundingClientRect();
+                const currentTop = container.scrollTop || 0;
+                const delta = (eRect.top - cRect.top) - (container.clientHeight / 2 - eRect.height / 2);
+                const nextTop = currentTop + delta;
+                if (typeof container.scrollTo === 'function') {
+                    container.scrollTo({ top: nextTop, behavior: 'smooth' });
+                } else {
+                    container.scrollTop = nextTop;
+                }
+
+                // 하이라이트
+                this.highlightedMessageUuid = targetUuid;
+                if (this._highlightTimer) clearTimeout(this._highlightTimer);
+                this._highlightTimer = setTimeout(() => {
+                    this.highlightedMessageUuid = null;
+                    this._highlightTimer = null;
+                }, 2200);
+            } catch (e) {
+                // ignore
+            }
+        },
         beforeSend($event) {
             // 이미 전송 중이면 무시
             if (this.isSending) {
@@ -2433,6 +3140,25 @@ export default {
         },
         async send() {
             if (this.editIndex >= 0) {
+                // ChatRoomPage 등 DB 기반 채팅에서는 수정 내용을 저장까지 수행
+                try {
+                    const msg = this.messages?.[this.editIndex] || null;
+                    const uuid = msg?.uuid || null;
+                    const roomId = (this.chatRoomId || '').toString();
+                    if (uuid && roomId) {
+                        // 기존 shape 유지: { uuid, id, messages }
+                        await backend.putObject(`db://chats/${uuid}`, {
+                            uuid,
+                            id: roomId,
+                            messages: {
+                                ...msg,
+                                editedAt: new Date().toISOString()
+                            }
+                        });
+                    }
+                } catch (e) {
+                    // ignore (저장 실패해도 UI는 유지)
+                }
                 this.$emit('sendEditedMessage', this.editIndex + 1);
                 this.editIndex = -1;
             } else {
@@ -2446,7 +3172,13 @@ export default {
                     text: this.newMessage,
                     mentionedUsers: this.mentionedUsers,
                     // PDF는 전송 직전 업로드된 fileInfo 형태로 전달
-                    file: this.uploadedPdfInfo
+                    file: this.uploadedPdfInfo,
+                    // reply 메타데이터 (ChatRoomPage에서 저장/표시)
+                    reply: this.isReply ? {
+                        uuid: this.replyUser?.uuid || null,
+                        name: this.replyUser?.name || this.replyUser?.userName || this.replyUser?.email || '',
+                        content: this.replyPreviewText(this.replyUser)
+                    } : null
                 });
             }
             if (this.isReply) this.isReply = false;
@@ -2459,6 +3191,8 @@ export default {
                 // workAssistantAgentMode 여부와 관계없이 항상 메시지 초기화
                 this.newMessage = "";
                 this.mentionedUsers = [];
+                this.mentionStartIndex = null;
+                this.mentionQuery = '';
                 this.showUserList = false;
                 this.isSending = false;
             }, 100);
@@ -3073,6 +3807,86 @@ pre {
     right: 0;
     bottom: calc(100% + 8px);
 }
+
+.mention-autocomplete-wrap {
+    position: relative;
+    width: 100%;
+    overflow: visible;
+}
+
+.mention-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.mention-chip {
+    max-width: 100%;
+}
+
+.message-mention-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.message-mention-chip {
+    max-width: 100%;
+}
+
+.mention-autocomplete-list {
+    border-radius: 12px;
+    padding: 6px 0;
+    z-index: 20000;
+    background: white;
+    width: max-content;
+    min-width: 220px;
+    max-width: min(320px, 90vw);
+}
+
+.mention-autocomplete-empty {
+    padding: 10px 12px;
+    font-size: 12px;
+    color: rgba(0,0,0,0.55);
+}
+
+.mention-autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+}
+.mention-autocomplete-item:hover {
+    background: rgba(0,0,0,0.04);
+}
+.mention-autocomplete-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    object-fit: cover;
+    flex: 0 0 auto;
+}
+.mention-autocomplete-meta {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+.mention-autocomplete-name {
+    font-size: 12px;
+    color: rgba(0,0,0,0.78);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mention-autocomplete-sub {
+    font-size: 11px;
+    color: rgba(0,0,0,0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 .definition-map-chat-menu-background {
     // background-color: rgb(var(--v-theme-primary), 0.15) !important;
     padding: 0px;
@@ -3104,6 +3918,117 @@ pre {
 
 .message-info-content {
     padding: 8px 16px;
+}
+
+.message-info-box--reply {
+    border-radius: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.message-info-content--reply {
+    padding: 10px 12px;
+}
+
+.reply-banner {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.reply-banner__main {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.reply-banner__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 2px;
+}
+
+.reply-banner__to {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(0,0,0,0.75);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reply-banner--primary .reply-banner__to {
+    color: rgb(var(--v-theme-primary));
+}
+
+.reply-banner__text {
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgba(0,0,0,0.62);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reply-banner__close {
+    color: rgba(0,0,0,0.55);
+}
+
+.reply-quote {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    padding: 8px 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.72);
+    cursor: pointer;
+}
+
+.reply-quote__body {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.reply-quote__title {
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(0,0,0,0.72);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reply-quote__text {
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgba(0,0,0,0.6);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-message-row--highlight {
+    animation: chatMessageHighlight 2.2s ease-out;
+}
+
+@keyframes chatMessageHighlight {
+    0% {
+        background: rgba(var(--v-theme-primary), 0.18);
+        box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.28) inset;
+        border-radius: 12px;
+    }
+    60% {
+        background: rgba(var(--v-theme-primary), 0.08);
+        box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.18) inset;
+        border-radius: 12px;
+    }
+    100% {
+        background: transparent;
+        box-shadow: none;
+        border-radius: 12px;
+    }
 }
 
 .message-info-header {
@@ -3196,6 +4121,11 @@ pre {
 .chat-input-card--inline {
   border: none !important;
   box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.chat-input-card {
+  overflow: visible !important;
 }
 
 .message-timestamp {
