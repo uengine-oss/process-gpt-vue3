@@ -157,6 +157,7 @@ PaletteProvider.prototype.adjustParticipantBoundsByLanes = function(participant,
 }
 
 PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onLoadEnd = () => {}) {
+  if (typeof window !== 'undefined' && window.$pal) return;
   var injector = this._injector;
   var elementFactory = this._elementFactory;
   var eventBus = this._eventBus;
@@ -200,6 +201,7 @@ PaletteProvider.prototype._rotateRelativePosition = function(relativeX, relative
 
 // 함수 정의를 getPaletteEntries 바깥으로 옮긴다
 PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event, element, onLoadStart = () => {}, onLoadEnd = () => {}) {
+  if (typeof window !== 'undefined' && window.$pal) { onLoadEnd(); return; }
   onLoadStart();
   const modeling = this._modeling;
   const logPrefix = '[changeParticipantOrientation]';
@@ -423,6 +425,7 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
 };
 
 PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event, element, onLoadStart = () => {}, onLoadEnd = () => {}) {
+  if (typeof window !== 'undefined' && window.$pal) { onLoadEnd(); return; }
   onLoadStart();
   const modeling = this._modeling;
   const logPrefix = '[changeParticipantOrientation]';
@@ -785,9 +788,60 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     'create.exclusive-gateway': createAction(
       'bpmn:ExclusiveGateway', 'gateway', 'bpmn-icon-gateway-xor'
     ),
-    'create.task': createAction(
-      'bpmn:UserTask', 'activity', 'bpmn-icon-task'
-    ),
+    // Task types are conditionally added based on palette settings
+    // Check window.$paletteSettings for visible task types
+  });
+
+  // Add task types based on palette settings
+  // Use new table-based palette task types if available
+  var enabledTaskTypes = window.$enabledPaletteTaskTypes || [];
+  var visibleTaskTypes = enabledTaskTypes.length > 0
+    ? enabledTaskTypes.map(t => t.task_type)
+    : (window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask']);
+
+  if (visibleTaskTypes.includes('bpmn:ManualTask')) {
+    actions['create.manual-task'] = createAction(
+      'bpmn:ManualTask', 'activity', 'bpmn-icon-task', i18n.global.t('PaletteProvider.ManualTask')
+    );
+  }
+
+  if (visibleTaskTypes.includes('bpmn:ServiceTask')) {
+    actions['create.service-task'] = createAction(
+      'bpmn:ServiceTask', 'activity', 'bpmn-icon-service-task', i18n.global.t('PaletteProvider.ServiceTask')
+    );
+  }
+
+  if (visibleTaskTypes.includes('bpmn:UserTask')) {
+    actions['create.user-task'] = createAction(
+      'bpmn:UserTask', 'activity', 'bpmn-icon-user-task', i18n.global.t('PaletteProvider.UserTask')
+    );
+  }
+
+  if (visibleTaskTypes.includes('bpmn:ScriptTask')) {
+    actions['create.script-task'] = createAction(
+      'bpmn:ScriptTask', 'activity', 'bpmn-icon-script-task', i18n.global.t('PaletteProvider.ScriptTask')
+    );
+  }
+
+  if (visibleTaskTypes.includes('bpmn:BusinessRuleTask')) {
+    actions['create.business-rule-task'] = createAction(
+      'bpmn:BusinessRuleTask', 'activity', 'bpmn-icon-business-rule-task', i18n.global.t('PaletteProvider.BusinessRuleTask')
+    );
+  }
+
+  if (visibleTaskTypes.includes('bpmn:SendTask')) {
+    actions['create.send-task'] = createAction(
+      'bpmn:SendTask', 'activity', 'bpmn-icon-send-task', i18n.global.t('PaletteProvider.SendTask')
+    );
+  }
+
+  if (visibleTaskTypes.includes('bpmn:ReceiveTask')) {
+    actions['create.receive-task'] = createAction(
+      'bpmn:ReceiveTask', 'activity', 'bpmn-icon-receive-task', i18n.global.t('PaletteProvider.ReceiveTask')
+    );
+  }
+
+  assign(actions, {
     'create.subprocess-expanded': createAction(
       'bpmn:SubProcess', 'activity', 'bpmn-icon-subprocess-expanded', i18n.global.t('PaletteProvider.expandedSubProcess'),
       { isExpanded: true }

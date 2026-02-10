@@ -1,9 +1,9 @@
 <template>
-    <div>
+    <div class="pt-2">
         <v-textarea
             v-model="userInput"
             :label="$t('UserInputGenerator.inputLabel')"
-            variant="solo"
+            variant="outlined"
             class="mb-2 delete-input-details user-input-generator-textarea"
             rows="2"
             auto-grow

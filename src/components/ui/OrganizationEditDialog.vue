@@ -171,6 +171,8 @@ export default {
                 if (this.editNode.data?.name) {
                     this.editNode.name = this.editNode.data.name;
                 }
+            } else if (this.dialogType == 'delete') {
+                this.$emit('deleteAgent', this.editNode)
             }
             this.$emit('updateNode', this.dialogType, this.editNode)
         },

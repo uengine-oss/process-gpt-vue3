@@ -47,6 +47,7 @@
                 :editNode="editNode"
                 @updateNode="updateNode"
                 @closeDialog="closeEditDialog"
+                @deleteAgent="handleDeleteAgentFromEdit"
             ></OrganizationEditDialog>
         </v-dialog>
     </div>
@@ -410,7 +411,7 @@ export default {
         },
         // 원본 데이터에서 노드를 찾는 메서드 (변환 전 데이터 사용)
         findOriginalNodeById(node, id) {
-            if (node.id === id) {
+            if (node.id == id || (node.data && node.data.id == id)) {
                 return node;
             }
             if (node.children) {
@@ -444,12 +445,20 @@ export default {
                         if (this.showBadgesDiagram && this.selectedAgent && this.selectedAgent.id === foundNode.data.id) {
                             this.closeBadgesDiagram();
                         } else {
-                            // users 테이블에서 최신 데이터 가져와서 AgentBadgesDiagram에 전달
-                            const latestAgentData = this.getUserData(foundNode.data);
+                            // users 테이블에서 최신 데이터 + 노드 데이터 병합 (노드 우선 → id/name 보장)
+                            const nodeData = foundNode.data || foundNode;
+                            const latestAgentData = this.getUserData(nodeData);
+                            const id = nodeData.id ?? foundNode.id ?? latestAgentData.id;
+                            const name = nodeData.name ?? nodeData.username ?? foundNode.name ?? latestAgentData.name ?? latestAgentData.username ?? 'Agent';
+                            const img = nodeData.img ?? nodeData.profile ?? latestAgentData.profile ?? latestAgentData.img;
+                            const profile = nodeData.profile ?? nodeData.img ?? latestAgentData.profile ?? latestAgentData.img;
                             this.selectedAgent = {
-                                ...foundNode.data,
                                 ...latestAgentData,
-                                id: foundNode.data.id // ID는 유지
+                                ...nodeData,
+                                id,
+                                name: String(name || 'Agent').trim() || 'Agent',
+                                img: img || '/images/chat-icon.png',
+                                profile: profile || img || '/images/chat-icon.png'
                             };
                             this.showBadgesDiagram = true;
                         }
@@ -473,6 +482,53 @@ export default {
         closeBadgesDiagram() {
             this.showBadgesDiagram = false;
             this.selectedAgent = null;
+        },
+        /**
+         * 조직도에서 지정한 에이전트 노드를 선택하고 AgentBadgesDiagram 표시 (부모에서 호출)
+         * @param {string} agentId - 선택할 에이전트 id
+         * @param {Object} [fallbackData] - 노드를 아직 찾지 못할 때 사용할 에이전트 데이터 (예: 방금 추가한 newAgent)
+         */
+        async selectAgentById(agentId, fallbackData = null) {
+            await this.loadUserList();
+
+            const foundNode = this.findOriginalNodeById(this.node, agentId);
+            const nodeData = (foundNode && (foundNode.data || foundNode)) || fallbackData;
+            const isAgent = foundNode?.data?.isAgent ?? fallbackData?.isAgent ?? true;
+
+            if (!nodeData || !isAgent) return;
+
+            if (this.previousTarget) {
+                const previousTextBox = this.previousTarget.querySelector('.node-content-text-box');
+                if (previousTextBox) previousTextBox.style.backgroundColor = '';
+            }
+
+            if (foundNode) this.editNode = foundNode;
+
+            const latestAgentData = this.getUserData(nodeData);
+            // 노드(래퍼·data·fallback) id/name 우선 보장 → AgentBadgesDiagram 이름·설정 버튼 노출
+            const id = nodeData.id ?? foundNode?.id ?? latestAgentData.id ?? agentId;
+            const name = nodeData.name ?? nodeData.username ?? foundNode?.name ?? latestAgentData.name ?? latestAgentData.username ?? 'Agent';
+            const img = nodeData.img ?? nodeData.profile ?? latestAgentData.profile ?? latestAgentData.img;
+            const profile = nodeData.profile ?? nodeData.img ?? latestAgentData.profile ?? latestAgentData.img;
+            this.selectedAgent = {
+                ...latestAgentData,
+                ...(typeof nodeData === 'object' && nodeData !== null ? nodeData : {}),
+                id,
+                name: String(name || 'Agent').trim() || 'Agent',
+                img: img || '/images/chat-icon.png',
+                profile: profile || img || '/images/chat-icon.png'
+            };
+            this.showBadgesDiagram = true;
+
+            const idStr = String(agentId);
+            this.$nextTick(() => {
+                const el = document.getElementById(idStr);
+                if (el) {
+                    const textBox = el.querySelector('.node-content-text-box');
+                    if (textBox) textBox.style.backgroundColor = 'rgba(var(--v-theme-primary), 0.20)';
+                    this.previousTarget = el;
+                }
+            });
         },
         handleAgentEditFromBadges(agentData) {
             // AgentBadgesDiagram에서 수정 버튼 클릭 시 호출
@@ -533,6 +589,10 @@ export default {
         closeEditDialog() {
             this.editDialog = false;
             this.editDialogType = '';
+        },
+        /** 에이전트 편집 다이얼로그에서 삭제 확인 시 부모로 전달 */
+        handleDeleteAgentFromEdit(editNode) {
+            this.$emit('deleteAgent', editNode);
         },
         
         async updateNode(type, editNode) {
@@ -619,7 +679,7 @@ export default {
 }
 
 #tree {
-    width: 100% !important;
+    width: 98% !important;
     height: 99% !important;
 }
 

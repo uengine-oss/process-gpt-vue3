@@ -50,122 +50,114 @@
         </v-dialog>
 
         <!-- 선택된 팀에 멤버 추가 -->
-        <div v-if="selectedTeam">            
-            <v-card-title class="pa-4 pt-0">
+        <div v-if="selectedTeam">
+            <!-- 대탭: 팀원추가 | 에이전트 생성 -->
+            <v-tabs v-model="mainTab" density="compact" color="primary" class="mx-4 mb-2">
+                <v-tab
+                    v-for="item in mainTabItems"
+                    :key="item.value"
+                    :value="item.value"
+                >
+                    {{ $t(item.text) }}
+                </v-tab>
+            </v-tabs>
+
+            <!-- 에이전트 생성 하위탭 -->
+            <div v-if="mainTab === 'agent'" class="px-4 pb-2"
+                style="border-bottom: 1px solid #e0e0e0;"
+            >
                 <div class="d-flex flex-wrap">
-                    <v-btn
-                        v-for="item in tabItems"
+                    <v-btn v-for="item in agentSubTabItems"
+                        class="mr-2"
                         :key="item.value"
                         variant="text"
                         color="default"
-                        size="small"
-                        @click="tab = item.value"
-                        :class="{ 'selected-tab': tab === item.value }"
+                        size="x-small"
+                        @click="agentSubTab = item.value"
+                        :class="{ 'selected-sub-tab': agentSubTab === item.value }"
                     >
                         {{ $t(item.text) }}
                     </v-btn>
                 </div>
-            </v-card-title>
-            <v-card-text class="pa-4 pb-0"
-                style="max-height: calc(100vh - 374px);
-                overflow: auto;"
+            </div>
+
+            <v-card-text class="pa-4 pb-0 pt-0"
+                :style="{
+                    'max-height': 'calc(100vh - 384px)',
+                    'overflow': 'auto',
+                    'border-bottom': mainTab === 'agent' ? '1px solid #e0e0e0' : 'none'
+                }"
             >
-                <v-window v-model="tab">
-                    <v-window-item value="user">
-                        <v-autocomplete
-                            v-if="!isNewUser"
-                            v-model="selectedList" 
-                            :items="teamMembers" 
-                            item-title="data.name" 
-                            :item-value="item => item" 
-                            :label="$t('organizationChartDefinition.selectTeamMember')" 
-                            variant="outlined"
-                            class="my-2"
-                            color="blue-grey-lighten-2" 
-                            multiple 
-                            chips 
-                            closable-chips 
-                            small-chips
-                        >
-                            <template v-slot:chip="{ props, item }">
-                                <v-chip v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" :text="item.raw.data.name"></v-chip>
-                                <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.data.name"></v-chip>
-                            </template>
-                            <template v-slot:item="{ props, item }">
-                                <v-list-item v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" 
-                                    :title="item.raw.data.name" :subtitle="item.raw.data.email"></v-list-item>
-                                <v-list-item v-else v-bind="props" :title="item.raw.data.name" :subtitle="item.raw.data.email">
-                                    <template v-slot:prepend>
-                                        <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
-                                    </template>
-                                </v-list-item>
-                            </template>
-                        </v-autocomplete>
+                <!-- 팀원 추가 탭 -->
+                <div v-if="mainTab === 'user'">
+                    <v-autocomplete
+                        v-if="!isNewUser"
+                        v-model="selectedList" 
+                        :items="teamMembers" 
+                        item-title="data.name" 
+                        :item-value="item => item" 
+                        :label="$t('organizationChartDefinition.selectTeamMember')" 
+                        variant="outlined"
+                        class="my-2"
+                        color="blue-grey-lighten-2" 
+                        multiple 
+                        chips 
+                        closable-chips 
+                        small-chips
+                        hide-details
+                    >
+                        <template v-slot:chip="{ props, item }">
+                            <v-chip v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" :text="item.raw.data.name"></v-chip>
+                            <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.data.name"></v-chip>
+                        </template>
+                        <template v-slot:item="{ props, item }">
+                            <v-list-item v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" 
+                                :title="item.raw.data.name" :subtitle="item.raw.data.email"></v-list-item>
+                            <v-list-item v-else v-bind="props" :title="item.raw.data.name" :subtitle="item.raw.data.email">
+                                <template v-slot:prepend>
+                                    <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
+                                </template>
+                            </v-list-item>
+                        </template>
+                    </v-autocomplete>
+                </div>
 
-                        <v-checkbox 
-                            v-model="isNewUser" 
-                            :label="$t('organizationChartDefinition.addNewUser')"
-                            color="primary" 
-                            density="compact"
-                        ></v-checkbox>
+                <!-- 에이전트 생성 탭 -->
+                <div v-if="mainTab === 'agent'">
+                    <v-window v-model="agentSubTab">
+                        <v-window-item value="agent">
+                            <AgentField v-model="newAgent"
+                                class="agent-field-dialog-contents"
+                                :nameRules="nameRules"
+                                :teamInfo="selectedTeam"
+                                :dialogReset="dialogReset"
+                            />
+                        </v-window-item>
 
-                        <div v-if="isNewUser">
-                            <v-alert icon="$info" color="primary" variant="outlined" density="compact" class="mb-4">
-                                <div class="text-body-1">{{ $t('organizationChartDefinition.addNewUserExplanation') }}</div>
-                            </v-alert>
+                        <v-window-item value="a2a">
+                            <AgentField v-model="newAgent"
+                                class="agent-field-dialog-contents"
+                                :nameRules="nameRules"
+                                :teamInfo="selectedTeam"
+                                :type="agentSubTab"
+                                :dialogReset="dialogReset"
+                            />
+                        </v-window-item>
 
-                            <v-text-field 
-                                v-model="newUser.name" 
-                                :label="$t('organizationChartDefinition.userName')" 
-                                :rules="nameRules"
-                                class="mb-2"
-                            ></v-text-field>
-                            <v-text-field 
-                                v-model="newUser.email" 
-                                :label="$t('organizationChartDefinition.userEmail')" 
-                                :rules="emailRules" 
-                                class="mb-2"
-                            ></v-text-field>
-                            <v-text-field 
-                                v-model="newUser.role" 
-                                :label="$t('organizationChartDefinition.role')" 
-                                class="mb-2"
-                            ></v-text-field>
-                        </div>
-                    </v-window-item>
-
-                    <v-window-item value="agent">
-                        <AgentField v-model="newAgent"
-                            class="agent-field-dialog-contents"
-                            :nameRules="nameRules"
-                            :teamInfo="selectedTeam"
-                            :dialogReset="dialogReset"
-                        />
-                    </v-window-item>
-
-                    <v-window-item value="a2a">
-                        <AgentField v-model="newAgent"
-                            class="agent-field-dialog-contents"
-                            :nameRules="nameRules"
-                            :teamInfo="selectedTeam"
-                            :type="tab"
-                            :dialogReset="dialogReset"
-                        />
-                    </v-window-item>
-
-                    <v-window-item value="pgagent">
-                        <AgentField v-model="newAgent"
-                            class="agent-field-dialog-contents"
-                            :nameRules="nameRules"
-                            :teamInfo="selectedTeam"
-                            :type="tab"
-                            :dialogReset="dialogReset"
-                        />
-                    </v-window-item>
-                </v-window>
+                        <v-window-item value="pgagent">
+                            <AgentField v-model="newAgent"
+                                class="agent-field-dialog-contents"
+                                :nameRules="nameRules"
+                                :teamInfo="selectedTeam"
+                                :type="agentSubTab"
+                                :dialogReset="dialogReset"
+                            />
+                        </v-window-item>
+                    </v-window>
+                </div>
             </v-card-text>
 
-            <v-row class="ma-0 pa-4 pt-2">
+            <v-row class="ma-0 pa-4">
                 <v-spacer></v-spacer>
                 <v-btn @click="save"
                     :disabled="!isValid"
@@ -204,7 +196,8 @@ export default {
         },
     },
     data: () => ({
-        tab: 'user',
+        mainTab: 'user',
+        agentSubTab: 'agent',
         selectedTeam: null,
         teamDialog: false,
         teamDialogType: 'add',
@@ -220,7 +213,7 @@ export default {
                 type: 'edit',
                 label: 'organizationChartDefinition.editTeam',
                 icon: 'mdi-pencil',
-                color: 'secondary',
+                color: 'grey',
                 disabled: true
             },
             {
@@ -231,18 +224,23 @@ export default {
                 disabled: false
             }
         ],
-        tabItems: [
+        mainTabItems: [
             {
                 text: 'organizationChartDefinition.addNewUser',
                 value: 'user',
             },
+            {
+                text: 'organizationChartDefinition.createAgentTab',
+                value: 'agent',
+            },
+        ],
+        agentSubTabItems: [
             {
                 text: 'organizationChartDefinition.addNewAgent',
                 value: 'agent',
             },
             {
                 text: 'organizationChartDefinition.addNewA2A',
-                // text: 'A2A 에이전트 추가',
                 value: 'a2a',
             },
             {
@@ -304,7 +302,7 @@ export default {
             ];
         },
         isValid() {
-            if (this.tab == 'user') {
+            if (this.mainTab == 'user') {
                 if (this.isNewUser) {
                     return this.newUser && 
                            this.emailRules.every(rule => rule(this.newUser.email) === true) && 
@@ -323,7 +321,8 @@ export default {
             handler(newVal) {
                 if (newVal && newVal.id) {
                     this.selectedTeam = newVal;
-                    this.updateTeamData();
+                    // teamInfo 변경 시에도 selectTeam을 호출하여 teamMembers 업데이트
+                    this.selectTeam();
                 }
             }
         },
@@ -335,8 +334,19 @@ export default {
                     const teams = newVal.children.filter(child => child.data && child.data.isTeam);
                     if (teams.length > 0) {
                         this.selectedTeam = teams[0];
-                        this.updateTeamData();
+                        // 초기 선택 시에도 selectTeam을 호출하여 teamMembers 업데이트
+                        this.selectTeam();
                     }
+                }
+            }
+        },
+        userList: {
+            immediate: true,
+            deep: true,
+            handler() {
+                // userList가 변경되면 teamMembers도 업데이트
+                if (this.selectedTeam) {
+                    this.updateTeamData();
                 }
             }
         }
@@ -347,7 +357,14 @@ export default {
         } else if (this.teamList && this.teamList.length > 0) {
             this.selectedTeam = this.teamList[0];
         }
-        this.updateTeamData();
+        // 초기 선택 시에도 selectTeam을 호출하여 teamMembers 업데이트
+        if (this.selectedTeam) {
+            this.selectTeam();
+        }
+        this.EventBus.on('agentAdded', this.resetAgentForm);
+    },
+    beforeUnmount() {
+        this.EventBus.off('agentAdded', this.resetAgentForm);
     },
     methods: {
         openTeamDialog(type) {
@@ -456,12 +473,34 @@ export default {
                 this.dialogReset = false;
             });
         },
+        resetAgentForm() {
+            // 에이전트 추가 후 좌측 입력 필드 초기화 (새 에이전트 연속 생성 가능)
+            Object.assign(this.newAgent, {
+                id: '',
+                name: '',
+                role: '',
+                goal: '',
+                persona: '',
+                endpoint: '',
+                description: '',
+                tools: '',
+                alias: '',
+                type: 'agent'
+            });
+            this.newAgent.pid = this.selectedTeam ? this.selectedTeam.id : '';
+            this.newAgent.img = '/images/chat-icon.png';
+            this.newAgent.isAgent = true;
+            this.dialogReset = true;
+            this.$nextTick(() => {
+                this.dialogReset = false;
+            });
+        },
         save() {
             if (!this.selectedTeam) {
                 return;
             }
 
-            if (this.tab == 'user') {
+            if (this.mainTab == 'user') {
                 this.selectedList.map(member => {
                     if (member && member.data) {
                         member.data.id = member.id
@@ -474,7 +513,7 @@ export default {
                     this.$emit('addUser', this.selectedTeam, this.selectedList, null)
                 }
             } else {
-                this.newAgent.type = this.tab
+                this.newAgent.type = this.agentSubTab
                 this.$emit('addAgent', this.selectedTeam, this.newAgent)
             }
         },
@@ -488,6 +527,11 @@ export default {
 <style scoped>
 .selected-tab {
     background: #808080 !important;
+    color: white !important;
+}
+
+.selected-sub-tab {
+    background: #b0b0b0 !important;
     color: white !important;
 }
 

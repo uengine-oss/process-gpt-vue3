@@ -2,7 +2,7 @@
     <!-- ---------------------------------------------- -->
     <!-- notifications DD -->
     <!-- ---------------------------------------------- -->
-    <v-menu :close-on-content-click="true" class="notification_popup">
+    <v-menu v-model="menuOpen" :close-on-content-click="true" class="notification_popup">
         <template v-slot:activator="{ props }">
             <v-btn icon flat v-bind="props" size="small" @click="isConfirm = true">
                 <div class="position-realtive">
@@ -56,12 +56,15 @@
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
+import { useDefaultSetting } from '@/stores/defaultSetting';
 const backend = BackendFactory.createBackend();
 
 export default {
     data: () => ({
+        menuOpen: false,
         isConfirm: false,
         notifications: [],
+        defaultSetting: useDefaultSetting(),
     }),
     computed: {
         notiCount() {
@@ -97,13 +100,55 @@ export default {
         async fetchNotifications() {
             this.notifications = await backend.fetchNotifications();
         },
+        getChatRoomIdFromUrl(url) {
+            if (!url || typeof url !== 'string') return null;
+            try {
+                const parsed = new URL(url, window.location.origin);
+                const id = parsed.searchParams.get('id');
+                return id ? decodeURIComponent(id) : null;
+            } catch (e) {
+                const match = url.match(/[?&]id=([^&]+)/);
+                return match ? decodeURIComponent(match[1]) : null;
+            }
+        },
         async checkNotification(value) {
+            // 클릭 순간 즉시 닫기(UX)
+            this.menuOpen = false;
             if (value.type == 'workitem') {
                 this.$router.push('/todolist');
             } else {
-                this.$router.push(value.url);
+                // chat 알림은 통합 채팅 화면(/chat)로 라우팅
+                if (value.type === 'chat') {
+                    const roomId = this.getChatRoomIdFromUrl(value.url) || value.url?.replace('/chats?id=', '');
+                    if (roomId) {
+                        // 가능하면 로컬 캐시(chatRoomIndex) 사용 (불필요한 재조회 방지)
+                        let room = null;
+                        try {
+                            const idx = JSON.parse(localStorage.getItem('chatRoomIndex') || '{}');
+                            room = idx && idx[roomId] ? idx[roomId] : null;
+                        } catch (e) {}
+                        if (!room) {
+                            room = await backend.getChatRoom(roomId);
+                        }
+                        if (room && room.id) {
+                            await this.$router.push({ path: '/chat', query: { roomId: room.id }, hash: '' });
+                            window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                                detail: { type: 'chat', value: false, id: room.id }
+                            }));
+                        } else {
+                            // 방 조회 실패 시 기존 url로 fallback
+                            this.$router.push(value.url);
+                        }
+                    } else {
+                        this.$router.push(value.url);
+                    }
+                } else {
+                    this.$router.push(value.url);
+                }
             }
             await backend.setNotifications(value);
+            // 즉시 UI에서 제거(체감 개선) 후 재조회
+            this.notifications = this.notifications.filter(n => n.id !== value.id);
             this.fetchNotifications();
         }
     }

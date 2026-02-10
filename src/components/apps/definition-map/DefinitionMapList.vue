@@ -3,14 +3,15 @@
         <draggable v-if="enableEdit" class="v-row dragArea list-group" :list="value.mega_proc_list" :animation="200"
             ghost-class="ghost-card" group="megaProcess" :draggable="'.draggable-item'">
             <transition-group>
-                <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
+                <v-col v-for="item in filteredValue.mega_proc_list" :key="item.id" class="cursor-pointer draggable-item"
                     cols="12" md="3" sm="6"
                     :min-width="200"
+                    v-show="!visibleMegaIds || visibleMegaIds.has(item.id)"
                 >
-                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                    <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
                 </v-col>
-                <!-- 실제 카드가 들어가야 할 위치 -->
-                <v-col class="cursor-pointer" cols="12" md="3" sm="3">
+                <!-- MegaProcess 추가 카드 -->
+                <v-col v-if="selectedDomain || isPalUengine" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
                     <v-card v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
                         class="cp-add-mega"
@@ -39,8 +40,10 @@
             </transition-group>
         </draggable>
         <v-row v-else>
-            <v-col v-for="item in value.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="3" sm="6">
-                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+            <v-col v-for="item in filteredValue.mega_proc_list" :key="item.id" class="cursor-pointer" cols="12" md="3" sm="6"
+                v-show="!visibleMegaIds || visibleMegaIds.has(item.id)"
+            >
+                <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
             </v-col>
         </v-row>
         <v-dialog v-model="permissionDialogStatus" max-width="500" persistent>
@@ -70,7 +73,73 @@ export default {
     props: {
         value: Object,
         enableEdit: Boolean,
-        isExecutionByProject: Boolean
+        isExecutionByProject: Boolean,
+        domains: Array,
+        selectedDomain: String,
+        filteredProcDefIds: Array,  // null = no filter, [] = filter active but no matches
+        searchQuery: {
+            type: String,
+            default: ''
+        }
+    },
+    computed: {
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
+        // 검색어로 필터링된 값 반환
+        filteredValue() {
+            if (!this.searchQuery || !this.searchQuery.trim()) {
+                return this.value;
+            }
+            
+            const query = this.searchQuery.toLowerCase().trim();
+            const filtered = JSON.parse(JSON.stringify(this.value)); // deep copy
+            
+            if (!filtered || !filtered.mega_proc_list) {
+                return filtered;
+            }
+            
+            // mega_proc_list 필터링
+            filtered.mega_proc_list = filtered.mega_proc_list.map(megaProc => {
+                const filteredMajorList = [];
+                
+                if (megaProc.major_proc_list) {
+                    megaProc.major_proc_list.forEach(majorProc => {
+                        if (majorProc.sub_proc_list) {
+                            // sub_proc_list에서 검색어가 포함된 프로세스만 필터링
+                            const filteredSubList = majorProc.sub_proc_list.filter(subProc => {
+                                return subProc.name && subProc.name.toLowerCase().includes(query);
+                            });
+                            
+                            // 필터링된 sub_proc_list가 있으면 majorProc 유지
+                            if (filteredSubList.length > 0) {
+                                filteredMajorList.push({
+                                    ...majorProc,
+                                    sub_proc_list: filteredSubList
+                                });
+                            }
+                        }
+                    });
+                }
+                
+                // 필터링된 major_proc_list가 있으면 megaProc 유지
+                if (filteredMajorList.length > 0) {
+                    return {
+                        ...megaProc,
+                        major_proc_list: filteredMajorList
+                    };
+                }
+                return null;
+            }).filter(Boolean); // null 제거
+            
+            return filtered;
+        },
+        // metrics 구조 상 모든 Domain은 같은 MegaProcess를 가지고 있어야함
+        // 모든 MegaProcess를 항상 표시
+        visibleMegaIds() {
+            // 항상 null 반환하여 모든 MegaProcess 표시
+            return null;
+        }
     },
     data: () => ({
         processType: '',
@@ -99,7 +168,7 @@ export default {
                 item => item.name.toLowerCase() === newProcess.name.toLowerCase()
             );
             if (isDuplicate) {
-                alert(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
+                this.$toast.error(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
                 return;
             }
             

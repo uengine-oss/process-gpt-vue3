@@ -51,6 +51,7 @@
                         :userList="userList"
                         @updateNode="updateNode"
                         @addMember="openAddDialog"
+                        @deleteAgent="handleDeleteAgentFromChart"
                         ref="organizationChart"
                 ></OrganizationChart>
             </template>
@@ -125,9 +126,11 @@ export default {
         }
 
         this.EventBus.on('user-deleted', this.handleUserDeleted);
+        this.EventBus.on('agentDeleted', this.handleAgentDeleted);
     },
     beforeUnmount() {
         this.EventBus.off('user-deleted', this.handleUserDeleted);
+        this.EventBus.off('agentDeleted', this.handleAgentDeleted);
     },
     computed: {
         isMobile() {
@@ -241,7 +244,7 @@ export default {
                     if (this.organizationChartId) {
                         putObj.uuid = this.organizationChartId;
                     }
-                    await this.putObject("configuration", putObj);
+                    await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
                 }
 
                 const newMessage = this.messages[this.messages.length - 1];
@@ -275,10 +278,11 @@ export default {
                     }
                     const result = await me.backend.createUser(userInfo);
                     if (!result.error) {
+                        const newUserId = result.user.id;
                         me.editNode.children.push({
-                            id: result.user.id,
+                            id: newUserId,
                             data: {
-                                id: result.user.id,
+                                id: newUserId,
                                 img: "/images/defaultUser.png",
                                 name: user.name,
                                 email: user.email,
@@ -287,6 +291,14 @@ export default {
                             },
                             name: user.name,
                         });
+
+                        // 새 사용자의 department_id 설정
+                        const teamId = me.editNode?.id;
+                        const teamName = me.editNode?.data?.name || me.editNode?.name;
+                        if (teamId && newUserId) {
+                            await me.updateUsersDepartment([{ id: newUserId }], teamId, teamName);
+                        }
+
                         await me.updateNode();
                         me.$refs.organizationChart.drawTree();
                     }
@@ -305,7 +317,7 @@ export default {
             if (this.organizationChartId) {
                 putObj.uuid = this.organizationChartId;
             }
-            await this.putObject("configuration", putObj);
+            await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
         },
         async updateTeam(type, editNode, newTeam) {
             console.log('OrganizationChartChat - updateTeam 호출');
@@ -350,9 +362,52 @@ export default {
             }
             if (addUserList && addUserList.length > 0) {
                 this.editNode.children = addUserList;
+
+                // 사용자들의 department_id 업데이트
+                const teamId = selectedTeam.id;
+                const teamName = selectedTeam.data?.name || selectedTeam.name;
+                await this.updateUsersDepartment(addUserList, teamId, teamName);
             }
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
+        },
+
+        /**
+         * 사용자들의 department_id를 업데이트
+         * @param {Array} userList - 업데이트할 사용자 목록
+         * @param {string} departmentId - 부서(팀) ID
+         * @param {string} departmentName - 부서(팀) 이름
+         */
+        async updateUsersDepartment(userList, departmentId, departmentName) {
+            if (!userList || userList.length === 0) return;
+
+            try {
+                const supabase = window.$supabase;
+                if (!supabase) return;
+
+                // 각 사용자의 department_id 업데이트
+                const userIds = userList
+                    .filter(u => u.id && !u.data?.isAgent && !u.isAgent)
+                    .map(u => u.id);
+
+                if (userIds.length > 0) {
+                    const { error } = await supabase
+                        .from('users')
+                        .update({
+                            department_id: departmentId,
+                            department_name: departmentName
+                        })
+                        .in('id', userIds);
+
+                    if (error) {
+                        console.error('[OrganizationChartChat] updateUsersDepartment error:', error);
+                    } else {
+                        console.log(`[OrganizationChartChat] Updated ${userIds.length} users with department: ${departmentName}`);
+                    }
+                }
+            } catch (e) {
+                console.error('[OrganizationChartChat] updateUsersDepartment error:', e);
+            }
         },
         async addAgent(selectedTeam, newAgent) {
             this.editNode = selectedTeam;
@@ -360,14 +415,45 @@ export default {
                 id: newAgent.id,
                 name: newAgent.name,
                 data: newAgent
-            }
+            };
             this.editNode.children.push(agent);
+
+            // 1) 에이전트 정보를 DB(users 테이블)에 저장
             await this.backend.putAgent(newAgent);
+
+            // 2) 조직도 및 UI 갱신
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
-            
-            // AgentList 실시간 업데이트를 위한 이벤트 발생
+
+            // 3) 새로 추가한 노드 선택 → AgentBadgesDiagram에 해당 에이전트 표시 (fallback으로 newAgent 전달해 이름·설정 버튼 보장)
+            this.$nextTick(() => {
+                this.$nextTick(async () => {
+                    await this.$refs.organizationChart.selectAgentById(newAgent.id, newAgent);
+                });
+            });
+
+            // 4) AgentList 실시간 업데이트를 위한 이벤트 발생 (좌측 폼 초기화 트리거)
             this.EventBus.emit('agentAdded', newAgent);
+
+            // 5) 조직도 차트 갱신 후 에이전트 초기 지식 셋업 (상태는 뱃지 다이어그램에 표시)
+            await this.setupAgentKnowledge(newAgent);
+        },
+        async setupAgentKnowledge(newAgent) {
+            const payload = {
+                agent_id: newAgent.id,
+                goal: newAgent.goal || null,
+                persona: newAgent.persona || null
+            };
+
+            this.EventBus.emit('agentKnowledgeSetupStatus', { agentId: newAgent.id, status: 'pending' });
+
+            try {
+                await this.backend.setupAgentKnowledge(payload);
+                this.EventBus.emit('agentKnowledgeSetupStatus', { agentId: newAgent.id, status: 'success' });
+            } catch (error) {
+                console.error('[OrganizationChartChat] setup-agent-knowledge 호출 실패:', error);
+                this.EventBus.emit('agentKnowledgeSetupStatus', { agentId: newAgent.id, status: 'error' });
+            }
         },
         deleteNode(obj, children) {
             if (children && children.some(item => item.id == obj.id)) {
@@ -387,6 +473,39 @@ export default {
                 this.$refs.organizationChart.loadUserList();
                 this.$refs.organizationChart.drawTree();
             }
+        },
+        /** 에이전트 삭제 시 조직도에서도 노드 제거 (다른 페이지에서 삭제 시 동기화) */
+        async handleAgentDeleted(payload) {
+            const id = payload?.id;
+            if (!id || !this.organizationChart?.children) return;
+            this.organizationChart.children = this.deleteNode({ id }, this.organizationChart.children);
+            await this.updateNode();
+            if (this.$refs.organizationChart) {
+                this.$refs.organizationChart.loadUserList();
+                this.$refs.organizationChart.drawTree();
+            }
+        },
+        /** 조직도 편집 다이얼로그에서 에이전트 삭제 확인 시: DB 삭제 + 조직도에서 제거 */
+        async handleDeleteAgentFromChart(editNode) {
+            const id = editNode?.data?.id || editNode?.id;
+            if (!id) return;
+            const parent = this.findParentOfNode(this.organizationChart, id);
+            await this.deleteAgent(id, parent);
+            await this.updateNode();
+            if (this.$refs.organizationChart) {
+                this.$refs.organizationChart.loadUserList();
+                this.$refs.organizationChart.drawTree();
+            }
+        },
+        /** 트리에서 targetId를 가진 노드의 부모 노드 반환 */
+        findParentOfNode(node, targetId) {
+            if (!node?.children) return null;
+            for (const child of node.children) {
+                if (child.id === targetId) return node;
+                const found = this.findParentOfNode(child, targetId);
+                if (found) return found;
+            }
+            return null;
         }
     }
 }

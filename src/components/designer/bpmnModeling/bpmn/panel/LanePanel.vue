@@ -279,7 +279,6 @@ export default {
     },
     methods: {
         initialize() {
-            this.initialized = false;
             if(!this.copyUengineProperties.roleResolutionContext) {
                 // 기본값 설정 (DirectRoleResolutionContext)
                 this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
@@ -344,6 +343,23 @@ export default {
 
             // 변경사항 emit
             this.$emit('update:uengineProperties', this.copyUengineProperties);
+        },
+        extractTeamsFromOrgChart(node) {
+            const teams = [];
+            const traverse = (n) => {
+                if (!n) return;
+                if (n.data?.isTeam) {
+                    teams.push({
+                        id: n.id,
+                        name: n.data.name || n.id
+                    });
+                }
+                if (n.children) {
+                    n.children.forEach(child => traverse(child));
+                }
+            };
+            traverse(node);
+            return teams;
         },
         ensureKeyExists(obj, key, defaultValue) {
             console.log(key);

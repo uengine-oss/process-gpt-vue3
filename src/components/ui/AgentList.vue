@@ -28,7 +28,8 @@
                         <template v-slot:activator="{ props }">
                             <div 
                                 v-bind="props"
-                                class="agent-item"
+                                class="agent-item sidebar-list-hover-bg"
+                                :class="{ 'sidebar-list-hover-bg--active': isAgentActive(agent) }"
                                 @click="goToAgentChat(agent.id)"
                             >
                                 <div class="agent-avatar">
@@ -91,6 +92,12 @@ export default {
         this.EventBus.off('agentDeleted', this.handleAgentUpdate);
     },
     methods: {
+        isAgentActive(agent) {
+            if (!agent || !agent.id) return false;
+            const path = this.$route?.path || '';
+            const routeId = this.$route?.params?.id;
+            return path.startsWith('/agent-chat/') && routeId === agent.id;
+        },
         // 로컬스토리지에서 최근 열람 정보 가져오기
         getRecentlyViewedAgents() {
             try {
@@ -197,11 +204,8 @@ export default {
         },
         
         goToAgentChat(agentId) {
-            // 로컬스토리지에 최근 열람 정보 저장
+            // 로컬스토리지에 최근 열람 정보 저장 (화면 전환/새로고침 시 정렬에 사용)
             this.saveRecentlyViewedAgent(agentId);
-            
-            // 에이전트 목록 재정렬
-            this.agentList = this.sortAgentsByRecentlyViewed([...this.agentList]);
             
             // AgentBadgesDiagram.vue의 goToAgentChat 메서드와 동일한 방식으로 라우터 이동
             this.$router.push(`/agent-chat/${agentId}`);
@@ -307,11 +311,6 @@ export default {
     gap: 12px;
 }
 
-.agent-item:hover {
-    background-color: #e3f2fd;
-    /* background-color: rgba(103, 126, 234, 0.08); */
-    transform: translateX(2px);
-}
 
 .agent-avatar {
     width: 32px;

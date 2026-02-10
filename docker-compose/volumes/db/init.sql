@@ -82,6 +82,8 @@ CREATE TYPE event_type_enum AS ENUM (
   'crew_completed',
   'human_asked',
   'human_response',
+  'human_checked',
+  'task_working',
   'error'
 );
 -- 이벤트 상태 enum
@@ -138,6 +140,7 @@ create table if not exists public.users (
     agent_type text null,
     model text null,
     alias text null,
+    last_used_at timestamp with time zone null default now(),
     constraint users_pkey primary key (id, tenant_id),
     constraint users_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -316,6 +319,7 @@ create table if not exists public.todolist (
     output_url text null,
     rework_count integer null default 0,
     query text null,
+    feedback_status text null,
     constraint todolist_pkey primary key (id),
     constraint todolist_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
 ) tablespace pg_default;
@@ -325,6 +329,7 @@ create table if not exists public.chat_rooms (
     participants jsonb not null,
     message jsonb null,
     name text null,
+    primary_agent_id text null,
     tenant_id text null default public.tenant_id(),
     constraint chat_rooms_pkey primary key (id),
     constraint chat_rooms_tenant_id_fkey foreign key (tenant_id) references tenants (id) on update cascade on delete cascade
@@ -2660,3 +2665,137 @@ DROP POLICY IF EXISTS "work-assistant-configuration_select_policy" ON configurat
 CREATE POLICY "work-assistant-configuration_select_policy" ON configuration 
     FOR SELECT TO authenticated 
     USING (tenant_id = public.tenant_id());
+
+
+
+-- =============================================================================
+-- Agent Memory 테이블 (에이전틱 메모리)
+-- 벡터 검색을 통한 컨텍스트 관리
+-- =============================================================================
+
+-- 메모리 타입 enum
+DO $$ BEGIN
+    CREATE TYPE memory_type AS ENUM ('conversation', 'tool_result', 'fact', 'preference');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- main_chat_memory 테이블 (에이전트 메모리)
+CREATE TABLE IF NOT EXISTS main_chat_memory (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id TEXT NOT NULL,
+    user_uid UUID NOT NULL,
+    session_id TEXT,
+    memory_type memory_type NOT NULL DEFAULT 'conversation',
+    content TEXT NOT NULL,
+    embedding vector(1536),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    expires_at TIMESTAMPTZ,
+    
+    CONSTRAINT fk_main_chat_memory_user FOREIGN KEY (user_uid) REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_tenant_user ON main_chat_memory(tenant_id, user_uid);
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_session ON main_chat_memory(session_id);
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_type ON main_chat_memory(memory_type);
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_created ON main_chat_memory(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_expires ON main_chat_memory(expires_at) WHERE expires_at IS NOT NULL;
+
+-- 벡터 검색 인덱스 (IVFFlat)
+CREATE INDEX IF NOT EXISTS idx_main_chat_memory_embedding ON main_chat_memory 
+USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+
+-- RLS 활성화
+ALTER TABLE main_chat_memory ENABLE ROW LEVEL SECURITY;
+
+-- RLS 정책: 사용자는 자신의 메모리만 접근 가능
+DROP POLICY IF EXISTS "main_chat_memory_user_policy" ON main_chat_memory;
+CREATE POLICY "main_chat_memory_user_policy" ON main_chat_memory
+    FOR ALL TO authenticated
+    USING (user_uid = auth.uid() AND tenant_id = public.tenant_id());
+
+-- 만료된 메모리 자동 삭제 함수
+CREATE OR REPLACE FUNCTION delete_expired_main_chat_memory()
+RETURNS void AS $$
+BEGIN
+    DELETE FROM main_chat_memory WHERE expires_at IS NOT NULL AND expires_at < NOW();
+END;
+$$ LANGUAGE plpgsql;
+
+-- 벡터 유사도 검색 함수
+CREATE OR REPLACE FUNCTION search_main_chat_memory(
+    p_tenant_id TEXT,
+    p_user_uid UUID,
+    p_embedding vector(1536),
+    p_limit INT DEFAULT 5,
+    p_memory_types memory_type[] DEFAULT NULL,
+    p_session_id TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+    id UUID,
+    memory_type memory_type,
+    content TEXT,
+    metadata JSONB,
+    similarity FLOAT,
+    created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        m.id,
+        m.memory_type,
+        m.content,
+        m.metadata,
+        1 - (m.embedding <=> p_embedding) AS similarity,
+        m.created_at
+    FROM main_chat_memory m
+    WHERE m.tenant_id = p_tenant_id
+      AND m.user_uid = p_user_uid
+      AND (m.expires_at IS NULL OR m.expires_at > NOW())
+      AND (p_memory_types IS NULL OR m.memory_type = ANY(p_memory_types))
+      AND (p_session_id IS NULL OR m.session_id = p_session_id)
+      AND m.embedding IS NOT NULL
+    ORDER BY m.embedding <=> p_embedding
+    LIMIT p_limit;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- ==========================================
+-- ProcessGPT SDK 이벤트 벌크 저장 함수
+-- ==========================================
+-- record_events_bulk: 여러 이벤트를 한 번에 저장하는 함수
+-- ProcessGPT Agent SDK에서 이벤트 버퍼 플러시 시 사용
+CREATE OR REPLACE FUNCTION public.record_events_bulk(p_events jsonb)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  INSERT INTO events (id, job_id, todo_id, proc_inst_id, crew_type, event_type, data, status)
+  SELECT COALESCE((e->>'id')::uuid, gen_random_uuid()),
+         e->>'job_id',
+         e->>'todo_id',
+         e->>'proc_inst_id',
+         e->>'crew_type',
+         (e->>'event_type')::public.event_type_enum,
+         (e->'data')::jsonb,
+         NULLIF(e->>'status','')::public.event_status
+    FROM jsonb_array_elements(COALESCE(p_events, '[]'::jsonb)) AS e;
+END;
+$$;
+
+
+-- Agent Skills 테이블 생성
+create table if not exists public.agent_skills (
+  user_id uuid not null,
+  tenant_id text not null,
+  skill_name text not null,
+  created_at timestamptz null default now(),
+  constraint agent_skills_pkey primary key (user_id, tenant_id, skill_name),
+  constraint agent_skills_user_fkey foreign key (user_id, tenant_id)
+    references public.users (id, tenant_id) on update cascade on delete cascade
+) tablespace pg_default;
+
+create index if not exists idx_agent_skills_tenant_skill
+  on public.agent_skills (tenant_id, skill_name);

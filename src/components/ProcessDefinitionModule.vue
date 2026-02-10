@@ -22,9 +22,9 @@ export default {
         bpmn: null,
         definitionChangeCount: 0,
         projectName: null,
-        disableChat: false,
-        isViewMode: false,
-        lock: false,
+        disableChat: true,
+        isViewMode: true,
+        lock: true,
         loading: false,
         isChanged: false,
         generateFormTask: null,
@@ -689,9 +689,11 @@ export default {
                     };
                     this.$emit("modelCreated", processInfo);
 
-                    me.disableChat = true;
-                    me.isViewMode = true;
-                    me.lock = true; // 잠금처리 ( 수정 불가 )
+                    if (window.$mode !== 'uEngine') {
+                        me.disableChat = true;
+                        me.isViewMode = true;
+                        me.lock = true; // 잠금처리 ( 수정 불가 )
+                    }
                     me.definitionChangeCount++;
 
                     me.loading = false;
@@ -1070,13 +1072,17 @@ export default {
                     task.orchestration = '';
                     task.attachments = [];
                     task.inputData = [];
+                    task.outputData = [];
                     task.tool = 'formHandler:defaultform';
+                    task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
+                    if (window.$pal && window.$mode === 'uEngine') {
+                        task.uuid = activity.id;
+                    }
 
                     task.role = normalizeRole(resolveRole(activity.id, lanesForRole, parentLanes));
 
                     const propsJson = getPropsJson(activity) || {};
                     if (propsJson) {
-                        // task.properties = activity['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}';
                         if (Object.prototype.hasOwnProperty.call(propsJson, 'role')) {
                             task.role = normalizeRole(propsJson.role) || task.role;
                         }
@@ -1089,6 +1095,7 @@ export default {
                         task.orchestration = propsJson.orchestration || task.orchestration;
                         task.attachments = propsJson.attachments || task.attachments;
                         task.inputData = propsJson.inputData || task.inputData;
+                        task.outputData = propsJson.outputData || task.outputData;
                         task.tool = propsJson.tool || task.tool;
                     }
                     
@@ -1137,19 +1144,24 @@ export default {
                     return (lanesArr || []).map((lane) => {
                         let endpoint = '';
                         let defaultEndpoint = '';
-                        if (!lane.endpoint) {
                         const laneJson = getPropsJson(lane);
-                        if (laneJson?.roleResolutionContext) {
-                            if (laneJson.roleResolutionContext.endpoint) {
-                            endpoint = laneJson.roleResolutionContext.endpoint;
-                            }
-                            if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                        if (laneJson?.roleResolutionContext?._type === 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
+                            endpoint = 'external_customer';
                             defaultEndpoint = endpoint;
-                            }
-                        }
                         } else {
-                            endpoint = lane.endpoint;
-                            defaultEndpoint = endpoint;
+                            if (!lane.endpoint) {
+                                if (laneJson?.roleResolutionContext) {
+                                    if (laneJson.roleResolutionContext.endpoint) {
+                                        endpoint = laneJson.roleResolutionContext.endpoint;
+                                    }
+                                    if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                                        defaultEndpoint = endpoint;
+                                    }
+                                }
+                            } else {
+                                endpoint = lane.endpoint;
+                                defaultEndpoint = endpoint;
+                            }
                         }
                         function isUUID(uuid) {
                             const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1159,14 +1171,14 @@ export default {
                             if (Array.isArray(endpoint)) {
                                 endpoint = endpoint.filter((item) => isUUID(item));
                             } else {
-                                endpoint = isUUID(endpoint) ? endpoint : '';
+                                endpoint = isUUID(endpoint) || endpoint == 'external_customer' ? endpoint : '';
                             }
                         }
                         if (defaultEndpoint && defaultEndpoint.length > 0) {
                             if (Array.isArray(defaultEndpoint)) {
                                 defaultEndpoint = defaultEndpoint.filter((item) => isUUID(item));
                             } else {
-                                defaultEndpoint = isUUID(defaultEndpoint) ? defaultEndpoint : '';
+                                defaultEndpoint = isUUID(defaultEndpoint) || defaultEndpoint == 'external_customer' ? defaultEndpoint : '';
                             }
                         }
                         return {
@@ -1247,19 +1259,24 @@ export default {
                     roles: lanes.map((lane) => {
                         let endpoint = '';
                         let defaultEndpoint = '';
-                        if (!lane.endpoint) {
-                            const laneJson = getPropsJson(lane);
-                            if (laneJson?.roleResolutionContext) {
-                                if (laneJson.roleResolutionContext.endpoint) {
-                                endpoint = laneJson.roleResolutionContext.endpoint;
-                                }
-                                if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
-                                defaultEndpoint = endpoint;
-                                }
-                            }
-                        } else {
-                            endpoint = lane.endpoint;
+                        const laneJson = getPropsJson(lane);
+                        if (laneJson?.roleResolutionContext?._type === 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
+                            endpoint = 'external_customer';
                             defaultEndpoint = endpoint;
+                        } else {
+                            if (!lane.endpoint) {
+                                if (laneJson?.roleResolutionContext) {
+                                    if (laneJson.roleResolutionContext.endpoint) {
+                                        endpoint = laneJson.roleResolutionContext.endpoint;
+                                    }
+                                    if (laneJson.roleResolutionContext._type === 'org.uengine.kernel.DirectRoleResolutionContext') {
+                                        defaultEndpoint = endpoint;
+                                    }
+                                }
+                            } else {
+                                endpoint = lane.endpoint;
+                                defaultEndpoint = endpoint;
+                            }
                         }
                         function isUUID(uuid) {
                             const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1269,14 +1286,14 @@ export default {
                             if (Array.isArray(endpoint)) {
                                 endpoint = endpoint.filter((item) => isUUID(item));
                             } else {
-                                endpoint = isUUID(endpoint) ? endpoint : '';
+                                endpoint = isUUID(endpoint) || endpoint == 'external_customer' ? endpoint : '';
                             }
                         }
                         if (defaultEndpoint && defaultEndpoint.length > 0) {
                             if (Array.isArray(defaultEndpoint)) {
                                 defaultEndpoint = defaultEndpoint.filter((item) => isUUID(item));
                             } else {
-                                defaultEndpoint = isUUID(defaultEndpoint) ? defaultEndpoint : '';
+                                defaultEndpoint = isUUID(defaultEndpoint) || defaultEndpoint == 'external_customer' ? defaultEndpoint : '';
                             }
                         }
                         return {
@@ -1795,7 +1812,6 @@ export default {
                                 }
 
                                 const options = {
-                                    name: processDefinition.processDefinitionName,
                                     definition: processDefinition
                                 }
                                 backend.putRawDefinition(this.bpmn, processDefinition.processDefinitionId, options);

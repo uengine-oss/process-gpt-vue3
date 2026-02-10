@@ -5,7 +5,7 @@ export interface Backend {
     versionUp(version: string, major: boolean, makeProduction: boolean): Promise<any>;
     makeProduction(version: string): Promise<any>;
     getProduction(): Promise<any>;
-    getDefinitionVersions(defId: string, options: any) : Promise<any>;
+    getDefinitionVersions(defId: string, options: any): Promise<any>;
     getVersion(version: string): Promise<any>;
     getDefinition(defPath: string): Promise<any>;
     renameOrMove(definition: any, requestPath: string): Promise<any>;
@@ -43,6 +43,8 @@ export interface Backend {
      * - 백엔드에서 검증 후 실제 처리(상태 변경/로그 기록 등)
      */
     skipTask(taskId: string, payload: any): Promise<any>;
+    advanceToActivity?(instanceId: string, tracingTag: string, body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }): Promise<any>;
+    startFromActivity?(instanceId: string, tracingTag: string, body?: { variables?: Record<string, any> }): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
     getVariable(instId: string, varName: string): Promise<any>;
     getVariableWithTaskId(instId: string, taskId: string, varName: string): Promise<any>;
@@ -60,13 +62,15 @@ export interface Backend {
     getWorkList(options?: any): Promise<any>;
     getProcessDefinitionMap(): Promise<any>;
     putProcessDefinitionMap(definitionMap: any): Promise<any>;
+    getMetricsMap(): Promise<any>;
+    putMetricsMap(metricsMap: any): Promise<any>;
     getPendingList(): Promise<any>;
     getCompletedList(options?: any): Promise<any>;
     getInProgressList(): Promise<any>;
     putWorklist(taskId: string, workItem: any): Promise<any>;
     getEventList(instanceId: string): Promise<any>;
     dryRun(isSimulate: string, command: object): Promise<any>;
-    startAndComplete(command: object, isSimulate: string) : Promise<any>;
+    startAndComplete(command: object, isSimulate: string): Promise<any>;
     getSystemList(): Promise<any>;
     putSystem(system: any): Promise<any>;
     deleteSystem(system: any): Promise<any>;
@@ -80,7 +84,7 @@ export interface Backend {
     findCurrentWorkItemByInstId(instId: string): Promise<any>;
     getUserList(options: any): Promise<any>;
     getGroupList(): Promise<any>;
-    releaseVersion(releaseName: string) : Promise<any>;
+    releaseVersion(releaseName: string): Promise<any>;
     uploadDefinition(file: File, path: string): Promise<any>;
     getCompletedTaskId(instId: string): Promise<any>;
     getActivitiesStatus(instId: string, executionScope: String): Promise<any>;
@@ -131,6 +135,64 @@ export interface Backend {
     updateBrowserUseSecretByTenant(data: any): Promise<any>;
     getMCPLists(): Promise<any>;
     claimWorkItem(taskId: string, data: any): Promise<any>;
+
+    // User & Data API
+    getUserInfo(): Promise<any>;
+    getData(path: string, options: any): Promise<any>;
+
+    // Task Catalog API
+    getTaskSystems(): Promise<any>;
+    saveTaskSystem(system: any): Promise<any>;
+    deleteTaskSystem(id: string): Promise<any>;
+
+    getTaskCatalogList(options?: any): Promise<any>;
+    getTaskCatalog(id: string): Promise<any>;
+    saveTaskCatalog(item: any): Promise<any>;
+    deleteTaskCatalog(id: string): Promise<any>;
+
+    getPropertySchemas(taskType?: string): Promise<any>;
+    savePropertySchema(schema: any): Promise<any>;
+    deletePropertySchema(id: string): Promise<any>;
+
+    getPaletteSettings(): Promise<any>;
+    savePaletteSettings(settings: any): Promise<any>;
+
+    // Palette Task Types API
+    getPaletteTaskTypes(): Promise<any>;
+    updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any>;
+
+    // Task Execution Properties API (분석용)
+    saveTaskExecutionProperties(params: {
+        procDefId: string;
+        procInstId: string;
+        activityId: string;
+        activityName?: string;
+        todoId?: string;
+        properties: any;
+        executorEmail?: string;
+    }): Promise<any>;
+    
+    updateTaskExecutionCompletion(params: {
+        procInstId: string;
+        activityId: string;
+        status: 'COMPLETED' | 'CANCELLED' | 'FAILED';
+    }): Promise<any>;
+
+    getTaskExecutionProperties(options?: {
+        procDefId?: string;
+        systemName?: string;
+        agentMode?: string;
+        dateFrom?: string;
+        dateTo?: string;
+        limit?: number;
+    }): Promise<any[]>;
+
+    // Agent Knowledge API
+    setupAgentKnowledge(params: {
+        agent_id: string;
+        goal?: string | null;
+        persona?: string | null;
+    }): Promise<any>;
 }
 
 // export type { Backend }

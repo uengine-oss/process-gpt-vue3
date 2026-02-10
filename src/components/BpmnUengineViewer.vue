@@ -13,7 +13,7 @@
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
-                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+                <v-icon v-if="!isPal" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- 참여자 보기 툴팁 -->
@@ -638,10 +638,12 @@ export default {
                 eventBus.on('element.dblclick', async function (e) {
                     if (e.element.type.includes('CallActivity')) {
                         self.$emit('openDefinition', e.element.businessObject);
-                    } 
-                    // if (e.element.type.includes('CallActivity')) {
-                    //     self.openCallActivity(e.element);
-                    // }
+                    } else if (e.element.type.includes('UserTask') && self.instanceId) {
+                        const tracingTag = e.element.id || (e.element.businessObject && e.element.businessObject.id);
+                        if (tracingTag) {
+                            self.$emit('navigateToTask', { instanceId: self.instanceId, tracingTag });
+                        }
+                    }
                 });
                 
                 if(!self.activityStatus) {
@@ -909,6 +911,7 @@ export default {
                 });
         },
         changeOrientation() {
+            if (window.$pal) return;
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
@@ -1169,13 +1172,9 @@ svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
   user-select: none !important;
 }
 
-/* 읽기모드에서 더블클릭 비활성화 */
-.view-mode.not-pal .djs-element {
-  pointer-events: auto !important;
-}
-
+.view-mode.not-pal .djs-element,
 .view-mode.not-pal .djs-element * {
-  pointer-events: none !important;
+  pointer-events: auto !important;
 }
 
 /* 참여자 툴팁 스타일 */

@@ -1,6 +1,18 @@
 <template>
     <div>
         <div v-if="enableEdit" class="proc-menu-btn-box text-right">
+            <!-- Add button for mega/major types -->
+            <v-tooltip v-if="(type === 'mega' || type === 'major') && (selectedDomain || isPal)" :text="addTooltipText">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="addProcess"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <v-icon size="14">mdi-plus</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
             <v-tooltip v-if="isPal" :text="$t('ProcessMenu.setPermission')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="setPermission"
@@ -12,18 +24,6 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <!-- 기존 정의체계도 내부에서 서브프로세스 편집창 호출하던 버튼 -->
-            <!-- <v-tooltip v-if="type == 'sub'" :text="$t('ProcessMenu.editProcess')">
-                <template v-slot:activator="{ props }">
-                    <v-btn @click.stop="editProcess"
-                        icon v-bind="props"
-                        density="compact"
-                        size="small"
-                    >
-                        <Icons :icon="'pencil-cog'" :width="12" :height="12"  />
-                    </v-btn>
-                </template>
-            </v-tooltip> -->
             <v-tooltip v-if="type != 'map' && type != 'sub'" :text="$t('ProcessMenu.edit')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="openEditDialog('update')"
@@ -32,6 +32,17 @@
                         size="small"
                     >
                         <Icons :icon="'pencil'" :width="12" :height="12" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip v-if="type === 'sub'" :text="$t('ProcessMenu.duplicate')">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="duplicateProcess"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <v-icon size="12">mdi-content-copy</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -63,6 +74,7 @@ export default {
         type: String,
         process: Object,
         enableEdit: Boolean,
+        selectedDomain: String,
     },
     data: () => ({
         newProcess: {
@@ -83,7 +95,15 @@ export default {
             }
         },
         isPal() {
-            return window.$pal;
+            return typeof window !== 'undefined' && window.$pal;
+        },
+        addTooltipText() {
+            if (this.type === 'mega') {
+                return this.$t('processDefinitionMap.addMajor');
+            } else if (this.type === 'major') {
+                return this.$t('processDefinitionMap.addSub');
+            }
+            return '';
         },
     },
     watch: {
@@ -102,6 +122,12 @@ export default {
         },
         setPermission() {
             this.$emit("setPermission", this.process);
+        },
+        duplicateProcess() {
+            this.$emit("duplicate", this.process);
+        },
+        addProcess() {
+            this.$emit("add");
         },
     },
 }

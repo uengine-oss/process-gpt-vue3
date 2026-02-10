@@ -888,6 +888,7 @@ export default {
         // 📡 실시간 구독 및 이벤트 처리
         // ========================================
         setupRealtimeSubscription(taskId) {
+            if (window.$mode === 'uEngine') return;
             try {
                 const validEventTypes = [
                     'task_started',
@@ -1139,6 +1140,7 @@ export default {
             }
         },
         async fetchTodoStatus() {
+            if (window.$mode === 'uEngine') return;
             var me = this;
             const taskId = this.validateTaskId();
             if (!taskId) return;
@@ -1274,20 +1276,23 @@ export default {
                 const updatedFeedback = [...existingFeedback, { time: now, content: text }];
                 const agentOrch = this.selectedOrchestrationMethod || this.todoStatus.agent_orch;
 
-                await this.backend.putWorkItem(taskId, {
+                let putItem = {
                     feedback: updatedFeedback,
-                    draft_status: 'FB_REQUESTED',
-                    status: 'IN_PROGRESS',
-                    agent_orch: agentOrch
-                });
+                    agent_orch: agentOrch,
+                }
+
+                if (agentOrch == 'agent') {
+                    putItem['feedback_status'] = 'REQUESTED';
+                }
+
+                if (this.todoStatus.status != 'DONE') {
+                    putItem['draft_status'] = 'FB_REQUESTED';
+                }
+
+                await this.backend.putWorkItem(taskId, putItem);
 
                 // 상태 업데이트
-                Object.assign(this.todoStatus, {
-                    draft_status: 'FB_REQUESTED',
-                    status: 'IN_PROGRESS',
-                    agent_orch: agentOrch,
-                    feedback: updatedFeedback
-                });
+                Object.assign(this.todoStatus, putItem);
                 
                 this.isLoading = true;
                 this.chatMessages.push({ time: now, content: text });

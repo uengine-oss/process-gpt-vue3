@@ -2,6 +2,7 @@ import axios from 'axios';
 const axiosInstance = axios.create();
 import type { Backend } from './Backend';
 import { getAllUsers } from '@/utils/keycloak';
+import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
 
 // uEngine 모드에서 ProcessGPT 전용(또는 미지원) 메서드 호출 시
 // - null/undefined 반환으로 인해 호출부에서 NPE(예: .forEach, .path 접근) 나는 걸 방지하기 위해
@@ -62,7 +63,7 @@ class UEngineBackend implements Backend {
         __warnUnsupported('getMCPByTenant');
         return {};
     }
-    
+
     async setMCPByTenant(mcp: any) {
         __warnUnsupported('setMCPByTenant');
         return { ok: false };
@@ -187,7 +188,6 @@ class UEngineBackend implements Backend {
 
     async getUserList(options: any) {
         const users = await getAllUsers(options);
-
         return users.map(user => {
             return {
                 id: user.id,
@@ -211,11 +211,11 @@ class UEngineBackend implements Backend {
     async search(keyword: string) {
         let url = '/definition';
         let result = [];
-    
+
         // 데이터 요청
         const response = await axiosInstance.get(url);
         const definitions = response.data?._embedded?.definitions;
-    
+
         // 데이터 변환
         const formattedData = {
             type: "definition",
@@ -230,24 +230,61 @@ class UEngineBackend implements Backend {
                         definition._links?.raw?.href || ""
                     ].filter(Boolean), // 유효한 값만 포함
                 }))
-                .filter((item: any) => 
-                    item.title.includes(keyword) || 
-                    item.href.includes(keyword) || 
+                .filter((item: any) =>
+                    item.title.includes(keyword) ||
+                    item.href.includes(keyword) ||
                     item.matches.some((match: string) => match.includes(keyword))
                 ) // keyword가 title, href, matches 셋 중 아무거나 포함되면 필터링
         };
-    
+
         result.push(formattedData);
         return result;
     }
-    
+
+    private __normalizeListDefinitionItem(item: any): { path: string; name: string; directory: boolean; id?: string; isDeleted?: boolean } {
+        const path =
+            (item.path ??
+                (item._links?.self?.href ? String(item._links.self.href).replace(/.*\/definition\/?/, '').replace(/\/$/, '') : '')) ||
+            item.id ||
+            '';
+        const name = item.name ?? (path ? (path.split('/').pop()?.split('.')[0] ?? path) : '');
+        const directory = item.directory ?? (typeof path === 'string' && !path.match(/\.(bpmn|form|rule|json)$/i));
+        const isDeleted = item.isDeleted ?? item.isdeleted ?? false;
+        return { path, name, directory, id: path, isDeleted };
+    }
+
     // Process Definition Service Impl API
     async listDefinition(basePath: string) {
         let url = '/definition';
         if (basePath) url += `?basePath=${basePath}`;
 
         const response = await axiosInstance.get(url);
-        return response.data?._embedded?.definitions;
+        let data = response?.data;
+
+        // 서버 구현에 따라 동일 endpoint가 "HAL object" 또는 "JSON string"을 반환할 수 있어 방어적으로 처리한다.
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                // 그대로 둠
+            }
+        }
+
+        let list: any[] = [];
+        if (data && data._embedded) {
+            if (Array.isArray(data._embedded.definitions)) list = data._embedded.definitions;
+            else {
+                const embedded = data._embedded;
+                const firstArrayKey = Object.keys(embedded).find((k) => Array.isArray(embedded[k]));
+                if (firstArrayKey) list = embedded[firstArrayKey];
+            }
+        } else if (Array.isArray(data)) {
+            list = data;
+        } else if (data && Array.isArray(data.content)) {
+            list = data.content;
+        }
+
+        return list.map((item: any) => this.__normalizeListDefinitionItem(item));
     }
     async listVersionDefinitions(version: string, basePath: string) {
         const response = await axiosInstance.get(`/version/${version}/definition/?basePath=${basePath}`);
@@ -283,8 +320,8 @@ class UEngineBackend implements Backend {
             }
         } else {
             const response = await axiosInstance.get(`/versions/${defId}.${options.type}`, options);
-                console.log(response);
-                return response.data?._embedded?.definitions;
+            console.log(response);
+            return response.data?._embedded?.definitions;
         }
     }
     async getVersion(version: string) {
@@ -321,29 +358,49 @@ class UEngineBackend implements Backend {
         document.body.removeChild(link);
     }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
-        console.log(options);
         var config = {
             headers: {
                 'Content-Type': 'application/json'
             }
         };
-        let body = {
-            definition: definition,
-            version: options.releaseName ? options.releaseName : options.version
+        const body = {
+            definition: typeof definition === 'string' ? definition : (definition?.bpmn ?? (definition && JSON.stringify(definition))),
+            version: options?.releaseName ?? options?.version ?? null
         };
-        const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, body, config);
+        let pathToUse = requestPath;
+        const type = options?.type ?? 'bpmn';
+        if (type === 'rule' && !pathToUse.toLowerCase().endsWith('.rule')) {
+            pathToUse = pathToUse + '.rule';
+        } else if (type === 'json' && !pathToUse.toLowerCase().endsWith('.json')) {
+            pathToUse = pathToUse + '.json';
+        }
+        let url = pathToUse;
+        if (!pathToUse.includes('/definition/raw')) {
+            url = `/definition/raw/${pathToUse}`;
+        }
+        const response = await axiosInstance.put(url, body, config);
         return response.data;
     }
     // @ts-ignore
     async getRawDefinition(defPath: string, options) {
-        if(options.type == 'deleted') return null;
-        let path = `/definition/raw/${defPath}.${options.type}`;
-        if(options.version) {
-            path = path + `/version/${options.version}`
-        }
-        const response = await axiosInstance.get(path, options);
-        return response.data;
+        if (!defPath) return null;
+        if (options?.type === 'deleted') return null;
 
+        const type = options?.type ?? 'bpmn';
+        let requestPath = String(defPath).replace(/\.bpmn$/i, '');
+        if (type === 'bpmn' && !requestPath.includes('definitions/')) {
+            requestPath = requestPath ? `definitions/${requestPath}` : 'definitions';
+        }
+        let path = `/definition/raw/${requestPath}.${type}`;
+        if (options?.version) path = path + `/version/${options.version}`;
+
+        const response = await axiosInstance.get(path, options ?? {});
+        let data = response?.data;
+        if (data == null) return null;
+
+        if (type === 'bpmn' && typeof data === 'object' && 'bpmn' in data) return data.bpmn;
+        if (type === 'form' && typeof data === 'object' && 'html' in data) return data.html;
+        return data;
     }
 
     // Process Service Impl API
@@ -423,6 +480,30 @@ class UEngineBackend implements Backend {
      */
     async skipTask(taskId: string, payload: any = {}): Promise<any> {
         const response = await axiosInstance.post(`/work-item/${taskId}/skip`, payload);
+        return response.data;
+    }
+
+    async advanceToActivity(
+        instanceId: string,
+        tracingTag: string,
+        body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }
+    ) {
+        const response = await axiosInstance.post(
+            `/instance/${instanceId}/advance-to-activity/${tracingTag}`,
+            body || {}
+        );
+        return response.data;
+    }
+
+    async startFromActivity(
+        instanceId: string,
+        tracingTag: string,
+        body?: { variables?: Record<string, any> }
+    ) {
+        const response = await axiosInstance.post(
+            `/instance/${instanceId}/state/start-from-activity/${tracingTag}`,
+            body || {}
+        );
         return response.data;
     }
 
@@ -805,15 +886,74 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    private __normalizeProcessDefinitionMap(data: any): { mega_proc_list: any[] } {
+        if (!data || typeof data !== 'object') return { mega_proc_list: [] };
+        const ensureName = (o: any) => (o && ('name' in o ? o : { ...o, name: o.label ?? o.id ?? '' }));
+        const ensureList = (arr: any[] | undefined) => (Array.isArray(arr) ? arr : []);
+
+        const megaList = ensureList(data.mega_proc_list ?? data.megaProcList ?? data.content);
+        if (megaList.length === 0 && Array.isArray(data)) {
+            const subList = (data as any[]).map((d: any) => ({
+                id: d.id ?? d.path ?? String(d),
+                name: d.name ?? d.label ?? d.id ?? d.path ?? String(d),
+                path: d.path ?? d.id
+            }));
+            return {
+                mega_proc_list: [
+                    {
+                        id: 'default',
+                        name: '프로세스',
+                        major_proc_list: [{ id: 'default_major', name: '전체', sub_proc_list: subList }]
+                    }
+                ]
+            };
+        }
+
+        return {
+            mega_proc_list: megaList.map((mega: any) => {
+                const m = ensureName(mega);
+                const majorList = ensureList(m.major_proc_list ?? m.majorProcList);
+                return {
+                    ...m,
+                    id: m.id ?? m.name,
+                    major_proc_list: majorList.map((major: any) => {
+                        const j = ensureName(major);
+                        const subList = ensureList(j.sub_proc_list ?? j.subProcList);
+                        return {
+                            ...j,
+                            id: j.id ?? j.name,
+                            sub_proc_list: subList.map((sub: any) => {
+                                const s = ensureName(sub);
+                                return { ...s, id: s.id ?? s.name ?? s.path };
+                            })
+                        };
+                    })
+                };
+            })
+        };
+    }
+
     async getProcessDefinitionMap() {
         const response = await axiosInstance.get(`/definition/map`);
-        return response.data;
+        const data = response?.data;
+        return this.__normalizeProcessDefinitionMap(data);
     }
 
     async putProcessDefinitionMap(definitionMap: any) {
-        definitionMap = JSON.stringify(definitionMap);
+        const body = typeof definitionMap === 'object' && definitionMap?.mega_proc_list
+            ? definitionMap
+            : definitionMap;
+        definitionMap = JSON.stringify(body);
         const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
         return response.data;
+    }
+
+    async getMetricsMap() {
+        return null;
+    }
+
+    async putMetricsMap(metricsMap: any) {
+        return null;
     }
 
     async getAllInstanceList(page: any, size: any) {
@@ -837,32 +977,32 @@ class UEngineBackend implements Backend {
     }
 
     async getInstanceListByRole(roles: string, names: string) {
-        if(!roles && !names) {
+        if (!roles && !names) {
             return this.getInstanceList();
         }
         let patternText = '';
-        if(roles) {
+        if (roles) {
             let pattern = roles
-            .split(',')
-            .map(item => {
-                const trimmedItem = item.trim();
-                return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
-            })
-            .join('|');
+                .split(',')
+                .map(item => {
+                    const trimmedItem = item.trim();
+                    return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+                })
+                .join('|');
             patternText += `rolePattern=${encodeURIComponent(pattern)}`;
         }
 
-        if(names) {
+        if (names) {
             let namePattern = names
-            .split(',')
-            .map(item => {
-                const trimmedItem = item.trim();
-                return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
-            })
-            .join('|');
+                .split(',')
+                .map(item => {
+                    const trimmedItem = item.trim();
+                    return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+                })
+                .join('|');
             patternText += `namePattern=${encodeURIComponent(namePattern)}`;
         }
-        
+
         const response = await axiosInstance.get(`/instances/search/findFilterICanSee?${patternText}`);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
@@ -877,17 +1017,17 @@ class UEngineBackend implements Backend {
 
     async getInstanceListByGroup(groups: string) {
         let pattern = groups
-        .split(',')
-        .map(item => {
-            const trimmedItem = item.trim();
-            return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
-        })
-        .join('|');
-    
+            .split(',')
+            .map(item => {
+                const trimmedItem = item.trim();
+                return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
+            })
+            .join('|');
+
         const response = await axiosInstance.get(
             `/instances/search/findAllByGroupsRegex?status=Running&pattern=${encodeURIComponent(pattern)}`
         );
-    
+
         return response.data._embedded.instances.map((inst: any) => ({
             instId: inst._links.self.href.split('/').pop(),
             instName: inst.name,
@@ -896,20 +1036,20 @@ class UEngineBackend implements Backend {
             defId: inst.defId
         }));
     }
-    
-    
+
+
     // 관리자 페이지 필터링 관련  API
     async getFilteredInstanceList(filters: object, page: number, size: number) {
         const queryParams = new URLSearchParams();
         queryParams.append('page', page.toString());
         queryParams.append('size', size.toString()); // size 추가
-    
+
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '') {
                 queryParams.append(key, value as string);
             }
         });
-    
+
         const request = `/instances/search/findFilterICanSee?${queryParams.toString()}`
         const response = await axiosInstance.get(request);
         if (!response.data) return null;
@@ -972,7 +1112,7 @@ class UEngineBackend implements Backend {
         if (!response.data) return null;
         return response.data;
     }
-    
+
 
     async startAndComplete(command: object, isSimulate: string) {
         let config = {
@@ -1020,6 +1160,9 @@ class UEngineBackend implements Backend {
     }
 
     async validate(xml: string) {
+        if ((window as any).$pal) {
+            return {};
+        }
         try {
             const response = await axiosInstance.post(`/validate`, xml);
             if (!response.data) return {};
@@ -1029,7 +1172,7 @@ class UEngineBackend implements Backend {
             throw error;
         }
     }
-    
+
     async uploadDefinition(file: File, path: string) {
         const formData = new FormData();
         formData.append('file', file);
@@ -1085,7 +1228,7 @@ class UEngineBackend implements Backend {
     async checkDBConnection() {
         return true;
     }
-    
+
     async saveTask(id: string, name: string, type: string, json: any) {
         console.warn("method is not implemented only use PalModeBackend");
         return null;
@@ -1096,7 +1239,7 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    
+
     async fetchNotifications() {
         console.warn("method is not implemented only use Process-GPT Mode");
         return [];
@@ -1110,6 +1253,595 @@ class UEngineBackend implements Backend {
     async putBSCard(card: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
         return null;
+    }
+
+    __uuid() {
+        // 브라우저 환경에서는 crypto.randomUUID() 우선 사용 (가능하면 표준 UUID)
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const anyCrypto = (globalThis as any)?.crypto;
+            if (anyCrypto && typeof anyCrypto.randomUUID === 'function') {
+                return anyCrypto.randomUUID();
+            }
+        } catch (e) {
+            // ignore
+        }
+        // fallback (UUID v4 유사)
+        const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+    }
+
+    // =========================
+    // Business Rule (비즈니스 규칙)
+    // - UI에는 JSON을 노출하지 않는다. (내부 데이터)
+    // - 정의 저장소(DefinitionServiceImpl)의 raw definition API를 사용한다.
+    //   - GET  /definition/raw/{path}.json   (getRawDefinition)
+    //   - PUT  /definition/raw/{path}.json   (putRawDefinition)
+    //   - LIST /definition?basePath=...      (listDefinition)
+    // =========================
+    async listBusinessRules() {
+        // NOTE:
+        // - raw definition API는 디렉터리 listing을 제공하지 않으므로 /definition listing을 사용한다.
+        // - 실제 룰 메타(name/description)는 각 파일(JSON)에서 읽는다. (정확성 우선)
+        const root = 'businessRules';
+
+        // folder 재귀 탐색(프로젝트 내 다른 definition 탐색 로직과 동일한 방식)
+        // versions 폴더는 제외
+        const collectRuleFiles = async (basePath?: string): Promise<any[]> => {
+            const defs = (await this.listDefinition(basePath || root)) || [];
+            const lists = Array.isArray(defs) ? defs : [];
+            const results: any[] = [];
+
+            for (const item of lists) {
+                if (!item) continue;
+                
+                // versions 폴더는 제외
+                const itemPath = typeof item?.path === 'string' ? item.path : '';
+                const itemName = typeof item?.name === 'string' ? item.name : '';
+                if (itemPath.includes('/versions/') || itemPath.endsWith('/versions') || itemName === 'versions') {
+                    continue;
+                }
+                
+                if (item.directory) {
+                    // 하위 폴더는 item.path 기준으로 내려간다. (name만 쓰면 상위 경로를 잃을 수 있음)
+                    const childPath = typeof item?.path === 'string' ? item.path : '';
+                    if (childPath) {
+                        const children = await collectRuleFiles(childPath);
+                        results.push(...children);
+                    }
+                } else {
+                    // 파일인 경우, versions 폴더 내부가 아닌지 확인
+                    if (!itemPath.includes('/versions/')) {
+                        results.push(item);
+                    }
+                }
+            }
+            return results;
+        };
+
+        const files = await collectRuleFiles();
+
+        const results = await Promise.all(
+            files
+                .filter((d: any) => d && !d.directory)
+                .filter((d: any) => typeof d?.name === 'string' && d.name.toLowerCase().endsWith('.rule'))
+                .filter((d: any) => {
+                    // versions 폴더 내부 파일 제외
+                    const path = typeof d?.path === 'string' ? d.path : '';
+                    return !path.includes('/versions/');
+                })
+                .map(async (d: any) => {
+                    const name = typeof d?.name === 'string' ? d.name : '';
+                    const path = typeof d?.path === 'string' ? d.path : '';
+                    const fileName = name || path.split('/').pop() || '';
+                    const idFromFile = fileName.replace(/\.rule$/i, '');
+
+                    try {
+                        const raw = await this.getRawDefinition(`businessRules/${encodeURIComponent(idFromFile)}`, { type: 'rule' });
+                        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                        return {
+                            id: parsed?.id ?? idFromFile,
+                            name: parsed?.name ?? idFromFile,
+                            description: parsed?.description ?? ''
+                        };
+                    } catch (e) {
+                        return { id: idFromFile, name: idFromFile, description: '' };
+                    }
+                })
+        );
+
+        // id/name 없는 항목 방어 + 정렬(이름 기준)
+        return results
+            .filter((r: any) => r && r.id)
+            .sort((a: any, b: any) => String(a?.name ?? '').localeCompare(String(b?.name ?? '')));
+    }
+
+    async getBusinessRule(ruleId: string) {
+        if (!ruleId) return null;
+        const raw = await this.getRawDefinition(`businessRules/${encodeURIComponent(ruleId)}`, { type: 'rule' });
+        if (!raw) return null;
+        const dto = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        return this.__fromBusinessRuleDto(dto);
+    }
+
+    async saveBusinessRule(rule: any, options?: { isNew?: boolean }) {
+        const toSave = { ...(rule || {}) };
+        if (!toSave.id) toSave.id = this.__uuid();
+
+        let currentVersion = '1.0';
+        if (!options?.isNew) {
+            const existingRaw = await this.getRawDefinition(`businessRules/${encodeURIComponent(String(toSave.id))}`, { type: 'rule' });
+            if (existingRaw) {
+                const existingDto = typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw;
+                if (existingDto.version) {
+                    const versionParts = String(existingDto.version).split('.');
+                    const major = parseInt(versionParts[0] || '1', 10);
+                    const minor = parseInt(versionParts[1] || '0', 10);
+                    currentVersion = `${major}.${minor + 1}`;
+                } else {
+                    currentVersion = '1.1';
+                }
+                const previousVersion = existingDto.version || '1.0';
+                await this.putRawDefinition(
+                    JSON.stringify({
+                        ...existingDto,
+                        created_at: existingDto.created_at || new Date().toISOString(),
+                        created_by: existingDto.created_by || this.__getCurrentUserId()
+                    }),
+                    `businessRules/${encodeURIComponent(String(toSave.id))}/versions/${previousVersion}`,
+                    { type: 'rule' }
+                );
+            }
+        }
+
+        // 원본 저장 (기존 방식 유지, 버전 정보만 추가)
+        const payload = this.__toBusinessRuleDto(toSave);
+        const versionedPayload = {
+            ...payload,
+            version: currentVersion,
+            created_at: new Date().toISOString(),
+            created_by: this.__getCurrentUserId()
+        };
+
+        // raw definition에는 "JSON 문자열"로 저장해 (서버/리소스매니저 직렬화 편차를 최소화)
+        await this.putRawDefinition(
+            JSON.stringify(versionedPayload),
+            `businessRules/${encodeURIComponent(String(toSave.id))}`,
+            { type: 'rule' }
+        );
+
+        return { id: toSave.id };
+    }
+
+    async deleteBusinessRule(ruleId: string): Promise<void> {
+        if (!ruleId) return;
+        // deleteDefinition 패턴 사용 (raw definition 삭제)
+        await this.deleteDefinition(`businessRules/${encodeURIComponent(ruleId)}.rule`);
+    }
+
+    // =========================
+    // Business Rule Test (룰 테스트 실행)
+    // =========================
+    async executeBusinessRule(ruleId: string, inputs: Record<string, any>): Promise<any> {
+        if (!ruleId) {
+            throw new Error('룰 ID가 필요합니다.');
+        }
+        
+        try {
+            const response = await axiosInstance.post(
+                `/business-rules/${encodeURIComponent(ruleId)}/execute`,
+                { inputs }
+            );
+            return response.data;
+        } catch (error: any) {
+            console.error('룰 실행 실패:', error);
+            throw new Error(error?.response?.data?.message || error?.message || '룰 실행 중 오류가 발생했습니다.');
+        }
+    }
+
+    async saveRuleTestCase(ruleId: string, testCase: any): Promise<void> {
+        if (!ruleId || !testCase) {
+            throw new Error('룰 ID와 테스트 케이스가 필요합니다.');
+        }
+        
+        try {
+            const testCaseId = testCase.id || this.__uuid();
+            const testCaseData = {
+                ...testCase,
+                id: testCaseId,
+                ruleId: ruleId,
+                updatedAt: new Date().toISOString(),
+                createdAt: testCase.createdAt || new Date().toISOString()
+            };
+            
+            await this.putRawDefinition(
+                JSON.stringify(testCaseData),
+                `businessRules/${encodeURIComponent(ruleId)}/testCases/${encodeURIComponent(testCaseId)}`,
+                { type: 'json' }
+            );
+        } catch (error: any) {
+            console.error('테스트 케이스 저장 실패:', error);
+            throw new Error(error?.response?.data?.message || error?.message || '테스트 케이스 저장 중 오류가 발생했습니다.');
+        }
+    }
+
+    async getRuleTestCases(ruleId: string): Promise<any[]> {
+        if (!ruleId) return [];
+        
+        try {
+            const testCasesPath = `businessRules/${encodeURIComponent(ruleId)}/testCases`;
+            const testCaseFiles = await this.listDefinition(testCasesPath);
+            
+            if (!Array.isArray(testCaseFiles) || testCaseFiles.length === 0) {
+                return [];
+            }
+            
+            const results = await Promise.all(
+                testCaseFiles
+                    .filter((f: any) => !f.directory && f.name?.endsWith('.json'))
+                    .map(async (f: any) => {
+                        try {
+                            const fileName = f.name?.replace(/\.json$/i, '') || '';
+                            const raw = await this.getRawDefinition(`${testCasesPath}/${fileName}`, { type: 'json' });
+                            if (!raw) return null;
+                            
+                            const testCase = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                            return {
+                                id: testCase.id || fileName,
+                                name: testCase.name || fileName,
+                                inputs: testCase.inputs || {},
+                                expectedOutcome: testCase.expectedOutcome,
+                                expectedNote: testCase.expectedNote,
+                                createdAt: testCase.createdAt,
+                                updatedAt: testCase.updatedAt
+                            };
+                        } catch (e) {
+                            console.warn(`테스트 케이스 로드 실패: ${f.name}`, e);
+                            return null;
+                        }
+                    })
+            );
+            
+            return results.filter((r: any) => r !== null).sort((a: any, b: any) => {
+                const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                return dateB - dateA; // 최신순
+            });
+        } catch (error) {
+            console.error('테스트 케이스 목록 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async deleteRuleTestCase(ruleId: string, testCaseId: string): Promise<void> {
+        if (!ruleId || !testCaseId) {
+            throw new Error('룰 ID와 테스트 케이스 ID가 필요합니다.');
+        }
+        
+        try {
+            await this.deleteDefinition(`businessRules/${encodeURIComponent(ruleId)}/testCases/${encodeURIComponent(testCaseId)}.json`);
+        } catch (error: any) {
+            console.error('테스트 케이스 삭제 실패:', error);
+            throw new Error(error?.response?.data?.message || error?.message || '테스트 케이스 삭제 중 오류가 발생했습니다.');
+        }
+    }
+
+    __getCurrentUserId(): string {
+        // UEngine 모드에서 사용자 정보 조회
+        // Keycloak 토큰에서 추출하거나 localStorage에서 조회
+        try {
+            const token = localStorage.getItem('keycloak') || localStorage.getItem('accessToken');
+            if (token) {
+                // JWT 토큰 파싱 (간단한 방식)
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.email || payload.preferred_username || payload.sub || 'unknown';
+                } catch (e) {
+                    // 토큰 파싱 실패 시 기본값
+                }
+            }
+        } catch (e) {
+            console.warn('사용자 정보 조회 실패:', e);
+        }
+        return 'unknown';
+    }
+
+    async getDmnHistory(agentId: string, ruleId?: string): Promise<any[]> {
+        // UEngine 모드: ruleId를 사용하여 버전 이력 조회
+        const targetRuleId = ruleId || agentId;
+        if (!targetRuleId) return [];
+
+        try {
+            const historyList: any[] = [];
+            
+            // 현재 룰의 DMN XML 가져오기
+            const currentRaw = await this.getRawDefinition(`businessRules/${encodeURIComponent(targetRuleId)}`, { type: 'rule' });
+            if (currentRaw) {
+                const currentDto = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
+                const currentDmnXml = currentDto?.ruleJson?.dmnXml || '';
+                
+                if (currentDmnXml) {
+                    historyList.push({
+                        knowledge_id: targetRuleId,
+                        knowledge_name: currentDto?.name || targetRuleId,
+                        operation: historyList.length === 0 ? 'CREATE' : 'UPDATE',
+                        change_summary: '현재 버전',
+                        dmn_xml: currentDmnXml,
+                        created_at: currentDto?.created_at || new Date().toISOString(),
+                        created_by: currentDto?.created_by || 'unknown',
+                        version: currentDto?.version || '1.0'
+                    });
+                }
+            }
+
+            // versions 폴더에서 이전 버전들 조회
+            try {
+                const versionsPath = `businessRules/${encodeURIComponent(targetRuleId)}/versions`;
+                const versionFiles = await this.listDefinition(versionsPath);
+                
+                if (Array.isArray(versionFiles)) {
+                    for (const file of versionFiles) {
+                        if (file.directory || !file.name?.endsWith('.rule')) continue;
+                        
+                        try {
+                            const versionName = file.name.replace(/\.rule$/i, '');
+                            const versionRaw = await this.getRawDefinition(`${versionsPath}/${versionName}`, { type: 'rule' });
+                            if (versionRaw) {
+                                const versionDto = typeof versionRaw === 'string' ? JSON.parse(versionRaw) : versionRaw;
+                                const versionDmnXml = versionDto?.ruleJson?.dmnXml || '';
+                                
+                                if (versionDmnXml) {
+                                    historyList.push({
+                                        knowledge_id: targetRuleId,
+                                        knowledge_name: versionDto?.name || targetRuleId,
+                                        operation: 'UPDATE',
+                                        change_summary: `버전 ${versionDto?.version || versionName}`,
+                                        dmn_xml: versionDmnXml,
+                                        created_at: versionDto?.created_at || new Date().toISOString(),
+                                        created_by: versionDto?.created_by || 'unknown',
+                                        version: versionDto?.version || versionName
+                                    });
+                                }
+                            }
+                        } catch (e) {
+                            console.warn(`버전 파일 로드 실패: ${file.name}`, e);
+                        }
+                    }
+                }
+            } catch (e) {
+                // versions 폴더가 없거나 접근 불가능한 경우 무시
+                console.log('버전 이력 폴더 조회 실패 (신규 룰일 수 있음):', e);
+            }
+
+            // created_at 기준 내림차순 정렬 (최신순)
+            return historyList.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0).getTime();
+                const dateB = new Date(b.created_at || 0).getTime();
+                return dateB - dateA;
+            });
+        } catch (error) {
+            console.error('DMN 히스토리 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async getBusinessRuleVersions(ruleId: string): Promise<any[]> {
+        if (!ruleId) return [];
+
+        try {
+            const versions: any[] = [];
+            
+            // 현재 룰 파일의 버전 정보 조회 (isCurrent 플래그 설정용)
+            let currentVersion = null;
+            try {
+                const currentRaw = await this.getRawDefinition(`businessRules/${encodeURIComponent(ruleId)}`, { type: 'rule' });
+                if (currentRaw) {
+                    const currentDto = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
+                    currentVersion = currentDto?.version || '1.0';
+                }
+            } catch (e) {
+                console.warn('[getBusinessRuleVersions] 현재 버전 조회 실패:', e);
+            }
+
+            // versions 폴더에서 실제로 존재하는 버전 파일들만 조회
+            try {
+                const versionsPath = `businessRules/${encodeURIComponent(ruleId)}/versions`;
+                const versionFiles = await this.listDefinition(versionsPath);
+                
+                console.log('[getBusinessRuleVersions] versionsPath:', versionsPath);
+                console.log('[getBusinessRuleVersions] versionFiles:', versionFiles);
+                
+                if (Array.isArray(versionFiles) && versionFiles.length > 0) {
+                    for (const file of versionFiles) {
+                        // 디렉토리는 제외, .rule 파일만 처리
+                        if (file.directory || !file.name?.endsWith('.rule')) {
+                            console.log('[getBusinessRuleVersions] 파일 스킵:', file.name, 'directory:', file.directory, 'endsWith .rule:', file.name?.endsWith('.rule'));
+                            continue;
+                        }
+                        
+                        try {
+                            const versionName = file.name.replace(/\.rule$/i, '');
+                            const versionRaw = await this.getRawDefinition(`${versionsPath}/${versionName}`, { type: 'rule' });
+                            
+                            // 파일이 실제로 존재하고 읽을 수 있는지 확인
+                            if (!versionRaw) {
+                                console.warn('[getBusinessRuleVersions] 파일이 존재하지 않음, 스킵:', versionName);
+                                continue;
+                            }
+                            
+                            // 빈 문자열이나 잘못된 데이터인지 확인
+                            const versionDto = typeof versionRaw === 'string' 
+                                ? (versionRaw.trim() ? JSON.parse(versionRaw) : null)
+                                : versionRaw;
+                            
+                            if (!versionDto || typeof versionDto !== 'object') {
+                                console.warn('[getBusinessRuleVersions] 유효하지 않은 데이터, 스킵:', versionName);
+                                continue;
+                            }
+                            
+                            // 버전 정보가 있는지 확인
+                            if (!versionDto.version && !versionName) {
+                                console.warn('[getBusinessRuleVersions] 버전 정보가 없음, 스킵:', versionName);
+                                continue;
+                            }
+                            
+                            // 현재 룰 파일의 버전과 비교하여 isCurrent 설정
+                            const isCurrent = (currentVersion && versionName === currentVersion);
+                            
+                            versions.push({
+                                version: versionName, // 파일명 기준 버전 사용
+                                name: versionDto?.name || ruleId, // 룰 이름 추가
+                                description: versionDto?.description || versionDto?.message || '', // 설명 추가
+                                created_at: versionDto?.created_at || new Date().toISOString(),
+                                created_by: versionDto?.created_by || 'unknown',
+                                isCurrent: isCurrent,
+                                fileName: file.name // 파일명 저장 (정렬용)
+                            });
+                            console.log('[getBusinessRuleVersions] 버전 추가:', versionName, 'isCurrent:', isCurrent);
+                        } catch (e) {
+                            // 파일이 존재하지 않거나 읽을 수 없는 경우 스킵
+                            console.warn(`[getBusinessRuleVersions] 버전 파일 로드 실패 (목록에서 제외): ${file.name}`, e);
+                        }
+                    }
+                } else {
+                    console.log('[getBusinessRuleVersions] versionFiles가 비어있거나 배열이 아님:', versionFiles);
+                }
+            } catch (e) {
+                // versions 폴더가 없거나 접근 불가능한 경우 무시
+                console.log('버전 폴더 조회 실패:', e);
+            }
+
+            console.log('[getBusinessRuleVersions] 최종 versions:', versions);
+
+            // 버전 번호 기준 정렬 (오름차순, 최신 버전이 맨 뒤)
+            return versions.sort((a, b) => {
+                const parseVersion = (v: string) => {
+                    const parts = String(v || '0.0').split('.');
+                    const major = parseInt(parts[0] || '0', 10);
+                    const minor = parseInt(parts[1] || '0', 10);
+                    return major * 1000 + minor;
+                };
+                return parseVersion(a.version) - parseVersion(b.version);
+            });
+        } catch (error) {
+            console.error('버전 목록 조회 실패:', error);
+            return [];
+        }
+    }
+
+    __toBusinessRuleDto(rule: any) {
+        // 서버 스펙: ruleJson 필수
+        // UI는 ruleJson을 직접 다루지 않으므로 여기서 래핑/정리한다.
+        const inputs = Array.isArray(rule?.inputs) ? rule.inputs : [];
+        const sanitizedInputs = inputs.map((i: any) => ({
+            // UI 모델: label(사람용) + key(내부). 과거 호환을 위해 item도 허용.
+            label: i?.label ?? '',
+            key: i?.key ?? i?.item ?? '',
+            inputMode: i?.inputMode ?? 'number',
+            options: Array.isArray(i?.options) ? i.options : []
+        }));
+
+        const rules = Array.isArray(rule?.rules) ? rule.rules : [];
+        const sanitizedRules = rules.map((r: any) => ({
+            conditions: Array.isArray(r?.conditions)
+                ? r.conditions.map((c: any) => ({
+                      // UI는 key를 사용(내부 식별자). 레거시/호환을 위해 item도 허용.
+                      item: c?.key ?? c?.item ?? '',
+                      key: c?.key ?? c?.item ?? '',
+                      operator: c?.operator ?? '',
+                      value: c?.value ?? ''
+                  }))
+                : [],
+            // note는 dmnXml(annotations)로만 저장한다.
+            result: { outcome: r?.result?.outcome ?? 'approve' }
+        }));
+
+        // 내부 모델(조건/결과) → DMN XML (저장/실행용)
+        // IMPORTANT: UI에는 절대 노출하지 않는다.
+        // NOTE: 입력칸(note 등)은 annotations로만 보관하므로, 프론트가 dmnXml을 제공하면 그것을 우선 사용한다.
+        // (그렇지 않으면 테이블 정보만으로 최소 DMN을 생성한다.)
+        let dmnXml = typeof rule?.dmnXml === 'string' ? rule.dmnXml : '';
+        if (!dmnXml || !String(dmnXml).trim()) {
+            try {
+                dmnXml = businessRuleToDmnXml({
+                    id: rule?.id,
+                    name: rule?.name,
+                    description: rule?.description,
+                    inputs: sanitizedInputs,
+                    rules: sanitizedRules
+                });
+            } catch (e) {
+                dmnXml = '';
+            }
+        }
+
+        return {
+            id: rule?.id,
+            name: rule?.name ?? '',
+            description: rule?.description ?? '',
+            ruleJson: {
+                // DMN XML을 우선 데이터로 제공 (UI에는 노출 금지)
+                dmnXml
+            }
+        };
+    }
+
+    __fromBusinessRuleDto(dto: any) {
+        if (!dto) return null;
+        // 서버가 { id, name, description, ruleJson } 형태로 주는 경우를 UI 모델(conditions/result)로 펼친다.
+        if (dto.ruleJson && (dto.conditions === undefined && dto.result === undefined)) {
+            const flattened: any = {
+                ...dto,
+                ...(dto.ruleJson || {})
+            };
+
+            const hasInputs = Array.isArray(flattened.inputs) && flattened.inputs.length > 0;
+            const hasRules = Array.isArray(flattened.rules) && flattened.rules.length > 0;
+            const dmnXml = typeof flattened.dmnXml === 'string' ? flattened.dmnXml : '';
+
+            if (dmnXml) {
+                const parsed = dmnXmlToBusinessRule(dmnXml);
+                if (parsed) {
+                    if (!hasInputs) flattened.inputs = parsed.inputs || [];
+                    if (!hasRules) flattened.rules = parsed.rules || [];
+                    // note는 내부 JSON에 저장하지 않으므로, annotations에서 읽은 값을 "표시용"으로만 backfill 한다.
+                    if (hasRules && Array.isArray(flattened.rules) && Array.isArray(parsed.rules)) {
+                        flattened.rules = flattened.rules.map((r: any, idx: number) => {
+                            const p = parsed.rules?.[idx];
+                            const pNote = typeof p?.result?.note === 'string' ? p.result.note : '';
+                            if (!pNote) return r;
+                            if (!r || typeof r !== 'object') return r;
+                            const next = { ...r };
+                            next.result = { ...(next.result || {}) };
+                            if (typeof next.result.note !== 'string' || !next.result.note.trim()) {
+                                next.result.note = pNote;
+                            }
+                            return next;
+                        });
+                    }
+                }
+            }
+
+            // 레거시(conditions/result)로 내려오는 경우도 신규 모델로 한 번 더 정리
+            if ((!hasInputs || !hasRules) && (flattened.conditions || flattened.result)) {
+                const parsedLegacy = businessRuleToDmnXml({
+                    id: flattened.id,
+                    name: flattened.name,
+                    description: flattened.description,
+                    conditions: flattened.conditions || [],
+                    result: flattened.result || { outcome: 'approve', note: '' }
+                });
+                const back = parsedLegacy ? dmnXmlToBusinessRule(parsedLegacy) : null;
+                if (back) {
+                    flattened.inputs = flattened.inputs && flattened.inputs.length ? flattened.inputs : back.inputs;
+                    flattened.rules = flattened.rules && flattened.rules.length ? flattened.rules : back.rules;
+                    if (!flattened.dmnXml) flattened.dmnXml = parsedLegacy;
+                }
+            }
+
+            return flattened;
+        }
+        return dto;
     }
 
     async getSchedule(id: string, version: string) {
@@ -1136,7 +1868,7 @@ class UEngineBackend implements Backend {
         console.warn("method is not implemented only use Process-GPT Mode");
         return null;
     }
-    
+
     async updateDataSource(dataSource: any) {
         console.warn("method is not implemented only use Process-GPT Mode");
         return null;
@@ -1227,6 +1959,102 @@ class UEngineBackend implements Backend {
     async claimWorkItem(taskId: string, data: any){
         const response = await axiosInstance.post(`/work-item/${taskId}/claim`, data);
         return response.data;
+    }
+    // ============================================
+    // Task Catalog API (Process-GPT Mode only)
+    // ============================================
+
+    async getTaskSystems(): Promise<any> {
+        console.warn("getTaskSystems is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async saveTaskSystem(system: any): Promise<any> {
+        console.warn("saveTaskSystem is not implemented - only use Process-GPT Mode");
+        return system;
+    }
+
+    async deleteTaskSystem(id: string): Promise<void> {
+        console.warn("deleteTaskSystem is not implemented - only use Process-GPT Mode");
+    }
+
+    async getTaskCatalogList(options?: any): Promise<any> {
+        console.warn("getTaskCatalogList is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async getTaskCatalog(id: string): Promise<any> {
+        console.warn("getTaskCatalog is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async saveTaskCatalog(item: any): Promise<any> {
+        console.warn("saveTaskCatalog is not implemented - only use Process-GPT Mode");
+        return item;
+    }
+
+    async deleteTaskCatalog(id: string): Promise<void> {
+        console.warn("deleteTaskCatalog is not implemented - only use Process-GPT Mode");
+    }
+
+    async getPropertySchemas(taskType?: string): Promise<any> {
+        console.warn("getPropertySchemas is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async savePropertySchema(schema: any): Promise<any> {
+        console.warn("savePropertySchema is not implemented - only use Process-GPT Mode");
+        return schema;
+    }
+
+    async deletePropertySchema(id: string): Promise<void> {
+        console.warn("deletePropertySchema is not implemented - only use Process-GPT Mode");
+    }
+
+    async getPaletteSettings(): Promise<any> {
+        console.warn("getPaletteSettings is not implemented - only use Process-GPT Mode");
+        return { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+    }
+
+    async savePaletteSettings(settings: any): Promise<any> {
+        console.warn("savePaletteSettings is not implemented - only use Process-GPT Mode");
+        return settings;
+    }
+
+    async getPaletteTaskTypes(): Promise<any> {
+        console.warn("getPaletteTaskTypes is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any> {
+        console.warn("updatePaletteTaskType is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    // Task Execution Properties - Not implemented in UEngine mode
+    async getUserInfo(): Promise<any> {
+        console.warn("getUserInfo is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async saveTaskExecutionProperties(params: any): Promise<any> {
+        console.warn("saveTaskExecutionProperties is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async updateTaskExecutionCompletion(params: any): Promise<any> {
+        console.warn("updateTaskExecutionCompletion is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    async getTaskExecutionProperties(options?: any): Promise<any[]> {
+        console.warn("getTaskExecutionProperties is not implemented - only use Process-GPT Mode");
+        return [];
+    }
+
+    async setupAgentKnowledge(params: any): Promise<any> {
+        console.warn("setupAgentKnowledge is not implemented - only use Process-GPT Mode");
+        return null;
     }
 
 }

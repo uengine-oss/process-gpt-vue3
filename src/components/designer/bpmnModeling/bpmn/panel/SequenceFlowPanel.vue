@@ -131,6 +131,7 @@ import ConditionField from './ConditionField.vue';
 import TextConditionField from './TextConditionField.vue';
 import ConditionExampleField from './ConditionExampleField.vue';
 import ConditionRuleGenerator from '@/components/ai/ConditionRuleGenerator.js';
+import { extractJSONFromText, parseJsonLike } from '@/utils/parsers/jsonLikeParser';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
@@ -266,20 +267,10 @@ export default {
             const conditionRuleClient = {
                 onGenerationFinished: (response) => {
                     console.log(response);
-                    let jsonData = this.extractJSON(response);
-                    if (jsonData && jsonData.includes('{')) {
-                        try {
-                            jsonData = JSON.parse(jsonData);
-                        } catch(e) {
-                            try {
-                                jsonData = partialParse(jsonData);
-                            } catch(e) {
-                                console.log(e);
-                            }
-                        }
-                    } else {
-                        jsonData = null;
-                    }
+                    const extracted = extractJSONFromText(response);
+                    const jsonData = extracted && extracted.includes('{')
+                        ? parseJsonLike(extracted)
+                        : null;
  
                      if (jsonData) {
                          if (!this.lastIsInitial && this.lastHasMismatch && this.lastSingleFieldTarget && Array.isArray(this.lastSingleFieldTarget.trueValues) && this.lastSingleFieldTarget.trueValues.length > 0) {

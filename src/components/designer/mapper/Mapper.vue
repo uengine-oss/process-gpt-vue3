@@ -318,6 +318,7 @@ export default {
         },
         findTasks(elements) {
             var me = this;
+            if(!elements) return;
             elements.forEach((element) => {
                 if (element.$type.toLowerCase().indexOf('task') !== -1) {
                     me.activities.push(element);
@@ -515,10 +516,13 @@ export default {
             
             if(!expandableTrees) return;
             Object.keys(expandableTrees).forEach((key) => {
-                if (!me.config.roots.includes(key) && expandableTrees[key].children) {
+                // NOTE:
+                // expandableTrees는 "외부 주입 트리"이므로, 루트(parent가 없는 노드)만 roots로 취급해야 한다.
+                // 그렇지 않으면 중간 노드(children이 있는 노드)가 roots로 승격되어 트리가 중복/겹쳐 보일 수 있다.
+                const tree = expandableTrees[key];
+                if (!me.config.roots.includes(key) && tree?.children && tree.parent == null) {
                     me.config.roots.push(key);
                 }
-                const tree = expandableTrees[key];
                 nodes[key] = JSON.parse(JSON.stringify(tree));
             });
         },

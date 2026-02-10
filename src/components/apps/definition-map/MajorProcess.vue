@@ -1,25 +1,35 @@
 <template>
     <div class="mb-3 major-hover">
         <v-card class="align-center pa-2 pr-2 pl-2 cp-major" elevation="10"
-            style="border-radius: 10px !important; margin-bottom:5px; border: 4px solid rgba(var(--v-theme-primary), 0.2);" @click="goProcess(parent.name, 'mega')"
+            style="border-radius: 10px !important; margin-bottom:5px; border: 4px solid rgba(var(--v-theme-primary), 0.2);"
         >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
-                <v-row class="ma-0 pa-0">
-                    <v-col :cols="enableEdit ? '7' : '12'" class="ma-0 pa-0 text-left">
-                        <div>{{ value.name }}</div>
+                <v-row class="ma-0 pa-0 align-center">
+                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1 d-flex align-center" style="min-width: 0;">
+                        <!-- 전체 탭에서 도메인 표시 (이름 왼쪽) -->
+                        <v-chip v-if="!selectedDomain && value.domain"
+                            size="x-small"
+                            :style="domainColor ? { backgroundColor: domainColor, color: domainTextColor } : {}"
+                            :color="domainColor ? undefined : 'primary'"
+                            :variant="domainColor ? 'flat' : 'tonal'"
+                            class="mr-2 flex-shrink-0"
+                        >
+                            {{ value.domain }}
+                        </v-chip>
+                        <div class="text-truncate font-weight-bold cursor-pointer" style="font-size: 0.9rem;" @click="goProcess(parent.name, 'mega')">{{ value.name }}</div>
                     </v-col>
-                    <v-col :cols="enableEdit ? '5' : ''" class="ma-0 pa-0 text-right">
-                        <div class="ml-auto add-major-process">
-                            <ProcessMenu
-                                :size="14"
-                                :type="type"
-                                :process="value"
-                                :enableEdit="enableEdit"
-                                @delete="deleteProcess"
-                                @editProcessdialog="editProcessdialog"
-                                @setPermission="openPermissionDialog(value)"
-                            />
-                        </div>
+                    <v-col cols="auto" class="ma-0 pa-0">
+                        <ProcessMenu
+                            :size="14"
+                            :type="type"
+                            :process="value"
+                            :enableEdit="enableEdit"
+                            :selectedDomain="selectedDomain"
+                            @add="openSubProcessDialog('add')"
+                            @delete="deleteProcess"
+                            @editProcessdialog="editProcessdialog"
+                            @setPermission="openPermissionDialog(value)"
+                        />
                     </v-col>
                 </v-row>
             </h6>
@@ -35,40 +45,25 @@
         </v-card>
 
         <draggable v-if="enableEdit"
-            class="dragArea list-group" 
-            :list="value.sub_proc_list" 
-            :animation="200" 
+            class="dragArea list-group"
+            :list="value.sub_proc_list"
+            :animation="200"
             ghost-class="ghost-card"
             group="subProcess"
         >
             <transition-group>
-                <div v-for="item in value.sub_proc_list" :key="item.id" class="cursor-pointer">
+                <div v-for="item in value.sub_proc_list" :key="item.id" class="cursor-pointer" v-show="isSubProcessVisible(item)">
                     <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
-            <div v-for="item in value.sub_proc_list" :key="item.id">
+            <div v-for="item in filteredSubProcList" :key="item.id">
                 <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
             </div>
         </div>
-        <v-card v-if="!processDialogStatus && enableEdit" 
-            @click="openSubProcessDialog('add')"
-            class="add-sub-card"
-            elevation="9" variant="outlined"
-            color="primary"
-            style="display: flex;
-                justify-content: center;
-                align-items: center;
-                border-radius: 10px !important;
-                height:26px;"
-        >
-            <v-row class="pa-0 ma-0 definitionMap-add-card">
-                <PlusIcon class="cp-add-sub" size="20" stroke-width="2" />
-                <div>&nbsp;{{ $t('processDefinitionMap.addSub') }}</div>
-            </v-row>
-        </v-card>
-        <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'add'"
+        <!-- Add Sub Process Dialog: 특정 도메인 탭에서만 표시 -->
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -98,11 +93,43 @@ export default {
         value: Object,
         parent: Object,
         enableEdit: Boolean,
-        isExecutionByProject: Boolean
+        isExecutionByProject: Boolean,
+        selectedDomain: String,
+        domains: Array,
+        filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
     },
     data: () => ({
         type: 'major'
     }),
+    computed: {
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
+        domainColor() {
+            if (!this.value.domain || !this.domains) return null;
+            const domain = this.domains.find(d => d.name === this.value.domain);
+            return domain?.color || null;
+        },
+        domainTextColor() {
+            if (!this.domainColor) return '#000000';
+            const hex = this.domainColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.5 ? '#000000' : '#FFFFFF';
+        },
+        filteredSubProcList() {
+            // null = no filter active, show all
+            if (this.filteredProcDefIds === null || !this.value.sub_proc_list) {
+                return this.value.sub_proc_list || [];
+            }
+            // Filter by proc_def_ids from process_organizations table
+            return this.value.sub_proc_list.filter(sub => {
+                return this.filteredProcDefIds.includes(sub.id);
+            });
+        }
+    },
     methods: {
         async addProcess(newProcess) {
             // 같은 레벨에 동일한 이름이 있는지 검증
@@ -110,19 +137,30 @@ export default {
                 item => item.name.toLowerCase() === newProcess.name.toLowerCase()
             );
             if (isDuplicate) {
-                alert(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
+                this.$toast.error(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
                 return;
             }
-            
-            if (!newProcess.id) {
-                newProcess.id = `${this.parent.name}_${newProcess.name}`;
+
+            // Use provided ID or generate one (for existing process selection)
+            let processId = newProcess.id;
+            if (!processId) {
+                // Fallback: generate ID from parent and name (for legacy/existing selection)
+                processId = `${this.parent.name}_${newProcess.name}`
+                    .toLowerCase()
+                    .replace(/[^a-z0-9_]/g, '_')
+                    .replace(/_+/g, '_');
             }
-            newProcess.id = newProcess.id.replace(/[/.]/g, '_');
-           
+
             this.value.sub_proc_list.push({
-                id: newProcess.id,
+                id: processId,
                 name: newProcess.name
             });
+
+            // Navigate to process editor if this is a newly created process
+            if (newProcess.isNew) {
+                const url = `/definitions/chat?id=${processId}&name=${encodeURIComponent(newProcess.name)}&modeling=true`;
+                window.open(url, '_blank');
+            }
         },
         openSubProcessDialog(processType) {
             this.processType = processType;
@@ -144,23 +182,17 @@ export default {
         },
         clickPlayBtn(value){
             this.$emit('clickPlayBtn', value)
-        }
+        },
+        isSubProcessVisible(item) {
+            // null = no filter active, show all
+            if (this.filteredProcDefIds === null) {
+                return true;
+            }
+            return this.filteredProcDefIds.includes(item.id);
+        },
     },
 }
 </script>
 
 <style>
-.add-sub-card {
-    display: none !important;
-}
-
-.major-hover:hover .add-sub-card {
-    display: flex !important;
-}
-
-@media only screen and (max-width: 700px) {
-    .add-sub-card {
-        display: flex !important;
-    }
-}
 </style>

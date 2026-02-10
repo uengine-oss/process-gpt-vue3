@@ -3,6 +3,7 @@
         <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
             <v-row class="ma-0 pa-0 align-center">
                 <div  @click="handleClick"
+                    @dblclick="handleDoubleClick"
                     class="ma-0 pa-0 d-flex align-center"
                     style="flex: 1; min-width: 0; gap: 4px;"
                 >
@@ -35,6 +36,7 @@
                         @editProcessdialog="editProcessdialog"
                         @modeling="editProcessModel"
                         @setPermission="openPermissionDialog(value)"
+                        @duplicate="duplicateProcess"
                     />
                 </div>
             </v-row>
@@ -94,6 +96,13 @@ export default {
                 localStorage.setItem('checkedProcess', JSON.stringify(this.checkedProcess));
             }
         },
+        handleDoubleClick() {
+            if (this.isExecutionByProject) return;
+            if (window.$mode === 'uEngine') {
+                const path = this.value.id ?? this.value.path;
+                if (path) this.goProcess(path, 'sub');
+            }
+        },
         deleteProcess() {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
             
@@ -119,6 +128,38 @@ export default {
         },
         clickPlayBtn(){
             this.$emit('clickPlayBtn', this.value)
+        },
+        duplicateProcess(process) {
+            // Generate unique name with copy suffix
+            let baseName = process.name;
+            let newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'})`;
+            let counter = 1;
+
+            // Check for duplicate names
+            while (this.parent.sub_proc_list.some(item => item.name === newName)) {
+                newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'} ${counter++})`;
+            }
+
+            // Generate unique ID based on original ID with _duplicate suffix
+            let baseId = process.id;
+            let newId = `${baseId}_duplicate`;
+            let idCounter = 1;
+
+            // Check for duplicate IDs
+            while (this.parent.sub_proc_list.some(item => item.id === newId)) {
+                newId = `${baseId}_duplicate${idCounter++}`;
+            }
+
+            // Create new process with unique ID
+            const newProcess = {
+                id: newId,
+                name: newName
+            };
+
+            // Add to parent's sub_proc_list
+            this.parent.sub_proc_list.push(newProcess);
+
+            this.$toast.success(this.$t('ProcessMenu.duplicateSuccess') || '프로세스가 복사되었습니다.');
         }
     },
 }

@@ -31,6 +31,12 @@ spring:
                       - Path=/memento/**,
                   filters:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
+                - id: agent-feedback
+                  uri: http://localhost:6789
+                  predicates:
+                      - Path=/api/agent-feedback/**,
+                  filters:
+                      - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
                 - id: voice
                   uri: http://localhost:3000
                   predicates:
@@ -148,6 +154,24 @@ spring:
                       - RewritePath=/voice/?(?<segment>.*), /$\{segment}
                   order: 40
 
+                - id: analytic
+                  uri: http://analytic-service:8000
+                  predicates:
+                      - Path=/api/analytics/**
+                  filters:
+                      - RewritePath=/api/analytics/?(?<segment>.*), /api/$\{segment}
+                  order: 44
+
+                # Agent Router 서비스 (agent pod warmup/proxy, SSE 지원)
+                - id: agent-router
+                  uri: http://agent-router:8001
+                  predicates:
+                      - Path=/agent-router/**
+                  filters:
+                      - RewritePath=/agent-router/?(?<segment>.*), /$\{segment}
+                      - AddResponseHeader=X-Accel-Buffering, no
+                  order: 45
+
                 # Work Assistant Agent 서비스 (SSE 스트리밍 지원)
                 - id: agent
                   uri: http://work-assistant-agent-service:8000
@@ -156,7 +180,15 @@ spring:
                   filters:
                       - RewritePath=/agent/?(?<segment>.*), /$\{segment}
                       - AddResponseHeader=X-Accel-Buffering, no
-                  order: 45
+                  order: 46
+
+                - id: agent-feedback
+                  uri: http://agent-feedback-service:6789
+                  predicates:
+                      - Path=/api/agent-feedback/**
+                  filters:
+                      - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
+                  order: 47
 
                 # VNC 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
                 - id: vnc-0-dev

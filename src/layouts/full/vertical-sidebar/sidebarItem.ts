@@ -92,6 +92,21 @@ const sidebarItem: menu[] = [
         to: "/definitions",
         children: []
     },
+    {
+        header: 'Analytics'
+    },
+    {
+        title: "Dashboard",
+        icon: 'dashboard',
+        BgColor: 'primary',
+        to: "/analytics",
+    },
+    {
+        title: "Heatmap",
+        icon: 'ibm-process-mining',
+        BgColor: 'primary',
+        to: "/analytics/heatmap",
+    },
 ]
 
 export default sidebarItem;

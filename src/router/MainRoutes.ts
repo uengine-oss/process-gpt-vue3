@@ -58,6 +58,11 @@ const MainRoutes = {
             component: () => import('@/views/apps/chat/Chats.vue')
         },
         {
+            name: 'Chat Room',
+            path: '/chat',
+            component: () => import('@/views/chat/ChatRoomPage.vue')
+        },
+        {
             name: 'Proposals',
             path: '/proposals',
             component: () => import('@/views/apps/proposal/Proposals.vue')
@@ -119,6 +124,11 @@ const MainRoutes = {
             component: () => import('@/components/ui/AdminDetail.vue'),
         },
         {
+            name: 'TaskCatalogAdmin',
+            path: '/admin/task-catalog',
+            component: () => import('@/components/admin/TaskCatalogAdmin.vue')
+        },
+        {
             name: 'Mega Process Detail',
             path: '/definition-map/mega/:id',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
@@ -131,7 +141,7 @@ const MainRoutes = {
         },
         {
             name: 'Sub Process Detail',
-            path: '/definition-map/sub/:id',
+            path: '/definition-map/sub/:pathMatch(.*)*',
             component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
             props: { componentName: 'SubProcessDetail' }
         },
@@ -144,6 +154,17 @@ const MainRoutes = {
             name: 'Account Setting',
             path: '/account-settings',
             component: () => import('@/views/pages/account-settings/AccountSettings.vue')
+        },
+        
+        {
+            name: 'Skills Management',
+            path: '/skills',
+            component: () => import('@/components/SkillsManagement.vue')
+        },
+        {
+            name: 'Skill Detail',
+            path: '/skills/:id',
+            component: () => import('@/components/SkillDetail.vue')
         },
         // 기존 페이지 방식으로 띄울 때 사용하던 이용약관 주석
         // {
@@ -160,6 +181,21 @@ const MainRoutes = {
             name: 'BSCard',
             path: '/bscard',
             component: () => import('@/components/ui/BSCard.vue')
+        },
+        {
+            name: 'Business Rules',
+            path: '/business-rule',
+            component: () => import('@/components/business-rules/BusinessRuleDefinitions.vue')
+        },
+        {
+            name: 'Business Rules New',
+            path: '/business-rule/new',
+            component: () => import('@/components/business-rules/BusinessRuleDefinitions.vue')
+        },
+        {
+            name: 'Business Rules Detail',
+            path: '/business-rule/:ruleId',
+            component: () => import('@/components/business-rules/BusinessRuleDefinitions.vue')
         },
         {
             name: 'Schedule',
@@ -376,6 +412,18 @@ const MainRoutes = {
             name: 'API Test',
             path: '/api/test',
             component: () => import('@/components/TestPage.vue')
+        },
+
+        // ============== Analytics Routes ==============
+        {
+            name: 'Analytics Dashboard',
+            path: '/analytics',
+            component: () => import('@/views/analytics/Dashboard.vue')
+        },
+        {
+            name: 'Heatmap',
+            path: '/analytics/heatmap',
+            component: () => import('@/views/analytics/BottleneckAnalysis.vue')
         }
     ]
 };
