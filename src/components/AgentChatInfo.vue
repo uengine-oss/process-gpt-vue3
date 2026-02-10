@@ -1,6 +1,6 @@
 <template>
     <div v-if="agentInfo">
-        <div v-if="!editDialog && !editSkills">
+        <div v-if="!editDialog && !toolPriorityDialog">
             <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
             <div class="text-left">
                 <v-row class="align-start pa-4 ma-0">
@@ -42,6 +42,20 @@
                         class="rounded-pill flex-shrink-0 ml-2"
                     >
                         <Icons :icon="'pencil'" :size="14"/>
+                    </v-btn>
+                    <!-- 도구 우선순위 지정 버튼 -->
+                    <v-btn 
+                        v-if="!agentInfo?.is_default"
+                        @click="openToolPriorityDialog"
+                        variant="text"
+                        :size="20"
+                        icon
+                        class="rounded-pill flex-shrink-0 ml-1"
+                    >
+                        <v-icon size="14">mdi-sort</v-icon>
+                        <v-tooltip activator="parent" location="bottom">
+                            {{ $t('agentField.toolPriorityButton') }}
+                        </v-tooltip>
                     </v-btn>
                 </v-row>
                 
@@ -162,26 +176,11 @@
                     </p>
 
                     <!-- Skills Section (agent / a2a / pgagent) -->
-                    <div v-if="isSectionVisible('skills')" class="d-flex align-center pa-0 mb-1">
-                        <span class="text-body-2 font-weight-medium mr-1">
-                            <v-icon size="small" class="mr-1">mdi-brain</v-icon>
-                            {{ parsedSkills ? $t('AgentSkills.skills') : $t('agentField.agentSkills') }}
-                        </span>
-                        <v-btn
-                            v-if="agentType === 'agent' && agentInfo.id"
-                            variant="text"
-                            icon
-                            size="x-small"
-                            @click="openSkillHistory"
-                            class="ml-auto"
-                        >
-                            <v-icon size="small">mdi-history</v-icon>
-                            <v-tooltip activator="parent" location="left">
-                                스킬 변경 이력
-                            </v-tooltip>
-                        </v-btn>
+                    <div v-if="isSectionVisible('skills')" class="pa-0 mb-1">
+                        <v-icon size="small" class="mr-1">mdi-brain</v-icon>
+                        <span class="text-body-2 font-weight-medium">{{ parsedSkills ? $t('AgentSkills.skills') : $t('agentField.agentSkills') }}</span>
                     </div>
-                    <v-chip-group v-if="isSectionVisible('skills') && !editSkills && parsedSkills && parsedSkills.length > 0" class="mb-3">
+                    <v-chip-group v-if="isSectionVisible('skills') && parsedSkills && parsedSkills.length > 0" class="mb-3">
                         <v-chip
                             v-for="skill in parsedSkills"
                             :key="skill"
@@ -192,7 +191,7 @@
                             {{ skill }}
                         </v-chip>
                     </v-chip-group>
-                    <p v-else-if="isSectionVisible('skills') && !editSkills && !parsedSkills" class="text-body-2 text-medium-emphasis mb-3">
+                    <p v-else-if="isSectionVisible('skills') && !parsedSkills" class="text-body-2 text-medium-emphasis mb-3">
                         {{ agentInfo?.skills }}
                     </p>
 
@@ -266,14 +265,15 @@
             </div>
         </div>
 
-        <AgentSkills 
-            v-else-if="!editDialog && editSkills"
-            :agentInfo="agentInfo"
-            :agentSkills="parsedSkills"
-            :isLoading="isSkillLoading"
-            @closeEditSkills="toggleEdit('skills')"
-            @update:skillFileName="openSkillFile"
-        />
+        <div v-else-if="!editDialog && toolPriorityDialog">
+            <AgentToolPriority
+                :modelValue="toolPriorityDialog"
+                :agentInfo="agentInfo"
+                @update:modelValue="toolPriorityDialog = $event"
+                @agentUpdated="onToolPriorityUpdated"
+                @close="toolPriorityDialog = false"
+            />
+        </div>
 
         <!-- 편집 모드일 때 OrganizationEditDialog 표시 -->
         <div v-else>
@@ -286,19 +286,18 @@
                 @deleteAgent="onDeleteAgent"
             />
         </div>
-
     </div>
 </template>
 
 <script>
 import OrganizationEditDialog from '@/components/ui/OrganizationEditDialog.vue';
-import AgentSkills from '@/components/AgentSkills.vue';
+import AgentToolPriority from '@/components/AgentToolPriority.vue';
 
 export default {
     name: 'AgentChatInfo',
     components: {
         OrganizationEditDialog,
-        AgentSkills
+        AgentToolPriority
     },
     props: {
         agentInfo: {
@@ -363,10 +362,6 @@ export default {
                     abled: false,
                     action: () => {}
                 },
-                skills: {
-                    abled: false,
-                    action: () => {}
-                },
                 endpoint: {
                     abled: false,
                     action: () => {}
@@ -377,7 +372,7 @@ export default {
                 }
             },
             agentType: 'agent',
-            selectedSkillsFile: null
+            toolPriorityDialog: false
         }
     },
     mounted() {
@@ -437,10 +432,6 @@ export default {
             }
         },
 
-        editSkills() {
-            return this.editProperties.skills.abled && this.agentType === 'agent';
-        },
-
         dmnTabList() {
             return this.dmnList.map(dmn => ({
                 id: dmn.id,
@@ -464,13 +455,6 @@ export default {
         },
     },
     methods: {
-        toggleEdit(type) {
-            if (this.editProperties[type].abled) {
-                this.editProperties[type].action();
-            }
-            this.editProperties[type].abled = !this.editProperties[type].abled;
-        },
-
         handleTabChange(newTab) {
             this.$emit('tabChange', newTab);
         },
@@ -611,14 +595,17 @@ export default {
             return this.parsedTools && this.parsedTools.length > 4;
         },
 
-        openSkillHistory() {
-            this.$emit('tabChange', 'skill-history');
-        },
-
         openDmnHistory() {
             this.$emit('tabChange', 'dmn-history');
-        }
+        },
 
+        openToolPriorityDialog() {
+            this.toolPriorityDialog = true;
+        },
+
+        onToolPriorityUpdated(updatedData) {
+            this.$emit('agentUpdated', updatedData);
+        }
     }
 }
 </script>

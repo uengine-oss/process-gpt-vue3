@@ -36,33 +36,65 @@
 
                     <div class="bubble-wrap" :class="{ 'bubble-wrap--my': isMyMessage(msg) }">
                         <div class="bubble" :class="{ 'bubble--my': isMyMessage(msg) }">
-                            <div class="message-text" v-html="formatMessage(msg.content)"></div>
+                            <div
+                                v-if="msg.content && msg.content.trim && msg.content.trim().length > 0"
+                                class="message-text"
+                                v-html="formatMessage(msg.content)"
+                            ></div>
+
+                            <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
+                                <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
+                                    <img
+                                        :src="image.url || image"
+                                        class="attached-image"
+                                        @click="emitPreviewImage(image.url || image)"
+                                    />
+                                    <v-btn
+                                        icon
+                                        size="x-small"
+                                        variant="tonal"
+                                        class="attached-image-download"
+                                        :disabled="!getAttachmentUrl(image)"
+                                        @click.stop="downloadAttachment(getAttachmentUrl(image), getAttachmentName(image, `image-${imgIdx + 1}`))"
+                                    >
+                                        <v-icon size="14">mdi-download</v-icon>
+                                    </v-btn>
+                                </div>
+                            </div>
+
+                            <div v-if="msg.pdfFile" class="attached-pdf mt-2">
+                                <div
+                                    class="attached-file-card"
+                                    role="button"
+                                    tabindex="0"
+                                    @click="getAttachmentUrl(msg.pdfFile) && emitOpenExternalUrl(getAttachmentUrl(msg.pdfFile))"
+                                >
+                                    <div class="attached-file-card__icon">
+                                        <v-icon size="18" color="primary">mdi-file-outline</v-icon>
+                                    </div>
+                                    <div class="attached-file-card__meta">
+                                        <div class="attached-file-card__name">
+                                            {{ msg.pdfFile.name || msg.pdfFile.fileName || '첨부파일' }}
+                                        </div>
+                                        <div class="attached-file-card__sub">
+                                            {{ formatAttachmentSub(msg.pdfFile) }}
+                                        </div>
+                                    </div>
+                                    <v-btn
+                                        icon
+                                        size="x-small"
+                                        variant="tonal"
+                                        :disabled="!getAttachmentUrl(msg.pdfFile)"
+                                        @click.stop="downloadAttachment(getAttachmentUrl(msg.pdfFile), getAttachmentName(msg.pdfFile, 'attachment'))"
+                                    >
+                                        <v-icon size="14">mdi-download</v-icon>
+                                    </v-btn>
+                                </div>
+                            </div>
                         </div>
                         <div v-if="msg.timeStamp" class="bubble-time" :class="{ 'bubble-time--my': isMyMessage(msg) }">
                             {{ formatTime(msg.timeStamp) }}
                         </div>
-                    </div>
-
-                    <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
-                        <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
-                            <img
-                                :src="image.url || image"
-                                class="attached-image"
-                                @click="emitPreviewImage(image.url || image)"
-                            />
-                        </div>
-                    </div>
-
-                    <div v-if="msg.pdfFile" class="attached-pdf mt-2">
-                        <v-chip
-                            color="primary"
-                            variant="tonal"
-                            size="small"
-                            @click="msg.pdfFile.url && emitOpenExternalUrl(msg.pdfFile.url)"
-                        >
-                            <v-icon start size="14">mdi-file-pdf-box</v-icon>
-                            {{ msg.pdfFile.name }}
-                        </v-chip>
                     </div>
 
                     <div v-if="msg.toolCalls && msg.toolCalls.length > 0" class="tool-calls">
@@ -219,6 +251,75 @@ export default {
         emitOpenExternalUrl(url) {
             if (!url) return;
             this.$emit('open-external-url', url);
+        },
+        getAttachmentUrl(fileOrUrl) {
+            if (!fileOrUrl) return '';
+            if (typeof fileOrUrl === 'string') return fileOrUrl;
+            return (
+                fileOrUrl.url ||
+                fileOrUrl.fileUrl ||
+                fileOrUrl.publicUrl ||
+                fileOrUrl.signedUrl ||
+                ''
+            );
+        },
+        getAttachmentName(fileObj, fallbackBaseName = 'download') {
+            if (!fileObj) return fallbackBaseName;
+            if (typeof fileObj === 'string') return this.getFilenameFromUrl(fileObj) || fallbackBaseName;
+            return fileObj.name || fileObj.fileName || this.getFilenameFromUrl(this.getAttachmentUrl(fileObj)) || fallbackBaseName;
+        },
+        getFilenameFromUrl(url) {
+            try {
+                const u = new URL(url);
+                const pathname = (u.pathname || '').toString();
+                const last = pathname.split('/').filter(Boolean).pop();
+                return last ? decodeURIComponent(last) : '';
+            } catch (e) {
+                return '';
+            }
+        },
+        formatBytes(bytes) {
+            const b = Number(bytes);
+            if (!Number.isFinite(b) || b <= 0) return '';
+            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), units.length - 1);
+            const v = b / Math.pow(1024, i);
+            const fixed = v >= 10 || i === 0 ? 0 : 1;
+            return `${v.toFixed(fixed)}${units[i]}`;
+        },
+        formatAttachmentSub(fileObj) {
+            try {
+                const size = this.formatBytes(fileObj?.size || fileObj?.fileSize);
+                const type = (fileObj?.type || fileObj?.fileType || '').toString();
+                const parts = [size, type].filter(Boolean);
+                return parts.join(' · ') || ' ';
+            } catch (e) {
+                return ' ';
+            }
+        },
+        async downloadAttachment(url, filename) {
+            if (!url) return;
+            const name = filename || this.getFilenameFromUrl(url) || 'download';
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const objectUrl = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = name;
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+                // revoke는 약간 지연시켜 다운로드 실패 확률을 낮춤
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            } catch (e) {
+                // CORS/네트워크 이슈 등으로 fetch 다운로드가 막히면 새 탭으로라도 열어준다.
+                this.emitOpenExternalUrl(url);
+            }
         },
         assistantLabel(msg) {
             // 기존 WorkAssistantChatPanel 스타일 유지: 기본 라벨은 AI 어시스턴트
@@ -401,6 +502,78 @@ export default {
     border-radius: 10px;
     cursor: pointer;
     border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.attached-image-item {
+    position: relative;
+    display: inline-block;
+}
+
+.attached-image-download {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    backdrop-filter: blur(6px);
+}
+
+.attached-file-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.attached-file-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(var(--v-theme-primary), 0.06);
+    cursor: pointer;
+    max-width: min(520px, 80vw);
+    user-select: none;
+}
+
+.attached-file-card:hover {
+    border-color: rgba(var(--v-theme-primary), 0.35);
+    background: rgba(var(--v-theme-primary), 0.09);
+}
+
+.attached-file-card__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(var(--v-theme-primary), 0.12);
+    flex: 0 0 auto;
+}
+
+.attached-file-card__meta {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.attached-file-card__name {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.78);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attached-file-card__sub {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .tool-calls {

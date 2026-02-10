@@ -57,15 +57,22 @@
                                     >
                                         <v-icon size="16" class="mr-1">mdi-account-multiple</v-icon>
                                         <span class="participants-count">{{ (currentChatRoom?.participants || []).length }}</span>
+                                        <v-icon
+                                            v-if="hasAgentFailure"
+                                            size="16"
+                                            color="error"
+                                            class="ml-1"
+                                        >mdi-alert</v-icon>
                                     </v-btn>
                                     <!-- 에이전트 연결중(웜업) 표시: 참가자 옆 원형 로딩 -->
-                                    <v-progress-circular
-                                        v-if="hasAgentWarming"
-                                        indeterminate
-                                        color="primary"
-                                        :size="14"
-                                        :width="2"
-                                    />
+                                    <template v-if="hasAgentWarming">
+                                        <v-progress-circular
+                                            indeterminate
+                                            color="primary"
+                                            :size="14"
+                                            :width="2"
+                                        />
+                                    </template>
                                 </div>
                             </div>
                         </div>
@@ -130,6 +137,8 @@
                         @preview-image="openImagePreview"
                         @open-external-url="openExternalUrl"
                         @beforeReply="handleBeforeReply"
+                        @invite-agent="handleInviteAgent"
+                        @getMoreChat="loadMoreMessages"
                     />
                 </div>
 
@@ -223,6 +232,8 @@
                             @preview-image="openImagePreview"
                             @open-external-url="openExternalUrl"
                             @beforeReply="handleBeforeReply"
+                            @invite-agent="handleInviteAgent"
+                            @getMoreChat="loadMoreMessages"
                         />
                     </div>
 
@@ -315,6 +326,8 @@
                         @preview-image="openImagePreview"
                         @open-external-url="openExternalUrl"
                         @beforeReply="handleBeforeReply"
+                        @invite-agent="handleInviteAgent"
+                        @getMoreChat="loadMoreMessages"
                     />
                 </div>
 
@@ -627,10 +640,20 @@ export default {
             messages: [],
             chatsWatchRef: null,
 
+            // history pagination (10개씩)
+            historyPageSize: 10,
+            isLoadingHistory: false,
+            hasMoreHistory: true,
+            oldestLoadedTimeStamp: null,
+
             isSending: false,
             // 메시지 전송 중복 방지(더블 submit 등)
             _lastClientSendKey: null,
             _lastClientSendAt: 0,
+
+            // 전체 에이전트 디렉토리 캐시(추천 기능용)
+            _agentDirectoryCache: null,
+            _agentDirectoryCacheAt: 0,
 
             // draft settings (새 채팅)
             draftName: '새 채팅',
@@ -761,13 +784,61 @@ export default {
                     __idx: idx
                 };
             });
-            // 참여자 목록: 내 계정 최상단 고정(나 외에는 기존 순서 유지)
+            // 참여자 목록 정렬:
+            // 1) 나(본인) 최상단
+            // 2) 일반 유저: 이름(가나다/알파벳) 오름차순
+            // 3) 에이전트: 이름(가나다/알파벳) 오름차순
+            const collator = new Intl.Collator(['ko', 'en'], {
+                sensitivity: 'base',
+                numeric: true,
+                ignorePunctuation: true
+            });
+
+            const getDisplayName = (p) => (p?.username || p?.name || p?.userName || p?.email || p?.id || '').toString().trim();
+
+            const isMe = (p) => !!(me && this.participantMatches(p, me));
+
+            const isAgent = (p) => {
+                if (!p) return false;
+                // defaultSetting 기반 에이전트
+                if (p?.id && this.defaultSetting?.getAgentById?.(p.id)) return true;
+                // participant flags (다양한 소스 호환)
+                if (p?.isAgent === true) return true;
+                if (p?.agent === true) return true;
+                if (p?.is_agent === true) return true;
+                const at = (p?.agent_type || p?.agentType || '').toString().toLowerCase();
+                if (at === 'agent') return true;
+                // system은 agent 그룹으로 간주
+                if (p?.id === 'system_id' || p?.email === 'system@uengine.org') return true;
+                const roleOrType = (p?.role || p?.type || '').toString().toLowerCase();
+                if (roleOrType === 'agent' || roleOrType === 'assistant') return true;
+                return false;
+            };
+
+            const byName = (a, b) => {
+                const an = getDisplayName(a);
+                const bn = getDisplayName(b);
+                const c = collator.compare(an, bn);
+                if (c !== 0) return c;
+                // 동률이면 id/email로 한번 더, 그래도 동률이면 원래 순서
+                const ak = (a?.id || a?.email || an || '').toString();
+                const bk = (b?.id || b?.email || bn || '').toString();
+                const c2 = collator.compare(ak, bk);
+                if (c2 !== 0) return c2;
+                return (a.__idx ?? 0) - (b.__idx ?? 0);
+            };
+
             merged.sort((a, b) => {
-                const aIsMe = !!(me && this.participantMatches(a, me));
-                const bIsMe = !!(me && this.participantMatches(b, me));
+                const aIsMe = isMe(a);
+                const bIsMe = isMe(b);
                 if (aIsMe && !bIsMe) return -1;
                 if (!aIsMe && bIsMe) return 1;
-                return (a.__idx ?? 0) - (b.__idx ?? 0);
+
+                const aIsAgent = isAgent(a);
+                const bIsAgent = isAgent(b);
+                if (!aIsAgent && bIsAgent) return -1; // 일반 유저 먼저
+                if (aIsAgent && !bIsAgent) return 1;  // 에이전트는 뒤로
+                return byName(a, b);
             });
             return merged.map(({ __idx, ...rest }) => rest);
         },
@@ -788,6 +859,12 @@ export default {
         // 참가자 영역 "연결중" 로딩바용 (warmup 중인 에이전트가 있는가)
         hasAgentWarming() {
             return (this.agentParticipants || []).some((a) => this.getAgentStatus(a.id)?.state === 'warming');
+        },
+        failedAgentParticipants() {
+            return (this.agentParticipants || []).filter((a) => this.getAgentStatus(a.id)?.state === 'error');
+        },
+        hasAgentFailure() {
+            return (this.failedAgentParticipants || []).length > 0;
         },
         // 실제로 "중지(Abort)" 가능한 스트림이 현재 방에 존재하는가
         hasAbortableStream() {
@@ -1037,7 +1114,8 @@ export default {
                 const msg = {
                     uuid: msgUuid,
                     role: 'user',
-                    content: text || (hasFile ? '첨부된 파일을 확인해주세요.' : '첨부된 내용을 확인해주세요.'),
+                    // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
+                    content: text || '',
                     timeStamp: nowIso,
                     email: this.userInfo?.email || null,
                     name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
@@ -1048,7 +1126,12 @@ export default {
                 await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
 
                 // room last message
-                room.message = { msg: (msg.content || '').substring(0, 50), type: 'text', createdAt: nowIso };
+                const fileName = (payload?.file?.name || payload?.file?.fileName || '').toString();
+                const preview =
+                    (text || '').substring(0, 50) ||
+                    (hasFile ? fileName.substring(0, 50) : '') ||
+                    (hasImages ? `이미지 ${((payload?.images || []).length || 0)}장` : '');
+                room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await backend.putObject('db://chat_rooms', room);
                 this.EventBus.emit('chat-rooms-updated');
 
@@ -1098,7 +1181,8 @@ export default {
                 const msg = {
                     uuid: msgUuid,
                     role: 'user',
-                    content: text || (hasFile ? '첨부된 파일을 확인해주세요.' : '첨부된 내용을 확인해주세요.'),
+                    // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
+                    content: text || '',
                     timeStamp: nowIso,
                     email: this.userInfo?.email || null,
                     name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
@@ -1108,7 +1192,12 @@ export default {
                 };
                 await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
 
-                room.message = { msg: (msg.content || '').substring(0, 50), type: 'text', createdAt: nowIso };
+                const fileName = (payload?.file?.name || payload?.file?.fileName || '').toString();
+                const preview =
+                    (text || '').substring(0, 50) ||
+                    (hasFile ? fileName.substring(0, 50) : '') ||
+                    (hasImages ? `이미지 ${((payload?.images || []).length || 0)}장` : '');
+                room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await backend.putObject('db://chat_rooms', room);
                 this.EventBus.emit('chat-rooms-updated');
 
@@ -1215,6 +1304,8 @@ export default {
         async bootstrapRoom(roomId) {
             this.isLoadingRoom = true;
             try {
+                // 방 전환 시 히스토리 페이지네이션 상태 초기화
+                this.resetHistoryPagination();
                 this.userInfo = await backend.getUserInfo();
                 if (!this.userList || this.userList.length === 0) {
                     await this.loadUserList();
@@ -1282,19 +1373,112 @@ export default {
         },
         async loadMessages(roomId) {
             this.messages = [];
-            const rows = await backend.getMessages(roomId);
-            if (rows && rows.length > 0) {
-                const all = rows.map((row) => {
-                    const m = row.messages || {};
-                    m.uuid = row.uuid || m.uuid || this.uuid();
+            this.resetHistoryPagination();
+            if (!roomId) return;
+
+            this.isLoadingHistory = true;
+            try {
+                // 최신 10개만 불러오기 (최신 desc -> 화면은 asc로 보여주기 위해 reverse)
+                const rows = await backend.getMessages(roomId, {
+                    size: this.historyPageSize,
+                    orderBy: `messages->>timeStamp`,
+                    sort: 'desc',
+                });
+                const list = Array.isArray(rows) ? rows : [];
+                const mapped = list.map((row) => {
+                    const m = row?.messages || {};
+                    m.uuid = row?.uuid || m.uuid || this.uuid();
                     return m;
                 });
-                all.sort((a, b) => new Date(a.timeStamp) - new Date(b.timeStamp));
-                this.messages = all;
+                // desc로 받아왔으니 asc로 정렬된 형태가 되도록 reverse
+                const asc = mapped.reverse();
+                this.messages = asc;
+
+                this.hasMoreHistory = mapped.length >= this.historyPageSize;
+                this.oldestLoadedTimeStamp = this.messages?.[0]?.timeStamp || null;
+            } catch (e) {
+                this.messages = [];
+                this.hasMoreHistory = false;
+                this.oldestLoadedTimeStamp = null;
+            } finally {
+                this.isLoadingHistory = false;
             }
             // 기존 채팅방 재진입 시: 이전 pdf2bpmn 작업 감지/구독 복구
             await this.checkExistingPdf2BpmnTask(roomId);
             this.$nextTick(() => this.scrollToBottomSafe());
+        },
+
+        resetHistoryPagination() {
+            this.isLoadingHistory = false;
+            this.hasMoreHistory = true;
+            this.oldestLoadedTimeStamp = null;
+        },
+
+        async loadMoreMessages() {
+            // Chat.vue(스크롤)에서 상단 도달 시 emit(getMoreChat)
+            const targetRoomId = this.currentChatRoom?.id || this.roomId || null;
+            if (!targetRoomId) return;
+            if (this.isLoadingHistory) return;
+            if (!this.hasMoreHistory) return;
+
+            const cursorTs = this.oldestLoadedTimeStamp;
+            if (!cursorTs) return;
+
+            // 현재 스크롤 위치 고정(상단 prepend 시 점프 방지)
+            let container = null;
+            try {
+                container = this.$refs?.chatView?.$refs?.scrollContainer?.$el || null;
+            } catch (e) {
+                container = null;
+            }
+            const prevScrollHeight = container?.scrollHeight || 0;
+            const prevScrollTop = container?.scrollTop || 0;
+
+            this.isLoadingHistory = true;
+            try {
+                const rows = await backend.getMessages(targetRoomId, {
+                    size: this.historyPageSize,
+                    orderBy: `messages->>timeStamp`,
+                    sort: 'desc',
+                    endBefore: cursorTs,
+                });
+                const list = Array.isArray(rows) ? rows : [];
+                if (list.length === 0) {
+                    this.hasMoreHistory = false;
+                    return;
+                }
+
+                const mapped = list.map((row) => {
+                    const m = row?.messages || {};
+                    m.uuid = row?.uuid || m.uuid || this.uuid();
+                    return m;
+                }).reverse(); // asc
+
+                // 중복 방지(uuid 기준)
+                const existingUuids = new Set((this.messages || []).map(m => m?.uuid).filter(Boolean));
+                const toPrepend = mapped.filter(m => !existingUuids.has(m?.uuid));
+                if (toPrepend.length > 0) {
+                    this.messages = [...toPrepend, ...(this.messages || [])];
+                    this.oldestLoadedTimeStamp = this.messages?.[0]?.timeStamp || this.oldestLoadedTimeStamp;
+                }
+
+                this.hasMoreHistory = list.length >= this.historyPageSize;
+
+                // prepend 후 스크롤 위치 복구
+                this.$nextTick(() => {
+                    try {
+                        const c = container || this.$refs?.chatView?.$refs?.scrollContainer?.$el;
+                        if (!c) return;
+                        const nextScrollHeight = c.scrollHeight || 0;
+                        const delta = nextScrollHeight - prevScrollHeight;
+                        c.scrollTop = prevScrollTop + delta;
+                    } catch (e) {}
+                });
+            } catch (e) {
+                // 네트워크/쿼리 오류 시에는 더 불러오기를 멈추지 않고 다음 시도 가능하게 둔다.
+            } finally {
+                this.isLoadingHistory = false;
+            }
         },
         async subscribeToRoom(roomId) {
             try {
@@ -1483,18 +1667,30 @@ export default {
                 const msg = {
                     uuid: msgUuid,
                     role: 'user',
-                    content: text || (hasFile ? '첨부된 파일을 확인해주세요.' : '첨부된 내용을 확인해주세요.'),
+                    // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
+                    content: text || '',
                     timeStamp: nowIso,
                     email: this.userInfo?.email || null,
                     name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     userName: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
                     images: payload.images || [],
-                    pdfFile: payload.file || null
+                    pdfFile: payload.file || null,
+                    // mention 메타데이터 (UI 표시 + 라우팅에 사용)
+                    mentionedUsers: Array.isArray(payload?.mentionedUsers) ? payload.mentionedUsers : [],
+                    // reply 메타데이터 (UI에서 표시)
+                    replyUuid: payload?.reply?.uuid || null,
+                    replyUserName: payload?.reply?.name || null,
+                    replyContent: payload?.reply?.content || null
                 };
                 await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: this.currentChatRoom.id, messages: msg });
 
                 // last message update
-                this.currentChatRoom.message = { msg: (msg.content || '').substring(0, 50), type: 'text', createdAt: nowIso };
+                const fileName = (payload?.file?.name || payload?.file?.fileName || '').toString();
+                const preview =
+                    (text || '').substring(0, 50) ||
+                    (hasFile ? fileName.substring(0, 50) : '') ||
+                    (hasImages ? `이미지 ${((payload?.images || []).length || 0)}장` : '');
+                this.currentChatRoom.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await backend.putObject('db://chat_rooms', this.currentChatRoom);
 
                 this.messages.push(msg);
@@ -1502,7 +1698,7 @@ export default {
                 this.$nextTick(() => this.scrollToBottomSafe());
 
                 // ---- 멀티 에이전트 라우팅/스트리밍 ----
-                const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '');
+                const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', msg.mentionedUsers || []);
                 if (agentTargets.length > 0) {
                     await this.streamAgents(agentTargets, msg.content || '', payload);
                 }
@@ -1510,6 +1706,196 @@ export default {
                 // ignore
             } finally {
                 this.isSending = false;
+            }
+        },
+
+        // ===== 자동 추천(초대) =====
+        _tokenizeForRecommend(text) {
+            const s = (text || '').toString().toLowerCase();
+            const tokens = s
+                .split(/[\s,.;:(){}\[\]"'`~!@#$%^&*+=<>/?\\|]+/g)
+                .map(t => t.trim())
+                .filter(t => t.length >= 2)
+                .slice(0, 12);
+            // uniq preserve order
+            const seen = new Set();
+            const out = [];
+            for (const t of tokens) {
+                if (seen.has(t)) continue;
+                seen.add(t);
+                out.push(t);
+            }
+            return out;
+        },
+
+        _agentHaystackForRecommend(agent) {
+            const a = agent || {};
+            const parts = [
+                a.username,
+                a.name,
+                a.alias,
+                a.role,
+                a.goal,
+                a.persona,
+                a.description,
+                a.tools,
+                typeof a.skills === 'string' ? a.skills : (a.skills ? JSON.stringify(a.skills) : ''),
+            ]
+                .filter(Boolean)
+                .map(v => (v || '').toString().toLowerCase());
+            return parts.join(' | ');
+        },
+
+        _scoreAgentForRecommend(agent, tokens) {
+            const hay = this._agentHaystackForRecommend(agent);
+            if (!hay) return 0;
+            const ts = Array.isArray(tokens) ? tokens : [];
+            let score = 0;
+            for (const t of ts) {
+                if (t && hay.includes(t)) score += 1;
+            }
+            return score;
+        },
+
+        _pickRecommendationCandidates(allAgents, userText, excludeIds, limit = 80) {
+            const list = Array.isArray(allAgents) ? allAgents : [];
+            const exclude = new Set((excludeIds || []).map(x => (x || '').toString()).filter(Boolean));
+            const tokens = this._tokenizeForRecommend(userText);
+
+            const filtered = list.filter(a => {
+                const id = (a?.id || a?.uid || '').toString();
+                if (!id) return false;
+                if (exclude.has(id)) return false;
+                if (a?.is_hidden === true) return false;
+                // 안전장치: is_agent가 명시된 경우만 통과
+                if (a?.is_agent === false) return false;
+                return true;
+            });
+
+            const scored = filtered.map((a, idx) => ({
+                a,
+                idx,
+                score: this._scoreAgentForRecommend(a, tokens),
+            }));
+
+            scored.sort((x, y) => {
+                if (y.score !== x.score) return y.score - x.score;
+                return x.idx - y.idx; // stable
+            });
+
+            const top = scored.slice(0, Math.max(10, Math.min(120, limit))).map(x => x.a);
+            return top;
+        },
+
+        async _getAgentDirectoryCached(ttlMs = 60_000) {
+            const now = Date.now();
+            if (this._agentDirectoryCache && (now - (this._agentDirectoryCacheAt || 0)) < ttlMs) {
+                return Array.isArray(this._agentDirectoryCache) ? this._agentDirectoryCache : [];
+            }
+            try {
+                const list = await backend.getAgentList?.();
+                const out = Array.isArray(list) ? list : [];
+                this._agentDirectoryCache = out;
+                this._agentDirectoryCacheAt = now;
+                return out;
+            } catch (e) {
+                return [];
+            }
+        },
+
+        async handleInviteAgent(_payload) {
+            try {
+                if (!this.currentChatRoom?.id) return;
+                const roomId = this.currentChatRoom.id;
+                const messageUuid = (_payload?.messageUuid || '').toString();
+                const agentId = (_payload?.agentId || '').toString();
+                if (!messageUuid || !agentId) return;
+
+                // 1) 추천 메시지(invited 상태) 업데이트 + 저장
+                const recIdx = this.messages.findIndex(m => m?.uuid === messageUuid);
+                if (recIdx !== -1) {
+                    const recMsg = this.messages[recIdx];
+                    const rec = recMsg?.__agentInviteRecommendation || null;
+                    if (rec) {
+                        if (!rec.invited) rec.invited = {};
+                        if (rec.invited[agentId] === true) {
+                            // 이미 처리됨(중복 클릭 방지)
+                        } else {
+                            rec.invited[agentId] = true;
+                        }
+                    }
+                    await backend.putObject(`db://chats/${messageUuid}`, {
+                        uuid: messageUuid,
+                        id: roomId,
+                        messages: this.messages[recIdx],
+                    });
+                }
+
+                // 2) 채팅방 참가자에 에이전트 추가 + 저장
+                let agentMeta = null;
+                try {
+                    agentMeta = this.defaultSetting?.getAgentById?.(agentId) || null;
+                } catch (e) {}
+                if (!agentMeta) {
+                    try {
+                        agentMeta = await backend.getUserById(agentId);
+                    } catch (e) {
+                        agentMeta = null;
+                    }
+                }
+                const agentPart = this.normalizeParticipant(agentMeta || { id: agentId, username: agentId });
+
+                const curParts = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
+                const normalized = curParts.map(p => this.normalizeParticipant(p)).filter(Boolean);
+                const exists = normalized.some(p => this.participantMatches(p, agentPart));
+                if (!exists) {
+                    this.currentChatRoom.participants = [...curParts, agentPart].filter(Boolean);
+                    await backend.putObject('db://chat_rooms', this.currentChatRoom);
+                    this.EventBus.emit('chat-rooms-updated');
+                }
+
+                // 3) 트리거(직전 사용자 요청) 찾아서 해당 에이전트로만 자동 재호출
+                let triggerUuid = null;
+                try {
+                    const recMsg = recIdx !== -1 ? this.messages[recIdx] : null;
+                    triggerUuid = recMsg?.__agentInviteRecommendation?.triggerUserUuid || null;
+                } catch (e) {}
+
+                let triggerMsg = null;
+                if (triggerUuid) {
+                    triggerMsg = this.messages.find(m => m?.uuid === triggerUuid) || null;
+                }
+                if (!triggerMsg) {
+                    // fallback: 마지막 user 메시지
+                    const reversed = [...(this.messages || [])].reverse();
+                    triggerMsg = reversed.find(m => (m?.role || '').toString() === 'user') || null;
+                }
+
+                const userText = (triggerMsg?.content || '').toString();
+                const resendPayload = {
+                    images: Array.isArray(triggerMsg?.images) ? triggerMsg.images : [],
+                    file: triggerMsg?.pdfFile || null,
+                };
+
+                const agentTarget = {
+                    id: agentId,
+                    username: (agentMeta?.username || agentMeta?.name || agentPart?.username || agentId).toString(),
+                    email: agentMeta?.email || agentPart?.email || `agent:${agentId}`,
+                    profile: agentMeta?.profile || agentPart?.profile || null,
+                    alias: agentMeta?.alias || '',
+                    policy: 'must_reply',
+                    __routingDecision: {
+                        should_intervene: true,
+                        reply_mode: 'answer',
+                        reason: 'auto_invite_recommendation',
+                        confidence: null,
+                        agent_selection_reason: null,
+                    }
+                };
+
+                await this.streamAgents([agentTarget], userText, resendPayload);
+            } catch (e) {
+                // ignore
             }
         },
 
@@ -1599,18 +1985,21 @@ export default {
                 if (!id) return null;
                 if (id === PROCESS_GPT_AGENT_ID) {
                     const m = MAIN_PROCESS_GPT_AGENT_META;
-                    return `- id=${m.id}, name=${m.username}, alias=${m.alias}, role=${m.role}, goal=${m.goal}, description=${m.description}, tools=${m.tools}`;
+                    const inRoom = a?.in_room === true;
+                    return `- id=${m.id}, in_room=${inRoom}, name=${m.username}, alias=${m.alias}, role=${m.role}, goal=${m.goal}, description=${m.description}, tools=${m.tools}`;
                 }
                 const meta = this.defaultSetting?.getAgentById?.(id) || {};
-                const name = a?.username || meta?.username || id;
+                const inRoom = a?.in_room === true;
+                const name = a?.username || a?.name || meta?.username || id;
                 const alias = a?.alias || meta?.alias || '';
-                const role = meta?.role || '';
-                const goal = meta?.goal || '';
-                const persona = meta?.persona || '';
-                const description = meta?.description || '';
-                const tools = meta?.tools || '';
-                const skills = meta?.skills ? JSON.stringify(meta.skills) : '';
-                return `- id=${id}, name=${name}, alias=${alias}, role=${role}, goal=${goal}, persona=${persona}, description=${description}, tools=${tools}, skills=${skills}`;
+                const role = a?.role || meta?.role || '';
+                const goal = a?.goal || meta?.goal || '';
+                const persona = a?.persona || meta?.persona || '';
+                const description = a?.description || meta?.description || '';
+                const tools = a?.tools || meta?.tools || '';
+                const skillsObj = a?.skills ?? meta?.skills ?? null;
+                const skills = skillsObj ? (typeof skillsObj === 'string' ? skillsObj : JSON.stringify(skillsObj)) : '';
+                return `- id=${id}, in_room=${inRoom}, name=${name}, alias=${alias}, role=${role}, goal=${goal}, persona=${persona}, description=${description}, tools=${tools}, skills=${skills}`;
             }).filter(Boolean);
             return lines.length > 0 ? lines.join('\n') : '(없음)';
         },
@@ -1659,16 +2048,42 @@ export default {
             return Array.from(new Set(mentions));
         },
 
-        async resolveAgentTargetsForMessage(text) {
-            const agents = this.getAgentCandidates();
-            if (agents.length === 0) return [];
+        async resolveAgentTargetsForMessage(text, mentionedUsers = []) {
+            const inRoomAgentsRaw = this.getAgentCandidates();
+            if (inRoomAgentsRaw.length === 0) return [];
 
+            // 0) payload 기반 멘션(정확): 선택된 멘션이 있으면 그것만 응답
+            const mentioned = Array.isArray(mentionedUsers) ? mentionedUsers : [];
+            if (mentioned.length > 0) {
+                const ids = new Set(mentioned.map(u => (u?.id || '').toString()).filter(Boolean));
+                const pickedById = inRoomAgentsRaw.filter(a => a?.id && ids.has(a.id));
+                if (pickedById.length > 0) {
+                    return pickedById.map(a => ({ ...a, policy: 'must_reply' }));
+                }
+
+                // fallback: mentionText/username 기반 매칭
+                const norm = (v) => (v || '').toString().toLowerCase().replace(/\s+/g, '');
+                const mentionKeys = new Set(
+                    mentioned
+                        .flatMap(u => [u?.mentionText, u?.username, u?.alias, u?.id])
+                        .filter(Boolean)
+                        .map(norm)
+                );
+                const matched = inRoomAgentsRaw.filter(a => {
+                    const keys = [a.username, a.alias, a.id].filter(Boolean).map(norm);
+                    return keys.some(k => mentionKeys.has(k));
+                });
+                // 멘션은 했지만 에이전트가 아닌 유저만 멘션한 경우 → 에이전트는 응답하지 않음
+                return matched.map(a => ({ ...a, policy: 'must_reply' }));
+            }
+
+            // 1) 텍스트 기반 멘션(호환)
             const mentions = this.parseMentions(text);
             if (mentions.length > 0) {
                 // 멘션 있음: 멘션된 에이전트만 반드시 응답 (기존 동작 유지)
                 const norm = (v) => (v || '').toString().toLowerCase().replace(/\s+/g, '');
                 const mentionSet = new Set(mentions.map(norm));
-                const matched = agents.filter(a => {
+                const matched = inRoomAgentsRaw.filter(a => {
                     const keys = [a.username, a.alias, a.id].filter(Boolean).map(norm);
                     return keys.some(k => mentionSet.has(k));
                 });
@@ -1677,8 +2092,8 @@ export default {
 
             // 멘션 없음:
             // 1) "나 + 에이전트 1명" 1:1이면 무조건 응답
-            if (agents.length === 1) {
-                const only = agents[0];
+            if (inRoomAgentsRaw.length === 1) {
+                const only = inRoomAgentsRaw[0];
                 if (only?.id && this.isOneOnOneWithSingleAgent(only.id)) {
                     return [{ ...only, policy: 'must_reply' }];
                 }
@@ -1687,8 +2102,54 @@ export default {
             // 2) 그 외(그룹 채팅, 에이전트 2+, 또는 에이전트 1명+일반 유저 포함)는 router가 선별
             const routingLoadingUuid = this.addRoutingLoadingMessage();
             const recent_history = this.buildRecentHistoryForRouting(10);
-            const agents_info = this.buildAgentsInfoForRouting(agents);
-            const candidate_agent_ids = agents.map(a => a.id).filter(Boolean);
+            const inRoomIdSet = new Set((inRoomAgentsRaw || []).map(a => a?.id).filter(Boolean));
+            const excludeIds = Array.from(inRoomIdSet.values());
+
+            // 전체 에이전트(조직도/디렉토리)에서 후보를 일부만 뽑아 라우팅에 포함
+            const allAgents = await this._getAgentDirectoryCached(60_000);
+            const dirCandidates = this._pickRecommendationCandidates(allAgents, (text || '').toString(), excludeIds, 80);
+
+            const inRoomAgents = (inRoomAgentsRaw || []).map(a => {
+                const meta = a?.id ? (this.defaultSetting?.getAgentById?.(a.id) || {}) : {};
+                return {
+                    ...a,
+                    // prompt에 넣기 위한 메타(있으면)
+                    role: meta?.role || '',
+                    goal: meta?.goal || '',
+                    persona: meta?.persona || '',
+                    description: meta?.description || '',
+                    tools: meta?.tools || '',
+                    skills: meta?.skills || null,
+                    in_room: true,
+                };
+            });
+
+            const directoryAgents = (dirCandidates || [])
+                .map(a => {
+                    const id = (a?.id || a?.uid || '').toString();
+                    if (!id) return null;
+                    return {
+                        id,
+                        username: (a?.username || a?.name || a?.email || id).toString(),
+                        email: a?.email || null,
+                        profile: a?.profile || null,
+                        alias: a?.alias || '',
+                        role: a?.role || '',
+                        goal: a?.goal || '',
+                        persona: a?.persona || '',
+                        description: a?.description || '',
+                        tools: a?.tools || '',
+                        skills: a?.skills || null,
+                        in_room: false,
+                    };
+                })
+                .filter(Boolean)
+                // dedupe with in-room
+                .filter(a => !inRoomIdSet.has(a.id));
+
+            const allCandidates = [...inRoomAgents, ...directoryAgents];
+            const agents_info = this.buildAgentsInfoForRouting(allCandidates);
+            const candidate_agent_ids = allCandidates.map(a => a.id).filter(Boolean);
             try {
                 const routed = await agentRouterService.routeAgents({
                     user_message: (text || '').toString(),
@@ -1704,26 +2165,84 @@ export default {
                     this.removeRoutingLoadingMessage(routingLoadingUuid);
                     return [];
                 }
-                const picked = agents.filter(a => selectedSet.has(a.id));
-                if (picked.length === 0) {
+                // 방 안/밖으로 분리
+                const pickedInRoom = inRoomAgentsRaw.filter(a => selectedSet.has(a.id));
+                const pickedOutRoom = directoryAgents.filter(a => selectedSet.has(a.id));
+
+                if (pickedInRoom.length > 0) {
+                    return pickedInRoom.map(a => ({
+                        ...a,
+                        policy: 'must_reply',
+                        __routingLoadingUuid: routingLoadingUuid,
+                        __routingDecision: {
+                            should_intervene: true,
+                            reply_mode: routed?.reply_mode || null,
+                            reason: routed?.reason || '',
+                            confidence: routed?.confidence ?? null,
+                            agent_selection_reason: routed?.agent_selection_reason || null,
+                        }
+                    }));
+                }
+
+                // 방 안에 선택된 에이전트가 없고, 방 밖 후보만 선택된 경우 → 초대 카드 표시
+                if (pickedOutRoom.length > 0) {
                     this.removeRoutingLoadingMessage(routingLoadingUuid);
+                    try {
+                        const recommendUuid = this.uuid();
+                        const nowIso = new Date().toISOString();
+                        const recommendedAgents = pickedOutRoom.slice(0, 3).map(a => ({
+                            id: a.id,
+                            username: a.username || a.id,
+                            alias: a.alias || '',
+                            profile: a.profile || '/images/chat-icon.png',
+                            role: a.role || '',
+                            goal: a.goal || '',
+                            description: a.description || '',
+                        })).filter(x => x.id);
+                        if (recommendedAgents.length > 0) {
+                            const recMsg = {
+                                uuid: recommendUuid,
+                                role: 'assistant',
+                                content: '적절한 담당자를 초대해볼까요?',
+                                contentType: 'text',
+                                isLoading: false,
+                                toolCalls: [],
+                                timeStamp: nowIso,
+                                email: 'system@uengine.org',
+                                name: '',
+                                userName: '',
+                                agentId: '__router__',
+                                __agentInviteRecommendation: {
+                                    triggerUserUuid: null, // handleSendMessage에서 주입되는 user msg uuid를 쓰지 못하므로 아래에서 fallback 처리
+                                    recommendedAgents,
+                                    invited: {},
+                                    reason: routed?.agent_selection_reason || routed?.reason || '',
+                                    confidence: routed?.confidence ?? null,
+                                }
+                            };
+                            // triggerUserUuid를 직전 user 메시지로 설정 (가장 최근 user)
+                            try {
+                                const lastUser = [...(this.messages || [])].reverse().find(m => (m?.role || '') === 'user');
+                                if (lastUser?.uuid) recMsg.__agentInviteRecommendation.triggerUserUuid = lastUser.uuid;
+                            } catch (e) {}
+
+                            this.messages.push(recMsg);
+                            this.$nextTick(() => this.scrollToBottomSafe());
+                            await backend.putObject(`db://chats/${recommendUuid}`, {
+                                uuid: recommendUuid,
+                                id: this.currentChatRoom.id,
+                                messages: recMsg,
+                            });
+                        }
+                    } catch (e) {}
                     return [];
                 }
-                return picked.map(a => ({
-                    ...a,
-                    policy: 'must_reply',
-                    __routingLoadingUuid: routingLoadingUuid,
-                    __routingDecision: {
-                        should_intervene: true,
-                        reply_mode: routed?.reply_mode || null,
-                        reason: routed?.reason || '',
-                        confidence: routed?.confidence ?? null,
-                        agent_selection_reason: routed?.agent_selection_reason || null,
-                    }
-                }));
+
+                this.removeRoutingLoadingMessage(routingLoadingUuid);
+                return [];
             } catch (e) {
                 // fallback: 메인만 호출(단, 방에 참여 중인 경우)
-                const main = agents.find(a => a?.id === PROCESS_GPT_AGENT_ID);
+                const main = inRoomAgentsRaw.find(a => a?.id === PROCESS_GPT_AGENT_ID);
                 if (!main) {
                     this.removeRoutingLoadingMessage(routingLoadingUuid);
                     return [];

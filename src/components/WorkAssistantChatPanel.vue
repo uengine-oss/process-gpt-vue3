@@ -624,11 +624,11 @@ export default {
             
             // 텍스트가 없고 첨부만 있는 경우 기본 메시지 설정
             let userMessage = this.inputText.trim();
-            if (!userMessage && (currentPdfFile || currentImages.length > 0)) {
-                userMessage = currentPdfFile 
-                    ? 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.' 
-                    : '첨부된 내용을 확인해주세요.';
-            }
+            // if (!userMessage && (currentPdfFile || currentImages.length > 0)) {
+            //     userMessage = currentPdfFile 
+            //         ? 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.' 
+            //         : '첨부된 내용을 확인해주세요.';
+            // }
             this.inputText = '';
             
             // 컨설팅 모드는 "사용자 메시지 라우팅"이 아니라,

@@ -2976,9 +2976,36 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName,
                 is_agent: newAgent.isAgent,
                 agent_type: newAgent.type,
-                alias: newAgent.alias
+                alias: newAgent.alias,
+                tool_priority: newAgent.tool_priority ?? null
             }
+
+            // users 테이블 업데이트
             await storage.putObject('users', putObj);
+
+            // agent_skills 테이블 동기화
+            if (putObj.id) {
+                const skillsArray =
+                    typeof putObj.skills === 'string'
+                        ? putObj.skills
+                            .split(',')
+                            .map((s: string) => s.trim())
+                            .filter((s: string) => s.length > 0)
+                        : Array.isArray(putObj.skills)
+                            ? putObj.skills
+                            : [];
+
+                try {
+                    await this.replaceAgentSkills({
+                        userId: putObj.id,
+                        skills: skillsArray,
+                        tenantId: putObj.tenant_id || window.$tenantName
+                    });
+                } catch (syncError) {
+                    console.error('[ProcessGPTBackend] replaceAgentSkills error:', syncError);
+                    // agent_skills 동기화 실패는 에이전트 저장 자체를 막지 않음
+                }
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3175,7 +3202,7 @@ class ProcessGPTBackend implements Backend {
         persona?: string | null;
     }): Promise<any> {
         try {
-            const response = await axios.post('/api/agent-feedback/setup-agent-knowledge', params);
+            const response = await axios.post('/agent-feedback/setup-agent-knowledge', params);
             return response.data;
         } catch (error) {
             //@ts-ignore
@@ -4944,13 +4971,37 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getMessages(chatRoomId: string) {
+    /**
+     * 채팅 메시지 조회 (페이지네이션 지원)
+     *
+     * chats 테이블 스키마에는 created_at 같은 정렬 컬럼이 없고 uuid는 랜덤이라
+     * messages->>'timeStamp' (ISO 문자열) 기준으로 정렬/커서를 잡는다.
+     *
+     * options:
+     * - size: number (가져올 개수)
+     * - sort: 'asc' | 'desc' (기본 'desc' = 최신부터)
+     * - orderBy: string (기본 "messages->>timeStamp")
+     * - endBefore: string (timeStamp ISO) - 이 값보다 "이전" 메시지들
+     * - startAfter: string (timeStamp ISO) - 이 값보다 "이후" 메시지들
+     */
+    async getMessages(chatRoomId: string, options: any = {}) {
         try {
-            let messages = await storage.list('chats', {
-                match: {
-                    id: chatRoomId
-                }
-            });
+            const sizeRaw = options?.size ?? options?.limit ?? null;
+            const size = Number(sizeRaw);
+            const orderBy = (options?.orderBy || `messages->>timeStamp`).toString();
+            const sort = (options?.sort || 'desc').toString();
+
+            const listOptions: any = {
+                match: { id: chatRoomId },
+                orderBy,
+                sort,
+            };
+            if (Number.isFinite(size) && size > 0) listOptions.size = size;
+            if (options?.endBefore) listOptions.endBefore = options.endBefore;
+            if (options?.startAfter) listOptions.startAfter = options.startAfter;
+            if (options?.range) listOptions.range = options.range;
+
+            const messages = await storage.list('chats', listOptions);
             return messages;
         } catch (error) {
             throw new Error(error.message);

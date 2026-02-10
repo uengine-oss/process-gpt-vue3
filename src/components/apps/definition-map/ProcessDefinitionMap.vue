@@ -972,7 +972,8 @@ export default {
             const msg = {
                 uuid: msgUuid,
                 role: 'user',
-                content: text || (hasFile ? '첨부된 파일을 확인해주세요.' : (hasImages ? '첨부된 내용을 확인해주세요.' : '')),
+                // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
+                content: text || '',
                 timeStamp: nowIso,
                 email: userInfo?.email || null,
                 name: userInfo?.username || userInfo?.name || userInfo?.email || '',
@@ -982,8 +983,13 @@ export default {
             };
 
             await backend.putObject(`db://chats/${msgUuid}`, { uuid: msgUuid, id: roomId, messages: msg });
-            // last message update
-            room.message = { msg: (msg.content || '').substring(0, 50), type: 'text', createdAt: nowIso };
+            // last message preview는 첨부 요약을 사용 (content는 비워둠)
+            const fileName = (message?.file?.name || message?.file?.fileName || '').toString();
+            const preview =
+                (text || '').substring(0, 50) ||
+                (hasFile ? fileName.substring(0, 50) : '') ||
+                (hasImages ? `이미지 ${((message?.images || []).length || 0)}장` : '');
+            room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
             await backend.putObject('db://chat_rooms', room);
 
             // ChatRoomPage에서 첫 메시지에 대한 에이전트 응답만 kick-off 하도록 sessionStorage에 전달
@@ -1214,11 +1220,6 @@ export default {
             console.log('[ProcessDefinitionMap] handleMainChatSubmit 받음:', message);
             // 파일만 있거나 텍스트만 있거나 둘 다 있는 경우 처리
             if (!message || (!message.text && !message.file && !message.images)) return;
-            
-            // 기본 텍스트 설정 (파일/이미지만 있는 경우)
-            if (!message.text && (message.file || message.images)) {
-                message.text = message.file ? 'PDF 파일을 분석하여 BPMN 프로세스를 생성해주세요.' : '첨부된 내용을 확인해주세요.';
-            }
 
             // 메인 채팅 전송 시: process-gpt-agent(가상) + 나 로 방 생성 후 /chat으로 이동
             await this.createRoomAndNavigateFromMainChat(message);

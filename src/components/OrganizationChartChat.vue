@@ -417,43 +417,18 @@ export default {
                 data: newAgent
             };
             this.editNode.children.push(agent);
-
-            // 1) 에이전트 정보를 DB(users 테이블)에 저장
             await this.backend.putAgent(newAgent);
 
-            // 2) 조직도 및 UI 갱신
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
 
-            // 3) 새로 추가한 노드 선택 → AgentBadgesDiagram에 해당 에이전트 표시 (fallback으로 newAgent 전달해 이름·설정 버튼 보장)
+            this.EventBus.emit('agentAdded', newAgent);
+
             this.$nextTick(() => {
                 this.$nextTick(async () => {
                     await this.$refs.organizationChart.selectAgentById(newAgent.id, newAgent);
                 });
             });
-
-            // 4) AgentList 실시간 업데이트를 위한 이벤트 발생 (좌측 폼 초기화 트리거)
-            this.EventBus.emit('agentAdded', newAgent);
-
-            // 5) 조직도 차트 갱신 후 에이전트 초기 지식 셋업 (상태는 뱃지 다이어그램에 표시)
-            await this.setupAgentKnowledge(newAgent);
-        },
-        async setupAgentKnowledge(newAgent) {
-            const payload = {
-                agent_id: newAgent.id,
-                goal: newAgent.goal || null,
-                persona: newAgent.persona || null
-            };
-
-            this.EventBus.emit('agentKnowledgeSetupStatus', { agentId: newAgent.id, status: 'pending' });
-
-            try {
-                await this.backend.setupAgentKnowledge(payload);
-                this.EventBus.emit('agentKnowledgeSetupStatus', { agentId: newAgent.id, status: 'success' });
-            } catch (error) {
-                console.error('[OrganizationChartChat] setup-agent-knowledge 호출 실패:', error);
-                this.EventBus.emit('agentKnowledgeSetupStatus', { agentId: newAgent.id, status: 'error' });
-            }
         },
         deleteNode(obj, children) {
             if (children && children.some(item => item.id == obj.id)) {

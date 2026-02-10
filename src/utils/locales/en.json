@@ -515,7 +515,20 @@
         "agentSkills": "Skills",
         "aiProvider": "AI Provider",
         "aiModel": "AI Model",
-        "alias": "Alias"
+        "alias": "Alias",
+        "resourcePriority": "Knowledge/Tools Usage Priority",
+        "resourcePriorityHint": "Use the up/down buttons to change priority. Items at the top are used first.",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "resourceLabelSkill": "Skill",
+        "resourceLabelDmnRule": "Business Rules",
+        "resourceLabelMem0": "Memory",
+        "resourceLabelOthers": "Others",
+        "resourceDescSkill": "Skills configured for this agent",
+        "resourceDescDmnRule": "Business rules defined in DMN",
+        "resourceDescMem0": "Personalized memory for work context and preferences",
+        "resourceDescOthers": "Other resources not listed above",
+        "toolPriorityButton": "Set Tool Priority"
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
