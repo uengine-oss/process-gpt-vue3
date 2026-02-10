@@ -56,6 +56,18 @@ jobs:
           echo "IMAGE_NAME_LATEST=$IMAGE_NAME_LATEST" >> $GITHUB_ENV
           echo "GATEWAY_CHANGED=${{ steps.changes.outputs.gateway }}" >> $GITHUB_ENV
 
+      - name: Set up Java for Gateway build
+        if: steps.changes.outputs.gateway == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'maven'
+
+      - name: Build Gateway JAR
+        if: steps.changes.outputs.gateway == 'true'
+        run: mvn -f gateway/pom.xml -DskipTests package
+
       - name: Build and push Gateway Docker image to GHCR
         if: steps.changes.outputs.gateway == 'true'
         run: |
