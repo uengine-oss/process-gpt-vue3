@@ -193,7 +193,7 @@
                         <v-window-item value="Account">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <AccountTab />
                             </div>
@@ -203,7 +203,7 @@
                         <v-window-item value="ManageAccess">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <ManageAccessTab :editable="superAdmin" />
                             </div>
@@ -213,7 +213,7 @@
                         <v-window-item v-if="!isUEngineMode" value="Drive">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <DriveTab />
                             </div>
@@ -223,7 +223,7 @@
                         <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <ConnectionInfoTab />
                             </div>
@@ -240,7 +240,7 @@
                         <v-window-item v-if="!isUEngineMode" value="MCP-Environments">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <MCPEnvSecretTab />
                             </div>
@@ -250,7 +250,7 @@
                         <v-window-item v-if="!isUEngineMode" value="Skills">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <SkillsTab />
                             </div>
@@ -258,7 +258,7 @@
                         <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
                             <div
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <TaskCatalogAdmin />
                             </div>
@@ -266,7 +266,7 @@
                         <v-window-item value="OrgChartGroup">
                             <div
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <OrgChartGroupTab />
                             </div>

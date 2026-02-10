@@ -3019,9 +3019,36 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName,
                 is_agent: newAgent.isAgent,
                 agent_type: newAgent.type,
-                alias: newAgent.alias
+                alias: newAgent.alias,
+                tool_priority: newAgent.tool_priority ?? null
             }
+
+            // users 테이블 업데이트
             await storage.putObject('users', putObj);
+
+            // agent_skills 테이블 동기화
+            if (putObj.id) {
+                const skillsArray =
+                    typeof putObj.skills === 'string'
+                        ? putObj.skills
+                            .split(',')
+                            .map((s: string) => s.trim())
+                            .filter((s: string) => s.length > 0)
+                        : Array.isArray(putObj.skills)
+                            ? putObj.skills
+                            : [];
+
+                try {
+                    await this.replaceAgentSkills({
+                        userId: putObj.id,
+                        skills: skillsArray,
+                        tenantId: putObj.tenant_id || window.$tenantName
+                    });
+                } catch (syncError) {
+                    console.error('[ProcessGPTBackend] replaceAgentSkills error:', syncError);
+                    // agent_skills 동기화 실패는 에이전트 저장 자체를 막지 않음
+                }
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3218,7 +3245,7 @@ class ProcessGPTBackend implements Backend {
         persona?: string | null;
     }): Promise<any> {
         try {
-            const response = await axios.post('/api/agent-feedback/setup-agent-knowledge', params);
+            const response = await axios.post('/agent-feedback/setup-agent-knowledge', params);
             return response.data;
         } catch (error) {
             //@ts-ignore
