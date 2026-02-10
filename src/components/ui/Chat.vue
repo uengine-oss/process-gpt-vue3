@@ -1477,7 +1477,7 @@
                             >
                                 <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
-                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
+                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" style="flex-shrink: 0;" />
                             <v-tooltip :text="$t('chat.headset')">
                                 <template v-slot:activator="{ props }">
                                     <v-btn @click="openChatMenu(); recordingModeChange()"
@@ -1763,28 +1763,21 @@
                             </v-btn>
                         </template>
                         <template v-else>
-                        <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                        <v-btn
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"
                             icon
                             variant="outlined"
                             size="small"
                             style="border-color: #e0e0e0 !important;"
-                            :disabled="isGenerationFinished"
+                            :disabled="isGenerationFinished || isMicRecorderLoading"
+                            @click="isMicRecording ? stopVoiceRecording() : startVoiceRecording()"
                         >
-                            <Icons :icon="'sharp-mic'" :size="'16'" />
+                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" :size="'16'" />
+                            <Icons v-else-if="isMicRecording" :icon="'stop'" :size="'16'" />
+                            <Icons v-else :icon="'sharp-mic'" :size="'16'" />
                         </v-btn>
-                        <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
-                            class="mr-1 text-medium-emphasis"
-                            density="comfortable"
-                            icon
-                            variant="outlined"
-                            size="small"
-                            style="border-color: #e0e0e0 !important;"
-                            :disabled="isGenerationFinished"
-                        >
-                            <Icons :icon="'stop'" :size="'16'" />
-                        </v-btn>
+                        
                         <v-tooltip :text="$t('chat.headset')">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="openChatMenu(); recordingModeChange()"
@@ -1801,8 +1794,7 @@
                                 </v-btn>
                             </template>
                         </v-tooltip>
-                        <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" />
-
+                        
                         <v-btn v-if="!(showStopButton || isLoading) && !isGenerationFinished"
                             class="cp-send text-medium-emphasis"
                             color="primary" 
@@ -2568,19 +2560,37 @@ export default {
             }
         },
         async startVoiceRecording() {
-            this.isMicRecording = true;
-
             if (!navigator.mediaDevices) {
-                alert('getUserMedia를 지원하지 않는 브라우저입니다.');
+                this.$try({
+                    action: async () => { throw new Error(); },
+                    errorMsg: this.$t('chat.micPermission.notSupported')
+                });
                 return;
             }
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.micRecorder = new MediaRecorder(stream);
-            this.micAudioChunks = [];
-            this.micRecorder.ondataavailable = e => {
-                this.micAudioChunks.push(e.data);
-            };
-            this.micRecorder.start();
+            try {
+                const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+                if (permissionStatus.state === 'denied') {
+                    this.$try({
+                        action: async () => { throw new Error(); },
+                        errorMsg: this.$t('chat.micPermission.denied')
+                    });
+                    return;
+                }
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                this.isMicRecording = true;
+                this.micRecorder = new MediaRecorder(stream);
+                this.micAudioChunks = [];
+                this.micRecorder.ondataavailable = e => {
+                    this.micAudioChunks.push(e.data);
+                };
+                this.micRecorder.start();
+            } catch (error) {
+                this.isMicRecording = false;
+                this.$try({
+                    action: async () => { throw new Error(); },
+                    errorMsg: this.$t('chat.micPermission.denied')
+                });
+            }
         },
         stopVoiceRecording() {
             this.isMicRecording = false;

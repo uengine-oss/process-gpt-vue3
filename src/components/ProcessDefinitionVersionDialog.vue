@@ -596,6 +596,7 @@ export default {
                             }
                         }
                     } else {
+                        if(!me.$route.params.pathMatch) return;
                         let defId = me.$route.params.pathMatch.join('/');
                         if(me.process && me.process.processDefinitionId) {
                             defId = me.process.processDefinitionId;
@@ -607,7 +608,25 @@ export default {
                             size: 1
                         });
                         if(versionInfo) {
-                            versionInfo.sort((a, b) => parseFloat(b.version) - parseFloat(a.version));
+                            const compareVersionParts = (va, vb) => {
+                                const aParts = String(va ?? '')
+                                    .split('.')
+                                    .map((p) => (p === '' ? 0 : Number(p)));
+                                const bParts = String(vb ?? '')
+                                    .split('.')
+                                    .map((p) => (p === '' ? 0 : Number(p)));
+
+                                const len = Math.max(aParts.length, bParts.length);
+                                for (let i = 0; i < len; i++) {
+                                    const ai = Number.isFinite(aParts[i]) ? aParts[i] : 0;
+                                    const bi = Number.isFinite(bParts[i]) ? bParts[i] : 0;
+                                    if (ai !== bi) return ai - bi;
+                                }
+                                return 0;
+                            };
+
+                            // "0.10" > "0.9" 처럼 점(.) 기준 숫자 비교로 정렬
+                            versionInfo.sort((a, b) => compareVersionParts(b.version, a.version));
                             const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
                             me.information.version = highestVersion
                         } else {

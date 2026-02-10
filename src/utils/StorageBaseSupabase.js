@@ -464,18 +464,18 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
-                // 루트 페이지('/')에서는 로그인 체크를 하지 않음
-                if (window.location.pathname === '/') {
+                // 루트 페이지('/') 및 인증 플로우 페이지에서는 로그인 체크 시 리다이렉트하지 않음
+                // (비밀번호 재설정 링크 등 세션 없이 접근해야 하는 경로)
+                const path = window.location.pathname;
+                if (path === '/' || path.startsWith('/auth/')) {
                     return null;
                 }
                 
-                if (window.location.pathname != '/auth/login') {
-                    await window.$app_.try({
-                        action: () => Promise.reject(new Error()),
-                        // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
-                    });
-                    window.location.href = '/auth/login';
-                }
+                await window.$app_.try({
+                    action: () => Promise.reject(new Error()),
+                    // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
+                });
+                window.location.href = '/auth/login';
             }
         } catch (e) {
             if (e instanceof StorageBaseError && e.cause) {

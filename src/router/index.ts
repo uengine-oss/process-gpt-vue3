@@ -32,10 +32,6 @@ export const retryDynamicImport = (importFn: () => Promise<any>, retries = 3, de
 export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
-        {
-            path: '/:pathMatch(.*)*',
-            component: () => retryDynamicImport(() => import('@/views/authentication/Error.vue'))
-        },
         // 외부 고객용 폼 URL
         {
             name: 'External Forms',
@@ -64,12 +60,22 @@ export const router = createRouter({
                 showNotes: route.query.showNotes,
                 pdfSeparateFragments: route.query.pdfSeparateFragments
             })
+        },
+        // 404 등 미매칭 경로는 마지막에 매칭되도록 catch-all을 맨 뒤에 둠 (예: /auth/reset-password가 Error로 떨어지지 않도록)
+        {
+            path: '/:pathMatch(.*)*',
+            component: () => retryDynamicImport(() => import('@/views/authentication/Error.vue'))
         }
     ]
 });
 
 // 라우터 에러 상태 추적
 let hasRouterError = false;
+
+function hasRecoveryTokenInHash(): boolean {
+    if (typeof window === 'undefined' || !window.location.hash) return false;
+    return /type=recovery|access_token=/.test(window.location.hash);
+}
 
 router.beforeEach(async (to: any, from: any, next: any) => {
     try {
@@ -79,12 +85,21 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             hasRouterError = false;
         }
 
+        // 이메일 복구 링크가 루트(/) 등 다른 경로로 열렸을 때 비밀번호 재설정 페이지로 보냄
+        if (hasRecoveryTokenInHash() && !to.path.includes('/auth/reset-password')) {
+            return next({ path: '/auth/reset-password', hash: window.location.hash });
+        }
+
         if (window.$mode !== 'uEngine') {
             if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms')) {
-                next();
+                return next();
             } else {
                 if (window.$isTenantServer) {
+                    // 비밀번호 재설정(복구) 플로우 중에는 세션이 있어도 테넌트 관리로 보내지 않음
                     if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {
+                        if (to.path === '/auth/reset-password' || hasRecoveryTokenInHash()) {
+                            return next();
+                        }
                         return next('/tenant/manage');
                     } else if (to.fullPath === '/' || 
                         to.matched.some((record) => TenantRoutes.children.includes(record as any))) {
