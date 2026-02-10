@@ -32,10 +32,6 @@ export const retryDynamicImport = (importFn: () => Promise<any>, retries = 3, de
 export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
-        {
-            path: '/:pathMatch(.*)*',
-            component: () => retryDynamicImport(() => import('@/views/authentication/Error.vue'))
-        },
         // 외부 고객용 폼 URL
         {
             name: 'External Forms',
@@ -64,6 +60,11 @@ export const router = createRouter({
                 showNotes: route.query.showNotes,
                 pdfSeparateFragments: route.query.pdfSeparateFragments
             })
+        },
+        // 404 등 미매칭 경로는 마지막에 매칭되도록 catch-all을 맨 뒤에 둠 (예: /auth/reset-password가 Error로 떨어지지 않도록)
+        {
+            path: '/:pathMatch(.*)*',
+            component: () => retryDynamicImport(() => import('@/views/authentication/Error.vue'))
         }
     ]
 });
@@ -81,7 +82,7 @@ router.beforeEach(async (to: any, from: any, next: any) => {
 
         if (window.$mode !== 'uEngine') {
             if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms')) {
-                next();
+                return next();
             } else {
                 if (window.$isTenantServer) {
                     if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {
