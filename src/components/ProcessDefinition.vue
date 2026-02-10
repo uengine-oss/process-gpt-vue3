@@ -15,48 +15,6 @@
                         <v-icon>mdi-alert-circle</v-icon>
                         <div class="ml-1">{{ $t('processDefinition.isReadOnlyMode') }}</div>
                     </v-row>
-                    <v-row class="ma-0 pa-0 button-container">
-                        <!-- 자동 레이아웃 버튼 -->
-                        <v-tooltip v-if="!isViewMode && !isPalUengine" :text="$t('PaletteProvider.autoLayout')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="applyAutoLayout" v-bind="props" class="btn-auto-layout"
-                                    icon variant="text"
-                                >
-                                    <v-icon class="mdi mdi-auto-fix" size="24"></v-icon>
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                        <!-- 방향 변경 버튼 -->
-                        <v-tooltip v-if="!isViewMode && !isPalUengine" :text="$t('PaletteProvider.changeOrientation')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="changeOrientation" v-bind="props" class="btn-change-orientation"
-                                    icon variant="text"
-                                >
-                                    <v-icon class="mdi mdi-crop-rotate" size="24"></v-icon>
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                        <!-- 프로세스 변수 추가 버튼 -->
-                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.processVariables')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn @click="openProcessVariables" v-bind="props" class="cp-process-variables btn-variables"
-                                    icon variant="text"
-                                >
-                                    <Icons :icon="'variable'" :size="24" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                        <!-- zoom -->
-                        <v-tooltip v-if="!isViewMode" :text="$t('processDefinition.zoom')">
-                            <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" @click="$globalState.methods.toggleZoom()" class="btn-zoom"
-                                    icon variant="text"
-                                >
-                                    <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="24" />
-                                </v-btn>
-                            </template>
-                        </v-tooltip>
-                    </v-row>
                     <div v-show="isBpmnLoading">
                         <v-skeleton-loader
                             type="image"
@@ -1215,25 +1173,11 @@ export default {
     z-index: 1;
 }
 
-.button-container {
-    position: absolute;
-    right: 5px;
-    top: 5px;
-    z-index: 1;
-    display: flex;
-    flex-direction: row;
-}
-
 .btn-simulate {
     margin-top:-3px;
 }
 
 @media only screen and (max-width: 550px) {
-    .button-container {
-        position: absolute;
-        flex-direction: column;
-        align-items: flex-end;
-    }
     .btn-simulate {
         order: 4;
     }

@@ -30,161 +30,175 @@
             <div v-if="componentName != 'SubProcessDetail'" class="header-section"
                 style="position: sticky; top: 0; z-index:2; background-color:white; border-bottom: 1px solid rgba(0,0,0,0.08);"
             >
-                <div class="d-flex align-center justify-space-between pa-4 pl-6 pr-6" style="gap: 16px;">
-                    <!-- 왼쪽: 제목 및 주요 액션 -->
-                    <div class="d-flex align-center" style="gap: 12px; flex: 1; min-width: 0;">
-                        <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold ma-0 flex-shrink-0">{{ $t('processDefinitionMap.title') }}</h5>
-                    <v-row v-else class="ma-0 pa-0 align-center flex-shrink-0">
-                    <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
-                        <h5 class="text-h5 font-weight-semibold ma-0">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
-                </v-row>
-                    <!-- 마켓플레이스 버튼 -->
-                <v-btn
-                    v-for="(card, index) in actionCards"
-                    :key="index"
-                    v-show="card.show"
-                    @click="card.action"
-                    color="primary"
-                    variant="flat"
-                    density="compact"
-                                class="rounded-pill flex-shrink-0"
+                <div class="d-flex pa-4 pl-6 pr-6"
+                    :class="globalIsMobile.value ? 'flex-column' : 'align-center justify-space-between'"
+                    :style="{ gap: globalIsMobile.value ? '8px' : '16px' }"
                 >
-                    <template v-slot:prepend>
-                        <Icons :icon="card.icon" color="white" :size="16" />
-                    </template>
-                    {{ card.title }}
-                </v-btn>
-                    
-                    <!-- 검색 기능 (Searchbar 스타일 참고) -->
-                    <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5"
-                        style="max-width: 246px; min-width: 160px;"
-                    >
-                        <Icons :icon="'magnifer-linear'" :size="20" />
-                        <v-text-field
-                            ref="searchInput"
-                            :model-value="searchInputValue"
-                            @update:model-value="searchInputValue = $event"
-                            variant="plain"
-                            density="compact"
-                            class="position-relative pt-0 ml-3 custom-placeholer-color"
-                            :placeholder="$t('processDefinitionMap.searchProcess') || '정의체계도 검색 (예: 보험, 신청)'"
-                            single-line
-                            hide-details
-                            @keyup.enter="handleSearch"
+                    <!-- 첫 번째 줄: 타이틀 + 디테일 + 마켓플레이스 -->
+                    <div class="d-flex align-center flex-shrink-0" :style="{ gap: globalIsMobile.value ? '8px' : '12px' }">
+                        <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold ma-0 flex-shrink-0">{{ $t('processDefinitionMap.title') }}</h5>
+                        <v-row v-else class="ma-0 pa-0 align-center flex-shrink-0">
+                            <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
+                            <h5 class="text-h5 font-weight-semibold ma-0">{{ $t('processDefinitionMap.mobileTitle') }}</h5>
+                        </v-row>
+                        <DetailComponent
+                            class="flex-shrink-0"
+                            :title="$t('processDefinitionMap.usageGuide.title')"
+                            :details="usageGuideDetails"
                         />
+                        <!-- 마켓플레이스 버튼 -->
+                        <v-btn
+                            v-for="(card, index) in actionCards"
+                            :key="index"
+                            v-show="card.show"
+                            @click="card.action"
+                            color="primary"
+                            variant="flat"
+                            density="compact"
+                            class="rounded-pill flex-shrink-0"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="card.icon" color="white" :size="16" />
+                            </template>
+                            {{ card.title }}
+                        </v-btn>
                     </div>
-                    <DetailComponent
-                        class="flex-shrink-0"
-                        :title="$t('processDefinitionMap.usageGuide.title')"
-                        :details="usageGuideDetails"
-                    />
-                    
-                    <v-btn 
-                        v-if="!isExecutionByProject && $route.path !== '/definition-map'" 
-                        icon 
-                        variant="text" 
-                        size="24" 
-                        class="flex-shrink-0"
-                        @click="goProcessMap"
-                    >
-                        <Icons :icon="'arrow-go-back'"/>
-                    </v-btn>
-                </div>
-                <!-- 오른쪽: 뷰 모드 토글 + 액션 버튼들 -->
-                <div class="d-flex align-center flex-shrink-0" style="gap: 8px;">
-                    <!-- 뷰 모드 토글 -->
-                    <v-tabs
-                        v-if="componentName === 'DefinitionMapList' && mode === 'ProcessGPT'"
-                        v-model="viewMode"
-                        color="primary"
-                        align-tabs="start"
-                        hide-slider
-                        density="compact"
-                    >
-                        <v-tab
-                            value="proc_map"
-                            class="premium-tab mr-2"
-                            rounded="lg"
-                            variant="flat"
+                    <!-- 두 번째 줄: 검색 + 뒤로가기 + 액션 버튼들 -->
+                    <div class="d-flex align-center" :class="globalIsMobile.value ? 'justify-end flex-shrink-0' : ''" style="gap: 8px; flex: 1; min-width: 0; justify-content: flex-end;">
+                        <!-- 검색 기능: 아이콘 클릭 시 입력 필드 확대 (확대 전에는 아이콘만, 테두리 없음) -->
+                        <div
+                            class="d-flex align-center header-search overflow-hidden"
+                            :class="{
+                                'header-search-expanded border border-borderColor rounded-pill': isSearchExpanded
+                            }"
                         >
-                            <v-icon start size="16">mdi-view-grid</v-icon>
-                            {{ $t('processDefinitionMap.cardView') || '카드' }}
-                        </v-tab>
-                        <v-tab
-                            value="metrics"
-                            class="premium-tab mr-2"
-                            rounded="lg"
-                            variant="flat"
-                        >
-                            <v-icon start size="16">mdi-table</v-icon>
-                            {{ $t('processDefinitionMap.matrixView') || '매트릭스' }}
-                        </v-tab>
-                    </v-tabs>
-                        
-                    <!-- 액션 버튼 그룹 -->
-                    <div class="d-flex align-center" style="gap: 4px;">
-                        <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode">
-                        <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props"
-                                    @click="openAlertDialog"
-                                    class="mr-2"
-                                    icon variant="text"
-                                    size="32"
-                                >
-                                <Icons :icon="'pencil'" :size="18" />
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinitionMap.unlock') }}</span>
-                    </v-tooltip>
-
-                    <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
-                        <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
-                                <Icons :icon="'save'" :size="24" />
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinitionMap.lock') }}</span>
-                    </v-tooltip>
-
-                    <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
-                        <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
-                                <LockIcon width="24" height="24" />
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinitionMap.unlock') }}</span>
-                    </v-tooltip>
-
-                    <v-tooltip location="bottom" v-if="!useLock">
-                        <template v-slot:activator="{ props }">
-                            <v-btn
-                                v-bind="props"
-                                icon
-                                variant="text"
-                                size="24"
-                                @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
+                            <div
+                                class="header-search-icon-wrap d-flex align-center justify-center flex-shrink-0"
+                                @click="toggleSearchExpand"
                             >
-                                <Icons :icon="'save'" />
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinitionMap.save') }}</span>
-                    </v-tooltip>
+                                <Icons :icon="'magnifer-linear'" :size="20" />
+                            </div>
+                            <v-text-field
+                                v-show="isSearchExpanded"
+                                ref="searchInput"
+                                :model-value="searchInputValue"
+                                @update:model-value="searchInputValue = $event"
+                                variant="plain"
+                                density="compact"
+                                class="position-relative pt-0 ml-2 mr-3 custom-placeholer-color header-search-input"
+                                :placeholder="$t('processDefinitionMap.searchProcess') || '정의체계도 검색 (예: 보험, 신청)'"
+                                single-line
+                                hide-details
+                                @keyup.enter="handleSearch"
+                            />
+                        </div>
 
-                    <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
-                        <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
-                                <Icons :icon="'image-download'" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                        <v-btn 
+                            v-if="!isExecutionByProject && $route.path !== '/definition-map'" 
+                            icon 
+                            variant="text" 
+                            size="24" 
+                            class="flex-shrink-0"
+                            @click="goProcessMap"
+                        >
+                            <Icons :icon="'arrow-go-back'"/>
+                        </v-btn>
 
-                    <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
-                        <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" icon variant="text" size="24" @click="closePDM()">
-                                <Icons :icon="'close'" :size="20"/>
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                        <!-- 뷰 모드 토글 -->
+                        <!-- 정의 체계도 카드 및 매트릭수 숨김처리 사용이 필요할 때 v-tabs의 display: none; 제거 -->
+                        <v-tabs
+                            v-if="componentName === 'DefinitionMapList' && mode === 'ProcessGPT'"
+                            v-model="viewMode"
+                            color="primary"
+                            align-tabs="start"
+                            hide-slider
+                            density="compact"
+                            style="display: none;"
+                        >
+                            <v-tab
+                                value="proc_map"
+                                class="premium-tab mr-2"
+                                rounded="lg"
+                                variant="flat"
+                            >
+                                <v-icon start size="16">mdi-view-grid</v-icon>
+                                {{ $t('processDefinitionMap.cardView') || '카드' }}
+                            </v-tab>
+                            <v-tab
+                                value="metrics"
+                                class="premium-tab mr-2"
+                                rounded="lg"
+                                variant="flat"
+                            >
+                                <v-icon start size="16">mdi-table</v-icon>
+                                {{ $t('processDefinitionMap.matrixView') || '매트릭스' }}
+                            </v-tab>
+                        </v-tabs>
+                        
+                        <!-- 액션 버튼 그룹 -->
+                        <div class="d-flex align-center" style="gap: 4px;">
+                            <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode">
+                                <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props"
+                                            @click="openAlertDialog"
+                                            class="mr-2"
+                                            icon variant="text"
+                                            size="32"
+                                        >
+                                        <Icons :icon="'pencil'" :size="18" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('processDefinitionMap.unlock') }}</span>
+                            </v-tooltip>
+
+                            <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
+                                <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
+                                        <Icons :icon="'save'" :size="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('processDefinitionMap.lock') }}</span>
+                            </v-tooltip>
+
+                            <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
+                                <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
+                                        <LockIcon width="24" height="24" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('processDefinitionMap.unlock') }}</span>
+                            </v-tooltip>
+
+                            <v-tooltip location="bottom" v-if="!useLock">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        size="24"
+                                        @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
+                                    >
+                                        <Icons :icon="'save'" />
+                                    </v-btn>
+                                </template>
+                                <span>{{ $t('processDefinitionMap.save') }}</span>
+                            </v-tooltip>
+
+                            <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
+                                <template v-slot:activator="{ props }">
+                                                <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
+                                        <Icons :icon="'image-download'" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+
+                            <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
+                                <template v-slot:activator="{ props }">
+                                                <v-btn v-bind="props" icon variant="text" size="24" @click="closePDM()">
+                                        <Icons :icon="'close'" :size="20"/>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
                         </div>
                         
                         <!-- 편집 사용자 표시 -->
@@ -205,8 +219,10 @@
                 </div>
                 <div v-else>
                     <!-- 필터 및 탭 영역 -->
+                     <!-- 도메인 및 조직필터 display: none 처리 필요시 display:none 제거-->
                     <div v-if="viewMode === 'proc_map' && metricsValue?.domains && metricsValue.domains.length > 0" 
                         class="filter-tab-section glass-tab-container"
+                        style="display: none;"
                     >
                         <div class="px-6 py-3 d-flex align-center" style="gap: 16px; flex-wrap: wrap;">
                             <!-- 왼쪽: 조직 필터 + 도메인 탭 -->
@@ -632,6 +648,7 @@ export default {
         filteredProcDefIds: null,  // null means no filter, [] means filter active but no matches
         searchQuery: '',  // 실제 필터링에 사용되는 검색어 (엔터키 입력 시 업데이트)
         searchInputValue: '',  // 입력 중인 검색어 (화면 표시용)
+        isSearchExpanded: false,  // 검색창 확대 여부 (아이콘 클릭 시 토글)
         domainDialog: {
             show: false,
             mode: 'add', // 'add' or 'edit'
@@ -1618,6 +1635,15 @@ export default {
             traverse(node);
             return teams;
         },
+        toggleSearchExpand() {
+            this.isSearchExpanded = !this.isSearchExpanded;
+            if (this.isSearchExpanded) {
+                this.$nextTick(() => {
+                    const inputEl = this.$refs.searchInput?.$el?.querySelector('input');
+                    if (inputEl) inputEl.focus();
+                });
+            }
+        },
         handleSearch() {
             // 엔터키 입력 시에만 검색 실행
             this.searchQuery = this.searchInputValue || '';
@@ -1959,6 +1985,29 @@ export default {
 </script>
 
 <style scoped>
+/* 검색창: 기본은 아이콘만(테두리 없음), 확대 시 테두리+입력 필드 */
+.header-search {
+    min-width: 44px;
+    max-width: 44px;
+    padding-left: 10px;
+    padding-right: 10px;
+    transition: max-width 0.25s ease, min-width 0.25s ease, padding 0.25s ease;
+}
+.header-search-expanded {
+    min-width: 160px;
+    max-width: 246px;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+.header-search-icon-wrap {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+.header-search-input {
+    min-width: 0;
+}
+
 .glass-tab-container {
     background: #ffffff;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08);
