@@ -35,7 +35,7 @@
                     :style="{ gap: globalIsMobile.value ? '8px' : '16px' }"
                 >
                     <!-- 첫 번째 줄: 타이틀 + 디테일 + 마켓플레이스 -->
-                    <div class="d-flex align-center" style="gap: 12px; min-width: 0;">
+                    <div class="d-flex align-center flex-shrink-0" :style="{ gap: globalIsMobile.value ? '8px' : '12px' }">
                         <h5 v-if="!globalIsMobile.value" class="text-h5 font-weight-semibold ma-0 flex-shrink-0">{{ $t('processDefinitionMap.title') }}</h5>
                         <v-row v-else class="ma-0 pa-0 align-center flex-shrink-0">
                             <img src="/process-gpt-favicon.png" alt="Process GPT Favicon" style="height:24px; margin-right:8px;" />
@@ -64,10 +64,10 @@
                         </v-btn>
                     </div>
                     <!-- 두 번째 줄: 검색 + 뒤로가기 + 액션 버튼들 -->
-                    <div class="d-flex align-center flex-shrink-0" :class="globalIsMobile.value ? 'justify-end' : ''" style="gap: 8px;">
+                    <div class="d-flex align-center" :class="globalIsMobile.value ? 'justify-end flex-shrink-0' : ''" style="gap: 8px; flex: 1; min-width: 0; justify-content: flex-end;">
                         <!-- 검색 기능: 아이콘 클릭 시 입력 필드 확대 (확대 전에는 아이콘만, 테두리 없음) -->
                         <div
-                            class="d-flex align-center header-search overflow-hidden flex-shrink-0"
+                            class="d-flex align-center header-search overflow-hidden"
                             :class="{
                                 'header-search-expanded border border-borderColor rounded-pill': isSearchExpanded
                             }"

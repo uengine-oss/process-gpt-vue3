@@ -881,6 +881,10 @@
         "userReply": "{name}님에게 답장",
         "systemReply": "system에게 답장",
         "headset": "말하기/듣기",
+        "micPermission": {
+            "notSupported": "이 브라우저는 마이크 기능을 지원하지 않습니다.",
+            "denied": "마이크 권한이 차단되어 있습니다. 브라우저 주소창 왼쪽의 아이콘을 클릭하여 마이크 권한을 허용해주세요."
+        },
         "document": "업무 지시",
         "camera": "카메라",
         "user": "유저",
