@@ -1,6 +1,6 @@
 <template>
     <v-menu
-        v-if="false"
+        v-if="true"
         location="top"
         offset="8"
         open-on-hover

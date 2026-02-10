@@ -23,6 +23,26 @@ export interface Backend {
     getInstanceListByGroup(group: string): Promise<any>;
     getFilteredInstanceList(filters: object, page: number, size: number): Promise<any>;
     backToHere(instanceId: string, tracingTag: string): Promise<any>;
+    /**
+     * 태스크 반송(이전 단계 담당자에게 재처리 요청) 가능 여부/조건 조회
+     * - 실제 가능 여부 판단 로직은 백엔드에서 처리
+     */
+    getTaskReturnAvailability(taskId: string): Promise<any>;
+    /**
+     * 태스크 반송 실행
+     * - 백엔드에서 검증 후 실제 반송 처리(상태 변경/담당자 변경/로그 기록 등)
+     */
+    returnTask(taskId: string, payload: any): Promise<any>;
+    /**
+     * 태스크 SKIP(건너뛰기) 가능 여부/조건 조회
+     * - 실제 가능 여부 판단 로직은 백엔드에서 처리
+     */
+    getTaskSkipAvailability(taskId: string): Promise<any>;
+    /**
+     * 태스크 SKIP(건너뛰기) 실행
+     * - 백엔드에서 검증 후 실제 처리(상태 변경/로그 기록 등)
+     */
+    skipTask(taskId: string, payload: any): Promise<any>;
     advanceToActivity?(instanceId: string, tracingTag: string, body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }): Promise<any>;
     startFromActivity?(instanceId: string, tracingTag: string, body?: { variables?: Record<string, any> }): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
@@ -114,6 +134,7 @@ export interface Backend {
     updateSecretByTenant(data: any): Promise<any>;
     updateBrowserUseSecretByTenant(data: any): Promise<any>;
     getMCPLists(): Promise<any>;
+    claimWorkItem(taskId: string, data: any): Promise<any>;
 
     // User & Data API
     getUserInfo(): Promise<any>;

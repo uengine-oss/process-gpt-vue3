@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div v-if="copyUengineProperties">
         <div class="mb-6 mt-6">
             <div>{{ $t('BpmnPropertyPanel.scriptType') }}</div>
             <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
@@ -39,7 +39,7 @@
             style="padding-bottom:20px;"
             :title="$t('ScriptTaskPanel.returnTitle')"
         />
-        <div class="mt-3">
+        <div class="mt-3" v-if="mode == 'ProcessGPT'">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
@@ -104,6 +104,7 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         definition: Object,
+        isForCompensation: Boolean,
         element: Object
     },
     components: {
@@ -114,7 +115,7 @@ export default {
     data() {
         return {
             requiredKeyLists: {},
-            copyUengineProperties: this.uengineProperties ? JSON.parse(JSON.stringify(this.uengineProperties)) : {},
+            copyUengineProperties: null,
             name: '',
             checkpoints: [],
             editCheckpoint: false,
@@ -152,21 +153,7 @@ export default {
     },
     async mounted() {
         let me = this;
-        console.log(this.copyDefinition);
-        this.processVariables = this.copyDefinition.processVariables
-            .filter((variable) => variable.type !== 'Form')
-            .map((variable) => ({
-                name: variable.name,
-                type: variable.type,
-                defaultValue: variable.defaultValue
-            }));
-        const store = useBpmnStore();
-        this.bpmnModeler = store.getModeler;
-        if(this.copyUengineProperties.out) {
-            // let tmp = this.processVariables.find((element) => element['name'] === this.copyUengineProperties.out.name);
-            this.selectedOut = this.copyUengineProperties.out.name;
-        }
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
+        me.initialize();
     },
     computed: {
         // inputData() {
@@ -203,6 +190,73 @@ export default {
         }
     },
     methods: {
+        initialize() {
+            var me = this;
+            const store = useBpmnStore();
+            me.copyDefinition = null;
+            me.processVariables = [];
+            me.copyUengineProperties = {};
+
+            if(me.definition) me.copyDefinition = JSON.parse(JSON.stringify(me.definition));
+
+            if(me.copyDefinition) {
+                me.processVariables = me.copyDefinition.processVariables
+                    .filter((variable) => variable.type !== 'Form')
+                    .map((variable) => ({
+                        name: variable.name,
+                        type: variable.type,
+                        defaultValue: variable.defaultValue
+                    }));
+            }
+          
+            me.bpmnModeler = store.getModeler;
+
+            if (me.uengineProperties) {
+                me.copyUengineProperties = JSON.parse(JSON.stringify(me.uengineProperties));
+            } 
+
+            // _type 고정
+            me.copyUengineProperties._type = 'org.uengine.kernel.ScriptActivity';
+
+            // script 초기화
+            if (typeof this.copyUengineProperties.script !== 'string') {
+                this.copyUengineProperties.script = this.copyUengineProperties.script || '';
+            }
+
+            // language 초기화 (0: Javascript, 1: Java)
+            if (!this.copyUengineProperties.language) {
+                this.copyUengineProperties.language = '0';
+            }
+
+            if(me.copyUengineProperties.out) {
+                // let tmp = this.processVariables.find((element) => element['name'] === this.copyUengineProperties.out.name);
+                me.selectedOut = me.copyUengineProperties.out.name;
+            }
+
+            // ProcessGPT 모드에서만 쓰는 사용자 속성
+            if (window.$mode === 'ProcessGPT') {
+                if(!me.copyUengineProperties.customProperties) me.copyUengineProperties.customProperties = [];
+                if (!Array.isArray(me.copyUengineProperties.customProperties)) me.copyUengineProperties.customProperties = [];
+            } else if (me.copyUengineProperties && me.copyUengineProperties.hasOwnProperty('customProperties')) {
+                delete me.copyUengineProperties.customProperties;
+            }
+        },
+        beforeSave() {
+            const { script, language, out, customProperties } = this.copyUengineProperties;
+            
+            const updateProperties = {
+                _type: 'org.uengine.kernel.ScriptActivity',
+                script: script || '',
+                language: language || '0',
+                out: out || {}
+            };
+
+            if (window.$mode === 'ProcessGPT') {
+                updateProperties.customProperties = customProperties || [];
+            }
+
+            this.$emit('update:uengineProperties', updateProperties);
+        },
         parseType(type) {
             switch (type) {
                 case 'Text':

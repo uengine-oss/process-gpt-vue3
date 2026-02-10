@@ -1,6 +1,7 @@
 import axios from 'axios';
 const axiosInstance = axios.create();
 import type { Backend } from './Backend';
+import { getAllUsers } from '@/utils/keycloak';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
 
 // uEngine 모드에서 ProcessGPT 전용(또는 미지원) 메서드 호출 시
@@ -186,29 +187,16 @@ class UEngineBackend implements Backend {
     }
 
     async getUserList(options: any) {
-        return [
-            {
-                id: 1,
-                profile: null,
-                username: 'hong',
-                email: 'hong@uengine.io',
-                is_admin: true
-            },
-            {
-                id: 2,
-                profile: null,
-                username: 'lee',
-                email: 'lee@uengine.io',
-                is_admin: true
-            },
-            {
-                id: 3,
-                profile: null,
-                username: 'kim',
-                email: 'kim@uengine.io',
-                is_admin: true
+        const users = await getAllUsers(options);
+        return users.map(user => {
+            return {
+                id: user.id,
+                profile: user.profile || null,
+                username: user.username,
+                email: user.email,
+                is_admin: user.is_admin || false 
             }
-        ];
+        })
     }
 
     async getGroupList() {
@@ -461,6 +449,40 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    /**
+     * 태스크 반송(이전 단계 담당자에게 재처리 요청) 가능 여부 조회
+     * - 실제 조건 판단/후보(이전 단계) 계산은 백엔드에서 수행
+     */
+    async getTaskReturnAvailability(taskId: string): Promise<any> {
+        const response = await axiosInstance.get(`/work-item/${taskId}/return/availability`);
+        return response.data;
+    }
+
+    /**
+     * 태스크 반송 실행
+     * - 백엔드에서 검증 후 상태 변경/담당자 변경/로그 기록 등 처리
+     */
+    async returnTask(taskId: string, payload: any): Promise<any> {
+        const response = await axiosInstance.post(`/work-item/${taskId}/return`, payload);
+        return response.data;
+    }
+
+    /**
+     * 태스크 SKIP(건너뛰기) 가능 여부 조회
+     */
+    async getTaskSkipAvailability(taskId: string): Promise<any> {
+        const response = await axiosInstance.get(`/work-item/${taskId}/skip/availability`);
+        return response.data;
+    }
+
+    /**
+     * 태스크 SKIP(건너뛰기) 실행
+     */
+    async skipTask(taskId: string, payload: any = {}): Promise<any> {
+        const response = await axiosInstance.post(`/work-item/${taskId}/skip`, payload);
+        return response.data;
+    }
+
     async advanceToActivity(
         instanceId: string,
         tracingTag: string,
@@ -532,6 +554,11 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async putRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
+        const response = await axiosInstance.put(`/instance/${instanceId}/role-mapping/${roleName}`, roleMapping);
+        return response.data;
+    }
+
     async setRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
         const response = await axiosInstance.post(`/instance/${instanceId}/role-mapping/${roleName}`, roleMapping);
         return response.data;
@@ -553,6 +580,10 @@ class UEngineBackend implements Backend {
     }
     async putWorkItem(taskId: string, workItem: any) {
         const response = await axiosInstance.post(`/work-item/${taskId}/save`, workItem);
+        return response.data;
+    }
+    async delegateWorkItem(taskId: string, delegatedRoleMapping: any, delegateOnlyForWorkitem = false) {
+        const response = await axiosInstance.post(`/work-item/${taskId}/delegate`, delegatedRoleMapping, { params: { delegateOnlyForWorkitem } });
         return response.data;
     }
 
@@ -1925,6 +1956,10 @@ class UEngineBackend implements Backend {
         return null;
     }
 
+    async claimWorkItem(taskId: string, data: any){
+        const response = await axiosInstance.post(`/work-item/${taskId}/claim`, data);
+        return response.data;
+    }
     // ============================================
     // Task Catalog API (Process-GPT Mode only)
     // ============================================

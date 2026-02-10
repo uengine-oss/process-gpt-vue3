@@ -814,10 +814,14 @@ export default {
                                         }
                                     });
                                 }
+                            } else if(taskStatus == 'Skipped' || taskStatus == 'SKIPPED') {
+                                canvas.addMarker(task, 'skipped');
                             } else if(taskStatus == 'Stopped') {
                                 canvas.addMarker(task, 'stopped');
                             } else if(taskStatus == 'Cancelled') {
                                 canvas.addMarker(task, 'cancelled');
+                            } else if(taskStatus == 'Failed') {
+                                canvas.addMarker(task, 'failed');
                             }
                         } catch (e) {
                             console.warn(`태스크 ${task} 상태 처리 중 오류:`, e);

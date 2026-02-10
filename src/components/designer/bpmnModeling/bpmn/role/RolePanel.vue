@@ -74,6 +74,91 @@
                         label="Select serviceId from eureka"
                 ></v-select>
             </div>
+
+            <!-- Assignment 섹션 (BPMN Pool/Lane 개념 기반) -->
+        <div class="mt-4">
+            <v-label class="font-weight-medium mb-2">Assignment</v-label>
+            <DetailComponent :title="$t('UserTaskPanel.assigneeInfo')" />
+            
+            <!-- 경합 모드 사용 여부 (체크박스) -->
+            <v-checkbox
+                v-model="copyUengineProperties.useCompetingMode"
+                :label="$t('UserTaskPanel.useCompetingMode')"
+                :hint="$t('UserTaskPanel.useCompetingModeHint')"
+                persistent-hint
+                hide-details="auto"
+                class="mb-2"
+            ></v-checkbox>
+
+            <!-- 경합 모드 활성화 시 표시되는 필드들 -->
+            <div v-if="copyUengineProperties.useCompetingMode" class="mb-2">
+                <!-- 경합 방식 선택 (Claim/Auto/LoadBalance) -->
+                <v-select
+                    v-model="copyUengineProperties.assignType"
+                    :label="$t('UserTaskPanel.assignType')"
+                    :hint="$t('UserTaskPanel.assignTypeHint')"
+                    persistent-hint
+                    :items="[
+                        { title: $t('UserTaskPanel.direct'), value: 'direct', description: $t('UserTaskPanel.directDescription') },
+                        { title: $t('UserTaskPanel.claim'), value: 'claim', description: $t('UserTaskPanel.claimDescription') },
+                    ]"
+                    variant="outlined"
+                    density="compact"
+                    hide-details="auto"
+                    class="mb-2"
+                >
+                    <template v-slot:item="{ props, item }">
+                        <v-list-item v-bind="props">
+                            <v-list-item-subtitle v-if="item.raw.description">{{ item.raw.description }}</v-list-item-subtitle>
+                        </v-list-item>
+                    </template>
+                </v-select>
+
+                <!-- Assignee 직접 지정 (Camunda: assignee) -->
+                <v-text-field
+                    v-if="copyUengineProperties.assignType === 'direct'"
+                    v-model="copyUengineProperties.assignee"
+                    :label="$t('UserTaskPanel.assignee')"
+                    :hint="$t('UserTaskPanel.assigneeHint')"
+                    persistent-hint
+                    variant="outlined"
+                    density="compact"
+                    hide-details="auto"
+                    class="mb-2"
+                ></v-text-field>
+
+                <!-- Candidate Users SelectBox (Camunda: candidateUsers) -->
+                <v-select
+                    v-if="copyUengineProperties.assignType === 'claim'"
+                    v-model="copyUengineProperties.candidateUsers"
+                    :label="$t('UserTaskPanel.candidateUsers')"
+                    :hint="$t('UserTaskPanel.candidateUsersHint')"
+                    persistent-hint
+                    :items="candidateUsers"
+                    multiple
+                    chips
+                    variant="outlined"
+                    density="compact"
+                    hide-details="auto"
+                    class="mb-2"
+                ></v-select>
+
+                <!-- Candidate Groups SelectBox (Camunda: candidateGroups) -->
+                <v-select
+                    v-if="copyUengineProperties.assignType === 'claim'"
+                    v-model="copyUengineProperties.candidateGroups"
+                    :label="$t('UserTaskPanel.candidateGroups')"
+                    :hint="$t('UserTaskPanel.candidateGroupsHint')"
+                    persistent-hint
+                    :items="candidateGroups"
+                    multiple
+                    chips
+                    variant="outlined"
+                    density="compact"
+                    hide-details="auto"
+                ></v-select>
+            </div>
+        </div>
         </template>
     </bpmn-common-panel>
 </template>

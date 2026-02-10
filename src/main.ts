@@ -439,7 +439,7 @@ async function initializeApp() {
         (async () => {
             try {
                 let initOptions = {
-                    url: window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || `http://localhost:9090/`,
+                    url: window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || `http://localhost:8080/`,
                     realm: window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || `uengine`,
                     clientId: window._env_?.VITE_KEYCLOAK_CLIENT_ID || import.meta.env.VITE_KEYCLOAK_CLIENT_ID || `uengine`,
                     onLoad: 'login-required' as KeycloakOnLoad // Explicitly cast to KeycloakOnLoad
@@ -460,7 +460,28 @@ async function initializeApp() {
                         localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
                         localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
                         localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
-                        localStorage.setItem('isAdmin', 'true');
+                        
+                        const realmRoles = Array.isArray(keycloak.tokenParsed.realm_access?.roles)
+                            ? keycloak.tokenParsed.realm_access.roles
+                            : [];
+                        // client roles도 함께 고려 (환경에 따라 여기로 내려오는 경우가 있음)
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const resourceAccess = (keycloak.tokenParsed as any)?.resource_access || {};
+                        const clientRoles = Array.isArray(resourceAccess?.[initOptions.clientId]?.roles)
+                            ? resourceAccess[initOptions.clientId].roles
+                            : [];
+                        const roles = Array.from(new Set([...realmRoles, ...clientRoles].map((r) => String(r))));
+                        localStorage.setItem('roles', roles.join(','));
+
+                        const isAdmin = roles.some((r) => {
+                            const rr = String(r).toLowerCase();
+                            return rr === 'admin' || rr === 'role_admin';
+                        });
+                        localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
+                        // 일부 컴포넌트는 localStorageChange 이벤트로 갱신됨
+                        window.dispatchEvent(
+                            new CustomEvent('localStorageChange', { detail: { key: 'isAdmin', value: isAdmin ? 'true' : 'false' } })
+                        );
                         const defaultPicture = '/images/defaultUser.png';
                         localStorage.setItem('picture', localStorage.getItem('picture') || defaultPicture);
                     }
