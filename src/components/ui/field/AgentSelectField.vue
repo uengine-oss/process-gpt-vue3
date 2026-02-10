@@ -241,9 +241,14 @@ export default {
                     newVal.forEach(agent => {
                         this.agentType = agent.agentType;
                         this.agentAlias = agent.alias;
-                        if (this.agentType === 'agent' && 
-                            (this.activity.orchestration === null || this.activity.orchestration === '' || this.activity.orchestration !== 'crewai-action' || this.activity.orchestration !== 'crewai-deep-research')
+                        if (
+                            this.agentType === 'agent' &&
+                            (
+                                !this.activity.orchestration ||
+                                !['crewai-action', 'crewai-deep-research'].includes(this.activity.orchestration)
+                            )
                         ) {
+                            // 기본값만 설정하고 사용자가 선택한 딥리서치를 덮어쓰지 않도록 방어
                             this.activity.orchestration = 'crewai-action';
                         } else if (this.agentType === 'pgagent') {
                             this.activity.orchestration = this.agentAlias;
