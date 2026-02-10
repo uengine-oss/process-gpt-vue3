@@ -173,7 +173,7 @@ export default {
                 if (idChanged) {
                     this.agentInfo = this.defaultSetting.getAgentById(newRoute.params.id);
                     if (!this.agentInfo) {
-                        this.agentInfo = await this.backend.getUserById(newId);
+                        this.agentInfo = await this.backend.getUserById(newRoute.params.id);
                     }
                     await this.init();
                     this.subscribeDmnRealtime(newRoute.params.id);

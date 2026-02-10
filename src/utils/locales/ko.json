@@ -651,7 +651,20 @@
         "agentSkills": "기술",
         "aiProvider": "AI 제공사",
         "aiModel": "AI 모델",
-        "alias": "별칭"
+        "alias": "별칭",
+        "resourcePriority": "지식/도구 사용 우선순위",
+        "resourcePriorityHint": "위/아래 버튼으로 우선순위를 변경합니다. 앞에 있을수록 먼저 사용됩니다.",
+        "moveUp": "위로",
+        "moveDown": "아래로",
+        "resourceLabelSkill": "스킬",
+        "resourceLabelDmnRule": "비즈니스 규칙",
+        "resourceLabelMem0": "기억",
+        "resourceLabelOthers": "기타",
+        "resourceDescSkill": "에이전트에 설정된 스킬",
+        "resourceDescDmnRule": "DMN으로 정의된 비즈니스 규칙",
+        "resourceDescMem0": "업무 맥락·선호도 등 개인화 메모리",
+        "resourceDescOthers": "위 항목에 해당하지 않는 기타 리소스",
+        "toolPriorityButton": "도구 우선 순위 지정"
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -1490,7 +1503,7 @@
     },
     "chatListing": {
         "title": "채팅방 설정",
-        "search": "채팅방/참가자명 검색",
+        "search": "검색",
         "chatRoomName": "채팅방 이름",
         "selectParticipants": "참여자 선택",
         "save": "저장",
@@ -1825,7 +1838,27 @@
         "stopRecording": "프로세스 실행 기록 중지",
         "recordingSave": "프로세스 실행 기록 저장",
         "confirm": "확인",
-        "name": "제목"
+        "name": "제목",
+        "setName": "세트 이름",
+        "initialVariables": "초기 프로세스 변수 설정",
+        "initialVariablesHint": "해당 단계 도달 시 가정한 초기값 (여러 시나리오 저장 가능)",
+        "addSet": "세트 추가",
+        "navigateToTaskSuccess": "해당 태스크로 이동했습니다.",
+        "lastExecuteResult": "최근 실행 결과",
+        "processStatus": "프로세스 상태",
+        "currentActivityNames": "진행 결과 액티비티",
+        "currentActivityIds": "진행 결과 액티비티 ID",
+        "changedProcessVariables": "변경된 프로세스 변수",
+        "varName": "변수명",
+        "beforeValue": "이전 값",
+        "afterValue": "변경 값",
+        "newInstance": "새 인스턴스",
+        "saveUnitTest": "변수 세트 저장",
+        "loadUnitTest": "변수 세트 불러오기",
+        "saveUnitTestSuccess": "변수 세트를 저장했습니다.",
+        "saveUnitTestError": "변수 세트 저장 실패",
+        "loadUnitTestSuccess": "변수 세트를 불러왔습니다.",
+        "loadUnitTestError": "변수 세트 불러오기 실패"
     },
     "TestVariables": {
         "key": "키값",
@@ -1841,9 +1874,9 @@
         "instanceList": "인스턴스",
         "projectList": "프로젝트",
         "agentList": "에이전트",
-        "userList": "유저",
         "skills": "스킬",
         "addSkill": "스킬 추가",
+        "userList": "유저 목록",
         "userLoading": "불러오는 중...",
         "instanceMyGroup": "내 그룹 인스턴스",
         "saveFileName": "저장될 파일명",
@@ -1854,7 +1887,7 @@
         "addProject": "프로젝트 추가",
         "showMore": "더보기",
         "showLess": "접기",
-        "chatList": "채팅",
+        "chatList": "대화목록",
         "chatLoading": "불러오는 중...",
         "chatEmpty": "채팅방이 없습니다.",
         "analytics": "분석"
@@ -2801,9 +2834,12 @@
     "BpmnUengine": {
         "decreaseFontSize": "글꼴 크기 축소",
         "increaseFontSize": "글꼴 크기 확대",
-        "resetZoom": "화면에 맞춤 (Ctrl+0)",
-        "zoomIn": "확대 (Ctrl++)",
-        "zoomOut": "축소 (Ctrl+-)"
+        "resetZoom": "화면에 맞춤",
+        "zoomIn": "캔버스 확대",
+        "zoomOut": "캔버스 축소",
+        "autoLayout": "자동 레이아웃",
+        "changeOrientation": "가로세로 방향 전환",
+        "processVariables": "프로세스 변수"
     },
     "BpmnUengineViewer": {
         "viewParticipants": "참여자 보기"
@@ -3104,6 +3140,16 @@
         "description": "설명",
         "instruction": "지시사항",
         "conditionExamples": "조건 예시"
+    },
+    "ProcessInstanceTable": {
+        "status": "상태",
+        "completedWork": "완료된 업무",
+        "nextWork": "다음 업무",
+        "time": "시간",
+        "userInput": "사용자 입력",
+        "noFormContent": "입력 폼 내용이 없습니다.",
+        "stepFeedback": "이 단계에 대한 피드백",
+        "processing": "처리중..."
     },
     "SkillsManagement": {
         "title": "스킬 목록 관리",

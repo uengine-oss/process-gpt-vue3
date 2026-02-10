@@ -322,7 +322,9 @@ import AgentSkillEdit from '@/components/AgentSkillEdit.vue';
 import VTreeview from 'vue3-treeview';
 import BackendFactory from '@/components/api/BackendFactory';
 import cytoscape from 'cytoscape';
-import { buildSkillReferenceGraph } from '@/utils/skillReferencesGraph';
+import { buildSkillReferenceGraph, updateGraphCurrentSkill } from '@/utils/skillReferencesGraph';
+
+const tenantGraphCacheStore = {};
 
 export default {
     name: 'SkillDetail',
@@ -350,11 +352,12 @@ export default {
             originalFolderName: '',
 
             leftViewMode: 'files',
+            /** API에서 받은 스킬 전체 파일 목록 (그래프는 이걸 기준으로 항상 전체 파일 노드 생성) */
+            skillFilesFromApi: [],
             cy: null,
             isGraphLoading: false,
             graphLoadError: false,
-            graphElements: [],
-            graphCacheBySkillName: {}
+            graphElements: []
         };
     },
     computed: {
@@ -477,12 +480,17 @@ export default {
             this.skillFile = null;
             this.nodes = {};
             this.config.roots = [];
+            this.skillFilesFromApi = [];
             this.leftViewMode = 'files';
             this.destroyGraph();
             this.graphElements = [];
             this.graphLoadError = false;
 
             try {
+                if (!this.skillId) {
+                    this.loadError = true;
+                    return;
+                }
                 const skill = await this.backend.getSkillFile(this.skillId);
                 if (!skill || !skill.skill_name) {
                     this.loadError = true;
@@ -494,6 +502,13 @@ export default {
                 this.loadUsedByAgents();
                 const skillId = skill.skill_name;
                 const files = Array.isArray(skill.files) ? skill.files : [];
+
+                // 그래프는 API 파일 목록 기준으로 항상 전체 파일 포함 (SKILL.md 루트 포함)
+                this.skillFilesFromApi = files.map((f) => ({
+                    path: String(f.path || f.file_name || f.name || '').replace(/\\/g, '/'),
+                    size: f.size ?? null,
+                    modified: f.modified ?? null
+                })).filter((f) => f.path && f.path.trim());
 
                 this.config.roots = [skillId];
                 this.nodes[skillId] = {
@@ -552,14 +567,25 @@ export default {
                     });
                 });
 
-                // SKILL.md를 기본 선택
-                const skillMdNodeId = Object.keys(this.nodes).find((id) => {
-                    const node = this.nodes[id];
-                    return node?.data?.type === 'file' && (node.data.path === 'SKILL.md' || node.data.path.endsWith('/SKILL.md'));
-                });
-                if (skillMdNodeId) {
+                // query.file가 있으면 해당 파일 선택, 없으면 SKILL.md 기본 선택
+                const fileFromQuery = this.$route?.query?.file;
+                let nodeToSelect = null;
+                if (fileFromQuery && typeof fileFromQuery === 'string') {
+                    const targetPath = String(fileFromQuery).replace(/\\/g, '/').trim();
+                    nodeToSelect = Object.keys(this.nodes).find((id) => {
+                        const node = this.nodes[id];
+                        return node?.data?.type === 'file' && String(node.data.path || '').replace(/\\/g, '/') === targetPath;
+                    });
+                }
+                if (!nodeToSelect) {
+                    nodeToSelect = Object.keys(this.nodes).find((id) => {
+                        const node = this.nodes[id];
+                        return node?.data?.type === 'file' && (node.data.path === 'SKILL.md' || node.data.path.endsWith('/SKILL.md'));
+                    });
+                }
+                if (nodeToSelect) {
                     this.$nextTick(() => {
-                        this.selectedNodeId = skillMdNodeId;
+                        this.selectedNodeId = nodeToSelect;
                     });
                 }
             } catch (error) {
@@ -567,6 +593,10 @@ export default {
                 this.loadError = true;
             } finally {
                 this.isLoading = false;
+                // 기본 선택(SKILL.md) 상태에서도 그래프 탭이면 전체 파일 기준 그래프 생성
+                if (this.leftViewMode === 'graph' && !this.loadError) {
+                    this.ensureGraphReady();
+                }
             }
         },
 
@@ -702,10 +732,18 @@ export default {
             if (this.selectedNodeId && this.nodes[this.selectedNodeId]) {
                 this.nodes[this.selectedNodeId].exists = true;
             }
+            const tenantId = window.$tenantName;
+            if (tenantId && tenantGraphCacheStore) {
+                delete tenantGraphCacheStore[tenantId];
+            }
         },
 
         onFileDeleted() {
             this.skillFile = null;
+            const tenantId = window.$tenantName;
+            if (tenantId && tenantGraphCacheStore) {
+                delete tenantGraphCacheStore[tenantId];
+            }
             this.loadSkillStructure();
         },
 
@@ -714,63 +752,136 @@ export default {
             if (!skillName) return;
             if (this.isLoading || this.loadError) return;
 
-            const cached = this.graphCacheBySkillName?.[skillName];
+            const tenantId = window.$tenantName;
+            const cached = tenantId && this.graphCacheByTenantId?.[tenantId];
             if (cached && Array.isArray(cached.elements)) {
-                this.graphElements = cached.elements;
-                this.$nextTick(() => this.initOrUpdateGraph());
+                this.graphElements = updateGraphCurrentSkill(cached.elements, skillName);
+                this.$nextTick(() => {
+                    this.$nextTick(() => this.initOrUpdateGraph());
+                });
                 return;
             }
 
             this.isGraphLoading = true;
             this.graphLoadError = false;
             try {
-                const filePaths = Object.keys(this.nodes)
-                    .map((id) => this.nodes[id])
-                    .filter((n) => n?.data?.type === 'file' && n?.data?.path)
-                    .map((n) => String(n.data.path).replace(/\\/g, '/'))
-                    .filter((p) => p && (p.endsWith('.md') || p.endsWith('.markdown')));
-
-                const cap = 50;
-                const targetPaths = filePaths.slice(0, cap);
-                const contentsByPath = {};
-                const chunkSize = 10;
-                for (let i = 0; i < targetPaths.length; i += chunkSize) {
-                    const chunk = targetPaths.slice(i, i + chunkSize);
-                    const results = await Promise.all(
-                        chunk.map(async (p) => {
-                            const file = await this.backend.getSkillFile(skillName, p);
-                            return { path: p, file };
-                        })
-                    );
-                    for (const r of results) {
-                        const content = r?.file?.content;
-                        if (typeof content === 'string') {
-                            contentsByPath[r.path] = content;
-                        }
-                    }
+                const tenantId = window.$tenantName;
+                let tenantResult = null;
+                try {
+                    tenantResult = await this.backend.getTenantSkills(tenantId);
+                } catch (e) {
+                    console.warn('getTenantSkills failed, using single-skill graph', e);
                 }
 
-                const filesMeta = Object.keys(this.nodes)
-                    .map((id) => this.nodes[id])
-                    .filter((n) => n?.data?.type === 'file' && n?.data?.path)
-                    .map((n) => ({
-                        path: String(n.data.path).replace(/\\/g, '/'),
-                        size: n?.data?.size ?? null,
-                        modified: n?.data?.modified ?? null
-                    }));
+                const skills = (tenantResult?.skills ?? []).filter((s) => s && (s.name || s.skill_name));
+                if (!skills.length) {
+                    tenantResult = null;
+                }
 
-                const graph = buildSkillReferenceGraph({
-                    skillName,
-                    filesMeta,
-                    contentsByPath,
-                    includeNonMarkdownNodes: true
-                });
+                let graph;
+                if (tenantResult && skills.length > 0) {
+                    const allSkillsData = [];
+                    const totalFileCap = 100;
+                    const chunkSize = 10;
+                    let totalLoaded = 0;
+
+                    for (const s of skills) {
+                        const skName = s.name || s.skill_name || '';
+                        if (!skName) continue;
+                        let skillMeta = null;
+                        try {
+                            skillMeta = await this.backend.getSkillFile(skName);
+                        } catch (e) {
+                            continue;
+                        }
+                        if (!skillMeta || !skillMeta.skill_name) continue;
+                        const files = Array.isArray(skillMeta.files) ? skillMeta.files : [];
+                        const filesMeta = files.map((f) => ({
+                            path: String(f.path || f.file_name || f.name || '').replace(/\\/g, '/'),
+                            size: f.size ?? null,
+                            modified: f.modified ?? null
+                        })).filter((f) => f.path && f.path.trim());
+
+                        const mdPaths = filesMeta
+                            .map((f) => (f.path || '').trim())
+                            .filter((p) => p && (p.endsWith('.md') || p.endsWith('.markdown')));
+                        const remaining = totalFileCap - totalLoaded;
+                        const targetMd = mdPaths.slice(0, Math.min(mdPaths.length, remaining));
+                        if (targetMd.length === 0 && filesMeta.length > 0) {
+                            allSkillsData.push({ skillName: skName, filesMeta, contentsByPath: {} });
+                            continue;
+                        }
+
+                        const contentsByPath = {};
+                        for (let i = 0; i < targetMd.length; i += chunkSize) {
+                            const chunk = targetMd.slice(i, i + chunkSize);
+                            const results = await Promise.all(
+                                chunk.map(async (p) => {
+                                    const file = await this.backend.getSkillFile(skName, p);
+                                    return { path: p, file };
+                                })
+                            );
+                            for (const r of results) {
+                                const content = r?.file?.content;
+                                if (typeof content === 'string') {
+                                    contentsByPath[r.path] = content;
+                                }
+                            }
+                        }
+                        totalLoaded += targetMd.length;
+                        allSkillsData.push({ skillName: skName, filesMeta, contentsByPath });
+                        if (totalLoaded >= totalFileCap) break;
+                    }
+
+                    graph = buildSkillReferenceGraph({
+                        skillName,
+                        filesMeta: [],
+                        contentsByPath: {},
+                        includeNonMarkdownNodes: true,
+                        allSkillsData
+                    });
+                } else {
+                    const filesMeta = (this.skillFilesFromApi || []).slice();
+                    const filePaths = filesMeta
+                        .map((f) => (f.path || '').trim())
+                        .filter((p) => p && (p.endsWith('.md') || p.endsWith('.markdown')));
+
+                    const cap = 50;
+                    const targetPaths = filePaths.slice(0, cap);
+                    const contentsByPath = {};
+                    const chunkSize = 10;
+                    for (let i = 0; i < targetPaths.length; i += chunkSize) {
+                        const chunk = targetPaths.slice(i, i + chunkSize);
+                        const results = await Promise.all(
+                            chunk.map(async (p) => {
+                                const file = await this.backend.getSkillFile(skillName, p);
+                                return { path: p, file };
+                            })
+                        );
+                        for (const r of results) {
+                            const content = r?.file?.content;
+                            if (typeof content === 'string') {
+                                contentsByPath[r.path] = content;
+                            }
+                        }
+                    }
+
+                    graph = buildSkillReferenceGraph({
+                        skillName,
+                        filesMeta,
+                        contentsByPath,
+                        includeNonMarkdownNodes: true
+                    });
+                }
 
                 this.graphElements = graph.elements || [];
-                this.graphCacheBySkillName = this.graphCacheBySkillName || {};
-                this.graphCacheBySkillName[skillName] = { elements: this.graphElements };
+                if (tenantId) {
+                    tenantGraphCacheStore[tenantId] = { elements: this.graphElements };
+                }
 
-                this.$nextTick(() => this.initOrUpdateGraph());
+                this.$nextTick(() => {
+                    this.$nextTick(() => this.initOrUpdateGraph());
+                });
             } catch (e) {
                 console.error('Failed to build graph', e);
                 this.graphLoadError = true;
@@ -804,6 +915,14 @@ export default {
                     style: { 'background-color': 'rgb(160, 160, 160)' }
                 },
                 {
+                    selector: 'node[isCurrentSkill=0]',
+                    style: { 'background-color': 'rgb(144, 202, 249)' }
+                },
+                {
+                    selector: 'node[type="external"]',
+                    style: { 'background-color': 'rgb(129, 199, 132)' }
+                },
+                {
                     selector: 'edge',
                     style: {
                         width: 2,
@@ -829,11 +948,28 @@ export default {
                 if (el?.data?.type === 'file') {
                     return {
                         ...el,
-                        data: { ...el.data, isMarkdown: el.data.isMarkdown ? 1 : 0 }
+                        data: {
+                            ...el.data,
+                            isMarkdown: el.data.isMarkdown ? 1 : 0,
+                            isCurrentSkill: el.data.isCurrentSkill === 1 ? 1 : 0
+                        }
                     };
+                }
+                if (el?.data?.type === 'external') {
+                    return { ...el, data: { ...el.data, isCurrentSkill: 0 } };
                 }
                 return el;
             });
+
+            const fitToCurrentSkill = () => {
+                if (!this.cy) return;
+                const currentNodes = this.cy.$('node[isCurrentSkill=1]');
+                if (currentNodes.length > 0) {
+                    this.cy.fit(currentNodes, 20);
+                } else {
+                    this.cy.fit(undefined, 10);
+                }
+            };
 
             if (!this.cy) {
                 this.cy = cytoscape({
@@ -842,18 +978,25 @@ export default {
                     style,
                     layout: { name: 'cose', animate: false, fit: true, padding: 10 }
                 });
+                fitToCurrentSkill();
 
                 this.cy.on('tap', 'node', (evt) => {
                     const data = evt?.target?.data?.();
-                    if (!data || data.type !== 'file') return;
-                    const path = data.path;
-                    if (path) this.openFileByPath(path);
+                    if (!data) return;
+                    if (data.type === 'external' && data.url) {
+                        window.open(data.url, '_blank', 'noopener,noreferrer');
+                        return;
+                    }
+                    if (data.type === 'file' && data.path) {
+                        this.openFileByPath(data.path);
+                    }
                 });
 
                 window.addEventListener('resize', this.onGraphResize, { passive: true });
             } else {
                 this.cy.json({ elements, style });
                 this.cy.layout({ name: 'cose', animate: false, fit: true, padding: 10 }).run();
+                fitToCurrentSkill();
                 this.onGraphResize();
             }
         },
@@ -883,17 +1026,31 @@ export default {
 
         openFileByPath(path) {
             const normalized = String(path || '').replace(/\\/g, '/');
+            const currentSkill = (this.skillDisplayName || this.skillId || '').trim();
+
+            const slashIdx = normalized.indexOf('/');
+            if (slashIdx > 0) {
+                const refSkillName = normalized.slice(0, slashIdx);
+                const filePath = normalized.slice(slashIdx + 1);
+                if (refSkillName !== currentSkill) {
+                    this.$router.push('/skills/' + encodeURIComponent(refSkillName) + (filePath ? '?file=' + encodeURIComponent(filePath) : ''));
+                    return;
+                }
+            }
+
+            const pathWithinSkill = slashIdx > 0 ? normalized.slice(slashIdx + 1) : normalized;
             const matchId = Object.keys(this.nodes).find((id) => {
                 const n = this.nodes[id];
-                return n?.data?.type === 'file' && String(n.data.path || '').replace(/\\/g, '/') === normalized;
+                return n?.data?.type === 'file' && String(n.data.path || '').replace(/\\/g, '/') === pathWithinSkill;
             });
             if (matchId) {
                 this.selectedNodeId = matchId;
                 return;
             }
-            const skillName = (this.skillDisplayName || this.skillId || '').trim();
+            const skillName = slashIdx > 0 ? normalized.slice(0, slashIdx) : currentSkill;
+            const filePathToFetch = slashIdx > 0 ? normalized.slice(slashIdx + 1) : normalized;
             if (!skillName) return;
-            this.backend.getSkillFile(skillName, normalized).then((file) => {
+            this.backend.getSkillFile(skillName, filePathToFetch).then((file) => {
                 this.skillFile = file || null;
             });
         }

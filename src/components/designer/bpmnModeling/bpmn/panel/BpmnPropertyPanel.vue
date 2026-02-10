@@ -1,7 +1,7 @@
 <template>
     <div id="property-panel" style="overflow: auto;"
         class="is-work-height"
-        :class="{ 'view-mode-panel-content': isViewMode }"
+        :class="{ 'view-mode-panel-content': isViewMode, 'pal-view-mode': isViewMode && isPALMode }"
     >
         <v-row class="ma-0 pa-4 pb-0" :class="{ 'view-mode-header': isViewMode }">
             <v-chip v-if="isViewMode" color="info" variant="tonal" size="x-small" class="mr-2">
@@ -44,7 +44,7 @@
                 </v-menu>
             </div>
             <v-spacer></v-spacer>
-            <v-tooltip v-if="!isViewMode && isTaskElement" location="bottom">
+            <v-tooltip v-if="!isViewMode && isTaskElement && !isUEngineMode" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="$emit('saveToCatalog')" icon variant="text" density="comfortable" class="panel-close-btn">
                         <v-icon>mdi-folder-plus</v-icon>
@@ -271,6 +271,9 @@ export default {
         },
         isPALMode() {
             return window.$pal;
+        },
+        isUEngineMode() {
+            return window.$mode === 'uEngine';
         },
         panelName() {
             var type = _.kebabCase(this.element.$type.split(':')[1])
@@ -813,8 +816,11 @@ export default {
 }
 
 /* Hide print button in compact view */
-.view-mode-panel-content .panel-download-btn {
+.view-mode-panel-content:not(.pal-view-mode) .panel-download-btn {
     display: none !important;
+}
+.view-mode-panel-content.pal-view-mode .panel-download-btn {
+    display: inline-flex !important;
 }
 
 /* Compact input fields */

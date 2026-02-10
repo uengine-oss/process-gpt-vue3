@@ -40,27 +40,32 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async deleteTest(testId: string): Promise<void> {
-        throw new Error("Method not implemented.");
+    async deleteTest(_path: string, _tracingTag: string, _index: number): Promise<void> {
+        console.warn(`[ProcessGPT] deleteTest은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async deleteRecordTest(path: string, index: number): Promise<void> {
-        throw new Error("Method not implemented.");
+        console.warn(`[ProcessGPT] deleteRecordTest은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async releaseVersion(releaseName: string): Promise<any> {
     }
 
-    testList(path: string): Promise<any> {
-        throw new Error('Method not implemented.');
+    async testList(_path: string): Promise<any> {
+        console.warn(`[ProcessGPT] testList은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    testRecordList(path: string): Promise<any> {
-        throw new Error('Method not implemented.');
+    async testRecordList(_path: string): Promise<any> {
+        console.warn(`[ProcessGPT] testRecordList은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    findCurrentWorkItemByInstId(instId: string): Promise<any> {
-        throw new Error('Method not implemented.');
+    async findCurrentWorkItemByInstId(_instId: string): Promise<any> {
+        console.warn(`[ProcessGPT] findCurrentWorkItemByInstId은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async checkDBConnection() {
@@ -123,12 +128,14 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async listVersionDefinitions(version: string, basePath: string) {
-        throw new Error("Method not implemented.");
+    async listVersionDefinitions(_version: string, _basePath: string) {
+        console.warn(`[ProcessGPT] listVersionDefinitions은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async listVersions() {
-        throw new Error("Method not implemented.");
+        console.warn(`[ProcessGPT] listVersions은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async deleteDefinition(defId: string, options: any) {
@@ -213,6 +220,11 @@ class ProcessGPTBackend implements Backend {
                 map[key] = val;
                 this.__saveBrRawMap(map);
                 return;
+            }
+
+            if (options && options.type === 'unit') {
+                console.warn(`[ProcessGPT] putRawDefinition(type: 'unit')은 ProcessGPT 모드에서 지원되지 않습니다.`);
+                return null as any;
             }
 
             // 폼 정보를 저장하기 위해서
@@ -349,7 +361,12 @@ class ProcessGPTBackend implements Backend {
                 const key = String(defId || '');
                 return map[key] ?? null;
             }
-            
+
+            if (options && options.type === 'unit') {
+                console.warn(`[ProcessGPT] getRawDefinition(type: 'unit')은 ProcessGPT 모드에서 지원되지 않습니다.`);
+                return null;
+            }
+
             if (options) {
                 // 폼 정보를 불러오기 위해서
                 if (options.type === "form") {
@@ -1641,7 +1658,7 @@ class ProcessGPTBackend implements Backend {
         return { ...parsedJson, dmnXml };
     }
 
-    async saveBusinessRule(rule: any) {
+    async saveBusinessRule(rule: any, _options?: { isNew?: boolean }) {
         const toSave = { ...(rule || {}) };
         if (!toSave.id) toSave.id = this.uuid();
 
@@ -1851,49 +1868,77 @@ class ProcessGPTBackend implements Backend {
             throw new Error(error.message);
         }
     }
-    // Add stub implementations for the missing methods and properties
-    async versionUp() {
-        throw new Error("Method not implemented.");
+    async versionUp(_version: string, _major: boolean, _makeProduction: boolean) {
+        console.warn(`[ProcessGPT] versionUp은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async makeProduction() {
-        throw new Error("Method not implemented.");
+    async makeProduction(_version: string) {
+        console.warn(`[ProcessGPT] makeProduction은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async getProduction() {
-        throw new Error("Method not implemented.");
+        console.warn(`[ProcessGPT] getProduction은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async getVersion() {
-        throw new Error("Method not implemented.");
+    async getVersion(_version: string) {
+        console.warn(`[ProcessGPT] getVersion은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async getDefinition() {
-        throw new Error("Method not implemented.");
+    async getDefinition(_defPath: string) {
+        console.warn(`[ProcessGPT] getDefinition은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async renameOrMove() {
-        throw new Error("Method not implemented.");
+    async renameOrMove(_definition: any, _requestPath: string) {
+        console.warn(`[ProcessGPT] renameOrMove은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async createFolder() {
-        throw new Error("Method not implemented.");
+    async createFolder(_newResource: any, _requestPath: string) {
+        console.warn(`[ProcessGPT] createFolder은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async stop() {
-        throw new Error("Method not implemented.");
+    async stop(_instanceId: string) {
+        console.warn(`[ProcessGPT] stop은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async suspend(instanceId: string) {
-        throw new Error("Method not implemented.");
+    async suspend(_instanceId: string) {
+        console.warn(`[ProcessGPT] suspend은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async resume(instanceId: string) {
-        throw new Error("Method not implemented.");
+    async resume(_instanceId: string) {
+        console.warn(`[ProcessGPT] resume은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async backToHere(instanceId: string, tracingTag: string) {
-        //
+    async backToHere(_instanceId: string, _tracingTag: string) {
+        console.warn(`[ProcessGPT] backToHere은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
+    }
+
+    async advanceToActivity(
+        _instanceId: string,
+        _tracingTag: string,
+        _body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }
+    ) {
+        console.warn(`[ProcessGPT] advanceToActivity은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
+    }
+
+    async startFromActivity(
+        _instanceId: string,
+        _tracingTag: string,
+        _body?: { variables?: Record<string, any> }
+    ) {
+        console.warn(`[ProcessGPT] startFromActivity은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async getProcessVariables(instanceId: string) {
@@ -2083,24 +2128,29 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getRoleMapping(instId: string, roleName: string) {
-        throw new Error("Method not implemented.");
+    async getRoleMapping(_instId: string, _roleName: string) {
+        console.warn(`[ProcessGPT] getRoleMapping은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async setRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
-        throw new Error("Method not implemented.");
+    async setRoleMapping(_instanceId: string, _roleName: string, _roleMapping: any) {
+        console.warn(`[ProcessGPT] setRoleMapping은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async signal(instanceId: string, signal: string) {
-        throw new Error("Method not implemented.");
+    async signal(_instanceId: string, _signal: string) {
+        console.warn(`[ProcessGPT] signal은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async serviceMessage(requestPath: string) {
-        throw new Error("Method not implemented.");
+    async serviceMessage(_requestPath: string) {
+        console.warn(`[ProcessGPT] serviceMessage은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
-    async postMessage(instanceId: string, message: any) {
-        throw new Error("Method not implemented.");
+    async postMessage(_instanceId: string, _message: any) {
+        console.warn(`[ProcessGPT] postMessage은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async getInProgressList(options?: any) {
@@ -2424,8 +2474,9 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async fireMessage(instanceId: string, event: any) {
-        throw new Error("Method not implemented.");
+    async fireMessage(_instanceId: string, _event: any) {
+        console.warn(`[ProcessGPT] fireMessage은 ProcessGPT 모드에서 지원되지 않습니다.`);
+        return null as any;
     }
 
     async dryRun(isSimulate: string, command: object) {
@@ -2925,9 +2976,36 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName,
                 is_agent: newAgent.isAgent,
                 agent_type: newAgent.type,
-                alias: newAgent.alias
+                alias: newAgent.alias,
+                tool_priority: newAgent.tool_priority ?? null
             }
+
+            // users 테이블 업데이트
             await storage.putObject('users', putObj);
+
+            // agent_skills 테이블 동기화
+            if (putObj.id) {
+                const skillsArray =
+                    typeof putObj.skills === 'string'
+                        ? putObj.skills
+                            .split(',')
+                            .map((s: string) => s.trim())
+                            .filter((s: string) => s.length > 0)
+                        : Array.isArray(putObj.skills)
+                            ? putObj.skills
+                            : [];
+
+                try {
+                    await this.replaceAgentSkills({
+                        userId: putObj.id,
+                        skills: skillsArray,
+                        tenantId: putObj.tenant_id || window.$tenantName
+                    });
+                } catch (syncError) {
+                    console.error('[ProcessGPTBackend] replaceAgentSkills error:', syncError);
+                    // agent_skills 동기화 실패는 에이전트 저장 자체를 막지 않음
+                }
+            }
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3124,7 +3202,7 @@ class ProcessGPTBackend implements Backend {
         persona?: string | null;
     }): Promise<any> {
         try {
-            const response = await axios.post('/api/agent-feedback/setup-agent-knowledge', params);
+            const response = await axios.post('/agent-feedback/setup-agent-knowledge', params);
             return response.data;
         } catch (error) {
             //@ts-ignore

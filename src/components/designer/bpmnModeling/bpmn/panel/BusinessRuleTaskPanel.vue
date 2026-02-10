@@ -763,10 +763,12 @@ export default {
 
 .br-advanced-preview {
     height: 420px;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: auto;
 }
 .br-advanced-preview :deep(.vue-dmn-diagram-container) {
     height: 100%;
+    min-height: min-content;
 }
 
 .br-advanced-toggle {

@@ -105,6 +105,7 @@ ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials_updated_at;
 ALTER TABLE public.users DROP COLUMN IF EXISTS url;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alias text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_used_at timestamptz NULL;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tool_priority jsonb NULL;
 
 
 -- configuration table

@@ -63,7 +63,7 @@
             </div>
         </div>
         <!-- Add Sub Process Dialog: 특정 도메인 탭에서만 표시 -->
-        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && selectedDomain"
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -102,6 +102,9 @@ export default {
         type: 'major'
     }),
     computed: {
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
         domainColor() {
             if (!this.value.domain || !this.domains) return null;
             const domain = this.domains.find(d => d.name === this.value.domain);

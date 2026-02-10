@@ -2,22 +2,60 @@
     <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal, 'mini-preview': isPreviewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop">
         <!-- View mode controls -->
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
-            <div class="pa-1 ga-3" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <v-icon @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
-                <v-icon @click="changeOrientation"  style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
+            <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
+                <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
+                <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
+                <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
+                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Edit mode controls -->
         <div v-if="!isViewMode" class="font-size-controls ga-3">
-            <v-icon @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-decrease</v-icon>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-decrease</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.decreaseFontSize') }}</span>
+            </v-tooltip>
             <span class="font-size-value">{{ labelFontSize }}px</span>
-            <v-icon @click="increaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-increase</v-icon>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-increase</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.increaseFontSize') }}</span>
+            </v-tooltip>
             <span class="controls-divider">|</span>
-            <v-icon @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
-            <v-icon @click="applyAutoLayout" style="color: #444; cursor: pointer; padding-bottom: 3px;" size="20">mdi-auto-fix</v-icon>
-            <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
-            <v-icon @click="$emit('openProcessVariables')" style="color: #444; cursor: pointer;" size="20">mdi-variable</v-icon>
-            <Icons @click="$globalState.methods.toggleZoom()" :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="20" style="cursor: pointer;" />
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.resetZoom') }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="applyAutoLayout" style="color: #444; cursor: pointer; padding-bottom: 3px;" size="20">mdi-auto-fix</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.autoLayout') }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="changeOrientation" style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.changeOrientation') }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="$emit('openProcessVariables')" style="color: #444; cursor: pointer;" size="20">mdi-variable</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.processVariables') }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <Icons v-bind="props" @click="$globalState.methods.toggleZoom()" :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="20" style="cursor: pointer;" />
+                </template>
+                <span>{{ !$globalState.state.isZoomed ? $t('BpmnUengine.zoomIn') : $t('BpmnUengine.zoomOut') }}</span>
+            </v-tooltip>
         </div>
     </div>
     <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">
@@ -173,6 +211,9 @@ export default {
         },
         isPal() {
             return window.$pal;
+        },
+        isPalUengine() {
+            return !!(window.$pal && window.$mode === 'uEngine');
         },
     },
     async mounted() {
@@ -397,6 +438,7 @@ export default {
             }
         },
         applyAutoLayout() {
+            if (window.$pal) return;
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
@@ -521,6 +563,7 @@ export default {
             });
         },
         changeOrientation() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
@@ -719,7 +762,7 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated) {
+                if(self.isAIGenerated && !(window.$pal && window.$mode === 'uEngine')) {
                     if(self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
@@ -731,7 +774,9 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
-                self.applyAutoLayout();
+                if (!(window.$pal && window.$mode === 'uEngine')) {
+                    self.applyAutoLayout();
+                }
                 self.resetZoom();
             });
             
