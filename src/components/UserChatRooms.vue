@@ -730,7 +730,8 @@ export default {
             const msg = {
                 uuid: msgUuid,
                 role: 'user',
-                content: text || (hasFile ? '첨부된 파일을 확인해주세요.' : '첨부된 내용을 확인해주세요.'),
+                // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
+                content: text || '',
                 timeStamp: nowIso,
                 email: this.userInfo?.email || null,
                 // notifications 트리거/기존 UI 호환 (NEW.messages->>'name')
@@ -745,7 +746,12 @@ export default {
             // last message 업데이트
             const room = this.currentChatRoom;
             if (room) {
-                room.message = { msg: (msg.content || '').substring(0, 50), type: 'text', createdAt: nowIso };
+                const fileName = (payload?.file?.name || payload?.file?.fileName || '').toString();
+                const preview =
+                    (text || '').substring(0, 50) ||
+                    (hasFile ? fileName.substring(0, 50) : '') ||
+                    (hasImages ? `이미지 ${((payload?.images || []).length || 0)}장` : '');
+                room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await this.putObject('chat_rooms', room);
                 // 탭 타이틀 최신화(이름이 바뀐 경우)
                 const tab = this.tabs[this.currentTabIndex];

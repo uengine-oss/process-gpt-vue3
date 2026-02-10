@@ -923,7 +923,8 @@ export default {
             const msg = {
                 uuid: msgUuid,
                 role: 'user',
-                content: text || (hasFile ? '첨부된 파일을 확인해주세요.' : '첨부된 내용을 확인해주세요.'),
+                // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
+                content: text || '',
                 timeStamp: nowIso,
                 email: this.userInfo?.email || null,
                 // notifications 트리거/기존 UI 호환 (NEW.messages->>'name')
@@ -939,7 +940,14 @@ export default {
             const room = this.chatRooms.find((r) => r.id === roomId) || this.currentChatRoom;
             if (room) {
                 room.message = {
-                    msg: (msg.content || '').substring(0, 50),
+                    msg: (() => {
+                        const fileName = (payload?.file?.name || payload?.file?.fileName || '').toString();
+                        const preview =
+                            (text || '').substring(0, 50) ||
+                            (hasFile ? fileName.substring(0, 50) : '') ||
+                            (hasImages ? `이미지 ${((payload?.images || []).length || 0)}장` : '');
+                        return (preview || '').substring(0, 50);
+                    })(),
                     type: 'text',
                     createdAt: nowIso
                 };
