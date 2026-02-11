@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Logo from '@/layouts/full/logo/Logo.vue';
-/* Reset form */
 import ResetPassword from '@/components/auth/ResetForm.vue';
 </script>
 

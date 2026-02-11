@@ -33,6 +33,11 @@ const MainRoutes = {
             component: () => import('@/components/apps/todolist/InstanceCard.vue'),
         },
         {
+            name: 'InstanceHistoryViewer',
+            path: '/instance-viewer/:instId',
+            component: () => import('@/components/apps/todolist/InstanceHistoryViewer.vue'),
+        },
+        {
             name: 'Project',
             path: '/project/:projectId',
             component: () => import('@/components/apps/todolist/ProjectCard.vue'),

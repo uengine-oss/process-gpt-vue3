@@ -130,6 +130,8 @@ export default {
                 timestamp: new Date().toISOString(),
                 file: message.file || null,
                 images: message.images || null,
+                // mention 메타데이터 pass-through (Chat.vue -> ChatRoomPage 라우팅)
+                mentionedUsers: Array.isArray(message.mentionedUsers) ? message.mentionedUsers : [],
                 // reply 메타데이터 pass-through (Chat.vue -> ChatRoomPage)
                 reply: message.reply || null
             });

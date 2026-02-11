@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -63,8 +65,8 @@ jobs:
           
           # Update frontend deployment image
           yq eval '.spec.template.spec.containers[0].image = "'$IMAGE_NAME'"' -i deployments/frontend-deployment.yaml
-          
-          echo "Updated image to: $IMAGE_NAME"
+
+          echo "Updated frontend image to: $IMAGE_NAME"
 
       - name: Commit and push changes
         run: |
@@ -78,7 +80,7 @@ jobs:
 
       - name: Create deployment summary
         run: |
-          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Deployment Summary (Frontend)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
@@ -103,11 +105,154 @@ jobs:
             while (attempt < maxRetries) {
               try {
                 const commentBody = [
-                  '🚀 **Deployment Started**',
+                  '🚀 **Frontend Deployment Started**',
                   '',
                   '**Image (commit):** `${{ env.IMAGE_NAME }}`',
                   '**Image (latest):** `${{ env.IMAGE_NAME_LATEST }}`',
                   '**Tags:** `${{ env.IMAGE_TAG }}` / `latest`',
+                  '',
+                  'ArgoCD will automatically sync the changes from [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s)',
+                  '',
+                  '---',
+                  '*Deployed via GitHub Actions*'
+                ].join('\n');
+                
+                await github.rest.repos.createCommitComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: context.sha,
+                  body: commentBody
+                });
+                console.log('Successfully created commit comment');
+                break;
+              } catch (error) {
+                attempt++;
+                console.log(`Attempt ${attempt} failed:`, error.message);
+                
+                if (attempt >= maxRetries) {
+                  console.log('All attempts failed, but deployment was successful');
+                  core.warning('Failed to create commit comment, but deployment completed successfully');
+                } else {
+                  console.log(`Retrying in ${attempt * 2} seconds...`);
+                  await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+                }
+              }
+            }
+
+  build-and-deploy-gateway:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java for Gateway build
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'maven'
+
+      - name: Build Gateway JAR
+        run: mvn -f gateway/pom.xml -DskipTests package
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push Gateway Docker image to GHCR
+        run: |
+          GATEWAY_IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)
+          GATEWAY_IMAGE_NAME=ghcr.io/uengine-oss/process-gpt-gateway:$GATEWAY_IMAGE_TAG
+          GATEWAY_IMAGE_NAME_LATEST=ghcr.io/uengine-oss/process-gpt-gateway:latest
+
+          docker build -t $GATEWAY_IMAGE_NAME -t $GATEWAY_IMAGE_NAME_LATEST ./gateway
+          docker push $GATEWAY_IMAGE_NAME
+          docker push $GATEWAY_IMAGE_NAME_LATEST
+
+          echo "GATEWAY_IMAGE_TAG=$GATEWAY_IMAGE_TAG" >> $GITHUB_ENV
+          echo "GATEWAY_IMAGE_NAME=$GATEWAY_IMAGE_NAME" >> $GITHUB_ENV
+          echo "GATEWAY_IMAGE_NAME_LATEST=$GATEWAY_IMAGE_NAME_LATEST" >> $GITHUB_ENV
+
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v3
+        with:
+          repository: uengine-oss/process-gpt-k8s
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops-repo
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update gateway image tag in GitOps repository
+        run: |
+          cd gitops-repo
+
+          if [ -f deployments/gateway.yaml ]; then
+            yq eval '.spec.template.spec.containers[0].image = "'$GATEWAY_IMAGE_NAME'"' -i deployments/gateway.yaml
+            echo "Updated gateway image to: $GATEWAY_IMAGE_NAME"
+          else
+            # Fallback: try to find any manifest referencing process-gpt-gateway
+            GATEWAY_FILES=$(grep -rl "process-gpt-gateway" . || true)
+            if [ -n "$GATEWAY_FILES" ]; then
+              echo "$GATEWAY_FILES" | while read -r f; do
+                if [ -n "$f" ] && [ -f "$f" ]; then
+                  yq eval '.spec.template.spec.containers[0].image = "'$GATEWAY_IMAGE_NAME'"' -i "$f" || true
+                  echo "Updated gateway image in: $f"
+                fi
+              done
+            else
+              echo "No gateway manifest found in GitOps repo. Skipping gateway image update."
+            fi
+          fi
+
+      - name: Commit and push changes
+        run: |
+          cd gitops-repo
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add .
+          git commit -m "Update gateway image to $GATEWAY_IMAGE_TAG" || exit 0
+          git push
+
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary (Gateway)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Gateway Image (commit)** | \`${{ env.GATEWAY_IMAGE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Gateway Image (latest)** | \`${{ env.GATEWAY_IMAGE_NAME_LATEST }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Gateway Tag** | \`${{ env.GATEWAY_IMAGE_TAG }}\` / \`latest\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Commit** | [\`${{ github.sha }}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| **GitOps Repo** | [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ ArgoCD will automatically sync the changes from the GitOps repository." >> $GITHUB_STEP_SUMMARY
+
+      - name: Create deployment comment (with retry)
+        continue-on-error: true
+        uses: actions/github-script@v6
+        with:
+          retries: 3
+          retry-exempt-status-codes: 400,401,403,404,422
+          script: |
+            const maxRetries = 3;
+            let attempt = 0;
+            
+            while (attempt < maxRetries) {
+              try {
+                const commentBody = [
+                  '🚀 **Gateway Deployment Started**',
+                  '',
+                  '**Gateway Image (commit):** `${{ env.GATEWAY_IMAGE_NAME }}`',
+                  '**Gateway Image (latest):** `${{ env.GATEWAY_IMAGE_NAME_LATEST }}`',
+                  '**Gateway Tags:** `${{ env.GATEWAY_IMAGE_TAG }}` / `latest`',
                   '',
                   'ArgoCD will automatically sync the changes from [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s)',
                   '',

@@ -209,8 +209,13 @@ export default {
                 }];
             }
         }
-        if (!this.copyUengineProperties.conditionMode) {
-            this.copyUengineProperties.conditionMode = 'text';
+        // conditionMode는 GPT 모드에서만 사용/저장
+        if (this.mode == 'ProcessGPT') {
+            if (!this.copyUengineProperties.conditionMode) {
+                this.copyUengineProperties.conditionMode = 'text';
+            }
+        } else if (this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('conditionMode')) {
+            delete this.copyUengineProperties.conditionMode;
         }
 
         // Ensure io_examples are stored locally, not in copyUengineProperties
@@ -250,8 +255,13 @@ export default {
             }
         },
         updateConditionMode(mode) {
-            this.copyUengineProperties.conditionMode = mode;
-            this.$emit('update:uengineProperties', this.copyUengineProperties)
+            if (this.mode !== 'ProcessGPT') {
+                if (this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('conditionMode')) {
+                    delete this.copyUengineProperties.conditionMode;
+                    this.$emit('update:uengineProperties', this.copyUengineProperties);
+                }
+                return;
+            }
         },
         generateRule() {
             const conditionRuleClient = {
@@ -464,6 +474,11 @@ export default {
             // Ensure io_examples are not persisted into uengineProperties
             if (this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('io_examples')) {
                 delete this.copyUengineProperties.io_examples;
+            }
+
+            // conditionMode는 GPT 모드에서만 저장
+            if (this.mode !== 'ProcessGPT' && this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('conditionMode')) {
+                delete this.copyUengineProperties.conditionMode;
             }
 
             if (!this.name || this.name == '') {

@@ -177,7 +177,9 @@
         "instanceDelete": "인스턴스가 삭제되었습니다.",
         "completed": "실행 완료",
         "savedMarketplace": "마켓플레이스에 등록되었습니다.",
-        "reworkRequested": "재작업이 요청되었습니다."
+        "reworkRequested": "재작업이 요청되었습니다.",
+        "taskReturned": "태스크를 반송했습니다.",
+        "taskSkipped": "태스크를 건너뛰었습니다."
     },
     "errorMsg": {
         "isBackendConnected": "AI 통신을 위한 백엔드 서버에 연결하지 못했습니다. 백엔드가 정상적으로 작동하는지 확인해 주세요.",
@@ -226,8 +228,32 @@
         "category": "구분"
     },
     "DefaultWorkItem": {
+        "assignTask": "선점하기",
+        "unAssignTask": "선점 해제하기",
+        "returnTask": "반송",
         "intermediateSave": "중간 저장",
-        "complete": "완료"
+        "skip": "SKIP",
+        "skipChecking": "SKIP 가능 여부 확인 중...",
+        "skipEnabledHelp": "이 태스크는 SKIP(건너뛰기)할 수 있습니다.",
+        "skipDisabledRequired": "이 업무는 반드시 수행해야 처리할 수 있습니다.",
+        "skipDialogTitle": "태스크 SKIP",
+        "skipReason": "사유",
+        "skipReasonPlaceholder": "SKIP 처리 사유를 입력하세요.",
+        "skipCancel": "취소",
+        "skipSubmit": "SKIP",
+        "complete": "완료",
+        "getTaskSuccess": "업무를 성공적으로 가져왔습니다.",
+        "unAssignTaskSuccess": "선점이 해제되었습니다."
+    },
+    "TaskReturn": {
+        "title": "태스크 반송",
+        "selectTarget": "반송 대상(이전 단계) 선택",
+        "reason": "반송 사유(선택)",
+        "reasonPlaceholder": "보완이 필요한 내용/요청사항을 입력하세요.",
+        "notAllowed": "현재 태스크는 반송할 수 없습니다.",
+        "fetchFailed": "불러올 수 없습니다.",
+        "cancel": "취소",
+        "submit": "반송 요청"
     },
     "dashboard": {
         "title": "대시보드",
@@ -568,12 +594,19 @@
     "adminDetail": {
         "processVariables": "프로세스 변수",
         "properties": "속성",
+        "history": "히스토리",
+        "participants": "참여자",
         "noProcessDefinition": "프로세스 정의가 없습니다.",
         "key": "키",
         "value": "값",
         "tools": "작업",
         "edit": "수정",
         "save": "저장",
+        "role": "역할",
+        "endpoint": "엔드포인트",
+        "resourceName": "이름",
+        "participantsSearch": "검색 (역할/아이디/이름)",
+        "noParticipants": "참여자 정보가 없습니다.",
         "rollback": "되돌리기",
         "rollbackMessage": "으로 되돌리시겠습니까?",
         "start": "실행",
@@ -1312,7 +1345,7 @@
     "UserTaskPanel": {
         "default": "기본",
         "defaultInfo": "현재 태스크의 역할에 해당하는 사용자 모두가 이 업무를 확인할 수 있습니다.  가장 먼저 업무를 선택한 사용자가 담당자로 지정됩니다.",
-        "sharedGroupInfo": "선택된 공동 담당 그룹에 속한 사용자는 모두 이 업무를 확인할 수 있으며, 먼저 선택한 사용자가 담당자가 됩니다.  ex) 작성자,검토자",
+        "racingInfo": "선택된 공동 담당 그룹에 속한 사용자는 모두 이 업무를 확인할 수 있으며, 먼저 선택한 사용자가 담당자가 됩니다.  ex) 작성자,검토자",
         "assigneeInfo": "지정된 단일 사용자에게만 이 업무가 할당되며, 다른 사용자는 열람할 수 없습니다.",
         "loadBalancingInfo": "지정된 그룹 내 사용자에게 자동으로 업무를 분배합니다. 분배 전략을 선택할 수 있습니다.",
         "expressionInfo": "표현식을 기반으로 실행 시 동적으로 담당자를 결정합니다. ex) ${initiatorManager}",
@@ -1324,8 +1357,15 @@
         "radioSelectDescriptionTitle": "데이터 처리 방식 선택: 기본 데이터 처리, 커스텀 화면 생성, 외부 시스템 연동.",
         "radioSelectDescriptionSubTitle1": "1. 기본 : 기본적인 데이터 사용 \n2. 폼 : 화면 정의에서 생성한 화면 \n3. 외부 어플리케이션 : 업무 화면 URL 입력 필드 생성",
         "assignmentType": "업무 할당 방식",
+        "useCompetingMode": "역할자 설정",
+        "useCompetingModeHint": "역할자 설정 여부",
+        "assignType": "업무 할당 방식",
+        "assignTypeHint": "업무 할당 방식",
+        "racing": "경합",
+        "racingDescription": "경합 방식으로 업무를 할당합니다.",
+        "direct": "직접 지정",
+        "directDescription": "직접 지정 방식으로 업무를 할당합니다.",
         "assignee": "담당자 지정",
-        "sharedGroup": "공동 담당 그룹",
         "expression": "표현식 기반",
         "loadBalancing": "로드 밸런싱",
         "taskType": "작업 유형",
@@ -1340,7 +1380,8 @@
         "loadBalancingStrategy": "할당 전략",
         "roundRobin": "라운드 로빈 (순차 할당)",
         "leastTasks": "최소 작업량 우선",
-        "idle": "오래 쉰 사용자 우선"
+        "idle": "오래 쉰 사용자 우선",
+        "candidateList": "할당 대상 목록"
     },
     "Mapper": {
         "mapper": "매퍼"
@@ -1385,8 +1426,14 @@
         "apiUrlDescriptionSubTitle1": "1.GET : 서버로부터 데이터를 조회하는 요청 \n2.POST : 서버에 새 데이터를 생성하여 전송하는 요청 \n3.PUT : 기존 데이터를 업데이트하거나 전체를 대체하는 요청 \n4.PATCH : 기존 데이터의 일부를 수정하는 요청 \n5.API URL : 요청이 전송될 서버의 엔드포인트 주소\n"
     },
     "LanePanel": {
+        "directLabel": "직접 지정",
         "selectRoleType": "역할 선택",
         "none": "없음",
+        "UserRole": "사용자 역할",
+        "IAMScope": "역할자 설정",
+        "DirecUser": "사용자 설정",
+        "Department": "부서 설정",
+        "Group": "그룹 설정",
         "organization": "조직/그룹",
         "selectOrganization": "조직 또는 그룹 선택",
         "group": "그룹",
@@ -1396,7 +1443,21 @@
         "resolutionRule": "역할 규칙",
         "scopeName": "역할 명",
         "userID": "유저 ID",
+        "userId": "사용자 ID",
+        "userIds": "사용자 선택",
+        "userIdsHint": "사용자를 선택하거나 직접 입력할 수 있습니다. 단일 사용자 선택 시 userId로, 여러 사용자 선택 시 userIds로 저장됩니다.",
+        "groupName": "그룹 이름",
+        "resourceName": "리소스 이름",
         "externalCustomer": "외부 고객",
+        "dispatchingOption": "할당 방식",
+        "dispatchingOptionAll": "모두 (All)",
+        "dispatchingOptionAllDescription": "모든 사용자에게 동시에 할당됩니다.",
+        "dispatchingOptionRacing": "경합 (Racing)",
+        "dispatchingOptionRacingDescription": "여러 사용자 중 먼저 클레임한 사용자가 처리합니다.",
+        "dispatchingOptionLoadBalanced": "로드 밸런싱 (LoadBalanced)",
+        "dispatchingOptionLoadBalancedDescription": "작업을 사용자들 사이에 균등하게 분배합니다.",
+        "dispatchingOptionAuto": "자동 (Auto)",
+        "dispatchingOptionAutoDescription": "사용자 수에 따라 자동으로 결정됩니다. (IAM 역할만 사용 가능)",
         "radioDescriptionTitle": "추가하고 싶은 역할을 선택합니다.",
         "radioDescriptionSubTitle": "없음 : 이 옵션을 선택하면 해당 작업에 대해 특정 역할이 할당되지 않습니다. 모든 사용자가 이 작업을 수행할 수 있습니다. \n\n조직/그룹 : 조직도의 팀 또는 조직 그룹을 선택합니다. 선택된 조직에 속한 사용자만 이 작업을 수행할 수 있습니다. \n\n역할명으로 역할 선택 : 이 옵션을 선택하면 미리 정의된 역할 목록에서 역할을 선택할 수 있습니다. 선택된 역할에 속한 사용자만 이 작업을 수행할 수 있습니다. \n\n직접 사용자 선택 : 이 옵션을 선택하면 특정 사용자를 직접 지정할 수 있습니다. 지정된 사용자만 이 작업을 수행할 수 있습니다."
     },
@@ -2583,7 +2644,8 @@
         "inProgress": "진행 중",
         "pending": "보류 중",
         "cancelled": "취소",
-        "completed": "완료"
+        "completed": "완료",
+        "skipped": "건너뜀"
     },
     "SubProcess": {
         "execute": "실행"
