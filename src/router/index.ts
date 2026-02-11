@@ -72,12 +72,27 @@ export const router = createRouter({
 // 라우터 에러 상태 추적
 let hasRouterError = false;
 
+/** 비밀번호 재설정 화면에 메일 링크(recovery)로 진입한 상태인지 여부 */
+function isOnResetPasswordWithRecoveryHash(): boolean {
+    return typeof window !== 'undefined' &&
+        window.location.pathname === '/auth/reset-password' &&
+        window.location.hash.includes('type=recovery');
+}
+
 router.beforeEach(async (to: any, from: any, next: any) => {
     try {
         // 라우터 에러 상태가 있으면 상태 리셋 후 계속 진행
         if (hasRouterError) {
             console.log('[라우터] 에러 상태 감지 - 상태 리셋 후 계속 진행');
             hasRouterError = false;
+        }
+
+        // 비밀번호 재설정 화면(recovery 해시)에 있는 동안 테넌트 관리 등으로 나가는 네비게이션 차단 (재설정 완료 후 /auth/login 이동은 허용)
+        if (isOnResetPasswordWithRecoveryHash()) {
+            const isBlocked = to.path.startsWith('/tenant/');
+            if (isBlocked) {
+                return next(false);
+            }
         }
 
         if (window.$mode !== 'uEngine') {

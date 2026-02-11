@@ -293,7 +293,9 @@ export default {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
         
-        if(localStorage.getItem('tenantId')) {
+        // 비밀번호 재설정 플로우(recovery 해시)일 때는 서브도메인 자동 이동하지 않음
+        const isRecoveryFlow = window.location.hash.includes('type=recovery');
+        if (!isRecoveryFlow && localStorage.getItem('tenantId')) {
             this.toSelectedTenantPage(localStorage.getItem('tenantId'));
         } else {
             try {
