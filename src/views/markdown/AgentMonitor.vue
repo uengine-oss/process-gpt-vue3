@@ -218,6 +218,23 @@ export default {
                         ]
                     }
                 },
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.deepResearchCustom.title',
+                    value: 'deep-research-custom', 
+                    label: this.$t('AgentSelectInfo.orchestration.deepResearchCustom.title'), 
+                    startLabel: 'Deep Research Custom', 
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.deepResearchCustom.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.2.title' }
+                        ]
+                    }
+                },
                 {
                     titleKey: 'AgentSelectInfo.orchestration.crewaiAction.title',
                     value: 'crewai-action',
@@ -456,7 +473,9 @@ export default {
         },
         isGeneralAgent() {
             if (this.selectedAgent) {
-                return this.selectedAgent.orchestration === 'crewai-action' || this.selectedAgent.orchestration === 'crewai-deep-research';
+                return this.selectedAgent.orchestration === 'crewai-action' ||
+                    this.selectedAgent.orchestration === 'crewai-deep-research' ||
+                    this.selectedAgent.orchestration === 'deep-research-custom';
             }
             return false;
         },
@@ -763,9 +782,11 @@ export default {
         // ========================================
         submitTask(task) {
             const original = task.outputRaw;
-            const payloadForSubmit = (task.crewType === 'text')
-                ? (task.content ?? this.resolvePrimaryValue(original, 'text'))
-                : original;
+            // 항상 원본 객체를 우선 사용해 폼 키를 유지, 없으면 content/primary로 대체
+            let payloadForSubmit = original;
+            if (!payloadForSubmit || typeof payloadForSubmit !== 'object' || Array.isArray(payloadForSubmit)) {
+                payloadForSubmit = task.content ?? this.resolvePrimaryValue(original, task.crewType || 'text');
+            }
             const normalized = this.normalizeFormValues(payloadForSubmit);
             // console.log('[AgentMonitor] submitTask!!', normalized);
             
