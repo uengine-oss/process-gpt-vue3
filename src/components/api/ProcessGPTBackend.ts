@@ -3395,10 +3395,13 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/completion/set-tenant', request);
             if (response.status === 200) {
                 const isOwner = await storage.checkTenantOwner(tenantId);
+                // email/username을 넣지 않으면 upsert 시 새 행은 null로 들어가 유령 레코드가 됨 (setTenant가 원인)
                 const putObj: any = {
                     id: user_id,
                     role: isOwner ? 'superAdmin' : 'user',
-                    tenant_id: tenantId
+                    tenant_id: tenantId,
+                    email: user.email ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('email') : null) ?? undefined,
+                    username: user.name ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null) ?? undefined
                 }
                 if (isOwner) {
                     putObj.is_admin = true;
