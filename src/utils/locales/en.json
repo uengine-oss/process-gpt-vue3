@@ -1032,7 +1032,14 @@
         "customColor": "Custom Color",
         "resetColor": "Reset",
         "systemName": "System Name",
-        "menuName": "Menu Name"
+        "menuName": "Menu Name",
+        "instructionPreview": "Preview",
+        "noMentionCandidates": "No items available.",
+        "mentionType": {
+            "agent": "Agent",
+            "skill": "Skill",
+            "activity": "Activity"
+        }
     },
     "KeyValueField": {
         "add": "Add",
