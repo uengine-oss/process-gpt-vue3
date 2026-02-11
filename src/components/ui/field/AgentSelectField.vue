@@ -185,6 +185,27 @@ export default {
                     }
                 },
                 { 
+                    titleKey: 'AgentSelectInfo.orchestration.deepResearchCustom.title',
+                    value: 'deep-research-custom',
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.deepResearchCustom.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.2.title'
+                            }
+                        ]
+                    }
+                },
+                { 
                     titleKey: 'AgentSelectInfo.orchestration.crewaiAction.title',
                     value: 'crewai-action',
                     icon: 'flowchart',
@@ -245,7 +266,7 @@ export default {
                             this.agentType === 'agent' &&
                             (
                                 !this.activity.orchestration ||
-                                !['crewai-action', 'crewai-deep-research'].includes(this.activity.orchestration)
+                                !['crewai-action', 'crewai-deep-research', 'deep-research-custom'].includes(this.activity.orchestration)
                             )
                         ) {
                             // 기본값만 설정하고 사용자가 선택한 딥리서치를 덮어쓰지 않도록 방어
