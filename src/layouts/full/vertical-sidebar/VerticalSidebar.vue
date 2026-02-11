@@ -126,7 +126,7 @@
                         <div v-for="item in instanceItem" :key="item.title">
                             <v-tooltip location="bottom" :text="$t(item.title)">
                                 <template v-slot:activator="{ props }">
-                                    <div class="pl-2 pt-1" style="cursor: pointer;" @click="navigateTo(item.to)" v-bind="props">
+                                    <div class="sidebar-title-icon" @click="navigateTo(item.to)" v-bind="props">
                                         <Icons
                                             :icon="item.icon"
                                             :size="14"
@@ -158,7 +158,7 @@
                             <div v-for="item in organizationItem" :key="item.title">
                                 <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
                                     <template v-slot:activator="{ props }">
-                                        <div class="pl-2 pt-1" style="cursor: pointer;" v-bind="props" @click="navigateTo(item.to)">
+                                        <div class="sidebar-title-icon" v-bind="props" @click="navigateTo(item.to)">
                                             <Icons
                                                 :icon="item.icon"
                                                 :size="14"
@@ -182,7 +182,7 @@
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
                         </div>
-                        <div class="pl-2 pt-1" style="cursor: pointer;" @click="toggleSidebarUserSearch">
+                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
                             <Icons
                                 :icon="'search'"
                                 :size="14"
@@ -204,7 +204,7 @@
                         </div>
                         <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
                             <template v-slot:activator="{ props }">
-                                <div class="pl-2 pt-1" style="cursor: pointer;" v-bind="props" @click="navigateTo('/skills')">
+                                <div class="sidebar-title-icon" v-bind="props" @click="navigateTo('/skills')">
                                     <Icons
                                         icon="plus"
                                         :size="14"

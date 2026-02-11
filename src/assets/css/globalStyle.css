@@ -1649,3 +1649,9 @@ hr {
     }
 }
 
+.sidebar-title-icon {
+    padding-left: 8px;
+    padding-top: 2px;
+    cursor: pointer;
+}
+

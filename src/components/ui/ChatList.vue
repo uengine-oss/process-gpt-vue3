@@ -4,7 +4,7 @@
         <div style="font-size:14px;" class="text-medium-emphasis cp-menu">
             {{ $t('VerticalSidebar.chatList') || '채팅' }}
         </div>
-        <div class="pl-2 pt-1" style="cursor: pointer;" @click.stop="toggleSearch">
+        <div class="sidebar-title-icon" @click.stop="toggleSearch">
             <Icons
                 :icon="searchOpen ? 'close' : 'search'"
                 :size="14"
@@ -12,7 +12,7 @@
                 style="width: 14px; height: 14px;"
             />
         </div>
-        <div class="pl-2 pt-1" style="cursor: pointer;" @click.stop="openCreateDialog">
+        <div class="sidebar-title-icon" @click.stop="openCreateDialog">
             <Icons
                 :icon="'plus'"
                 :size="14"
