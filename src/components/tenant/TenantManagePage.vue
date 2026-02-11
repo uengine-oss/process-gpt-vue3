@@ -298,71 +298,70 @@ export default {
         } else {
             try {
                 let allTenantInfos = [];
-                const users = await backend.getUserAllTenants() || [];
-                allTenantInfos = users.map(user => {
-                    return {
-                        id: user.tenant_id,
-                        isOwned: user.role === 'superAdmin',
-                        isAdmin: user.is_admin
+
+                // 소유한 테넌트들 가져오기
+                const ownedTenants = await backend.getTenants() || [];
+                ownedTenants.forEach(tenant => {
+                    if (tenant?.id && tenant.id !== 'process-gpt') {
+                        allTenantInfos.push({
+                            id: tenant.id,
+                            isOwned: true,
+                            isAdmin: true
+                        });
                     }
-                })
+                });
+
+                // 속한 모든 테넌트들 가져오기 (소유한 것 + 직원으로 속한 것)
+                const users = await backend.getUserAllTenants() || [];
+                users.forEach(user => {
+                    const tenantId = user?.tenant_id;
+                    if (!tenantId || tenantId === 'process-gpt') return;
+
+                    const existing = allTenantInfos.find(t => t.id === tenantId);
+                    const isOwned = user?.role === 'superAdmin';
+                    const isAdmin = !!user?.is_admin;
+
+                    if (!existing) {
+                        allTenantInfos.push({
+                            id: tenantId,
+                            isOwned,
+                            isAdmin
+                        });
+                    } else {
+                        // 병합: 중복 rows가 있거나 소유/관리자 정보가 다를 수 있어 OR 처리
+                        existing.isOwned = !!existing.isOwned || isOwned;
+                        existing.isAdmin = !!existing.isAdmin || isAdmin || existing.isOwned;
+                    }
+                });
+                
+                if (allTenantInfos.length === 0) {
+                    this.tenantInfos = [];
+                    this.isOwner = false;
+                    this.isLoading = false;
+                    return;
+                }
+
+                // 삭제된 테넌트 표시 + 삭제된 테넌트 마지막 정렬 (기존 로직 유지)
+                const deletedTenants = await backend.getDeletedTenants() || [];
+                deletedTenants.forEach(deletedTenant => {
+                    const tenantIndex = allTenantInfos.findIndex(tenant => tenant.id === deletedTenant?.id);
+                    if (tenantIndex !== -1) {
+                        allTenantInfos[tenantIndex].isDeleted = true;
+                        allTenantInfos[tenantIndex].isDeletedAt = deletedTenant?.deleted_at;
+                    }
+                });
+
+                // 삭제된 테넌트를 마지막으로 정렬
+                allTenantInfos.sort((a, b) => {
+                    if (a.isDeleted && !b.isDeleted) return 1;
+                    if (!a.isDeleted && b.isDeleted) return -1;
+                    return 0;
+                });
+
+                // 여러 테넌트에 속한 경우 목록 표시
                 this.tenantInfos = allTenantInfos;
+                this.isOwner = allTenantInfos.some(tenant => tenant.isOwned);
                 this.isLoading = false;
-                
-                // // 소유한 테넌트들 가져오기
-                // const ownedTenants = await backend.getTenants() || [];
-                // ownedTenants.forEach(tenant => {
-                //     if(tenant.id !== 'process-gpt') {
-                //         allTenantInfos.push({
-                //             id: tenant.id,
-                //             isOwned: true
-                //         });
-                //     }
-                // });
-                
-                // // 속한 모든 테넌트들 가져오기 (소유한 것 + 직원으로 속한 것)
-                // const users = await backend.getUserAllTenants() || [];
-                // users.forEach(user => {
-                //     if(user.tenant_id && user.tenant_id !== 'process-gpt' && !allTenantInfos.some(tenant => tenant.id === user.tenant_id)) {
-                //         allTenantInfos.push({
-                //             id: user.tenant_id,
-                //             isOwned: false
-                //         });
-                //     }
-                // });
-                
-                // if (allTenantInfos.length === 0) {
-                //     this.tenantInfos = [];
-                //     this.isOwner = false;
-                //     this.isLoading = false;
-                // }
-                // // else if (allTenantInfos.length === 1) {
-                // //     // 하나의 테넌트에만 속한 경우 바로 리다이렉션 (유저3)
-                // //     const tenantId = allTenantInfos[0].id;
-                // //     if (tenantId && tenantId !== 'process-gpt') {
-                // //         this.toSelectedTenantPage(tenantId);
-                // //     } 
-                // // } 
-                // else {
-                //     const deletedTenants = await backend.getDeletedTenants() || [];
-                //     deletedTenants.forEach(deletedTenant => {
-                //         const tenantIndex = allTenantInfos.findIndex(tenant => tenant.id === deletedTenant.id);
-                //         if (tenantIndex !== -1) {
-                //             allTenantInfos[tenantIndex].isDeleted = true;
-                //             allTenantInfos[tenantIndex].isDeletedAt = deletedTenant.deleted_at;
-                //         }
-                //     });
-                //     // 삭제된 테넌트를 마지막으로 정렬
-                //     allTenantInfos.sort((a, b) => {
-                //         if (a.isDeleted && !b.isDeleted) return 1;
-                //         if (!a.isDeleted && b.isDeleted) return -1;
-                //         return 0;
-                //     });
-                //     // 여러 테넌트에 속한 경우 목록 표시 (유저1, 유저2)
-                //     this.tenantInfos = allTenantInfos;
-                //     this.isOwner = allTenantInfos.some(tenant => tenant.isOwned);
-                //     this.isLoading = false;
-                // }
             } catch (error) {
                 console.error('Error fetching tenant list:', error);
                 this.isLoading = false;

@@ -1113,6 +1113,8 @@ export default {
                 const msgUuid = this.uuid();
                 const msg = {
                     uuid: msgUuid,
+                    // 클라이언트에서 생성한 안정적인 ID(optimistic/realtime dedupe에 사용)
+                    clientUuid: msgUuid,
                     role: 'user',
                     // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
                     content: text || '',
@@ -1180,6 +1182,8 @@ export default {
                 const msgUuid = this.uuid();
                 const msg = {
                     uuid: msgUuid,
+                    // 클라이언트에서 생성한 안정적인 ID(optimistic/realtime dedupe에 사용)
+                    clientUuid: msgUuid,
                     role: 'user',
                     // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
                     content: text || '',
@@ -1386,8 +1390,13 @@ export default {
                 });
                 const list = Array.isArray(rows) ? rows : [];
                 const mapped = list.map((row) => {
-                    const m = row?.messages || {};
-                    m.uuid = row?.uuid || m.uuid || this.uuid();
+                    const raw = row?.messages || {};
+                    // NOTE: row.uuid(DB row key)와 메시지 uuid(클라 생성/메시지 식별자)를 분리해서 보관한다.
+                    // 과거에는 row.uuid로 m.uuid를 덮어써서 optimistic uuid와 불일치 시 중복 표시가 발생할 수 있었다.
+                    const m = { ...(raw || {}) };
+                    m.rowUuid = row?.uuid || null;
+                    m.uuid = m.uuid || m.clientUuid || m.rowUuid || this.uuid();
+                    m.clientUuid = m.clientUuid || m.uuid;
                     return m;
                 });
                 // desc로 받아왔으니 asc로 정렬된 형태가 되도록 reverse
@@ -1449,14 +1458,24 @@ export default {
                 }
 
                 const mapped = list.map((row) => {
-                    const m = row?.messages || {};
-                    m.uuid = row?.uuid || m.uuid || this.uuid();
+                    const raw = row?.messages || {};
+                    const m = { ...(raw || {}) };
+                    m.rowUuid = row?.uuid || null;
+                    m.uuid = m.uuid || m.clientUuid || m.rowUuid || this.uuid();
+                    m.clientUuid = m.clientUuid || m.uuid;
                     return m;
                 }).reverse(); // asc
 
                 // 중복 방지(uuid 기준)
-                const existingUuids = new Set((this.messages || []).map(m => m?.uuid).filter(Boolean));
-                const toPrepend = mapped.filter(m => !existingUuids.has(m?.uuid));
+                const existingKeys = new Set(
+                    (this.messages || [])
+                        .flatMap(m => [m?.uuid, m?.clientUuid, m?.rowUuid])
+                        .filter(Boolean)
+                );
+                const toPrepend = mapped.filter(m => {
+                    const keys = [m?.uuid, m?.clientUuid, m?.rowUuid].filter(Boolean);
+                    return !keys.some(k => existingKeys.has(k));
+                });
                 if (toPrepend.length > 0) {
                     this.messages = [...toPrepend, ...(this.messages || [])];
                     this.oldestLoadedTimeStamp = this.messages?.[0]?.timeStamp || this.oldestLoadedTimeStamp;
@@ -1498,20 +1517,38 @@ export default {
                 if (payload.eventType === 'DELETE') {
                     const oldUuid = payload.old?.uuid;
                     if (!oldUuid) return;
-                    const idx = this.messages.findIndex(m => m.uuid === oldUuid);
+                    const idx = this.messages.findIndex(m => m?.rowUuid === oldUuid || m?.uuid === oldUuid || m?.clientUuid === oldUuid);
                     if (idx !== -1) this.messages.splice(idx, 1);
                     return;
                 }
                 if (!payload.new) return;
                 const roomId = payload.new.id;
                 if (!this.roomId || roomId !== this.roomId) return;
-                const incoming = payload.new.messages;
-                if (!incoming) return;
-                const uuid = payload.new.uuid || incoming.uuid;
-                if (!uuid) return;
-                const exists = this.messages.findIndex(m => m.uuid === uuid);
+                const incomingRaw = payload.new.messages;
+                if (!incomingRaw) return;
+
+                // incoming 메시지의 uuid(클라 생성/메시지 식별자)를 우선으로 사용해서 optimistic 메시지와 동일 키로 매칭되게 한다.
+                const rowUuid = payload.new.uuid || null;
+                const incoming = typeof incomingRaw === 'object' ? { ...(incomingRaw || {}) } : incomingRaw;
+                const logicalUuid = incoming?.uuid || incoming?.clientUuid || rowUuid;
+                if (!logicalUuid) return;
+
+                if (typeof incoming === 'object') {
+                    incoming.rowUuid = rowUuid || incoming.rowUuid || null;
+                    incoming.uuid = incoming.uuid || logicalUuid;
+                    incoming.clientUuid = incoming.clientUuid || incoming.uuid;
+                }
+
+                const keys = new Set([logicalUuid, rowUuid, incoming?.uuid, incoming?.clientUuid].filter(Boolean));
+                const exists = this.messages.findIndex(m => {
+                    if (!m) return false;
+                    return keys.has(m?.uuid) || keys.has(m?.clientUuid) || keys.has(m?.rowUuid);
+                });
                 if (exists !== -1) {
-                    this.messages[exists] = incoming;
+                    // 기존 optimistic 메시지를 실시간 데이터로 최신화(필드 merge)
+                    this.messages[exists] = typeof incoming === 'object'
+                        ? { ...(this.messages[exists] || {}), ...incoming }
+                        : incoming;
                     return;
                 }
                 // uuid가 다르게 들어오는 경우(또는 이중 submit)로 인한 중복 방지: 내용/작성자/시간이 거의 동일하면 덮어쓰기
@@ -1529,8 +1566,12 @@ export default {
                         return Math.abs(mts - inTs) <= 1500;
                     });
                     if (dupIdx !== -1) {
-                        // 들어온 것을 기준으로 최신화(단, uuid는 row uuid로 맞춰준다)
-                        this.messages[dupIdx] = { ...incoming, uuid };
+                        // 들어온 것을 기준으로 최신화(단, uuid는 메시지 uuid를 유지)
+                        if (typeof incoming === 'object') {
+                            this.messages[dupIdx] = { ...(this.messages[dupIdx] || {}), ...incoming };
+                        } else {
+                            this.messages[dupIdx] = incoming;
+                        }
                         return;
                     }
                 } catch (e) {}
@@ -1666,6 +1707,8 @@ export default {
                 const msgUuid = this.uuid();
                 const msg = {
                     uuid: msgUuid,
+                    // 클라이언트에서 생성한 안정적인 ID(optimistic/realtime dedupe에 사용)
+                    clientUuid: msgUuid,
                     role: 'user',
                     // 첨부만 있을 때 자동 문구를 넣지 않음 (메시지는 첨부 UI로만 표시)
                     content: text || '',
@@ -2050,7 +2093,9 @@ export default {
 
         async resolveAgentTargetsForMessage(text, mentionedUsers = []) {
             const inRoomAgentsRaw = this.getAgentCandidates();
-            if (inRoomAgentsRaw.length === 0) return [];
+            // NOTE:
+            // - 멘션이 아닌 경우에는 1:1(사람-사람 / 사람-에이전트 포함)이라도 router가 개입 여부/추천을 판단해야 함.
+            // - 방에 참여 중인 에이전트가 0명이어도, 조직도(디렉토리) 기반으로 "초대 추천"은 가능해야 함.
 
             // 0) payload 기반 멘션(정확): 선택된 멘션이 있으면 그것만 응답
             const mentioned = Array.isArray(mentionedUsers) ? mentionedUsers : [];
@@ -2091,15 +2136,7 @@ export default {
             }
 
             // 멘션 없음:
-            // 1) "나 + 에이전트 1명" 1:1이면 무조건 응답
-            if (inRoomAgentsRaw.length === 1) {
-                const only = inRoomAgentsRaw[0];
-                if (only?.id && this.isOneOnOneWithSingleAgent(only.id)) {
-                    return [{ ...only, policy: 'must_reply' }];
-                }
-            }
-
-            // 2) 그 외(그룹 채팅, 에이전트 2+, 또는 에이전트 1명+일반 유저 포함)는 router가 선별
+            // - 1:1이라도 router가 선별(개입/추천/초대)해야 함
             const routingLoadingUuid = this.addRoutingLoadingMessage();
             const recent_history = this.buildRecentHistoryForRouting(10);
             const inRoomIdSet = new Set((inRoomAgentsRaw || []).map(a => a?.id).filter(Boolean));
@@ -2151,12 +2188,16 @@ export default {
             const agents_info = this.buildAgentsInfoForRouting(allCandidates);
             const candidate_agent_ids = allCandidates.map(a => a.id).filter(Boolean);
             try {
+                const tenant_id = window.$tenantName || localStorage.getItem('tenantId') || '';
+                const user_uid = this.userInfo?.uid || this.userInfo?.id || '';
                 const routed = await agentRouterService.routeAgents({
                     user_message: (text || '').toString(),
                     recent_history,
                     agents_info,
                     candidate_agent_ids,
                     conversation_id: this.currentChatRoom?.id || null,
+                    tenant_id,
+                    user_uid,
                 });
                 const should = !!routed?.should_intervene;
                 const selected = Array.isArray(routed?.selected_agent_ids) ? routed.selected_agent_ids : [];
@@ -2345,6 +2386,10 @@ export default {
                     }
                 }
 
+                // 에이전트가 채팅방 맥락을 잡을 수 있도록 최근 대화 10개를 함께 전달
+                // (최근 대화 10개 + 벡터검색 결과 하이브리드 컨텍스트에 사용)
+                const room_recent_history = this.buildRecentHistoryForRouting(10);
+
                 const commonParams = {
                     message: messageForAgent,
                     tenant_id: tenantId,
@@ -2353,7 +2398,10 @@ export default {
                     user_name: this.userInfo?.name || this.userInfo?.username,
                     user_jwt: userJwt,
                     conversation_id: this.currentChatRoom?.id,
-                    metadata: agentTarget?.__routingDecision ? { routing: agentTarget.__routingDecision } : {}
+                    metadata: {
+                        ...(agentTarget?.__routingDecision ? { routing: agentTarget.__routingDecision } : {}),
+                        room_recent_history,
+                    }
                 };
 
                 // AbortController 등록 (중지 버튼)

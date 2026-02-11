@@ -2681,61 +2681,74 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- main_chat_memory 테이블 (에이전트 메모리)
-CREATE TABLE IF NOT EXISTS main_chat_memory (
+-- =============================================================================
+-- chat_vector_memory 테이블 (채팅방 단위 에이전틱 메모리: 다자간/다에이전트 공용)
+-- - room_id(=conversation_id=프론트 roomId) 스코프로 벡터 검색
+-- - 모든 에이전트(메인/일반/라우터)가 동일 테이블을 사용하도록 확장용
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS chat_vector_memory (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id TEXT NOT NULL,
     user_uid UUID NOT NULL,
-    session_id TEXT,
-    memory_type memory_type NOT NULL DEFAULT 'conversation',
+    room_id TEXT NOT NULL,
+    agent_id TEXT,
+    source_role TEXT, -- user | assistant | tool
+    memory_type memory_type NOT NULL DEFAULT 'conversation', -- conversation | tool_result | fact | preference
     content TEXT NOT NULL,
     embedding vector(1536),
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     expires_at TIMESTAMPTZ,
     
-    CONSTRAINT fk_main_chat_memory_user FOREIGN KEY (user_uid) REFERENCES auth.users(id) ON DELETE CASCADE
+    CONSTRAINT fk_chat_vector_memory_user FOREIGN KEY (user_uid) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
 -- 인덱스
-CREATE INDEX IF NOT EXISTS idx_main_chat_memory_tenant_user ON main_chat_memory(tenant_id, user_uid);
-CREATE INDEX IF NOT EXISTS idx_main_chat_memory_session ON main_chat_memory(session_id);
-CREATE INDEX IF NOT EXISTS idx_main_chat_memory_type ON main_chat_memory(memory_type);
-CREATE INDEX IF NOT EXISTS idx_main_chat_memory_created ON main_chat_memory(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_main_chat_memory_expires ON main_chat_memory(expires_at) WHERE expires_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_chat_vector_memory_tenant_user_room ON chat_vector_memory(tenant_id, user_uid, room_id);
+CREATE INDEX IF NOT EXISTS idx_chat_vector_memory_room_created ON chat_vector_memory(room_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_vector_memory_type ON chat_vector_memory(memory_type);
+CREATE INDEX IF NOT EXISTS idx_chat_vector_memory_agent ON chat_vector_memory(agent_id);
+CREATE INDEX IF NOT EXISTS idx_chat_vector_memory_created ON chat_vector_memory(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_vector_memory_expires ON chat_vector_memory(expires_at) WHERE expires_at IS NOT NULL;
 
 -- 벡터 검색 인덱스 (IVFFlat)
-CREATE INDEX IF NOT EXISTS idx_main_chat_memory_embedding ON main_chat_memory 
+CREATE INDEX IF NOT EXISTS idx_chat_vector_memory_embedding ON chat_vector_memory
 USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
 
 -- RLS 활성화
-ALTER TABLE main_chat_memory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_vector_memory ENABLE ROW LEVEL SECURITY;
 
--- RLS 정책: 사용자는 자신의 메모리만 접근 가능
-DROP POLICY IF EXISTS "main_chat_memory_user_policy" ON main_chat_memory;
-CREATE POLICY "main_chat_memory_user_policy" ON main_chat_memory
+-- RLS 정책: 사용자는 자신의 테넌트/사용자 스코프만 접근 가능
+DROP POLICY IF EXISTS "chat_vector_memory_user_policy" ON chat_vector_memory;
+CREATE POLICY "chat_vector_memory_user_policy" ON chat_vector_memory
     FOR ALL TO authenticated
     USING (user_uid = auth.uid() AND tenant_id = public.tenant_id());
 
 -- 만료된 메모리 자동 삭제 함수
-CREATE OR REPLACE FUNCTION delete_expired_main_chat_memory()
+CREATE OR REPLACE FUNCTION delete_expired_chat_vector_memory()
 RETURNS void AS $$
 BEGIN
-    DELETE FROM main_chat_memory WHERE expires_at IS NOT NULL AND expires_at < NOW();
+    DELETE FROM chat_vector_memory WHERE expires_at IS NOT NULL AND expires_at < NOW();
 END;
 $$ LANGUAGE plpgsql;
 
--- 벡터 유사도 검색 함수
-CREATE OR REPLACE FUNCTION search_main_chat_memory(
+-- 벡터 유사도 검색 함수 (채팅방 room_id 스코프)
+CREATE OR REPLACE FUNCTION search_chat_vector_memory(
     p_tenant_id TEXT,
     p_user_uid UUID,
+    p_room_id TEXT,
     p_embedding vector(1536),
-    p_limit INT DEFAULT 5,
+    p_limit INT DEFAULT 8,
     p_memory_types memory_type[] DEFAULT NULL,
-    p_session_id TEXT DEFAULT NULL
+    p_agent_id TEXT DEFAULT NULL,
+    p_min_similarity FLOAT DEFAULT NULL
 )
 RETURNS TABLE (
     id UUID,
+    room_id TEXT,
+    agent_id TEXT,
+    source_role TEXT,
     memory_type memory_type,
     content TEXT,
     metadata JSONB,
@@ -2744,20 +2757,25 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         m.id,
+        m.room_id,
+        m.agent_id,
+        m.source_role,
         m.memory_type,
         m.content,
         m.metadata,
         1 - (m.embedding <=> p_embedding) AS similarity,
         m.created_at
-    FROM main_chat_memory m
+    FROM chat_vector_memory m
     WHERE m.tenant_id = p_tenant_id
       AND m.user_uid = p_user_uid
+      AND m.room_id = p_room_id
       AND (m.expires_at IS NULL OR m.expires_at > NOW())
       AND (p_memory_types IS NULL OR m.memory_type = ANY(p_memory_types))
-      AND (p_session_id IS NULL OR m.session_id = p_session_id)
+      AND (p_agent_id IS NULL OR m.agent_id = p_agent_id)
       AND m.embedding IS NOT NULL
+      AND (p_min_similarity IS NULL OR (1 - (m.embedding <=> p_embedding)) >= p_min_similarity)
     ORDER BY m.embedding <=> p_embedding
     LIMIT p_limit;
 END;
