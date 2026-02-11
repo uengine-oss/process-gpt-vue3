@@ -108,7 +108,10 @@
             </v-select>
         </div>
 
-        <div v-if="isExecute" class="d-flex justify-end mt-2">
+        <div v-if="isExecute" class="d-flex justify-end mt-2" style="gap: 8px;">
+            <v-btn @click="selectBasicLlmAgent" color="gray" variant="flat" density="compact" class="rounded-pill">
+                {{ $t('WorkItem.quickCreate') }}
+            </v-btn>
             <v-btn @click="selectAgent" color="primary" variant="flat" density="compact" class="rounded-pill">
                 {{ $t('WorkItem.select') }}
             </v-btn>
@@ -373,6 +376,20 @@ export default {
                 return 'error';
             }
             return 'grey';
+        },
+        selectBasicLlmAgent() {
+            const basicLlmAgent = this.defaultSetting.getAgentList.find(
+                agent => agent.alias === 'default' && agent.agent_type === 'pgagent'
+            );
+            if (basicLlmAgent) {
+                const basicLlmActivity = {
+                    ...this.activity,
+                    agent: basicLlmAgent.id,
+                    agentMode: 'draft',
+                    orchestration: basicLlmAgent.alias,
+                };
+                this.$emit('update:modelValue', basicLlmActivity);
+            }
         },
         selectAgent() {
             this.$emit('update:modelValue', this.activity);

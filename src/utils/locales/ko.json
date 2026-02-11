@@ -1194,7 +1194,14 @@
         "customColor": "사용자 정의 색상",
         "resetColor": "초기화",
         "systemName": "시스템명",
-        "menuName": "메뉴명"
+        "menuName": "메뉴명",
+        "instructionPreview": "미리보기",
+        "noMentionCandidates": "선택할 수 있는 항목이 없습니다.",
+        "mentionType": {
+            "agent": "에이전트",
+            "skill": "스킬",
+            "activity": "액티비티"
+        }
     },
     "KeyValueField": {
         "add": "추가",
@@ -1695,7 +1702,8 @@
         "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
         "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다.",
         "runAgain": "다시 수행하기",
-        "select": "선택"
+        "select": "선택",
+        "quickCreate": "빠른 초안 생성"
     },
     "AgentSelectInfo": {
         "orcation": "에이전트 연구 방식",

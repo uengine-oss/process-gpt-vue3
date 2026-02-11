@@ -81,14 +81,6 @@ export default {
             return;
         }
 
-        // URL 해시에 비밀번호 복구 토큰이 있으면 재설정 페이지로 (테넌트 관리로 보내지 않음)
-        const hash = window.location.hash || '';
-        const hasRecoveryToken = /type=recovery|access_token=/.test(hash);
-        if (hasRecoveryToken) {
-            await this.$router.push({ path: '/auth/reset-password', hash });
-            return;
-        }
-
         // 적절한 URL로 이동하는 함수
         let gotoUrl = "";
 

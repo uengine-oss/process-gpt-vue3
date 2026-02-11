@@ -1499,6 +1499,7 @@ hr {
 
     .instance-card-tab-6 {
         height: calc(100vh - 200px);
+        padding: 16px;
         overflow: auto;
     }
 
@@ -1646,5 +1647,11 @@ hr {
         width: 230px !important;
         height:185px !important;
     }
+}
+
+.sidebar-title-icon {
+    padding-left: 8px;
+    padding-top: 2px;
+    cursor: pointer;
 }
 

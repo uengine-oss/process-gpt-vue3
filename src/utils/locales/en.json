@@ -1032,7 +1032,14 @@
         "customColor": "Custom Color",
         "resetColor": "Reset",
         "systemName": "System Name",
-        "menuName": "Menu Name"
+        "menuName": "Menu Name",
+        "instructionPreview": "Preview",
+        "noMentionCandidates": "No items available.",
+        "mentionType": {
+            "agent": "Agent",
+            "skill": "Skill",
+            "activity": "Activity"
+        }
     },
     "KeyValueField": {
         "add": "Add",
@@ -1528,7 +1535,8 @@
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
         "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
         "runAgain": "Run Again",
-        "select": "Select"
+        "select": "Select",
+        "quickCreate": "Quick Draft"
     },
     "AgentSelectInfo": {
         "orcation": "Agent Research Method",
