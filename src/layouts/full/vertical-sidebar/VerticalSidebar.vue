@@ -126,12 +126,12 @@
                         <div v-for="item in instanceItem" :key="item.title">
                             <v-tooltip location="bottom" :text="$t(item.title)">
                                 <template v-slot:activator="{ props }">
-                                    <div class="pl-2 pt-1">
-                                        <Icons @click="navigateTo(item.to)" v-bind="props"
+                                    <div class="sidebar-title-icon" @click="navigateTo(item.to)" v-bind="props">
+                                        <Icons
                                             :icon="item.icon"
-                                            :size="16"
+                                            :size="14"
                                             :color="'#808080'"
-                                            style="cursor: pointer; width: 16px; height: 16px;"
+                                            style="width: 14px; height: 14px;"
                                         />
                                     </div>
                                 </template>
@@ -158,13 +158,14 @@
                             <div v-for="item in organizationItem" :key="item.title">
                                 <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
                                     <template v-slot:activator="{ props }">
-                                        <Icons @click="navigateTo(item.to)" v-bind="props"
-                                            class="ml-2"
-                                            :icon="item.icon"
-                                            :size="item.size || 20"
-                                            :color="'#808080'"
-                                            style="cursor: pointer;"
-                                        />
+                                        <div class="sidebar-title-icon" v-bind="props" @click="navigateTo(item.to)">
+                                            <Icons
+                                                :icon="item.icon"
+                                                :size="14"
+                                                :color="'#808080'"
+                                                style="width: 14px; height: 14px;"
+                                            />
+                                        </div>
                                     </template>
                                 </v-tooltip>
                             </div>
@@ -177,20 +178,19 @@
 
                 <!-- 유저 목록 -->
                 <div v-if="mode !== 'uEngine'" class="mb-4">
-                    <v-row class="align-center pa-0 ma-0">
-                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                    <div class="d-flex align-center ml-2">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
                         </div>
-                        <v-spacer></v-spacer>
-                        <v-btn
-                            icon
-                            variant="text"
-                            density="comfortable"
-                            @click="toggleSidebarUserSearch"
-                        >
-                            <v-icon size="18">mdi-magnify</v-icon>
-                        </v-btn>
-                    </v-row>
+                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
+                            <Icons
+                                :icon="'search'"
+                                :size="14"
+                                :color="'#808080'"
+                                style="width: 14px; height: 14px;"
+                            />
+                        </div>
+                    </div>
                     <v-col class="pa-0">
                         <SidebarUserList ref="sidebarUserList" />
                     </v-col>
@@ -204,15 +204,14 @@
                         </div>
                         <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
                             <template v-slot:activator="{ props }">
-                                <Icons
-                                    v-bind="props"
-                                    class="ml-2"
-                                    icon="plus"
-                                    :size="12"
-                                    :color="'#808080'"
-                                    style="cursor: pointer;"
-                                    @click="navigateTo('/skills')"
-                                />
+                                <div class="sidebar-title-icon" v-bind="props" @click="navigateTo('/skills')">
+                                    <Icons
+                                        icon="plus"
+                                        :size="14"
+                                        :color="'#808080'"
+                                        style="width: 14px; height: 14px;"
+                                    />
+                                </div>
                             </template>
                         </v-tooltip>
                     </v-row>
@@ -249,12 +248,13 @@
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
-                        <div v-if="item.header && index === 0"
-                            style="font-size:14px;"
-                            class="text-medium-emphasis cp-menu mt-3 ml-2"
-                        >{{ $t(item.header) }}</div>
-                        <v-row v-if="item.header && !item.disable"
-                            class="pa-0 ma-0" 
+                        <div v-if="item.header && !item.disable" class="d-flex align-center mt-3 ml-2">
+                            <div v-if="index === 0"
+                                style="font-size:14px;"
+                                class="text-medium-emphasis cp-menu flex-shrink-0 mr-1"
+                            >{{ $t(item.header) }}</div>
+                        <v-row
+                            class="pa-0 ma-0 flex-nowrap" 
                         >
                             <template v-for="subItem in definitionItem" :key="subItem.title">
                                 <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
@@ -279,6 +279,7 @@
                                 </v-tooltip>
                             </template>
                         </v-row>
+                        </div>
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
@@ -579,7 +580,7 @@ export default {
                 this.instanceItem = [
                     {
                         title: 'definitionManagement.completedList',
-                        icon: 'search',
+                        icon: 'check-mark',
                         BgColor: 'primary',
                         disable: true,
                         to: '/list-pages/completed',
@@ -593,7 +594,7 @@ export default {
                         BgColor: 'primary',
                         to: '/organization',
                         disable: false,
-                        size: 12
+                        size: 14
                     },
                 ];
             }

@@ -1535,7 +1535,8 @@
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
         "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
         "runAgain": "Run Again",
-        "select": "Select"
+        "select": "Select",
+        "quickCreate": "Quick Draft"
     },
     "AgentSelectInfo": {
         "orcation": "Agent Research Method",

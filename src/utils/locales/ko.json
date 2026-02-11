@@ -1702,7 +1702,8 @@
         "delegateMessage": "'{taskName}'업무를 {username}에게 위임하였습니다.",
         "delegateMessageWithAssignee": "'{taskName}'업무의 담당자를 [{assigneeInfo}]에서 {username}으로 위임하였습니다.",
         "runAgain": "다시 수행하기",
-        "select": "선택"
+        "select": "선택",
+        "quickCreate": "빠른 초안 생성"
     },
     "AgentSelectInfo": {
         "orcation": "에이전트 연구 방식",

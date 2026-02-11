@@ -40,8 +40,8 @@ const addMaterialColors = (theme: any) => ({
         orange: colors.orange.base,
         'deep-orange': colors.deepOrange.base,
         brown: colors.brown.base,
-        grey: colors.grey.base,
-        gray: colors.grey.base, // gray와 grey 둘 다 지원
+        grey: '#808080',
+        gray: '#808080', // gray와 grey 둘 다 지원
         'blue-grey': colors.blueGrey.base,
         black: colors.shades.black,
         white: colors.shades.white
