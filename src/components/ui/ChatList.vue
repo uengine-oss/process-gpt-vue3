@@ -1,16 +1,24 @@
 <template>
     <!-- 대화 목록 -->
-    <div class="d-flex align-center justify-space-between mt-3 ml-2 pr-2">
+    <div class="d-flex align-center mt-3 ml-2">
         <div style="font-size:14px;" class="text-medium-emphasis cp-menu">
             {{ $t('VerticalSidebar.chatList') || '채팅' }}
         </div>
-        <div class="d-flex align-center" style="gap: 2px;">
-            <v-btn icon variant="text" density="comfortable" @click.stop="toggleSearch">
-                <v-icon size="18">{{ searchOpen ? 'mdi-close' : 'mdi-magnify' }}</v-icon>
-            </v-btn>
-            <v-btn icon variant="text" density="comfortable" @click.stop="openCreateDialog">
-                <v-icon size="18">mdi-plus</v-icon>
-            </v-btn>
+        <div class="pl-2 pt-1" style="cursor: pointer;" @click.stop="toggleSearch">
+            <Icons
+                :icon="searchOpen ? 'close' : 'search'"
+                :size="14"
+                :color="'#808080'"
+                style="width: 14px; height: 14px;"
+            />
+        </div>
+        <div class="pl-2 pt-1" style="cursor: pointer;" @click.stop="openCreateDialog">
+            <Icons
+                :icon="'plus'"
+                :size="14"
+                :color="'#808080'"
+                style="width: 14px; height: 14px;"
+            />
         </div>
     </div>
 

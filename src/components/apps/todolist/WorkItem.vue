@@ -338,6 +338,7 @@
                             @backToPrevStep="backToPrevStep"
                             :is-simulate="isSimulate"
                             :is-finished-agent-generation="isFinishedAgentGeneration"
+                            :is-generating-example="isGeneratingExample"
                             :processDefinition="processDefinition"
                         >   
                             <template #form-work-item-action-label>
@@ -349,8 +350,8 @@
                                 >
                                     <v-btn
                                         class="mr-1"
-                                        color="primary"
-                                        :variant="isMobile ? 'outlined' : 'flat'"
+                                        color="gray"
+                                        variant="flat"
                                         :icon="isMobile"
                                         density="comfortable"
                                         :size="isMobile ? 'small' : 'default'"
@@ -384,7 +385,8 @@
                                             <v-btn class="mr-1"
                                                 density="comfortable"
                                                 rounded
-                                                style="background-color: #808080; color: white;"
+                                                color="gray"
+                                                variant="flat"
                                                 v-bind="props"
                                                 :loading="isGeneratingExample"
                                                 :disabled="isGeneratingExample"

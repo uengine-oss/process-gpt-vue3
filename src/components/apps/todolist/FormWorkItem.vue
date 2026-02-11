@@ -94,7 +94,7 @@
                                     <!-- 직접 입력 탭 -->
                                     <!-- <v-window-item value="direct-input"> -->
                                         <!-- 슬랏으로 버튼 추가 영역  -->
-                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
+                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem || isGeneratingExample"></DynamicForm>
                                         <!-- <div v-if="!isCompleted" class="mb-4">
                                             <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
                                             <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
@@ -219,6 +219,10 @@ export default {
             default: "false"
         },
         isFinishedAgentGeneration: Boolean,
+        isGeneratingExample: {
+            type: Boolean,
+            default: false
+        },
         processDefinition: Object,
         isOwnWorkItem: Boolean,
         isInWorkItem: {

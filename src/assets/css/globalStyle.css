@@ -1476,6 +1476,7 @@ hr {
 
     .instance-card-tab-6 {
         height: calc(100vh - 200px);
+        padding: 16px;
         overflow: auto;
     }
 
