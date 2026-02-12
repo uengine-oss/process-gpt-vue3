@@ -1043,7 +1043,14 @@
         "customColor": "Custom Color",
         "resetColor": "Reset",
         "systemName": "System Name",
-        "menuName": "Menu Name"
+        "menuName": "Menu Name",
+        "instructionPreview": "Preview",
+        "noMentionCandidates": "No items available.",
+        "mentionType": {
+            "agent": "Agent",
+            "skill": "Skill",
+            "activity": "Activity"
+        }
     },
     "KeyValueField": {
         "add": "Add",
@@ -1588,6 +1595,24 @@
                         },
                         {
                             "title": "📝 Examples:\n• Competitor analysis report\n• Market trend research\n• Strategic planning document"
+                        }
+                    ]
+                }
+            },
+            "deepResearchCustom": {
+                "title": "Deep Research Custom",
+                "description": "Custom deep research pipeline for dedicated server. ex) Specialized data collection, tailored analysis, custom report (5~15 minutes)",
+                "detailDesc": {
+                    "title": "Custom research flow optimized for your environment",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\nCustom researcher → Data collection\nCustom analyst → Deep analysis\nCustom writer → Report writing"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• You want a custom deep research server\n• Need specialized data sources\n• Tailored report style is required"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Internal knowledge research\n• Custom data pipeline analysis\n• Organization-specific report"
                         }
                     ]
                 }

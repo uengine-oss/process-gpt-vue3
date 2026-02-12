@@ -108,6 +108,11 @@ export default {
                 await this.backend.checkDBConnection();
                 this.loadScreen = true;
             } else {
+                // 비밀번호 재설정 화면(recovery 해시)에 있는 동안 테넌트/로그인 리디렉션 수행하지 않음
+                if (window.location.pathname === '/auth/reset-password' && window.location.hash.includes('type=recovery')) {
+                    this.loadScreen = true;
+                    return;
+                }
                 const tenantId = await this.backend.getTenant(window.$tenantName);
                 if(window.$tenantName !== 'localhost') {
                     if (!tenantId) {

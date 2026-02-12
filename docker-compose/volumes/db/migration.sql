@@ -684,6 +684,7 @@ BEGIN
     END IF;
 END $$;
 
+ALTER TYPE public.agent_orch ADD VALUE IF NOT EXISTS 'deep-research-custom';
 
 -- 2) events.event_type 컬럼 마이그레이션 (임시 컬럼 → 이관 → 드롭 → 리네임)
 DO $$

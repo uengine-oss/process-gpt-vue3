@@ -1201,7 +1201,14 @@
         "customColor": "사용자 정의 색상",
         "resetColor": "초기화",
         "systemName": "시스템명",
-        "menuName": "메뉴명"
+        "menuName": "메뉴명",
+        "instructionPreview": "미리보기",
+        "noMentionCandidates": "선택할 수 있는 항목이 없습니다.",
+        "mentionType": {
+            "agent": "에이전트",
+            "skill": "스킬",
+            "activity": "액티비티"
+        }
     },
     "KeyValueField": {
         "add": "추가",
@@ -1751,6 +1758,24 @@
                         },
                         {
                             "title": "📝 예시:\n• 경쟁사 분석 보고서\n• 시장 트렌드 리서치\n• 전략 기획 문서"
+                        }
+                    ]
+                }
+            },
+            "deepResearchCustom": {
+                "title": "딥리서치 커스텀",
+                "description": "커스텀 딥리서치 파이프라인으로 전용 서버를 활용. ex) 맞춤 데이터 수집, 맞춤 분석, 커스텀 리포트 (5~15분 소요)",
+                "detailDesc": {
+                    "title": "환경에 최적화된 커스텀 연구 흐름",
+                    "details": [
+                        {
+                            "title": "🎯 작동 방식:\n커스텀 연구원 → 데이터 수집\n커스텀 분석가 → 심층 분석\n커스텀 작가 → 보고서 작성"
+                        },
+                        {
+                            "title": "💡 이런 경우에 사용하세요:\n• 딥리서치 커스텀 서버를 사용하고 싶을 때\n• 특수 데이터 소스가 필요할 때\n• 조직에 맞춘 리포트 형식이 필요할 때"
+                        },
+                        {
+                            "title": "📝 예시:\n• 내부 지식 리서치\n• 커스텀 데이터 파이프라인 분석\n• 조직 특화 보고서"
                         }
                     ]
                 }
