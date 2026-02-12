@@ -1039,7 +1039,7 @@ export default class StorageBaseSupabase {
                     .match(filter)
                     .maybeSingle();
 
-                if (!error) {
+                if (data && !error) {
                     window.localStorage.setItem('isAdmin', data.is_admin || false);
                     window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {
@@ -1101,9 +1101,13 @@ export default class StorageBaseSupabase {
                         const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
                         window.dispatchEvent(event);
                     }
+                } else if (!data) {
+                    await this.signOut();
+                    throw new StorageBaseError('error in writeUserData', 'user not found', arguments);
                 }
             }
         } catch (e) {
+            await this.signOut();
             throw new StorageBaseError('error in writeUserData', e, arguments);
         }
     }
