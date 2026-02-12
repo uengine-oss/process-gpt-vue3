@@ -57,9 +57,9 @@
                     <v-list-item
                         v-for="room in displayedItems"
                         :key="room.id"
-                        class="chat-room-item"
+                        class="chat-room-item sidebar-list-hover-bg"
                         :class="{
-                            'chat-room-item--active': room.id === currentChatRoomId,
+                            'sidebar-list-hover-bg--active': room.id === currentChatRoomId,
                             'chat-room-item--unread': isUnreadRoom(room) && room.id !== currentChatRoomId
                         }"
                         @click="openChatRoom(room)"
@@ -642,12 +642,6 @@ export default {
 <style scoped>
 .chat-room-item {
     cursor: pointer;
-}
-.chat-room-item:hover {
-    background: #f8fafc;
-}
-.chat-room-item--active {
-    background: rgba(var(--v-theme-primary), 0.10);
 }
 .chat-room-item--unread :deep(.chat-room-title),
 .chat-room-item--unread :deep(.chat-room-subtitle),

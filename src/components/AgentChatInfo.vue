@@ -3,7 +3,7 @@
         <div v-if="!editDialog && !toolPriorityDialog">
             <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
             <div class="text-left">
-                <v-row class="align-start pa-4 ma-0">
+                <v-row class="align-center pa-4 ma-0 pb-0">
                     <v-avatar size="24" class="mr-2 flex-shrink-0">
                         <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
                         <v-img 
@@ -37,9 +37,9 @@
                         v-if="!agentInfo?.is_default"
                         @click="openEditDialog"
                         variant="text"
-                        :size="20"
+                        :size="24"
                         icon
-                        class="rounded-pill flex-shrink-0 ml-2"
+                        class="rounded-pill flex-shrink-0 mr-1"
                     >
                         <Icons :icon="'pencil'" :size="14"/>
                     </v-btn>
@@ -48,11 +48,11 @@
                         v-if="!agentInfo?.is_default"
                         @click="openToolPriorityDialog"
                         variant="text"
-                        :size="20"
+                        :size="24"
                         icon
                         class="rounded-pill flex-shrink-0 ml-1"
                     >
-                        <v-icon size="14">mdi-sort</v-icon>
+                        <v-icon size="18">mdi-sort</v-icon>
                         <v-tooltip activator="parent" location="bottom">
                             {{ $t('agentField.toolPriorityButton') }}
                         </v-tooltip>
