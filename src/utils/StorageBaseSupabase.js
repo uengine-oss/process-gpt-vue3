@@ -320,18 +320,6 @@ export default class StorageBaseSupabase {
                     error: true,
                     errorMsg: '이미 가입된 이메일입니다.'
                 };
-                // const isOwner = await this.checkTenantOwner(window.$tenantName);
-                // const role = isOwner ? 'superAdmin' : 'user';
-                // const isAdmin = isOwner ? true : false;
-                // await this.putObject('users', {
-                //     id: existUser.id,
-                //     username: userInfo.username,
-                //     email: userInfo.email,
-                //     role: role,
-                //     is_admin: isAdmin,
-                //     tenant_id: tenantId
-                // }, { onConflict: 'id' });
-                // return await this.signIn(userInfo);
             } else {
                 const result = await window.$supabase.auth.signUp({
                     email: userInfo.email,
@@ -345,36 +333,6 @@ export default class StorageBaseSupabase {
                 });
 
                 if (!result.error) {
-                    if (!window.$isTenantServer && window.$tenantName) {
-                        let role = 'user';
-                        let isAdmin = false;
-                        const existTenant = await this.getObject('tenants', { match: { id: window.$tenantName } });
-                        if (!existTenant) {
-                            await this.putObject('tenants', {
-                                id: window.$tenantName,
-                                owner: result.data.user.id
-                            });
-                            role = 'superAdmin';
-                            isAdmin = true;
-                        }
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: userInfo.username,
-                            email: userInfo.email,
-                            role: role,
-                            is_admin: isAdmin,
-                            tenant_id: window.$tenantName
-                        });
-                    } else {
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: userInfo.username,
-                            email: userInfo.email,
-                            role: 'user',
-                            is_admin: false,
-                            tenant_id: 'process-gpt'
-                        });
-                    }
                     result.data["isNewUser"] = true;
                     return result.data;
                 } else {
@@ -1081,7 +1039,7 @@ export default class StorageBaseSupabase {
                     .match(filter)
                     .maybeSingle();
 
-                if (!error) {
+                if (data && !error) {
                     window.localStorage.setItem('isAdmin', data.is_admin || false);
                     window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {
@@ -1143,9 +1101,13 @@ export default class StorageBaseSupabase {
                         const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
                         window.dispatchEvent(event);
                     }
+                } else if (!data) {
+                    await this.signOut();
+                    throw new StorageBaseError('error in writeUserData', 'user not found', arguments);
                 }
             }
         } catch (e) {
+            await this.signOut();
             throw new StorageBaseError('error in writeUserData', e, arguments);
         }
     }
