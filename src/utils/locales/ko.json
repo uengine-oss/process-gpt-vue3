@@ -1,5 +1,10 @@
 {
     "message": "ko",
+    "Common": {
+        "cancel": "취소",
+        "submit": "제출",
+        "role": "역할"
+    },
     "leadTime": {
         "title": "소요 시간",
         "days": "일",
@@ -697,7 +702,9 @@
         "resourceDescDmnRule": "DMN으로 정의된 비즈니스 규칙",
         "resourceDescMem0": "업무 맥락·선호도 등 개인화 메모리",
         "resourceDescOthers": "위 항목에 해당하지 않는 기타 리소스",
-        "toolPriorityButton": "도구 우선 순위 지정"
+        "toolPriorityButton": "도구 우선 순위 지정",
+        "toolPriorityEmptyHint": "도구/스킬을 먼저 설정해주세요.",
+        "toolPrioritySaveSuccess": "도구 우선순위가 저장되었습니다."
     },
     "processDefinitionMap": {
         "title": "프로세스 정의 체계도",
@@ -2550,7 +2557,9 @@
         "pastDue": "기한 지남",
         "error": "실행 오류",
         "agentWorking": "에이전트 작업중",
-        "agentCompleted": "에이전트 작업 완료"
+        "agentCompleted": "에이전트 작업 완료",
+        "submitted": "제출됨",
+        "submitProcessing": "제출 작업 처리중"
     },
     "agentMonitor": {
         "accept": "채택",
@@ -2794,6 +2803,11 @@
         },
         "fallback": {
             "goal": "에이전트의 목표가 설정되지 않았습니다."
+        },
+        "empty": {
+            "tools": "할당된 도구가 없습니다.",
+            "skills": "할당된 스킬이 없습니다.",
+            "model": "할당된 모델이 없습니다."
         },
         "tabs": {
             "chat": "대화 모드",

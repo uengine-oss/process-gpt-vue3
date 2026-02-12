@@ -1004,6 +1004,7 @@ hr {
 
 .instance-card-tab-6 {
     height: calc(100vh - 250px);
+    padding: 16px;
     overflow: auto;
 }
 
@@ -1377,6 +1378,20 @@ hr {
         color: #bababa;
     }
 }
+
+.submit-processing-char {
+    display: inline-block;
+    animation: submit-processing-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes submit-processing-shimmer {
+    0%, 70%, 100% {
+        color: #ffffff;
+    }
+    15%, 35% {
+        color: #333333;
+    }
+}
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
@@ -1499,7 +1514,6 @@ hr {
 
     .instance-card-tab-6 {
         height: calc(100vh - 200px);
-        padding: 16px;
         overflow: auto;
     }
 

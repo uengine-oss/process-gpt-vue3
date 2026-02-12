@@ -148,7 +148,8 @@
                                 rounded variant="flat"
                                 :disabled="isLoading"
                                 :loading="isLoading"
-                            >{{ $t('FormWorkItem.submitComplete') }}</v-btn>
+                            >{{ $t('FormWorkItem.submitComplete') }}
+                            </v-btn>
                         </v-row>
                     </div>
                 </v-card-text>
