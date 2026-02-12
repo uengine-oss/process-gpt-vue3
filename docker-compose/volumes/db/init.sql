@@ -150,6 +150,46 @@ CREATE INDEX IF NOT EXISTS idx_users_is_agent_true
   ON public.users (is_agent)
   WHERE is_agent = true;
 
+-- 1) 트리거 함수: auth.users → public.users 동기화
+create or replace function public.handle_new_auth_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  insert into public.users (
+    id,
+    username,
+    email,
+    tenant_id,
+    is_admin,
+    role
+  )
+  values (
+    new.id,
+    coalesce(
+      (new.raw_user_meta_data ->> 'name'),
+      new.email
+    ),
+    new.email,
+    'process-gpt',   -- 고정 테넌트
+    false,           -- 항상 일반 유저
+    'user'           -- 기본 역할
+  )
+  on conflict (id, tenant_id) do nothing;  -- 이미 있으면 무시
+
+  return new;
+end;
+$$;
+
+-- 2) 트리거: auth.users INSERT 시 실행
+drop trigger if exists on_auth_user_created on auth.users;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row
+  execute function public.handle_new_auth_user();
 
 create table if not exists public.configuration (
     key text not null,

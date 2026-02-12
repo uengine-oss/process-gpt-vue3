@@ -7,8 +7,15 @@
             >
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
-                    <v-row class="ma-0 pa-0 align-center">
-                        <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
+                    <v-row class="ma-0 pa-0 align-center account-settings-header-row">
+                        <v-tabs
+                            v-model="tab"
+                            bg-color="transparent"
+                            min-height="70"
+                            height="70"
+                            color="default"
+                            show-arrows
+                        >
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
                                 <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
@@ -443,6 +450,20 @@ export default {
     height: 2px;
     background-color: transparent;
     transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.account-settings-header-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+.settings-tenant-manage-btn {
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.language-chip-select-wrapper {
+    flex: 0 0 auto;
 }
 </style>
 
