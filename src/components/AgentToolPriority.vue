@@ -17,48 +17,49 @@
         <v-card-text class="ma-0 pa-4 pb-0 pt-1 organization-edit-dialog-contents">
             <div class="text-caption text-disabled mb-3">{{ $t('agentField.resourcePriorityHint') }}</div>
             <div v-if="toolPriorityOrder.length === 0" class="text-caption text-medium-emphasis">
-                도구/스킬을 먼저 설정해주세요.
+                {{ $t('agentField.toolPriorityEmptyHint') }}
             </div>
-            <v-list v-else class="pa-0" density="compact">
-                <v-list-item
+            <div v-else class="tool-priority-card-list">
+                <v-card
                     v-for="(item, index) in toolPriorityOrder"
                     :key="item"
-                    class="tool-priority-list-item px-0"
-                    rounded
+                    class="tool-priority-card mb-2"
+                    variant="outlined"
+                    rounded="lg"
                 >
-                    <template v-slot:prepend>
-                        <span class="text-body-2 text-medium-emphasis mr-2" style="min-width: 20px;">{{ index + 1 }}</span>
-                    </template>
-                    <div class="d-flex flex-column py-1 flex-grow-1 min-width-0">
-                        <span class="text-body-2">{{ getLineLabel(item) }}</span>
-                        <span class="text-caption text-disabled mt-0">{{ getDisplayDescription(item) }}</span>
+                    <div class="d-flex align-center pa-3">
+                        <span class="text-body-2 text-medium-emphasis mr-3" style="min-width: 20px;">{{ index + 1 }}</span>
+                        <div class="d-flex flex-column flex-grow-1 min-width-0">
+                            <span class="text-body-2">{{ getLineLabel(item) }}</span>
+                            <span class="text-caption text-disabled mt-0">{{ getDisplayDescription(item) }}</span>
+                        </div>
+                        <div class="d-flex ml-2">
+                            <v-btn
+                                icon
+                                variant="text"
+                                size="x-small"
+                                density="compact"
+                                :disabled="index === 0"
+                                @click="moveUp(index)"
+                            >
+                                <v-icon size="small">mdi-chevron-up</v-icon>
+                                <v-tooltip activator="parent" location="top">{{ $t('agentField.moveUp') }}</v-tooltip>
+                            </v-btn>
+                            <v-btn
+                                icon
+                                variant="text"
+                                size="x-small"
+                                density="compact"
+                                :disabled="index === toolPriorityOrder.length - 1"
+                                @click="moveDown(index)"
+                            >
+                                <v-icon size="small">mdi-chevron-down</v-icon>
+                                <v-tooltip activator="parent" location="top">{{ $t('agentField.moveDown') }}</v-tooltip>
+                            </v-btn>
+                        </div>
                     </div>
-                    <template v-slot:append>
-                        <v-btn
-                            icon
-                            variant="text"
-                            size="x-small"
-                            density="compact"
-                            :disabled="index === 0"
-                            @click="moveUp(index)"
-                        >
-                            <v-icon size="small">mdi-chevron-up</v-icon>
-                            <v-tooltip activator="parent" location="top">{{ $t('agentField.moveUp') }}</v-tooltip>
-                        </v-btn>
-                        <v-btn
-                            icon
-                            variant="text"
-                            size="x-small"
-                            density="compact"
-                            :disabled="index === toolPriorityOrder.length - 1"
-                            @click="moveDown(index)"
-                        >
-                            <v-icon size="small">mdi-chevron-down</v-icon>
-                            <v-tooltip activator="parent" location="top">{{ $t('agentField.moveDown') }}</v-tooltip>
-                        </v-btn>
-                    </template>
-                </v-list-item>
-            </v-list>
+                </v-card>
+            </div>
         </v-card-text>
 
         <v-card-actions class="ma-0 pa-4 pt-2">
@@ -218,7 +219,7 @@ export default {
                 tool_priority: expandedPriority.length > 0 ? expandedPriority : null
             };
             this.$emit('agentUpdated', payload);
-            this.$toast?.success?.('도구 우선순위가 저장되었습니다.');
+            this.$toast?.success?.(this.$t('agentField.toolPrioritySaveSuccess'));
             this.close();
         },
         close() {
@@ -230,11 +231,20 @@ export default {
 </script>
 
 <style scoped>
-.tool-priority-list-item {
-    min-height: 48px;
-    align-items: flex-start;
+.tool-priority-card-list {
+    display: flex;
+    flex-direction: column;
 }
-.tool-priority-list-item .min-width-0 {
+
+.tool-priority-card {
+    transition: box-shadow 0.2s ease;
+}
+
+.tool-priority-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+}
+
+.min-width-0 {
     min-width: 0;
     word-break: break-word;
 }

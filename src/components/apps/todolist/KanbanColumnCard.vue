@@ -15,7 +15,7 @@
                             <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ displayTitle }}</span>
                             <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{ reworkCount }}</v-chip>
                             <v-chip v-if="task.status === 'SUBMITTED'" class="ml-1" size="small" color="success" variant="flat" density="comfortable">
-                                제출됨
+                                {{ $t('kanbanColumnCard.submitted') }}
                             </v-chip>
                         </v-col>
                         <v-col class="pa-0" cols="3">
@@ -125,7 +125,7 @@
                             class="text-subtitle-2"
                         >
                             <div class="thinking-wave-text">
-                                <div v-for="(char, index) in '에이전트 작업중'" :key="index" 
+                                <div v-for="(char, index) in $t('kanbanColumnCard.agentWorking')" :key="index" 
                                     :style="{ animationDelay: `${index * 0.1}s` }"
                                     class="thinking-char"
                                 >{{ char === ' ' ? '\u00A0' : char }}
@@ -143,6 +143,26 @@
                     <div v-else
                         class="text-subtitle-2"
                     >{{ $t('kanbanColumnCard.agentCompleted') }}
+                    </div>
+                </div>
+                <div v-if="isSubmittedStatus && !currentDraftStatus"
+                    class="my-2"
+                >
+                    <div class="text-subtitle-2">
+                        <div class="thinking-wave-text">
+                            <div v-for="(char, index) in $t('kanbanColumnCard.submitProcessing')" :key="'submit-' + index" 
+                                :style="{ animationDelay: `${index * 0.1}s` }"
+                                class="submit-processing-char"
+                            >{{ char === ' ' ? '\u00A0' : char }}
+                            </div>
+                        </div>
+                        <span class="loading-dots" style="color: #ffffff;">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
                     </div>
                 </div>
                 <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
@@ -400,6 +420,9 @@ export default {
         },
         isStartedStatus() {
             return this.currentDraftStatus === 'STARTED';
+        },
+        isSubmittedStatus() {
+            return this.task.status === 'SUBMITTED';
         },
         reworkCount() {
             if (this.task && this.task.task && this.task.task.rework_count) {

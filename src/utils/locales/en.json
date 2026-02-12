@@ -1,5 +1,10 @@
 {
     "message": "en",
+    "Common": {
+        "cancel": "Cancel",
+        "submit": "Submit",
+        "role": "Role"
+    },
     "leadTime": {
         "title": "Lead Time",
         "days": "Days",
@@ -561,7 +566,9 @@
         "resourceDescDmnRule": "Business rules defined in DMN",
         "resourceDescMem0": "Personalized memory for work context and preferences",
         "resourceDescOthers": "Other resources not listed above",
-        "toolPriorityButton": "Set Tool Priority"
+        "toolPriorityButton": "Set Tool Priority",
+        "toolPriorityEmptyHint": "Please set up tools/skills first.",
+        "toolPrioritySaveSuccess": "Tool priority has been saved."
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -758,6 +765,10 @@
         "userReply": "Reply to {name}",
         "systemReply": "Reply to the system",
         "headset": "Speaking/Listening",
+        "micPermission": {
+            "notSupported": "This browser does not support microphone functionality.",
+            "denied": "Microphone permission is blocked. Please click the icon on the left side of the browser address bar to allow microphone access."
+        },
         "document": "Work Instruction",
         "camera": "Camera",
         "user": "User",
@@ -2394,7 +2405,9 @@
         "pastDue": "Past Due",
         "error": "Execution Error",
         "agentWorking": "Agent Working",
-        "agentCompleted": "Agent Completed"
+        "agentCompleted": "Agent Completed",
+        "submitted": "Submitted",
+        "submitProcessing": "Processing submission"
     },
     "agentMonitor": {
         "accept": "Accept",
@@ -2608,6 +2621,11 @@
         },
         "fallback": {
             "goal": "Agent goal is not configured yet."
+        },
+        "empty": {
+            "tools": "No tools assigned.",
+            "skills": "No skills assigned.",
+            "model": "No model assigned."
         },
         "tabs": {
             "chat": "Conversation",

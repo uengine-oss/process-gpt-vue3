@@ -48,7 +48,18 @@ export default {
     mounted() {
         // 최신 XML 반영된 processDefinition을 콜백으로 전달
         this.EventBus.on('get-process-definition', async(callback) => {
-            const processDefinition = await this.convertXMLToJSON(this.bpmn);
+            let xmlString = this.bpmn;
+            // BPMN 모델러가 있으면 모델러의 현재 XML 사용 (편집 중인 최신 상태 반영)
+            const modeler = useBpmnStore().getModeler;
+            if (modeler && typeof modeler.saveXML === 'function') {
+                try {
+                    const result = await modeler.saveXML({ format: true, preamble: true });
+                    xmlString = result.xml || result;
+                } catch (e) {
+                    console.warn('[ProcessDefinitionModule] 모델러 XML 추출 실패, this.bpmn 사용:', e);
+                }
+            }
+            const processDefinition = await this.convertXMLToJSON(xmlString);
             if (callback && typeof callback === 'function') {
                 callback(processDefinition);
             }

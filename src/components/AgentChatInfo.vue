@@ -101,34 +101,37 @@
                     </p>
                     
                     <!-- Tools Section (agent only) -->
-                    <div v-if="isSectionVisible('tools')" class="pa-0 mb-1">
-                        <v-icon size="small" class="mr-1">mdi-tools</v-icon>
-                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.tools') }}</span>
-                    </div>
-                    <div v-if="isSectionVisible('tools')" class="mb-3">
-                        <v-chip-group class="tools-chips">
-                            <v-chip 
-                                v-for="tool in getDisplayTools()" 
-                                :key="tool"
-                                size="small"
-                                color="success"
-                                variant="outlined"
-                                class="ma-1"
-                            >
-                                {{ tool }}
-                            </v-chip>
-                            <v-btn
-                                v-if="shouldShowToolsToggle()"
-                                @click="toggleTextExpansion('tools')"
-                                variant="text"
-                                size="small"
-                                color="primary"
-                                class="pa-0 text-caption ma-1"
-                                style="min-width: auto; height: auto; vertical-align: middle;"
-                            >
-                                {{ expandedTexts.tools ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
-                            </v-btn>
-                        </v-chip-group>
+                    <div v-if="isSectionVisible('tools')">
+                        <div class="pa-0 mb-1">
+                            <v-icon size="small" class="mr-1">mdi-tools</v-icon>
+                            <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.tools') }}</span>
+                        </div>
+                        <div v-if="parsedTools && parsedTools.length > 0" class="mb-3">
+                            <v-chip-group class="tools-chips">
+                                <v-chip 
+                                    v-for="tool in getDisplayTools()" 
+                                    :key="tool"
+                                    size="small"
+                                    color="success"
+                                    variant="outlined"
+                                    class="ma-1"
+                                >
+                                    {{ tool }}
+                                </v-chip>
+                                <v-btn
+                                    v-if="shouldShowToolsToggle()"
+                                    @click="toggleTextExpansion('tools')"
+                                    variant="text"
+                                    size="small"
+                                    color="primary"
+                                    class="pa-0 text-caption ma-1"
+                                    style="min-width: auto; height: auto; vertical-align: middle;"
+                                >
+                                    {{ expandedTexts.tools ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                                </v-btn>
+                            </v-chip-group>
+                        </div>
+                        <p v-else class="text-body-2 text-medium-emphasis mb-3">{{ $t('AgentChatInfo.empty.tools') }}</p>
                     </div>
 
                     <!-- Endpoint Section (a2a only) -->
@@ -176,33 +179,36 @@
                     </p>
 
                     <!-- Skills Section (agent / a2a / pgagent) -->
-                    <div v-if="isSectionVisible('skills')" class="pa-0 mb-1">
-                        <v-icon size="small" class="mr-1">mdi-brain</v-icon>
-                        <span class="text-body-2 font-weight-medium">{{ parsedSkills ? $t('AgentSkills.skills') : $t('agentField.agentSkills') }}</span>
+                    <div v-if="isSectionVisible('skills')">
+                        <div class="pa-0 mb-1">
+                            <v-icon size="small" class="mr-1">mdi-brain</v-icon>
+                            <span class="text-body-2 font-weight-medium">{{ $t('AgentSkills.skills') }}</span>
+                        </div>
+                        <v-chip-group v-if="parsedSkills && parsedSkills.length > 0" class="mb-3">
+                            <v-chip
+                                v-for="skill in parsedSkills"
+                                :key="skill"
+                                size="small"
+                                variant="outlined"
+                                class="ma-1"
+                            >
+                                {{ skill }}
+                            </v-chip>
+                        </v-chip-group>
+                        <p v-else class="text-body-2 text-medium-emphasis mb-3">{{ $t('AgentChatInfo.empty.skills') }}</p>
                     </div>
-                    <v-chip-group v-if="isSectionVisible('skills') && parsedSkills && parsedSkills.length > 0" class="mb-3">
-                        <v-chip
-                            v-for="skill in parsedSkills"
-                            :key="skill"
-                            size="small"
-                            variant="outlined"
-                            class="ma-1"
-                        >
-                            {{ skill }}
-                        </v-chip>
-                    </v-chip-group>
-                    <p v-else-if="isSectionVisible('skills') && !parsedSkills" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo?.skills }}
-                    </p>
 
                     <!-- Model Section (agent only) -->
-                    <div v-if="isSectionVisible('model')" class="pa-0 mb-1">
-                        <v-icon size="small" class="mr-1">mdi-robot</v-icon>
-                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.model') }}</span>
+                    <div v-if="isSectionVisible('model')">
+                        <div class="pa-0 mb-1">
+                            <v-icon size="small" class="mr-1">mdi-robot</v-icon>
+                            <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.model') }}</span>
+                        </div>
+                        <p v-if="agentInfo?.model" class="text-body-2 text-medium-emphasis mb-3">
+                            {{ agentInfo?.model }}
+                        </p>
+                        <p v-else class="text-body-2 text-medium-emphasis mb-3">{{ $t('AgentChatInfo.empty.model') }}</p>
                     </div>
-                    <p v-if="isSectionVisible('model')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo?.model }}
-                    </p>
                     
                     <v-divider class="mb-4"></v-divider>
                     
