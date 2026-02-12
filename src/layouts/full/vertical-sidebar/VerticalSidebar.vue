@@ -205,12 +205,7 @@
                         <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
                             <template v-slot:activator="{ props }">
                                 <div class="sidebar-title-icon" v-bind="props" @click="navigateTo('/skills')">
-                                    <Icons
-                                        icon="plus"
-                                        :size="14"
-                                        :color="'#808080'"
-                                        style="width: 14px; height: 14px;"
-                                    />
+                                    <SettingsIcon size="14" color="#808080" />
                                 </div>
                             </template>
                         </v-tooltip>

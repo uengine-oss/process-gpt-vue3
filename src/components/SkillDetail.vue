@@ -140,46 +140,42 @@
                                     <div v-else-if="graphElements.length === 0" class="text-caption text-medium-emphasis py-4 text-center">
                                         {{ $t('SkillDetail.graphEmpty') }}
                                     </div>
-                                    <div v-else ref="cyContainer" class="skill-graph-canvas"></div>
+                                    <Teleport to="body" :disabled="!isGraphExpanded">
+                                        <div v-if="isGraphExpanded" class="graph-overlay" @click.self="toggleGraphExpand"></div>
+                                        <div class="skill-graph-wrap" :class="{ 'skill-graph-expanded': isGraphExpanded }">
+                                            <div ref="cyContainer" class="skill-graph-canvas"></div>
+                                            <v-btn
+                                                icon
+                                                variant="text"
+                                                size="x-small"
+                                                class="graph-fullscreen-btn"
+                                                @click="toggleGraphExpand"
+                                            >
+                                                <v-icon size="18">{{ isGraphExpanded ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+                                            </v-btn>
+                                        </div>
+                                    </Teleport>
                                 </template>
                             </v-card>
                         </div>
+                        <v-divider class="mt-3" />
                         <!-- 아래: 사용 중인 에이전트 -->
-                        <div class="used-by-block mt-3">
-                            <div class="d-flex align-center justify-space-between px-2 py-2">
-                                <div class="d-flex align-center gap-1">
-                                    <v-icon size="18" color="primary">mdi-robot-outline</v-icon>
-                                    <span class="text-caption font-weight-medium ml-1">{{ $t('SkillDetail.usedByTitle') }}</span>
-                                </div>
-                                <div class="d-flex align-center gap-1">
-                                    <v-chip size="x-small" variant="tonal" color="primary" density="compact">
-                                        <template v-if="isUsageLoading">
-                                            <v-progress-circular indeterminate size="12" width="2" color="primary" class="mr-1" />
-                                        </template>
-                                        {{ usedByAgents.length }}
-                                    </v-chip>
-                                    <v-btn
-                                        icon
-                                        variant="text"
-                                        size="x-small"
-                                        density="compact"
-                                        color="primary"
-                                        @click="showUsedBy = !showUsedBy"
-                                    >
-                                        <v-icon size="18">{{ showUsedBy ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-                                    </v-btn>
-                                </div>
+                        <div class="used-by-block mt-3 pa-4">
+                            <div class="d-flex align-center justify-space-between cursor-pointer" @click="showUsedBy = !showUsedBy">
+                                <span class="text-caption font-weight-medium text-medium-emphasis">
+                                    {{ $t('SkillDetail.usedByTitle') }} ({{ usedByAgents.length }})
+                                </span>
+                                <v-icon size="18" class="text-medium-emphasis">{{ showUsedBy ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                             </div>
-                            <v-divider />
-                            <div v-if="showUsedBy" class="used-by-list-wrap px-2 py-2">
+                            <div v-if="showUsedBy" class="pt-2">
                                 <div v-if="isUsageLoading" class="d-flex align-center justify-center py-3 text-medium-emphasis">
-                                    <v-progress-circular indeterminate size="20" width="2" color="primary" class="mr-2" />
+                                    <v-progress-circular indeterminate size="16" width="2" color="primary" class="mr-2" />
                                     <span class="text-caption">{{ $t('SkillDetail.usedByLoading') }}</span>
                                 </div>
                                 <div v-else-if="usedByAgents.length === 0" class="text-caption text-medium-emphasis py-3 text-center">
                                     {{ $t('SkillDetail.usedByEmpty') }}
                                 </div>
-                                <v-list v-else density="compact" class="used-by-list">
+                                <v-list v-else density="compact" class="used-by-list pa-0">
                                     <v-list-item
                                         v-for="agent in usedByAgents"
                                         :key="agent.id"
@@ -357,7 +353,8 @@ export default {
             cy: null,
             isGraphLoading: false,
             graphLoadError: false,
-            graphElements: []
+            graphElements: [],
+            isGraphExpanded: false
         };
     },
     computed: {
@@ -405,6 +402,13 @@ export default {
         }
     },
     mounted() {
+        this._escHandler = (e) => {
+            if (e.key === 'Escape' && this.isGraphExpanded) {
+                this.toggleGraphExpand();
+            }
+        };
+        window.addEventListener('keydown', this._escHandler);
+
         if (this.skillId) {
             this.loadSkillStructure();
         } else {
@@ -414,6 +418,9 @@ export default {
     },
     beforeUnmount() {
         this.destroyGraph();
+        if (this._escHandler) {
+            window.removeEventListener('keydown', this._escHandler);
+        }
     },
     methods: {
         async loadUsedByAgents() {
@@ -902,61 +909,151 @@ export default {
                     selector: 'node',
                     style: {
                         label: 'data(label)',
-                        'font-size': 10,
+                        'font-size': 11,
+                        'font-family': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                         'text-wrap': 'wrap',
-                        'text-max-width': 110,
-                        'background-color': 'rgb(103, 126, 234)',
-                        color: '#1a1a1a',
-                        'text-outline-width': 0
+                        'text-max-width': 120,
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'background-color': '#6366f1',
+                        'background-opacity': 0.9,
+                        color: '#ffffff',
+                        'text-outline-width': 0,
+                        shape: 'roundrectangle',
+                        width: 'label',
+                        height: 'label',
+                        padding: '10px',
+                        'border-width': 0,
+                        'overlay-opacity': 0,
+                        'transition-property': 'background-color, border-width, border-color',
+                        'transition-duration': '0.2s'
                     }
                 },
                 {
-                    selector: 'node[isMarkdown=0]',
-                    style: { 'background-color': 'rgb(160, 160, 160)' }
+                    selector: 'node[ext="md"]',
+                    style: { 'background-color': '#6366f1', color: '#ffffff' }
+                },
+                {
+                    selector: 'node[ext="py"]',
+                    style: { 'background-color': '#eab308', color: '#422006' }
+                },
+                {
+                    selector: 'node[ext="js"]',
+                    style: { 'background-color': '#f59e0b', color: '#451a03' }
+                },
+                {
+                    selector: 'node[ext="ts"]',
+                    style: { 'background-color': '#3b82f6', color: '#ffffff' }
+                },
+                {
+                    selector: 'node[ext="json"]',
+                    style: { 'background-color': '#f97316', color: '#ffffff' }
+                },
+                {
+                    selector: 'node[ext="yaml"], node[ext="yml"], node[ext="toml"]',
+                    style: { 'background-color': '#ec4899', color: '#ffffff' }
+                },
+                {
+                    selector: 'node[ext="html"], node[ext="css"], node[ext="vue"]',
+                    style: { 'background-color': '#14b8a6', color: '#ffffff' }
+                },
+                {
+                    selector: 'node[ext="sh"], node[ext="sql"]',
+                    style: { 'background-color': '#8b5cf6', color: '#ffffff' }
+                },
+                {
+                    selector: 'node[ext="txt"], node[ext="csv"]',
+                    style: { 'background-color': '#94a3b8', color: '#ffffff' }
+                },
+                {
+                    selector: 'node[isCurrentSkill=1]',
+                    style: {
+                        'border-width': 2,
+                        'border-color': '#1e1b4b'
+                    }
                 },
                 {
                     selector: 'node[isCurrentSkill=0]',
-                    style: { 'background-color': 'rgb(144, 202, 249)' }
+                    style: {
+                        'background-opacity': 0.7
+                    }
                 },
                 {
                     selector: 'node[type="external"]',
-                    style: { 'background-color': 'rgb(129, 199, 132)' }
+                    style: {
+                        'background-color': '#34d399',
+                        color: '#064e3b',
+                        shape: 'ellipse'
+                    }
                 },
                 {
                     selector: 'edge',
                     style: {
-                        width: 2,
-                        'line-color': 'rgba(103, 126, 234, 0.65)',
-                        'target-arrow-color': 'rgba(103, 126, 234, 0.65)',
+                        width: 1.5,
+                        'line-color': 'rgba(148, 163, 184, 0.5)',
+                        'line-style': 'solid',
+                        'target-arrow-color': 'rgba(148, 163, 184, 0.7)',
                         'target-arrow-shape': 'triangle',
+                        'arrow-scale': 0.8,
                         'curve-style': 'bezier',
                         label: 'data(count)',
                         'font-size': 9,
-                        color: '#555'
+                        color: '#94a3b8',
+                        'text-background-color': '#ffffff',
+                        'text-background-opacity': 0.8,
+                        'text-background-padding': '2px',
+                        'transition-property': 'line-color, target-arrow-color, width',
+                        'transition-duration': '0.2s'
+                    }
+                },
+                {
+                    selector: 'node:active',
+                    style: {
+                        'overlay-opacity': 0.08,
+                        'overlay-color': '#6366f1'
                     }
                 },
                 {
                     selector: ':selected',
                     style: {
-                        'border-width': 3,
-                        'border-color': 'rgb(103, 126, 234)'
+                        'border-width': 2,
+                        'border-color': '#4338ca',
+                        'background-color': '#4f46e5'
                     }
                 }
             ];
 
+            const getFileExt = (label) => {
+                if (!label) return 'other';
+                const dot = label.lastIndexOf('.');
+                return dot > 0 ? label.slice(dot + 1).toLowerCase() : 'other';
+            };
+
+            const extPrefixMap = {
+                md: 'MD', py: 'PY', js: 'JS', ts: 'TS',
+                json: 'JSON', yaml: 'YAML', yml: 'YAML', toml: 'TOML',
+                txt: 'TXT', csv: 'CSV', html: 'HTML', css: 'CSS',
+                sh: 'SH', sql: 'SQL', xml: 'XML', vue: 'VUE',
+                java: 'JAVA', go: 'GO', rs: 'RS', rb: 'RB'
+            };
+
             const elements = (this.graphElements || []).map((el) => {
                 if (el?.data?.type === 'file') {
+                    const ext = getFileExt(el.data.label || el.data.path);
+                    const prefix = extPrefixMap[ext] || ext.toUpperCase();
                     return {
                         ...el,
                         data: {
                             ...el.data,
+                            label: `[${prefix}] ${el.data.label || ''}`,
+                            ext: ext,
                             isMarkdown: el.data.isMarkdown ? 1 : 0,
                             isCurrentSkill: el.data.isCurrentSkill === 1 ? 1 : 0
                         }
                     };
                 }
                 if (el?.data?.type === 'external') {
-                    return { ...el, data: { ...el.data, isCurrentSkill: 0 } };
+                    return { ...el, data: { ...el.data, ext: 'external', isCurrentSkill: 0 } };
                 }
                 return el;
             });
@@ -976,7 +1073,7 @@ export default {
                     container,
                     elements,
                     style,
-                    layout: { name: 'cose', animate: false, fit: true, padding: 10 }
+                    layout: { name: 'cose', animate: false, fit: true, padding: 20, nodeRepulsion: 8000, idealEdgeLength: 80, edgeElasticity: 100, gravity: 0.25 }
                 });
                 fitToCurrentSkill();
 
@@ -995,7 +1092,7 @@ export default {
                 window.addEventListener('resize', this.onGraphResize, { passive: true });
             } else {
                 this.cy.json({ elements, style });
-                this.cy.layout({ name: 'cose', animate: false, fit: true, padding: 10 }).run();
+                this.cy.layout({ name: 'cose', animate: false, fit: true, padding: 20, nodeRepulsion: 8000, idealEdgeLength: 80, edgeElasticity: 100, gravity: 0.25 }).run();
                 fitToCurrentSkill();
                 this.onGraphResize();
             }
@@ -1022,6 +1119,16 @@ export default {
                 }
             }
             this.cy = null;
+        },
+
+        toggleGraphExpand() {
+            this.isGraphExpanded = !this.isGraphExpanded;
+            this.$nextTick(() => {
+                if (this.cy) {
+                    this.cy.resize();
+                    this.cy.fit(undefined, 20);
+                }
+            });
         },
 
         openFileByPath(path) {
@@ -1105,10 +1212,16 @@ export default {
     padding: 4px 8px;
 }
 
+.skill-graph-wrap {
+    position: relative;
+}
+
 .skill-graph-canvas {
     width: 100%;
     height: 360px;
     min-height: 240px;
+    background: #f8fafc;
+    border-radius: 8px;
 }
 
 .skill-tree-node {
@@ -1122,5 +1235,41 @@ export default {
 
 ::v-deep(.tree .node-text) {
     display: none;
+}
+</style>
+
+<style>
+.graph-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.skill-graph-wrap.skill-graph-expanded {
+    position: fixed;
+    inset: 24px;
+    z-index: 2001;
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+}
+
+.skill-graph-wrap.skill-graph-expanded .skill-graph-canvas {
+    height: 100%;
+    border-radius: 8px;
+}
+
+.graph-fullscreen-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+    opacity: 0.5;
+}
+
+.graph-fullscreen-btn:hover {
+    opacity: 1;
 }
 </style>

@@ -156,7 +156,7 @@
                         </v-table>
                     </div>
                     <!-- 카드 뷰: 업로드 중 임시 카드 + 스킬 목록(삭제 중이면 해당 카드만 로딩/삭제 중 표시) -->
-                    <v-row v-else-if="viewMode === 'card'" class="skill-card-list">
+                    <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
                         <v-col v-if="isUploading" cols="12" sm="6" md="4" lg="3">
                             <v-card variant="outlined" class="skill-card skill-card-placeholder" rounded="lg">
                                 <div class="card-inner">
@@ -184,7 +184,13 @@
                             >
                                 <div class="card-inner">
                                     <div class="card-header">
-                                        <v-icon size="24" class="card-skill-icon">mdi-lightning-bolt-outline</v-icon>
+                                        <v-chip size="x-small" variant="tonal" color="primary" class="flex-shrink-0">
+                                            <template v-if="isUsageLoading">
+                                                <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-1" />
+                                            </template>
+                                            <span v-else>{{ getUsageCount(skill.name) }}</span>
+                                            <span class="ml-1">{{ $t('SkillsManagement.usedByAgentsSuffix') }}</span>
+                                        </v-chip>
                                         <template v-if="deletingSkillName === skill.name">
                                             <v-progress-circular indeterminate size="28" width="2" color="primary" class="card-delete-btn" />
                                         </template>
@@ -201,29 +207,7 @@
                                         </v-btn>
                                     </div>
                                     <h3 class="card-title">{{ skill.name }}</h3>
-                                    <div class="d-flex align-center justify-space-between gap-2 mb-1">
-                                        <v-chip size="x-small" variant="tonal" color="primary" class="flex-shrink-0">
-                                            <template v-if="isUsageLoading">
-                                                <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-1" />
-                                            </template>
-                                            <span v-else>{{ getUsageCount(skill.name) }}</span>
-                                            <span class="ml-1">{{ $t('SkillsManagement.usedByAgentsSuffix') }}</span>
-                                        </v-chip>
-                                    </div>
                                     <p class="card-desc">{{ deletingSkillName === skill.name ? $t('SkillsManagement.deleting') : (skill.description || '') }}</p>
-                                    <div class="card-footer">
-                                        <v-btn
-                                            size="small"
-                                            variant="tonal"
-                                            color="primary"
-                                            block
-                                            :disabled="deletingSkillName === skill.name"
-                                            @click.stop="deletingSkillName === skill.name ? null : $router.push(`/skills/${encodeURIComponent(skill.name)}`)"
-                                        >
-                                            <v-icon start size="small">mdi-pencil-outline</v-icon>
-                                            {{ $t('SkillsManagement.openToEdit') }}
-                                        </v-btn>
-                                    </div>
                                 </div>
                             </v-card>
                         </v-col>
@@ -280,17 +264,17 @@
         <!-- 삭제 확인 다이얼로그: 확인 후 닫고, 진행 상태는 목록 해당 행/카드에 표시 -->
         <v-dialog v-model="showDeleteDialog" max-width="400" persistent :scrollable="false">
             <v-card>
-                <v-card-title>{{ $t('SkillsManagement.deleteTitle') }}</v-card-title>
-                <v-card-text>
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
                     {{ $t('SkillsManagement.deleteMessage') }}
+                    <v-btn variant="text" density="compact" icon @click="showDeleteDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-4 pb-0">
                     <strong v-if="skillToDelete" class="d-block mt-2">{{ skillToDelete.name }}</strong>
                 </v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn variant="flat" color="error" rounded @click="showDeleteDialog = false">
-                        {{ $t('common.cancel') }}
-                    </v-btn>
-                    <v-btn variant="flat" color="primary" rounded @click="doDelete">
+                <v-card-actions class="d-flex justify-end align-center pa-4">
+                    <v-btn color="error" rounded variant="flat" @click="doDelete">
                         {{ $t('common.delete') }}
                     </v-btn>
                 </v-card-actions>
