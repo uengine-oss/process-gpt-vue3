@@ -35,7 +35,7 @@
                                         <span class="ml-1 d-none d-sm-inline">{{ $t('SkillDetail.graphTab') }}</span>
                                     </v-btn>
                                 </v-btn-toggle>
-                                <v-tooltip location="bottom" :text="$t('SkillDetail.addFolder')">
+                                <v-tooltip v-if="!isBuiltinSkill" location="bottom" :text="$t('SkillDetail.addFolder')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
                                             v-bind="props"
@@ -49,7 +49,7 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
-                                <v-tooltip location="bottom" :text="$t('SkillDetail.addFile')">
+                                <v-tooltip v-if="!isBuiltinSkill" location="bottom" :text="$t('SkillDetail.addFile')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn
                                             v-bind="props"
@@ -81,7 +81,7 @@
                                                     'selected-node-background': selectedNodeId === node.id
                                                 }"
                                             >
-                                                <div v-if="editingNodeId !== node.id || node.data.type !== 'folder'" class="d-inline-flex align-center text-subtitle-1 font-weight-medium text-truncate ml-1">
+                                                <div v-if="isBuiltinSkill || editingNodeId !== node.id || node.data.type !== 'folder'" class="d-inline-flex align-center text-subtitle-1 font-weight-medium text-truncate ml-1">
                                                     <span class="text-truncate">
                                                         {{ node.text }}
                                                         <v-tooltip activator="parent" location="bottom">
@@ -90,7 +90,7 @@
                                                     </span>
                                                 </div>
                                                 <v-text-field
-                                                    v-else
+                                                    v-else-if="!isBuiltinSkill"
                                                     v-model="editingFolderName"
                                                     variant="plain"
                                                     density="compact"
@@ -103,7 +103,7 @@
                                                     autofocus
                                                 ></v-text-field>
                                                 <v-btn
-                                                    v-if="node.data.type === 'folder' && editingNodeId !== node.id"
+                                                    v-if="!isBuiltinSkill && node.data.type === 'folder' && editingNodeId !== node.id"
                                                     variant="text"
                                                     icon
                                                     size="x-small"
@@ -112,7 +112,7 @@
                                                     <v-icon>mdi-pencil-outline</v-icon>
                                                 </v-btn>
                                                 <v-btn
-                                                    v-else-if="node.data.type === 'folder' && editingNodeId === node.id"
+                                                    v-else-if="!isBuiltinSkill && node.data.type === 'folder' && editingNodeId === node.id"
                                                     variant="text"
                                                     icon
                                                     size="x-small"
@@ -205,6 +205,7 @@
                     <AgentSkillEdit
                         v-if="skillFile"
                         :skillFile="skillFile"
+                        :read-only="isBuiltinSkill"
                         @update:isLoading="isEditorLoading = $event"
                         @file-saved="onFileSaved"
                         @file-deleted="onFileDeleted"
@@ -334,6 +335,7 @@ export default {
             backend: null,
             skillId: '',
             skillDisplayName: '',
+            isBuiltinSkill: false,
             isLoading: true,
             loadError: false,
             isUsageLoading: false,
@@ -483,6 +485,7 @@ export default {
         async loadSkillStructure() {
             this.isLoading = true;
             this.loadError = false;
+            this.isBuiltinSkill = false;
             this.selectedNodeId = null;
             this.skillFile = null;
             this.nodes = {};
@@ -505,6 +508,16 @@ export default {
                 }
 
                 this.skillDisplayName = skill.skill_name;
+                // 기본 내장 스킬 여부 확인 (내장 스킬은 조회 전용)
+                try {
+                    const builtinResult = this.backend.getTenantBuiltinSkills ? await this.backend.getTenantBuiltinSkills() : [];
+                    const raw = builtinResult?.skills ?? builtinResult;
+                    const builtinList = Array.isArray(raw) ? raw : (raw?.skills || []);
+                    const builtinNames = builtinList.map((s) => (typeof s === 'string' ? s : (s.name || s.skill_name || ''))).filter(Boolean);
+                    this.isBuiltinSkill = builtinNames.includes(skill.skill_name);
+                } catch (e) {
+                    this.isBuiltinSkill = false;
+                }
                 // 이 스킬을 사용 중인 에이전트 목록 로드 (파일 트리와는 독립)
                 this.loadUsedByAgents();
                 const skillId = skill.skill_name;

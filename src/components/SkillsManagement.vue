@@ -51,167 +51,287 @@
                         </v-menu>
                     </div>
                 </div>
-                <!-- 본문: 목록 -->
+                <!-- 본문: 탭 + 목록 -->
                 <div class="skills-management-body pa-3">
                 <div v-if="isLoading" class="body-state body-loading">
                     <v-progress-circular indeterminate color="primary" size="40" width="3" />
                     <p class="text-body-1 mt-3 text-medium-emphasis">{{ $t('SkillList.loading') }}</p>
                 </div>
-                <template v-else-if="skillList.length === 0 && !isUploading">
-                    <div class="body-state body-empty">
-                        <div class="empty-illustration">
-                            <v-icon size="80" color="grey-lighten-1">mdi-lightning-bolt-outline</v-icon>
-                        </div>
-                        <h3 class="empty-title">{{ $t('SkillsManagement.emptyTitle') }}</h3>
-                        <p class="empty-desc">{{ $t('SkillsManagement.empty') }}</p>
-                        <div class="empty-actions">
-                            <v-card variant="outlined" class="empty-action-card" rounded="lg" @click="openZipUpload">
-                                <v-icon size="32" color="primary">mdi-folder-zip-outline</v-icon>
-                                <span class="empty-action-label">{{ $t('SkillsManagement.addFromZip') }}</span>
-                                <span class="text-caption text-medium-emphasis">{{ $t('SkillsManagement.addFromZipHint') }}</span>
-                            </v-card>
-                            <v-card variant="outlined" class="empty-action-card" rounded="lg" @click="openRepoDialog">
-                                <v-icon size="32" color="primary">mdi-github</v-icon>
-                                <span class="empty-action-label">{{ $t('SkillsManagement.addFromRepo') }}</span>
-                                <span class="text-caption text-medium-emphasis">{{ $t('SkillsManagement.addFromRepoHint') }}</span>
-                            </v-card>
-                        </div>
-                    </div>
-                </template>
                 <template v-else>
-                    <!-- 테이블 뷰: 업로드 중 임시 행 + 스킬 목록(삭제 중이면 해당 행만 로딩/삭제 중 표시) -->
-                    <div v-if="viewMode === 'table'" class="table-wrap">
-                        <v-table class="skill-management-table" hover>
-                            <thead>
-                                <tr>
-                                    <th class="text-left table-header-name">{{ $t('SkillsManagement.skillName') }}</th>
-                                    <th class="text-left table-header-desc">{{ $t('SkillsManagement.skillDescription') }}</th>
-                                    <th class="text-right table-header-used">{{ $t('SkillsManagement.usedByAgents') }}</th>
-                                    <th class="text-right table-header-actions"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- 업로드 중 임시 행 -->
-                                <tr v-if="isUploading" class="table-row table-row-placeholder">
-                                    <td class="td-name">
-                                        <div class="name-cell">
-                                            <v-progress-circular indeterminate size="20" width="2" color="primary" class="mr-2" />
-                                            <span class="skill-name-text text-medium-emphasis">{{ $t('SkillsManagement.uploading') }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="td-desc text-medium-emphasis">—</td>
-                                    <td class="td-used text-right text-medium-emphasis">—</td>
-                                    <td class="td-actions text-right"></td>
-                                </tr>
-                                <tr
-                                    v-for="skill in skillList"
-                                    :key="skill.name"
-                                    class="table-row"
-                                    :class="{ 'table-row-deleting': deletingSkillName === skill.name }"
-                                    @click="deletingSkillName === skill.name ? null : $router.push(`/skills/${encodeURIComponent(skill.name)}`)"
-                                >
-                                    <td class="td-name">
-                                        <div class="name-cell">
-                                            <v-icon size="20" class="mr-2 skill-icon">mdi-lightning-bolt-outline</v-icon>
-                                            <span class="skill-name-text">{{ skill.name }}</span>
-                                            <v-icon v-if="deletingSkillName !== skill.name" size="16" class="open-hint">mdi-open-in-new</v-icon>
-                                        </div>
-                                    </td>
-                                    <td class="td-desc text-medium-emphasis">
-                                        {{ deletingSkillName === skill.name ? $t('SkillsManagement.deleting') : (skill.description || '—') }}
-                                    </td>
-                                    <td class="td-used text-right">
-                                        <template v-if="isUsageLoading">
-                                            <v-progress-circular indeterminate size="18" width="2" color="primary" />
-                                        </template>
-                                        <template v-else>
-                                            <v-chip size="x-small" variant="tonal" color="primary">
-                                                {{ getUsageCount(skill.name) }}
-                                            </v-chip>
-                                        </template>
-                                    </td>
-                                    <td class="td-actions text-right">
-                                        <template v-if="deletingSkillName === skill.name">
-                                            <v-progress-circular indeterminate size="24" width="2" color="primary" />
-                                        </template>
-                                        <template v-else>
-                                            <v-tooltip location="left" :text="$t('common.delete')">
-                                                <template v-slot:activator="{ props }">
-                                                    <v-btn
-                                                        v-bind="props"
-                                                        icon
-                                                        variant="text"
-                                                        size="small"
-                                                        color="error"
-                                                        @click.stop="confirmDelete(skill)"
-                                                    >
-                                                        <v-icon>mdi-delete-outline</v-icon>
-                                                    </v-btn>
-                                                </template>
-                                            </v-tooltip>
-                                        </template>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </v-table>
-                    </div>
-                    <!-- 카드 뷰: 업로드 중 임시 카드 + 스킬 목록(삭제 중이면 해당 카드만 로딩/삭제 중 표시) -->
-                    <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
-                        <v-col v-if="isUploading" cols="12" sm="6" md="4" lg="3">
-                            <v-card variant="outlined" class="skill-card skill-card-placeholder" rounded="lg">
-                                <div class="card-inner">
-                                    <div class="card-header">
-                                        <v-progress-circular indeterminate size="24" width="2" color="primary" />
+                    <v-tabs
+                        v-model="skillTab"
+                        density="compact"
+                        variant="plain"
+                        class="skills-management-tabs mb-3"
+                        hide-slider
+                    >
+                        <v-tab value="uploaded" class="text-body-2">{{ $t('SkillsManagement.uploadedSkills') }}</v-tab>
+                        <v-tab value="builtin" class="text-body-2">{{ $t('SkillsManagement.builtinSkills') }}</v-tab>
+                    </v-tabs>
+                    <v-window v-model="skillTab" class="skills-tab-window">
+                        <!-- 업로드된 스킬 탭 -->
+                        <v-window-item value="uploaded">
+                            <div class="skill-section">
+                                <div v-if="skillList.length === 0 && !isUploading" class="body-state body-empty">
+                                    <div v-if="builtinSkillList.length === 0" class="empty-illustration">
+                                        <v-icon size="80" color="grey-lighten-1">mdi-lightning-bolt-outline</v-icon>
                                     </div>
-                                    <h3 class="card-title text-medium-emphasis">{{ $t('SkillsManagement.uploading') }}</h3>
-                                    <p class="card-desc">—</p>
-                                    <div class="card-footer">
-                                        <v-btn size="small" variant="tonal" color="primary" block disabled>
-                                            <v-icon start size="small">mdi-cloud-upload-outline</v-icon>
-                                            {{ $t('SkillsManagement.uploading') }}
-                                        </v-btn>
+                                    <h3 v-if="builtinSkillList.length === 0" class="empty-title">{{ $t('SkillsManagement.emptyTitle') }}</h3>
+                                    <p class="empty-desc">{{ builtinSkillList.length === 0 ? $t('SkillsManagement.empty') : $t('SkillsManagement.uploadedEmpty') }}</p>
+                                    <div v-if="builtinSkillList.length === 0" class="empty-actions">
+                                        <v-card variant="outlined" class="empty-action-card" rounded="lg" @click="openZipUpload">
+                                            <v-icon size="32" color="primary">mdi-folder-zip-outline</v-icon>
+                                            <span class="empty-action-label">{{ $t('SkillsManagement.addFromZip') }}</span>
+                                            <span class="text-caption text-medium-emphasis">{{ $t('SkillsManagement.addFromZipHint') }}</span>
+                                        </v-card>
+                                        <v-card variant="outlined" class="empty-action-card" rounded="lg" @click="openRepoDialog">
+                                            <v-icon size="32" color="primary">mdi-github</v-icon>
+                                            <span class="empty-action-label">{{ $t('SkillsManagement.addFromRepo') }}</span>
+                                            <span class="text-caption text-medium-emphasis">{{ $t('SkillsManagement.addFromRepoHint') }}</span>
+                                        </v-card>
                                     </div>
                                 </div>
-                            </v-card>
-                        </v-col>
-                        <v-col v-for="skill in skillList" :key="skill.name" cols="12" sm="6" md="4" lg="3">
-                            <v-card
-                                variant="outlined"
-                                class="skill-card"
-                                rounded="lg"
-                                :class="{ 'skill-card-deleting': deletingSkillName === skill.name }"
-                                @click="deletingSkillName === skill.name ? null : $router.push(`/skills/${encodeURIComponent(skill.name)}`)"
-                            >
-                                <div class="card-inner">
-                                    <div class="card-header">
-                                        <v-chip size="x-small" variant="tonal" color="primary" class="flex-shrink-0">
-                                            <template v-if="isUsageLoading">
-                                                <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-1" />
-                                            </template>
-                                            <span v-else>{{ getUsageCount(skill.name) }}</span>
-                                            <span class="ml-1">{{ $t('SkillsManagement.usedByAgentsSuffix') }}</span>
-                                        </v-chip>
-                                        <template v-if="deletingSkillName === skill.name">
-                                            <v-progress-circular indeterminate size="28" width="2" color="primary" class="card-delete-btn" />
-                                        </template>
-                                        <v-btn
-                                            v-else
-                                            icon
-                                            variant="text"
-                                            size="x-small"
-                                            color="error"
-                                            class="card-delete-btn"
-                                            @click.stop="confirmDelete(skill)"
+                                <template v-else>
+                            <div v-if="viewMode === 'table'" class="table-wrap">
+                                <v-table class="skill-management-table" hover>
+                                    <thead>
+                                        <tr>
+                                            <th class="text-left table-header-name table-header-sort" @click="toggleSortOrder">
+                                                <span class="d-inline-flex align-center">
+                                                    {{ $t('SkillsManagement.skillName') }}
+                                                    <v-icon size="18" class="ml-1" :class="{ 'sort-desc': tableSortOrder === 'desc' }">
+                                                        {{ tableSortOrder === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending' }}
+                                                    </v-icon>
+                                                </span>
+                                            </th>
+                                            <th class="text-left table-header-desc">{{ $t('SkillsManagement.skillDescription') }}</th>
+                                            <th class="text-right table-header-used">{{ $t('SkillsManagement.usedByAgents') }}</th>
+                                            <th class="text-right table-header-actions"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-if="isUploading" class="table-row table-row-placeholder">
+                                            <td class="td-name">
+                                                <div class="name-cell">
+                                                    <v-progress-circular indeterminate size="20" width="2" color="primary" class="mr-2" />
+                                                    <span class="skill-name-text text-medium-emphasis">{{ $t('SkillsManagement.uploading') }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="td-desc text-medium-emphasis">—</td>
+                                            <td class="td-used text-right text-medium-emphasis">—</td>
+                                            <td class="td-actions text-right"></td>
+                                        </tr>
+                                        <tr
+                                            v-for="skill in uploadedPaginated"
+                                            :key="'uploaded-' + skill.name"
+                                            class="table-row"
+                                            :class="{ 'table-row-deleting': deletingSkillName === skill.name }"
+                                            @click="deletingSkillName === skill.name ? null : $router.push(`/skills/${encodeURIComponent(skill.name)}`)"
                                         >
-                                            <v-icon>mdi-delete-outline</v-icon>
-                                        </v-btn>
-                                    </div>
-                                    <h3 class="card-title">{{ skill.name }}</h3>
-                                    <p class="card-desc">{{ deletingSkillName === skill.name ? $t('SkillsManagement.deleting') : (skill.description || '') }}</p>
+                                            <td class="td-name">
+                                                <div class="name-cell">
+                                                    <v-icon size="20" class="mr-2 skill-icon">mdi-lightning-bolt-outline</v-icon>
+                                                    <span class="skill-name-text">{{ skill.name }}</span>
+                                                    <v-icon v-if="deletingSkillName !== skill.name" size="16" class="open-hint">mdi-open-in-new</v-icon>
+                                                </div>
+                                            </td>
+                                            <td class="td-desc text-medium-emphasis">
+                                                {{ deletingSkillName === skill.name ? $t('SkillsManagement.deleting') : (skill.description || '—') }}
+                                            </td>
+                                            <td class="td-used text-right">
+                                                <template v-if="isUsageLoading">
+                                                    <v-progress-circular indeterminate size="18" width="2" color="primary" />
+                                                </template>
+                                                <template v-else>
+                                                    <v-chip size="x-small" variant="tonal" color="primary">
+                                                        {{ getUsageCount(skill.name) }}
+                                                    </v-chip>
+                                                </template>
+                                            </td>
+                                            <td class="td-actions text-right">
+                                                <template v-if="deletingSkillName === skill.name">
+                                                    <v-progress-circular indeterminate size="24" width="2" color="primary" />
+                                                </template>
+                                                <template v-else>
+                                                    <v-tooltip location="left" :text="$t('common.delete')">
+                                                        <template v-slot:activator="{ props }">
+                                                            <v-btn
+                                                                v-bind="props"
+                                                                icon
+                                                                variant="text"
+                                                                size="small"
+                                                                color="error"
+                                                                @click.stop="confirmDelete(skill)"
+                                                            >
+                                                                <v-icon>mdi-delete-outline</v-icon>
+                                                            </v-btn>
+                                                        </template>
+                                                    </v-tooltip>
+                                                </template>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
+                                <div v-if="sortedUploadedList.length > tableItemsPerPage" class="table-pagination mt-3 d-flex justify-center">
+                                    <v-pagination
+                                        v-model="tablePage"
+                                        :length="uploadedTotalPages"
+                                        :total-visible="7"
+                                        density="compact"
+                                        variant="tonal"
+                                        color="primary"
+                                        rounded
+                                    />
                                 </div>
-                            </v-card>
-                        </v-col>
-                    </v-row>
+                            </div>
+                            <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
+                                <v-col v-if="isUploading" cols="12" sm="6" md="4" lg="3">
+                                    <v-card variant="outlined" class="skill-card skill-card-placeholder" rounded="lg">
+                                        <div class="card-inner">
+                                            <div class="card-header">
+                                                <v-progress-circular indeterminate size="24" width="2" color="primary" />
+                                            </div>
+                                            <h3 class="card-title text-medium-emphasis">{{ $t('SkillsManagement.uploading') }}</h3>
+                                            <p class="card-desc">—</p>
+                                            <div class="card-footer">
+                                                <v-btn size="small" variant="tonal" color="primary" block disabled>
+                                                    <v-icon start size="small">mdi-cloud-upload-outline</v-icon>
+                                                    {{ $t('SkillsManagement.uploading') }}
+                                                </v-btn>
+                                            </div>
+                                        </div>
+                                    </v-card>
+                                </v-col>
+                                <v-col v-for="skill in sortedUploadedList" :key="'uploaded-' + skill.name" cols="12" sm="6" md="4" lg="3">
+                                    <v-card
+                                        variant="outlined"
+                                        class="skill-card"
+                                        rounded="lg"
+                                        :class="{ 'skill-card-deleting': deletingSkillName === skill.name }"
+                                        @click="deletingSkillName === skill.name ? null : $router.push(`/skills/${encodeURIComponent(skill.name)}`)"
+                                    >
+                                        <div class="card-inner">
+                                            <div class="card-header">
+                                                <v-chip size="x-small" variant="tonal" color="primary" class="flex-shrink-0">
+                                                    <template v-if="isUsageLoading">
+                                                        <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-1" />
+                                                    </template>
+                                                    <span v-else>{{ getUsageCount(skill.name) }}</span>
+                                                    <span class="ml-1">{{ $t('SkillsManagement.usedByAgentsSuffix') }}</span>
+                                                </v-chip>
+                                                <template v-if="deletingSkillName === skill.name">
+                                                    <v-progress-circular indeterminate size="28" width="2" color="primary" class="card-delete-btn" />
+                                                </template>
+                                                <v-btn
+                                                    v-else
+                                                    icon
+                                                    variant="text"
+                                                    size="x-small"
+                                                    color="error"
+                                                    class="card-delete-btn"
+                                                    @click.stop="confirmDelete(skill)"
+                                                >
+                                                    <v-icon>mdi-delete-outline</v-icon>
+                                                </v-btn>
+                                            </div>
+                                            <h3 class="card-title">{{ skill.name }}</h3>
+                                            <p class="card-desc">{{ deletingSkillName === skill.name ? $t('SkillsManagement.deleting') : (skill.description || '') }}</p>
+                                        </div>
+                                    </v-card>
+                                </v-col>
+                            </v-row>
+                        </template>
+                    </div>
+                        </v-window-item>
+                        <!-- 기본 내장 스킬 탭 -->
+                        <v-window-item value="builtin">
+                            <div class="skill-section">
+                        <p v-if="builtinSkillList.length === 0" class="section-empty text-medium-emphasis">{{ $t('SkillsManagement.builtinEmpty') }}</p>
+                        <template v-else>
+                            <div v-if="viewMode === 'table'" class="table-wrap">
+                                <v-table class="skill-management-table" hover>
+                                    <thead>
+                                        <tr>
+                                            <th class="text-left table-header-name table-header-sort" @click="toggleSortOrder">
+                                                <span class="d-inline-flex align-center">
+                                                    {{ $t('SkillsManagement.skillName') }}
+                                                    <v-icon size="18" class="ml-1" :class="{ 'sort-desc': tableSortOrder === 'desc' }">
+                                                        {{ tableSortOrder === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending' }}
+                                                    </v-icon>
+                                                </span>
+                                            </th>
+                                            <th class="text-left table-header-desc">{{ $t('SkillsManagement.skillDescription') }}</th>
+                                            <th class="text-right table-header-used">{{ $t('SkillsManagement.usedByAgents') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr
+                                            v-for="skill in builtinPaginated"
+                                            :key="'builtin-' + skill.name"
+                                            class="table-row"
+                                            @click="$router.push(`/skills/${encodeURIComponent(skill.name)}`)"
+                                        >
+                                            <td class="td-name">
+                                                <div class="name-cell">
+                                                    <v-icon size="20" class="mr-2 skill-icon">mdi-package-variant</v-icon>
+                                                    <span class="skill-name-text">{{ skill.name }}</span>
+                                                    <v-icon size="16" class="open-hint">mdi-open-in-new</v-icon>
+                                                </div>
+                                            </td>
+                                            <td class="td-desc text-medium-emphasis">{{ skill.description || '—' }}</td>
+                                            <td class="td-used text-right">
+                                                <template v-if="isUsageLoading">
+                                                    <v-progress-circular indeterminate size="18" width="2" color="primary" />
+                                                </template>
+                                                <template v-else>
+                                                    <v-chip size="x-small" variant="tonal" color="primary">
+                                                        {{ getUsageCount(skill.name) }}
+                                                    </v-chip>
+                                                </template>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </v-table>
+                                <div v-if="sortedBuiltinList.length > tableItemsPerPage" class="table-pagination mt-3 d-flex justify-center">
+                                    <v-pagination
+                                        v-model="tablePage"
+                                        :length="builtinTotalPages"
+                                        :total-visible="7"
+                                        density="compact"
+                                        variant="tonal"
+                                        color="primary"
+                                        rounded
+                                    />
+                                </div>
+                            </div>
+                            <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
+                                <v-col v-for="skill in sortedBuiltinList" :key="'builtin-' + skill.name" cols="12" sm="6" md="4" lg="3">
+                                    <v-card
+                                        variant="outlined"
+                                        class="skill-card skill-card-builtin"
+                                        rounded="lg"
+                                        @click="$router.push(`/skills/${encodeURIComponent(skill.name)}`)"
+                                    >
+                                        <div class="card-inner">
+                                            <div class="card-header">
+                                                <v-chip size="x-small" variant="tonal" color="primary" class="flex-shrink-0">
+                                                    <template v-if="isUsageLoading">
+                                                        <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-1" />
+                                                    </template>
+                                                    <span v-else>{{ getUsageCount(skill.name) }}</span>
+                                                    <span class="ml-1">{{ $t('SkillsManagement.usedByAgentsSuffix') }}</span>
+                                                </v-chip>
+                                            </div>
+                                            <h3 class="card-title">{{ skill.name }}</h3>
+                                            <p class="card-desc">{{ skill.description || '' }}</p>
+                                        </div>
+                                    </v-card>
+                                </v-col>
+                            </v-row>
+                        </template>
+                            </div>
+                        </v-window-item>
+                    </v-window>
                 </template>
             </div>
             </template>
@@ -294,17 +414,63 @@ export default {
         return {
             backend: null,
             skillList: [],
+            builtinSkillList: [],
             isLoading: true,
             isUploading: false,
             isUsageLoading: false,
             skillUsageCount: {},
             deletingSkillName: null,
             viewMode: 'table',
+            skillTab: 'uploaded',
+            tableSortOrder: 'asc',
+            tablePage: 1,
+            tableItemsPerPage: 10,
             showRepoDialog: false,
             repositoryUrl: '',
             showDeleteDialog: false,
             skillToDelete: null
         };
+    },
+    computed: {
+        sortedUploadedList() {
+            const list = [...this.skillList];
+            const dir = this.tableSortOrder === 'asc' ? 1 : -1;
+            return list.sort((a, b) => dir * String(a.name || '').localeCompare(String(b.name || '')));
+        },
+        sortedBuiltinList() {
+            const list = [...this.builtinSkillList];
+            const dir = this.tableSortOrder === 'asc' ? 1 : -1;
+            return list.sort((a, b) => dir * String(a.name || '').localeCompare(String(b.name || '')));
+        },
+        uploadedPaginated() {
+            const start = (this.tablePage - 1) * this.tableItemsPerPage;
+            return this.sortedUploadedList.slice(start, start + this.tableItemsPerPage);
+        },
+        builtinPaginated() {
+            const start = (this.tablePage - 1) * this.tableItemsPerPage;
+            return this.sortedBuiltinList.slice(start, start + this.tableItemsPerPage);
+        },
+        uploadedTotalPages() {
+            return Math.max(1, Math.ceil(this.sortedUploadedList.length / this.tableItemsPerPage));
+        },
+        builtinTotalPages() {
+            return Math.max(1, Math.ceil(this.sortedBuiltinList.length / this.tableItemsPerPage));
+        }
+    },
+    watch: {
+        skillTab() {
+            this.tablePage = 1;
+        },
+        uploadedTotalPages(pages) {
+            if (this.skillTab === 'uploaded' && this.tablePage > pages) {
+                this.tablePage = Math.max(1, pages);
+            }
+        },
+        builtinTotalPages(pages) {
+            if (this.skillTab === 'builtin' && this.tablePage > pages) {
+                this.tablePage = Math.max(1, pages);
+            }
+        }
     },
     created() {
         this.backend = BackendFactory.createBackend();
@@ -323,16 +489,25 @@ export default {
         async loadSkillList() {
             this.isLoading = true;
             try {
-                const result = await this.backend.getTenantSkills(window.$tenantName);
-                const raw = result.skills;
-                const list = Array.isArray(raw) ? raw : (raw?.skills || []);
-                this.skillList = list.map((s) => ({
-                    name: typeof s === 'string' ? s : (s.name || s.skill_name || ''),
-                    description: typeof s === 'string' ? '' : (s.description || '')
-                })).filter((s) => s.name);
+                const tenantId = window.$tenantName;
+                const [uploadedResult, builtinResult] = await Promise.all([
+                    this.backend.getTenantSkills(tenantId),
+                    this.backend.getTenantBuiltinSkills ? this.backend.getTenantBuiltinSkills() : Promise.resolve([])
+                ]);
+                const normalize = (result) => {
+                    const raw = result?.skills ?? result;
+                    const list = Array.isArray(raw) ? raw : (raw?.skills || []);
+                    return list.map((s) => ({
+                        name: typeof s === 'string' ? s : (s.name || s.skill_name || ''),
+                        description: typeof s === 'string' ? '' : (s.description || '')
+                    })).filter((s) => s.name);
+                };
+                this.skillList = normalize(uploadedResult);
+                this.builtinSkillList = normalize(builtinResult || []);
             } catch (e) {
                 console.error('Failed to load skills', e);
                 this.skillList = [];
+                this.builtinSkillList = [];
             } finally {
                 this.isLoading = false;
             }
@@ -362,6 +537,11 @@ export default {
 
         getUsageCount(skillName) {
             return this.skillUsageCount?.[skillName] || 0;
+        },
+
+        toggleSortOrder() {
+            this.tableSortOrder = this.tableSortOrder === 'asc' ? 'desc' : 'asc';
+            this.tablePage = 1;
         },
 
         openZipUpload() {
@@ -475,6 +655,24 @@ export default {
     border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
+.skills-management-tabs :deep(.v-tab) {
+    font-size: 0.8125rem;
+    min-height: 36px;
+    text-transform: none;
+}
+
+.skills-management-tabs :deep(.v-tabs-container) {
+    min-height: 36px;
+}
+
+.skills-tab-window :deep(.v-window__container) {
+    overflow: visible;
+}
+
+.skills-tab-window :deep(.v-window-item) {
+    overflow: auto;
+}
+
 .list-item-with-hint :deep(.v-list-item-subtitle) {
     white-space: normal;
     margin-top: 2px;
@@ -483,6 +681,29 @@ export default {
 .skills-management-body {
     min-height: 0;
     overflow: auto;
+}
+
+.skill-section {
+    margin-bottom: 0;
+}
+
+.skill-section .section-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: rgba(var(--v-theme-on-surface), 0.85);
+}
+
+.skill-section .section-empty {
+    font-size: 0.875rem;
+    margin: 0 0 16px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.skill-card-builtin .card-header {
+    margin-bottom: 10px;
 }
 
 .upload-progress-banner {
@@ -592,6 +813,15 @@ export default {
     font-weight: 600;
     font-size: 0.8125rem;
     padding: 14px 16px;
+}
+
+.table-header-sort {
+    cursor: pointer;
+    user-select: none;
+}
+
+.table-header-sort:hover {
+    background: rgba(var(--v-theme-on-surface), 0.06);
 }
 
 .table-header-actions {

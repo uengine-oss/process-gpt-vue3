@@ -3,7 +3,7 @@
         <v-card-title class="d-flex align-center justify-space-between px-0">
             <div class="d-flex align-center text-h6">
                 <v-text-field
-                    v-if="isEditable"
+                    v-if="!readOnly && isEditable"
                     v-model="fileName"
                     class="ml-2 my-2"
                     hide-details
@@ -16,10 +16,10 @@
                 <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon size="small">
                     <v-icon>{{ markdownPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                 </v-btn>
-                <v-btn @click="saveSkillFile" variant="text" icon color="primary" :loading="isLoading" size="small">
+                <v-btn v-if="!readOnly" @click="saveSkillFile" variant="text" icon color="primary" :loading="isLoading" size="small">
                     <v-icon>mdi-content-save</v-icon>
                 </v-btn>
-                <v-btn v-if="isEditable" @click="deleteDialog = true" variant="text" icon color="error" size="small">
+                <v-btn v-if="!readOnly && isEditable" @click="deleteDialog = true" variant="text" icon color="error" size="small">
                     <v-icon>mdi-delete</v-icon>
                 </v-btn>
             </div>
@@ -94,6 +94,10 @@ export default {
         skillFile: {
             type: Object,
             default: () => ({})
+        },
+        readOnly: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -102,11 +106,6 @@ export default {
             skillName: '',
             fileName: '',
             skillContent: '',
-            monacoEditorOptions: {
-                automaticLayout: true,
-                formatOnType: true,
-                formatOnPaste: true
-            },
             deleteDialog: false,
             isLoading: false,
 
@@ -115,6 +114,14 @@ export default {
         }
     },
     computed: {
+        monacoEditorOptions() {
+            return {
+                automaticLayout: true,
+                formatOnType: true,
+                formatOnPaste: true,
+                readOnly: this.readOnly
+            };
+        },
         markdownHtml() {
             if (!this.markdownPreview || !this.skillContent) return '';
             return marked(this.skillContent);
