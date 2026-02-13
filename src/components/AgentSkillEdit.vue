@@ -29,8 +29,8 @@
                 v-model="skillContent"
                 rows="19"
             ></v-textarea> -->
-            <div v-if="markdownPreview" class="h-100 markdown-preview">
-                <div v-html="markdownContent"></div>
+            <div v-if="markdownPreview" class="h-100 markdown-preview markdown-content">
+                <div v-html="markdownHtml"></div>
             </div>
             <vue-monaco-editor
                 v-else
@@ -67,7 +67,26 @@
 
 <script>
 import { marked } from 'marked';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/atom-one-dark.css';
 import BackendFactory from '@/components/api/BackendFactory';
+
+// marked + highlight.js 연동 (코드 블록 문법 하이라이팅)
+marked.setOptions({
+    breaks: true,
+    gfm: true,
+    highlight(code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return hljs.highlight(code, { language: lang }).value;
+            } catch (_) {}
+        }
+        try {
+            return hljs.highlightAuto(code).value;
+        } catch (_) {}
+        return code;
+    }
+});
 
 export default {
     name: 'AgentSkillEdit',
@@ -92,11 +111,14 @@ export default {
             isLoading: false,
 
             // markdown preview
-            markdownPreview: false,
-            markdownContent: ''
+            markdownPreview: false
         }
     },
     computed: {
+        markdownHtml() {
+            if (!this.markdownPreview || !this.skillContent) return '';
+            return marked(this.skillContent);
+        },
         isMarkdown() {
             return this.fileName && (this.fileName.endsWith('.md') || this.fileName.endsWith('.markdown'));
         },
@@ -131,7 +153,6 @@ export default {
         skillFile: {
             handler(newVal) {
                 this.markdownPreview = false;
-                this.markdownContent = '';
 
                 if (newVal) {
                     this.skillName = newVal.skill_name;
@@ -197,17 +218,6 @@ export default {
             }
         },
         toggleMarkdownPreview() {
-            if (!this.markdownPreview) {
-                // markdown 옵션 설정
-                marked.setOptions({
-                    breaks: true,
-                    gfm: true
-                });
-                // markdown 렌더링
-                this.markdownContent = marked(this.skillContent);
-            } else {
-                this.markdownContent = '';
-            }
             this.markdownPreview = !this.markdownPreview;
         }
     }
@@ -217,6 +227,11 @@ export default {
 <style scoped>
 .markdown-preview {
     height: 100%;
+    min-height: 320px;
     overflow-y: auto;
+    padding: 16px;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 4px;
+    background: rgb(var(--v-theme-surface));
 }
 </style>
