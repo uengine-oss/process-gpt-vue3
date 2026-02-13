@@ -22,7 +22,7 @@
                                 <v-tab v-if="superAdmin && !isUEngineMode" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
                                 <v-tab v-if="!isUEngineMode" value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
                                 <v-tab v-if="!isUEngineMode" value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
-                                <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab>
+                                <!-- <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab> -->
                                 <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
@@ -254,14 +254,14 @@
                         </v-window-item>
                         
                         <!-- Skills: 스킬 탭 (accountTab.skills) -->
-                        <v-window-item v-if="!isUEngineMode" value="Skills">
+                        <!-- <v-window-item v-if="!isUEngineMode" value="Skills">
                             <div 
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <SkillsTab />
                             </div>
-                        </v-window-item>
+                        </v-window-item> -->
                         <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
                             <div
                                 style="overflow: auto;"
@@ -338,7 +338,7 @@ export default {
                 { value: 'ManageAccess', label: 'Manage Access' },
                 { value: 'Drive', label: 'Drive' },
                 { value: 'MCP', label: 'MCP Servers' },
-                { value: 'Skills', label: 'Skills' },
+                // { value: 'Skills', label: 'Skills' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
             ],
             admin: localStorage.getItem('isAdmin') === 'true',
@@ -364,7 +364,7 @@ export default {
     },
     methods: {
         ensureVisibleTab() {
-            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'Skills', 'ConnectionInfo', 'TaskCatalog']);
+            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog']);
             if (!this.tab) {
                 this.tab = 'Account';
                 return;

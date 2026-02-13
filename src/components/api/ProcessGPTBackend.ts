@@ -2936,6 +2936,7 @@ class ProcessGPTBackend implements Backend {
                     tenant_id: window.$tenantName
                 }
             }
+
             if (options) {
                 Object.keys(options).forEach((key) => {
                     filter[key] = options[key]
@@ -3805,6 +3806,66 @@ class ProcessGPTBackend implements Backend {
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
+        }
+    }
+
+    /**
+     * Google Drive 폴더(tenant 설정에 저장된 folder_id)의 파일들을 문서 처리(인덱싱)합니다.
+     * - 기존 `processFile()`과 분리된 신규 호출로, 기존 로직에 영향이 없습니다.
+     * - 백엔드가 폴더 전체 처리를 지원하는 경우(file_path 없이 storage_type="drive") 이를 사용합니다.
+     */
+    async processDriveFolder(options?: { drive_folder_id?: string; [key: string]: any }) {
+        try {
+            const response = await axios.post('/memento/process', {
+                storage_type: 'drive',
+                tenant_id: window.$tenantName,
+                options: options || {}
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * Google Drive 폴더 문서 처리(인덱싱) 작업 상태 조회.
+     * 백엔드 구현/배포 환경에 따라 경로가 다를 수 있어, 우선순위대로 시도합니다.
+     */
+    async getDriveFolderProcessStatus(params?: { tenant_id?: string; job_id?: string }) {
+        const tenantId = params?.tenant_id || window.$tenantName;
+        const jobId = params?.job_id;
+
+        const tryGet = async (url: string) => {
+            return await axios.get(url, {
+                params: {
+                    tenant_id: tenantId,
+                    ...(jobId ? { job_id: jobId } : {})
+                },
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        };
+
+        try {
+            // 1) 문서/계획에서 기대하는 형태(기본 prefix 포함)
+            const res = await tryGet('/memento/process/drive/status');
+            return res.data;
+        } catch (e1) {
+            try {
+                // 2) prefix 없는 형태
+                const res = await tryGet('/process/drive/status');
+                return res.data;
+            } catch (e2) {
+                // 3) 일부 구현에서 사용할 수 있는 경로
+                const res = await tryGet('/memento/process/status');
+                return res.data;
+            }
         }
     }
 
@@ -6026,6 +6087,20 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             console.error('테넌트 스킬 목록 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async getTenantBuiltinSkills() {
+        try {
+            const response = await axios.get('/claude-skills/skills/list-builtin');
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                return [];
+            }
+        } catch (error) {
+            console.error('기본 내장 스킬 목록 조회 실패:', error);
             return [];
         }
     }
