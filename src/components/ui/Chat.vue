@@ -17,7 +17,7 @@
                                 <v-avatar v-if="chatInfo.img">
                                     <img :src="chatInfo.img" width="50" />
                                 </v-avatar>
-                                <div>
+                                <div class="pa-4 pb-0">
                                     <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
                                     <small class="textPrimary"> {{ chatInfo.subtitle }} </small>
                                 </div>
@@ -4139,12 +4139,13 @@ pre {
 }
 
 .agent-message {
-  margin-right: auto;
-  background-color: #f5f5f5 !important;
-  border-radius: 8px !important;
-  padding: 10px 12px;
-  display: inline-block;
-  max-width: min(720px, 80vw);
+    width: 100%;
+    margin-right: auto;
+    background-color: #f5f5f5 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px;
+    display: inline-block;
+    max-width: min(720px, 80vw);
 }
 
 .markdown-content :deep(pre),
