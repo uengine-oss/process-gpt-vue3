@@ -96,14 +96,7 @@
                                 <v-table class="skill-management-table" hover>
                                     <thead>
                                         <tr>
-                                            <th class="text-left table-header-name table-header-sort" @click="toggleSortOrder">
-                                                <span class="d-inline-flex align-center">
-                                                    {{ $t('SkillsManagement.skillName') }}
-                                                    <v-icon size="18" class="ml-1" :class="{ 'sort-desc': tableSortOrder === 'desc' }">
-                                                        {{ tableSortOrder === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending' }}
-                                                    </v-icon>
-                                                </span>
-                                            </th>
+                                            <th class="text-left table-header-name">{{ $t('SkillsManagement.skillName') }}</th>
                                             <th class="text-left table-header-desc">{{ $t('SkillsManagement.skillDescription') }}</th>
                                             <th class="text-right table-header-used">{{ $t('SkillsManagement.usedByAgents') }}</th>
                                             <th class="text-right table-header-actions"></th>
@@ -122,7 +115,7 @@
                                             <td class="td-actions text-right"></td>
                                         </tr>
                                         <tr
-                                            v-for="skill in uploadedPaginated"
+                                            v-for="skill in skillList"
                                             :key="'uploaded-' + skill.name"
                                             class="table-row"
                                             :class="{ 'table-row-deleting': deletingSkillName === skill.name }"
@@ -172,17 +165,6 @@
                                         </tr>
                                     </tbody>
                                 </v-table>
-                                <div v-if="sortedUploadedList.length > tableItemsPerPage" class="table-pagination mt-3 d-flex justify-center">
-                                    <v-pagination
-                                        v-model="tablePage"
-                                        :length="uploadedTotalPages"
-                                        :total-visible="7"
-                                        density="compact"
-                                        variant="tonal"
-                                        color="primary"
-                                        rounded
-                                    />
-                                </div>
                             </div>
                             <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
                                 <v-col v-if="isUploading" cols="12" sm="6" md="4" lg="3">
@@ -202,7 +184,7 @@
                                         </div>
                                     </v-card>
                                 </v-col>
-                                <v-col v-for="skill in sortedUploadedList" :key="'uploaded-' + skill.name" cols="12" sm="6" md="4" lg="3">
+                                <v-col v-for="skill in skillList" :key="'uploaded-' + skill.name" cols="12" sm="6" md="4" lg="3">
                                     <v-card
                                         variant="outlined"
                                         class="skill-card"
@@ -252,21 +234,14 @@
                                 <v-table class="skill-management-table" hover>
                                     <thead>
                                         <tr>
-                                            <th class="text-left table-header-name table-header-sort" @click="toggleSortOrder">
-                                                <span class="d-inline-flex align-center">
-                                                    {{ $t('SkillsManagement.skillName') }}
-                                                    <v-icon size="18" class="ml-1" :class="{ 'sort-desc': tableSortOrder === 'desc' }">
-                                                        {{ tableSortOrder === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending' }}
-                                                    </v-icon>
-                                                </span>
-                                            </th>
+                                            <th class="text-left table-header-name">{{ $t('SkillsManagement.skillName') }}</th>
                                             <th class="text-left table-header-desc">{{ $t('SkillsManagement.skillDescription') }}</th>
                                             <th class="text-right table-header-used">{{ $t('SkillsManagement.usedByAgents') }}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr
-                                            v-for="skill in builtinPaginated"
+                                            v-for="skill in builtinSkillList"
                                             :key="'builtin-' + skill.name"
                                             class="table-row"
                                             @click="$router.push(`/skills/${encodeURIComponent(skill.name)}`)"
@@ -292,20 +267,9 @@
                                         </tr>
                                     </tbody>
                                 </v-table>
-                                <div v-if="sortedBuiltinList.length > tableItemsPerPage" class="table-pagination mt-3 d-flex justify-center">
-                                    <v-pagination
-                                        v-model="tablePage"
-                                        :length="builtinTotalPages"
-                                        :total-visible="7"
-                                        density="compact"
-                                        variant="tonal"
-                                        color="primary"
-                                        rounded
-                                    />
-                                </div>
                             </div>
                             <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
-                                <v-col v-for="skill in sortedBuiltinList" :key="'builtin-' + skill.name" cols="12" sm="6" md="4" lg="3">
+                                <v-col v-for="skill in builtinSkillList" :key="'builtin-' + skill.name" cols="12" sm="6" md="4" lg="3">
                                     <v-card
                                         variant="outlined"
                                         class="skill-card skill-card-builtin"
@@ -422,55 +386,11 @@ export default {
             deletingSkillName: null,
             viewMode: 'table',
             skillTab: 'uploaded',
-            tableSortOrder: 'asc',
-            tablePage: 1,
-            tableItemsPerPage: 10,
             showRepoDialog: false,
             repositoryUrl: '',
             showDeleteDialog: false,
             skillToDelete: null
         };
-    },
-    computed: {
-        sortedUploadedList() {
-            const list = [...this.skillList];
-            const dir = this.tableSortOrder === 'asc' ? 1 : -1;
-            return list.sort((a, b) => dir * String(a.name || '').localeCompare(String(b.name || '')));
-        },
-        sortedBuiltinList() {
-            const list = [...this.builtinSkillList];
-            const dir = this.tableSortOrder === 'asc' ? 1 : -1;
-            return list.sort((a, b) => dir * String(a.name || '').localeCompare(String(b.name || '')));
-        },
-        uploadedPaginated() {
-            const start = (this.tablePage - 1) * this.tableItemsPerPage;
-            return this.sortedUploadedList.slice(start, start + this.tableItemsPerPage);
-        },
-        builtinPaginated() {
-            const start = (this.tablePage - 1) * this.tableItemsPerPage;
-            return this.sortedBuiltinList.slice(start, start + this.tableItemsPerPage);
-        },
-        uploadedTotalPages() {
-            return Math.max(1, Math.ceil(this.sortedUploadedList.length / this.tableItemsPerPage));
-        },
-        builtinTotalPages() {
-            return Math.max(1, Math.ceil(this.sortedBuiltinList.length / this.tableItemsPerPage));
-        }
-    },
-    watch: {
-        skillTab() {
-            this.tablePage = 1;
-        },
-        uploadedTotalPages(pages) {
-            if (this.skillTab === 'uploaded' && this.tablePage > pages) {
-                this.tablePage = Math.max(1, pages);
-            }
-        },
-        builtinTotalPages(pages) {
-            if (this.skillTab === 'builtin' && this.tablePage > pages) {
-                this.tablePage = Math.max(1, pages);
-            }
-        }
     },
     created() {
         this.backend = BackendFactory.createBackend();
@@ -537,11 +457,6 @@ export default {
 
         getUsageCount(skillName) {
             return this.skillUsageCount?.[skillName] || 0;
-        },
-
-        toggleSortOrder() {
-            this.tableSortOrder = this.tableSortOrder === 'asc' ? 'desc' : 'asc';
-            this.tablePage = 1;
         },
 
         openZipUpload() {
@@ -813,15 +728,6 @@ export default {
     font-weight: 600;
     font-size: 0.8125rem;
     padding: 14px 16px;
-}
-
-.table-header-sort {
-    cursor: pointer;
-    user-select: none;
-}
-
-.table-header-sort:hover {
-    background: rgba(var(--v-theme-on-surface), 0.06);
 }
 
 .table-header-actions {
