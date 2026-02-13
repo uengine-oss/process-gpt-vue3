@@ -18,7 +18,11 @@
                 <Description v-model="activity.description" class="mb-4"></Description>
                 
                 <!-- Instruction -->
-                <Instruction v-model="activity.instruction" class="mb-4"></Instruction>
+                <Instruction
+                    v-model="activity.instruction"
+                    :mention-candidates="mentionCandidates"
+                    class="mb-4"
+                ></Instruction>
                 
                 <v-divider class="mb-2"></v-divider>
                 
@@ -176,6 +180,7 @@ export default {
             selectedForms: [],
             availableForms: [],
             formFields: {},
+            mentionCandidates: []
         };
     },
     created() {
@@ -218,6 +223,7 @@ export default {
     async mounted() {
         let me = this;
         await me.init();
+        await me.loadMentionCandidates();
     },
     computed: {
         lastPath() {
@@ -283,6 +289,93 @@ export default {
         },
     },
     methods: {
+        async loadMentionCandidates() {
+            const candidates = [];
+
+            // Agents
+            try {
+                if (this.backend && this.backend.getAgentList) {
+                    const agents = await this.backend.getAgentList();
+                    if (Array.isArray(agents)) {
+                        agents.forEach((agent) => {
+                            if (!agent) return;
+
+                            // 기본 LLM(숨김 기본 에이전트)은 멘션 후보에서 제외
+                            const username = (agent.username || '').toString();
+                            const isHiddenDefault =
+                                agent.is_hidden === true ||
+                                agent.is_default === true && username === '기본 LLM';
+                            if (isHiddenDefault) return;
+
+                            const id = agent.id || agent.user_id || agent.uid;
+                            if (!id) return;
+                            const label = (agent.username || agent.name || agent.alias || agent.email || id).toString();
+                            const description = (agent.goal || agent.description || '').toString();
+                            candidates.push({
+                                id: String(id),
+                                type: 'agent',
+                                label,
+                                description
+                            });
+                        });
+                    }
+                }
+            } catch (error) {
+                // 에이전트 목록 조회 실패 시 로깅만 수행 (기능은 계속 동작)
+                // eslint-disable-next-line no-console
+                console.error('[GPTUserTaskPanel] loadMentionCandidates - getAgentList error', error);
+            }
+
+            // Skills
+            try {
+                if (this.backend && this.backend.getTenantSkills && window.$tenantName) {
+                    const result = await this.backend.getTenantSkills(window.$tenantName);
+                    const tenantSkills = result && result.skills;
+                    const list = Array.isArray(tenantSkills)
+                        ? tenantSkills
+                        : (tenantSkills && tenantSkills.skills) || [];
+
+                    list.forEach((skill) => {
+                        if (!skill) return;
+                        const name = skill.name || skill.skill_name;
+                        if (!name) return;
+                        const description = (skill.description || '').toString();
+                        candidates.push({
+                            id: String(name),
+                            type: 'skill',
+                            label: String(name),
+                            description
+                        });
+                    });
+                }
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.error('[GPTUserTaskPanel] loadMentionCandidates - getTenantSkills error', error);
+            }
+
+            // Activities
+            try {
+                const pd = this.processDefinition;
+                if (pd && Array.isArray(pd.activities)) {
+                    pd.activities.forEach((act) => {
+                        if (!act || !act.id) return;
+                        const label = (act.name || act.activityName || act.displayName || act.id).toString();
+                        const description = (act.description || '').toString();
+                        candidates.push({
+                            id: String(act.id),
+                            type: 'activity',
+                            label,
+                            description
+                        });
+                    });
+                }
+            } catch (error) {
+                // eslint-disable-next-line no-console
+                console.error('[GPTUserTaskPanel] loadMentionCandidates - activities error', error);
+            }
+
+            this.mentionCandidates = candidates;
+        },
         async init() {
             var me = this;
             if(me.isPreviewMode){
