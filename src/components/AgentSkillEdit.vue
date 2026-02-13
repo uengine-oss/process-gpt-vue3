@@ -1,6 +1,6 @@
 <template>
     <v-card flat v-if="skillFile">
-        <v-card-title class="d-flex align-center justify-space-between px-0">
+        <v-card-title class="d-flex align-center justify-space-between pa-0">
             <div class="d-flex align-center text-h6">
                 <v-text-field
                     v-if="isEditable"
@@ -13,14 +13,14 @@
                 <span v-else class="ml-3">{{ fileName }}</span>
             </div>
             <div class="d-flex align-center gap-2 mr-2">
+                <v-btn v-if="isEditable" @click="deleteDialog = true" variant="text" icon color="error" size="small">
+                    <v-icon>mdi-delete</v-icon>
+                </v-btn>
                 <v-btn v-if="isMarkdown" @click="toggleMarkdownPreview" variant="text" icon size="small">
                     <v-icon>{{ markdownPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                 </v-btn>
                 <v-btn @click="saveSkillFile" variant="text" icon color="primary" :loading="isLoading" size="small">
                     <v-icon>mdi-content-save</v-icon>
-                </v-btn>
-                <v-btn v-if="isEditable" @click="deleteDialog = true" variant="text" icon color="error" size="small">
-                    <v-icon>mdi-delete</v-icon>
                 </v-btn>
             </div>
         </v-card-title>
@@ -43,24 +43,22 @@
     </v-card>
 
     <!-- delete dialog -->
-    <v-dialog v-model="deleteDialog" width="400">
+    <v-dialog v-model="deleteDialog" max-width="500px" persistent>
         <v-card>
-            <v-card-title>
+            <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
                 {{ $t('AgentSkillEdit.deleteDialogTitle') }}
+                <v-btn variant="text" density="compact" icon @click="deleteDialog = false">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
             </v-card-title>
-            <v-card-text>
+            <v-card-text class="pa-4 pb-0">
                 {{ $t('AgentSkillEdit.deleteDialogMessage') }}
             </v-card-text>
-            <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn @click="deleteDialog = false" variant="flat" color="error" rounded>
-                    {{ $t('common.cancel') }}
-                </v-btn>
-                <v-btn @click="deleteSkillFile" variant="flat" color="primary" rounded>
+            <v-card-actions class="d-flex justify-end align-center pa-4">
+                <v-btn color="error" rounded variant="flat" @click="deleteSkillFile">
                     {{ $t('common.delete') }}
                 </v-btn>
             </v-card-actions>
-
         </v-card>
     </v-dialog>
 </template>

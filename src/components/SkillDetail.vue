@@ -102,25 +102,17 @@
                                                     ref="folderNameInput"
                                                     autofocus
                                                 ></v-text-field>
-                                                <v-btn
+                                                <v-icon
                                                     v-if="node.data.type === 'folder' && editingNodeId !== node.id"
-                                                    variant="text"
-                                                    icon
                                                     size="x-small"
                                                     @click.stop="startEditFolder(node)"
-                                                >
-                                                    <v-icon>mdi-pencil-outline</v-icon>
-                                                </v-btn>
-                                                <v-btn
+                                                >mdi-pencil-outline</v-icon>
+                                                <v-icon 
                                                     v-else-if="node.data.type === 'folder' && editingNodeId === node.id"
-                                                    variant="text"
-                                                    icon
                                                     size="x-small"
                                                     color="primary"
                                                     @click.stop="finishEditFolder(node)"
-                                                >
-                                                    <v-icon>mdi-check</v-icon>
-                                                </v-btn>
+                                                >mdi-check</v-icon>
                                             </div>
                                         </template>
                                     </v-treeview>
