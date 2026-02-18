@@ -93,14 +93,15 @@
                             {{ formattedDate }}
                         </div>
                         <v-spacer></v-spacer>
-                        <div v-if="isDueTodayOrTomorrow" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert" style="color: #FF9800;" />
-                            <span class="text-caption ml-1" style="color: #FF9800;">{{ $t('kanbanColumnCard.overdue') }}</span>
-                        </div>
-                        <div v-else-if="isPastDue" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336; padding-top: 3px;" />
-                            <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.pastDue') }}</span>
-                        </div>
+                        <v-chip 
+                            v-if="isDueTodayOrTomorrow || isPastDue"
+                            size="x-small" 
+                            :color="isDueTodayOrTomorrow ? 'warning' : 'error'" 
+                            variant="tonal"
+                            class="ml-auto"
+                        >
+                            {{ isPastDue ? $t('kanbanColumnCard.pastDue') : $t('kanbanColumnCard.overdue') }}
+                        </v-chip>
                         <v-tooltip v-if="isPending" location="right">
                             <template v-slot:activator="{ props }">
                                 <div class="d-flex align-center ml-2" v-bind="props">
