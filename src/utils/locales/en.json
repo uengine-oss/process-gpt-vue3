@@ -2985,6 +2985,10 @@
     "SkillsManagement": {
         "title": "Skills List Management",
         "description": "Add or remove skills here. Click a skill to open it and edit its files.",
+        "uploadedSkills": "Uploaded skills",
+        "builtinSkills": "Built-in skills",
+        "uploadedEmpty": "No uploaded skills.",
+        "builtinEmpty": "No built-in skills.",
         "viewAs": "View as",
         "viewTable": "Table",
         "viewCard": "Card",

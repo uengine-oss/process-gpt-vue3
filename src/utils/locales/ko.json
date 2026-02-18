@@ -3265,6 +3265,10 @@
     "SkillsManagement": {
         "title": "스킬 목록 관리",
         "description": "여기서 스킬을 추가하거나 삭제할 수 있습니다. 스킬을 클릭하면 열어서 파일을 편집할 수 있습니다.",
+        "uploadedSkills": "업로드된 스킬",
+        "builtinSkills": "기본 내장 스킬",
+        "uploadedEmpty": "업로드된 스킬이 없습니다.",
+        "builtinEmpty": "기본 내장 스킬이 없습니다.",
         "viewAs": "보기",
         "viewTable": "테이블",
         "viewCard": "카드",

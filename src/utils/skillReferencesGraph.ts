@@ -435,6 +435,36 @@ export function buildSkillReferenceGraph(
         }
     }
 
+    // Structural edges: top-level SKILL.md -> all other files in the same skill
+    const skillRootIdBySkill = new Map<string, string>();
+    const fileIdsBySkill = new Map<string, string[]>();
+    for (const [id, data] of nodeDataById.entries()) {
+        if (data.type !== 'file') continue;
+        const path = data.path ?? '';
+        const skillName = data.skillName ?? currentSkillName;
+        const isTopLevelSkillMd = tenantMode
+            ? path === `${skillName}/SKILL.md`
+            : path === 'SKILL.md';
+        if (isTopLevelSkillMd) skillRootIdBySkill.set(skillName, id);
+        if (!fileIdsBySkill.has(skillName)) fileIdsBySkill.set(skillName, []);
+        fileIdsBySkill.get(skillName)!.push(id);
+    }
+    for (const [skillName, rootId] of skillRootIdBySkill) {
+        const fileIds = fileIdsBySkill.get(skillName) ?? [];
+        for (const tgtId of fileIds) {
+            if (tgtId === rootId) continue;
+            const edgeKey = `${rootId}-->${tgtId}`;
+            if (edgeAgg.has(edgeKey)) continue;
+            edgeAgg.set(edgeKey, {
+                id: `ref:${rootId}->${tgtId}`,
+                type: 'ref',
+                source: rootId,
+                target: tgtId,
+                count: 1
+            });
+        }
+    }
+
     const elements: CytoscapeElement[] = [];
     for (const node of nodeDataById.values()) {
         elements.push({ data: node });
