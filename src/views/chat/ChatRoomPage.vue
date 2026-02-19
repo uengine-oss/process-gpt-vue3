@@ -142,8 +142,29 @@
                     />
                 </div>
 
-                <!-- 입력 영역(임시): 이후 UnifiedChatInput으로 교체 -->
+                <!-- 입력 영역 -->
                 <div class="input-area">
+                    <!-- 음성 상태 바 (공용 컴포넌트가 위에서 렌더링) -->
+                    <div v-if="isDesktopVoiceActive" class="voice-mode-bar" :class="{ 'is-error': voiceStatus === 'error' }">
+                        <div class="voice-pulse-dot" :class="{
+                            'is-speaking': voiceUserSpeaking,
+                            'is-responding': voiceStatus === 'responding',
+                            'is-playing': voiceStatus === 'playing',
+                            'is-connecting': voiceStatus === 'connecting',
+                            'is-error': voiceStatus === 'error'
+                        }"></div>
+                        <span class="voice-status-label" :class="{ 'is-error-text': voiceStatus === 'error' }">
+                            <template v-if="voiceStatus === 'error'">서버에 연결할 수 없습니다</template>
+                            <template v-else-if="voiceStatus === 'connecting'">서버 연결 중...</template>
+                            <template v-else-if="voiceStatus === 'playing'">AI 말하는 중...</template>
+                            <template v-else-if="voiceStatus === 'responding'">AI 응답 생성 중...</template>
+                            <template v-else-if="voiceUserSpeaking">음성 인식 중...</template>
+                            <template v-else>음성 대기 중 — 말씀해 주세요</template>
+                        </span>
+                        <v-btn icon variant="text" density="compact" size="small" class="ml-auto" @click="stopDesktopVoice">
+                            <v-icon size="16">mdi-close</v-icon>
+                        </v-btn>
+                    </div>
                     <UnifiedChatInput
                         ref="composer"
                         variant="inline"
@@ -152,8 +173,11 @@
                         :showStopButton="hasAbortableStream"
                         :userList="userList"
                         :currentChatRoom="currentChatRoom"
+                        :desktopVoiceActive="isDesktopVoiceActive"
+                        :enableDesktopVoice="isVoiceEnabled"
                         @sendMessage="handleSendMessage"
                         @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
+                        @desktop-voice-toggle="toggleDesktopVoice"
                     />
                 </div>
             </div>
@@ -238,6 +262,26 @@
                     </div>
 
                     <div class="input-area">
+                        <div v-if="isDesktopVoiceActive" class="voice-mode-bar" :class="{ 'is-error': voiceStatus === 'error' }">
+                            <div class="voice-pulse-dot" :class="{
+                                'is-speaking': voiceUserSpeaking,
+                                'is-responding': voiceStatus === 'responding',
+                                'is-playing': voiceStatus === 'playing',
+                                'is-connecting': voiceStatus === 'connecting',
+                                'is-error': voiceStatus === 'error'
+                            }"></div>
+                            <span class="voice-status-label" :class="{ 'is-error-text': voiceStatus === 'error' }">
+                                <template v-if="voiceStatus === 'error'">서버에 연결할 수 없습니다</template>
+                                <template v-else-if="voiceStatus === 'connecting'">서버 연결 중...</template>
+                                <template v-else-if="voiceStatus === 'playing'">AI 말하는 중...</template>
+                                <template v-else-if="voiceStatus === 'responding'">AI 응답 생성 중...</template>
+                                <template v-else-if="voiceUserSpeaking">음성 인식 중...</template>
+                                <template v-else>음성 대기 중 — 말씀해 주세요</template>
+                            </span>
+                            <v-btn icon variant="text" density="compact" size="small" class="ml-auto" @click="stopDesktopVoice">
+                                <v-icon size="16">mdi-close</v-icon>
+                            </v-btn>
+                        </div>
                         <UnifiedChatInput
                             ref="composer"
                             variant="inline"
@@ -246,8 +290,11 @@
                             :showStopButton="hasAbortableStream"
                             :userList="userList"
                             :currentChatRoom="draftUserContextRoom"
+                            :desktopVoiceActive="isDesktopVoiceActive"
+                            :enableDesktopVoice="isVoiceEnabled"
                             @sendMessage="handleSendMessageUserContextDraft"
                             @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
+                            @desktop-voice-toggle="toggleDesktopVoice"
                         />
                     </div>
                 </template>
@@ -332,6 +379,26 @@
                 </div>
 
                 <div class="input-area">
+                    <div v-if="isDesktopVoiceActive" class="voice-mode-bar" :class="{ 'is-error': voiceStatus === 'error' }">
+                        <div class="voice-pulse-dot" :class="{
+                            'is-speaking': voiceUserSpeaking,
+                            'is-responding': voiceStatus === 'responding',
+                            'is-playing': voiceStatus === 'playing',
+                            'is-connecting': voiceStatus === 'connecting',
+                            'is-error': voiceStatus === 'error'
+                        }"></div>
+                        <span class="voice-status-label" :class="{ 'is-error-text': voiceStatus === 'error' }">
+                            <template v-if="voiceStatus === 'error'">서버에 연결할 수 없습니다</template>
+                            <template v-else-if="voiceStatus === 'connecting'">서버 연결 중...</template>
+                            <template v-else-if="voiceStatus === 'playing'">AI 말하는 중...</template>
+                            <template v-else-if="voiceStatus === 'responding'">AI 응답 생성 중...</template>
+                            <template v-else-if="voiceUserSpeaking">음성 인식 중...</template>
+                            <template v-else>음성 대기 중 — 말씀해 주세요</template>
+                        </span>
+                        <v-btn icon variant="text" density="compact" size="small" class="ml-auto" @click="stopDesktopVoice">
+                            <v-icon size="16">mdi-close</v-icon>
+                        </v-btn>
+                    </div>
                     <UnifiedChatInput
                         ref="composer"
                         variant="inline"
@@ -340,11 +407,33 @@
                         :showStopButton="hasAbortableStream"
                         :userList="userList"
                         :currentChatRoom="draftContextRoom"
+                        :desktopVoiceActive="isDesktopVoiceActive"
+                        :enableDesktopVoice="isVoiceEnabled"
                         @sendMessage="handleSendMessageContextDraft"
                         @stopMessage="stopAgentsInRoom(currentChatRoom?.id || roomId)"
+                        @desktop-voice-toggle="toggleDesktopVoice"
                     />
                 </div>
             </div>
+
+            <!-- 음성 에이전트 (단일 인스턴스: 뷰 전환 시에도 유지) -->
+            <VoiceAgentDesktopMode
+                :active="isDesktopVoiceActive"
+                :chatRoomId="currentChatRoom?.id || ''"
+                :agentInfo="currentVoiceAgentInfo"
+                :conversationHistory="currentVoiceHistory"
+                @user-transcript="onVoiceUserTranscript"
+                @ai-transcript-delta="onVoiceAiDelta"
+                @ai-transcript-done="onVoiceAiDone"
+                @speaking-start="voiceUserSpeaking = true"
+                @speaking-stop="voiceUserSpeaking = false; voiceStatus = 'responding'"
+                @ai-audio-start="voiceStatus = 'playing'"
+                @ai-audio-stop="voiceStatus = 'listening'"
+                @ai-interrupted="onVoiceAiInterrupted"
+                @started="voiceStatus = 'listening'"
+                @stopped="voiceStatus = 'idle'; voiceUserSpeaking = false"
+                @error="onVoiceError"
+            />
         </div>
 
         <!-- 참여자 보기 -->
@@ -586,6 +675,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import UnifiedChatInput from '@/components/chat/UnifiedChatInput.vue';
 import Chat from '@/components/ui/Chat.vue';
+import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
@@ -626,7 +716,8 @@ export default {
     components: {
         UnifiedChatInput,
         Chat,
-        ProcessDefinition
+        ProcessDefinition,
+        VoiceAgentDesktopMode,
     },
     data() {
         return {
@@ -697,6 +788,12 @@ export default {
 
             // 스트리밍 중지(Abort) 컨트롤러: roomId:agentId 단위
             agentAbortControllers: {},
+
+            // 데스크탑 음성 에이전트 모드
+            isDesktopVoiceActive: false,
+            voiceAiMsgId: null,        // 스트리밍 중인 AI 메시지 uuid
+            voiceStatus: 'idle',       // idle | connecting | listening | speaking | responding | playing | error
+            voiceUserSpeaking: false,
 
             // settings UI
             settingsMenu: false,
@@ -897,7 +994,56 @@ export default {
                 return true;
             });
             return others.length > 0 ? others : parts.filter(Boolean);
-        }
+        },
+        // 음성 세션 시작 시 서버에 주입할 대화 히스토리 (최근 20턴)
+        currentVoiceHistory() {
+            const msgs = Array.isArray(this.messages) ? this.messages : [];
+            return msgs
+                .filter(m => m && !m.isLoading && (m.role === 'user' || m.role === 'assistant') && (m.content || '').trim())
+                .slice(-20)
+                .map(m => ({ role: m.role, content: (m.content || '').trim() }));
+        },
+        // 현재 음성 세션에 사용할 에이전트 메타데이터
+        // 에이전트 컨텍스트 모드: contextAgent + defaultSetting 병합
+        // 일반 채팅방: 첫 번째 에이전트 참가자 메타데이터
+        // 1:1 에이전트 대화일 때만 말하기/듣기 버튼 활성화
+        isVoiceEnabled() {
+            // embedded 에이전트 컨텍스트(에이전트 목록에서 선택) → 항상 1:1 에이전트 대화
+            if (this.isAgentContextEmbedded) return true;
+            // 일반 채팅방: 참가자가 정확히 2명(나 + 상대방)이고 상대방이 에이전트인 경우
+            const parts = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
+            if (parts.length === 2 && this.agentParticipants.length === 1) return true;
+            return false;
+        },
+        currentVoiceAgentInfo() {
+            if (this.contextAgentId && this.contextAgent) {
+                const stored = this.defaultSetting?.getAgentById?.(this.contextAgent.id || this.contextAgentId) || {};
+                return {
+                    id:          stored.id          || this.contextAgent.id          || this.contextAgentId,
+                    username:    stored.username     || this.contextAgent.username    || this.contextAgent.name || '',
+                    role:        stored.role         || this.contextAgent.role        || '',
+                    goal:        stored.goal         || this.contextAgent.goal        || '',
+                    persona:     stored.persona      || this.contextAgent.persona     || '',
+                    description: stored.description  || this.contextAgent.description || '',
+                    tools:       stored.tools        || this.contextAgent.tools       || '',
+                };
+            }
+            const candidates = this.getAgentCandidates();
+            if (candidates.length > 0) {
+                const first = candidates[0];
+                const meta = this.defaultSetting?.getAgentById?.(first.id) || {};
+                return {
+                    id:          first.id,
+                    username:    meta.username     || first.username || '',
+                    role:        meta.role         || '',
+                    goal:        meta.goal         || '',
+                    persona:     meta.persona      || '',
+                    description: meta.description  || '',
+                    tools:       meta.tools        || '',
+                };
+            }
+            return null;
+        },
     },
     async mounted() {
         try {
@@ -925,7 +1071,20 @@ export default {
             async handler(newRoomId, oldRoomId) {
                 if (!newRoomId) return;
                 if (newRoomId === oldRoomId) return;
-                await this.bootstrapRoom(newRoomId);
+
+                const isVoiceDraftTransition = this.isDesktopVoiceActive && !oldRoomId;
+                const isDifferentRoom = !!oldRoomId && oldRoomId !== newRoomId;
+
+                if (isDifferentRoom) {
+                    // 완전히 다른 방으로 이동: 음성 종료 후 정상 bootstrap
+                    this.stopDesktopVoice();
+                    await this.bootstrapRoom(newRoomId);
+                } else if (isVoiceDraftTransition) {
+                    // 음성 중 드래프트→방 전환: 메시지 초기화 없이 구독·에이전트 워밍업만
+                    await this._bootstrapRoomForVoice(newRoomId);
+                } else {
+                    await this.bootstrapRoom(newRoomId);
+                }
             }
         },
         userId: {
@@ -1305,6 +1464,23 @@ export default {
                 this.isLoadingUsers = false;
             }
         },
+        // 음성 모드에서 드래프트 → 방 전환 시: messages 초기화 없이 구독만 설정
+        async _bootstrapRoomForVoice(roomId) {
+            try {
+                if (!this.userInfo) this.userInfo = await backend.getUserInfo();
+                if (!this.userList || this.userList.length === 0) {
+                    await this.loadUserList();
+                }
+                // 방 정보는 _ensureRoomForVoice에서 이미 세팅됨 — 구독·워밍업만 수행
+                await this.subscribeToRoom(roomId);
+                this.EventBus.emit('chat-room-selected', roomId);
+                this.warmupAgentsForCurrentRoom();
+                this.$nextTick(() => this.scrollToBottomSafe?.());
+            } catch (e) {
+                // ignore — 실패해도 음성 대화는 계속
+            }
+        },
+
         async bootstrapRoom(roomId) {
             this.isLoadingRoom = true;
             try {
@@ -1676,6 +1852,243 @@ export default {
             this.EventBus.emit('chat-room-unselected');
             await this.$router.replace({ path: '/chat' });
         },
+        // ===== 데스크탑 음성 에이전트 =====
+        toggleDesktopVoice() {
+            if (this.isDesktopVoiceActive) {
+                this.stopDesktopVoice();
+            } else {
+                this.isDesktopVoiceActive = true;
+                this.voiceStatus = 'connecting';
+            }
+        },
+        stopDesktopVoice() {
+            this.isDesktopVoiceActive = false;
+            this.voiceStatus = 'idle';
+            this.voiceUserSpeaking = false;
+            this.voiceAiMsgId = null;
+        },
+
+        // 드래프트 모드(에이전트/유저 선택 후 아직 방이 없는 상태)에서 첫 발화 시 방을 생성
+        async _ensureRoomForVoice() {
+            if (this.currentChatRoom?.id) return this.currentChatRoom.id;
+
+            const nowIso = new Date().toISOString();
+            const roomId = this.uuid();
+            let participants = [];
+
+            if (this.isDraftContextView) {
+                // 에이전트 드래프트
+                if (!this.contextAgent) {
+                    try {
+                        const a = this.defaultSetting?.getAgentById?.(this.contextAgentId);
+                        this.contextAgent = a || (await backend.getUserById(this.contextAgentId));
+                    } catch (e) {
+                        this.contextAgent = { id: this.contextAgentId, username: 'Agent' };
+                    }
+                }
+                const me = this.normalizeParticipant(this.userInfo);
+                const ag = this.normalizeParticipant(this.contextAgent);
+                participants = this.getDraftParticipantsFallback([me, ag]);
+            } else if (this.isUserContextRouted && this.targetUser) {
+                // 유저 드래프트
+                const me = this.normalizeParticipant(this.userInfo);
+                const tu = this.normalizeParticipant(this.targetUser);
+                participants = this.getDraftParticipantsFallback([me, tu]);
+            } else {
+                return null;
+            }
+
+            const room = {
+                id: roomId,
+                name: String(this.draftName || '새 채팅').trim().substring(0, 50) || '새 채팅',
+                participants,
+                message: { msg: 'NEW', type: 'text', createdAt: nowIso },
+            };
+            await backend.putObject('db://chat_rooms', room);
+            this.activeRoomId = roomId;
+            this.currentChatRoom = room;
+            this.EventBus.emit('chat-rooms-updated');
+            return roomId;
+        },
+
+        async onVoiceUserTranscript(transcript) {
+            if (!transcript) return;
+
+            // 사용자 메시지를 async 작업 전에 즉시 UI에 표시
+            // (await 중 AI 메시지가 먼저 push되는 순서 역전 방지)
+            const nowIso = new Date().toISOString();
+            const msgUuid = this.uuid();
+            const msg = {
+                uuid: msgUuid,
+                clientUuid: msgUuid,
+                role: 'user',
+                content: transcript,
+                contentType: 'voice',
+                timeStamp: nowIso,
+                email: this.userInfo?.email || null,
+                name: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
+                userName: this.userInfo?.username || this.userInfo?.name || this.userInfo?.email || '',
+                images: [],
+                pdfFile: null,
+                mentionedUsers: [],
+                isVoiceMessage: true,
+            };
+            // OpenAI Realtime API는 response.audio_transcript.delta(AI 텍스트)가
+            // conversation.item.input_audio_transcription.completed(사용자 전사)보다
+            // 먼저 도착하는 것이 정상 스펙이므로, AI 메시지가 이미 push된 경우 그 앞에 삽입
+            if (this.voiceAiMsgId) {
+                const aiIdx = this.messages.findIndex(m => m.uuid === this.voiceAiMsgId);
+                if (aiIdx !== -1) {
+                    this.messages.splice(aiIdx, 0, msg);
+                } else {
+                    this.messages.push(msg);
+                }
+            } else {
+                this.messages.push(msg);
+            }
+            this.$nextTick(() => this.scrollToBottomSafe?.());
+
+            // 방이 없으면(드래프트 모드) 생성 — 이후 async 작업
+            if (!this.currentChatRoom?.id) {
+                const created = await this._ensureRoomForVoice();
+                if (!created) return;
+            }
+
+            // DB 저장
+            try {
+                await backend.putObject(`db://chats/${msgUuid}`, {
+                    uuid: msgUuid,
+                    id: this.currentChatRoom.id,
+                    messages: msg,
+                });
+            } catch (e) { /* ignore persistence error */ }
+        },
+        onVoiceAiDelta(delta) {
+            if (!delta) return;
+            this.voiceStatus = 'responding';
+            if (!this.voiceAiMsgId) {
+                // 첫 번째 delta: 새 AI 메시지 생성
+                const nowIso = new Date().toISOString();
+                const msgUuid = this.uuid();
+                const agentName = this.currentVoiceAgentInfo?.username || 'AI';
+                const agentEmail = this.currentVoiceAgentInfo?.email || 'voice-agent@system';
+                this.voiceAiMsgId = msgUuid;
+                this.messages.push({
+                    uuid: msgUuid,
+                    role: 'assistant',
+                    content: delta,
+                    contentType: 'text',
+                    isLoading: false,
+                    isVoiceResponse: true,
+                    timeStamp: nowIso,
+                    email: agentEmail,
+                    name: agentName,
+                    userName: agentName,
+                });
+                this.$nextTick(() => this.scrollToBottomSafe?.());
+            } else {
+                // 이후 delta: 기존 메시지에 텍스트 추가
+                const idx = this.messages.findIndex((m) => m?.uuid === this.voiceAiMsgId);
+                if (idx !== -1) {
+                    this.messages[idx] = {
+                        ...this.messages[idx],
+                        content: (this.messages[idx].content || '') + delta,
+                    };
+                }
+            }
+        },
+        async onVoiceAiDone(finalText) {
+            this.voiceStatus = 'listening';
+            const text = (finalText || '').trim();
+            if (!text) return;
+
+            // delta 없이 done만 온 경우(API 버전에 따라 발생): 메시지를 여기서 생성
+            if (!this.voiceAiMsgId) {
+                const nowIso = new Date().toISOString();
+                const msgUuid = this.uuid();
+                const agentName = this.currentVoiceAgentInfo?.username || 'AI';
+                const agentEmail = this.currentVoiceAgentInfo?.email || 'voice-agent@system';
+                this.voiceAiMsgId = msgUuid;
+                this.messages.push({
+                    uuid: msgUuid,
+                    role: 'assistant',
+                    content: text,
+                    contentType: 'text',
+                    isLoading: false,
+                    isVoiceResponse: true,
+                    timeStamp: nowIso,
+                    email: agentEmail,
+                    name: agentName,
+                    userName: agentName,
+                });
+                this.$nextTick(() => this.scrollToBottomSafe?.());
+            } else {
+                // delta로 스트리밍되다가 done이 온 경우: 최종 텍스트로 확정
+                const idx = this.messages.findIndex((m) => m?.uuid === this.voiceAiMsgId);
+                if (idx !== -1) {
+                    this.messages[idx] = {
+                        ...this.messages[idx],
+                        content: text || this.messages[idx].content || '',
+                        isLoading: false,
+                    };
+                }
+            }
+
+            // 완성된 AI 메시지 DB 저장
+            if (!this.currentChatRoom?.id) {
+                await this._ensureRoomForVoice();
+            }
+            try {
+                const savedIdx = this.messages.findIndex((m) => m?.uuid === this.voiceAiMsgId);
+                if (savedIdx !== -1 && this.currentChatRoom?.id) {
+                    // AI 메시지 timestamp를 현재 시각으로 갱신한다.
+                    // user transcript (T1) 이후에 onVoiceAiDone(T2)이 호출되므로
+                    // T2 > T1 이 보장되어 DB 로드 시에도 사용자 → AI 순서가 유지된다.
+                    const aiTimestamp = new Date().toISOString();
+                    this.messages[savedIdx] = { ...this.messages[savedIdx], timeStamp: aiTimestamp };
+                    const msg = this.messages[savedIdx];
+                    await backend.putObject(`db://chats/${msg.uuid}`, {
+                        uuid: msg.uuid,
+                        id: this.currentChatRoom.id,
+                        messages: msg,
+                    });
+                }
+            } catch (e) { /* ignore */ }
+
+            this.voiceAiMsgId = null;
+        },
+        onVoiceError(err) {
+            console.error('[VoiceAgent] error:', err);
+            this.voiceStatus = 'error';
+            this.voiceAiMsgId = null;
+            // 3초 후 자동으로 바 닫기
+            setTimeout(() => {
+                if (this.voiceStatus === 'error') {
+                    this.stopDesktopVoice();
+                }
+            }, 3000);
+        },
+
+        // 사용자 발화로 AI 응답이 인터럽트됐을 때 — partial 메시지 확정
+        onVoiceAiInterrupted() {
+            if (this.voiceAiMsgId) {
+                const msg = this.messages.find(m => m.uuid === this.voiceAiMsgId);
+                if (msg) {
+                    if (msg.content && msg.content.trim()) {
+                        // 내용이 있으면 로딩 상태만 해제 (부분 텍스트 유지)
+                        msg.isLoading = false;
+                    } else {
+                        // 내용이 없으면 빈 메시지 제거
+                        const idx = this.messages.findIndex(m => m.uuid === this.voiceAiMsgId);
+                        if (idx !== -1) this.messages.splice(idx, 1);
+                    }
+                }
+                this.voiceAiMsgId = null;
+            }
+            this.voiceStatus = 'listening';
+        },
+        // ===== 데스크탑 음성 에이전트 끝 =====
+
         async handleSendMessage(payload) {
             if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !payload.file)) return;
             if (!this.currentChatRoom?.id) return;
@@ -3588,6 +4001,72 @@ export default {
     background: white;
     flex-shrink: 0;
 }
+
+/* ===== 데스크탑 음성 모드 바 ===== */
+.voice-mode-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.08), rgba(var(--v-theme-primary), 0.04));
+    border: 1px solid rgba(var(--v-theme-primary), 0.2);
+}
+
+.voice-pulse-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #94a3b8;
+    flex-shrink: 0;
+    transition: background-color 0.3s;
+}
+
+.voice-pulse-dot.is-speaking {
+    background-color: rgb(var(--v-theme-primary));
+    animation: voice-pulse 1s ease-in-out infinite;
+}
+
+.voice-pulse-dot.is-responding {
+    background-color: #f59e0b;
+    animation: voice-pulse 0.6s ease-in-out infinite;
+}
+
+.voice-pulse-dot.is-playing {
+    background-color: #10b981;
+    animation: voice-pulse 0.5s ease-in-out infinite;
+}
+
+.voice-pulse-dot.is-connecting {
+    background-color: #94a3b8;
+    animation: voice-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-pulse-dot.is-error {
+    background-color: #ef4444;
+}
+
+.voice-mode-bar.is-error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.04));
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.voice-status-label.is-error-text {
+    color: #ef4444;
+}
+
+@keyframes voice-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.7; }
+}
+
+.voice-status-label {
+    font-size: 12px;
+    color: rgb(var(--v-theme-primary));
+    font-weight: 500;
+}
+/* ===== 데스크탑 음성 모드 바 끝 ===== */
 
 .participants-summary-btn {
     padding: 0 !important;

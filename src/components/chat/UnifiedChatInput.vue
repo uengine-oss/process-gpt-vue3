@@ -24,9 +24,12 @@
                 :isMobile="false"
                 :userList="userList"
                 :currentChatRoom="currentChatRoom"
+                :desktopVoiceActive="desktopVoiceActive"
+                :enableDesktopVoice="enableDesktopVoice"
                 @sendMessage="forwardSendMessage"
                 @stopMessage="$emit('stopMessage')"
                 @recording-mode-change="(v) => $emit('recording-mode-change', v)"
+                @desktop-voice-toggle="$emit('desktop-voice-toggle')"
             />
         </div>
     </div>
@@ -68,9 +71,19 @@ export default {
         currentChatRoom: {
             type: Object,
             default: null
-        }
+        },
+        // 데스크탑 음성 에이전트 활성화 여부 (버튼 하이라이트용)
+        desktopVoiceActive: {
+            type: Boolean,
+            default: false,
+        },
+        // 말하기/듣기 버튼 노출 여부 (1:1 에이전트 대화일 때만 true)
+        enableDesktopVoice: {
+            type: Boolean,
+            default: false,
+        },
     },
-    emits: ['sendMessage', 'recording-mode-change', 'stopMessage'],
+    emits: ['sendMessage', 'recording-mode-change', 'stopMessage', 'desktop-voice-toggle'],
     computed: {
         containerVariantClass() {
             return this.variant === 'inline'
