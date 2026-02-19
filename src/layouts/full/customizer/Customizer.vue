@@ -142,7 +142,8 @@ watch(
             <h6 class="text-h6 mb-3">{{ $t('Customizer.customColor') }}</h6>
             <v-color-picker
                 v-model="pickerColor"
-                mode="hexa"
+                mode="hex"
+                :modes="['hex']"
                 elevation="0"
                 width="100%"
             ></v-color-picker>
