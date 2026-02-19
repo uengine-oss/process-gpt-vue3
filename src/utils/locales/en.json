@@ -1085,7 +1085,8 @@
         "themeColor": "Theme Color",
         "containerOption": "Container Option",
         "boxed": "Boxed",
-        "full": "Full"
+        "full": "Full",
+        "customColor": "Custom Color"
     },
     "Mashup": {
         "hoverText": "Drag a layout (Container) here to start editing the form."
@@ -3014,5 +3015,45 @@
         "uploadSuccess": "Skill added successfully.",
         "deleting": "Deleting...",
         "deleteSuccess": "Skill deleted successfully."
+    },
+    "usage": {
+        "tabUsage": "Usage",
+        "tabSearch": "Search",
+        "finalCredit": "Final Credit",
+        "loading": "Loading...",
+        "availableCredit": "Available Credit",
+        "usedCredit": "Used Credit",
+        "periodUsage": "Usage by Period",
+        "periodSetting": "Period",
+        "thisMonth": "This Month",
+        "last7Days": "Last 7 Days",
+        "last1Month": "Last 1 Month",
+        "last3Months": "Last 3 Months",
+        "last6Months": "Last 6 Months",
+        "last1Year": "Last 1 Year",
+        "usageSummary": "Usage Summary",
+        "usageSummaryDescription": "This is an overall service summary for the tenant, showing the usage summary for the selected period.",
+        "usageCount": "Usage Count",
+        "countUnit": "{count} times",
+        "serviceUsage": "Usage by Service",
+        "serviceUsageDescription": "Displays the usage by service for the tenant during the selected period.",
+        "modelUsage": "Usage by Model",
+        "modelUsageDescription": "Displays the usage by model for the tenant during the selected period.",
+        "credit": "Credit",
+        "creditDescription": "Displays the credit balance of the tenant for the selected period.",
+        "date": "Date",
+        "creditAmount": "Credit",
+        "type": "Type",
+        "expiryDate": "Expiry Date",
+        "purchase": "Purchase",
+        "charge": "Charge",
+        "serviceName": "Service",
+        "usageCountHeader": "Count",
+        "usageQuantity": "Quantity",
+        "creditUsage": "Credit Usage",
+        "modelName": "Model",
+        "chartUsageCount": "Usage Count",
+        "chartUsageCredit": "Credit Used",
+        "noData": "No data available"
     }
 }
