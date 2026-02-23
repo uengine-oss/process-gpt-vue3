@@ -1,5 +1,5 @@
 <template>
-    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop">
+    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop" @contextmenu.prevent="onContextMenu">
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
@@ -422,6 +422,263 @@ export default {
             const horizontal = participant[0].di.isHorizontal;
             window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
         },
+        revertAutoLayout() {
+            if (!window.BpmnAutoLayout || !window.BpmnAutoLayout.hasLayoutSnapshot()) {
+                console.warn('No layout snapshot available to restore');
+                this.$root.$emit('show-snackbar', {
+                    message: this.$t('BpmnUengine.noLayoutSnapshot') || 'No layout snapshot available',
+                    color: 'warning'
+                });
+                return false;
+            }
+            const success = window.BpmnAutoLayout.restoreLayoutSnapshot(this.bpmnViewer);
+            if (success) {
+                this.$root.$emit('show-snackbar', {
+                    message: this.$t('BpmnUengine.layoutRestored') || 'Layout restored successfully',
+                    color: 'success'
+                });
+            }
+            return success;
+        },
+        hasLayoutSnapshot() {
+            return window.BpmnAutoLayout && window.BpmnAutoLayout.hasLayoutSnapshot();
+        },
+        // ========== 프로세스 간 복사/붙여넣기 기능 ==========
+        getCurrentProcessId() {
+            // 현재 프로세스 ID 가져오기 (URL 또는 props에서)
+            return this.$route?.params?.pathMatch || window.location.pathname || 'unknown';
+        },
+        saveToCrossProcessClipboard(elements) {
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+
+                // Shape 요소와 Connection 요소 분리
+                const shapes = elements.filter(el => !el.waypoints);
+                const shapeIds = new Set(shapes.map(el => el.id));
+
+                // 선택된 Shape 간의 연결선 찾기
+                const connections = [];
+                shapes.forEach(shape => {
+                    // outgoing connections
+                    if (shape.outgoing) {
+                        shape.outgoing.forEach(conn => {
+                            if (conn.target && shapeIds.has(conn.target.id)) {
+                                connections.push({
+                                    type: conn.type,
+                                    id: conn.id,
+                                    sourceId: conn.source.id,
+                                    targetId: conn.target.id,
+                                    name: conn.businessObject?.name || '',
+                                    waypoints: conn.waypoints?.map(wp => ({ x: wp.x, y: wp.y })) || [],
+                                    properties: this.extractElementProperties(conn)
+                                });
+                            }
+                        });
+                    }
+                });
+
+                const clipboardData = {
+                    processId: this.getCurrentProcessId(),
+                    timestamp: Date.now(),
+                    elements: shapes.map(el => {
+                        const businessObject = el.businessObject;
+                        return {
+                            type: el.type,
+                            id: el.id,
+                            name: businessObject?.name || '',
+                            x: el.x,
+                            y: el.y,
+                            width: el.width,
+                            height: el.height,
+                            properties: this.extractElementProperties(el)
+                        };
+                    }),
+                    connections: connections
+                };
+                localStorage.setItem('bpmn-cross-process-clipboard', JSON.stringify(clipboardData));
+                console.log('프로세스 간 클립보드에 저장됨:', clipboardData.elements.length, '개 요소,', connections.length, '개 연결선');
+            } catch (e) {
+                console.error('프로세스 간 복사 실패:', e);
+            }
+        },
+        extractElementProperties(element) {
+            const bo = element.businessObject;
+            if (!bo) return {};
+
+            const props = {
+                name: bo.name,
+                documentation: bo.documentation?.[0]?.text || ''
+            };
+
+            // uengine 확장 속성 추출
+            const extensionElements = bo.extensionElements;
+            if (extensionElements && extensionElements.values) {
+                const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                if (uengineProps && uengineProps.json) {
+                    try {
+                        props.uengineJson = uengineProps.json;
+                    } catch (e) {}
+                }
+            }
+
+            return props;
+        },
+        getFromCrossProcessClipboard() {
+            try {
+                const data = localStorage.getItem('bpmn-cross-process-clipboard');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    // 10분 이내 복사된 데이터만 유효
+                    if (Date.now() - parsed.timestamp < 10 * 60 * 1000) {
+                        return parsed;
+                    }
+                }
+            } catch (e) {
+                console.error('프로세스 간 클립보드 읽기 실패:', e);
+            }
+            return null;
+        },
+        pasteFromCrossProcessClipboard(clipboardData) {
+            if (!clipboardData || !clipboardData.elements || clipboardData.elements.length === 0) {
+                return;
+            }
+
+            try {
+                const modeling = this.bpmnViewer.get('modeling');
+                const elementFactory = this.bpmnViewer.get('elementFactory');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const canvas = this.bpmnViewer.get('canvas');
+                const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
+
+                // 현재 뷰포트 중앙 위치 계산
+                const viewbox = canvas.viewbox();
+                const centerX = viewbox.x + viewbox.width / 2;
+                const centerY = viewbox.y + viewbox.height / 2;
+
+                // 복사된 요소들의 바운딩 박스 계산
+                let minX = Infinity, minY = Infinity;
+                clipboardData.elements.forEach(el => {
+                    if (el.x < minX) minX = el.x;
+                    if (el.y < minY) minY = el.y;
+                });
+
+                // 부모 요소 찾기 (Pool 또는 Process)
+                const rootElement = canvas.getRootElement();
+                let parent = rootElement;
+                const participants = elementRegistry.filter(el => el.type === 'bpmn:Participant');
+                if (participants.length > 0) {
+                    parent = participants[0];
+                }
+
+                // 기존 ID → 새 ID 매핑
+                const idMapping = {};
+                const timestamp = Date.now();
+
+                const createdElements = [];
+
+                // 1. Shape 요소들 생성
+                clipboardData.elements.forEach((elData, index) => {
+                    // 새 ID 생성
+                    const newId = elData.type.replace('bpmn:', '') + '_' + timestamp + '_' + index;
+                    idMapping[elData.id] = newId;
+
+                    // 새 위치 계산 (뷰포트 중앙 기준 + 오프셋)
+                    const offsetX = elData.x - minX;
+                    const offsetY = elData.y - minY;
+                    const newX = centerX + offsetX;
+                    const newY = centerY + offsetY;
+
+                    // 비즈니스 오브젝트 생성
+                    const businessObject = bpmnFactory.create(elData.type, {
+                        id: newId,
+                        name: elData.properties?.name || elData.name || ''
+                    });
+
+                    // Shape 생성
+                    const shape = elementFactory.createShape({
+                        type: elData.type,
+                        businessObject: businessObject,
+                        width: elData.width || 100,
+                        height: elData.height || 80
+                    });
+
+                    // 캔버스에 추가
+                    const createdShape = modeling.createShape(shape, { x: newX, y: newY }, parent);
+                    createdElements.push(createdShape);
+
+                    // 새로 생성된 요소 ID 저장
+                    idMapping[elData.id] = createdShape.id;
+
+                    // uengine 확장 속성 복원 (ID 참조 업데이트)
+                    if (elData.properties?.uengineJson) {
+                        try {
+                            let jsonStr = elData.properties.uengineJson;
+                            // JSON 내 ID 참조 업데이트
+                            Object.keys(idMapping).forEach(oldId => {
+                                const newId = idMapping[oldId];
+                                jsonStr = jsonStr.replace(new RegExp(oldId, 'g'), newId);
+                            });
+
+                            const moddle = this.bpmnViewer.get('moddle');
+                            const extensionElements = moddle.create('bpmn:ExtensionElements');
+                            const uengineProps = moddle.create('uengine:Properties', {
+                                json: jsonStr
+                            });
+                            extensionElements.values = [uengineProps];
+                            modeling.updateProperties(createdShape, { extensionElements });
+                        } catch (e) {
+                            console.warn('확장 속성 복원 실패:', e);
+                        }
+                    }
+                });
+
+                // 2. 연결선(SequenceFlow) 생성
+                if (clipboardData.connections && clipboardData.connections.length > 0) {
+                    clipboardData.connections.forEach((connData, index) => {
+                        try {
+                            const sourceId = idMapping[connData.sourceId];
+                            const targetId = idMapping[connData.targetId];
+
+                            if (!sourceId || !targetId) {
+                                console.warn('연결선 복원 실패: source 또는 target을 찾을 수 없음', connData);
+                                return;
+                            }
+
+                            const sourceElement = elementRegistry.get(sourceId);
+                            const targetElement = elementRegistry.get(targetId);
+
+                            if (!sourceElement || !targetElement) {
+                                console.warn('연결선 복원 실패: 요소를 찾을 수 없음', sourceId, targetId);
+                                return;
+                            }
+
+                            // 연결선 생성
+                            const connection = modeling.connect(sourceElement, targetElement, {
+                                type: connData.type || 'bpmn:SequenceFlow'
+                            });
+
+                            // 연결선 이름 설정
+                            if (connData.name) {
+                                modeling.updateProperties(connection, { name: connData.name });
+                            }
+
+                            console.log('연결선 생성:', sourceId, '->', targetId);
+                        } catch (e) {
+                            console.warn('연결선 복원 실패:', e);
+                        }
+                    });
+                }
+
+                // 생성된 요소들 선택
+                const selection = this.bpmnViewer.get('selection');
+                selection.select(createdElements);
+
+                console.log('프로세스 간 붙여넣기 완료:', createdElements.length, '개 요소,',
+                    (clipboardData.connections?.length || 0), '개 연결선');
+            } catch (e) {
+                console.error('프로세스 간 붙여넣기 실패:', e);
+            }
+        },
         debounce(func, timeout) {
             let timer;
             return (...args) => {
@@ -680,12 +937,14 @@ export default {
                         }
                     });
 
-                    // Use high priority (2000) to handle dblclick before directEditing module
-                    // This prevents text from disappearing when directEditing tries to activate
-                    eventBus.on('element.dblclick', 2000, function (e) {
-                        // Stop propagation to prevent directEditing from activating
-                        e.stopPropagation();
-
+                    // View 모드: 더블클릭 시 패널 열기
+                    eventBus.on('element.dblclick', function (e) {
+                        self.$emit('openPanel', e.element.id);
+                    });
+                } else {
+                    // Edit 모드: 더블클릭 시 인라인 텍스트 편집 (표준 BPMN UX)
+                    // CallActivity와 Collaboration만 특별 처리
+                    eventBus.on('element.dblclick', function (e) {
                         if (e.element.type.includes('CallActivity')) {
                             self.$emit('openDefinition', e.element.businessObject);
                         } else if (e.element.type.includes('Collaboration')) {
@@ -703,17 +962,89 @@ export default {
                                     }
                                 }
                             }
-                        } else {
-                            self.$emit('openPanel', e.element.id);
+                        }
+                        // Task, Event, Gateway 등은 directEditing이 자동 활성화됨 (인라인 텍스트 편집)
+                    });
+
+                    // Edit 모드: 우클릭 시 속성 패널 열기 (DOM 이벤트 사용)
+                    const canvas = self.bpmnViewer.get('canvas');
+                    const container = canvas.getContainer();
+                    container.addEventListener('contextmenu', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        // 클릭된 SVG 요소에서 data-element-id 찾기
+                        let target = event.target;
+                        let elementId = null;
+
+                        while (target && target !== container) {
+                            elementId = target.getAttribute('data-element-id');
+                            if (elementId) break;
+                            target = target.parentElement;
+                        }
+
+                        if (elementId) {
+                            // Root element나 빈 공간은 무시
+                            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                            const element = elementRegistry.get(elementId);
+                            if (element && element.type !== 'bpmn:Process' && element.type !== 'bpmn:Collaboration') {
+                                self.$emit('openPanel', elementId);
+                            }
                         }
                     });
-                } else {
-                    eventBus.on('element.dblclick', function (e) {
-                        // self.openPanel = true;
-                        self.$emit('openPanel', e.element.id);
-                    });
                 }
-                
+
+                // ContextPad에서 속성 패널 열기 버튼 클릭 시
+                eventBus.on('element.openPanel', function (e) {
+                    self.$emit('openPanel', e.element.id);
+                });
+
+                // directEditing 시작/종료 시 커스텀 텍스트 처리 (인라인 편집 충돌 방지)
+                eventBus.on('directEditing.activate', function (e) {
+                    // 인라인 편집 시작 시 해당 요소의 커스텀 텍스트 숨기기
+                    const elementId = e.active?.element?.id;
+                    if (elementId) {
+                        const container = document.querySelector(`[data-element-id="${elementId}"]`);
+                        if (container) {
+                            const customText = container.closest('.djs-element')?.querySelector('text.custom-wrapped-text');
+                            if (customText) {
+                                customText.style.display = 'none';
+                            }
+                        }
+                    }
+                });
+
+                eventBus.on('directEditing.complete', function (e) {
+                    // 인라인 편집 완료 시 해당 요소 다시 렌더링
+                    const elementId = e.active?.element?.id;
+                    if (elementId) {
+                        const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                        const element = elementRegistry.get(elementId);
+                        if (element) {
+                            // 요소를 다시 렌더링하여 텍스트 업데이트
+                            const graphicsFactory = self.bpmnViewer.get('graphicsFactory');
+                            const gfx = elementRegistry.getGraphics(element);
+                            if (gfx) {
+                                graphicsFactory.update('shape', element, gfx);
+                            }
+                        }
+                    }
+                });
+
+                eventBus.on('directEditing.cancel', function (e) {
+                    // 인라인 편집 취소 시 커스텀 텍스트 다시 보이기
+                    const elementId = e.active?.element?.id;
+                    if (elementId) {
+                        const container = document.querySelector(`[data-element-id="${elementId}"]`);
+                        if (container) {
+                            const customText = container.closest('.djs-element')?.querySelector('text.custom-wrapped-text');
+                            if (customText) {
+                                customText.style.display = '';
+                            }
+                        }
+                    }
+                });
+
                 eventBus.on('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
                     if(self.bpmn) {
@@ -1310,26 +1641,85 @@ export default {
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             const modifierKey = isMac ? event.metaKey : event.ctrlKey;
 
-            if (!modifierKey) return;
             if (!this.bpmnViewer) return;
 
             try {
                 const copyPaste = this.bpmnViewer.get('copyPaste');
                 const commandStack = this.bpmnViewer.get('commandStack');
                 const selection = this.bpmnViewer.get('selection');
+                const modeling = this.bpmnViewer.get('modeling');
+
+                // Handle Delete/Backspace key (without modifier)
+                if (event.key === 'Delete' || event.key === 'Backspace') {
+                    const selectedElements = selection.get();
+                    if (selectedElements.length > 0) {
+                        // Filter out root elements that shouldn't be deleted
+                        const deletableElements = selectedElements.filter(el =>
+                            el.type !== 'bpmn:Process' &&
+                            el.type !== 'bpmn:Collaboration'
+                        );
+                        if (deletableElements.length > 0) {
+                            modeling.removeElements(deletableElements);
+                        }
+                    }
+                    event.preventDefault();
+                    return;
+                }
+
+                // Handle Arrow keys for element movement (without modifier)
+                if (!modifierKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                    const selectedElements = selection.get();
+                    if (selectedElements.length > 0) {
+                        const step = event.shiftKey ? 10 : 1; // Shift: 10px step, Normal: 1px step
+                        let dx = 0, dy = 0;
+
+                        switch (event.key) {
+                            case 'ArrowUp': dy = -step; break;
+                            case 'ArrowDown': dy = step; break;
+                            case 'ArrowLeft': dx = -step; break;
+                            case 'ArrowRight': dx = step; break;
+                        }
+
+                        // Move only shape elements (not connections)
+                        const shapeElements = selectedElements.filter(el =>
+                            el.waypoints === undefined && // Not a connection
+                            el.type !== 'bpmn:Process' &&
+                            el.type !== 'bpmn:Collaboration'
+                        );
+
+                        if (shapeElements.length > 0) {
+                            modeling.moveElements(shapeElements, { x: dx, y: dy });
+                        }
+                    }
+                    event.preventDefault();
+                    return;
+                }
+
+                // Handle modifier key shortcuts (Ctrl/Cmd)
+                if (!modifierKey) return;
 
                 switch (event.key.toLowerCase()) {
                     case 'c':
-                        // Copy
+                        // Copy (내부 + 프로세스 간 복사)
                         const selectedElements = selection.get();
                         if (selectedElements.length > 0) {
+                            // 내부 복사
                             copyPaste.copy(selectedElements);
+                            // 프로세스 간 복사를 위해 localStorage에 저장
+                            this.saveToCrossProcessClipboard(selectedElements);
                         }
                         event.preventDefault();
                         break;
                     case 'v':
-                        // Paste
-                        copyPaste.paste();
+                        // Paste (내부 붙여넣기 시도 후, 없으면 프로세스 간 붙여넣기)
+                        const crossProcessData = this.getFromCrossProcessClipboard();
+                        if (crossProcessData && crossProcessData.processId !== this.getCurrentProcessId()) {
+                            // 다른 프로세스에서 복사한 경우 프로세스 간 붙여넣기
+                            this.pasteFromCrossProcessClipboard(crossProcessData);
+                        } else {
+                            // 같은 프로세스 내 붙여넣기
+                            copyPaste.paste();
+                        }
                         event.preventDefault();
                         break;
                     case 'x':
@@ -1337,7 +1727,7 @@ export default {
                         const elementsTocut = selection.get();
                         if (elementsTocut.length > 0) {
                             copyPaste.copy(elementsTocut);
-                            const modeling = this.bpmnViewer.get('modeling');
+                            this.saveToCrossProcessClipboard(elementsTocut);
                             modeling.removeElements(elementsTocut);
                         }
                         event.preventDefault();
@@ -1398,6 +1788,13 @@ export default {
             }
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
+        },
+        onContextMenu(event) {
+            // 기본 브라우저 컨텍스트 메뉴 방지 (Edit 모드에서만)
+            // bpmn-js의 element.contextmenu 이벤트에서 패널을 열도록 처리
+            if (!this.isViewMode) {
+                event.preventDefault();
+            }
         },
         onDragOver(event) {
             // Enable drop

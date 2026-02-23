@@ -191,6 +191,37 @@ PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onL
   }
 }
 
+/**
+ * Revert to the previous layout (before auto layout was applied)
+ */
+PaletteProvider.prototype.revertLayout = function() {
+  try {
+    if (!window.BpmnAutoLayout) {
+      console.error('BpmnAutoLayout이 존재하지 않습니다.');
+      return false;
+    }
+
+    if (!window.BpmnAutoLayout.hasLayoutSnapshot()) {
+      console.warn('복구할 레이아웃 스냅샷이 없습니다.');
+      return false;
+    }
+
+    const bpmnJS = this._injector;
+    const success = window.BpmnAutoLayout.restoreLayoutSnapshot(bpmnJS);
+
+    if (success) {
+      console.log('레이아웃이 복구되었습니다.');
+      // Clear the snapshot after successful restore
+      window.BpmnAutoLayout.clearLayoutSnapshot();
+    }
+
+    return success;
+  } catch (error) {
+    console.error('레이아웃 복구에 실패했습니다.', error);
+    return false;
+  }
+}
+
 PaletteProvider.prototype._rotateRelativePosition = function(relativeX, relativeY, scaleX, scaleY) {
   return {
     x: relativeY * scaleY,
@@ -866,6 +897,16 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
       action: {
         click: function(event) {
           me.applyAutoLayout();
+        }
+      }
+    },
+    'revert-layout': {
+      group: 'collaboration',
+      className: 'mdi mdi-undo-variant',
+      title: i18n.global.t('PaletteProvider.revertLayout') || 'Revert Layout',
+      action: {
+        click: function(event) {
+          me.revertLayout();
         }
       }
     },

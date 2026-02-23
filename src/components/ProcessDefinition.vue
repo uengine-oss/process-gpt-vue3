@@ -62,12 +62,47 @@
                                         </template>
                                         <span>{{ $t('processDefinition.processVariables') }}</span>
                                     </v-tooltip>
-                                    <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
+                                    <!-- 승인 상태 버튼 -->
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-icon v-bind="props" @click="$globalState.methods.toggleZoom()" style="color: #444; cursor: pointer;" size="small">{{ !$globalState.state.isZoomed ? 'mdi-arrow-expand-all' : 'mdi-arrow-collapse-all' }}</v-icon>
+                                            <v-icon
+                                                v-bind="props"
+                                                @click="showApprovalPanel = !showApprovalPanel"
+                                                style="cursor: pointer;"
+                                                :style="{ color: showApprovalPanel ? '#1976d2' : '#444' }"
+                                                size="small"
+                                            >mdi-clipboard-check-outline</v-icon>
                                         </template>
-                                        <span>{{ $t('processDefinition.zoom') }}</span>
+                                        <span>{{ $t('processDefinition.approvalState') }}</span>
+                                    </v-tooltip>
+                                    <!-- 댓글 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-badge
+                                                :content="totalCommentCount"
+                                                :model-value="totalCommentCount > 0"
+                                                color="error"
+                                                overlap
+                                                offset-x="-2"
+                                                offset-y="-2"
+                                            >
+                                                <v-icon
+                                                    v-bind="props"
+                                                    @click="toggleCommentPanel"
+                                                    style="cursor: pointer;"
+                                                    :style="{ color: showCommentPanel ? '#1976d2' : '#444' }"
+                                                    size="small"
+                                                >mdi-comment-text-multiple-outline</v-icon>
+                                            </v-badge>
+                                        </template>
+                                        <span>{{ $t('processDefinition.comments') }}</span>
+                                    </v-tooltip>
+                                    <!-- 채팅창 열기/닫기 토글 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-icon v-bind="props" @click="$globalState.methods.toggleChatHidden()" style="color: #444; cursor: pointer;" size="small">{{ $globalState.state.isChatHidden ? 'mdi-message-text' : 'mdi-message-text-outline' }}</v-icon>
+                                        </template>
+                                        <span>{{ $globalState.state.isChatHidden ? $t('processDefinition.showChat') : $t('processDefinition.hideChat') }}</span>
                                     </v-tooltip>
                                 </template>
                             </BpmnuEngine>
@@ -84,6 +119,27 @@
                             :element="element"
                             @saved="onSavedToCatalog"
                         />
+
+                        <!-- 승인 상태 패널 -->
+                        <div v-if="showApprovalPanel" class="approval-state-floating-panel">
+                            <ApprovalStatePanel
+                                v-if="definitionPath"
+                                :procDefId="definitionPath"
+                                @stateChanged="onApprovalStateChanged"
+                            />
+                        </div>
+
+                        <!-- 댓글 패널 -->
+                        <div v-if="showCommentPanel" class="comment-floating-panel">
+                            <ElementCommentPanel
+                                v-if="definitionPath"
+                                :procDefId="definitionPath"
+                                :selectedElement="selectedElementForComment"
+                                @close="showCommentPanel = false"
+                                @commentCountChanged="loadCommentCounts"
+                            />
+                        </div>
+
                         <!-- View Mode Property Panel (inside canvas) -->
                         <div v-if="panel && isViewMode" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
                                 <div class="resize-handle" @mousedown="startResize"></div>
@@ -282,6 +338,8 @@ import SaveToCatalogDialog from '@/components/designer/SaveToCatalogDialog.vue'
 import BackendFactory from "@/components/api/BackendFactory";
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
+import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
+import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
 
 const backend = BackendFactory.createBackend();
 export default {
@@ -301,7 +359,9 @@ export default {
         XmlViewer,
         XMLEditor,
         DryRunProcess,
-        TestProcess
+        TestProcess,
+        ElementCommentPanel,
+        ApprovalStatePanel
     },
     props: {
         processDefinition: Object,
@@ -365,6 +425,14 @@ export default {
 
         // Task Catalog
         saveToCatalogDialogOpen: false,
+
+        // 댓글 패널
+        showCommentPanel: false,
+        selectedElementForComment: null,
+        commentCounts: {},
+
+        // 승인 상태 패널
+        showApprovalPanel: false,
     }),
     computed: {
         mode() {
@@ -400,6 +468,9 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        totalCommentCount() {
+            return Object.values(this.commentCounts).reduce((sum, item) => sum + (item.unresolved || 0), 0);
         },
     },
     watch: {
@@ -538,8 +609,47 @@ export default {
         // console.log(this.definitions)
         // LLM과 uEngine 각각 처리 필요.
         // this.processVariables = this.copyProcessDefinition.data
+
+        // 댓글 개수 로드
+        if (this.definitionPath) {
+            this.loadCommentCounts();
+        }
     },
     methods: {
+        // 댓글 관련 메서드
+        toggleCommentPanel() {
+            this.showCommentPanel = !this.showCommentPanel;
+            if (this.showCommentPanel && this.element) {
+                // Task 타입인 경우에만 선택된 요소로 설정
+                const elementType = this.element.$type || '';
+                if (this.isTaskType(elementType)) {
+                    this.selectedElementForComment = {
+                        id: this.element.id,
+                        type: elementType,
+                        name: this.element.businessObject?.name || this.element.name || this.element.id
+                    };
+                } else {
+                    this.selectedElementForComment = null;
+                }
+            }
+        },
+        // Task 타입 여부 확인
+        isTaskType(type) {
+            if (!type) return false;
+            return type.includes('Task') || type.includes('Activity');
+        },
+        async loadCommentCounts() {
+            if (!this.definitionPath) return;
+            try {
+                this.commentCounts = await backend.getElementCommentCounts(this.definitionPath);
+            } catch (e) {
+                console.error('댓글 개수 로드 실패:', e);
+            }
+        },
+        onApprovalStateChanged(state) {
+            // 승인 상태 변경 시 처리
+            console.log('Approval state changed:', state);
+        },
         openSaveToCatalog() {
             const type = this.element?.$type || '';
             if (this.element && (type.includes('Task') || type.includes('Activity'))) {
@@ -1138,6 +1248,40 @@ export default {
     background: white;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     border-radius: 8px 8px 0 0;
+}
+
+/* Comment Floating Panel */
+.comment-floating-panel {
+    position: absolute;
+    right: 12px;
+    top: 50px;
+    width: 360px;
+    max-height: calc(100% - 100px);
+    z-index: 99;
+    background: white;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Approval State Floating Panel */
+.approval-state-floating-panel {
+    position: absolute;
+    right: 12px;
+    top: 50px;
+    width: 380px;
+    z-index: 98;
+    background: white;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Panel이 둘 다 열렸을 때 위치 조정 */
+.comment-floating-panel + .approval-state-floating-panel,
+.approval-state-floating-panel ~ .comment-floating-panel {
+    top: auto;
+    bottom: 12px;
 }
 
 /* View Mode Panel Styles - Inside Canvas */

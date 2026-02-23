@@ -136,7 +136,8 @@ const humanStats = computed(() => {
 
 const chartOptions = {
   responsive: true,
-  maintainAspectRatio: false,
+  maintainAspectRatio: true,
+  aspectRatio: 2,
   plugins: {
     legend: {
       position: 'bottom' as const
@@ -148,6 +149,45 @@ const chartOptions = {
     }
   }
 }
+
+// Safe chart data computed - 항상 유효한 구조 반환 (vue-chartjs 내부 에러 방지)
+const safeF1ChartData = computed(() => {
+  const d = f1ChartData.value
+  if (d && typeof d === 'object' && d.datasets && Array.isArray(d.datasets)) {
+    return d
+  }
+  return {
+    labels: months,
+    datasets: [
+      { label: 'Agent', data: Array(12).fill(0), borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.1)', fill: true, tension: 0.4 },
+      { label: 'Human', data: Array(12).fill(0), borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.1)', fill: true, tension: 0.4 }
+    ]
+  }
+})
+
+const safeTaskCountChartData = computed(() => {
+  const d = taskCountChartData.value
+  if (d && typeof d === 'object' && d.datasets && Array.isArray(d.datasets)) {
+    return d
+  }
+  return {
+    labels: months,
+    datasets: [
+      { label: 'Agent', data: Array(12).fill(0), backgroundColor: '#06b6d4' },
+      { label: 'Human', data: Array(12).fill(0), backgroundColor: '#8b5cf6' }
+    ]
+  }
+})
+
+const canRenderF1Chart = computed(() => {
+  const d = f1ChartData.value
+  return d && d.datasets && Array.isArray(d.datasets) && d.datasets.length > 0
+})
+
+const canRenderTaskCountChart = computed(() => {
+  const d = taskCountChartData.value
+  return d && d.datasets && Array.isArray(d.datasets) && d.datasets.length > 0
+})
 </script>
 
 <template>
@@ -251,13 +291,13 @@ const chartOptions = {
             <v-col cols="12" md="6">
               <div class="pa-4 rounded border">
                 <div class="text-subtitle-2 font-weight-medium mb-3">F1 Score 추이</div>
-                <div style="height: 280px;">
+                <div class="chart-wrapper">
                   <Line
-                    v-if="f1ChartData"
-                    :chartData="f1ChartData"
+                    v-if="canRenderF1Chart"
+                    :chartData="safeF1ChartData"
                     :chartOptions="chartOptions"
                   />
-                  <div v-else class="d-flex align-center justify-center h-100">
+                  <div v-else class="d-flex align-center justify-center" style="height: 150px;">
                     <v-progress-circular indeterminate color="primary" size="24" />
                   </div>
                 </div>
@@ -266,13 +306,13 @@ const chartOptions = {
             <v-col cols="12" md="6">
               <div class="pa-4 rounded border">
                 <div class="text-subtitle-2 font-weight-medium mb-3">Task 처리 건수</div>
-                <div style="height: 280px;">
+                <div class="chart-wrapper">
                   <Bar
-                    v-if="taskCountChartData"
-                    :chartData="taskCountChartData"
+                    v-if="canRenderTaskCountChart"
+                    :chartData="safeTaskCountChartData"
                     :chartOptions="chartOptions"
                   />
-                  <div v-else class="d-flex align-center justify-center h-100">
+                  <div v-else class="d-flex align-center justify-center" style="height: 150px;">
                     <v-progress-circular indeterminate color="primary" size="24" />
                   </div>
                 </div>
@@ -289,3 +329,19 @@ const chartOptions = {
     </v-col>
   </v-row>
 </template>
+
+<style scoped>
+/* Chart wrapper - constrain canvas size */
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.chart-wrapper :deep(canvas) {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+}
+</style>

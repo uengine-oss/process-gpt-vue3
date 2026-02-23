@@ -273,12 +273,12 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+
     </v-card>
 </template>
 <script>
 import partialParse from 'partial-json-parser';
 import xml2js from 'xml2js';
-import domtoimage from 'dom-to-image';
 
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
@@ -308,6 +308,8 @@ import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 import ProcessDefinitionMarketPlaceDialog from '@/components/ProcessDefinitionMarketPlaceDialog.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { hasSubstantialChanges } from '@/utils/xmlDiff';
+import { useBpmnExport } from '@/composables/useBpmnExport';
 const storage = StorageBaseFactory.getStorage();
 
 const backend = BackendFactory.createBackend();
@@ -620,8 +622,8 @@ export default {
             if (this.organizationChartId) {
                 putObj.uuid = this.organizationChartId;
             }
-            await this.putObject("configuration", putObj);
-        
+            await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
+
         },
         async addTeam(newTeamData){
             try {
@@ -843,6 +845,30 @@ export default {
             if(window.$pal){
                 await this.beforeSavePALUserTasks(info);
             }
+
+            // 변경 사항 확인 (변동 없으면 저장 스킵)
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (modeler && this.lastSavedXML) {
+                try {
+                    const { xml: currentXML } = await modeler.saveXML({ format: true });
+                    if (!hasSubstantialChanges(this.lastSavedXML, currentXML)) {
+                        // 변경 사항 없음 알림
+                        if (this.$snackbar) {
+                            this.$snackbar.show({
+                                message: this.$t('save.noChanges'),
+                                color: 'info'
+                            });
+                        } else {
+                            alert(this.$t('save.noChanges'));
+                        }
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('변경 감지 실패, 저장 진행:', e);
+                }
+            }
+
 
             // Run BPMN validation before save
             const validationResults = await this.validateBpmn();
@@ -2080,25 +2106,22 @@ export default {
             this.isPreviewPDFDialog = false;
             this.isPreviewPDFDialog = true;
         },
-        capturePng() {
+        async capturePng() {
             const definitionComponent = this.$refs.definitionComponent;
-            if (!definitionComponent || !definitionComponent.$el) {
-                console.error('Definition component not found');
+            if (!definitionComponent || !definitionComponent.$refs?.bpmnVue) {
+                console.error('BPMN component not found');
                 return;
             }
 
-            domtoimage.toPng(definitionComponent.$el, { bgcolor: 'white' })
-                .then((dataUrl) => {
-                    const link = document.createElement('a');
-                    link.href = dataUrl;
-                    link.download = `${this.projectName || 'process_diagram'}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                })
-                .catch((error) => {
-                    console.error('PNG capture failed:', error);
-                });
+            const bpmnVue = definitionComponent.$refs.bpmnVue;
+            const bpmnViewer = bpmnVue.bpmnViewer;
+
+            // 공통 유틸리티 사용
+            const { capturePng } = useBpmnExport();
+            await capturePng({
+                bpmnViewer,
+                processName: this.projectName || 'Process Diagram'
+            });
         },
         async checkPermission(id) {
             const uid = localStorage.getItem('uid');

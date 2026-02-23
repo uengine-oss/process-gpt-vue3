@@ -35,6 +35,17 @@
                     </v-btn>
                 </template>
             </v-tooltip>
+            <v-tooltip v-if="type === 'sub'" :text="$t('ProcessMenu.setOwner')">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="setOwner"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <v-icon size="12">mdi-account-edit</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
             <v-tooltip v-if="type === 'sub'" :text="$t('ProcessMenu.duplicate')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="duplicateProcess"
@@ -131,6 +142,9 @@ export default {
         },
         duplicateProcess() {
             this.$emit("duplicate", this.process);
+        },
+        setOwner() {
+            this.$emit("setOwner", this.process);
         },
         addProcess() {
             this.$emit("add");

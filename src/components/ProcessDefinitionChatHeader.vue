@@ -72,7 +72,8 @@
                         :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : ''"
                     >
                     
-                        <div class="mr-0 d-flex" v-if="bpmn">
+                        <!-- PDF 저장, 이미지 캡처: View Mode에서만 표시 -->
+                        <div class="mr-4 d-flex" v-if="bpmn && lock">
                             <!-- PDF 저장 아이콘 -->
                             <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
                                 <template v-slot:activator="{ props }">
@@ -92,8 +93,8 @@
                         </div>
                         <!-- 저장 관련 버튼  -->
                         <div class="mr-4 d-flex">
-                            <!-- 파일업로드 아이콘 -->
-                            <v-tooltip v-if="fullPath != 'definition-map'" location="bottom">
+                            <!-- 파일업로드 아이콘: Edit Mode에서만 표시 -->
+                            <v-tooltip v-if="fullPath != 'definition-map' && !lock" location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                         density="comfortable" @click="triggerFileInput">

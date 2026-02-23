@@ -15,6 +15,17 @@
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
                 <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
                 <v-icon @click="capturePng" style="color: #444; cursor: pointer;">mdi-download</v-icon>
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-icon
+                            v-bind="props"
+                            @click="showExpandedProcessView"
+                            style="color: #444; cursor: pointer;"
+                            :class="{ 'text-primary': showExpandedView }"
+                        >mdi-sitemap</v-icon>
+                    </template>
+                    <span>{{ $t('BpmnUengineViewer.expandedView') }}</span>
+                </v-tooltip>
             </div>
         </div>
         <!-- 참여자 보기 툴팁 -->
@@ -92,6 +103,51 @@
                 </div>
             </v-row>
         </div>
+
+        <!-- 전체 연결 조회 다이얼로그 -->
+        <v-dialog v-model="showExpandedView" max-width="600" scrollable>
+            <v-card>
+                <v-card-title class="d-flex align-center">
+                    <v-icon class="mr-2">mdi-sitemap</v-icon>
+                    {{ $t('BpmnUengineViewer.expandedViewTitle') }}
+                    <v-spacer />
+                    <v-btn icon variant="text" size="small" @click="showExpandedView = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-divider />
+                <v-card-text class="pa-0">
+                    <div v-if="expandedViewLoading" class="d-flex justify-center align-center pa-8">
+                        <v-progress-circular indeterminate />
+                    </div>
+                    <div v-else-if="expandedProcessList.length === 0" class="text-center pa-8 text-grey">
+                        <v-icon size="48" color="grey-lighten-1">mdi-folder-open-outline</v-icon>
+                        <div class="mt-2">{{ $t('BpmnUengineViewer.noSubProcesses') }}</div>
+                    </div>
+                    <v-list v-else density="compact">
+                        <v-list-item
+                            v-for="(item, index) in expandedProcessList"
+                            :key="index"
+                            :style="{ paddingLeft: (item.depth * 16 + 16) + 'px' }"
+                            @click="navigateToProcess(item.childDefId); showExpandedView = false;"
+                        >
+                            <template #prepend>
+                                <v-icon size="18" color="primary">
+                                    {{ item.depth === 1 ? 'mdi-subdirectory-arrow-right' : 'mdi-minus' }}
+                                </v-icon>
+                            </template>
+                            <v-list-item-title>{{ item.activityName }}</v-list-item-title>
+                            <v-list-item-subtitle class="text-caption">
+                                {{ item.childDefId }}
+                            </v-list-item-subtitle>
+                            <template #append>
+                                <v-icon size="16">mdi-chevron-right</v-icon>
+                            </template>
+                        </v-list-item>
+                    </v-list>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
 
     </div>
 </template>
@@ -186,7 +242,11 @@ export default {
             laneAssignments: [],
             // 최초 로딩 시 포커싱할 태스크 ID 목록
             focusedTaskIds: [],
-            initialFocusDone: false
+            initialFocusDone: false,
+            // 전체 연결 조회 관련
+            showExpandedView: false,
+            expandedViewLoading: false,
+            expandedProcessList: []
         };
     },
     computed: {
@@ -250,19 +310,22 @@ export default {
         diffActivities(newVal) {
             if (newVal && Object.keys(newVal).length > 0) {
                 const canvas = this.bpmnViewer.get('canvas');
-                // 이전 마커 제거 (선택 사항)
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
                 Object.keys(newVal).forEach(activityId => {
-                    canvas.removeMarker(activityId, 'bpmn-diff-added');
-                    canvas.removeMarker(activityId, 'bpmn-diff-deleted');
-                    canvas.removeMarker(activityId, 'bpmn-diff-modified');
-                });
-                
-                // 새 마커 추가
-                Object.keys(newVal).forEach(activityId => {
-                    const changeType = newVal[activityId];
-                    if (activityId && changeType) {
-                        const markerClass = `bpmn-diff-${changeType}`;
-                        canvas.addMarker(activityId, markerClass);
+                    try {
+                        const el = elementRegistry.get(activityId);
+                        if (!el) return;
+                        // 이전 마커 제거
+                        canvas.removeMarker(activityId, 'bpmn-diff-added');
+                        canvas.removeMarker(activityId, 'bpmn-diff-deleted');
+                        canvas.removeMarker(activityId, 'bpmn-diff-modified');
+                        // 새 마커 추가
+                        const changeType = newVal[activityId];
+                        if (changeType) {
+                            canvas.addMarker(activityId, `bpmn-diff-${changeType}`);
+                        }
+                    } catch (e) {
+                        // 개별 마커 적용 실패 시 나머지 계속 진행
                     }
                 });
             }
@@ -349,8 +412,8 @@ export default {
                 const callId = callJson.definitionId;
                 const callDefinition = await backend.getRawDefinition(callId.replace('.bpmn', ''), { type: 'bpmn', version: callJson.version });
                 const previewerXML = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                
-                
+
+
                 const previewerObject = {
                     xml: previewerXML.xml,
                     name: self.bpmnViewer._definitions.name.slice(self.bpmnViewer._definitions.name.indexOf('/') + 1),
@@ -359,6 +422,115 @@ export default {
                 }
                 self.previewersXMLLists.push(previewerObject);
                 self.diagramXML = callDefinition;
+            }
+        },
+        /**
+         * 모든 서브프로세스/CallActivity를 펼쳐서 연결된 프로세스 목록 가져오기
+         */
+        async getExpandedSubProcessList() {
+            const self = this;
+            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+            const expandedList = [];
+            const visited = new Set();
+
+            // 재귀적으로 서브프로세스 탐색
+            const exploreSubProcesses = async (defId, depth = 0) => {
+                if (visited.has(defId) || depth > 5) return; // 순환 참조 및 깊이 제한
+                visited.add(defId);
+
+                try {
+                    const definition = await backend.getRawDefinition(defId.replace('.bpmn', ''));
+                    if (!definition || !definition.bpmn) return;
+
+                    // 임시 뷰어로 XML 파싱
+                    const tempViewer = new BpmnViewer({
+                        moddleExtensions: {
+                            uEngine: uEngineModdleDescriptor,
+                            zeebe: zeebeModdleDescriptor,
+                            phase: phaseModdle
+                        }
+                    });
+
+                    await tempViewer.importXML(definition.bpmn);
+                    const tempRegistry = tempViewer.get('elementRegistry');
+
+                    // CallActivity 및 SubProcess 요소 찾기
+                    const callActivities = tempRegistry.filter(el =>
+                        el.type === 'bpmn:CallActivity' || el.type === 'bpmn:SubProcess'
+                    );
+
+                    for (const activity of callActivities) {
+                        const callJsonText = activity.businessObject?.extensionElements?.values?.[0]?.$children?.[0]?.$body;
+                        if (callJsonText) {
+                            try {
+                                const callJson = JSON.parse(callJsonText);
+                                const childDefId = callJson.definitionId;
+                                if (childDefId && !visited.has(childDefId)) {
+                                    expandedList.push({
+                                        parentDefId: defId,
+                                        childDefId: childDefId,
+                                        activityId: activity.id,
+                                        activityName: activity.businessObject?.name || activity.id,
+                                        depth: depth + 1
+                                    });
+                                    await exploreSubProcesses(childDefId, depth + 1);
+                                }
+                            } catch (e) {
+                                // JSON 파싱 실패 무시
+                            }
+                        }
+                    }
+
+                    tempViewer.destroy();
+                } catch (e) {
+                    console.error('서브프로세스 탐색 실패:', defId, e);
+                }
+            };
+
+            // 현재 정의에서 시작
+            const currentDefId = self.bpmnViewer._definitions?.id || '';
+            await exploreSubProcesses(currentDefId);
+
+            return expandedList;
+        },
+        /**
+         * 프로세스 전체 연결 뷰 표시 (모든 서브프로세스 펼침)
+         */
+        async showExpandedProcessView() {
+            const self = this;
+            self.expandedViewLoading = true;
+            self.expandedProcessList = [];
+
+            try {
+                const list = await self.getExpandedSubProcessList();
+                self.expandedProcessList = list;
+                self.showExpandedView = true;
+            } catch (e) {
+                console.error('전체 연결 조회 실패:', e);
+            } finally {
+                self.expandedViewLoading = false;
+            }
+        },
+        /**
+         * 펼쳐진 뷰에서 특정 프로세스로 이동
+         */
+        async navigateToProcess(defId) {
+            try {
+                const definition = await backend.getRawDefinition(defId.replace('.bpmn', ''));
+                if (definition && definition.bpmn) {
+                    // 현재 상태 저장
+                    const previewerXML = await this.bpmnViewer.saveXML({ format: true, preamble: true });
+                    const previewerObject = {
+                        xml: previewerXML.xml,
+                        name: this.bpmnViewer._definitions.name?.slice(this.bpmnViewer._definitions.name.indexOf('/') + 1) || 'Process',
+                        activityStatus: this.activityStatus,
+                        instanceId: this.currentInstanceId
+                    };
+                    this.previewersXMLLists.push(previewerObject);
+                    this.diagramXML = definition.bpmn;
+                }
+            } catch (e) {
+                console.error('프로세스 이동 실패:', e);
             }
         },
         async setSubProcessInstance(instanceId) {
@@ -660,10 +832,17 @@ export default {
                 // 차이점 시각화 처리 추가
                 if (self.diffActivities && Object.keys(self.diffActivities).length > 0) {
                     Object.keys(self.diffActivities).forEach(activityId => {
-                        const changeType = self.diffActivities[activityId];
-                        if (activityId && changeType) {
-                            const markerClass = `bpmn-diff-${changeType}`;
-                            canvas.addMarker(activityId, markerClass);
+                        try {
+                            const changeType = self.diffActivities[activityId];
+                            if (activityId && changeType) {
+                                const el = elementRegistry.get(activityId);
+                                if (el) {
+                                    const markerClass = `bpmn-diff-${changeType}`;
+                                    canvas.addMarker(activityId, markerClass);
+                                }
+                            }
+                        } catch (e) {
+                            // 개별 마커 적용 실패 시 나머지 계속 진행
                         }
                     });
                 }
@@ -715,6 +894,8 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
+
+                self.$emit('rendered');
             });
         },
         initializeViewer() {
@@ -1155,12 +1336,11 @@ export default {
 }
 
 .bpmn-diff-modified .djs-visual > :nth-child(1) {
-    stroke: #2ecc71 !important; /* 초록색 - 수정된 항목 */
-    /* stroke: #3498db !important; 파란색 - 수정된 항목 */
+    stroke: #f39c12 !important; /* 주황색 - 수정된 항목 */
     stroke-width: 3px !important;
 }
 
-/* 연결선(Sequence Flow)만을 위한 스타일 - 추가/삭제만 */
+/* 연결선(Sequence Flow)만을 위한 스타일 */
 [data-element-id*="SequenceFlow"].bpmn-diff-added .djs-visual > path {
     stroke: #2ecc71 !important; /* 초록색 - 추가된 연결선 */
     stroke-width: 3px !important;
@@ -1168,6 +1348,11 @@ export default {
 
 [data-element-id*="SequenceFlow"].bpmn-diff-deleted .djs-visual > path {
     stroke: #e74c3c !important; /* 빨간색 - 삭제된 연결선 */
+    stroke-width: 3px !important;
+}
+
+[data-element-id*="SequenceFlow"].bpmn-diff-modified .djs-visual > path {
+    stroke: #f39c12 !important; /* 주황색 - 수정된 연결선 */
     stroke-width: 3px !important;
 }
 

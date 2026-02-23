@@ -168,7 +168,7 @@
         <v-card-text style="width: 100%;"
             :style="isMobile ? 'height: calc(100vh - 80px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 180px); padding: 10px;'"
         >
-            <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
+            <ProcessDefinition ref="processDefinitionRef" v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinitionData"
                 :isViewMode="isViewMode"
                 :isAdmin="isAdmin"
@@ -214,6 +214,7 @@ import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
 import { useBpmnStore } from '@/stores/bpmn';
+import { useBpmnExport } from '@/composables/useBpmnExport';
 
 const backend = BackendFactory.createBackend();
 
@@ -420,8 +421,22 @@ export default {
                 this.$router.push(`/definitions/chat?id=${this.processDefinition.id}&name=${this.processDefinition.name}`);
             }
         },
-        capture() {
-            this.$emit('capture')
+        async capture() {
+            const processDefinitionRef = this.$refs.processDefinitionRef;
+            if (!processDefinitionRef || !processDefinitionRef.$refs?.bpmnVue) {
+                console.error('BPMN component not found');
+                return;
+            }
+
+            const bpmnVue = processDefinitionRef.$refs.bpmnVue;
+            const bpmnViewer = bpmnVue.bpmnViewer;
+
+            // 공통 유틸리티 사용
+            const { capturePng } = useBpmnExport();
+            await capturePng({
+                bpmnViewer,
+                processName: this.processDefinition?.name || 'Process Diagram'
+            });
         },
         savePDF() {
             this.isPreviewPDFDialog = false;

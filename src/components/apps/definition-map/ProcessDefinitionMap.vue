@@ -99,6 +99,17 @@
                         </template>
                     </v-tooltip>
 
+                    <!-- 미분류 프로세스 관리 버튼 -->
+                    <v-tooltip v-if="enableEdit && orphanProcessCount > 0" :text="$t('processDefinitionMap.manageOrphans') || '미분류 프로세스 관리'">
+                        <template v-slot:activator="{ props }">
+                            <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="openOrphanDialog">
+                                <v-badge :content="orphanProcessCount" color="warning" overlap>
+                                    <v-icon size="20">mdi-folder-question</v-icon>
+                                </v-badge>
+                            </v-btn>
+                        </template>
+                    </v-tooltip>
+
                     <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" class="ml-3"
@@ -412,11 +423,203 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="openMarketplaceDialog" 
+        <v-dialog v-model="openMarketplaceDialog"
             persistent
             fullscreen
         >
             <process-definition-market-place @closeMarketplaceDialog="closeMarketplaceDialog" />
+        </v-dialog>
+
+        <!-- 미분류 프로세스 관리 다이얼로그 -->
+        <v-dialog v-model="orphanDialog.show" max-width="700" scrollable>
+            <v-card class="rounded-lg">
+                <v-card-title class="d-flex align-center pa-4">
+                    <v-icon class="mr-2" color="warning">mdi-folder-question</v-icon>
+                    {{ $t('processDefinitionMap.orphanManagement') || '미분류 프로세스 관리' }}
+                    <v-chip size="small" color="warning" class="ml-2">{{ orphanProcesses.length }}</v-chip>
+                    <v-spacer></v-spacer>
+                    <v-btn icon variant="text" size="small" @click="orphanDialog.show = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+
+                <v-divider />
+
+                <v-card-text class="pa-0" style="max-height: 400px;">
+                    <v-list v-if="orphanProcesses.length > 0">
+                        <v-list-item
+                            v-for="proc in orphanProcesses"
+                            :key="proc.id"
+                            class="orphan-process-item"
+                        >
+                            <template #prepend>
+                                <v-checkbox
+                                    v-model="orphanDialog.selectedProcesses"
+                                    :value="proc.id"
+                                    hide-details
+                                    density="compact"
+                                />
+                            </template>
+
+                            <v-list-item-title>{{ proc.name }}</v-list-item-title>
+                            <v-list-item-subtitle class="text-caption">ID: {{ proc.id }}</v-list-item-subtitle>
+
+                            <template #append>
+                                <v-btn
+                                    variant="tonal"
+                                    color="primary"
+                                    size="small"
+                                    @click="openAssignDialog(proc)"
+                                >
+                                    {{ $t('processDefinitionMap.assignCategory') || '분류하기' }}
+                                </v-btn>
+                            </template>
+                        </v-list-item>
+                    </v-list>
+                    <v-alert v-else type="info" variant="tonal" class="ma-4">
+                        {{ $t('processDefinitionMap.noOrphans') || '미분류 프로세스가 없습니다.' }}
+                    </v-alert>
+                </v-card-text>
+
+                <v-divider v-if="orphanProcesses.length > 0" />
+
+                <v-card-actions v-if="orphanProcesses.length > 0" class="pa-4">
+                    <v-btn
+                        variant="text"
+                        size="small"
+                        @click="selectAllOrphans"
+                    >
+                        {{ $t('common.selectAll') || '전체 선택' }}
+                    </v-btn>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                        variant="flat"
+                        color="primary"
+                        :disabled="orphanDialog.selectedProcesses.length === 0"
+                        @click="openBulkAssignDialog"
+                    >
+                        {{ $t('processDefinitionMap.assignSelected') || '선택 항목 분류' }}
+                        ({{ orphanDialog.selectedProcesses.length }})
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- 분류 이동 다이얼로그 -->
+        <v-dialog v-model="assignDialog.show" max-width="500">
+            <v-card class="rounded-lg pa-4">
+                <v-card-title class="px-0 pt-0">
+                    {{ $t('processDefinitionMap.assignToCategory') || '카테고리 지정' }}
+                </v-card-title>
+
+                <v-card-text class="px-0">
+                    <div class="text-body-2 mb-3">
+                        {{ assignDialog.processList.length > 1
+                            ? `${assignDialog.processList.length}개 프로세스를 분류합니다.`
+                            : `"${assignDialog.processList[0]?.name || ''}" 프로세스를 분류합니다.`
+                        }}
+                    </div>
+
+                    <!-- Mega Process 선택 -->
+                    <v-select
+                        v-model="assignDialog.selectedMega"
+                        :items="megaProcessOptions"
+                        :label="$t('processDefinitionMap.selectMega') || 'Mega Process 선택'"
+                        item-title="name"
+                        item-value="id"
+                        return-object
+                        variant="outlined"
+                        density="comfortable"
+                        class="mb-3"
+                    >
+                        <template #prepend-item>
+                            <v-list-item @click="showNewMegaInput = true">
+                                <template #prepend>
+                                    <v-icon color="primary">mdi-plus</v-icon>
+                                </template>
+                                <v-list-item-title class="text-primary">
+                                    {{ $t('processDefinitionMap.createNewMega') || '새 Mega Process 생성' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                            <v-divider class="my-2" />
+                        </template>
+                    </v-select>
+
+                    <!-- 새 Mega 입력 -->
+                    <v-text-field
+                        v-if="showNewMegaInput"
+                        v-model="assignDialog.newMegaName"
+                        :label="$t('processDefinitionMap.newMegaName') || '새 Mega Process 이름'"
+                        variant="outlined"
+                        density="comfortable"
+                        class="mb-3"
+                        @keyup.enter="createNewMega"
+                    >
+                        <template #append>
+                            <v-btn variant="text" color="primary" @click="createNewMega">
+                                {{ $t('common.create') || '생성' }}
+                            </v-btn>
+                        </template>
+                    </v-text-field>
+
+                    <!-- Major Process 선택 -->
+                    <v-select
+                        v-model="assignDialog.selectedMajor"
+                        :items="majorProcessOptions"
+                        :label="$t('processDefinitionMap.selectMajor') || 'Major Process 선택'"
+                        item-title="name"
+                        item-value="id"
+                        return-object
+                        variant="outlined"
+                        density="comfortable"
+                        :disabled="!assignDialog.selectedMega"
+                    >
+                        <template #prepend-item>
+                            <v-list-item @click="showNewMajorInput = true" :disabled="!assignDialog.selectedMega">
+                                <template #prepend>
+                                    <v-icon color="primary">mdi-plus</v-icon>
+                                </template>
+                                <v-list-item-title class="text-primary">
+                                    {{ $t('processDefinitionMap.createNewMajor') || '새 Major Process 생성' }}
+                                </v-list-item-title>
+                            </v-list-item>
+                            <v-divider class="my-2" />
+                        </template>
+                    </v-select>
+
+                    <!-- 새 Major 입력 -->
+                    <v-text-field
+                        v-if="showNewMajorInput && assignDialog.selectedMega"
+                        v-model="assignDialog.newMajorName"
+                        :label="$t('processDefinitionMap.newMajorName') || '새 Major Process 이름'"
+                        variant="outlined"
+                        density="comfortable"
+                        class="mt-3"
+                        @keyup.enter="createNewMajor"
+                    >
+                        <template #append>
+                            <v-btn variant="text" color="primary" @click="createNewMajor">
+                                {{ $t('common.create') || '생성' }}
+                            </v-btn>
+                        </template>
+                    </v-text-field>
+                </v-card-text>
+
+                <v-card-actions class="px-0 pb-0">
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="assignDialog.show = false">
+                        {{ $t('common.cancel') || '취소' }}
+                    </v-btn>
+                    <v-btn
+                        color="primary"
+                        variant="flat"
+                        :disabled="!assignDialog.selectedMega || !assignDialog.selectedMajor"
+                        @click="assignProcessesToCategory"
+                    >
+                        {{ $t('common.confirm') || '확인' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
         </v-dialog>
     </div>
 </template>
@@ -526,23 +729,38 @@ export default {
             processes: []
         },
         usageGuideDetails: [
-            { 
-                icon: 'pencil', 
-                title: 'processDefinitionMap.usageGuide.details.0.title' 
+            {
+                icon: 'pencil',
+                title: 'processDefinitionMap.usageGuide.details.0.title'
             },
-            { 
-                icon: 'image-download', 
-                title: 'processDefinitionMap.usageGuide.details.1.title' 
+            {
+                icon: 'image-download',
+                title: 'processDefinitionMap.usageGuide.details.1.title'
             },
-            { 
-                icon: 'magic', 
-                title: 'processDefinitionMap.usageGuide.details.2.title' 
+            {
+                icon: 'magic',
+                title: 'processDefinitionMap.usageGuide.details.2.title'
             },
-            { 
-                icon: 'market', 
-                title: 'processDefinitionMap.usageGuide.details.3.title' 
+            {
+                icon: 'market',
+                title: 'processDefinitionMap.usageGuide.details.3.title'
             }
-        ]
+        ],
+        // 미분류 프로세스 관리 관련
+        orphanDialog: {
+            show: false,
+            selectedProcesses: []
+        },
+        assignDialog: {
+            show: false,
+            processList: [],
+            selectedMega: null,
+            selectedMajor: null,
+            newMegaName: '',
+            newMajorName: ''
+        },
+        showNewMegaInput: false,
+        showNewMajorInput: false
     }),
     computed: {
         useLock() {
@@ -554,6 +772,60 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        // 미분류 프로세스 목록
+        orphanProcesses() {
+            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
+            if (!this.value || !this.value.mega_proc_list) return [];
+
+            // 미분류 Mega에서 sub_proc_list 추출
+            const uncategorizedMega = this.value.mega_proc_list.find(
+                mega => uncategorizedNames.includes(mega.name) || uncategorizedNames.includes(mega.id)
+            );
+
+            if (!uncategorizedMega || !uncategorizedMega.major_proc_list) return [];
+
+            const processes = [];
+            uncategorizedMega.major_proc_list.forEach(major => {
+                if (major.sub_proc_list) {
+                    major.sub_proc_list.forEach(sub => {
+                        processes.push({
+                            id: sub.id,
+                            name: sub.name
+                        });
+                    });
+                }
+            });
+
+            return processes;
+        },
+        // 미분류 프로세스 수
+        orphanProcessCount() {
+            return this.orphanProcesses.length;
+        },
+        // Mega Process 선택 옵션 (미분류 제외)
+        megaProcessOptions() {
+            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
+            if (!this.value || !this.value.mega_proc_list) return [];
+
+            return this.value.mega_proc_list
+                .filter(mega => !uncategorizedNames.includes(mega.name) && !uncategorizedNames.includes(mega.id))
+                .map(mega => ({
+                    id: mega.id,
+                    name: mega.name
+                }));
+        },
+        // Major Process 선택 옵션 (선택된 Mega 하위)
+        majorProcessOptions() {
+            if (!this.assignDialog.selectedMega || !this.value || !this.value.mega_proc_list) return [];
+
+            const mega = this.value.mega_proc_list.find(m => m.id === this.assignDialog.selectedMega.id);
+            if (!mega || !mega.major_proc_list) return [];
+
+            return mega.major_proc_list.map(major => ({
+                id: major.id,
+                name: major.name
+            }));
         },
         actionCards() {
             return [
@@ -848,11 +1120,11 @@ export default {
         },
         async ensureUncategorizedDomainTab() {
             // '미분류' 도메인 탭이 없으면 추가 (데이터는 수정하지 않음, UI 탭만 추가)
-            const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
-
-            if (!this.metricsValue.domains) {
-                this.metricsValue.domains = [];
+            if (!this.metricsValue || !this.metricsValue.domains) {
+                return;
             }
+
+            const uncategorizedName = this.$t('processDefinitionMap.uncategorized');
 
             let uncategorizedDomain = this.metricsValue.domains.find(
                 d => d.name === uncategorizedName || d.name === '미분류' || d.name === 'Uncategorized'
@@ -865,7 +1137,11 @@ export default {
                     order: 0  // 첫 번째로 표시
                 };
                 this.metricsValue.domains.unshift(uncategorizedDomain);
-                await backend.putMetricsMap(this.metricsValue);
+                try {
+                    await backend.putMetricsMap(this.metricsValue);
+                } catch (e) {
+                    console.warn('Failed to save uncategorized domain tab:', e);
+                }
             }
         },
         async syncCardToMetrics() {
@@ -1680,17 +1956,182 @@ export default {
                 }
 
                 // 첫 번째 서브프로세스로 이동, 없으면 chat으로 이동
-                // const targetPath = firstSubProcessId 
-                //     ? `/definitions-tree/${firstSubProcessId}` 
+                // const targetPath = firstSubProcessId
+                //     ? `/definitions-tree/${firstSubProcessId}`
                 //     : '/definitions-tree/chat';
                 const targetPath = `/definitions-tree`
-                
+
                 this.$router.push(targetPath);
             } catch (error) {
                 console.error('TreeView 이동 중 오류:', error);
                 // 오류 발생 시 기본 경로로 이동
                 this.$router.push('/definitions-tree/chat');
             }
+        },
+
+        // ========== 미분류 프로세스 관리 메서드 ==========
+
+        /**
+         * 미분류 프로세스 관리 다이얼로그 열기
+         */
+        openOrphanDialog() {
+            this.orphanDialog.show = true;
+            this.orphanDialog.selectedProcesses = [];
+        },
+
+        /**
+         * 전체 선택
+         */
+        selectAllOrphans() {
+            if (this.orphanDialog.selectedProcesses.length === this.orphanProcesses.length) {
+                this.orphanDialog.selectedProcesses = [];
+            } else {
+                this.orphanDialog.selectedProcesses = this.orphanProcesses.map(p => p.id);
+            }
+        },
+
+        /**
+         * 단일 프로세스 분류 다이얼로그 열기
+         */
+        openAssignDialog(process) {
+            this.assignDialog.processList = [process];
+            this.assignDialog.selectedMega = null;
+            this.assignDialog.selectedMajor = null;
+            this.assignDialog.newMegaName = '';
+            this.assignDialog.newMajorName = '';
+            this.showNewMegaInput = false;
+            this.showNewMajorInput = false;
+            this.assignDialog.show = true;
+        },
+
+        /**
+         * 일괄 분류 다이얼로그 열기
+         */
+        openBulkAssignDialog() {
+            const selectedProcesses = this.orphanProcesses.filter(p =>
+                this.orphanDialog.selectedProcesses.includes(p.id)
+            );
+            this.assignDialog.processList = selectedProcesses;
+            this.assignDialog.selectedMega = null;
+            this.assignDialog.selectedMajor = null;
+            this.assignDialog.newMegaName = '';
+            this.assignDialog.newMajorName = '';
+            this.showNewMegaInput = false;
+            this.showNewMajorInput = false;
+            this.assignDialog.show = true;
+        },
+
+        /**
+         * 새 Mega Process 생성
+         */
+        createNewMega() {
+            if (!this.assignDialog.newMegaName.trim()) return;
+
+            const newMega = {
+                id: this.assignDialog.newMegaName.toLowerCase().replace(/[/.]/g, '_'),
+                name: this.assignDialog.newMegaName.trim(),
+                major_proc_list: []
+            };
+
+            // 미분류가 아닌 위치에 추가
+            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
+            const insertIndex = this.value.mega_proc_list.findIndex(
+                mega => uncategorizedNames.includes(mega.name) || uncategorizedNames.includes(mega.id)
+            );
+
+            if (insertIndex > 0) {
+                this.value.mega_proc_list.splice(insertIndex, 0, newMega);
+            } else {
+                this.value.mega_proc_list.push(newMega);
+            }
+
+            this.assignDialog.selectedMega = { id: newMega.id, name: newMega.name };
+            this.assignDialog.newMegaName = '';
+            this.showNewMegaInput = false;
+        },
+
+        /**
+         * 새 Major Process 생성
+         */
+        createNewMajor() {
+            if (!this.assignDialog.newMajorName.trim() || !this.assignDialog.selectedMega) return;
+
+            const mega = this.value.mega_proc_list.find(m => m.id === this.assignDialog.selectedMega.id);
+            if (!mega) return;
+
+            if (!mega.major_proc_list) {
+                mega.major_proc_list = [];
+            }
+
+            const newMajor = {
+                id: this.assignDialog.newMajorName.toLowerCase().replace(/[/.]/g, '_'),
+                name: this.assignDialog.newMajorName.trim(),
+                sub_proc_list: []
+            };
+
+            mega.major_proc_list.push(newMajor);
+
+            this.assignDialog.selectedMajor = { id: newMajor.id, name: newMajor.name };
+            this.assignDialog.newMajorName = '';
+            this.showNewMajorInput = false;
+        },
+
+        /**
+         * 프로세스를 선택한 카테고리로 이동
+         */
+        async assignProcessesToCategory() {
+            if (!this.assignDialog.selectedMega || !this.assignDialog.selectedMajor) return;
+
+            const uncategorizedNames = ['미분류', 'Uncategorized', this.$t('processDefinitionMap.uncategorized')];
+
+            // 1. 선택한 Mega/Major 찾기
+            const targetMega = this.value.mega_proc_list.find(m => m.id === this.assignDialog.selectedMega.id);
+            if (!targetMega) return;
+
+            const targetMajor = targetMega.major_proc_list.find(m => m.id === this.assignDialog.selectedMajor.id);
+            if (!targetMajor) return;
+
+            if (!targetMajor.sub_proc_list) {
+                targetMajor.sub_proc_list = [];
+            }
+
+            // 2. 프로세스를 미분류에서 제거하고 타겟에 추가
+            const processIds = this.assignDialog.processList.map(p => p.id);
+
+            // 미분류 Mega 찾기
+            const uncategorizedMega = this.value.mega_proc_list.find(
+                mega => uncategorizedNames.includes(mega.name) || uncategorizedNames.includes(mega.id)
+            );
+
+            if (uncategorizedMega && uncategorizedMega.major_proc_list) {
+                uncategorizedMega.major_proc_list.forEach(major => {
+                    if (major.sub_proc_list) {
+                        // 이동할 프로세스들 추출
+                        const processesToMove = major.sub_proc_list.filter(sub => processIds.includes(sub.id));
+
+                        // 미분류에서 제거
+                        major.sub_proc_list = major.sub_proc_list.filter(sub => !processIds.includes(sub.id));
+
+                        // 타겟에 추가
+                        targetMajor.sub_proc_list.push(...processesToMove);
+                    }
+                });
+            }
+
+            // 3. 저장
+            await this.saveProcess();
+
+            // 4. 다이얼로그 닫기
+            this.assignDialog.show = false;
+            this.orphanDialog.selectedProcesses = this.orphanDialog.selectedProcesses.filter(
+                id => !processIds.includes(id)
+            );
+
+            // 5. 토스트 메시지
+            this.$toast.success(
+                this.$t('processDefinitionMap.assignSuccess', { count: processIds.length }) ||
+                `${processIds.length}개 프로세스가 분류되었습니다.`
+            );
         }
     },
 }
@@ -1875,5 +2316,19 @@ export default {
 .consulting-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 미분류 프로세스 관리 스타일 */
+.orphan-process-item {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    transition: background-color 0.15s ease;
+}
+
+.orphan-process-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.orphan-process-item:last-child {
+    border-bottom: none;
 }
 </style>

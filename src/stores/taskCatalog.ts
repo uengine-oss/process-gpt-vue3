@@ -25,15 +25,19 @@ export interface PropertySchema {
     task_type: string;
     property_key: string;
     property_label: string;
-    property_type: 'string' | 'number' | 'boolean' | 'select' | 'textarea';
+    property_type: 'string' | 'number' | 'boolean' | 'select' | 'textarea' | 'url' | 'db-select' | 'formula';
     is_mandatory: boolean;
     default_value?: string;
     options?: { label: string; value: any }[];
     display_order: number;
+    applies_to?: 'both' | 'process' | 'task';
+    placeholder?: string;
+    visible_by_default?: boolean;
+    config?: Record<string, any>;
     // Layout properties
-    row_index?: number;      // Row position (0-based, properties with same row_index appear on same row)
-    col_span?: number;       // Column span (1-12, Vuetify grid system)
-    section_name?: string;   // Section header name (properties with same section are grouped)
+    row_index?: number;
+    col_span?: number;
+    section_name?: string;
 }
 
 export interface PaletteSettings {
@@ -64,11 +68,25 @@ export const AVAILABLE_TASK_TYPES = [
 // Property types for schema
 export const PROPERTY_TYPES = [
     { value: 'string', label: 'Text' },
+    { value: 'textarea', label: 'Text Area' },
     { value: 'number', label: 'Number' },
     { value: 'boolean', label: 'Boolean' },
     { value: 'select', label: 'Select' },
-    { value: 'textarea', label: 'Text Area' }
+    { value: 'url', label: 'URL' },
+    { value: 'db-select', label: 'DB-Select' },
+    { value: 'formula', label: 'Formula' }
 ];
+
+export const APPLIES_TO_OPTIONS = [
+    { value: 'both', label: 'Process + Task', labelKo: '프로세스 + Task' },
+    { value: 'process', label: 'Process Only', labelKo: '프로세스만' },
+    { value: 'task', label: 'All Tasks', labelKo: '모든 Task' },
+    ...AVAILABLE_TASK_TYPES.map(t => ({ value: t.value, label: t.label, labelKo: t.labelKo })),
+];
+
+// Built-in property keys that exist by default in ProcessHierarchyProperties
+// These should be hidden from the schema manager to avoid duplication
+export const BUILT_IN_PROPERTY_KEYS = ['title', 'name'];
 
 export const useTaskCatalogStore = defineStore({
     id: 'taskCatalog',
@@ -401,6 +419,27 @@ export const useTaskCatalogStore = defineStore({
             return state.propertySchemas
                 .filter(s => s.task_type === taskType && s.is_mandatory)
                 .sort((a, b) => a.display_order - b.display_order);
+        },
+
+        // Get schemas filtered by target ('process' or 'task')
+        // For task: optionally pass elementType (e.g., 'bpmn:ManualTask') to include type-specific schemas
+        schemasByAppliesTo: (state) => (target: 'process' | 'task', elementType?: string) => {
+            return state.propertySchemas
+                .filter(s => {
+                    const at = s.applies_to || 'both';
+                    if (target === 'process') {
+                        return at === 'process' || at === 'both';
+                    }
+                    if (target === 'task') {
+                        if (at === 'task' || at === 'both') return true;
+                        // Specific BPMN type match
+                        if (elementType && at === elementType) return true;
+                        return false;
+                    }
+                    return false;
+                })
+                .filter(s => s.visible_by_default !== false)
+                .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         },
 
         // Check if task type is visible in palette

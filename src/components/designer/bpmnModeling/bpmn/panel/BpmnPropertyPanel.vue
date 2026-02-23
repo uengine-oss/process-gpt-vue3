@@ -9,8 +9,18 @@
                 {{ $t('BpmnPropertyPanel.readOnly') || 'Read Only' }}
             </v-chip>
             <v-card-title v-if="isViewMode" class="pa-0 view-mode-title">{{ name }}</v-card-title>
-            <v-text-field v-else-if="!isPALMode" v-model="name" :label="$t('BpmnPropertyPanel.name')" 
-                :disabled="isViewMode" ref="cursor" 
+            <v-combobox v-else-if="!isPALMode && isTaskElement" v-model="name" :label="$t('BpmnPropertyPanel.name')"
+                :disabled="isViewMode" ref="cursor"
+                :items="termSuggestions"
+                :loading="termLoading"
+                @update:search="onTermSearch"
+                @update:model-value="recordTermUsage"
+                hide-no-data
+                clearable
+                class="bpmn-property-panel-name mb-3 delete-input-details"
+            ></v-combobox>
+            <v-text-field v-else-if="!isPALMode" v-model="name" :label="$t('BpmnPropertyPanel.name')"
+                :disabled="isViewMode" ref="cursor"
                 class="bpmn-property-panel-name mb-3 delete-input-details"
             ></v-text-field>
             <div v-if="!isViewMode && isPALMode" style="position: relative; width: 200px;">
@@ -133,6 +143,7 @@ import ValidationField from '@/components/designer/bpmnModeling/bpmn/panel/Valid
 import PDFPreviewer from '@/components/PDFPreviewer.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import ZeebePropertiesPanel from '@/components/designer/bpmnModeling/bpmn/panel/ZeebePropertiesPanel.vue';
+import { useTerminology } from '@/composables/useTerminology';
 
 import BusinessRuleTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/BusinessRuleTaskPanel.vue';
 
@@ -235,7 +246,12 @@ export default {
             templateOptions: [],
             taskList: [],
             componentKey: 0,
-            eventBusListener: null
+            eventBusListener: null,
+            // 용어 자동완성 관련
+            termSuggestions: [],
+            termLoading: false,
+            allTerms: [],
+            menu: false
         };
     },
     async mounted() {
@@ -250,6 +266,11 @@ export default {
         // 템플릿 목록 불러오기
         if (this.isPALMode) {
             await this.loadTaskList();
+        }
+
+        // 용어 자동완성 로드 (Task 요소인 경우)
+        if (this.isTaskElement && !this.isPALMode) {
+            await this.loadTerminology();
         }
 
         // this.$refs.cursor.focus();
@@ -538,6 +559,40 @@ export default {
                 console.error('템플릿 적용 중 오류 발생:', error);
             }
         },
+        // 용어 자동완성 관련 메서드
+        async loadTerminology() {
+            this.termLoading = true;
+            try {
+                const { loadTerminology } = useTerminology();
+                this.allTerms = await loadTerminology('task_name');
+                this.termSuggestions = this.allTerms.slice(0, 10).map(t => t.term);
+            } catch (error) {
+                console.warn('용어 로드 실패:', error);
+                this.allTerms = [];
+                this.termSuggestions = [];
+            } finally {
+                this.termLoading = false;
+            }
+        },
+        onTermSearch(searchText) {
+            if (!searchText || searchText.trim() === '') {
+                this.termSuggestions = this.allTerms.slice(0, 10).map(t => t.term);
+                return;
+            }
+            const lowered = searchText.toLowerCase();
+            this.termSuggestions = this.allTerms
+                .filter(t => t.term.toLowerCase().includes(lowered))
+                .slice(0, 10)
+                .map(t => t.term);
+        },
+        async recordTermUsage(term) {
+            try {
+                const { recordUsage } = useTerminology();
+                await recordUsage('task_name', term);
+            } catch (error) {
+                console.warn('용어 사용 기록 실패:', error);
+            }
+        },
         closePanel() {
             this.$emit('close');
         },
@@ -717,10 +772,12 @@ export default {
 .view-mode-header {
     background: linear-gradient(to right, #f8fafc, #ffffff);
     border-bottom: 1px solid #e2e8f0;
-    padding: 8px 12px !important;
+    padding: 4px 12px !important;
     flex-shrink: 0;
+    flex-grow: 0;
     align-items: center;
-    min-height: 44px !important;
+    min-height: auto !important;
+    max-height: 40px !important;
 }
 
 .view-mode-title {

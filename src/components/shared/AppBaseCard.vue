@@ -48,11 +48,17 @@ const { proxy } = getCurrentInstance();
 
 const chatReSizeDisplay = computed(() => {
     // globalState를 사용하여 계산된 속성을 정의합니다.
+    // 이 클래스는 mainbox가 아닌 right-part에만 적용해야 함
     return globalState?.state.isZoomed ? 'chat-display-none' : 'chat-display-block';
 });
+
+// 채팅창(right-part) 숨김 여부 (isChatHidden 또는 isZoomed 둘 다 지원)
+const isChatHidden = computed(() => {
+    return globalState?.state.isChatHidden || globalState?.state.isZoomed || false;
+});
 const canvasReSize = computed(() => {
-    // globalState의 isZoomed 상태에 따라 width 스타일 속성을 반환합니다.
-    if(globalState?.state.isZoomed) {
+    // globalState의 isZoomed 또는 isChatHidden 상태에 따라 width 스타일 속성을 반환합니다.
+    if(globalState?.state.isZoomed || globalState?.state.isChatHidden) {
         return 'width: 100%;';
     } else if (globalState?.state.isRightZoomed) {
         return 'display:none';
@@ -129,7 +135,7 @@ const menuButtonStyle = computed(() => {
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox is-work-height" :class="[chatReSizeDisplay, heightClass]"
+    <div class="d-flex mainbox is-work-height" :class="[heightClass]"
         :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
         style="overflow: auto;"
     >
@@ -140,15 +146,15 @@ const menuButtonStyle = computed(() => {
         </div>
 
         <!---right chat conversation -->
-        <div class="right-part">
+        <div class="right-part" :class="{ 'chat-hidden': isChatHidden }">
             <!---Toggle Button For mobile-->
             <v-tooltip location="right">
                 <template v-slot:activator="{ props: tooltipProps }">
-                    <v-btn 
-                        icon 
+                    <v-btn
+                        icon
                         size="x-small"
-                        @click="sDrawer = !sDrawer" 
-                        variant="text" 
+                        @click="sDrawer = !sDrawer"
+                        variant="text"
                         class="mobile-menu-toggle-btn d-lg-none"
                         v-bind="tooltipProps"
                     >
@@ -210,6 +216,11 @@ const menuButtonStyle = computed(() => {
     flex-direction: column;
     height: 100%;
     position: relative;
+    transition: all 0.2s ease;
+}
+
+.right-part.chat-hidden {
+    display: none;
 }
 
 .mobile-menu-toggle-btn {

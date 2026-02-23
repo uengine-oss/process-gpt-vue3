@@ -17,6 +17,137 @@ import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil';
 const HIGH_PRIORITY = 1500,
   TASK_BORDER_RADIUS = 10;
 
+// Check if text contains Korean characters
+function containsKorean(text) {
+  return /[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/.test(text);
+}
+
+// Estimate text width more accurately
+function estimateTextWidth(text, fontSize = 12) {
+  if (!text) return 0;
+
+  let width = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charAt(i);
+    // Korean characters are typically full-width
+    if (/[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/.test(char)) {
+      width += fontSize * 1.0; // Full-width for Korean
+    } else if (/[a-zA-Z0-9]/.test(char)) {
+      width += fontSize * 0.55; // Narrower for alphanumeric
+    } else if (char === ' ') {
+      width += fontSize * 0.3; // Space
+    } else {
+      width += fontSize * 0.6; // Default for other characters
+    }
+  }
+  return width;
+}
+
+// Text wrapping helper function with better Korean support
+function wrapText(text, maxWidth, fontSize = 12) {
+  if (!text) return [];
+
+  // Handle explicit newlines (\n)
+  const paragraphs = text.split('\n');
+  const lines = [];
+
+  paragraphs.forEach(paragraph => {
+    if (!paragraph.trim()) {
+      lines.push('');
+      return;
+    }
+
+    // Check if paragraph fits in one line
+    if (estimateTextWidth(paragraph, fontSize) <= maxWidth) {
+      lines.push(paragraph);
+      return;
+    }
+
+    // For Korean text, we can break at any character
+    // For English/mixed text, we prefer word boundaries
+    if (containsKorean(paragraph)) {
+      // Character-by-character wrapping for Korean
+      let currentLine = '';
+      for (let i = 0; i < paragraph.length; i++) {
+        const char = paragraph.charAt(i);
+        const testLine = currentLine + char;
+
+        if (estimateTextWidth(testLine, fontSize) <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+          }
+          currentLine = char;
+        }
+      }
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+    } else {
+      // Word wrap for non-Korean text
+      const words = paragraph.split(/(\s+)/);
+      let currentLine = '';
+
+      words.forEach(word => {
+        if (!word) return;
+
+        const testLine = currentLine + word;
+        if (estimateTextWidth(testLine, fontSize) <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine.trim()) {
+            lines.push(currentLine.trim());
+          }
+          currentLine = word.trim() ? word : '';
+        }
+      });
+
+      if (currentLine.trim()) {
+        lines.push(currentLine.trim());
+      }
+    }
+  });
+
+  return lines;
+}
+
+// Render wrapped text as SVG text element with tspans
+function renderWrappedText(parentNode, text, x, y, width, height, fontSize, fillColor) {
+  const lines = wrapText(text, width - 20, fontSize); // 20px padding for better margin
+  if (lines.length === 0) return null;
+
+  const lineHeight = fontSize * 1.4; // Slightly more line height for better readability
+  const totalTextHeight = lines.length * lineHeight;
+
+  // Center text vertically, with adjustment for better visual centering
+  const startY = y + (height - totalTextHeight) / 2 + fontSize * 0.8;
+
+  const textElement = svgCreate('text');
+  svgAttr(textElement, {
+    'class': 'custom-wrapped-text',
+    'text-anchor': 'middle',
+    'font-size': fontSize + 'px',
+    'font-family': 'Arial, sans-serif',
+    'fill': fillColor || '#000000',
+    'pointer-events': 'none'
+  });
+
+  lines.forEach((line, index) => {
+    const tspan = svgCreate('tspan');
+    svgAttr(tspan, {
+      x: x + width / 2,
+      y: startY + index * lineHeight,
+      'dominant-baseline': 'middle'
+    });
+    tspan.textContent = line;
+    svgAppend(textElement, tspan);
+  });
+
+  svgAppend(parentNode, textElement);
+  return textElement;
+}
+
 // Convert HEX to RGB
 function hexToRgb(hex) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -459,9 +590,8 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     svgRemove(shape);
 
     // Dynamic text color: white text on dark backgrounds
-    // Set data attribute on parent for CSS-based coloring (immediate)
-    // and also apply directly via JS as backup
     const useWhiteText = shouldUseWhiteText(fillColor);
+    const textColor = useWhiteText ? '#ffffff' : '#000000';
 
     // Set data attribute for CSS-based styling (immediate, no flicker)
     if (parentNode.closest) {
@@ -471,28 +601,71 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       }
     }
 
-    // Also apply directly via JS for immediate effect
-    const textElements = parentNode.querySelectorAll('text, text tspan');
-    textElements.forEach(textEl => {
-      svgAttr(textEl, { fill: useWhiteText ? '#ffffff' : '#000000' });
+    // Get task name for text wrapping
+    const taskName = element.businessObject?.name || '';
+
+    // Remove ALL existing text elements (including djs-label and any other text)
+    // This ensures our wrapped text is the only text rendered
+    const existingTexts = parentNode.querySelectorAll('text:not(.custom-wrapped-text)');
+    existingTexts.forEach(textEl => {
+      try {
+        svgRemove(textEl);
+      } catch (e) {
+        // Ignore if already removed
+      }
     });
 
-    // Retry for text elements that might be added later
-    let retryCount = 0;
-    const maxRetries = 5;
-
-    const applyTextColor = () => {
-      const texts = parentNode.querySelectorAll('text, text tspan');
-      if (texts.length > 0) {
-        texts.forEach(textEl => {
-          svgAttr(textEl, { fill: useWhiteText ? '#ffffff' : '#000000' });
-        });
-      } else if (retryCount < maxRetries) {
-        retryCount++;
-        requestAnimationFrame(applyTextColor);
+    // Also remove any previously added custom wrapped text
+    const previousCustomText = parentNode.querySelectorAll('text.custom-wrapped-text');
+    previousCustomText.forEach(textEl => {
+      try {
+        svgRemove(textEl);
+      } catch (e) {
+        // Ignore if already removed
       }
-    };
-    requestAnimationFrame(applyTextColor);
+    });
+
+    // Render wrapped text with line breaks support
+    if (taskName) {
+      const fontSize = 12;
+      renderWrappedText(parentNode, taskName, 0, 0, existingWidth, existingHeight, fontSize, textColor);
+    }
+
+    // Apply text color to any remaining text elements (safety check)
+    const textElements = parentNode.querySelectorAll('text, text tspan');
+    textElements.forEach(textEl => {
+      svgAttr(textEl, { fill: textColor });
+    });
+
+    // Use MutationObserver to handle text elements added after our rendering
+    // But skip if directEditing is active (인라인 편집 중에는 텍스트 제거하지 않음)
+    const observer = new MutationObserver((mutations) => {
+      // Check if directEditing is active by looking for djs-direct-editing-parent class
+      const isDirectEditing = document.querySelector('.djs-direct-editing-parent');
+      if (isDirectEditing) {
+        return; // Skip removal during direct editing
+      }
+
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeName === 'text' && !node.classList.contains('custom-wrapped-text')) {
+            // Remove default text added by BPMN-JS
+            try {
+              svgRemove(node);
+            } catch (e) {
+              // Ignore
+            }
+          }
+        });
+      });
+    });
+
+    observer.observe(parentNode, { childList: true, subtree: true });
+
+    // Disconnect observer after a short delay (BPMN-JS should have finished rendering)
+    setTimeout(() => {
+      observer.disconnect();
+    }, 100);
 
     // Display System Name / Menu Name below the Task
     if (systemName || menuName) {
@@ -546,14 +719,70 @@ export default class CustomBpmnRenderer extends BaseRenderer {
   drawConnection(parentNode, element) {
 
     if (is(element, 'bpmn:SequenceFlow')) {
-      var strokeColor =  'black';
+      var strokeColor = 'black';
 
-      const customMarkerUrl = createCustomMarker(parentNode, strokeColor); // 화살표 색상 설정
-      const options = {
-        stroke: strokeColor, // 연결선 색상 변경
-        strokeWidth: '2',
-        markerEnd: customMarkerUrl // 사용자 정의 마커 적용
+      const customMarkerUrl = createCustomMarker(parentNode, strokeColor);
+
+      // Get all sequence flows to find intersections
+      const allConnections = this.elementRegistry.filter(e => is(e, 'bpmn:SequenceFlow'));
+      const currentWaypoints = element.waypoints;
+
+      // Find intersection points with other connections
+      const intersections = [];
+      allConnections.forEach(otherConn => {
+        if (otherConn.id === element.id) return;
+        const otherWaypoints = otherConn.waypoints;
+
+        // Check each segment of current connection against each segment of other connection
+        for (let i = 0; i < currentWaypoints.length - 1; i++) {
+          for (let j = 0; j < otherWaypoints.length - 1; j++) {
+            const intersection = getLineIntersection(
+              currentWaypoints[i], currentWaypoints[i + 1],
+              otherWaypoints[j], otherWaypoints[j + 1]
+            );
+            if (intersection) {
+              intersections.push({
+                point: intersection,
+                segmentIndex: i
+              });
+            }
+          }
+        }
+      });
+
+      // Sort intersections by distance from start of each segment
+      intersections.sort((a, b) => {
+        if (a.segmentIndex !== b.segmentIndex) {
+          return a.segmentIndex - b.segmentIndex;
+        }
+        const startA = currentWaypoints[a.segmentIndex];
+        const startB = currentWaypoints[b.segmentIndex];
+        const distA = Math.hypot(a.point.x - startA.x, a.point.y - startA.y);
+        const distB = Math.hypot(b.point.x - startB.x, b.point.y - startB.y);
+        return distA - distB;
+      });
+
+      // Draw path with line jumps at intersections
+      if (intersections.length > 0) {
+        const path = createPathWithLineJumps(currentWaypoints, intersections);
+
+        svgAttr(path, {
+          stroke: strokeColor,
+          strokeWidth: '2',
+          fill: 'none',
+          markerEnd: customMarkerUrl
+        });
+
+        svgAppend(parentNode, path);
+        return path;
       }
+
+      // No intersections, draw normal connection
+      const options = {
+        stroke: strokeColor,
+        strokeWidth: '2',
+        markerEnd: customMarkerUrl
+      };
 
       var connection = this.bpmnRenderer.drawConnection(parentNode, element, options);
       return connection;
@@ -783,5 +1012,103 @@ function copyAttributes(source, target) {
 // copied from https://github.com/bpmn-io/diagram-js/blob/master/lib/core/GraphicsFactory.js
 function prependTo(newNode, parentNode, siblingNode) {
   parentNode.insertBefore(newNode, siblingNode || parentNode.firstChild);
+}
+
+// Line intersection detection
+function getLineIntersection(p1, p2, p3, p4) {
+  const x1 = p1.x, y1 = p1.y;
+  const x2 = p2.x, y2 = p2.y;
+  const x3 = p3.x, y3 = p3.y;
+  const x4 = p4.x, y4 = p4.y;
+
+  const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+  if (Math.abs(denom) < 0.0001) return null; // Lines are parallel
+
+  const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+  const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+
+  // Check if intersection is within both line segments (with small margin)
+  const margin = 0.01;
+  if (t > margin && t < 1 - margin && u > margin && u < 1 - margin) {
+    return {
+      x: x1 + t * (x2 - x1),
+      y: y1 + t * (y2 - y1)
+    };
+  }
+  return null;
+}
+
+// Create SVG path with line jumps (arcs) at intersection points
+function createPathWithLineJumps(waypoints, intersections) {
+  const JUMP_RADIUS = 6; // Radius of the arc jump
+  const path = svgCreate('path');
+
+  let d = '';
+  let currentSegmentIndex = 0;
+  let intersectionIdx = 0;
+
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const start = waypoints[i];
+    const end = waypoints[i + 1];
+
+    // Calculate segment direction
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    const ux = dx / length; // Unit vector x
+    const uy = dy / length; // Unit vector y
+
+    if (i === 0) {
+      d += `M ${start.x} ${start.y}`;
+    }
+
+    // Get intersections for this segment
+    const segmentIntersections = [];
+    while (intersectionIdx < intersections.length && intersections[intersectionIdx].segmentIndex === i) {
+      segmentIntersections.push(intersections[intersectionIdx].point);
+      intersectionIdx++;
+    }
+
+    // Sort by distance from segment start
+    segmentIntersections.sort((a, b) => {
+      const distA = Math.hypot(a.x - start.x, a.y - start.y);
+      const distB = Math.hypot(b.x - start.x, b.y - start.y);
+      return distA - distB;
+    });
+
+    if (segmentIntersections.length === 0) {
+      // No intersections, draw straight line
+      d += ` L ${end.x} ${end.y}`;
+    } else {
+      // Draw line with arcs at intersection points
+      let lastPoint = start;
+
+      for (const intersection of segmentIntersections) {
+        // Point before the arc
+        const beforeX = intersection.x - ux * JUMP_RADIUS;
+        const beforeY = intersection.y - uy * JUMP_RADIUS;
+
+        // Point after the arc
+        const afterX = intersection.x + ux * JUMP_RADIUS;
+        const afterY = intersection.y + uy * JUMP_RADIUS;
+
+        // Draw line to before point
+        d += ` L ${beforeX} ${beforeY}`;
+
+        // Draw arc (semicircle) over the intersection
+        // The arc goes perpendicular to the line direction
+        // sweep-flag = 1 for clockwise arc (jump over)
+        d += ` A ${JUMP_RADIUS} ${JUMP_RADIUS} 0 0 1 ${afterX} ${afterY}`;
+
+        lastPoint = { x: afterX, y: afterY };
+      }
+
+      // Draw line from last arc to segment end
+      d += ` L ${end.x} ${end.y}`;
+    }
+  }
+
+  svgAttr(path, { d: d });
+  return path;
 }
 

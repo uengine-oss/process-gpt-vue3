@@ -9,6 +9,7 @@ import BPMNXmlGenerator from './BPMNXmlGenerator.vue';
 import partialParse from "partial-json-parser";
 import JSON5 from 'json5';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
+import { getBpmnModelService } from '@/services/bpmnModelService';
 
 const backend = BackendFactory.createBackend();
 
@@ -35,6 +36,8 @@ export default {
         datasourceSchema: null,
         definitionOptimizer: null,
         useOptimize: false,
+        lastSavedXML: '',  // 마지막 저장된 XML (변경 감지용)
+        lastSavedXMLHash: '',  // 마지막 저장된 XML 해시
     }),
     computed: {
         lastPath() {
@@ -709,6 +712,21 @@ export default {
 
                     await me.saveModel(info, xmlObj.xml);
                     me.bpmn = xmlObj.xml;
+
+                    // Phase 1: XML 파싱하여 정규화된 테이블에 저장 (비동기, 실패해도 저장은 진행)
+                    try {
+                        const bpmnModelService = getBpmnModelService();
+                        await bpmnModelService.saveModel(info.proc_def_id, {
+                            xml_content: xmlObj.xml
+                        });
+                        console.log('[saveDefinition] BPMN 모델 파싱 완료');
+                    } catch (parseError) {
+                        console.warn('[saveDefinition] BPMN 모델 파싱 실패 (저장은 정상 완료):', parseError);
+                    }
+
+                    // 저장 성공 후 lastSavedXML 업데이트 (변경 감지용)
+                    me.lastSavedXML = xmlObj.xml;
+                    me.isChanged = false;
 
                     // Extract organization info from swimlanes and save to process_organizations table
                     try {

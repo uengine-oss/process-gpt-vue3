@@ -380,24 +380,44 @@ const MainRoutes = {
 
         // ============== Analytics Routes ==============
         {
+            name: 'Process Architecture',
+            path: '/process-architecture',
+            component: () => import('@/views/process-architecture/ProcessArchitecture.vue')
+        },
+        {
+            name: 'Process Hierarchy',
+            path: '/process-hierarchy',
+            component: () => import('@/views/process-hierarchy/ProcessHierarchy.vue')
+        },
+        {
+            name: 'Version Comparison',
+            path: '/version-comparison',
+            component: () => import('@/views/process-hierarchy/VersionComparison.vue')
+        },
+        {
             name: 'Analytics Dashboard',
             path: '/analytics',
             component: () => import('@/views/analytics/Dashboard.vue')
         },
         {
-            name: 'Pivot Table',
-            path: '/analytics/pivot',
-            component: () => import('@/views/analytics/PivotTablePage.vue')
+            name: 'Heatmap',
+            path: '/analytics/heatmap',
+            component: () => import('@/views/analytics/BottleneckAnalysis.vue')
         },
         {
-            name: 'Performance Analysis',
-            path: '/analytics/performance',
-            component: () => import('@/views/analytics/Performance.vue')
+            name: 'KPI Dashboard',
+            path: '/analytics/kpi',
+            component: () => import('@/views/analytics/KPIDashboard.vue')
         },
         {
-            name: 'Natural Query',
-            path: '/analytics/query',
-            component: () => import('@/views/analytics/NaturalQueryPage.vue')
+            name: 'Review Board',
+            path: '/review-board',
+            component: () => import('@/views/review-board/ProcessReviewBoard.vue')
+        },
+        {
+            name: 'Review Detail',
+            path: '/review-board/:reviewId',
+            component: () => import('@/views/review-board/ProcessReviewDetail.vue')
         }
     ]
 };

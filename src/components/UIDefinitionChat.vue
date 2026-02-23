@@ -629,10 +629,10 @@ export default {
                 // }
             // }
 
-            await this.backend.putRawDefinition(html, id, { 
+            await this.backend.putRawDefinition(html, id, {
                 type: 'form',
-                proc_def_id: isFormAlreadyExist?.proc_def_id,
-                activity_id: isFormAlreadyExist?.activity_id
+                proc_def_id: isFormAlreadyExist?.proc_def_id || id,
+                activity_id: isFormAlreadyExist?.activity_id || 'standalone'
             });
             this.isOpenSaveDialog = false;
 
