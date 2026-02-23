@@ -3,7 +3,8 @@ import { reactive, readonly } from 'vue';
 // 전역 상태 정의
 const state = reactive({
   isZoomed: false,
-  isRightZoomed: false
+  isRightZoomed: false,
+  isMobileDrawerOpen: false
 });
 
 // 상태를 변경하는 메서드
@@ -13,6 +14,9 @@ const methods = {
   },
   toggleRightZoom() {
     state.isRightZoomed = !state.isRightZoomed;
+  },
+  setMobileDrawerOpen(value: boolean) {
+    state.isMobileDrawerOpen = value;
   },
 };
 

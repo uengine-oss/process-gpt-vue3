@@ -43,7 +43,7 @@
             </div>
         </v-card>
         <AppBaseCard v-else
-             :customMenuName="projectName"
+             :customMenuName="$t('processDefinition.title')"
         >
             <template v-slot:leftpart>
                 <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
@@ -2560,10 +2560,6 @@ export default {
 }
 
 @media only screen and (max-width: 1279px) {
-    .process-definition-resize {
-        width: 100%;
-        height: calc(100% - 38px) !important;
-    }
 }
 
 :deep(.left-part) {

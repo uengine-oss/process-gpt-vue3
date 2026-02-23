@@ -138,10 +138,9 @@ watch(
                 </v-col>
             </v-item-group>
 
-            <v-divider class="my-5"></v-divider>
-            <h6 class="text-h6 mb-3">{{ $t('Customizer.customColor') }}</h6>
             <v-color-picker
                 v-model="pickerColor"
+                class="mt-4"
                 mode="hex"
                 :modes="['hex']"
                 elevation="0"
@@ -165,4 +164,8 @@ watch(
     </perfect-scrollbar>
 </template>
 
-<style lang="scss"></style>
+<style lang="scss">
+.v-color-picker .v-color-picker-edit__input span {
+    display: none;
+}
+</style>

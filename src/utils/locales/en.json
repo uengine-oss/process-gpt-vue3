@@ -2427,7 +2427,7 @@
         "doubleClick": "Double-click to collapse/expand",
         "workInProgress": "Working...",
         "workQueued": "Work has been registered in the queue.",
-        "noWorkInProgress": "No work in progress.",
+        "noWorkInProgress": "Standby",
         "workStarted": "The work will be displayed here once it starts.",
         "selectResearchMethod": "Select research method",
         "browserUse": "Browser use feature is available after downloading and decompressing. (Size: 114MB)",

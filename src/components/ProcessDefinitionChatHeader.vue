@@ -14,7 +14,7 @@
                                 <v-text-field v-if="isEditableTitle" v-model="processName"
                                     :label="$t('ProcessDefinitionChatHeader.processDefinitionName')" variant="underlined" hide-details class="pa-0 ma-0"
                                 ></v-text-field>
-                                <div v-else>
+                                <div v-else-if="!isMobile">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <h5
@@ -40,6 +40,7 @@
                                     </v-tooltip>
                                 </div>
                             </div>
+                            <h5 v-else-if="modelValue" class="text-h5 mb-n1">{{ modelValue }}</h5>
                             <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                         </div>
 

@@ -83,7 +83,7 @@
 
             <v-card-text class="pa-4 pb-0 pt-0"
                 :style="{
-                    'max-height': 'calc(100vh - 384px)',
+                    'max-height': 'calc(100vh - 300px)',
                     'overflow': 'auto',
                     'border-bottom': mainTab === 'agent' ? '1px solid #e0e0e0' : 'none'
                 }"
