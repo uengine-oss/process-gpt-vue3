@@ -263,7 +263,7 @@ const rightPartStyle = computed(() => {
     // min-height: 500px;
     transition: width 0.1s ease-out;
     flex-shrink: 0;
-    overflow: auto;
+    overflow: visible;
     background-color: white;
     position: relative;
 }
