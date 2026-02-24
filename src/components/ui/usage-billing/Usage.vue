@@ -1,67 +1,70 @@
 <template>
     <div>
-        <v-card elevation="10" >
-            <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="primary">
+        <v-card class="pa-0" elevation="10">
+            <v-tabs v-model="tab" color="primary">
                 <v-tab value="Usage">
-                    <GraphIcon class="mr-2" size="20"/> Usage
+                    <GraphIcon class="mr-2" size="20"/> {{ $t('usage.tabUsage') }}
                 </v-tab>
                 <v-tab value="Search">
-                    <SearchIcon class="mr-2" size="20"/> Search
+                    <SearchIcon class="mr-2" size="20"/> {{ $t('usage.tabSearch') }}
                 </v-tab>
             </v-tabs>
             <v-divider></v-divider>
-            <v-card-text class="pa-sm-6 pa-3 pb-sm-6 pb-6">
+            <v-card-text class="pa-0 pt-4 pb-4"
+                :style="!isMobile ? 'height: calc(100vh - 180px); overflow-y: auto;' : 'height: 100%; overflow-y: auto;'"
+            >
                 <v-window v-model="tab">
                     <v-window-item value="Usage">
-                        <div style="height: 800px; overflow-y: auto;">
-
-
+                        <div>
                             <v-card flat>
-                                <v-card-text style="padding-bottom: 0;">
-                                    <v-row class="align-center">
-                                        <v-row>
-                                            <div style="font-size: 22px; font-weight: bold;">최종 크레딧</div>
-                                        </v-row>
-                                    </v-row>
-                                    <v-col class="d-flex justify-end align-center">
-                                        <v-row style="margin-top:20px;">
-                                            <v-col style="max-width: 250px;">
-                                                <v-card outlined flat>
-                                                    <v-card-text style="padding-bottom: 5px; padding-top: 25px;">
-                                                        <div style="font-size: 40px; font-weight: bold;height: 30px;">{{credit ? credit.available.toFixed(2) : '조회중...'}}</div>
-                                                        <div>Available Credit</div>
-                                                    </v-card-text>
-                                                </v-card>
-                                            </v-col>
-                                            <v-col style="max-width: 250px;">
-                                                <v-card outlined flat>
-                                                    <v-card-text style="padding-bottom: 5px; padding-top: 25px;">
-                                                        <div style="font-size: 40px; font-weight: bold;height: 30px;">{{credit ? credit.used.toFixed(2) : '조회중...'}}</div>
-                                                        <div>Used Credit</div>
-                                                    </v-card-text>
-                                                </v-card>
-                                            </v-col>
-                                        </v-row>
-                                    </v-col>
+                                <v-card-text class="pb-0 pt-0">
+                                    <div class="text-h5 font-weight-bold mb-4">{{ $t('usage.finalCredit') }}</div>
+                                    <v-card flat variant="outlined" class="pa-2">
+                                        <v-card-text>
+                                            <div class="d-flex justify-space-between align-center mb-1">
+                                                <span class="text-body-2 text-medium-emphasis">{{ $t('usage.availableCredit') }}</span>
+                                                <span class="text-h5 font-weight-bold">{{ credit ? credit.available.toFixed(2) : $t('usage.loading') }}</span>
+                                            </div>
+                                            <v-progress-linear
+                                                :model-value="creditAvailablePercent"
+                                                color="primary"
+                                                height="8"
+                                                rounded
+                                            ></v-progress-linear>
+                                            <div class="text-caption text-medium-emphasis mt-1 text-right">{{ creditAvailablePercent.toFixed(1) }}%</div>
+
+                                            <div class="d-flex justify-space-between align-center mb-1 mt-5">
+                                                <span class="text-body-2 text-medium-emphasis">{{ $t('usage.usedCredit') }}</span>
+                                                <span class="text-h5 font-weight-bold">{{ credit ? credit.used.toFixed(2) : $t('usage.loading') }}</span>
+                                            </div>
+                                            <v-progress-linear
+                                                :model-value="creditUsedPercent"
+                                                color="warning"
+                                                height="8"
+                                                rounded
+                                            ></v-progress-linear>
+                                            <div class="text-caption text-medium-emphasis mt-1 text-right">{{ creditUsedPercent.toFixed(1) }}%</div>
+                                        </v-card-text>
+                                    </v-card>
                                 </v-card-text>
                             </v-card>
-                            
-                            <v-divider></v-divider>
+
+                            <v-divider class="my-4"></v-divider>
 
                             <v-card flat>
-                                <v-card-text style="padding-top: 10px; padding-bottom: 0;">
-                                    <v-row class="align-center">
-                                        <v-row>
-                                            <div style="font-size: 22px; font-weight: bold;">기간별 사용량</div>
-                                            <div style="font-size: 10px; font-weight: bold; margin-top: 7px; margin-left: 7px;">({{ period.startAt.split(' ')[0] }} ~ {{ period.endAt.split(' ')[0] }})</div>
-                                        </v-row>
-                                        <v-col class="d-flex justify-end align-center">
+                                <v-card-text class="pt-2 pb-0">
+                                    <v-row class="ma-0 pa-0 align-center" :class="isMobile ? 'flex-column' : ''">
+                                        <v-col class="pa-0" :class="isMobile ? '' : 'd-flex align-center'">
+                                            <div class="text-h5 font-weight-bold">{{ $t('usage.periodUsage') }}</div>
+                                            <div class="text-caption font-weight-bold" :class="isMobile ? 'mt-1' : 'ml-2'">({{ period.startAt.split(' ')[0] }} ~ {{ period.endAt.split(' ')[0] }})</div>
+                                        </v-col>
+                                        <v-col class="pa-0" :class="isMobile ? 'mt-3' : 'd-flex justify-end'" :style="isMobile ? '' : 'max-width: 250px;'">
                                             <v-autocomplete
                                                 v-model="selectedPeriod"
-                                                :items="periodOptions"
+                                                :items="translatedPeriodOptions"
                                                 density="compact"
                                                 variant="outlined"
-                                                label="기간 설정"
+                                                :label="$t('usage.periodSetting')"
                                                 item-title="text"
                                                 item-value="value"
                                                 hide-details
@@ -73,40 +76,40 @@
 
                             <v-card flat>
                                 <v-card-text>
-                                    <v-col>
-                                        <div style="font-size: 20px; font-weight: bold;">사용량 요약</div>
-                                        <p>테넌트에 대한 전체적인 서비스 요약 내역이며, 해당 기간의 사용량을 요약하여 보여줍니다.</p>
+                                    <div class="text-h6 font-weight-bold">{{ $t('usage.usageSummary') }}</div>
+                                    <p class="text-body-2 text-medium-emphasis mt-1">{{ $t('usage.usageSummaryDescription') }}</p>
 
+                                    <v-row class="ma-0 pa-0 mt-5 mb-5">
+                                        <v-col class="pa-0">
+                                            <div class="text-subtitle-1 font-weight-bold">{{ $t('usage.usageCount') }}</div>
+                                            <div class="text-body-1">{{ $t('usage.countUnit', { count: summaryCredit.used_count }) }}</div>
+                                        </v-col>
+                                        <v-col class="pa-0">
+                                            <div class="text-subtitle-1 font-weight-bold">{{ $t('usage.usedCredit') }}</div>
+                                            <div class="text-body-1">{{ summaryCredit.used_credit.toFixed(2) }} 🔋</div>
+                                        </v-col>
+                                    </v-row>
 
-                                        <v-row style="margin-top: 20px; margin-bottom: 20px;">
-                                            <v-col>
-                                                <div style="font-size: 18px; font-weight: bold;">사용 횟수</div>
-                                                <div style="font-size: 15px;">{{ summaryCredit.used_count }} 번</div>
-                                            </v-col>
-                                            <v-col>
-                                                <div style="font-size: 18px; font-weight: bold;">사용 크레딧</div>
-                                                <div style="font-size: 15px;">{{ summaryCredit.used_credit.toFixed(2) }} 🔋</div>
-                                            </v-col>
-                                        </v-row>
-
-                                        <div style="width: 100%;height: 300px;">
-                                            <canvas id="summaryChart"></canvas>
-                                        </div>
-                                    </v-col>
+                                    <div style="width: 100%; height: 300px;">
+                                        <canvas id="summaryChart"></canvas>
+                                    </div>
                                 </v-card-text>
                             </v-card>
+
                             <v-divider></v-divider>
+
                             <v-card flat>
                                 <v-card-text>
-                                    <v-row>
-                                        <v-col cols="12" md="7">
-                                            <div style="font-size: 20px; font-weight: bold;">서비스별 사용량</div>
-                                            <p>테넌트의 서비스별 사용량을 표시합니다. 해당 기간의 사용량을 표시합니다.</p>
+                                    <v-row class="ma-0 pa-0">
+                                        <v-col cols="12" md="7" class="pa-0">
+                                            <div class="text-h6 font-weight-bold">{{ $t('usage.serviceUsage') }}</div>
+                                            <p class="text-body-2 text-medium-emphasis mt-1">{{ $t('usage.serviceUsageDescription') }}</p>
 
-                                            <v-row style="margin-top:20px;">
+                                            <v-row class="ma-0 pa-0 mt-5">
                                                 <v-data-table-virtual
                                                     :items="serviceUsage" 
-                                                    :headers="serviceUsageHeaders"
+                                                    :headers="translatedServiceUsageHeaders"
+                                                    :no-data-text="$t('usage.noData')"
                                                 >
                                                     <template v-slot:item.used_quantity="{ item }">
                                                         <v-tooltip v-if="item.used_quantity_detail">
@@ -143,61 +146,65 @@
                                                 </v-data-table-virtual>
                                             </v-row> 
                                         </v-col>
-                                        <v-col cols="12" md="5">
+                                        <v-col cols="12" md="5" class="pa-0">
                                             <div style="height: 400px;">
-                                                <canvas id="serviceUsageChart" style="margin-left:50px;"></canvas>
+                                                <canvas id="serviceUsageChart" style="margin-left: 50px;"></canvas>
                                             </div>
                                         </v-col>
                                     </v-row>
                                 </v-card-text>
                             </v-card>
+
                             <v-divider></v-divider>
+
                             <v-card flat>
                                 <v-card-text>
-                                    <v-row>
-                                        <v-col cols="12" md="7">
-                                            <div style="font-size: 20px; font-weight: bold;">모델별 사용량</div>
-                                            <p>테넌트의 모델별 사용량을 표시합니다. 해당 기간의 사용량을 표시합니다.</p>
+                                    <v-row class="ma-0 pa-0">
+                                        <v-col cols="12" md="7" class="pa-0">
+                                            <div class="text-h6 font-weight-bold">{{ $t('usage.modelUsage') }}</div>
+                                            <p class="text-body-2 text-medium-emphasis mt-1">{{ $t('usage.modelUsageDescription') }}</p>
 
-                                            <v-row style="margin-top:20px;">
+                                            <v-row class="ma-0 pa-0 mt-5">
                                                 <v-data-table-virtual
                                                     :items="modelUsage" 
-                                                    :headers="modelUsageHeaders"
+                                                    :headers="translatedModelUsageHeaders"
+                                                    :no-data-text="$t('usage.noData')"
                                                 ></v-data-table-virtual>
                                             </v-row> 
                                         </v-col>
-                                        <v-col cols="12" md="5">
+                                        <v-col cols="12" md="5" class="pa-0">
                                             <div style="height: 400px;">
-                                                <canvas id="modelUsageChart" style="margin-left:50px;"></canvas>
+                                                <canvas id="modelUsageChart" style="margin-left: 50px;"></canvas>
                                             </div>
                                         </v-col>
                                     </v-row>
                                 </v-card-text>
                             </v-card>
+
                             <v-divider></v-divider>
+
                             <v-card flat>
                                 <v-card-text>
-                                    <v-col>
-                                        <h2>크레딧</h2>
-                                        <p>해당 기간의 테넌트의 크레딧 보유량을 표시합니다</p>
+                                    <div class="text-h6 font-weight-bold">{{ $t('usage.credit') }}</div>
+                                    <p class="text-body-2 text-medium-emphasis mt-1">{{ $t('usage.creditDescription') }}</p>
 
-                                        <v-row style="margin-top:20px;">
-                                            <v-data-table-virtual
-                                                :items="validCredit" 
-                                                :headers="validCreditHeaders"
-                                            >
-                                                <template v-slot:item.created_at="{ item }">
-                                                    {{ item.created_at.split('T')[0] }}
-                                                </template>
-                                                <template v-slot:item.source_type="{ item }">
-                                                    {{ item.source_type === 'purchase' ? '구매' : '충전' }}
-                                                </template>
-                                                <template v-slot:item.expires_at="{ item }">
-                                                    {{ item.expires_at.split('T')[0] }}
-                                                </template>
-                                            </v-data-table-virtual>
-                                        </v-row> 
-                                    </v-col>
+                                    <v-row class="ma-0 pa-0 mt-5">
+                                        <v-data-table-virtual
+                                            :items="validCredit" 
+                                            :headers="translatedValidCreditHeaders"
+                                            :no-data-text="$t('usage.noData')"
+                                        >
+                                            <template v-slot:item.created_at="{ item }">
+                                                {{ item.created_at.split('T')[0] }}
+                                            </template>
+                                            <template v-slot:item.source_type="{ item }">
+                                                {{ item.source_type === 'purchase' ? $t('usage.purchase') : $t('usage.charge') }}
+                                            </template>
+                                            <template v-slot:item.expires_at="{ item }">
+                                                {{ item.expires_at.split('T')[0] }}
+                                            </template>
+                                        </v-data-table-virtual>
+                                    </v-row> 
                                 </v-card-text>
                             </v-card>
                         </div>
@@ -227,14 +234,6 @@ export default {
             tab: 'Usage',
             loading: true,
 
-            periodOptions: [
-                { text: 'This month', value: 'current_month' },
-                { text: 'Last 7 Days', value: '7d' },
-                { text: 'Last 1 Month', value: '1m' },
-                { text: 'Last 3 Months', value: '3m' },
-                { text: 'Last 6 Months', value: '6m' },
-                { text: 'Last 1 Year', value: '1y' },
-            ],
             selectedPeriod: 'current_month',
             selectedTenant: null,
             // 차트 인스턴스 저장용 변수들
@@ -242,41 +241,68 @@ export default {
             serviceUsageChart: null,
             modelUsageChart: null,
          
-            // 크레딧
             credit: null,
             // 크레딧 구매 내역 
             validCredit: [],
-            validCreditHeaders: [
-                { title: '날짜', align: 'start', key: 'created_at' },
-                { title: '크레딧', align: 'end', key: 'added_credit' },
-                { title: '유형', align: 'end', key: 'source_type' },
-                { title: '만료일', align: 'end', key: 'expires_at' },
-            ],
-
             summaryCredit: {
                 used_count: 0,
                 used_credit: 0,
             },
             // 서비스 사용량
             serviceUsage: [],
-            serviceUsageHeaders:[
-                { title: '서비스명', align: 'start', key: 'name' },
-                { title: '사용횟수', align: 'end', key: 'used_count' },
-                { title: '사용량', align: 'end', key: 'used_quantity' },
-                { title: '크레딧 사용량', align: 'end', key: 'used_credit' },
-            ],
-
             // 모델 사용량
             modelUsage: [],
-            modelUsageHeaders: [
-                { title: '모델명', align: 'start', key: 'model' },
-                { title: '사용량', align: 'end', key: 'used_quantity' },
-                { title: '크레딧 사용량', align: 'end', key: 'used_credit' },
-            ],
-
         }
     },
     computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+        creditTotal() {
+            if (!this.credit) return 0;
+            return this.credit.available + this.credit.used;
+        },
+        creditAvailablePercent() {
+            if (!this.creditTotal) return 0;
+            return (this.credit.available / this.creditTotal) * 100;
+        },
+        creditUsedPercent() {
+            if (!this.creditTotal) return 0;
+            return (this.credit.used / this.creditTotal) * 100;
+        },
+        translatedPeriodOptions() {
+            return [
+                { text: this.$t('usage.thisMonth'), value: 'current_month' },
+                { text: this.$t('usage.last7Days'), value: '7d' },
+                { text: this.$t('usage.last1Month'), value: '1m' },
+                { text: this.$t('usage.last3Months'), value: '3m' },
+                { text: this.$t('usage.last6Months'), value: '6m' },
+                { text: this.$t('usage.last1Year'), value: '1y' },
+            ];
+        },
+        translatedValidCreditHeaders() {
+            return [
+                { title: this.$t('usage.date'), align: 'start', key: 'created_at' },
+                { title: this.$t('usage.creditAmount'), align: 'end', key: 'added_credit' },
+                { title: this.$t('usage.type'), align: 'end', key: 'source_type' },
+                { title: this.$t('usage.expiryDate'), align: 'end', key: 'expires_at' },
+            ];
+        },
+        translatedServiceUsageHeaders() {
+            return [
+                { title: this.$t('usage.serviceName'), align: 'start', key: 'name' },
+                { title: this.$t('usage.usageCountHeader'), align: 'end', key: 'used_count' },
+                { title: this.$t('usage.usageQuantity'), align: 'end', key: 'used_quantity' },
+                { title: this.$t('usage.creditUsage'), align: 'end', key: 'used_credit' },
+            ];
+        },
+        translatedModelUsageHeaders() {
+            return [
+                { title: this.$t('usage.modelName'), align: 'start', key: 'model' },
+                { title: this.$t('usage.usageQuantity'), align: 'end', key: 'used_quantity' },
+                { title: this.$t('usage.creditUsage'), align: 'end', key: 'used_credit' },
+            ];
+        },
         period() {
             const today = new Date();
             let startAt, endAt;
@@ -407,7 +433,7 @@ export default {
 
                     me.serviceUsage = Object.values(usageByService).map((usage) => ({
                        ...usage,
-                       used_count: `${usage.used_count} 번`,
+                       used_count: me.$t('usage.countUnit', { count: usage.used_count }),
                        used_quantity: `${usage.used_quantity} token`,
                        used_credit: `${usage.used_credit.toFixed(2)} 🔋`,
                     }));
@@ -570,13 +596,13 @@ export default {
                                 datasets: [
                                     {
                                         type: 'bar',
-                                        label: '사용 횟수',
+                                        label: me.$t('usage.chartUsageCount'),
                                         data: used_count,
                                         backgroundColor: '#A0C4FF' // 파스텔 파랑
                                     }, 
                                     {
                                         type: 'line',
-                                        label: '사용 크레딧',
+                                        label: me.$t('usage.chartUsageCredit'),
                                         data: used_credit,
                                         backgroundColor: '#FFD6A5' // 파스텔 오렌지 (파랑과 어울리는 색상)
                                     }

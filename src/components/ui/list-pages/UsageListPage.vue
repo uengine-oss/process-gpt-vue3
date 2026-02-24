@@ -236,12 +236,5 @@
     </script>
 
 
-<style scoped>
-
-.dashboard {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-    padding: 24px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}</style>
+<style>
+</style>

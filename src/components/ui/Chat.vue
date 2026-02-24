@@ -1478,16 +1478,18 @@
                                 <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
                             <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" style="flex-shrink: 0;" />
-                            <v-tooltip :text="$t('chat.headset')">
+                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn @click="openChatMenu(); recordingModeChange()"
+                                    <v-btn @click="enableDesktopVoice && (openChatMenu(), handleVoiceButtonClick())"
                                         v-bind="props"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        style="border-color: #e0e0e0 !important;"
+                                        :disabled="!enableDesktopVoice"
+                                        :color="desktopVoiceActive ? 'primary' : undefined"
+                                        :style="desktopVoiceActive ? 'border-color: rgb(var(--v-theme-primary)) !important;' : 'border-color: #e0e0e0 !important;'"
                                     >
                                         <Icons :icon="'voice'" :size="16"  />
                                     </v-btn>
@@ -1778,17 +1780,18 @@
                             <Icons v-else :icon="'sharp-mic'" :size="'16'" />
                         </v-btn>
                         
-                        <v-tooltip :text="$t('chat.headset')">
+                        <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
                             <template v-slot:activator="{ props }">
-                                <v-btn @click="openChatMenu(); recordingModeChange()"
+                                <v-btn @click="enableDesktopVoice && !isGenerationFinished && (openChatMenu(), handleVoiceButtonClick())"
                                     class="mr-1 text-medium-emphasis"
                                     density="comfortable"
                                     icon
                                     variant="outlined"
                                     size="small"
                                     v-bind="props"
-                                    style="border-color: #e0e0e0 !important;"
-                                    :disabled="isGenerationFinished"
+                                    :disabled="!enableDesktopVoice || isGenerationFinished"
+                                    :color="desktopVoiceActive ? 'primary' : undefined"
+                                    :style="desktopVoiceActive ? 'border-color: rgb(var(--v-theme-primary)) !important;' : 'border-color: #e0e0e0 !important;'"
                                 >
                                     <Icons :icon="'voice'" :size="'16'"  />
                                 </v-btn>
@@ -1901,6 +1904,16 @@ export default {
         isAgentMode: Boolean,
         chatRoomId: String,
         isMobile: Boolean,
+        // 데스크탑 음성 에이전트 모드 활성화 여부 (ChatRoomPage에서 제어)
+        desktopVoiceActive: {
+            type: Boolean,
+            default: false,
+        },
+        // 말하기/듣기 버튼 노출 여부 (1:1 에이전트 대화일 때만 true)
+        enableDesktopVoice: {
+            type: Boolean,
+            default: false,
+        },
         newMessageInfo: Object,
         hideInput: {
             type: Boolean,
@@ -1988,7 +2001,11 @@ export default {
         // 미리보기/외부 링크 오픈 (ChatRoomPage에서 다이얼로그 처리)
         'preview-bpmn',
         'preview-image',
-        'open-external-url'
+        'open-external-url',
+        // 데스크탑 음성 에이전트 모드 토글
+        'desktop-voice-toggle',
+        'recording-mode-change',
+        'invite-agent',
     ],
     data() {
         return {
@@ -2484,7 +2501,18 @@ export default {
         },
         recordingModeChange() {
             this.recordingMode = !this.recordingMode
+            this.$emit('recording-mode-change', this.recordingMode);
             // this.$globalState.methods.toggleRightZoom();
+        },
+        handleVoiceButtonClick() {
+            const isMobileViewport = window.innerWidth < 768;
+            if (isMobileViewport) {
+                // 모바일: 기존 풀스크린 Record.vue 열기
+                this.recordingModeChange();
+            } else {
+                // 데스크탑: 인라인 텍스트 음성 모드 토글
+                this.$emit('desktop-voice-toggle');
+            }
         },
         // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
         shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
