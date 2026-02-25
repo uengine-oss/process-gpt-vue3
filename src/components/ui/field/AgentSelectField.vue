@@ -109,7 +109,7 @@
         </div>
 
         <div v-if="isExecute" class="d-flex justify-end mt-2" style="gap: 8px;">
-            <v-btn @click="selectBasicLlmAgent" color="gray" variant="flat" density="compact" class="rounded-pill">
+            <v-btn v-if="showQuickCreate" @click="selectBasicLlmAgent" color="gray" variant="flat" density="compact" class="rounded-pill">
                 {{ $t('WorkItem.quickCreate') }}
             </v-btn>
             <v-btn @click="selectAgent" color="primary" variant="flat" density="compact" class="rounded-pill">
@@ -140,6 +140,10 @@ export default {
             required: true
         },
         isExecute: {
+            type: Boolean,
+            default: false
+        },
+        showQuickCreate: {
             type: Boolean,
             default: false
         },
