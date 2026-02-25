@@ -484,7 +484,28 @@ export default {
     },
     methods: {
         async handleInstanceUpdated() {
+            // 프로세스 실행 화면에서 완료 신호를 받았지만
+            // 인스턴스 상태가 아직 NEW로 남아 있는 레이스 컨디션을 방지하기 위해
+            // 짧은 시간 동안 여러 번 재조회하여 상태 변화를 반영한다.
             await this.init();
+
+            if (!this.instance || this.instance.status !== 'NEW') {
+                return;
+            }
+
+            // 최대 5회, 500ms 간격으로 재시도 (총 최대 약 2.5초)
+            for (let i = 0; i < 5; i++) {
+                await this.delay(500);
+                const latest = await backend.getInstance(this.id);
+                if (!latest) {
+                    break;
+                }
+
+                this.instance = latest;
+                if (this.instance.status !== 'NEW') {
+                    break;
+                }
+            }
         },
         async init() {
             var me = this;
