@@ -191,7 +191,8 @@
         "languageChangeFailed": "언어 설정 변경에 실패했습니다."
     },
     "App": {
-        "view": "자세히 보기"
+        "view": "자세히 보기",
+        "tenantNotFound": "{tenant} 은(는) 존재하지 않는 경로입니다.\n확인을 누르면 테넌트 관리 페이지로 이동합니다."
     },
     "mainPage": {
         "login": "로그인",
@@ -1698,7 +1699,6 @@
         "progress": "프로세스",
         "history": "액티비티",
         "chatbot": "어시스턴트",
-        "agent": "빠른 초안 생성",
         "agentMonitor": "에이전트에 맡기기",
         "agentFeedback": "에이전트 학습",
         "toggleInputFieldSize": "확대 / 축소",

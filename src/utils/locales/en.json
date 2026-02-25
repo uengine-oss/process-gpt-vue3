@@ -55,7 +55,8 @@
         "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
-        "view": "Read more"
+        "view": "Read more",
+        "tenantNotFound": "{tenant} is not a valid path."
     },
     "mainPage": {
         "login": "login",
@@ -1535,7 +1536,6 @@
         "progress": "Progress",
         "history": "Work History",
         "chatbot": "Assistant",
-        "agent": "Quick Draft Generation",
         "agentMonitor": "Agent Delegation",
         "agentFeedback": "Agent Learning",
         "toggleInputFieldSize": "Toggle Input Field Size",

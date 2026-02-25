@@ -35,18 +35,19 @@
               :icon="isFilter ? 'filter-fill' : 'filter'" 
               :size="24" 
               class="ml-1"
-              style="cursor: pointer;" 
+              :style="{ cursor: 'pointer', color: isFilter ? 'rgb(var(--v-theme-primary))' : '' }" 
             />
           </template>
 
           <v-card min-width="300" v-if="!isLoading">
-            <v-list>
-              <v-list-item v-if="copyFilter.period">
-                <v-card flat>
-                  <v-card-title>{{ $t('filterConfigLabel.period') }}</v-card-title>
-                  <v-divider></v-divider>
-                    <v-card-text style="margin-top: 5px; padding: 0;">
-                      <v-col>
+            <v-list class="pa-4">
+              <v-list-item v-if="copyFilter.period"
+                class="pa-0"
+              >
+                <div flat>
+                  <v-card-title class="pa-0 mb-2">{{ $t('filterConfigLabel.period') }}</v-card-title>
+                    <v-card-text class="ma-0 pa-0">
+                      <v-col class="pa-0">
                         <!-- 시작일 -->
                         <v-menu
                           v-model="showStartFilter"
@@ -63,6 +64,7 @@
                               prepend-inner-icon="mdi-calendar"
                               readonly
                               clearable
+                              hide-details="auto"
                               v-bind="props"
                               @click="showStartFilter = true"
                             ></v-text-field>
@@ -86,11 +88,12 @@
                             <v-text-field
                               v-model="copyFilter.period.endDate"
                               :label="$t('filterConfigLabel.endDate')"
+                              class="mt-4"
                               prepend-inner-icon="mdi-calendar"
                               readonly
                               clearable
                               v-bind="props"
-                              hide-details
+                              hide-details="auto"
                             ></v-text-field>
                           </template>
                           <v-date-picker
@@ -98,25 +101,23 @@
                             @update:model-value="(value) => { endDateByPicker = value; showEndFilter = false; }"
                           ></v-date-picker>
                         </v-menu>
+                        <v-divider class="my-2 mb-0"></v-divider>
+                        <div v-if="filterConfig" v-for="key in Object.keys(filterConfig)" :key="key"
+                          class="pa-0"
+                        >
+                          <v-select class="mt-4"
+                            v-model="copyFilter[key]"
+                            :label="filterConfig[key].label"
+                            :items="filterConfig[key].options"
+                            item-title="text"
+                            item-value="value"
+                            :multiple="filterConfig[key].multiple"
+                            hide-details="auto"
+                          ></v-select>
+                        </div>
                     </v-col>
                   </v-card-text>
-                </v-card>
-              </v-list-item>
-              <v-list-item v-if="filterConfig" v-for="key in Object.keys(filterConfig)" :key="key">
-                  <v-card flat>
-                    <v-card-title> {{ filterConfig[key].label }} </v-card-title>
-                    <v-divider></v-divider>
-                    <v-card-text style="margin-top: 10px; padding: 0;">
-                      <v-select
-                        v-model="copyFilter[key]"
-                        :label="filterConfig[key].label"
-                        :items="filterConfig[key].options"
-                        item-title="text"
-                        item-value="value"
-                        :multiple="filterConfig[key].multiple"
-                      ></v-select>
-                    </v-card-text>
-                  </v-card>
+                </div>
               </v-list-item>
             </v-list>
           </v-card>
