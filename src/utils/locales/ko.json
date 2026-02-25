@@ -1139,8 +1139,10 @@
         "sendEmailExplanation": "이메일 주소를 입력하고 메일 전송 버튼을 누르면 비밀번호를 재설정 할 수 있는 링크가 메일로 전송됩니다.",
         "login": "로그인",
         "resetPassword": "비밀번호 재설정",
-        "password": "비밀번호",
+        "password": "새 비밀번호",
+        "confirmPassword": "새 비밀번호 확인",
         "passwordExplanation": "재설정할 비밀번호를 입력하세요.",
+        "passwordMismatch": "비밀번호가 일치하지 않습니다.",
         "updatePassword": "비밀번호 변경"
     },
     "ExtraBox": {
