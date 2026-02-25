@@ -2613,6 +2613,7 @@
         "expand": "Show more",
         "collapse": "Show less",
         "defaultAgentName": "Agent",
+        "knowledgeSetupInProgress": "Setting up knowledge",
         "labels": {
             "goal": "Goal",
             "persona": "Persona",
@@ -3003,6 +3004,8 @@
         "addFromRepo": "From Repository",
         "addFromRepoHint": "Add from a Git repository URL",
         "repositoryUrl": "Repository URL",
+        "searchPlaceholder": "Search by name or description",
+        "noSkills": "No skills to display",
         "skillName": "Skill name",
         "skillDescription": "Skill description",
         "usedByAgents": "Used by",

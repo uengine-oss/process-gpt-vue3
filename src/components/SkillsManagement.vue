@@ -58,16 +58,30 @@
                     <p class="text-body-1 mt-3 text-medium-emphasis">{{ $t('SkillList.loading') }}</p>
                 </div>
                 <template v-else>
-                    <v-tabs
-                        v-model="skillTab"
-                        density="compact"
-                        variant="plain"
-                        class="skills-management-tabs mb-3"
-                        hide-slider
-                    >
-                        <v-tab value="uploaded" class="text-body-2">{{ $t('SkillsManagement.uploadedSkills') }}</v-tab>
-                        <v-tab value="builtin" class="text-body-2">{{ $t('SkillsManagement.builtinSkills') }}</v-tab>
-                    </v-tabs>
+                    <div class="d-flex align-center flex-wrap mb-3 skills-tabs-row">
+                        <v-tabs
+                            v-model="skillTab"
+                            density="compact"
+                            variant="plain"
+                            class="skills-management-tabs flex-shrink-0"
+                            hide-slider
+                        >
+                            <v-tab value="uploaded" class="text-body-2">{{ $t('SkillsManagement.uploadedSkills') }}</v-tab>
+                            <v-tab value="builtin" class="text-body-2">{{ $t('SkillsManagement.builtinSkills') }}</v-tab>
+                        </v-tabs>
+                        <v-spacer class="flex-grow-1" />
+                        <v-text-field
+                            :model-value="searchByTab"
+                            @update:model-value="onSearchInput"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            prepend-inner-icon="mdi-magnify"
+                            :placeholder="$t('SkillsManagement.searchPlaceholder')"
+                            class="skill-search-inline flex-shrink-0"
+                            clearable
+                        />
+                    </div>
                     <v-window v-model="skillTab" class="skills-tab-window">
                         <!-- 업로드된 스킬 탭 -->
                         <v-window-item value="uploaded">
@@ -92,83 +106,80 @@
                                     </div>
                                 </div>
                                 <template v-else>
-                            <div v-if="viewMode === 'table'" class="table-wrap">
-                                <v-table class="skill-management-table" hover>
-                                    <thead>
-                                        <tr>
-                                            <th class="text-left table-header-name">{{ $t('SkillsManagement.skillName') }}</th>
-                                            <th class="text-left table-header-desc">{{ $t('SkillsManagement.skillDescription') }}</th>
-                                            <th class="text-right table-header-used">{{ $t('SkillsManagement.usedByAgents') }}</th>
-                                            <th class="text-right table-header-actions"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-if="isUploading" class="table-row table-row-placeholder">
-                                            <td class="td-name">
-                                                <div class="name-cell">
-                                                    <v-progress-circular indeterminate size="20" width="2" color="primary" class="mr-2" />
-                                                    <span class="skill-name-text text-medium-emphasis">{{ $t('SkillsManagement.uploading') }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="td-desc text-medium-emphasis">—</td>
-                                            <td class="td-used text-right text-medium-emphasis">—</td>
-                                            <td class="td-actions text-right"></td>
-                                        </tr>
-                                        <tr
-                                            v-for="skill in skillList"
-                                            :key="'uploaded-' + skill.name"
-                                            class="table-row"
-                                            :class="{ 'table-row-deleting': deletingSkillName === skill.name }"
-                                            @click="deletingSkillName === skill.name ? null : $router.push(`/skills/${encodeURIComponent(skill.name)}`)"
-                                        >
-                                            <td class="td-name">
-                                                <div class="name-cell">
-                                                    <v-icon size="20" class="mr-2 skill-icon">mdi-lightning-bolt-outline</v-icon>
-                                                    <span class="skill-name-text">{{ skill.name }}</span>
-                                                    <v-icon v-if="deletingSkillName !== skill.name" size="16" class="open-hint">mdi-open-in-new</v-icon>
-                                                </div>
-                                            </td>
-                                            <td class="td-desc text-medium-emphasis">
-                                                {{ deletingSkillName === skill.name ? $t('SkillsManagement.deleting') : (skill.description || '—') }}
-                                            </td>
-                                            <td class="td-used text-right">
-                                                <template v-if="isUsageLoading">
-                                                    <v-progress-circular indeterminate size="18" width="2" color="primary" />
+                            <div v-if="viewMode === 'table'" class="table-wrap w-100">
+                                <v-data-table
+                                    :headers="tableHeadersUploaded"
+                                    :items="uploadedTableRows"
+                                    :items-per-page="10"
+                                    :items-per-page-options="[5, 10, 25, 50]"
+                                    density="comfortable"
+                                    class="skill-management-table w-100"
+                                    :hover="true"
+                                    :item-value="(item) => item.name"
+                                    @click:row="onUploadedRowClick"
+                                >
+                                    <template #item.name="{ item }">
+                                        <div v-if="item.isPlaceholder" class="name-cell">
+                                            <v-progress-circular indeterminate size="20" width="2" color="primary" class="mr-2" />
+                                            <span class="skill-name-text text-medium-emphasis">{{ $t('SkillsManagement.uploading') }}</span>
+                                        </div>
+                                        <div v-else class="name-cell" :class="{ 'table-row-deleting': deletingSkillName === item.name }">
+                                            <v-icon size="20" class="mr-2 skill-icon">mdi-lightning-bolt-outline</v-icon>
+                                            <span class="skill-name-text">{{ item.name }}</span>
+                                            <v-icon v-if="deletingSkillName !== item.name" size="16" class="open-hint">mdi-open-in-new</v-icon>
+                                        </div>
+                                    </template>
+                                    <template #item.description="{ item }">
+                                        <span v-if="item.isPlaceholder" class="text-medium-emphasis">—</span>
+                                        <span v-else class="text-medium-emphasis">{{ deletingSkillName === item.name ? $t('SkillsManagement.deleting') : (item.description || '—') }}</span>
+                                    </template>
+                                    <template #item.used="{ item }">
+                                        <div v-if="item.isPlaceholder" class="text-medium-emphasis">—</div>
+                                        <template v-else>
+                                            <v-progress-circular v-if="isUsageLoading" indeterminate size="18" width="2" color="primary" />
+                                            <v-chip v-else size="x-small" variant="tonal" color="primary">
+                                                {{ item.usedCount }}
+                                            </v-chip>
+                                        </template>
+                                    </template>
+                                    <template #item.actions="{ item }">
+                                        <template v-if="item.isPlaceholder">—</template>
+                                        <template v-else-if="deletingSkillName === item.name">
+                                            <v-progress-circular indeterminate size="24" width="2" color="primary" />
+                                        </template>
+                                        <template v-else>
+                                            <v-tooltip location="left" :text="$t('common.delete')">
+                                                <template v-slot:activator="{ props }">
+                                                    <v-btn
+                                                        v-bind="props"
+                                                        icon
+                                                        variant="text"
+                                                        size="small"
+                                                        color="error"
+                                                        @click.stop="confirmDelete(item)"
+                                                    >
+                                                        <v-icon>mdi-delete-outline</v-icon>
+                                                    </v-btn>
                                                 </template>
-                                                <template v-else>
-                                                    <v-chip size="x-small" variant="tonal" color="primary">
-                                                        {{ getUsageCount(skill.name) }}
-                                                    </v-chip>
-                                                </template>
-                                            </td>
-                                            <td class="td-actions text-right">
-                                                <template v-if="deletingSkillName === skill.name">
-                                                    <v-progress-circular indeterminate size="24" width="2" color="primary" />
-                                                </template>
-                                                <template v-else>
-                                                    <v-tooltip location="left" :text="$t('common.delete')">
-                                                        <template v-slot:activator="{ props }">
-                                                            <v-btn
-                                                                v-bind="props"
-                                                                icon
-                                                                variant="text"
-                                                                size="small"
-                                                                color="error"
-                                                                @click.stop="confirmDelete(skill)"
-                                                            >
-                                                                <v-icon>mdi-delete-outline</v-icon>
-                                                            </v-btn>
-                                                        </template>
-                                                    </v-tooltip>
-                                                </template>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </v-table>
+                                            </v-tooltip>
+                                        </template>
+                                    </template>
+                                    <template #no-data>
+                                        <div class="no-data-cell py-4">
+                                            <v-icon size="large" color="medium-emphasis">mdi-inbox-outline</v-icon>
+                                            <div class="text-body-2 text-medium-emphasis mt-2">{{ $t('SkillsManagement.noSkills') }}</div>
+                                        </div>
+                                    </template>
+                                </v-data-table>
                             </div>
                             <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
-                                <v-col v-if="isUploading" cols="12" sm="6" md="4" lg="3">
-                                    <v-card variant="outlined" class="skill-card skill-card-placeholder" rounded="lg">
+                                <v-col v-for="skill in uploadedCardRowsPaginated" :key="'uploaded-' + skill.name" cols="12" sm="6" md="4" lg="3">
+                                    <v-card
+                                        v-if="skill.isPlaceholder"
+                                        variant="outlined"
+                                        class="skill-card skill-card-placeholder"
+                                        rounded="lg"
+                                    >
                                         <div class="card-inner">
                                             <div class="card-header">
                                                 <v-progress-circular indeterminate size="24" width="2" color="primary" />
@@ -183,9 +194,8 @@
                                             </div>
                                         </div>
                                     </v-card>
-                                </v-col>
-                                <v-col v-for="skill in skillList" :key="'uploaded-' + skill.name" cols="12" sm="6" md="4" lg="3">
                                     <v-card
+                                        v-else
                                         variant="outlined"
                                         class="skill-card"
                                         rounded="lg"
@@ -198,7 +208,7 @@
                                                     <template v-if="isUsageLoading">
                                                         <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-1" />
                                                     </template>
-                                                    <span v-else>{{ getUsageCount(skill.name) }}</span>
+                                                    <span v-else>{{ skill.usedCount }}</span>
                                                     <span class="ml-1">{{ $t('SkillsManagement.usedByAgentsSuffix') }}</span>
                                                 </v-chip>
                                                 <template v-if="deletingSkillName === skill.name">
@@ -221,6 +231,15 @@
                                         </div>
                                     </v-card>
                                 </v-col>
+                                <v-col v-if="viewMode === 'card' && uploadedCardTotalPages > 1" cols="12" class="d-flex justify-center py-3">
+                                    <v-pagination
+                                        v-model="cardPageUploaded"
+                                        :length="uploadedCardTotalPages"
+                                        :total-visible="7"
+                                        density="compact"
+                                        rounded="circle"
+                                    />
+                                </v-col>
                             </v-row>
                         </template>
                     </div>
@@ -230,46 +249,44 @@
                             <div class="skill-section">
                         <p v-if="builtinSkillList.length === 0" class="section-empty text-medium-emphasis">{{ $t('SkillsManagement.builtinEmpty') }}</p>
                         <template v-else>
-                            <div v-if="viewMode === 'table'" class="table-wrap">
-                                <v-table class="skill-management-table" hover>
-                                    <thead>
-                                        <tr>
-                                            <th class="text-left table-header-name">{{ $t('SkillsManagement.skillName') }}</th>
-                                            <th class="text-left table-header-desc">{{ $t('SkillsManagement.skillDescription') }}</th>
-                                            <th class="text-right table-header-used">{{ $t('SkillsManagement.usedByAgents') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr
-                                            v-for="skill in builtinSkillList"
-                                            :key="'builtin-' + skill.name"
-                                            class="table-row"
-                                            @click="$router.push(`/skills/${encodeURIComponent(skill.name)}`)"
-                                        >
-                                            <td class="td-name">
-                                                <div class="name-cell">
-                                                    <v-icon size="20" class="mr-2 skill-icon">mdi-package-variant</v-icon>
-                                                    <span class="skill-name-text">{{ skill.name }}</span>
-                                                    <v-icon size="16" class="open-hint">mdi-open-in-new</v-icon>
-                                                </div>
-                                            </td>
-                                            <td class="td-desc text-medium-emphasis">{{ skill.description || '—' }}</td>
-                                            <td class="td-used text-right">
-                                                <template v-if="isUsageLoading">
-                                                    <v-progress-circular indeterminate size="18" width="2" color="primary" />
-                                                </template>
-                                                <template v-else>
-                                                    <v-chip size="x-small" variant="tonal" color="primary">
-                                                        {{ getUsageCount(skill.name) }}
-                                                    </v-chip>
-                                                </template>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </v-table>
+                            <div v-if="viewMode === 'table'" class="table-wrap w-100">
+                                <v-data-table
+                                    :headers="tableHeadersBuiltin"
+                                    :items="builtinTableRows"
+                                    :items-per-page="10"
+                                    :items-per-page-options="[5, 10, 25, 50]"
+                                    density="comfortable"
+                                    class="skill-management-table w-100"
+                                    :hover="true"
+                                    :item-value="(item) => item.name"
+                                    @click:row="onBuiltinRowClick"
+                                >
+                                    <template #item.name="{ item }">
+                                        <div class="name-cell">
+                                            <v-icon size="20" class="mr-2 skill-icon">mdi-package-variant</v-icon>
+                                            <span class="skill-name-text">{{ item.name }}</span>
+                                            <v-icon size="16" class="open-hint">mdi-open-in-new</v-icon>
+                                        </div>
+                                    </template>
+                                    <template #item.description="{ item }">
+                                        <span class="text-medium-emphasis">{{ item.description || '—' }}</span>
+                                    </template>
+                                    <template #item.used="{ item }">
+                                        <v-progress-circular v-if="isUsageLoading" indeterminate size="18" width="2" color="primary" />
+                                        <v-chip v-else size="x-small" variant="tonal" color="primary">
+                                            {{ item.usedCount }}
+                                        </v-chip>
+                                    </template>
+                                    <template #no-data>
+                                        <div class="no-data-cell py-4">
+                                            <v-icon size="large" color="medium-emphasis">mdi-inbox-outline</v-icon>
+                                            <div class="text-body-2 text-medium-emphasis mt-2">{{ $t('SkillsManagement.builtinEmpty') }}</div>
+                                        </div>
+                                    </template>
+                                </v-data-table>
                             </div>
                             <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
-                                <v-col v-for="skill in builtinSkillList" :key="'builtin-' + skill.name" cols="12" sm="6" md="4" lg="3">
+                                <v-col v-for="skill in builtinCardRowsPaginated" :key="'builtin-' + skill.name" cols="12" sm="6" md="4" lg="3">
                                     <v-card
                                         variant="outlined"
                                         class="skill-card skill-card-builtin"
@@ -282,7 +299,7 @@
                                                     <template v-if="isUsageLoading">
                                                         <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-1" />
                                                     </template>
-                                                    <span v-else>{{ getUsageCount(skill.name) }}</span>
+                                                    <span v-else>{{ skill.usedCount }}</span>
                                                     <span class="ml-1">{{ $t('SkillsManagement.usedByAgentsSuffix') }}</span>
                                                 </v-chip>
                                             </div>
@@ -290,6 +307,15 @@
                                             <p class="card-desc">{{ skill.description || '' }}</p>
                                         </div>
                                     </v-card>
+                                </v-col>
+                                <v-col v-if="viewMode === 'card' && builtinCardTotalPages > 1" cols="12" class="d-flex justify-center py-3">
+                                    <v-pagination
+                                        v-model="cardPageBuiltin"
+                                        :length="builtinCardTotalPages"
+                                        :total-visible="7"
+                                        density="compact"
+                                        rounded="circle"
+                                    />
                                 </v-col>
                             </v-row>
                         </template>
@@ -389,8 +415,81 @@ export default {
             showRepoDialog: false,
             repositoryUrl: '',
             showDeleteDialog: false,
-            skillToDelete: null
+            skillToDelete: null,
+            searchUploaded: '',
+            searchBuiltin: '',
+            cardPageUploaded: 1,
+            cardPageBuiltin: 1
         };
+    },
+    watch: {
+        searchUploaded() {
+            this.cardPageUploaded = 1;
+        },
+        searchBuiltin() {
+            this.cardPageBuiltin = 1;
+        },
+        uploadedTableRows() {
+            const total = Math.max(1, Math.ceil(this.uploadedTableRows.length / 12));
+            if (this.cardPageUploaded > total) this.cardPageUploaded = total;
+        },
+        builtinTableRows() {
+            const total = Math.max(1, Math.ceil(this.builtinTableRows.length / 12));
+            if (this.cardPageBuiltin > total) this.cardPageBuiltin = total;
+        }
+    },
+    computed: {
+        searchByTab() {
+            return this.skillTab === 'uploaded' ? this.searchUploaded : this.searchBuiltin;
+        },
+        tableHeadersUploaded() {
+            return [
+                { title: this.$t('SkillsManagement.skillName'), key: 'name', sortable: true, align: 'start', width: '200px' },
+                { title: this.$t('SkillsManagement.skillDescription'), key: 'description', sortable: true, align: 'start' },
+                { title: this.$t('SkillsManagement.usedByAgents'), key: 'used', sortable: true, align: 'end', width: '120px' },
+                { title: '', key: 'actions', sortable: false, align: 'end', width: '72px' }
+            ];
+        },
+        tableHeadersBuiltin() {
+            return [
+                { title: this.$t('SkillsManagement.skillName'), key: 'name', sortable: true, align: 'start', width: '200px' },
+                { title: this.$t('SkillsManagement.skillDescription'), key: 'description', sortable: true, align: 'start' },
+                { title: this.$t('SkillsManagement.usedByAgents'), key: 'used', sortable: true, align: 'end', width: '120px' }
+            ];
+        },
+        uploadedTableRows() {
+            const base = this.skillList.map((s) => {
+                const count = this.getUsageCount(s.name);
+                return { ...s, usedCount: count, used: count };
+            });
+            const withPlaceholder = this.isUploading
+                ? [{ name: '__uploading__', description: '', usedCount: 0, used: 0, isPlaceholder: true }, ...base]
+                : base;
+            return this.filterTableRows(withPlaceholder, this.searchUploaded);
+        },
+        builtinTableRows() {
+            const rows = this.builtinSkillList.map((s) => {
+                const count = this.getUsageCount(s.name);
+                return { ...s, usedCount: count, used: count };
+            });
+            return this.filterTableRows(rows, this.searchBuiltin);
+        },
+        uploadedCardTotalPages() {
+            const n = this.uploadedTableRows.length;
+            return Math.max(1, Math.ceil(n / 12));
+        },
+        builtinCardTotalPages() {
+            const n = this.builtinTableRows.length;
+            return Math.max(1, Math.ceil(n / 12));
+        },
+        uploadedCardRowsPaginated() {
+            const start = (this.cardPageUploaded - 1) * 12;
+            return this.uploadedTableRows.slice(start, start + 12);
+        },
+        builtinCardRowsPaginated() {
+            const start = (this.cardPageBuiltin - 1) * 12;
+            return this.builtinTableRows.slice(start, start + 12);
+        }
     },
     created() {
         this.backend = BackendFactory.createBackend();
@@ -457,6 +556,34 @@ export default {
 
         getUsageCount(skillName) {
             return this.skillUsageCount?.[skillName] || 0;
+        },
+
+        filterTableRows(rows, search) {
+            const q = (search || '').trim().toLowerCase();
+            if (!q) return rows;
+            return rows.filter((row) => {
+                if (row.isPlaceholder) return true;
+                const name = (row.name || '').toLowerCase();
+                const desc = (row.description || '').toLowerCase();
+                return name.includes(q) || desc.includes(q);
+            });
+        },
+
+        onUploadedRowClick(event, { item }) {
+            if (item.isPlaceholder || this.deletingSkillName === item.name) return;
+            this.$router.push(`/skills/${encodeURIComponent(item.name)}`);
+        },
+
+        onBuiltinRowClick(event, { item }) {
+            this.$router.push(`/skills/${encodeURIComponent(item.name)}`);
+        },
+
+        onSearchInput(value) {
+            if (this.skillTab === 'uploaded') {
+                this.searchUploaded = value ?? '';
+            } else {
+                this.searchBuiltin = value ?? '';
+            }
         },
 
         openZipUpload() {
@@ -710,14 +837,51 @@ export default {
 
 /* 테이블 */
 .table-wrap {
+    width: 100%;
     background: rgb(var(--v-theme-surface));
     border-radius: 12px;
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     overflow: hidden;
 }
 
+.skills-tabs-row {
+    gap: 12px;
+}
+
+.skill-search-inline {
+    max-width: 280px;
+    min-width: 160px;
+}
+
+.skill-search-inline :deep(.v-field) {
+    min-height: 36px;
+}
+
 .skill-management-table {
+    width: 100%;
     border-radius: 12px;
+}
+
+.skill-management-table :deep(.v-data-table__wrapper) {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.skill-management-table :deep(table) {
+    width: 100%;
+}
+
+.skill-management-table :deep(tbody tr) {
+    cursor: pointer;
+}
+
+/* 스킬 설명 열: 가로로 표시 후 길면 줄바꿈 */
+.skill-management-table :deep(thead th:nth-child(2)),
+.skill-management-table :deep(tbody td:nth-child(2)) {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 10em;
 }
 
 .skill-management-table :deep(thead) {
@@ -789,9 +953,8 @@ export default {
     opacity: 0.6;
 }
 
-.td-desc {
+.skill-management-table :deep(tbody td:nth-child(2)) {
     font-size: 0.875rem;
-    max-width: 360px;
 }
 
 .td-used {

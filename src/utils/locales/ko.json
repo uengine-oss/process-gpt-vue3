@@ -2825,6 +2825,7 @@
         "expand": "더보기",
         "collapse": "접기",
         "defaultAgentName": "에이전트",
+        "knowledgeSetupInProgress": "지식 셋팅 중",
         "labels": {
             "goal": "목표",
             "persona": "페르소나",
@@ -3283,6 +3284,8 @@
         "addFromRepo": "Repository에서 추가",
         "addFromRepoHint": "Git 저장소 URL로 스킬 추가",
         "repositoryUrl": "Repository URL",
+        "searchPlaceholder": "이름 또는 설명으로 검색",
+        "noSkills": "표시할 스킬이 없습니다",
         "skillName": "스킬 이름",
         "skillDescription": "스킬 설명",
         "usedByAgents": "사용 중",
