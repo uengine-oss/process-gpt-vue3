@@ -69,10 +69,9 @@ export default class AIGenerator {
 
         this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay : 3000;
         
-        // 로컬 개발(vite proxy)에서는 /langchain-chat로 붙어야 8000으로 프록시된다.
-        // 배포 환경에서는 /completion prefix를 유지한다.
-        const isLocalDev = window?.location?.hostname === 'localhost' || window?.location?.hostname === '127.0.0.1';
-        this.backendUrl = isLocalDev ? '/langchain-chat' : '/completion/langchain-chat';
+        // Vite dev server에서는 /langchain-chat 프록시를 사용하고,
+        // 빌드/배포(nginx)에서는 /completion prefix 경로를 사용한다.
+        this.backendUrl = import.meta.env.DEV ? '/langchain-chat' : '/completion/langchain-chat';
         this.vendor = 'openai';
         this.modelConfig = {
             temperature: 1,
