@@ -55,7 +55,8 @@
         "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
-        "view": "Read more"
+        "view": "Read more",
+        "tenantNotFound": "{tenant} is not a valid path."
     },
     "mainPage": {
         "login": "login",
@@ -984,8 +985,10 @@
         "sendEmailExplanation": "Please enter the email address associated with your account and We will email you a link to reset your password.",
         "login": "Back to Login",
         "resetPassword": "Reset Password",
-        "password": "Password",
+        "password": "New Password",
+        "confirmPassword": "Confirm New Password",
         "passwordExplanation": "Enter the password you want to reset.",
+        "passwordMismatch": "Passwords do not match.",
         "updatePassword": "Update Password"
     },
     "ExtraBox": {
@@ -1539,7 +1542,6 @@
         "progress": "Progress",
         "history": "Work History",
         "chatbot": "Assistant",
-        "agent": "Quick Draft Generation",
         "agentMonitor": "Agent Delegation",
         "agentFeedback": "Agent Learning",
         "toggleInputFieldSize": "Toggle Input Field Size",
@@ -2431,7 +2433,7 @@
         "doubleClick": "Double-click to collapse/expand",
         "workInProgress": "Working...",
         "workQueued": "Work has been registered in the queue.",
-        "noWorkInProgress": "No work in progress.",
+        "noWorkInProgress": "Standby",
         "workStarted": "The work will be displayed here once it starts.",
         "selectResearchMethod": "Select research method",
         "browserUse": "Browser use feature is available after downloading and decompressing. (Size: 114MB)",
@@ -2615,6 +2617,7 @@
         "expand": "Show more",
         "collapse": "Show less",
         "defaultAgentName": "Agent",
+        "knowledgeSetupInProgress": "Setting up knowledge",
         "labels": {
             "goal": "Goal",
             "persona": "Persona",
@@ -3005,6 +3008,8 @@
         "addFromRepo": "From Repository",
         "addFromRepoHint": "Add from a Git repository URL",
         "repositoryUrl": "Repository URL",
+        "searchPlaceholder": "Search by name or description",
+        "noSkills": "No skills to display",
         "skillName": "Skill name",
         "skillDescription": "Skill description",
         "usedByAgents": "Used by",

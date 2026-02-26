@@ -220,7 +220,6 @@ export function buildSkillReferenceGraph(
     const currentSkillName = input.skillName;
 
     const knownPaths = new Set<string>();
-    const knownSkillNames = new Set<string>();
     const fileIdByPath: Record<string, string> = {};
     const nodeDataById = new Map<string, SkillReferenceGraphNodeData>();
     const edgeAgg = new Map<string, SkillReferenceGraphEdgeData>();
@@ -228,27 +227,24 @@ export function buildSkillReferenceGraph(
     const srcPathToSkill = new Map<string, string>();
 
     if (tenantMode) {
-        for (const sd of input.allSkillsData!) {
-            const skillName = String(sd?.skillName || '').trim();
-            if (!skillName) continue;
-            knownSkillNames.add(skillName);
-            const metas = Array.isArray(sd.filesMeta) ? sd.filesMeta : [];
+        // 선택된 스킬(current skill) 데이터만 로드 (외부 스킬 참조 감지 안 함)
+        const currentSkillData = input.allSkillsData!.find(
+            (sd) => String(sd?.skillName || '').trim() === currentSkillName
+        );
+        if (currentSkillData) {
+            const skillName = String(currentSkillData.skillName || '').trim();
+            const metas = Array.isArray(currentSkillData.filesMeta) ? currentSkillData.filesMeta : [];
             for (const m of metas) {
                 const p = normalizePath(m?.path || '');
                 if (!p) continue;
                 const qp = qualPath(skillName, p);
                 knownPaths.add(qp);
             }
-            for (const [kp, content] of Object.entries(sd.contentsByPath || {})) {
+            for (const [kp, content] of Object.entries(currentSkillData.contentsByPath || {})) {
                 const qp = qualPath(skillName, kp);
                 contentsByPathMap.set(qp, String(content || ''));
                 srcPathToSkill.set(qp, skillName);
             }
-        }
-        for (const sd of input.allSkillsData!) {
-            const skillName = String(sd?.skillName || '').trim();
-            if (!skillName) continue;
-            const metas = Array.isArray(sd.filesMeta) ? sd.filesMeta : [];
             for (const m of metas) {
                 const p = normalizePath(m?.path || '');
                 if (!p) continue;
@@ -257,7 +253,7 @@ export function buildSkillReferenceGraph(
                 const qp = qualPath(skillName, p);
                 const id = `file:${qp}`;
                 fileIdByPath[qp] = id;
-                const label = skillName === currentSkillName ? basename(p) || p : `${skillName}: ${basename(p) || p}`;
+                const label = basename(p) || p;
                 nodeDataById.set(id, {
                     id,
                     type: 'file',
@@ -266,7 +262,7 @@ export function buildSkillReferenceGraph(
                     isMarkdown: md,
                     externalRefCount: 0,
                     skillName,
-                    isCurrentSkill: skillName === currentSkillName ? 1 : 0
+                    isCurrentSkill: 1
                 });
             }
         }
@@ -306,15 +302,6 @@ export function buildSkillReferenceGraph(
         const normalized = normalizePath(rawTarget);
         if (!normalized) return null;
         if (tenantMode) {
-            const slashIdx = normalized.indexOf('/');
-            if (slashIdx > 0) {
-                const firstSeg = normalized.slice(0, slashIdx);
-                if (knownSkillNames.has(firstSeg)) {
-                    if (knownPaths.has(normalized)) return normalized;
-                    const ext = tryResolveMissingExtension(normalized, knownPaths);
-                    return ext;
-                }
-            }
             const resolved = joinAndResolve(srcDir, normalized);
             if (!resolved) return null;
             if (knownPaths.has(resolved)) return resolved;

@@ -1,6 +1,7 @@
 <template>
     <v-btn icon
         v-if="globalIsMobile.value"
+        v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
         class="mobile-side-bar-btn"
         size="40"
@@ -10,6 +11,7 @@
     </v-btn>
     <v-badge
         v-if="notiCount > 0"
+        v-show="!$globalState.state.isMobileDrawerOpen"
         class="mobile-side-bar-btn"
         :content="notiCount"
         :model-value="notiCount > 0"

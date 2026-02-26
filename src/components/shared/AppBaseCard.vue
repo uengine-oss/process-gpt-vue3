@@ -81,6 +81,10 @@ const slotName = computed(() => {
     }
 });
 
+watch(sDrawer, (val) => {
+    globalState?.methods.setMobileDrawerOpen(val);
+});
+
 // drawer를 닫는 함수
 const closeDrawer = () => {
     sDrawer.value = false;
@@ -246,9 +250,15 @@ const rightPartStyle = computed(() => {
     </div>
 
     <v-navigation-drawer temporary v-model="sDrawer" top v-if="!lgAndUp"
-        class="mobile-menu-nav"
+        class="mobile-menu-nav mobile-drawer-flex"
     >
-        <v-card-text class="pa-0 mobile-left-menu">
+        <div v-if="isMobile" class="mobile-drawer-header-bar">
+            <span class="mobile-drawer-header-title">{{ menuName }}</span>
+            <v-btn variant="text" density="compact" icon @click="closeDrawer">
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
+        </div>
+        <v-card-text class="pa-0 mobile-left-menu mobile-drawer-content">
             <slot 
                 :name="route.path === '/definition-map' ? 'rightpart' : 'mobileLeftContent'" 
                 :closeDrawer="handleCloseDrawer"
@@ -263,7 +273,7 @@ const rightPartStyle = computed(() => {
     // min-height: 500px;
     transition: width 0.1s ease-out;
     flex-shrink: 0;
-    overflow: auto;
+    overflow: visible;
     background-color: white;
     position: relative;
 }
@@ -305,6 +315,32 @@ const rightPartStyle = computed(() => {
     flex-direction: column;
     height: 100%;
     position: relative;
+}
+
+.mobile-drawer-flex {
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-drawer-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 8px 12px 16px;
+    flex-shrink: 0;
+    background-color: inherit;
+    border-bottom: 1px solid rgb(var(--v-theme-borderColor));
+}
+
+.mobile-drawer-header-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.mobile-drawer-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .mobile-menu-toggle-btn {

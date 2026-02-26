@@ -191,7 +191,8 @@
         "languageChangeFailed": "언어 설정 변경에 실패했습니다."
     },
     "App": {
-        "view": "자세히 보기"
+        "view": "자세히 보기",
+        "tenantNotFound": "{tenant} 은(는) 존재하지 않는 경로입니다.\n확인을 누르면 테넌트 관리 페이지로 이동합니다."
     },
     "mainPage": {
         "login": "로그인",
@@ -1142,8 +1143,10 @@
         "sendEmailExplanation": "이메일 주소를 입력하고 메일 전송 버튼을 누르면 비밀번호를 재설정 할 수 있는 링크가 메일로 전송됩니다.",
         "login": "로그인",
         "resetPassword": "비밀번호 재설정",
-        "password": "비밀번호",
+        "password": "새 비밀번호",
+        "confirmPassword": "새 비밀번호 확인",
         "passwordExplanation": "재설정할 비밀번호를 입력하세요.",
+        "passwordMismatch": "비밀번호가 일치하지 않습니다.",
         "updatePassword": "비밀번호 변경"
     },
     "ExtraBox": {
@@ -1702,7 +1705,6 @@
         "progress": "프로세스",
         "history": "액티비티",
         "chatbot": "어시스턴트",
-        "agent": "빠른 초안 생성",
         "agentMonitor": "에이전트에 맡기기",
         "agentFeedback": "에이전트 학습",
         "toggleInputFieldSize": "확대 / 축소",
@@ -2093,8 +2095,8 @@
     },
     "StorageBaseSupabase": {
         "emailNotConfirmed": "계정 인증이 완료되지 않았습니다. 이메일 확인 후 다시 로그인하세요.",
-        "wrongPassword": "비밀번호가 틀렸습니다.",
-        "wrongId": "아이디가 틀렸습니다.",
+        "wrongPassword": "아이디 또는 비밀번호가 잘못되었습니다. 로그인 정보를 확인해주시기 바랍니다.",
+        "wrongId": "아이디 또는 비밀번호가 잘못되었습니다. 로그인 정보를 확인해주시기 바랍니다.",
         "notRegisteredEmail": "가입된 이메일주소가 아닙니다.",
         "loginRequired": "로그인이 필요합니다.",
         "unRegisteredTenant": "가입되지 않은 테넌트입니다."
@@ -2613,7 +2615,7 @@
         "doubleClick": "더블클릭으로도 접기/펼치기가 가능합니다",
         "workInProgress": "작업을 진행하고 있습니다...",
         "workQueued": "작업이 대기열에 등록되었습니다",
-        "noWorkInProgress": "진행중인 작업이 없습니다",
+        "noWorkInProgress": "대기 중",
         "workStarted": "작업이 시작되면 여기에 표시됩니다.",
         "selectResearchMethod": "연구 방식을 선택하세요",
         "browserUse": "Browser use 기능은 다운로드 후 압축 해제 후 사용 가능합니다. (용량: 114MB)",
@@ -2827,6 +2829,7 @@
         "expand": "더보기",
         "collapse": "접기",
         "defaultAgentName": "에이전트",
+        "knowledgeSetupInProgress": "지식 셋팅 중",
         "labels": {
             "goal": "목표",
             "persona": "페르소나",
@@ -3285,6 +3288,8 @@
         "addFromRepo": "Repository에서 추가",
         "addFromRepoHint": "Git 저장소 URL로 스킬 추가",
         "repositoryUrl": "Repository URL",
+        "searchPlaceholder": "이름 또는 설명으로 검색",
+        "noSkills": "표시할 스킬이 없습니다",
         "skillName": "스킬 이름",
         "skillDescription": "스킬 설명",
         "usedByAgents": "사용 중",

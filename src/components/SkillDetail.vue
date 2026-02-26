@@ -2,10 +2,11 @@
     <v-card elevation="10">
         <AppBaseCard :custom-menu-name="$t('SkillDetail.title')">
             <template v-slot:leftpart="{ closeDrawer }">
-                <h6 class="text-h6 px-4 py-3">
-                    {{ skillDisplayName || skillId }}
-                </h6>
-                <div class="skill-detail-left pa-2">
+                <div class="leftpart-inner">
+                    <h6 class="text-h6 px-4 py-3 flex-shrink-0 text-left">
+                        {{ skillDisplayName || skillId }}
+                    </h6>
+                    <div class="skill-detail-left pa-2">
                     <div v-if="loadError" class="text-caption text-error py-4 text-center">
                         {{ $t('SkillDetail.loadError') }}
                     </div>
@@ -167,7 +168,7 @@
                                 </span>
                                 <v-icon size="18" class="text-medium-emphasis">{{ showUsedBy ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                             </div>
-                            <div v-if="showUsedBy" class="pt-2">
+                            <div v-if="showUsedBy" class="pt-2 used-by-list-wrap">
                                 <div v-if="isUsageLoading" class="d-flex align-center justify-center py-3 text-medium-emphasis">
                                     <v-progress-circular indeterminate size="16" width="2" color="primary" class="mr-2" />
                                     <span class="text-caption">{{ $t('SkillDetail.usedByLoading') }}</span>
@@ -198,6 +199,7 @@
                         </div>
                     </template>
                 </div>
+                </div>
             </template>
 
             <template v-slot:rightpart>
@@ -225,7 +227,7 @@
                         <v-progress-circular indeterminate size="24" color="primary"></v-progress-circular>
                     </div>
                     <template v-else>
-                        <div class="text-subtitle-2 text-medium-emphasis mb-2 px-1">
+                        <div class="text-subtitle-2 text-medium-emphasis mb-2 px-1 text-left">
                             {{ skillDisplayName || skillId }}
                         </div>
                         <div class="left-tree-section">
@@ -798,8 +800,13 @@ export default {
                     tenantResult = null;
                 }
 
+                // 현재 스킬이 tenant 목록에 없으면 (기본 내장 스킬 등) 단일 스킬 경로 사용
+                const currentSkillInList = skills.some(
+                    (s) => (s.name || s.skill_name || '').trim() === skillName
+                );
+
                 let graph;
-                if (tenantResult && skills.length > 0) {
+                if (tenantResult && skills.length > 0 && currentSkillInList) {
                     const allSkillsData = [];
                     const totalFileCap = 100;
                     const chunkSize = 10;
@@ -1179,8 +1186,16 @@ export default {
 </script>
 
 <style scoped>
+.leftpart-inner {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 .skill-detail-left {
-    min-height: 200px;
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1189,7 +1204,8 @@ export default {
 .left-tree-section {
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .skill-detail-right {

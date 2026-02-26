@@ -129,14 +129,23 @@
                 <v-combobox
                     v-if="!gs"
                     v-model="selectedSkills"
-                    :items="skills"
+                    :items="skillItemsForCombobox"
+                    item-value="value"
+                    item-title="title"
                     :label="$t('agentField.agentSkills')"
                     multiple
                     chips
                     clearable
                     closable-chips
                     variant="outlined"
-                ></v-combobox>
+                >
+                    <template #item="{ item, props }">
+                        <v-list-subheader v-if="item.raw?.isHeader" class="text-uppercase font-weight-medium">
+                            {{ item.raw.title }}
+                        </v-list-subheader>
+                        <v-list-item v-else v-bind="props" :title="item.raw?.title"></v-list-item>
+                    </template>
+                </v-combobox>
                 <v-row dense
                     class="ma-0 pa-0"
                 >
@@ -254,7 +263,8 @@ export default {
             mcpTools: {},
             toolList: [],
             selectedTools: [],
-            skills: [],
+            uploadedSkills: [],
+            builtinSkills: [],
             selectedSkills: [],
             isLoading: false,
             isDataGenerated: false,
@@ -334,6 +344,26 @@ export default {
         gs() {
             return window.$gs;
         },
+        skillItemsForCombobox() {
+            const items = [];
+            items.push({
+                value: null,
+                title: this.$t('SkillsManagement.uploadedSkills'),
+                isHeader: true
+            });
+            (this.uploadedSkills || []).forEach((name) => {
+                items.push({ value: name, title: name, isHeader: false });
+            });
+            items.push({
+                value: null,
+                title: this.$t('SkillsManagement.builtinSkills'),
+                isHeader: true
+            });
+            (this.builtinSkills || []).forEach((name) => {
+                items.push({ value: name, title: name, isHeader: false });
+            });
+            return items;
+        },
         showDetailFields() {
             if (this.type === 'a2a' || this.type === 'pgagent') {
                 return true;
@@ -386,7 +416,13 @@ export default {
         selectedSkills: {
             deep: true,
             handler(newVal) {
-                this.agent.skills = newVal ? newVal.join(',') : '';
+                const normalized = (newVal || []).map((s) =>
+                    typeof s === 'object' && s != null && s.value != null ? s.value : String(s ?? '')
+                ).filter(Boolean);
+                this.agent.skills = normalized.join(',');
+                if (newVal?.some((s) => typeof s === 'object')) {
+                    this.$nextTick(() => { this.selectedSkills = normalized; });
+                }
             }
         },
         selectedProvider(newVal) {
@@ -483,11 +519,24 @@ export default {
             this.toolList = tools;
         },
         async getSkills() {
-            const tenantSkills = await this.backend.getTenantSkills(window.$tenantName);
-            if (tenantSkills && tenantSkills.skills) {
-                const skills = tenantSkills.skills.map(skill => skill.name);
-                console.log(skills);
-                this.skills = skills;
+            const normalize = (result) => {
+                const raw = result?.skills ?? result;
+                const list = Array.isArray(raw) ? raw : (raw?.skills || []);
+                return list
+                    .map((s) => (typeof s === 'string' ? s : (s.name || s.skill_name || '')))
+                    .filter(Boolean);
+            };
+            try {
+                const [uploadedResult, builtinResult] = await Promise.all([
+                    this.backend.getTenantSkills(window.$tenantName),
+                    this.backend.getTenantBuiltinSkills ? this.backend.getTenantBuiltinSkills() : Promise.resolve([])
+                ]);
+                this.uploadedSkills = normalize(uploadedResult || []);
+                this.builtinSkills = normalize(builtinResult || []);
+            } catch (e) {
+                console.error('Failed to load skills', e);
+                this.uploadedSkills = [];
+                this.builtinSkills = [];
             }
         },
         async fetchAgentData() {

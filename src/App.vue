@@ -139,7 +139,9 @@ export default {
                         if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
                             localStorage.removeItem('tenantId');
                         }
-                        alert(window.$tenantName + " 존재하지 않는 경로입니다.");
+                        alert(this.$t('App.tenantNotFound', { tenant: window.$tenantName }));
+                        localStorage.removeItem('tenantId');
+                        window.location.href = getMainDomainUrl('/tenant/manage?clear=true');
                         if (localStorage.getItem('email')) {
                             localStorage.removeItem('tenantId');
                             window.location.href = getMainDomainUrl('/tenant/manage?clear=true');

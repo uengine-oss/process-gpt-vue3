@@ -1033,11 +1033,20 @@ export default class StorageBaseSupabase {
                 if (window.$tenantName) {
                     filter.tenant_id = window.$tenantName;
                 }
-                const { data, error } = await window.$supabase
-                    .from('users')
-                    .select('*')
-                    .match(filter)
-                    .maybeSingle();
+                // 메인 도메인($tenantName 없음)에서는 동일 id로 여러 테넌트 행이 있어 maybeSingle()이 실패하므로, 한 행만 조회
+                const isMainDomain = !window.$tenantName;
+                const { data: rawData, error } = isMainDomain
+                    ? await window.$supabase
+                        .from('users')
+                        .select('*')
+                        .match(filter)
+                        .limit(1)
+                    : await window.$supabase
+                        .from('users')
+                        .select('*')
+                        .match(filter)
+                        .maybeSingle();
+                const data = isMainDomain ? (Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : null) : rawData;
 
                 if (data && !error) {
                     window.localStorage.setItem('isAdmin', data.is_admin || false);

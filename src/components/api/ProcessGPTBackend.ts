@@ -5952,6 +5952,24 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 에이전트 초기 지식 셋업 로그 조회 (agent_knowledge_setup_log).
+     * @returns 해당 agent_id의 로그 행 1개 또는 null
+     */
+    async getAgentKnowledgeSetupLog(agentId: string): Promise<any | null> {
+        try {
+            const list = await storage.list('agent_knowledge_setup_log', {
+                match: { agent_id: agentId }
+            });
+            if (list && list.length > 0) {
+                return list[0];
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
     async getTenantInfo(id: string) {
         try {
             const response = await storage.getObject('tenants', {

@@ -1025,39 +1025,55 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+DROP FUNCTION IF EXISTS public.duplicate_definition_from_marketplace(text, text, text, text);
+
 CREATE OR REPLACE FUNCTION duplicate_definition_from_marketplace(
-    p_definition_id TEXT,
+    p_definition_id   TEXT,
     p_definition_name TEXT,
-    p_author_uid TEXT,
-    p_tenant_id TEXT
+    p_author_uid      TEXT,
+    p_tenant_id       TEXT
 )
 RETURNS JSONB AS $$
 DECLARE
-    v_proc_def_record RECORD;
-    v_form_def_record RECORD;
-    v_result JSONB := '{}';
-    v_proc_def_uuid UUID;
-    v_form_def_uuid UUID;
+    v_proc_def_record   RECORD;
+    v_form_def_record   RECORD;
+    v_result            JSONB := '{}';
+    v_proc_def_uuid     UUID;
+    v_form_def_uuid     UUID;
     v_new_definition_id TEXT;
-    v_new_definition JSONB;
+    v_new_definition    JSONB;
+    v_activities        JSONB;
+    v_activity          JSONB;
+    v_tool              TEXT;
+    v_form_id           TEXT;
 BEGIN
-    -- 프로세스 정의를 marketplace에서 복사
-    SELECT * INTO v_proc_def_record
-    FROM proc_def_marketplace
-    WHERE id = p_definition_id AND name = p_definition_name;
-    
+    -- 프로세스 정의 조회
+    SELECT *
+      INTO v_proc_def_record
+      FROM proc_def_marketplace
+     WHERE id = p_definition_id
+       AND name = p_definition_name;
+
     IF NOT FOUND THEN
         RETURN jsonb_build_object('error', 'Process definition not found in marketplace');
     END IF;
-    
+
     -- 새로운 정의 ID 생성 (기존 ID + UUID)
     v_new_definition_id := p_definition_id || '_' || gen_random_uuid()::TEXT;
-    
+
     -- definition JSON에서 processDefinitionId 업데이트
     v_new_definition := v_proc_def_record.definition;
-    v_new_definition := jsonb_set(v_new_definition, '{processDefinitionId}', to_jsonb(v_new_definition_id));
-    
-    -- proc_def에 복사
+    v_new_definition := jsonb_set(
+        v_new_definition,
+        '{processDefinitionId}',
+        to_jsonb(v_new_definition_id)
+    );
+
+    -- activities 배열 캐싱
+    v_activities := COALESCE(v_new_definition->'activities', '[]'::jsonb);
+
+    -- proc_def 에 복사
     INSERT INTO proc_def (
         id,
         name,
@@ -1072,17 +1088,35 @@ BEGIN
         p_tenant_id
     )
     ON CONFLICT (id, tenant_id) DO UPDATE SET
-        name = EXCLUDED.name,
+        name       = EXCLUDED.name,
         definition = EXCLUDED.definition,
-        bpmn = EXCLUDED.bpmn
+        bpmn       = EXCLUDED.bpmn
     RETURNING uuid INTO v_proc_def_uuid;
-    
-    -- form_def_marketplace에서 관련 폼들을 찾아서 form_def로 복사
+
+    -- form_def_marketplace → form_def 복사
     FOR v_form_def_record IN
         SELECT *
-        FROM form_def_marketplace
-        WHERE proc_def_id = p_definition_id AND author_uid = p_author_uid
+          FROM form_def_marketplace
+         WHERE proc_def_id = p_definition_id
+           AND author_uid  = p_author_uid
     LOOP
+        -- definition JSON 에서 해당 activity 를 찾아 tool 기반으로 formId 계산
+        SELECT elem
+          INTO v_activity
+          FROM jsonb_array_elements(v_activities) AS elem
+         WHERE elem->>'id' = v_form_def_record.activity_id
+         LIMIT 1;
+
+        IF v_activity IS NOT NULL
+           AND v_activity ? 'tool'
+           AND v_activity->>'tool' LIKE 'formHandler:%' THEN
+            v_tool    := v_activity->>'tool';
+            v_form_id := split_part(v_tool, 'formHandler:', 2);
+        ELSE
+            -- tool 정보가 없으면 기존 id 사용 (fallback)
+            v_form_id := v_form_def_record.id;
+        END IF;
+
         INSERT INTO form_def (
             html,
             proc_def_id,
@@ -1095,34 +1129,35 @@ BEGIN
             v_new_definition_id,
             v_form_def_record.activity_id,
             p_tenant_id,
-            v_form_def_record.id,
+            v_form_id,
             NULL
         )
         ON CONFLICT (id, tenant_id) DO UPDATE SET
-            html = EXCLUDED.html,
+            html        = EXCLUDED.html,
             proc_def_id = EXCLUDED.proc_def_id,
             activity_id = EXCLUDED.activity_id
         RETURNING uuid INTO v_form_def_uuid;
     END LOOP;
-    
+
     -- import_count 증가
     UPDATE proc_def_marketplace
-    SET import_count = import_count + 1
-    WHERE id = p_definition_id AND name = p_definition_name;
-    
+       SET import_count = import_count + 1
+     WHERE id   = p_definition_id
+       AND name = p_definition_name;
+
     v_result := jsonb_build_object(
-        'success', true,
-        'proc_def_uuid', v_proc_def_uuid,
+        'success',          true,
+        'proc_def_uuid',    v_proc_def_uuid,
         'new_definition_id', v_new_definition_id,
-        'message', 'Definition duplicated successfully'
+        'message',          'Definition duplicated successfully'
     );
-    
+
     RETURN v_result;
-    
+
 EXCEPTION
     WHEN OTHERS THEN
         RETURN jsonb_build_object(
-            'error', SQLERRM,
+            'error',   SQLERRM,
             'success', false
         );
 END;
@@ -2687,56 +2722,28 @@ $$ LANGUAGE plpgsql VOLATILE;
 GRANT EXECUTE ON FUNCTION public.openai_deep_fetch_pending_task(integer, text) TO anon;
 
 -- 0) 공용 대기 작업 조회 및 상태 변경 (agent_orch 인자로 필터)
-DROP FUNCTION IF EXISTS public.fetch_pending_task(text, text, integer);
+DROP FUNCTION IF EXISTS public.fetch_pending_task(text, text, integer, text);
 
 CREATE OR REPLACE FUNCTION public.fetch_pending_task(
   p_agent_orch text,
   p_consumer   text,
-  p_limit      integer
+  p_limit      integer,
+  p_env        text
 )
-RETURNS TABLE (
-  id uuid,
-  user_id text,
-  proc_inst_id text,
-  proc_def_id text,
-  activity_id text,
-  activity_name text,
-  start_date timestamp without time zone,
-  end_date timestamp without time zone,
-  description text,
-  tool text,
-  due_date timestamp without time zone,
-  tenant_id text,
-  reference_ids text[],
-  adhoc boolean,
-  assignees jsonb,
-  duration integer,
-  output jsonb,
-  retry integer,
-  consumer text,
-  log text,
-  draft jsonb,
-  project_id uuid,
-  feedback jsonb,
-  updated_at timestamp with time zone,
-  username text,
-  status public.todo_status,
-  agent_mode public.agent_mode,
-  agent_orch public.agent_orch,
-  temp_feedback text,
-  draft_status public.draft_status,
-  task_type public.draft_status
-)
+RETURNS SETOF todolist
+LANGUAGE plpgsql
+VOLATILE
 AS $$
 BEGIN
   RETURN QUERY
     WITH cte AS (
-      SELECT
-        t.*,
-        t.draft_status AS task_type
+      SELECT t.id
       FROM todolist AS t
       WHERE t.status = 'IN_PROGRESS'
+        -- env 분기 제거됨
+        -- agent_orch 필터(옵션)
         AND (p_agent_orch IS NULL OR p_agent_orch = '' OR t.agent_orch::text = p_agent_orch)
+        -- 처리 대상 선택 로직
         AND (
           (t.agent_mode IN ('DRAFT','COMPLETE') AND t.draft IS NULL AND t.draft_status IS NULL)
           OR t.draft_status = 'FB_REQUESTED'
@@ -2751,42 +2758,11 @@ BEGIN
              consumer     = p_consumer
         FROM cte
        WHERE t.id = cte.id
-       RETURNING
-         t.id,
-         t.user_id,
-         t.proc_inst_id,
-         t.proc_def_id,
-         t.activity_id,
-         t.activity_name,
-         t.start_date,
-         t.end_date,
-         t.description,
-         t.tool,
-         t.due_date,
-         t.tenant_id,
-         t.reference_ids,
-         t.adhoc,
-         t.assignees,
-         t.duration,
-         t.output,
-         t.retry,
-         t.consumer,
-         t.log,
-         t.draft,
-         t.project_id,
-         t.feedback,
-         t.updated_at,
-         t.username,
-         t.status,
-         t.agent_mode,
-         t.agent_orch,
-         t.temp_feedback,
-         t.draft_status,
-         cte.task_type
+       RETURNING t.*
     )
     SELECT * FROM upd;
 END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$;
 
 -- 0-1) 공용 대기 작업 조회 및 상태 변경 (dev: tenant_id 인자로 필터)
 DROP FUNCTION IF EXISTS public.fetch_pending_task_dev(text, text, integer, text);

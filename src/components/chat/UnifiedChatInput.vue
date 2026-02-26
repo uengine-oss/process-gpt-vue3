@@ -206,7 +206,7 @@ export default {
 
 @media (max-width: 768px) {
     .main-chat-input-container {
-        padding: 12px;
+        padding: 0px;
     }
 
     .example-prompts {
