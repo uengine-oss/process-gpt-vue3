@@ -18,30 +18,298 @@ const HIGH_PRIORITY = 1500,
   TASK_BORDER_RADIUS = 10,
   COLOR_RULES_STORAGE_KEY = 'bpmn_color_rules';
 
-// Get color from rules stored in localStorage
+// Check if text contains Korean characters
+function containsKorean(text) {
+  return /[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/.test(text);
+}
+
+// Estimate text width more accurately
+function estimateTextWidth(text, fontSize = 12) {
+  if (!text) return 0;
+
+  let width = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charAt(i);
+    // Korean characters are typically full-width
+    if (/[\uAC00-\uD7A3\u1100-\u11FF\u3130-\u318F]/.test(char)) {
+      width += fontSize * 1.0; // Full-width for Korean
+    } else if (/[a-zA-Z0-9]/.test(char)) {
+      width += fontSize * 0.55; // Narrower for alphanumeric
+    } else if (char === ' ') {
+      width += fontSize * 0.3; // Space
+    } else {
+      width += fontSize * 0.6; // Default for other characters
+    }
+  }
+  return width;
+}
+
+// Text wrapping helper function with better Korean support
+function wrapText(text, maxWidth, fontSize = 12) {
+  if (!text) return [];
+
+  // Handle explicit newlines (\n)
+  const paragraphs = text.split('\n');
+  const lines = [];
+
+  paragraphs.forEach(paragraph => {
+    if (!paragraph.trim()) {
+      lines.push('');
+      return;
+    }
+
+    // Check if paragraph fits in one line
+    if (estimateTextWidth(paragraph, fontSize) <= maxWidth) {
+      lines.push(paragraph);
+      return;
+    }
+
+    // For Korean text, we can break at any character
+    // For English/mixed text, we prefer word boundaries
+    if (containsKorean(paragraph)) {
+      // Character-by-character wrapping for Korean
+      let currentLine = '';
+      for (let i = 0; i < paragraph.length; i++) {
+        const char = paragraph.charAt(i);
+        const testLine = currentLine + char;
+
+        if (estimateTextWidth(testLine, fontSize) <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+          }
+          currentLine = char;
+        }
+      }
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+    } else {
+      // Word wrap for non-Korean text
+      const words = paragraph.split(/(\s+)/);
+      let currentLine = '';
+
+      words.forEach(word => {
+        if (!word) return;
+
+        const testLine = currentLine + word;
+        if (estimateTextWidth(testLine, fontSize) <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine.trim()) {
+            lines.push(currentLine.trim());
+          }
+          currentLine = word.trim() ? word : '';
+        }
+      });
+
+      if (currentLine.trim()) {
+        lines.push(currentLine.trim());
+      }
+    }
+  });
+
+  return lines;
+}
+
+// Render wrapped text as SVG text element with tspans
+function renderWrappedText(parentNode, text, x, y, width, height, fontSize, fillColor) {
+  const lines = wrapText(text, width - 20, fontSize); // 20px padding for better margin
+  if (lines.length === 0) return null;
+
+  const lineHeight = fontSize * 1.4; // Slightly more line height for better readability
+  const totalTextHeight = lines.length * lineHeight;
+
+  // Center text vertically, with adjustment for better visual centering
+  const startY = y + (height - totalTextHeight) / 2 + fontSize * 0.8;
+
+  const textElement = svgCreate('text');
+  svgAttr(textElement, {
+    'class': 'custom-wrapped-text',
+    'text-anchor': 'middle',
+    'font-size': fontSize + 'px',
+    'font-family': 'Arial, sans-serif',
+    'fill': fillColor || '#000000',
+    'pointer-events': 'none'
+  });
+
+  lines.forEach((line, index) => {
+    const tspan = svgCreate('tspan');
+    svgAttr(tspan, {
+      x: x + width / 2,
+      y: startY + index * lineHeight,
+      'dominant-baseline': 'middle'
+    });
+    tspan.textContent = line;
+    svgAppend(textElement, tspan);
+  });
+
+  svgAppend(parentNode, textElement);
+  return textElement;
+}
+
+// Convert HEX to RGB
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 0, g: 0, b: 0 };
+}
+
+// Convert RGB to HEX
+function rgbToHex(r, g, b) {
+  return '#' + [r, g, b].map(x => {
+    const hex = Math.round(Math.max(0, Math.min(255, x))).toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  }).join('');
+}
+
+// Convert sRGB to linear RGB
+function srgbToLinear(c) {
+  c = c / 255;
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+// Convert linear RGB to sRGB
+function linearToSrgb(c) {
+  return c <= 0.0031308 ? c * 12.92 * 255 : (1.055 * Math.pow(c, 1 / 2.4) - 0.055) * 255;
+}
+
+// Convert RGB to OKLAB
+function rgbToOklab(r, g, b) {
+  const lr = srgbToLinear(r);
+  const lg = srgbToLinear(g);
+  const lb = srgbToLinear(b);
+
+  const l = 0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb;
+  const m = 0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb;
+  const s = 0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb;
+
+  const l_ = Math.cbrt(l);
+  const m_ = Math.cbrt(m);
+  const s_ = Math.cbrt(s);
+
+  return {
+    L: 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+    a: 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+  };
+}
+
+// Convert OKLAB to RGB
+function oklabToRgb(L, a, b) {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+
+  const lr = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+  const lg = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+  const lb = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+  return {
+    r: linearToSrgb(lr),
+    g: linearToSrgb(lg),
+    b: linearToSrgb(lb)
+  };
+}
+
+// Interpolate color using OKLAB color space for perceptually uniform transitions
+function interpolateColorOklab(startHex, endHex, ratio) {
+  const start = hexToRgb(startHex);
+  const end = hexToRgb(endHex);
+
+  const startLab = rgbToOklab(start.r, start.g, start.b);
+  const endLab = rgbToOklab(end.r, end.g, end.b);
+
+  // Linear interpolation in OKLAB space
+  const L = startLab.L + (endLab.L - startLab.L) * ratio;
+  const a = startLab.a + (endLab.a - startLab.a) * ratio;
+  const b = startLab.b + (endLab.b - startLab.b) * ratio;
+
+  const rgb = oklabToRgb(L, a, b);
+  return rgbToHex(rgb.r, rgb.g, rgb.b);
+}
+
+// Adjust color intensity (lightness) based on ratio
+// ratio 0 = original/light, ratio 1 = darker
+function adjustColorIntensity(hexColor, ratio) {
+  const rgb = hexToRgb(hexColor);
+  const lab = rgbToOklab(rgb.r, rgb.g, rgb.b);
+
+  // Adjust lightness: lighter when ratio is low, darker when ratio is high
+  // Original lightness is maintained at ratio=0, reduced to ~40% at ratio=1
+  const minLightness = 0.35; // Minimum lightness (darkest)
+  const maxLightness = Math.min(lab.L * 1.15, 0.95); // Slightly lighter than original, capped at 0.95
+
+  // Linear interpolation from maxLightness to minLightness
+  const newL = maxLightness - (maxLightness - minLightness) * ratio;
+
+  // Keep hue and saturation (a, b), only adjust lightness
+  const newRgb = oklabToRgb(newL, lab.a, lab.b);
+  return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+}
+
+// Calculate relative luminance (WCAG formula)
+// Returns value between 0 (black) and 1 (white)
+function getRelativeLuminance(hexColor) {
+  const rgb = hexToRgb(hexColor);
+
+  // Convert to sRGB
+  const rsRGB = rgb.r / 255;
+  const gsRGB = rgb.g / 255;
+  const bsRGB = rgb.b / 255;
+
+  // Apply gamma correction
+  const r = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
+  const g = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
+  const b = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
+
+  // Calculate luminance
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+// Check if background is dark enough to need white text
+// Using WCAG contrast ratio threshold
+function shouldUseWhiteText(hexColor) {
+  const luminance = getRelativeLuminance(hexColor);
+  // If luminance is below 0.4, use white text for better contrast
+  return luminance < 0.4;
+}
+
+// Get color from rules stored in BPMN XML (via window.$bpmnColorRules)
 function getColorFromRules(element) {
   try {
-    const savedSettings = localStorage.getItem(COLOR_RULES_STORAGE_KEY);
-    if (!savedSettings) return null;
+    const rules = window.$bpmnColorRules;
+    if (!rules || !Array.isArray(rules) || rules.length === 0) {
+      return null;
+    }
 
-    const settings = JSON.parse(savedSettings);
-    const rules = settings.rules || [];
-    const defaultColor = settings.defaultColor || '#fdf2d0';
+    const defaultColor = '#fdf2d0';
 
     // Get element type
     const elementType = element.businessObject?.$type;
     if (!elementType) return { fillColor: defaultColor };
 
-    // Get duration from extension elements
-    let duration = null;
+    // Get leadTime (duration) from extension elements
+    let leadTime = null;
     const extensionElements = element.businessObject?.extensionElements;
     if (extensionElements?.values) {
       const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
       if (uengineProps?.json) {
         try {
           const parsed = JSON.parse(uengineProps.json);
-          if (parsed.duration !== undefined) {
-            duration = Number(parsed.duration);
+          // Support both 'duration' and 'leadTime' property names
+          if (parsed.leadTime !== undefined) {
+            leadTime = Number(parsed.leadTime);
+          } else if (parsed.duration !== undefined) {
+            leadTime = Number(parsed.duration);
           }
         } catch (e) {
           // Ignore parse errors
@@ -52,27 +320,43 @@ function getColorFromRules(element) {
     // Sort rules by priority
     const sortedRules = [...rules]
       .filter(r => r.enabled)
-      .sort((a, b) => a.priority - b.priority);
+      .sort((a, b) => (a.priority || 0) - (b.priority || 0));
 
-    // Check lead time rules first
-    for (const rule of sortedRules.filter(r => r.type === 'leadTime')) {
-      if (duration !== null) {
+    // Step 1: Get base color from task type rules
+    let baseColor = defaultColor;
+    let baseStrokeColor = '';
+    for (const rule of sortedRules.filter(r => r.type === 'taskType')) {
+      if (rule.taskTypes?.includes(elementType)) {
+        baseColor = rule.fillColor || defaultColor;
+        baseStrokeColor = rule.strokeColor || '';
+        break;
+      }
+    }
+
+    // Step 2: Apply leadTime intensity adjustment if applicable
+    if (leadTime !== null) {
+      for (const rule of sortedRules.filter(r => r.type === 'leadTime')) {
         const min = rule.minDuration ?? 0;
-        const max = rule.maxDuration ?? Infinity;
-        if (duration >= min && duration < max) {
-          return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
+        const max = rule.maxDuration ?? 60;
+
+        if (leadTime >= min && leadTime <= max) {
+          // Calculate ratio: 0 = short time (light), 1 = long time (dark)
+          const range = max - min;
+          const ratio = range > 0 ? Math.min(1, Math.max(0, (leadTime - min) / range)) : 0;
+
+          // Apply intensity adjustment to base color
+          const adjustedColor = adjustColorIntensity(baseColor, ratio);
+          return { fillColor: adjustedColor, strokeColor: baseStrokeColor };
         }
       }
     }
 
-    // Then check task type rules
-    for (const rule of sortedRules.filter(r => r.type === 'taskType')) {
-      if (rule.taskTypes?.includes(elementType)) {
-        return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
-      }
+    // Return base color if no leadTime rule matched
+    if (baseColor !== defaultColor) {
+      return { fillColor: baseColor, strokeColor: baseStrokeColor };
     }
 
-    return { fillColor: defaultColor };
+    return null;
   } catch (e) {
     console.warn('Failed to get color from rules:', e);
     return null;
@@ -247,6 +531,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     let customStrokeColor = 'none';
     let hasIndividualColor = false;
 
+    let systemName = '';
+    let menuName = '';
+
     const extensionElements = element.businessObject?.extensionElements;
     if (extensionElements && extensionElements.values) {
       const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
@@ -259,6 +546,12 @@ export default class CustomBpmnRenderer extends BaseRenderer {
           }
           if (props.taskStrokeColor) {
             customStrokeColor = props.taskStrokeColor;
+          }
+          if (props.systemName) {
+            systemName = props.systemName;
+          }
+          if (props.menuName) {
+            menuName = props.menuName;
           }
         } catch (e) {
           // Ignore JSON parse errors
@@ -296,6 +589,197 @@ export default class CustomBpmnRenderer extends BaseRenderer {
     const rect = drawRect(parentNode, existingWidth, existingHeight, TASK_BORDER_RADIUS, 'none', fillColor, shape.style);
     prependTo(rect, parentNode);
     svgRemove(shape);
+
+    // Dynamic text color: white text on dark backgrounds
+    const useWhiteText = shouldUseWhiteText(fillColor);
+    const textColor = useWhiteText ? '#ffffff' : '#000000';
+
+    // Set data attribute for CSS-based styling (immediate, no flicker)
+    if (parentNode.closest) {
+      const container = parentNode.closest('.djs-element');
+      if (container) {
+        container.setAttribute('data-dark-bg', useWhiteText ? 'true' : 'false');
+      }
+    }
+
+    // Get task name for text wrapping
+    const taskName = element.businessObject?.name || '';
+
+    // Remove ALL existing text elements (including djs-label and any other text)
+    // This ensures our wrapped text is the only text rendered
+    const existingTexts = parentNode.querySelectorAll('text:not(.custom-wrapped-text)');
+    existingTexts.forEach(textEl => {
+      try {
+        svgRemove(textEl);
+      } catch (e) {
+        // Ignore if already removed
+      }
+    });
+
+    // Also remove any previously added custom wrapped text
+    const previousCustomText = parentNode.querySelectorAll('text.custom-wrapped-text');
+    previousCustomText.forEach(textEl => {
+      try {
+        svgRemove(textEl);
+      } catch (e) {
+        // Ignore if already removed
+      }
+    });
+
+    // Render wrapped text with line breaks support
+    if (taskName) {
+      const fontSize = 12;
+      renderWrappedText(parentNode, taskName, 0, 0, existingWidth, existingHeight, fontSize, textColor);
+    }
+
+    // Apply text color to any remaining text elements (safety check)
+    const textElements = parentNode.querySelectorAll('text, text tspan');
+    textElements.forEach(textEl => {
+      svgAttr(textEl, { fill: textColor });
+    });
+
+    // Use MutationObserver to handle text elements added after our rendering
+    // But skip if directEditing is active (인라인 편집 중에는 텍스트 제거하지 않음)
+    const observer = new MutationObserver((mutations) => {
+      // Check if directEditing is active by looking for djs-direct-editing-parent class
+      const isDirectEditing = document.querySelector('.djs-direct-editing-parent');
+      if (isDirectEditing) {
+        return; // Skip removal during direct editing
+      }
+
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeName === 'text' && !node.classList.contains('custom-wrapped-text')) {
+            // Remove default text added by BPMN-JS
+            try {
+              svgRemove(node);
+            } catch (e) {
+              // Ignore
+            }
+          }
+        });
+      });
+    });
+
+    observer.observe(parentNode, { childList: true, subtree: true });
+
+    // Disconnect observer after a short delay (BPMN-JS should have finished rendering)
+    setTimeout(() => {
+      observer.disconnect();
+    }, 100);
+
+    // Phase 4-2: Display Business ID label above the Task
+    const extensionElements2 = element.businessObject?.extensionElements;
+    let businessId = '';
+    if (extensionElements2 && extensionElements2.values) {
+      const uengineProps2 = extensionElements2.values.find(v => v.$type === 'uengine:Properties');
+      if (uengineProps2 && uengineProps2.json) {
+        try {
+          const props2 = JSON.parse(uengineProps2.json);
+          if (props2.businessId) businessId = props2.businessId;
+        } catch (e) { /* ignore */ }
+      }
+    }
+    if (businessId) {
+      const bidLabel = svgCreate('text');
+      svgAttr(bidLabel, {
+        x: existingWidth / 2,
+        y: -6,
+        'text-anchor': 'middle',
+        'font-size': '9px',
+        'font-family': '"Courier New", monospace',
+        'fill': '#888888',
+        'pointer-events': 'none'
+      });
+      bidLabel.textContent = businessId;
+      svgAppend(parentNode, bidLabel);
+    }
+
+    // Phase 4-3: Time-Travel Visual Cues
+    const timeTravel = window.$bpmnTimeTravel;
+    if (timeTravel === 'toBe') {
+      let futureStatus = '';
+      if (extensionElements2 && extensionElements2.values) {
+        const uengineProps3 = extensionElements2.values.find(v => v.$type === 'uengine:Properties');
+        if (uengineProps3 && uengineProps3.json) {
+          try {
+            const props3 = JSON.parse(uengineProps3.json);
+            if (props3.futureStatus) futureStatus = props3.futureStatus;
+          } catch (e) { /* ignore */ }
+        }
+      }
+
+      if (futureStatus === 'sunset') {
+        // Red dashed border + strikethrough name
+        const sunsetBorder = svgCreate('rect');
+        svgAttr(sunsetBorder, {
+          width: existingWidth, height: existingHeight,
+          rx: TASK_BORDER_RADIUS, ry: TASK_BORDER_RADIUS,
+          stroke: '#e53935', strokeWidth: 2, strokeDasharray: '6,3',
+          fill: 'none', 'pointer-events': 'none'
+        });
+        svgAppend(parentNode, sunsetBorder);
+        // Strikethrough line over name
+        const strikeY = existingHeight / 2;
+        const strikeLine = svgCreate('line');
+        svgAttr(strikeLine, {
+          x1: 10, y1: strikeY, x2: existingWidth - 10, y2: strikeY,
+          stroke: '#e53935', strokeWidth: 1.5, 'pointer-events': 'none'
+        });
+        svgAppend(parentNode, strikeLine);
+      } else if (futureStatus === 'new') {
+        // Blue glow border
+        const glowBorder = svgCreate('rect');
+        svgAttr(glowBorder, {
+          width: existingWidth + 4, height: existingHeight + 4,
+          x: -2, y: -2,
+          rx: TASK_BORDER_RADIUS + 2, ry: TASK_BORDER_RADIUS + 2,
+          stroke: '#1565c0', strokeWidth: 3, strokeOpacity: 0.6,
+          fill: 'none', 'pointer-events': 'none'
+        });
+        svgAppend(parentNode, glowBorder);
+      } else if (futureStatus === 'automation_planned') {
+        // Orange dashed border + robot icon
+        const autoBorder = svgCreate('rect');
+        svgAttr(autoBorder, {
+          width: existingWidth, height: existingHeight,
+          rx: TASK_BORDER_RADIUS, ry: TASK_BORDER_RADIUS,
+          stroke: '#f57c00', strokeWidth: 2, strokeDasharray: '6,3',
+          fill: 'none', 'pointer-events': 'none'
+        });
+        svgAppend(parentNode, autoBorder);
+        // Robot icon indicator
+        const robotIcon = svgCreate('text');
+        svgAttr(robotIcon, {
+          x: existingWidth - 14, y: 14,
+          'font-size': '12px', fill: '#f57c00', 'pointer-events': 'none'
+        });
+        robotIcon.textContent = '🤖';
+        svgAppend(parentNode, robotIcon);
+      }
+      // 'maintain' = no visual change
+    }
+
+    // Display System Name / Menu Name below the Task
+    if (systemName || menuName) {
+      const labelParts = [];
+      if (systemName) labelParts.push(systemName);
+      if (menuName) labelParts.push(menuName);
+      const labelText = labelParts.join(' / ');
+
+      const metaLabel = svgCreate('text');
+      svgAttr(metaLabel, {
+        x: existingWidth / 2,
+        y: existingHeight + 14,
+        'text-anchor': 'middle',
+        'font-size': '10px',
+        'font-family': 'Arial, sans-serif',
+        'fill': '#666666',
+        'font-style': 'italic'
+      });
+      metaLabel.textContent = `[${labelText}]`;
+      svgAppend(parentNode, metaLabel);
+    }
   }
 
   // StartEvnet 관련
@@ -328,14 +812,70 @@ export default class CustomBpmnRenderer extends BaseRenderer {
   drawConnection(parentNode, element) {
 
     if (is(element, 'bpmn:SequenceFlow')) {
-      var strokeColor =  'black';
+      var strokeColor = 'black';
 
-      const customMarkerUrl = createCustomMarker(parentNode, strokeColor); // 화살표 색상 설정
-      const options = {
-        stroke: strokeColor, // 연결선 색상 변경
-        strokeWidth: '2',
-        markerEnd: customMarkerUrl // 사용자 정의 마커 적용
+      const customMarkerUrl = createCustomMarker(parentNode, strokeColor);
+
+      // Get all sequence flows to find intersections
+      const allConnections = this.elementRegistry.filter(e => is(e, 'bpmn:SequenceFlow'));
+      const currentWaypoints = element.waypoints;
+
+      // Find intersection points with other connections
+      const intersections = [];
+      allConnections.forEach(otherConn => {
+        if (otherConn.id === element.id) return;
+        const otherWaypoints = otherConn.waypoints;
+
+        // Check each segment of current connection against each segment of other connection
+        for (let i = 0; i < currentWaypoints.length - 1; i++) {
+          for (let j = 0; j < otherWaypoints.length - 1; j++) {
+            const intersection = getLineIntersection(
+              currentWaypoints[i], currentWaypoints[i + 1],
+              otherWaypoints[j], otherWaypoints[j + 1]
+            );
+            if (intersection) {
+              intersections.push({
+                point: intersection,
+                segmentIndex: i
+              });
+            }
+          }
+        }
+      });
+
+      // Sort intersections by distance from start of each segment
+      intersections.sort((a, b) => {
+        if (a.segmentIndex !== b.segmentIndex) {
+          return a.segmentIndex - b.segmentIndex;
+        }
+        const startA = currentWaypoints[a.segmentIndex];
+        const startB = currentWaypoints[b.segmentIndex];
+        const distA = Math.hypot(a.point.x - startA.x, a.point.y - startA.y);
+        const distB = Math.hypot(b.point.x - startB.x, b.point.y - startB.y);
+        return distA - distB;
+      });
+
+      // Draw path with line jumps at intersections
+      if (intersections.length > 0) {
+        const path = createPathWithLineJumps(currentWaypoints, intersections);
+
+        svgAttr(path, {
+          stroke: strokeColor,
+          strokeWidth: '2',
+          fill: 'none',
+          markerEnd: customMarkerUrl
+        });
+
+        svgAppend(parentNode, path);
+        return path;
       }
+
+      // No intersections, draw normal connection
+      const options = {
+        stroke: strokeColor,
+        strokeWidth: '2',
+        markerEnd: customMarkerUrl
+      };
 
       var connection = this.bpmnRenderer.drawConnection(parentNode, element, options);
       return connection;
@@ -504,19 +1044,14 @@ function drawNotchTag(parentNode, width, height, fillColor, strokeColor, x = 0, 
 
 function drawBorderRect(parentNode, width, height, borderRadius, strokeColor, strokeWidth) {
   const borderRect = svgCreate('rect');
-  
-  if (strokeColor !== '#000000' && strokeColor !== '#4e72be') {
-    svgAttr(borderRect, {
-      'stroke-dasharray': '10, 10'
-    });
-  }
+
   svgAttr(borderRect, {
     width: width,
     height: height,
     rx: borderRadius,
     ry: borderRadius,
-    stroke: strokeColor == '#000000'? 'none' : strokeColor,
-    strokeWidth: strokeWidth ? strokeWidth : 5,
+    stroke: strokeColor == '#000000' ? 'none' : strokeColor,
+    strokeWidth: strokeWidth ? strokeWidth : 2,
     fill: 'none'
   });
   svgAppend(parentNode, borderRect);
@@ -570,5 +1105,103 @@ function copyAttributes(source, target) {
 // copied from https://github.com/bpmn-io/diagram-js/blob/master/lib/core/GraphicsFactory.js
 function prependTo(newNode, parentNode, siblingNode) {
   parentNode.insertBefore(newNode, siblingNode || parentNode.firstChild);
+}
+
+// Line intersection detection
+function getLineIntersection(p1, p2, p3, p4) {
+  const x1 = p1.x, y1 = p1.y;
+  const x2 = p2.x, y2 = p2.y;
+  const x3 = p3.x, y3 = p3.y;
+  const x4 = p4.x, y4 = p4.y;
+
+  const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+  if (Math.abs(denom) < 0.0001) return null; // Lines are parallel
+
+  const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+  const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+
+  // Check if intersection is within both line segments (with small margin)
+  const margin = 0.01;
+  if (t > margin && t < 1 - margin && u > margin && u < 1 - margin) {
+    return {
+      x: x1 + t * (x2 - x1),
+      y: y1 + t * (y2 - y1)
+    };
+  }
+  return null;
+}
+
+// Create SVG path with line jumps (arcs) at intersection points
+function createPathWithLineJumps(waypoints, intersections) {
+  const JUMP_RADIUS = 6; // Radius of the arc jump
+  const path = svgCreate('path');
+
+  let d = '';
+  let currentSegmentIndex = 0;
+  let intersectionIdx = 0;
+
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const start = waypoints[i];
+    const end = waypoints[i + 1];
+
+    // Calculate segment direction
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    const ux = dx / length; // Unit vector x
+    const uy = dy / length; // Unit vector y
+
+    if (i === 0) {
+      d += `M ${start.x} ${start.y}`;
+    }
+
+    // Get intersections for this segment
+    const segmentIntersections = [];
+    while (intersectionIdx < intersections.length && intersections[intersectionIdx].segmentIndex === i) {
+      segmentIntersections.push(intersections[intersectionIdx].point);
+      intersectionIdx++;
+    }
+
+    // Sort by distance from segment start
+    segmentIntersections.sort((a, b) => {
+      const distA = Math.hypot(a.x - start.x, a.y - start.y);
+      const distB = Math.hypot(b.x - start.x, b.y - start.y);
+      return distA - distB;
+    });
+
+    if (segmentIntersections.length === 0) {
+      // No intersections, draw straight line
+      d += ` L ${end.x} ${end.y}`;
+    } else {
+      // Draw line with arcs at intersection points
+      let lastPoint = start;
+
+      for (const intersection of segmentIntersections) {
+        // Point before the arc
+        const beforeX = intersection.x - ux * JUMP_RADIUS;
+        const beforeY = intersection.y - uy * JUMP_RADIUS;
+
+        // Point after the arc
+        const afterX = intersection.x + ux * JUMP_RADIUS;
+        const afterY = intersection.y + uy * JUMP_RADIUS;
+
+        // Draw line to before point
+        d += ` L ${beforeX} ${beforeY}`;
+
+        // Draw arc (semicircle) over the intersection
+        // The arc goes perpendicular to the line direction
+        // sweep-flag = 1 for clockwise arc (jump over)
+        d += ` A ${JUMP_RADIUS} ${JUMP_RADIUS} 0 0 1 ${afterX} ${afterY}`;
+
+        lastPoint = { x: afterX, y: afterY };
+      }
+
+      // Draw line from last arc to segment end
+      d += ` L ${end.x} ${end.y}`;
+    }
+  }
+
+  svgAttr(path, { d: d });
+  return path;
 }
 

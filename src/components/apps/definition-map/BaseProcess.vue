@@ -14,12 +14,23 @@ export default {
     },
     data: () => ({
         processDialogStatus: false,
+        processType: '',
         permissionDialogStatus: false,
         hover: false,
         permissionProcess: null,
         permissionProcessMap: null,
         editable: false,
     }),
+    created() {
+        // 다른 곳에서 프로세스 다이얼로그가 열리면 자신의 다이얼로그 닫기
+        this._processDialogId = Math.random().toString(36).substr(2, 9);
+        this._closeDialogHandler = (event) => {
+            if (event.detail !== this._processDialogId) {
+                this.processDialogStatus = false;
+            }
+        };
+        window.addEventListener('closeAllProcessDialogs', this._closeDialogHandler);
+    },
     async mounted() {
         const role = localStorage.getItem('role');
         if (role == 'superAdmin') {
@@ -36,6 +47,9 @@ export default {
             }
         }
     },
+    beforeUnmount() {
+        window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
+    },
     methods: {
         closePermissionDialog() {
             this.permissionProcess = null;
@@ -50,16 +64,14 @@ export default {
             this.value.name = process.name
         },
         editProcessdialog(processType) {
-            if (this.processDialogStatus) {
-                this.processDialogStatus = false;
-            }
+            // 다른 모든 다이얼로그 닫기
+            window.dispatchEvent(new CustomEvent('closeAllProcessDialogs', { detail: this._processDialogId }));
             this.processType = processType;
             this.processDialogStatus = true;
         },
         openProcessDialog(processType) {
-            if (this.processDialogStatus) {
-                this.processDialogStatus = false;
-            }
+            // 다른 모든 다이얼로그 닫기
+            window.dispatchEvent(new CustomEvent('closeAllProcessDialogs', { detail: this._processDialogId }));
             this.processType = processType;
             this.processDialogStatus = true;
         },

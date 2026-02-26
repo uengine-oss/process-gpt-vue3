@@ -113,6 +113,10 @@ export interface Backend {
     updateBrowserUseSecretByTenant(data: any): Promise<any>;
     getMCPLists(): Promise<any>;
 
+    // User & Data API
+    getUserInfo(): Promise<any>;
+    getData(path: string, options: any): Promise<any>;
+
     // Task Catalog API
     getTaskSystems(): Promise<any>;
     saveTaskSystem(system: any): Promise<any>;
@@ -133,6 +137,30 @@ export interface Backend {
     // Palette Task Types API
     getPaletteTaskTypes(): Promise<any>;
     updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any>;
+
+    // Task Execution Properties API (분석용)
+    saveTaskExecutionProperties(params: {
+        procDefId: string;
+        procInstId: string;
+        activityId: string;
+        activityName?: string;
+        todoId?: string;
+        properties: any;
+        executorEmail?: string;
+    }): Promise<any>;
+    updateTaskExecutionCompletion(params: {
+        procInstId: string;
+        activityId: string;
+        status: 'COMPLETED' | 'CANCELLED' | 'FAILED';
+    }): Promise<any>;
+    getTaskExecutionProperties(options?: {
+        procDefId?: string;
+        systemName?: string;
+        agentMode?: string;
+        dateFrom?: string;
+        dateTo?: string;
+        limit?: number;
+    }): Promise<any[]>;
 }
 
 // export type { Backend }

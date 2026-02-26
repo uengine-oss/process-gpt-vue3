@@ -202,6 +202,16 @@
         </div>
     </div>
 
+    <!-- Lead Time -->
+    <div class="mt-4">
+        <LeadTimeInput
+            v-model="copyUengineProperties.leadTime"
+            :label="$t('leadTime.title') || 'Lead Time'"
+            :disabled="isViewMode"
+        />
+    </div>
+
+
     <!-- Schema-based Properties -->
     <div class="mt-4">
         <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
@@ -287,6 +297,7 @@
         </div>
     </div>
 
+
     <v-dialog
         v-model="isOpenFieldMapper"
         class="mapper-dialog"
@@ -337,6 +348,7 @@ import DefaultArguments from '@/components/designer/DefaultArguments.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import Instruction from '@/components/designer/InstructionField.vue';
 import SchemaBasedProperties from './SchemaBasedProperties.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
 
 export default {
     name: 'user-task-panel',
@@ -347,7 +359,8 @@ export default {
         DefaultArguments,
         Checkpoints,
         Instruction,
-        SchemaBasedProperties
+        SchemaBasedProperties,
+        LeadTimeInput
     },
     props: {
         uengineProperties: Object,

@@ -7,16 +7,46 @@
                     <v-row class="ma-0 pa-0">
                         <v-card-title class="pa-2 mb-2">
                             <v-icon class="mr-2">mdi-file-tree</v-icon>
-                            프로세스 체계도
+                            {{ $t('processDefinitionTree.title') || '프로세스 체계도' }}
                         </v-card-title>
                         <v-spacer></v-spacer>
-                        
+
                         <div class="d-flex ga-2">
-                            <v-btn color="grey" variant="flat">추가</v-btn>
-                            <v-btn color="grey" variant="flat">삭제</v-btn>
+                            <v-btn color="grey" variant="flat" size="small">{{ $t('common.add') || '추가' }}</v-btn>
+                            <v-btn color="grey" variant="flat" size="small">{{ $t('common.delete') || '삭제' }}</v-btn>
                         </div>
                     </v-row>
-                    
+
+                    <!-- 도메인 필터 탭 -->
+                    <div v-if="domains && domains.length > 0" class="domain-filter-tabs mb-3">
+                        <v-chip-group
+                            v-model="selectedDomainFilter"
+                            selected-class="bg-primary text-white"
+                            mandatory
+                        >
+                            <v-chip
+                                :value="null"
+                                size="small"
+                                variant="outlined"
+                                filter
+                            >
+                                {{ $t('processDefinitionTree.allDomains') || '전체' }}
+                            </v-chip>
+                            <v-chip
+                                v-for="domain in domains"
+                                :key="domain.id"
+                                :value="domain.id"
+                                size="small"
+                                variant="outlined"
+                                filter
+                                :style="domain.color ? { '--chip-color': domain.color } : {}"
+                                :class="{ 'domain-colored-chip': domain.color && selectedDomainFilter === domain.id }"
+                            >
+                                {{ domain.name }}
+                            </v-chip>
+                        </v-chip-group>
+                    </div>
+
                     <!-- TreeView -->
                     <v-treeview
                         v-if="Object.keys(nodes).length > 0"
@@ -156,9 +186,14 @@ export default {
         uploadedFileName: null,
         isParsingExcel: false,
         parsedExcelData: null,
+        // 도메인 필터 관련
+        domains: [],
+        selectedDomainFilter: null,
+        metricsMap: null,
     }),
     async created() {
         await this.loadProcessDefinitionMap();
+        await this.loadMetricsMap();
         // await this.loadFirstSubProcess();
     },
     watch: {
@@ -171,6 +206,12 @@ export default {
                     await this.loadProcessDefinitionMap();
                 }
             }
+        },
+        // 도메인 필터 변경 시 트리 다시 생성
+        selectedDomainFilter() {
+            if (this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
+                this.convertToVue3TreeviewFormat(this.processDefinitionMap.mega_proc_list);
+            }
         }
     },
     methods: {
@@ -180,7 +221,7 @@ export default {
         async loadProcessDefinitionMap() {
             try {
                 this.processDefinitionMap = await backend.getProcessDefinitionMap();
-                
+
                 if (this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
                     this.convertToVue3TreeviewFormat(this.processDefinitionMap.mega_proc_list);
                     console.log('🌲 Nodes loaded:', this.nodes);
@@ -199,6 +240,36 @@ export default {
         },
 
         /**
+         * 메트릭스 맵에서 도메인 정보 로드
+         */
+        async loadMetricsMap() {
+            try {
+                this.metricsMap = await backend.getMetricsMap();
+                if (this.metricsMap && this.metricsMap.domains) {
+                    this.domains = this.metricsMap.domains;
+                }
+            } catch (error) {
+                console.error('메트릭스 맵 로드 실패:', error);
+            }
+        },
+
+        /**
+         * 도메인 ID로 도메인 정보 조회
+         */
+        getDomainById(domainId) {
+            return this.domains.find(d => d.id === domainId);
+        },
+
+        /**
+         * Major 프로세스의 도메인 ID 조회
+         */
+        getMajorDomainId(majorId) {
+            if (!this.metricsMap || !this.metricsMap.processes) return null;
+            const proc = this.metricsMap.processes.find(p => p.id === majorId);
+            return proc ? proc.domain_id : null;
+        },
+
+        /**
          * 프로세스 정의 체계도를 vue3-treeview 형식으로 변환
          * @param {Array} megaProcList - mega_proc_list 배열
          */
@@ -210,11 +281,15 @@ export default {
             this.nodes = {};
             this.config.roots = [];
 
+            // 도메인 필터가 선택된 경우 필터링 적용
+            const selectedDomain = this.selectedDomainFilter;
+
             megaProcList.forEach(mega => {
                 const megaId = `mega_${mega.id}`;
-                this.config.roots.push(megaId);
-                
-                this.nodes[megaId] = {
+                let hasMajorInDomain = false;
+
+                // 임시로 mega 노드 생성
+                const megaNode = {
                     id: megaId,
                     text: mega.name,
                     children: [],
@@ -223,35 +298,58 @@ export default {
 
                 if (mega.major_proc_list && Array.isArray(mega.major_proc_list)) {
                     mega.major_proc_list.forEach(major => {
-                        const majorId = `major_${major.id}`;
-                        this.nodes[megaId].children.push(majorId);
-                        
-                        this.nodes[majorId] = {
-                            id: majorId,
-                            text: major.name,
-                            children: [],
-                            data: { type: 'major', originalId: major.id }
-                        };
+                        // 도메인 필터링: 선택된 도메인과 major의 도메인이 일치하는지 확인
+                        const majorDomainId = this.getMajorDomainId(major.id);
 
-                        if (major.sub_proc_list && Array.isArray(major.sub_proc_list)) {
-                            major.sub_proc_list.forEach(sub => {
-                                const subId = `sub_${sub.id}`;
-                                this.nodes[majorId].children.push(subId);
-                                
-                                this.nodes[subId] = {
-                                    id: subId,
-                                    text: sub.name,
-                                    children: [],
-                                    data: { 
-                                        type: 'sub', 
-                                        originalId: sub.id,
-                                        processDefinitionId: sub.id,
-                                        new: sub.new || false
-                                    }
-                                };
-                            });
+                        // 필터가 없거나, 필터가 일치하는 경우에만 추가
+                        if (selectedDomain === null || majorDomainId === selectedDomain) {
+                            hasMajorInDomain = true;
+
+                            const majorId = `major_${major.id}`;
+                            megaNode.children.push(majorId);
+
+                            // 도메인 정보 조회
+                            const domainInfo = majorDomainId ? this.getDomainById(majorDomainId) : null;
+
+                            this.nodes[majorId] = {
+                                id: majorId,
+                                text: major.name,
+                                children: [],
+                                data: {
+                                    type: 'major',
+                                    originalId: major.id,
+                                    domain: major.domain,
+                                    domainId: majorDomainId,
+                                    domainColor: domainInfo?.color
+                                }
+                            };
+
+                            if (major.sub_proc_list && Array.isArray(major.sub_proc_list)) {
+                                major.sub_proc_list.forEach(sub => {
+                                    const subId = `sub_${sub.id}`;
+                                    this.nodes[majorId].children.push(subId);
+
+                                    this.nodes[subId] = {
+                                        id: subId,
+                                        text: sub.name,
+                                        children: [],
+                                        data: {
+                                            type: 'sub',
+                                            originalId: sub.id,
+                                            processDefinitionId: sub.id,
+                                            new: sub.new || false
+                                        }
+                                    };
+                                });
+                            }
                         }
                     });
+                }
+
+                // 도메인 필터링 후 major가 있는 경우에만 mega 노드 추가
+                if (selectedDomain === null || hasMajorInDomain) {
+                    this.config.roots.push(megaId);
+                    this.nodes[megaId] = megaNode;
                 }
             });
         },
@@ -918,6 +1016,27 @@ export default {
 
 .tree-view-card::-webkit-scrollbar-thumb:hover {
     background: #a0a0a0;
+}
+
+/* 도메인 필터 탭 스타일 */
+.domain-filter-tabs {
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 8px;
+}
+
+.domain-filter-tabs :deep(.v-chip-group) {
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.domain-filter-tabs :deep(.v-chip) {
+    margin: 2px;
+}
+
+.domain-colored-chip {
+    background-color: var(--chip-color) !important;
+    color: white !important;
+    border-color: var(--chip-color) !important;
 }
 </style>
 

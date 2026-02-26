@@ -242,6 +242,8 @@ export default {
                     this.copyUengineProperties.roleResolutionContext.organizationId = newVal.id;
                     this.copyUengineProperties.roleResolutionContext.organizationName = newVal.name;
                     this.copyUengineProperties.roleResolutionContext.organizationType = newVal.type;
+                    // Phase 4-4: Auto-set Lane name from Organization selection
+                    this.updateLaneName(newVal.name);
                 } else {
                     delete this.copyUengineProperties.roleResolutionContext.organizationId;
                     delete this.copyUengineProperties.roleResolutionContext.organizationName;
@@ -356,6 +358,20 @@ export default {
             };
             traverse(node);
             return teams;
+        },
+        // Phase 4-4: Update Lane name using modeling API
+        updateLaneName(name) {
+            if (!name || !this.bpmnModeler || !this.element) return;
+            try {
+                const modeling = this.bpmnModeler.get('modeling');
+                const elementRegistry = this.bpmnModeler.get('elementRegistry');
+                const laneElement = elementRegistry.get(this.element.id);
+                if (laneElement) {
+                    modeling.updateLabel(laneElement, name);
+                }
+            } catch (e) {
+                console.warn('[LanePanel] updateLaneName failed:', e);
+            }
         },
         ensureKeyExists(obj, key, defaultValue) {
             console.log(key);

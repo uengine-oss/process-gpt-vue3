@@ -28,7 +28,7 @@
                     </v-row>
 
                     <v-row>
-                        <v-col cols="12" md="6">
+                        <v-col cols="12" md="4">
                             <v-select
                                 v-model="formData.property_type"
                                 :items="propertyTypes"
@@ -37,7 +37,16 @@
                                 item-value="value"
                             />
                         </v-col>
-                        <v-col cols="12" md="6">
+                        <v-col cols="12" md="4">
+                            <v-select
+                                v-model="formData.applies_to"
+                                :items="appliesToOptions"
+                                :label="$t('taskCatalog.appliesTo')"
+                                item-title="label"
+                                item-value="value"
+                            />
+                        </v-col>
+                        <v-col cols="12" md="4">
                             <v-text-field
                                 v-model.number="formData.display_order"
                                 :label="$t('taskCatalog.order')"
@@ -48,20 +57,46 @@
                     </v-row>
 
                     <v-row>
-                        <v-col cols="12">
+                        <v-col cols="12" md="6">
+                            <v-text-field
+                                v-model="formData.placeholder"
+                                :label="$t('taskCatalog.placeholder')"
+                            />
+                        </v-col>
+                        <v-col cols="12" md="6">
+                            <v-text-field
+                                v-model="formData.default_value"
+                                :label="$t('taskCatalog.defaultValue')"
+                            />
+                        </v-col>
+                    </v-row>
+
+                    <v-row>
+                        <v-col cols="12" md="6">
                             <v-switch
                                 v-model="formData.is_mandatory"
                                 :label="$t('taskCatalog.mandatory')"
                                 color="error"
                             />
                         </v-col>
+                        <v-col cols="12" md="6">
+                            <v-switch
+                                v-model="formData.visible_by_default"
+                                :label="$t('taskCatalog.visibleByDefault')"
+                                color="primary"
+                            />
+                        </v-col>
                     </v-row>
 
-                    <v-row>
+                    <!-- Config for db-select / formula -->
+                    <v-row v-if="formData.property_type === 'db-select' || formData.property_type === 'formula'">
                         <v-col cols="12">
                             <v-text-field
-                                v-model="formData.default_value"
-                                :label="$t('taskCatalog.defaultValue')"
+                                v-model="configText"
+                                :label="$t('taskCatalog.config')"
+                                :placeholder="$t('taskCatalog.configPlaceholder')"
+                                :hint="formData.property_type === 'db-select' ? 'DB: table_name' : 'SUM(tasks.fte)'"
+                                persistent-hint
                             />
                         </v-col>
                     </v-row>
@@ -162,8 +197,8 @@
 </template>
 
 <script>
-import { defineComponent, ref, watch, computed } from 'vue';
-import { useTaskCatalogStore, PROPERTY_TYPES } from '@/stores/taskCatalog';
+import { defineComponent, ref, watch, computed, getCurrentInstance } from 'vue';
+import { useTaskCatalogStore, PROPERTY_TYPES, APPLIES_TO_OPTIONS } from '@/stores/taskCatalog';
 
 export default defineComponent({
     name: 'PropertySchemaDialog',
@@ -175,12 +210,15 @@ export default defineComponent({
     emits: ['update:modelValue', 'saved'],
     setup(props, { emit }) {
         const store = useTaskCatalogStore();
-
-        const formRef = ref(null);
-        const formValid = ref(false);
-        const loading = ref(false);
+        const configText = ref('');
 
         const propertyTypes = computed(() => PROPERTY_TYPES);
+        const appliesToOptions = computed(() => {
+            return APPLIES_TO_OPTIONS.map(item => ({
+                ...item,
+                label: locale.value === 'ko' ? (item.labelKo || item.label) : item.label,
+            }));
+        });
 
         const colSpanOptions = [
             { label: '1/12 (좁음)', value: 1 },
@@ -202,9 +240,13 @@ export default defineComponent({
             property_label: '',
             property_type: 'string',
             is_mandatory: false,
+            visible_by_default: true,
             default_value: '',
             display_order: 0,
             options: [],
+            applies_to: 'both',
+            placeholder: '',
+            config: null,
             row_index: 0,
             col_span: 12,
             section_name: ''
@@ -218,12 +260,21 @@ export default defineComponent({
                     formData.value = {
                         ...props.schema,
                         options: props.schema.options ? [...props.schema.options] : [],
-                        row_index: props.schema.row_index ?? 0,
-                        col_span: props.schema.col_span ?? 12,
-                        section_name: props.schema.section_name ?? ''
-                    };
+                    // Serialize config
+                    if (props.schema.config) {
+                        if (props.schema.property_type === 'db-select') {
+                            configText.value = 'DB: ' + (props.schema.config.table || '');
+                        } else if (props.schema.property_type === 'formula') {
+                            configText.value = props.schema.config.expression || '';
+                        } else {
+                            configText.value = JSON.stringify(props.schema.config);
+                        }
+                    } else {
+                        configText.value = '';
+                    }
                 } else {
                     formData.value = defaultFormData();
+                    configText.value = '';
                 }
             }
         });
@@ -239,13 +290,29 @@ export default defineComponent({
             formData.value.options.splice(index, 1);
         };
 
+        const parseConfig = (type, text) => {
+            if (!text || !text.trim()) return null;
+            const trimmed = text.trim();
+            if (type === 'db-select') {
+                const match = trimmed.match(/^(?:DB:\s*)?(.+)/i);
+                const tableName = match ? match[1].trim() : trimmed;
+                return { table: tableName, label_col: 'name', value_col: 'id' };
+            }
+            if (type === 'formula') {
+                return { expression: trimmed };
+            }
+            try { return JSON.parse(trimmed); } catch { return { value: trimmed }; }
+        };
+
         const save = async () => {
             loading.value = true;
             try {
+                const config = parseConfig(formData.value.property_type, configText.value);
                 await store.saveSchema({
                     ...formData.value,
                     id: props.schema?.id,
-                    task_type: props.taskType
+                    task_type: formData.value.applies_to,
+                    config,
                 });
                 emit('saved');
             } catch (error) {
@@ -260,7 +327,9 @@ export default defineComponent({
             formValid,
             loading,
             formData,
+            configText,
             propertyTypes,
+            appliesToOptions,
             colSpanOptions,
             addOption,
             removeOption,
