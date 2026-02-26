@@ -1095,6 +1095,10 @@
         "enterName": "이름을 입력하세요",
         "enterConfirmPassword": "비밀번호 확인을 입력하세요",
         "passwordMismatch": "비밀번호가 일치하지 않습니다",
+        "passwordMinLength": "비밀번호는 8자 이상이어야 합니다.",
+        "passwordNeedLetter": "영문자를 최소 1자 포함해야 합니다.",
+        "passwordNeedNumber": "숫자를 최소 1자 포함해야 합니다.",
+        "passwordNeedSpecial": "특수문자를 최소 1자 포함해야 합니다.",
         "signUp": "회원가입",
         "checkEmailMessage": "회원가입이 완료되었습니다. 이메일 함을 확인하여 계정을 활성화하세요.",
         "registrationFailed": "회원가입 과정에서 오류가 발생했습니다. 입력 정보를 확인 후 다시 시도해주세요."

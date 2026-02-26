@@ -349,7 +349,7 @@
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
                                     class="work-item-form-btn-box align-center"
                                 >
-                                    <v-btn
+                                    <v-btn v-if="!gs"
                                         class="mr-1"
                                         color="gray"
                                         variant="flat"
@@ -377,7 +377,7 @@
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
                                     <v-menu
-                                        v-if="!isMobile"
+                                        v-if="!isMobile && !gs"
                                         v-model="researchMethodMenu"
                                         :close-on-content-click="false"
                                         location="bottom"
@@ -435,7 +435,7 @@
                                     >
                                         <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
                                     </v-btn>
-                                    <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                                    <v-btn v-if="!isMicRecording && !isMicRecorderLoading && !gs" @click="startVoiceRecording()"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
@@ -446,7 +446,7 @@
                                     >
                                         <Icons :icon="'sharp-mic'" :size="'16'" />
                                     </v-btn>
-                                    <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                                    <v-btn v-else-if="!isMicRecorderLoading && !gs" @click="stopVoiceRecording()"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
@@ -827,6 +827,9 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
         currentRunningResearchMethod() {
             // 에이전트가 진행 중이고 workItem에 orchestration 정보가 있는 경우
             if (this.isAgentBusy && this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {

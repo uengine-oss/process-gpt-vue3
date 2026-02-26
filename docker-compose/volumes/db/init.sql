@@ -64,17 +64,38 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- ENUM 타입 정의
 -- ==========================================
 -- 프로세스 인스턴스 상태 enum
-CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+DO $$ BEGIN
+  CREATE TYPE process_status AS ENUM ('NEW', 'RUNNING', 'COMPLETED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 -- 할일 항목 상태 enum
-CREATE TYPE todo_status AS ENUM ('NEW', 'TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
+DO $$ BEGIN
+  CREATE TYPE todo_status AS ENUM ('NEW', 'TODO', 'IN_PROGRESS', 'SUBMITTED', 'PENDING', 'DONE', 'CANCELLED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 -- 에이전트 모드 enum
-CREATE TYPE agent_mode AS ENUM ('DRAFT', 'COMPLETE');
+DO $$ BEGIN
+  CREATE TYPE agent_mode AS ENUM ('DRAFT', 'COMPLETE');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 -- 오케스트레이션 방식 enum
-CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a', 'visionparse');
+DO $$ BEGIN
+  CREATE TYPE agent_orch AS ENUM ('crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a', 'visionparse');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 -- 드래프트 상태 enum
-CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
+DO $$ BEGIN
+  CREATE TYPE draft_status AS ENUM ('STARTED', 'CANCELLED', 'COMPLETED', 'FB_REQUESTED', 'HUMAN_ASKED', 'FAILED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 -- 이벤트 타입 enum
-CREATE TYPE event_type_enum AS ENUM (
+DO $$ BEGIN
+  CREATE TYPE event_type_enum AS ENUM (
   'task_started',
   'task_completed',
   'tool_usage_started',
@@ -85,9 +106,16 @@ CREATE TYPE event_type_enum AS ENUM (
   'human_checked',
   'task_working',
   'error'
-);
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 -- 이벤트 상태 enum
-CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
+DO $$ BEGIN
+  CREATE TYPE event_status AS ENUM ('ASKED', 'APPROVED', 'REJECTED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Create tenant_id function
 create or replace function public.tenant_id()
@@ -111,7 +139,10 @@ create table if not exists public.tenants (
     constraint tenants_pkey primary key (id)
 ) tablespace pg_default;
 
-INSERT INTO public.tenants (id, owner) VALUES ('process-gpt', null);
+-- If init.sql is re-run, avoid duplicate key errors
+INSERT INTO public.tenants (id, owner)
+VALUES ('process-gpt', null)
+ON CONFLICT (id) DO NOTHING;
 
 create table if not exists public.user_devices (
     user_email text not null,
@@ -128,7 +159,7 @@ create table if not exists public.users (
     email text null,
     is_admin boolean not null default false,
     role text null,
-    tenant_id text not null 'process-gpt',
+    tenant_id text not null default 'process-gpt',
     device_token text null,
     goal text null,
     persona text null,
@@ -184,12 +215,73 @@ end;
 $$;
 
 -- 2) 트리거: auth.users INSERT 시 실행
-drop trigger if exists on_auth_user_created on auth.users;
+-- Supabase Auth 스키마는 Supabase가 소유/관리합니다.
+-- 일부 환경(권한 제한, managed DB 등)에서는 auth 스키마에 DDL이 실패할 수 있으므로
+-- "가능하면 적용, 안 되면 스킵"으로 처리합니다.
+DO $$
+BEGIN
+  -- 2) 트리거: auth.users INSERT 시 실행 (가능하면 생성)
+  BEGIN
+    EXECUTE 'DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users';
+    EXECUTE 'CREATE TRIGGER on_auth_user_created
+      AFTER INSERT ON auth.users
+      FOR EACH ROW
+      EXECUTE FUNCTION public.handle_new_auth_user()';
+  EXCEPTION
+    WHEN insufficient_privilege OR undefined_table OR invalid_schema_name THEN
+      RAISE NOTICE 'Skipping auth.users trigger setup: %', SQLERRM;
+  END;
 
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row
-  execute function public.handle_new_auth_user();
+  -- 3) Supabase Auth: identities 테이블 (신규 버전 signup에서 사용)
+  -- 권한이 없으면 스킵. 이미 존재하면 아무 것도 하지 않음.
+  IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'auth')
+     AND NOT EXISTS (
+       SELECT 1
+       FROM information_schema.tables
+       WHERE table_schema = 'auth' AND table_name = 'identities'
+     )
+  THEN
+    BEGIN
+      EXECUTE $ddl$
+        CREATE TABLE auth.identities (
+          id uuid not null default gen_random_uuid(),
+          user_id uuid not null,
+          identity_data jsonb not null,
+          provider text not null,
+          provider_id text not null,
+          last_sign_in_at timestamp with time zone null,
+          created_at timestamp with time zone not null default now(),
+          updated_at timestamp with time zone not null default now(),
+          email text generated always as (lower(nullif(identity_data ->> 'email', ''))) stored,
+          constraint identities_pkey primary key (id),
+          constraint identities_user_id_fkey foreign key (user_id) references auth.users (id) on delete cascade
+        )
+      $ddl$;
+
+      EXECUTE 'CREATE UNIQUE INDEX IF NOT EXISTS identities_provider_provider_id_idx
+        ON auth.identities (provider, provider_id)';
+      EXECUTE 'CREATE INDEX IF NOT EXISTS identities_user_id_idx
+        ON auth.identities (user_id)';
+      EXECUTE 'CREATE INDEX IF NOT EXISTS identities_email_idx
+        ON auth.identities (email)';
+    EXCEPTION
+      WHEN insufficient_privilege OR undefined_table OR invalid_schema_name THEN
+        RAISE NOTICE 'Skipping auth.identities creation: %', SQLERRM;
+    END;
+  END IF;
+
+  -- 4) 권한/검색경로 설정 (가능하면 적용)
+  BEGIN
+    IF EXISTS (select 1 from pg_roles where rolname = 'supabase_auth_admin') THEN
+      EXECUTE 'GRANT USAGE ON SCHEMA auth TO supabase_auth_admin';
+      EXECUTE 'GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE auth.identities TO supabase_auth_admin';
+      EXECUTE 'ALTER ROLE supabase_auth_admin SET search_path = auth, public, extensions';
+    END IF;
+  EXCEPTION
+    WHEN insufficient_privilege THEN
+      RAISE NOTICE 'Skipping supabase_auth_admin grants: %', SQLERRM;
+  END;
+END $$;
 
 create table if not exists public.configuration (
     key text not null,
@@ -1706,124 +1798,168 @@ grant execute on all functions in schema cron to service_role;
 -- ※ 주의: 아래 마이그레이션 쿼리들은 해당 컬럼이 text 타입인 경우에만 실행하세요
 -- 이미 enum 타입으로 변경된 경우에는 실행하지 마세요
 --
--- events 테이블 마이그레이션 (event_type)
--- 1. 임시 컬럼 추가
-ALTER TABLE public.events ADD COLUMN event_type_new event_type_enum;
--- 2. 기존 데이터를 새 enum 타입으로 변환
-UPDATE public.events
-SET event_type_new = CASE
-  WHEN event_type = 'task_started' THEN 'task_started'::event_type_enum
-  WHEN event_type = 'task_completed' THEN 'task_completed'::event_type_enum
-  WHEN event_type = 'tool_usage_started' THEN 'tool_usage_started'::event_type_enum
-  WHEN event_type = 'tool_usage_finished' THEN 'tool_usage_finished'::event_type_enum
-  WHEN event_type = 'crew_completed' THEN 'crew_completed'::event_type_enum
-  WHEN event_type = 'human_asked' THEN 'human_asked'::event_type_enum
-  WHEN event_type = 'human_response' THEN 'human_response'::event_type_enum
-  ELSE NULL  -- 기본값을 NULL로 설정
-END;
--- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
-ALTER TABLE public.events DROP COLUMN event_type;
-ALTER TABLE public.events RENAME COLUMN event_type_new TO event_type;
+-- ENUM 마이그레이션(재실행 안전)
+-- - 이미 enum 타입이면 스킵 (뷰/트리거 등 의존성 때문에 DROP COLUMN이 터질 수 있음)
+-- - 타입이 다르면 ALTER COLUMN TYPE ... USING 으로 변환
+--
+DO $$
+DECLARE
+  v_udt text;
+BEGIN
+  -- events.event_type -> event_type_enum
+  SELECT udt_name INTO v_udt
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'event_type';
 
--- events 테이블 마이그레이션 (status)
--- 1. 임시 컬럼 추가
-ALTER TABLE public.events ADD COLUMN status_new event_status;
--- 2. 기존 데이터를 새 enum 타입으로 변환
-UPDATE public.events
-SET status_new = CASE
-  WHEN status = 'ASKED' THEN 'ASKED'::event_status
-  WHEN status = 'APPROVED' THEN 'APPROVED'::event_status
-  WHEN status = 'REJECTED' THEN 'REJECTED'::event_status
-  ELSE NULL  -- 기본값을 NULL로 설정
-END;
--- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
-ALTER TABLE public.events DROP COLUMN status;
-ALTER TABLE public.events RENAME COLUMN status_new TO status;
+  IF v_udt IS NOT NULL AND v_udt <> 'event_type_enum' THEN
+    EXECUTE $sql$
+      ALTER TABLE public.events
+        ALTER COLUMN event_type TYPE event_type_enum
+        USING (
+          CASE (event_type::text)
+            WHEN 'task_started' THEN 'task_started'::event_type_enum
+            WHEN 'task_completed' THEN 'task_completed'::event_type_enum
+            WHEN 'tool_usage_started' THEN 'tool_usage_started'::event_type_enum
+            WHEN 'tool_usage_finished' THEN 'tool_usage_finished'::event_type_enum
+            WHEN 'crew_completed' THEN 'crew_completed'::event_type_enum
+            WHEN 'human_asked' THEN 'human_asked'::event_type_enum
+            WHEN 'human_response' THEN 'human_response'::event_type_enum
+            ELSE NULL
+          END
+        )
+    $sql$;
+  END IF;
 
--- bpm_proc_inst 테이블 마이그레이션 (status)
--- 1. 임시 컬럼 추가
-ALTER TABLE public.bpm_proc_inst ADD COLUMN status_new process_status;
--- 2. 기존 데이터를 새 enum 타입으로 변환
-UPDATE public.bpm_proc_inst 
-SET status_new = CASE 
-    WHEN status = 'NEW' THEN 'NEW'::process_status
-    WHEN status = 'RUNNING' THEN 'RUNNING'::process_status
-    WHEN status = 'COMPLETED' THEN 'COMPLETED'::process_status
-    ELSE 'NEW'::process_status  -- 기본값 설정
-END;
--- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
-ALTER TABLE public.bpm_proc_inst DROP COLUMN status;
-ALTER TABLE public.bpm_proc_inst RENAME COLUMN status_new TO status;
+  -- events.status -> event_status
+  SELECT udt_name INTO v_udt
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'events' AND column_name = 'status';
 
--- todolist 테이블 마이그레이션 (status)
--- 1. 임시 컬럼 추가
-ALTER TABLE public.todolist ADD COLUMN status_new todo_status;
--- 2. 기존 데이터를 새 enum 타입으로 변환
-UPDATE public.todolist 
-SET status_new = CASE 
-    WHEN status = 'TODO' THEN 'TODO'::todo_status
-    WHEN status = 'IN_PROGRESS' THEN 'IN_PROGRESS'::todo_status
-    WHEN status = 'DONE' THEN 'DONE'::todo_status
-    WHEN status = 'SUBMITTED' THEN 'SUBMITTED'::todo_status
-    WHEN status = 'PENDING' THEN 'PENDING'::todo_status
-    WHEN status = 'CANCELLED' THEN 'CANCELLED'::todo_status
-    ELSE 'TODO'::todo_status  -- 기본값 설정
-END;
--- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
-ALTER TABLE public.todolist DROP COLUMN status;
-ALTER TABLE public.todolist RENAME COLUMN status_new TO status;
+  IF v_udt IS NOT NULL AND v_udt <> 'event_status' THEN
+    EXECUTE $sql$
+      ALTER TABLE public.events
+        ALTER COLUMN status TYPE event_status
+        USING (
+          CASE (status::text)
+            WHEN 'ASKED' THEN 'ASKED'::event_status
+            WHEN 'APPROVED' THEN 'APPROVED'::event_status
+            WHEN 'REJECTED' THEN 'REJECTED'::event_status
+            ELSE NULL
+          END
+        )
+    $sql$;
+  END IF;
 
--- todolist 테이블 마이그레이션 (agent_mode)
--- 1. 임시 컬럼 추가
-ALTER TABLE public.todolist ADD COLUMN agent_mode_new agent_mode;
--- 2. 기존 데이터를 새 enum 타입으로 변환
-UPDATE public.todolist 
-SET agent_mode_new = CASE 
-    WHEN agent_mode = 'DRAFT' THEN 'DRAFT'::agent_mode
-    WHEN agent_mode = 'COMPLETE' THEN 'COMPLETE'::agent_mode
-    ELSE NULL  -- 기본값 설정
-END;
--- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
-ALTER TABLE public.todolist DROP COLUMN agent_mode;
-ALTER TABLE public.todolist RENAME COLUMN agent_mode_new TO agent_mode;
+  -- bpm_proc_inst.status -> process_status
+  SELECT udt_name INTO v_udt
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'bpm_proc_inst' AND column_name = 'status';
 
+  IF v_udt IS NOT NULL AND v_udt <> 'process_status' THEN
+    EXECUTE $sql$
+      ALTER TABLE public.bpm_proc_inst
+        ALTER COLUMN status TYPE process_status
+        USING (
+          CASE (status::text)
+            WHEN 'NEW' THEN 'NEW'::process_status
+            WHEN 'RUNNING' THEN 'RUNNING'::process_status
+            WHEN 'COMPLETED' THEN 'COMPLETED'::process_status
+            ELSE 'NEW'::process_status
+          END
+        )
+    $sql$;
+  END IF;
 
--- todolist 테이블 마이그레이션 (agent_orch)
--- 1. 임시 컬럼 추가
-ALTER TABLE public.todolist ADD COLUMN agent_orch_new agent_orch;
--- 2. 기존 데이터를 새 enum 타입으로 변환
-UPDATE public.todolist 
-SET agent_orch_new = CASE 
-    WHEN agent_orch = 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
-    WHEN agent_orch = 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
-    WHEN agent_orch = 'crewai-action' THEN 'crewai-action'::agent_orch
-    WHEN agent_orch = 'langchain-react' THEN 'langchain-react'::agent_orch
-    WHEN agent_orch = 'browser-automation-agent' THEN 'browser-automation-agent'::agent_orch
-    WHEN agent_orch = 'visionparse' THEN 'visionparse'::agent_orch
-    ELSE NULL  -- 기본값을 NULL로 설정
-END;
--- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
-ALTER TABLE public.todolist DROP COLUMN agent_orch;
-ALTER TABLE public.todolist RENAME COLUMN agent_orch_new TO agent_orch;
+  -- todolist.status -> todo_status
+  SELECT udt_name INTO v_udt
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'todolist' AND column_name = 'status';
 
+  IF v_udt IS NOT NULL AND v_udt <> 'todo_status' THEN
+    EXECUTE $sql$
+      ALTER TABLE public.todolist
+        ALTER COLUMN status TYPE todo_status
+        USING (
+          CASE (status::text)
+            WHEN 'NEW' THEN 'NEW'::todo_status
+            WHEN 'TODO' THEN 'TODO'::todo_status
+            WHEN 'IN_PROGRESS' THEN 'IN_PROGRESS'::todo_status
+            WHEN 'DONE' THEN 'DONE'::todo_status
+            WHEN 'SUBMITTED' THEN 'SUBMITTED'::todo_status
+            WHEN 'PENDING' THEN 'PENDING'::todo_status
+            WHEN 'CANCELLED' THEN 'CANCELLED'::todo_status
+            ELSE 'TODO'::todo_status
+          END
+        )
+    $sql$;
+  END IF;
 
--- todolist 테이블 마이그레이션 (draft_status)
--- 1. 임시 컬럼 추가
-ALTER TABLE public.todolist ADD COLUMN draft_status_new draft_status;
--- 2. 기존 데이터를 새 enum 타입으로 변환 (정확 스펠링 기준)
-UPDATE public.todolist 
-SET draft_status_new = CASE 
-    WHEN draft_status = 'STARTED' THEN 'STARTED'::draft_status
-    WHEN draft_status = 'CANCELLED' THEN 'CANCELLED'::draft_status
-    WHEN draft_status = 'COMPLETED' THEN 'COMPLETED'::draft_status
-    WHEN draft_status = 'FB_REQUESTED' THEN 'FB_REQUESTED'::draft_status
-    WHEN draft_status = 'HUMAN_ASKED' THEN 'HUMAN_ASKED'::draft_status
-    WHEN draft_status = 'FAILED' THEN 'FAILED'::draft_status
-    ELSE NULL  -- 기본값을 NULL로 설정
-END;
--- 3. 기존 컬럼 삭제 후 새 컬럼명 변경
-ALTER TABLE public.todolist DROP COLUMN draft_status;
-ALTER TABLE public.todolist RENAME COLUMN draft_status_new TO draft_status;
+  -- todolist.agent_mode -> agent_mode
+  SELECT udt_name INTO v_udt
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'todolist' AND column_name = 'agent_mode';
+
+  IF v_udt IS NOT NULL AND v_udt <> 'agent_mode' THEN
+    EXECUTE $sql$
+      ALTER TABLE public.todolist
+        ALTER COLUMN agent_mode TYPE agent_mode
+        USING (
+          CASE (agent_mode::text)
+            WHEN 'DRAFT' THEN 'DRAFT'::agent_mode
+            WHEN 'COMPLETE' THEN 'COMPLETE'::agent_mode
+            ELSE NULL
+          END
+        )
+    $sql$;
+  END IF;
+
+  -- todolist.agent_orch -> agent_orch
+  SELECT udt_name INTO v_udt
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'todolist' AND column_name = 'agent_orch';
+
+  IF v_udt IS NOT NULL AND v_udt <> 'agent_orch' THEN
+    EXECUTE $sql$
+      ALTER TABLE public.todolist
+        ALTER COLUMN agent_orch TYPE agent_orch
+        USING (
+          CASE (agent_orch::text)
+            WHEN 'crewai-deep-research' THEN 'crewai-deep-research'::agent_orch
+            WHEN 'openai-deep-research' THEN 'openai-deep-research'::agent_orch
+            WHEN 'crewai-action' THEN 'crewai-action'::agent_orch
+            WHEN 'langchain-react' THEN 'langchain-react'::agent_orch
+            WHEN 'browser-automation-agent' THEN 'browser-automation-agent'::agent_orch
+            WHEN 'a2a' THEN 'a2a'::agent_orch
+            WHEN 'visionparse' THEN 'visionparse'::agent_orch
+            ELSE NULL
+          END
+        )
+    $sql$;
+  END IF;
+
+  -- todolist.draft_status -> draft_status
+  SELECT udt_name INTO v_udt
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'todolist' AND column_name = 'draft_status';
+
+  IF v_udt IS NOT NULL AND v_udt <> 'draft_status' THEN
+    EXECUTE $sql$
+      ALTER TABLE public.todolist
+        ALTER COLUMN draft_status TYPE draft_status
+        USING (
+          CASE (draft_status::text)
+            WHEN 'STARTED' THEN 'STARTED'::draft_status
+            WHEN 'CANCELLED' THEN 'CANCELLED'::draft_status
+            WHEN 'COMPLETED' THEN 'COMPLETED'::draft_status
+            WHEN 'FB_REQUESTED' THEN 'FB_REQUESTED'::draft_status
+            WHEN 'HUMAN_ASKED' THEN 'HUMAN_ASKED'::draft_status
+            WHEN 'FAILED' THEN 'FAILED'::draft_status
+            ELSE NULL
+          END
+        )
+    $sql$;
+  END IF;
+END $$;
 
 
 
@@ -2652,8 +2788,109 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+-- 0-1) 공용 대기 작업 조회 및 상태 변경 (dev: tenant_id 인자로 필터)
+DROP FUNCTION IF EXISTS public.fetch_pending_task_dev(text, text, integer, text);
 
-
+CREATE OR REPLACE FUNCTION public.fetch_pending_task_dev(
+  p_agent_orch text,
+  p_consumer   text,
+  p_limit      integer,
+  p_tenant_id  text
+)
+RETURNS TABLE (
+  id uuid,
+  user_id text,
+  proc_inst_id text,
+  proc_def_id text,
+  activity_id text,
+  activity_name text,
+  start_date timestamp without time zone,
+  end_date timestamp without time zone,
+  description text,
+  tool text,
+  due_date timestamp without time zone,
+  tenant_id text,
+  reference_ids text[],
+  adhoc boolean,
+  assignees jsonb,
+  duration integer,
+  output jsonb,
+  retry integer,
+  consumer text,
+  log text,
+  draft jsonb,
+  project_id uuid,
+  feedback jsonb,
+  updated_at timestamp with time zone,
+  username text,
+  status public.todo_status,
+  agent_mode public.agent_mode,
+  agent_orch public.agent_orch,
+  temp_feedback text,
+  draft_status public.draft_status,
+  task_type public.draft_status
+)
+AS $$
+BEGIN
+  RETURN QUERY
+    WITH cte AS (
+      SELECT
+        t.*,
+        t.draft_status AS task_type
+      FROM todolist AS t
+      WHERE t.status = 'IN_PROGRESS'
+        AND (p_agent_orch IS NULL OR p_agent_orch = '' OR t.agent_orch::text = p_agent_orch)
+        AND t.tenant_id = p_tenant_id
+        AND (
+          (t.agent_mode IN ('DRAFT','COMPLETE') AND t.draft IS NULL AND t.draft_status IS NULL)
+          OR t.draft_status = 'FB_REQUESTED'
+        )
+      ORDER BY t.start_date
+      LIMIT p_limit
+      FOR UPDATE SKIP LOCKED
+    ),
+    upd AS (
+      UPDATE todolist AS t
+         SET draft_status = 'STARTED',
+             consumer     = p_consumer
+        FROM cte
+       WHERE t.id = cte.id
+       RETURNING
+         t.id,
+         t.user_id,
+         t.proc_inst_id,
+         t.proc_def_id,
+         t.activity_id,
+         t.activity_name,
+         t.start_date,
+         t.end_date,
+         t.description,
+         t.tool,
+         t.due_date,
+         t.tenant_id,
+         t.reference_ids,
+         t.adhoc,
+         t.assignees,
+         t.duration,
+         t.output,
+         t.retry,
+         t.consumer,
+         t.log,
+         t.draft,
+         t.project_id,
+         t.feedback,
+         t.updated_at,
+         t.username,
+         t.status,
+         t.agent_mode,
+         t.agent_orch,
+         t.temp_feedback,
+         t.draft_status,
+         cte.task_type
+    )
+    SELECT * FROM upd;
+END;
+$$ LANGUAGE plpgsql VOLATILE;
 
 -- 익명(anon) 역할에 실행 권한 부여
 GRANT EXECUTE ON FUNCTION public.fetch_pending_task(text, text, integer) TO anon;
@@ -2739,10 +2976,22 @@ CREATE TABLE IF NOT EXISTS chat_vector_memory (
     embedding vector(1536),
     metadata JSONB DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    expires_at TIMESTAMPTZ,
-    
-    CONSTRAINT fk_chat_vector_memory_user FOREIGN KEY (user_uid) REFERENCES auth.users(id) ON DELETE CASCADE
+    expires_at TIMESTAMPTZ
 );
+
+-- auth 스키마 권한이 없는 환경에서는 FK 생성이 실패할 수 있어 선택적으로 적용
+DO $$
+BEGIN
+  BEGIN
+    ALTER TABLE chat_vector_memory
+      ADD CONSTRAINT fk_chat_vector_memory_user
+      FOREIGN KEY (user_uid) REFERENCES auth.users(id) ON DELETE CASCADE;
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+    WHEN insufficient_privilege OR undefined_table OR invalid_schema_name THEN
+      RAISE NOTICE 'Skipping fk_chat_vector_memory_user: %', SQLERRM;
+  END;
+END $$;
 
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_chat_vector_memory_tenant_user_room ON chat_vector_memory(tenant_id, user_uid, room_id);
@@ -2929,72 +3178,72 @@ create index if not exists idx_agent_knowledge_history_knowledge_type on public.
 create index if not exists idx_agent_knowledge_history_knowledge_id on public.agent_knowledge_history using btree (knowledge_id) tablespace pg_default;
 
 
-create table
-  public.agent_knowledge_history (
-    id uuid not null default gen_random_uuid (),
-    knowledge_type text not null,
-    knowledge_id text not null,
-    knowledge_name text null,
-    agent_id uuid not null,
-    tenant_id text null,
-    operation text not null,
-    previous_content text null,
-    new_content text null,
-    moved_from_storage text null,
-    moved_to_storage text null,
-    feedback_content text null,
-    batch_job_id text null,
-    created_at timestamp with time zone not null default now(),
-    constraint agent_knowledge_history_pkey primary key (id),
-    constraint agent_knowledge_history_agent_id_fkey foreign key (agent_id, tenant_id) references users (id, tenant_id) on update cascade on delete cascade,
-    constraint agent_knowledge_history_knowledge_type_check check (
-      (
-        knowledge_type = any (
-          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
-        )
-      )
-    ),
-    constraint agent_knowledge_history_operation_check check (
-      (
-        operation = any (
-          array[
-            'CREATE'::text,
-            'UPDATE'::text,
-            'DELETE'::text,
-            'MOVE'::text
-          ]
-        )
-      )
-    ),
-    constraint agent_knowledge_history_moved_from_storage_check check (
-      (
-        moved_from_storage = any (
-          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
-        )
-      )
-    ),
-    constraint agent_knowledge_history_moved_to_storage_check check (
-      (
-        moved_to_storage = any (
-          array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
-        )
-      )
-    )
-  ) tablespace pg_default;
+-- create table
+--   public.agent_knowledge_history (
+--     id uuid not null default gen_random_uuid (),
+--     knowledge_type text not null,
+--     knowledge_id text not null,
+--     knowledge_name text null,
+--     agent_id uuid not null,
+--     tenant_id text null,
+--     operation text not null,
+--     previous_content text null,
+--     new_content text null,
+--     moved_from_storage text null,
+--     moved_to_storage text null,
+--     feedback_content text null,
+--     batch_job_id text null,
+--     created_at timestamp with time zone not null default now(),
+--     constraint agent_knowledge_history_pkey primary key (id),
+--     constraint agent_knowledge_history_agent_id_fkey foreign key (agent_id, tenant_id) references users (id, tenant_id) on update cascade on delete cascade,
+--     constraint agent_knowledge_history_knowledge_type_check check (
+--       (
+--         knowledge_type = any (
+--           array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+--         )
+--       )
+--     ),
+--     constraint agent_knowledge_history_operation_check check (
+--       (
+--         operation = any (
+--           array[
+--             'CREATE'::text,
+--             'UPDATE'::text,
+--             'DELETE'::text,
+--             'MOVE'::text
+--           ]
+--         )
+--       )
+--     ),
+--     constraint agent_knowledge_history_moved_from_storage_check check (
+--       (
+--         moved_from_storage = any (
+--           array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+--         )
+--       )
+--     ),
+--     constraint agent_knowledge_history_moved_to_storage_check check (
+--       (
+--         moved_to_storage = any (
+--           array['MEMORY'::text, 'DMN_RULE'::text, 'SKILL'::text]
+--         )
+--       )
+--     )
+--   ) tablespace pg_default;
 
-create index if not exists idx_agent_knowledge_history_agent_id on public.agent_knowledge_history using btree (agent_id) tablespace pg_default;
+-- create index if not exists idx_agent_knowledge_history_agent_id on public.agent_knowledge_history using btree (agent_id) tablespace pg_default;
 
-create index if not exists idx_agent_knowledge_history_tenant_id on public.agent_knowledge_history using btree (tenant_id) tablespace pg_default;
+-- create index if not exists idx_agent_knowledge_history_tenant_id on public.agent_knowledge_history using btree (tenant_id) tablespace pg_default;
 
-create index if not exists idx_agent_knowledge_history_operation on public.agent_knowledge_history using btree (operation) tablespace pg_default;
+-- create index if not exists idx_agent_knowledge_history_operation on public.agent_knowledge_history using btree (operation) tablespace pg_default;
 
-create index if not exists idx_agent_knowledge_history_created_at on public.agent_knowledge_history using btree (created_at desc) tablespace pg_default;
+-- create index if not exists idx_agent_knowledge_history_created_at on public.agent_knowledge_history using btree (created_at desc) tablespace pg_default;
 
-create index if not exists idx_agent_knowledge_history_batch_job_id on public.agent_knowledge_history using btree (batch_job_id) tablespace pg_default;
+-- create index if not exists idx_agent_knowledge_history_batch_job_id on public.agent_knowledge_history using btree (batch_job_id) tablespace pg_default;
 
-create index if not exists idx_agent_knowledge_history_knowledge_type on public.agent_knowledge_history using btree (knowledge_type) tablespace pg_default;
+-- create index if not exists idx_agent_knowledge_history_knowledge_type on public.agent_knowledge_history using btree (knowledge_type) tablespace pg_default;
 
-create index if not exists idx_agent_knowledge_history_knowledge_id on public.agent_knowledge_history using btree (knowledge_id) tablespace pg_default;
+-- create index if not exists idx_agent_knowledge_history_knowledge_id on public.agent_knowledge_history using btree (knowledge_id) tablespace pg_default;
 
 
 

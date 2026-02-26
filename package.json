@@ -163,6 +163,7 @@
         "@4tw/cypress-drag-drop": "^2.2.5",
         "@antfu/eslint-config-vue": "^0.25.2",
         "@iconify-json/mdi": "^1.1.33",
+        "@iconify-json/solar": "^1.2.5",
         "@iconify/tools": "^2.1.0",
         "@iconify/vue": "^3.2.1",
         "@intlify/vite-plugin-vue-i18n": "^5.0.1",

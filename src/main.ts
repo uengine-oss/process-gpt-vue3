@@ -36,7 +36,9 @@ import { createI18n } from 'vue-i18n';
 import setLocale from './plugins/setLocale';
 
 // icon
-import { Icon } from '@iconify/vue';
+import { Icon, addCollection } from '@iconify/vue';
+import solarIcons from '@iconify-json/solar/icons.json';
+addCollection(solarIcons);
 import Icons from '@/components/ui-components/Icons.vue'
 import InfoAlert from '@/components/ui/InfoAlert.vue'
 
@@ -151,18 +153,25 @@ declare global {
     interface Window {
         $mode: any; 
         $pal: any;
+        $gs: boolean;
         $supabase: any;
         $jms: any;
         $isTenantServer: boolean;
         $tenantName: string;
         _env_: any;
-        $themeColor: any; // 테마 색상을 위한 전역 변수 추가
-        $globalIsMobile: boolean; // 모바일 체크를 위한 전역 변수 추가
+        $themeColor: any;
+        $globalIsMobile: boolean;
     }
 }
 
 Object.defineProperty(window, '$pal', {
     value: false,
+    writable: false,
+    configurable: false
+});
+
+Object.defineProperty(window, '$gs', {
+    value: (window._env_?.VITE_GS_MODE === 'true' || import.meta.env.VITE_GS_MODE === 'true'),
     writable: false,
     configurable: false
 });
@@ -320,7 +329,7 @@ async function setupTenant() {
 async function initializeApp() {
     await setupSupabase();
     await setupTenant();
-    // setupAuthAuditLogging();
+    setupAuthAuditLogging();
     
     // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 자동 감지)
     const savedLocale = localStorage.getItem('locale');

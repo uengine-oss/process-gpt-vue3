@@ -937,6 +937,10 @@
         "enterName": "Please enter your name",
         "enterConfirmPassword": "Please confirm your password",
         "passwordMismatch": "Passwords do not match",
+        "passwordMinLength": "Password must be at least 8 characters.",
+        "passwordNeedLetter": "Must include at least one letter.",
+        "passwordNeedNumber": "Must include at least one number.",
+        "passwordNeedSpecial": "Must include at least one special character.",
         "signUp": "Sign In",
         "checkEmailMessage": "Your registration is complete. Please check your email to activate your account.",
         "registrationFailed": "There was an error during the registration process. Please check your information and try again."

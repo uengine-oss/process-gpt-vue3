@@ -116,6 +116,7 @@
                     rows="3"
                 ></v-textarea>
                 <v-combobox
+                    v-if="!gs"
                     v-model="selectedTools"
                     :items="toolList"
                     :label="$t('agentField.agentTools')"
@@ -126,6 +127,7 @@
                     variant="outlined"
                 ></v-combobox>
                 <v-combobox
+                    v-if="!gs"
                     v-model="selectedSkills"
                     :items="skills"
                     :label="$t('agentField.agentSkills')"
@@ -143,12 +145,13 @@
                     >
                         <v-select
                             v-model="selectedProvider"
-                            :items="providers"
+                            :items="availableProviders"
                             item-title="name"
                             item-value="key"
                             :label="$t('agentField.aiProvider')"
                             outlined
                             dense
+                            :disabled="gs"
                             @update:model-value="onProviderChange"
                         ></v-select>
                     </v-col>
@@ -157,13 +160,13 @@
                     >
                         <v-select
                             v-model="selectedModel"
-                            :items="getModelsForProvider(selectedProvider)"
+                            :items="availableModels"
                             item-title="name"
                             item-value="key"
                             :label="$t('agentField.aiModel')"
                             outlined
                             dense
-                            :disabled="!selectedProvider"
+                            :disabled="!selectedProvider || gs"
                         ></v-select>
                     </v-col>
                 </v-row>
@@ -328,13 +331,26 @@ export default {
         }
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
         showDetailFields() {
-            // A2A, PGAGENT 타입일 때는 바로 필드를 표시
             if (this.type === 'a2a' || this.type === 'pgagent') {
                 return true;
             }
-            // 일반 agent 타입일 때는 기존 로직 사용
             return (this.isEdit || this.isDataGenerated) && !this.isGenerating;
+        },
+        availableProviders() {
+            if (this.gs) {
+                return [{ key: 'openai', name: 'OpenAI' }];
+            }
+            return this.providers;
+        },
+        availableModels() {
+            if (this.gs) {
+                return [{ key: 'gpt-4.1', name: 'GPT-4.1' }];
+            }
+            return this.getModelsForProvider(this.selectedProvider);
         }
     },
     watch: {
@@ -393,7 +409,11 @@ export default {
             await this.getTools();
             await this.getSkills();
         }
-        if (this.agent.model && this.agent.model.includes('/')) {
+        if (this.gs) {
+            this.selectedProvider = 'openai';
+            this.selectedModel = 'gpt-4.1';
+            this.agent.model = 'openai/gpt-4.1';
+        } else if (this.agent.model && this.agent.model.includes('/')) {
             const [prov, mod] = this.agent.model.split('/');
             this.selectedProvider = prov;
             this.selectedModel = mod;

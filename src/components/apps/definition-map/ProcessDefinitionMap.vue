@@ -18,7 +18,7 @@
                     @sendMessage="handleMainChatMessage"
                 />
             </div> -->
-            <div v-if="mode !== 'uEngine' && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
+            <div v-if="mode !== 'uEngine' && !gs && componentName == 'DefinitionMapList' && !openConsultingDialog" class="pa-4">
                 <MainChatInput 
                     :agentInfo="mainChatAgentInfo"
                     :userId="userInfo.uid || userInfo.id"
@@ -50,7 +50,7 @@
                         <v-btn
                             v-for="(card, index) in actionCards"
                             :key="index"
-                            v-show="card.show"
+                            v-show="card.show && !gs"
                             @click="card.action"
                             color="primary"
                             variant="flat"
@@ -67,6 +67,7 @@
                     <div class="d-flex align-center" :class="globalIsMobile.value ? 'justify-end flex-shrink-0' : ''" style="gap: 8px; flex: 1; min-width: 0; justify-content: flex-end;">
                         <!-- 검색 기능: 아이콘 클릭 시 입력 필드 확대 (확대 전에는 아이콘만, 테두리 없음) -->
                         <div
+                            v-if="!gs"
                             class="d-flex align-center header-search overflow-hidden"
                             :class="{
                                 'header-search-expanded border border-borderColor rounded-pill': isSearchExpanded
@@ -184,7 +185,7 @@
                                 <span>{{ $t('processDefinitionMap.save') }}</span>
                             </v-tooltip>
 
-                            <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
+                            <v-tooltip v-if="!gs" :text="$t('processDefinitionMap.downloadImage')">
                                 <template v-slot:activator="{ props }">
                                                 <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
                                         <Icons :icon="'image-download'" />
@@ -824,8 +825,10 @@ export default {
         },
         mode() {
             return window.$mode;
-        }
-        ,
+        },
+        gs() {
+            return window.$gs;
+        },
         userChatHeaderTitle() {
             const u = this.selectedChatUser;
             return (u && (u.username || u.name || u.email)) ? (u.username || u.name || u.email) : '대화';

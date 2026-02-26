@@ -312,7 +312,7 @@ export default {
                         skills: latestUserData.skills,
                         img: latestUserData.profile || latestUserData.img,
                         type: latestUserData.agent_type || latestUserData.type,
-                        tool_priority: latestUserData.tool_priority ?? null
+                        ...(window.$gs ? {} : { tool_priority: latestUserData.tool_priority ?? null })
                     };
                 }
                 // 노드 이름도 업데이트

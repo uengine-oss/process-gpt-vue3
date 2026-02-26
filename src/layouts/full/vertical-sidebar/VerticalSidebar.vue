@@ -144,7 +144,7 @@
                     />
 
                     <!-- 대화목록 -->
-                    <ChatList />
+                    <ChatList v-if="!gs" />
                 </v-col>
 
 
@@ -177,7 +177,7 @@
                 </div>
 
                 <!-- 유저 목록 -->
-                <div v-if="mode !== 'uEngine'" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
                     <div class="d-flex align-center ml-2">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
@@ -197,7 +197,7 @@
                 </div>
 
                 <!-- 스킬 타이틀 + 목록 -->
-                <div v-if="mode !== 'uEngine'" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.skills') }}
@@ -216,7 +216,7 @@
                 </div>
 
                 <!-- Analytics 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0" class="mb-4">
+                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
                     <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('VerticalSidebar.analytics') }}
                     </div>
@@ -412,6 +412,9 @@ export default {
         },
         pal() {
             return window.$pal;
+        },
+        gs() {
+            return window.$gs;
         },
         isShowInstances() {
             if (!this.pal && !this.JMS) {

@@ -385,8 +385,7 @@ export default {
                                         }
                                         
                                         if (userList && userList.length > 0) {
-                                            // userInfoList.push(userList[0]); ???
-                                            userInfoList = [...userInfoList, ...userList];
+                                            userInfoList.push(...userList);
                                         } else {
                                             // 사용자를 찾을 수 없으면 endpoint를 이름으로 사용 (역할명 또는 삭제된 사용자)
                                             userInfoList.push({
