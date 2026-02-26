@@ -1,11 +1,18 @@
-const MainRoutes = {
-    path: '/main',
-    meta: {
-        requiresAuth: true
-    },
-    redirect: '/main',
-    component: () => import('@/layouts/full/FullLayout.vue'),
-    children: [
+const isGsMode = (window as any)._env_?.VITE_GS_MODE === 'true'
+    || import.meta.env.VITE_GS_MODE === 'true';
+
+const gsExcludedRoutes = [
+    'Analytics Dashboard', 'Heatmap',
+    'Skills Management', 'Skill Detail',
+    'Business Rules', 'Business Rules New', 'Business Rules Detail',
+    'Chat Room', 'InstanceHistoryViewer', 'TaskCatalogAdmin',
+    'Chats', 'Proposals', 'Calendar',
+    'Usage', 'Agent Chat', 'Pricing',
+    'Payment Success', 'Payment Fail',
+    'BSCard', 'Schedule',
+];
+
+const allRoutes = [
         {
             name: 'Todolist',
             path: '/todolist',
@@ -425,7 +432,18 @@ const MainRoutes = {
             path: '/analytics/heatmap',
             component: () => import('@/views/analytics/BottleneckAnalysis.vue')
         }
-    ]
+];
+
+const MainRoutes = {
+    path: '/main',
+    meta: {
+        requiresAuth: true
+    },
+    redirect: '/main',
+    component: () => import('@/layouts/full/FullLayout.vue'),
+    children: isGsMode
+        ? allRoutes.filter(route => !gsExcludedRoutes.includes(route.name))
+        : allRoutes
 };
 
 export default MainRoutes;

@@ -3009,6 +3009,7 @@ class ProcessGPTBackend implements Backend {
 
     async putAgent(newAgent: any) {
         try {
+            const isGs = window.$gs;
             const putObj: any = {
                 id: newAgent.id,
                 username: newAgent.name,
@@ -3025,14 +3026,12 @@ class ProcessGPTBackend implements Backend {
                 is_agent: newAgent.isAgent,
                 agent_type: newAgent.type,
                 alias: newAgent.alias,
-                tool_priority: newAgent.tool_priority ?? null
+                ...(isGs ? {} : { tool_priority: newAgent.tool_priority ?? null })
             }
 
-            // users 테이블 업데이트
             await storage.putObject('users', putObj);
 
-            // agent_skills 테이블 동기화
-            if (putObj.id) {
+            if (!isGs && putObj.id) {
                 const skillsArray =
                     typeof putObj.skills === 'string'
                         ? putObj.skills
@@ -3051,7 +3050,6 @@ class ProcessGPTBackend implements Backend {
                     });
                 } catch (syncError) {
                     console.error('[ProcessGPTBackend] replaceAgentSkills error:', syncError);
-                    // agent_skills 동기화 실패는 에이전트 저장 자체를 막지 않음
                 }
             }
         } catch (error) {

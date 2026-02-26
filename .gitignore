@@ -75,3 +75,5 @@ playwright/.auth/
 playwright/playwright-report/
 playwright/test-results/
 playwright/.cache/
+
+docker-compose-gs/

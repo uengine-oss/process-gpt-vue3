@@ -67,7 +67,7 @@
                 style="border-bottom: 1px solid #e0e0e0;"
             >
                 <div class="d-flex flex-wrap">
-                    <v-btn v-for="item in agentSubTabItems"
+                    <v-btn v-for="item in filteredAgentSubTabItems"
                         class="mr-2"
                         :key="item.value"
                         variant="text"
@@ -134,7 +134,7 @@
                             />
                         </v-window-item>
 
-                        <v-window-item value="a2a">
+                        <v-window-item v-if="!gs" value="a2a">
                             <AgentField v-model="newAgent"
                                 class="agent-field-dialog-contents"
                                 :nameRules="nameRules"
@@ -144,7 +144,7 @@
                             />
                         </v-window-item>
 
-                        <v-window-item value="pgagent">
+                        <v-window-item v-if="!gs" value="pgagent">
                             <AgentField v-model="newAgent"
                                 class="agent-field-dialog-contents"
                                 :nameRules="nameRules"
@@ -280,8 +280,17 @@ export default {
         },
     }),
     computed: {
+        gs() {
+            return window.$gs;
+        },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        filteredAgentSubTabItems() {
+            if (this.gs) {
+                return this.agentSubTabItems.filter(item => item.value === 'agent');
+            }
+            return this.agentSubTabItems;
         },
         teamList() {
             if (!this.organizationChart || !this.organizationChart.children) {

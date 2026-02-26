@@ -45,7 +45,7 @@
                     </v-btn>
                     <!-- 도구 우선순위 지정 버튼 -->
                     <v-btn 
-                        v-if="!agentInfo?.is_default"
+                        v-if="!agentInfo?.is_default && !gs"
                         @click="openToolPriorityDialog"
                         variant="text"
                         :size="24"
@@ -278,7 +278,7 @@
             </div>
         </div>
 
-        <div v-else-if="!editDialog && toolPriorityDialog">
+        <div v-else-if="!editDialog && toolPriorityDialog && !gs">
             <AgentToolPriority
                 :modelValue="toolPriorityDialog"
                 :agentInfo="agentInfo"
@@ -403,6 +403,9 @@ export default {
         this.unsubscribeKnowledgeSetup();
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
         tabList() {
             if (this.agentInfo?.agent_type == 'agent') {
                 this.agentType = 'agent';
