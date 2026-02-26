@@ -2,8 +2,8 @@ FROM node:22-bullseye AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund --legacy-peer-deps
+COPY package.json ./
+RUN npm install --no-audit --no-fund --legacy-peer-deps
 
 COPY . .
 RUN NODE_OPTIONS=--max-old-space-size=4096 npm run build
