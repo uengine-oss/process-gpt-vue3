@@ -242,6 +242,8 @@ let authAuditListenerAttached = false;
 function setupAuthAuditLogging() {
     if (authAuditListenerAttached) return;
     if (!window.$supabase) return;
+    // GS 모드에서만 auth audit 로그를 기록한다.
+    if (!window.$gs) return;
 
     authAuditListenerAttached = true;
 
