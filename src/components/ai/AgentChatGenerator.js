@@ -57,8 +57,7 @@ export default class AgentChatGenerator extends AIGenerator {
                     return !message.isLoading;  
                 });
                 if (this.client.afterGenerationFinished) {
-                    this.client.afterGenerationFinished(model);
-                    await this.client.getMessages(this.chatRoomId);
+                    await this.client.afterGenerationFinished(model);
                 }
             } else {
                 throw new Error('Failed to fetch data');
