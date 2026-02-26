@@ -94,7 +94,7 @@
                                     <!-- 직접 입력 탭 -->
                                     <!-- <v-window-item value="direct-input"> -->
                                         <!-- 슬랏으로 버튼 추가 영역  -->
-                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
+                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem || isGeneratingExample"></DynamicForm>
                                         <!-- <div v-if="!isCompleted" class="mb-4">
                                             <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
                                             <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
@@ -148,7 +148,8 @@
                                 rounded variant="flat"
                                 :disabled="isLoading"
                                 :loading="isLoading"
-                            >{{ $t('FormWorkItem.submitComplete') }}</v-btn>
+                            >{{ $t('FormWorkItem.submitComplete') }}
+                            </v-btn>
                         </v-row>
                     </div>
                 </v-card-text>
@@ -219,6 +220,10 @@ export default {
             default: "false"
         },
         isFinishedAgentGeneration: Boolean,
+        isGeneratingExample: {
+            type: Boolean,
+            default: false
+        },
         processDefinition: Object,
         isOwnWorkItem: Boolean,
         isInWorkItem: {
@@ -660,7 +665,11 @@ export default {
                 if(this.isSimulate == 'true') {
                     this.isLoading = false;
                 }
-                // 경고 메시지 표시
+                // 경고 메시지 표시 (스낵바)
+                this.$try({
+                    action: async () => {},
+                    warningMsg: this.$t('Checkpoints.checkBottomArea')
+                });
                 this.$refs.checkpoints.showWarning = true;
                 // 체크포인트 컴포넌트로 스크롤
                 this.$nextTick(() => {

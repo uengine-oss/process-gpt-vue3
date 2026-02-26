@@ -14,8 +14,13 @@
     "save": {
         "noChanges": "No changes to save."
     },
+    "Common": {
+        "cancel": "Cancel",
+        "submit": "Submit",
+        "role": "Role"
+    },
     "leadTime": {
-        "title": "BPMN Validation Results",
+        "title": "Lead Time",
         "days": "Days",
         "hours": "Hours",
         "minutes": "Min"
@@ -52,14 +57,17 @@
         "instanceDelete": "The instance has been deleted.",
         "completed": "Completed",
         "savedMarketplace": "Saved to marketplace.",
-        "reworkRequested": "Rework has been requested."
+        "reworkRequested": "Rework has been requested.",
+        "taskReturned": "Task has been returned.",
+        "taskSkipped": "Task has been skipped."
     },
     "errorMsg": {
         "isBackendConnected": "Failed to connect to the backend server for AI communication. Please check if the backend is operational.",
         "languageChangeFailed": "Failed to change language settings."
     },
     "App": {
-        "view": "Read more"
+        "view": "Read more",
+        "tenantNotFound": "{tenant} is not a valid path."
     },
     "mainPage": {
         "login": "login",
@@ -101,14 +109,264 @@
         "category": "Category"
     },
     "DefaultWorkItem": {
+        "assignTask": "Claim",
+        "unAssignTask": "Unclaim",
+        "returnTask": "Return",
         "intermediateSave": "Intermediate Save",
-        "complete": "Complete"
+        "skip": "SKIP",
+        "skipChecking": "Checking if SKIP is available...",
+        "skipEnabledHelp": "You can skip this task.",
+        "skipDisabledRequired": "This task must be completed and cannot be skipped.",
+        "skipDialogTitle": "Skip Task",
+        "skipReason": "Reason",
+        "skipReasonPlaceholder": "Enter a reason for skipping.",
+        "skipCancel": "Cancel",
+        "skipSubmit": "Skip",
+        "complete": "Complete",
+        "getTaskSuccess": "Task obtained successfully.",
+        "unAssignTaskSuccess": "Claim released successfully."
+    },
+    "TaskReturn": {
+        "title": "Return Task",
+        "selectTarget": "Select return target (previous step)",
+        "reason": "Reason (optional)",
+        "reasonPlaceholder": "Describe what needs to be corrected or reprocessed.",
+        "notAllowed": "This task cannot be returned.",
+        "fetchFailed": "Unable to load.",
+        "cancel": "Cancel",
+        "submit": "Request Return"
     },
     "dashboard": {
         "title": "Dashboard",
         "startProcess": "Start Process",
         "startProcessDescription": "Click the Start Process button to start the process.",
         "welcome": "Welcome"
+    },
+    "analyticsDashboard": {
+        "title": "Analytics Dashboard",
+        "subtitle": "Process Execution Status & Analysis",
+        "refresh": "Refresh",
+        "processInstances": "Process Instances",
+        "completedCount": "Completed: {count}",
+        "totalTasks": "Total Tasks",
+        "avgProcessingTimeValue": "Avg Processing Time: {value}sec",
+        "avgProcessingTimeNone": "Avg Processing Time: -",
+        "agentTasks": "Agent Tasks",
+        "humanCount": "Human: {count}",
+        "totalFte": "Total FTE",
+        "fteSubtitle": "Resource Allocation by Process",
+        "unassigned": "Unassigned",
+        "agentTasksLabel": "Agent Tasks",
+        "humanTasksLabel": "Human Tasks",
+        "tasksLabel": "Tasks",
+        "months": {
+            "jan": "Jan",
+            "feb": "Feb",
+            "mar": "Mar",
+            "apr": "Apr",
+            "may": "May",
+            "jun": "Jun",
+            "jul": "Jul",
+            "aug": "Aug",
+            "sep": "Sep",
+            "oct": "Oct",
+            "nov": "Nov",
+            "dec": "Dec"
+        },
+        "taskDistribution": "Task Distribution",
+        "agentVsHuman": "Agent vs Human",
+        "noData": "No data available",
+        "monthlyTrend": "Monthly Task Trend",
+        "last6Months": "Last 6 Months",
+        "noMonthlyData": "No monthly data available",
+        "fteHeatmap": "FTE Heatmap",
+        "processXDept": "Process × Department",
+        "fteIntensity": "FTE Intensity",
+        "noFteData": "No FTE data available",
+        "checkAfterExecution": "Check after executing process by department",
+        "domainSubProcess": "Sub Process by Domain",
+        "setDomainHint": "Set Domain in",
+        "setDomainHint2": "Process Map",
+        "deptTaskCount": "Tasks by Department",
+        "totalCount": "Total {count}",
+        "syncFromOrg": "Sync from Organization",
+        "noDeptData": "No department data available",
+        "performanceComparison": "Performance Comparison",
+        "agent": "Agent",
+        "human": "Human",
+        "tasks": "Tasks",
+        "avgProcessingTime": "Avg Processing Time",
+        "firstTimeRight": "First-Time-Right",
+        "errorRate": "Error Rate",
+        "noComparisonData": "No comparison data available",
+        "processPerformance": "Process Performance",
+        "cycleTime": "Cycle Time",
+        "completed": "Completed",
+        "average": "Avg",
+        "noPerformanceData": "No performance data available",
+        "bottleneckAnalysis": "Bottleneck Analysis",
+        "waitTimeTop5": "Wait Time Top 5",
+        "wait": "Wait",
+        "processing": "Processing",
+        "cases": "cases",
+        "noBottleneckData": "No bottleneck data available",
+        "recentInstances": "Recent Process Instances",
+        "viewMore": "View More",
+        "instanceId": "Instance ID",
+        "process": "Process",
+        "status": "Status",
+        "startTime": "Start Time",
+        "duration": "Duration",
+        "seconds": "sec"
+    },
+    "bottleneckAnalysis": {
+        "title": "Process Analytics",
+        "subtitle": "History-based process performance analysis and bottleneck detection",
+        "metricInfo": "Metric Info",
+        "fteSettings": "FTE Settings",
+        "metricInfoTitle": "Metric Description & Calculation",
+        "selected": "Selected",
+        "formulaLabel": "Formula",
+        "selectProcess": "Select Process to Analyze",
+        "period": "Period",
+        "status": "Status",
+        "metric": "Metric",
+        "basicMetrics": "Basic Metrics",
+        "fteMetrics": "FTE Metrics",
+        "selectProcessHint": "Select a process",
+        "selectProcessDesc": "Select a process to analyze and view",
+        "selectProcessDesc2": "history-based performance analysis results.",
+        "low": "Low",
+        "high": "High",
+        "instances": "Instances",
+        "activity": "Activity",
+        "avgDuration": "Avg Duration",
+        "completionRate": "Completion Rate",
+        "analyzing": "Analyzing...",
+        "loadingDiagram": "Loading diagram...",
+        "cannotLoadBpmn": "Cannot load BPMN data",
+        "bottleneckTop3": "Bottleneck Top 3",
+        "noExecutionData": "No execution data",
+        "durationDistribution": "Duration Distribution",
+        "min": "Min",
+        "max": "Max",
+        "median": "Median",
+        "avg": "Avg",
+        "activityDetail": "Activity Details",
+        "duration": "Duration",
+        "frequency": "Frequency",
+        "score": "Score",
+        "noData": "No data",
+        "defaultSettings": "Default Settings",
+        "defaultStandardMinutes": "Default Standard Minutes",
+        "defaultAvailableFte": "Default Available FTE",
+        "roleCapacity": "Role FTE Capacity",
+        "addRole": "Add Role",
+        "roleName": "Role Name",
+        "availableFte": "Available FTE",
+        "dailyWorkHours": "Daily Work Hours",
+        "monthlyWorkDays": "Monthly Work Days",
+        "monthlyCapacity": "Monthly Capacity (hrs)",
+        "activityStandardTime": "Activity Standard Time",
+        "save": "Save",
+        "standardMinutes": "Std Minutes",
+        "role": "Role",
+        "complexity": "Complexity",
+        "close": "Close",
+        "apply": "Apply",
+        "period7days": "Last 7 days",
+        "period30days": "Last 30 days",
+        "period90days": "Last 90 days",
+        "periodAll": "All",
+        "statusAll": "All",
+        "statusCompleted": "Completed",
+        "statusRunning": "Running",
+        "seconds": "sec",
+        "minutes": "min",
+        "hours": "hrs",
+        "days": "days",
+        "times": "times",
+        "metrics": {
+            "duration": {
+                "title": "Total Duration",
+                "subtitle": "Total Duration",
+                "description": "Total time from task start to completion. Includes both Idle Time and Work Time.",
+                "formula": "AVG(end_time - start_time)",
+                "formulaDesc": "Camunda: Average time from task creation to completion",
+                "unit": "hours",
+                "camundaRef": "Total Duration = Idle Duration + Work Duration"
+            },
+            "frequency": {
+                "title": "Flow Node Count",
+                "subtitle": "Execution Count",
+                "description": "Number of tokens that passed through this Flow Node (Activity). Identifies the most frequently executed paths.",
+                "formula": "COUNT(flow_node_instances)",
+                "formulaDesc": "Camunda: Number of instances passing through this node",
+                "unit": "times",
+                "camundaRef": "Flow Node Executions"
+            },
+            "bottleneck": {
+                "title": "Outlier Score",
+                "subtitle": "Z-Score",
+                "description": "Identifies nodes with many instances taking significantly longer than average. Uses Z-Score to detect bottlenecks.",
+                "formula": "Z = (X - μ) / σ",
+                "formulaDesc": "Camunda: (Actual - Mean) ÷ Standard Deviation",
+                "unit": "σ",
+                "camundaRef": "Heatmap displays incidence of higher outliers based on z-score"
+            },
+            "rework": {
+                "title": "Rework Rate",
+                "subtitle": "Rework Rate",
+                "description": "Percentage of instances where this Activity was executed more than once. Detects loops or error-induced re-executions.",
+                "formula": "(Loops / Total) × 100",
+                "formulaDesc": "(Re-executed instances ÷ Total instances) × 100",
+                "unit": "%",
+                "camundaRef": "Loop detection in process flow"
+            },
+            "waiting": {
+                "title": "Idle Duration",
+                "subtitle": "Unassigned Time",
+                "description": "Wait time from task creation until assignment (Claim). Long Idle Time indicates resource shortage or workload imbalance.",
+                "formula": "SUM(unassigned_periods)",
+                "formulaDesc": "Camunda: Sum of all unassigned periods",
+                "unit": "hours",
+                "camundaRef": "Idle Duration = Total Duration - Work Duration"
+            },
+            "workloadFte": {
+                "title": "Workload FTE",
+                "subtitle": "Workload FTE",
+                "description": "Cumulative FTE needed to process this Activity during the selected period. Based on execution count and standard work time.",
+                "formula": "(Count × Std_Hours) / Available_Hours",
+                "formulaDesc": "(Execution count × Standard work time) ÷ Available hours in period",
+                "unit": "FTE",
+                "camundaRef": "FTE calculation based on Effort per Instance"
+            },
+            "peakFte": {
+                "title": "Peak FTE",
+                "subtitle": "Peak FTE (P95)",
+                "description": "95th percentile of concurrent instance count. Indicates maximum staffing needed during peak hours.",
+                "formula": "P95(concurrent_instances)",
+                "formulaDesc": "95th percentile of concurrent execution count",
+                "unit": "FTE",
+                "camundaRef": "Based on Dynamic Concurrent Usage"
+            },
+            "loadRatio": {
+                "title": "Load Ratio",
+                "subtitle": "Load Ratio (vs Capacity)",
+                "description": "Ratio of required FTE to available FTE. Exceeding 100% indicates a bottleneck due to insufficient resources.",
+                "formula": "Demand_FTE / Capacity_FTE × 100",
+                "formulaDesc": "(Required FTE ÷ Available FTE) × 100",
+                "unit": "%",
+                "camundaRef": "Load Ratio > 100% = Bottleneck"
+            }
+        },
+        "bottleneckScore": "Bottleneck Score",
+        "btnDuration": "Duration",
+        "btnFrequency": "Frequency",
+        "btnOutlier": "Outlier",
+        "btnWorkload": "Workload",
+        "btnPeak": "Peak",
+        "btnLoadRatio": "Load Ratio"
     },
     "todoList": {
         "title": "Task List",
@@ -217,12 +475,19 @@
     "adminDetail": {
         "processVariables": "Process Variables",
         "properties": "Properties",
+        "history": "History",
+        "participants": "Participants",
         "noProcessDefinition": "No Process Definition",
         "key": "Key",
         "value": "Value",
         "tools": "Tools",
         "edit": "Edit",
         "save": "Save",
+        "role": "Role",
+        "endpoint": "Endpoint",
+        "resourceName": "Name",
+        "participantsSearch": "Search (role/id/name)",
+        "noParticipants": "No participant information.",
         "rollback": "Rollback",
         "rollbackMessage": "Do you want to roll back to this point?",
         "start": "Start",
@@ -264,10 +529,11 @@
         "save": "Save",
         "delete": "Delete",
         "close": "Close",
-        "addNewUser": "Add New User(Team Member)",
-        "addNewAgent": "Add New Agent",
-        "addNewA2A": "Add A2A Agent",
-        "addNewPGAgent": "Add ProcessGPT Agent",
+        "addNewUser": "Add Team Member",
+        "createAgentTab": "Create Agent",
+        "addNewAgent": "Create New Agent",
+        "addNewA2A": "Create A2A Agent",
+        "addNewPGAgent": "Create ProcessGPT Agent",
         "userName": "Name",
         "userEmail": "Email",
         "idRequired": "Please enter your ID.",
@@ -282,7 +548,7 @@
         "addTeamFailed": "Failed to add team.",
         "addNewUserExplanation": "To add a new user, please enter their name and email address. An account will be automatically created using the provided email, and the initial password will be set to 000000.",
         "agent": "Agent",
-        "deleteAgentExplanation": "This is a permanent deletion. Deleted agents cannot be recovered. If you want to delete a team member, please use the + button in the team to modify the team member.",
+        "deleteAgentExplanation": "Are you sure you want to delete? When you delete, this agent will also be removed from the organization chart. Deleted agents cannot be recovered.",
         "oauth": "OAuth Settings",
         "aliasRequired": "Please enter your alias.",
         "aliasAlreadyExists": "Alias already exists."
@@ -299,7 +565,22 @@
         "agentSkills": "Skills",
         "aiProvider": "AI Provider",
         "aiModel": "AI Model",
-        "alias": "Alias"
+        "alias": "Alias",
+        "resourcePriority": "Knowledge/Tools Usage Priority",
+        "resourcePriorityHint": "Use the up/down buttons to change priority. Items at the top are used first.",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "resourceLabelSkill": "Skill",
+        "resourceLabelDmnRule": "Business Rules",
+        "resourceLabelMem0": "Memory",
+        "resourceLabelOthers": "Others",
+        "resourceDescSkill": "Skills configured for this agent",
+        "resourceDescDmnRule": "Business rules defined in DMN",
+        "resourceDescMem0": "Personalized memory for work context and preferences",
+        "resourceDescOthers": "Other resources not listed above",
+        "toolPriorityButton": "Set Tool Priority",
+        "toolPriorityEmptyHint": "Please set up tools/skills first.",
+        "toolPrioritySaveSuccess": "Tool priority has been saved."
     },
     "processDefinitionMap": {
         "title": "Process Definition Map",
@@ -357,7 +638,6 @@
         "settingPermission": "Setting Permission",
         "isReadable": "Readable",
         "isWritable": "Writable",
-        "isDeployable": "Deployable",
         "marketplace": "Marketplace",
         "marketplaceExplanation": "Find a business process template",
         "treeView": "View as Tree",
@@ -893,7 +1173,7 @@
     },
     "chat": {
         "inputMessage": "Type a Message",
-        "definitionMapInputMessage": "e.g. Create vacation request process / Run vacation request process / Check approval status of running vacation request",
+        "definitionMapInputMessage": "How can I help you?",
         "lock": "Click the save icon to save.",
         "unlock": "Click the pencil icon to edit.",
         "processDefinitionSave": "Save",
@@ -907,6 +1187,10 @@
         "userReply": "Reply to {name}",
         "systemReply": "Reply to the system",
         "headset": "Speaking/Listening",
+        "micPermission": {
+            "notSupported": "This browser does not support microphone functionality.",
+            "denied": "Microphone permission is blocked. Please click the icon on the left side of the browser address bar to allow microphone access."
+        },
         "document": "Work Instruction",
         "camera": "Camera",
         "user": "User",
@@ -950,6 +1234,11 @@
         "clientId": "Client ID",
         "clientSecret": "Client Secret",
         "folderId": "Folder ID",
+        "processDocuments": "Process documents",
+        "processDocumentsStarted": "Started processing documents in the Drive folder.",
+        "driveIndexingInProgress": "Indexing all files in the Drive folder.",
+        "driveIndexingCompleted": "Drive folder document processing is completed.",
+        "driveIndexingFailed": "Drive folder document processing failed.",
         "edit": "Edit",
         "cancel": "Cancel",
         "close": "Close",
@@ -986,7 +1275,6 @@
         "username": "Username",
         "password": "Password",
         "search": "Search User",
-        "noSearchResults": "No search results found",
         "inviteUser": "Invite User",
         "inviteUserMessage": "Invite your colleagues to join the company",
         "inviteUserMessage2": "*Emails will be sent to the invited users",
@@ -1014,7 +1302,6 @@
         "confirmDeleteConnectionText": "Are you sure you want to delete \"{name}\"?",
         "skills": "Skills",
         "taskCatalog": "Task Catalog",
-        "tenantManage": "Tenant Manage",
         "orgChartGroup": "Org Groups"
     },
     "orgChartGroup": {
@@ -1041,8 +1328,7 @@
         "noAvailableTeams": "No teams available to add",
         "addSelectedTeams": "Add Selected Teams",
         "confirmDelete": "Delete Group",
-        "deleteConfirmMessage": "Are you sure you want to delete '{name}' group?",
-        "affiliatedTeam": "Affiliated Team"
+        "deleteConfirmMessage": "Are you sure you want to delete '{name}' group?"
     },
     "loginPage": {
         "title": "Welcome to Process-GPT",
@@ -1073,6 +1359,10 @@
         "enterName": "Please enter your name",
         "enterConfirmPassword": "Please confirm your password",
         "passwordMismatch": "Passwords do not match",
+        "passwordMinLength": "Password must be at least 8 characters.",
+        "passwordNeedLetter": "Must include at least one letter.",
+        "passwordNeedNumber": "Must include at least one number.",
+        "passwordNeedSpecial": "Must include at least one special character.",
         "signUp": "Sign In",
         "checkEmailMessage": "Your registration is complete. Please check your email to activate your account.",
         "registrationFailed": "There was an error during the registration process. Please check your information and try again."
@@ -1116,8 +1406,10 @@
         "sendEmailExplanation": "Please enter the email address associated with your account and We will email you a link to reset your password.",
         "login": "Back to Login",
         "resetPassword": "Reset Password",
-        "password": "Password",
+        "password": "New Password",
+        "confirmPassword": "Confirm New Password",
         "passwordExplanation": "Enter the password you want to reset.",
+        "passwordMismatch": "Passwords do not match.",
         "updatePassword": "Update Password"
     },
     "ExtraBox": {
@@ -1182,9 +1474,16 @@
         "schemaProperties": "General Properties",
         "taskColor": "Task Color",
         "customColor": "Custom Color",
-"resetColor": "Reset",
+        "resetColor": "Reset",
         "systemName": "System Name",
-        "menuName": "Menu Name"
+        "menuName": "Menu Name",
+        "instructionPreview": "Preview",
+        "noMentionCandidates": "No items available.",
+        "mentionType": {
+            "agent": "Agent",
+            "skill": "Skill",
+            "activity": "Activity"
+        }
     },
     "KeyValueField": {
         "add": "Add",
@@ -1214,7 +1513,8 @@
         "themeColor": "Theme Color",
         "containerOption": "Container Option",
         "boxed": "Boxed",
-        "full": "Full"
+        "full": "Full",
+        "customColor": "Custom Color"
     },
     "Mashup": {
         "hoverText": "Drag a layout (Container) here to start editing the form."
@@ -1325,8 +1625,6 @@
     "EventSynchronizationForm": {
         "edit": "Edit",
         "delete": "Delete",
-        "url": "URL",
-        "eventType": "Event Type",
         "dataMapping": "Data Mapping",
         "eventAttributes": "Event Attributes",
         "primaryKey": "Primary Key",
@@ -1341,7 +1639,7 @@
     "UserTaskPanel": {
         "default": "Default",
         "defaultInfo": "All users assigned to this task role can view this task. The first user to select the task will be assigned as the assignee.",
-        "sharedGroupInfo": "All users in the selected shared group can view this task. The first user to select the task becomes the assignee. e.g., Author, Reviewer",
+        "racingInfo": "All users in the selected shared group can view this task. The first user to select the task becomes the assignee. e.g., Author, Reviewer",
         "assigneeInfo": "This task is assigned only to the specified user. Other users cannot view it.",
         "loadBalancingInfo": "Tasks are automatically distributed among users in the designated group. You can select a distribution strategy.",
         "expressionInfo": "The assignee is dynamically determined at runtime based on an expression. e.g., ${initiatorManager}",
@@ -1353,8 +1651,16 @@
         "radioSelectDescriptionTitle": "Select data processing method: basic data processing, custom screen creation, or external system integration.",
         "radioSelectDescriptionSubTitle1": "1. Basic: Use default data\n2. Form: Use a screen created in the screen definition\n3. External Application: Create a field to enter the business screen URL",
         "assignmentType": "Assignment Method",
+        "useCompetingMode": "Use Competing Mode",
+        "useCompetingModeHint": "Use Competing Mode",
+        "assignType": "Assignment Method",
+        "assignTypeHint": "Assignment Method",
+        "claim": "Claim",
+        "claimDescription": "Claim Assignment",
+        "direct": "Direct Assignment",
+        "directDescription": "Direct Assignment",
         "assignee": "Assign User",
-        "sharedGroup": "Shared Group",
+        "racing": "Shared Group",
         "expression": "Expression-based",
         "loadBalancing": "Load Balancing",
         "taskType": "Task Type",
@@ -1416,16 +1722,33 @@
     "LanePanel": {
         "selectRoleType": "Select Role Type",
         "none": "None",
+        "UserRole": "User Role",
         "organization": "Organization/Group",
         "selectOrganization": "Select Organization or Group",
         "group": "Group",
         "team": "Team",
         "IAMScope": "Role Resolution By IAM Scope",
         "DirecUser": "Role Resolution By Direct user",
+        "Department": "Department",
+        "Group": "Group",
         "resolutionRule": "Resolution Rule",
         "scopeName": "Scope Name",
         "userID": "User ID",
+        "userId": "User ID",
+        "userIds": "Select Users",
+        "userIdsHint": "Select users from the list or type directly. Single user will be saved as userId, multiple users as userIds.",
+        "groupName": "Group Name",
+        "resourceName": "Resource Name",
         "externalCustomer": "External Customer",
+        "dispatchingOption": "Dispatching Option",
+        "dispatchingOptionAll": "All",
+        "dispatchingOptionAllDescription": "Assigns to all users simultaneously.",
+        "dispatchingOptionRacing": "Racing",
+        "dispatchingOptionRacingDescription": "The first user to claim the task processes it.",
+        "dispatchingOptionLoadBalanced": "Load Balanced",
+        "dispatchingOptionLoadBalancedDescription": "Distributes tasks evenly among users.",
+        "dispatchingOptionAuto": "Auto",
+        "dispatchingOptionAutoDescription": "Automatically determined based on the number of users. (IAM Role only)",
         "radioDescriptionTitle": "Select the role you want to add.",
         "radioDescriptionSubTitle": "None: Selecting this option does not assign a specific role to the task. All users can perform this task.\nOrganization/Group: Select a team from org chart or an organization group. Only users belonging to the selected organization can perform this task.\nSelect by Role Name: Selecting this option allows you to choose from a predefined list of roles. Only users belonging to the selected role can perform this task.\nSelect Users Directly: Selecting this option allows you to designate specific users. Only designated users can perform this task."
     },
@@ -1545,8 +1868,9 @@
         "create": "Create",
         "cancel": "Cancel",
         "setting": "Setting",
-        "deleteChatRoom": "Delete Chat Room",
+        "deleteChatRoom": "Delete Chat",
         "confirmDeleteChatRoom": "Are you sure you want to delete this chat room?",
+        "deleteChatRoomConfirm": "Are you sure you want to delete this chat? Deleted chats cannot be recovered.",
         "enterChatRoomName": "Please enter a chat room name.",
         "selectAtLeastOneParticipant": "Please select at least one participant."
     },
@@ -1655,7 +1979,6 @@
         "progress": "Progress",
         "history": "Work History",
         "chatbot": "Assistant",
-        "agent": "Quick Draft Generation",
         "agentMonitor": "Agent Delegation",
         "agentFeedback": "Agent Learning",
         "toggleInputFieldSize": "Toggle Input Field Size",
@@ -1672,7 +1995,8 @@
         "delegateMessage": "Task '{taskName}' has been delegated to {username}.",
         "delegateMessageWithAssignee": "Task '{taskName}' assignee has been changed from [{assigneeInfo}] to {username}.",
         "runAgain": "Run Again",
-        "select": "Select"
+        "select": "Select",
+        "quickCreate": "Quick Draft"
     },
     "AgentSelectInfo": {
         "orcation": "Agent Research Method",
@@ -1720,6 +2044,24 @@
                         },
                         {
                             "title": "📝 Examples:\n• Competitor analysis report\n• Market trend research\n• Strategic planning document"
+                        }
+                    ]
+                }
+            },
+            "deepResearchCustom": {
+                "title": "Deep Research Custom",
+                "description": "Custom deep research pipeline for dedicated server. ex) Specialized data collection, tailored analysis, custom report (5~15 minutes)",
+                "detailDesc": {
+                    "title": "Custom research flow optimized for your environment",
+                    "details": [
+                        {
+                            "title": "🎯 How it works:\nCustom researcher → Data collection\nCustom analyst → Deep analysis\nCustom writer → Report writing"
+                        },
+                        {
+                            "title": "💡 Use this when:\n• You want a custom deep research server\n• Need specialized data sources\n• Tailored report style is required"
+                        },
+                        {
+                            "title": "📝 Examples:\n• Internal knowledge research\n• Custom data pipeline analysis\n• Organization-specific report"
                         }
                     ]
                 }
@@ -1880,7 +2222,27 @@
         "stopRecording": "Stop Recording Process Execution",
         "recordingSave": "Save Process Execution Recording",
         "confirm": "Confirm",
-        "name": "Title"
+        "name": "Title",
+        "setName": "Set name",
+        "initialVariables": "Initial process variables",
+        "initialVariablesHint": "Initial values assumed when this step is reached (multiple scenarios can be saved)",
+        "addSet": "Add set",
+        "navigateToTaskSuccess": "Navigated to the task.",
+        "lastExecuteResult": "Last execution result",
+        "processStatus": "Process status",
+        "currentActivityNames": "Result activity",
+        "currentActivityIds": "Result activity ID",
+        "changedProcessVariables": "Changed process variables",
+        "varName": "Variable",
+        "beforeValue": "Before",
+        "afterValue": "After",
+        "newInstance": "New instance",
+        "saveUnitTest": "Save variable sets",
+        "loadUnitTest": "Load variable sets",
+        "saveUnitTestSuccess": "Variable sets saved.",
+        "saveUnitTestError": "Failed to save variable sets",
+        "loadUnitTestSuccess": "Variable sets loaded.",
+        "loadUnitTestError": "Failed to load variable sets"
     },
     "TestVariables": {
         "key": "Key",
@@ -1896,6 +2258,10 @@
         "instanceList": "Instance",
         "projectList": "Project",
         "agentList": "Agent",
+        "skills": "Skills",
+        "addSkill": "Manage Skills",
+        "userList": "Users",
+        "userLoading": "Loading...",
         "instanceMyGroup": "My Group Instance",
         "saveFileName": "File name to be saved",
         "downloadDefinitionList": "Definition Export",
@@ -1904,7 +2270,11 @@
         "newProject": "Create New Project",
         "addProject": "Add Project",
         "showMore": "Show More",
-        "showLess": "Show Less"
+        "showLess": "Show Less",
+        "chatList": "Conversations",
+        "chatLoading": "Loading...",
+        "chatEmpty": "No chats.",
+        "analytics": "Analytics"
     },
     "ProfitExpanse": {
         "processExecutionPerformance": "Process Execution Performance",
@@ -1985,7 +2355,9 @@
         "cancel": "Cancel"
     },
     "Checkpoints": {
-        "checkpoints": "Checkpoints"
+        "checkpoints": "Checkpoints",
+        "pleaseCheckAll": "Please check all checkpoints.",
+        "checkBottomArea": "Please review the checkpoints at the bottom of the work area."
     },
     "auth": {
         "emailRateLimitExceeded": "Please change the SMTP settings of the connected Supabase to adjust the email sending limit or try again later.\n\nYou can find the SMTP settings in the Supabase dashboard under Project Settings > Authentication > SMTP Settings.",
@@ -2039,15 +2411,13 @@
         "addedButton": "Added",
         "addButton": "Add",
         "deleteButton": "Delete",
-        "previewButton": "Preview",
         "otherCategory": "Other",
         "countUnit": "items",
         "allTemplates": "All Templates",
         "deleteDialogTitle": "Confirm Process Deletion",
         "deleteDialogMessage": "Are you sure you want to delete the \"{name}\" process from the marketplace?",
         "deleteDialogWarning": "This action cannot be undone.",
-        "deleteDialogConfirmMessage": "Please type the process name exactly to continue:",
-        "previewDialogTitle": "Process Preview"
+        "deleteDialogConfirmMessage": "Please type the process name exactly to continue:"
     },
     "ContentEditorField": {
         "contentEditor": "Content Editor",
@@ -2162,7 +2532,7 @@
     },
     "Header": {
         "tutorial": "Tutorial",
-        "works": "Features",
+        "works": "How Process GPT Works?",
         "ai3Steps": "3 Stages of AI Transformation",
         "movieGallery": "Video Gallery",
         "download": "Download",
@@ -2182,31 +2552,16 @@
         "card4Description": "The results of execution are structured as knowledge based on Ontology, and applied to the next agent execution, making the process more refined."
     },
     "HeroSection": {
-        "title1": "Define your business processes.",
-        "title2": "Process GPT handles the execution.",
-        "description1": "AI agents organize and execute workflows aligned with your strategic goals. Humans intervene only for necessary decisions, and the process continues automatically.",
-        "betaTestButton": "Start Beta Test",
-        "educationButton": "View Training Courses",
+        "title1": "Define your business processes, and Process GPT will execute them.",
+        "title2": "",
+        "description1": "Elite agents tailored to strategic goals create work drafts and automate them. If agents make mistakes, teach them. Processes and knowledge will improve automatically.",
+        "betaTestButton": "Try Beta Test",
+        "galleryButton": "View Gallery",
+        "educationButton": "View Education Course",
         "technicalReportLink": "View Technical Report"
     },
-    "NecessitySection": {
-        "title1": "Until now, AI utilization has mostly been limited",
-        "title2": "to individual productivity tools.",
-        "feature1": "Draft Documents",
-        "feature2": "Translate",
-        "feature3": "Summarize",
-        "feature4": "Search Automation",
-        "problemTitle": "These functions are useful for individuals, but they have little impact on the organization's overall End-to-End Process.",
-        "solutionTitle": "Now, Agentic Process AI that understands and executes the entire workflow is",
-        "solutionDescription": "necessary for the automation of an organization's End-to-End processes.",
-        "benefit1": "Automated execution from document creation to system integration",
-        "benefit2": "Implementation of a hybrid organization with humans and AI agents",
-        "benefit3": "Automation of repetitive tasks and knowledge-based judgments",
-        "benefit4": "Focus only on strategic decision-making and contextual judgment"
-    },
     "AI3StepsSection": {
-        "title1": "ProcessGPT is the solution",
-        "title2": "that implements this Agentic Process AI",
+        "title": "MS Work Trend Index 2025: 3 Stages of AI Transformation",
         "category": "Category",
         "step1": "Stage 1: Assistant Utilization",
         "step2": "Stage 2: Digital Colleague Agent",
@@ -2232,8 +2587,8 @@
         "technology1": "Generative AI + <b>MCP</b><br>(e.g. Copilot, ChatGPT)",
         "technology2": "Multi-agent, <b>Agentic BPM, A2A</b> communication<br>(e.g. AgentSpace, Orchestrate)",
         "technology3": "Autonomous agent network (<b>Agentic Mesh</b>) + governance<br>(e.g. Palantir AIP)",
-        "description1": "It corresponds to the final stage of the 3-stage AI transformation presented by Microsoft, where AI executes repetitive tasks in the 'Agent Boss' system and humans focus on strategy and supervision.",
-        "description2": "This implements role-based collaboration and execution automation within the organization, greatly improving work efficiency."
+        "description1": "In the 'Agent Boss' system, AI executes repetitive tasks, and humans focus on strategy and supervision, forming a collaborative agent system.",
+        "description2": "This matches the 3-stage transition model of MS Work Trend Index 2025, greatly improving work efficiency through role-based collaboration and execution automation within the organization."
     },
     "DemoSection": {
         "title": "AI-based Business Process Innovation",
@@ -2242,26 +2597,31 @@
         "diagramImg": "diagram-en.png"
     },
     "HowSection": {
-        "title": "Process GPT's Core Features",
-        "subtitle1": "1. Human-Agent Collaborative Task Execution",
-        "subtitle2": "2. System-to-System (A2A) Automation",
-        "subtitle3": "3. Automated Process Creation",
-        "subtitle4": "4. Automated Knowledge Accumulation and Reuse",
-        "subtitle5": "5. Multimodal Interface",
-        "description1-1": "Agents execute operational tasks, while humans handle approvals and decisions.",
-        "description1-2": "Visualizes workflows based on BPMN and automates team-level collaboration.",
-        "description2-1": "Automatically connects major systems like ERP, CRM, and Groupware.",
-        "description2-2": "Automates repetitive tasks such as data querying, input, and document attachment.",
-        "description2-3": "Integrates with external APIs and MCP tools to control internal and external system screens.",
-        "description3-1": "BPMN processes are automatically modeled when tasks are described in natural language.",
-        "description3-2": "Automatically inserts human approval and review steps.",
-        "description3-3": "Automatically configures workflows by department and role.",
-        "description4-1": "AI continuously learns while performing tasks.",
-        "description4-2": "Automatically enhances rules, metadata, and ontologies for use in generating work manuals and rulebooks.",
-        "description4-3": "Continuously improves processes through human feedback.",
-        "description5-1": "Supports both web-based MCP (browser/desktop) and mobile app environments to accommodate diverse user work settings.",
-        "description5-2": "Provides precision process design UI for office workers, and voice/image-based mobile interface for field and sales personnel.",
-        "description5-3": "By providing multi-interface options based on work environment, it ensures consistent user experience and work continuity regardless of location or device."
+        "title": "How Process GPT Works?",
+        "subtitle": "Various business tasks, now Process-GPT executes them",
+        "subtitle1": "1. Agent Declaration",
+        "subtitle2": "2. Process Creation",
+        "subtitle3": "3. Process Execution",
+        "subtitle4": "4. Improvement",
+        "subtitle5": "5. A2A Call & Service Exposure",
+        "description1-1": "Register and manage general agents and A2A agents.",
+        "description1-2": "Assign personas and roles to each agent.",
+        "description1-3": "Manage documents and data based on ontology to use for learning and execution.",
+        "description1-4": "Configure necessary tools and permissions to automate tasks and system integrations.",
+        "description2-1": "When you enter your goal, tasks, forms, and checkpoints are automatically defined.",
+        "description2-2": "The roles of humans and agents are declared in the work chart.",
+        "description2-3": "Interpret Open API specifications and process data to propose MCP·A2A integration methods.",
+        "description2-4": "Include input forms and approval procedures to configure, and you can edit in natural language or BPMN.",
+        "description3-1": "Create a Crew with registered agents to execute autonomously.",
+        "description3-2": "ERP, email, collaboration tools are processed automatically through MCP, and the results of task execution are reflected in the system or output as necessary documents (e.g., documents, reports).",
+        "description3-3": "Processes and agents are exposed as A2A services to allow external calls.",
+        "description3-4": "Provide an execution-centered environment that can use internal search·office tools.",
+        "description3-5": "Mobile supports voice·image input, desktop supports text input to ensure task continuity anywhere.",
+        "description4-1": "Accumulate execution data as a feedback loop.",
+        "description4-2": "Agents improve performance through repeated execution.",
+        "description4-3": "Improved knowledge is reflected in the ontology and used for process and task design.",
+        "description4-4": "People can add new knowledge·rules to retrain agents.",
+        "description4-5": "Organizations gradually improve their operational environment based on data."
     },
     "ConsultingSection": {
         "title": "Process Consulting AI and Management",
@@ -2314,6 +2674,18 @@
         "processExample1Title": "Order Processing Process with ERP System Integration",
         "processExample2Title": "Sales Proposal Writing Process Using Browser Use Function",
         "processExample3Title": "VIP Customized Newsletter Automation Process",
+        "coreDistinctionTitle": "Core Differentiators of Process GPT",
+        "coreDistinctionDescription": "Unlike existing AI agent systems, Process GPT provides an innovative approach that automatically identifies and implements business processes. Users can define and execute complex business processes through natural language conversation alone without coding knowledge.",
+        "feature1Title": "No Coding Knowledge Required",
+        "feature1Description": "General users can provide feedback on process flow appropriateness without programming concepts, and AI internally defines BPMN-based processes.",
+        "feature2Title": "Self-learning and Improvement",
+        "feature2Description": "When business process instances occur, processes are automatically improved through user feedback, enabling continuous development.",
+        "feature3Title": "Process Consulting Service",
+        "feature3Description": "Derives business processes through conversation with users, collects feedback through automatic tours, and establishes processes.",
+        "feature4Title": "Automated Agent Deployment",
+        "feature4Description": "Automatically identifies agents needed for processes, maps them to BPMN SwimLanes (work roles), and automatically generates prompts.",
+        "feature5Title": "BPMN-based Standard Process Notation",
+        "feature5Description": "Implements industry-standard compliant processes utilizing business process notation accumulated over about 20 years.",
         "tabTitle1": "Define Processes through Conversation",
         "tabDescription1": "Process definition generation and visualization through generative AI are possible. After generation, administrators can make detailed modifications, and detailed modifications can also be described in natural language.",
         "tabItem1_1": "Process definition through generative AI",
@@ -2423,7 +2795,7 @@
         "selectAssignee": "Select Delegatee",
         "equalDelegate": "Delegatee is the same as the assignee.",
         "successMsg": "Delegated successfully.",
-        "searchUser": "Search by name, email",
+        "searchUser": "Search",
         "profile": "Profile",
         "userInfo": "User info",
         "delegateToMyself": "Delegate to myself"
@@ -2477,7 +2849,9 @@
         "pastDue": "Past Due",
         "error": "Execution Error",
         "agentWorking": "Agent Working",
-        "agentCompleted": "Agent Completed"
+        "agentCompleted": "Agent Completed",
+        "submitted": "Submitted",
+        "submitProcessing": "Processing submission"
     },
     "agentMonitor": {
         "accept": "Accept",
@@ -2496,7 +2870,7 @@
         "doubleClick": "Double-click to collapse/expand",
         "workInProgress": "Working...",
         "workQueued": "Work has been registered in the queue.",
-        "noWorkInProgress": "No work in progress.",
+        "noWorkInProgress": "Standby",
         "workStarted": "The work will be displayed here once it starts.",
         "selectResearchMethod": "Select research method",
         "browserUse": "Browser use feature is available after downloading and decompressing. (Size: 114MB)",
@@ -2521,8 +2895,6 @@
         "toolUsageComplete": "completed",
         "toolUsageInProgress": "in progress",
         "tool": "tool",
-        "parsingDocument": "Document parsing in progress...",
-        "parsingFailed": "Parsing failed",
         "approved": "Approved",
         "rejected": "Rejected",
         "processed": "Processed",
@@ -2571,7 +2943,8 @@
         "inProgress": "In Progress",
         "pending": "Pending",
         "cancelled": "Cancelled",
-        "completed": "Completed"
+        "completed": "Completed",
+        "skipped": "Skipped"
     },
     "SubProcess": {
         "execute": "Execute"
@@ -2579,25 +2952,11 @@
     "ProcessInstanceChat": {
         "subprocessCreating": "Subprocess creating...",
         "feedback": "Is the process execution normal?",
-        "feedbackDescription": "Do you want to apply the process feedback?"
-    },
-    "ProcessInstanceLog": {
-        "headers": {
-            "time": "Time",
-            "role": "Role",
-            "sender": "Sender",
-            "message": "Message"
-        },
-        "noData": "No messages yet.",
-        "streaming": "Streaming log...",
-        "unknownSender": "Unknown",
-        "systemSender": "System"
+        "feedbackDescription": "Is the process execution normal?"
     },
     "ActivityInputData": {
         "previousInput": "Previous Activity Input",
-        "previousInputDescription": "This shows the input provided for the previous activity. Please refer to it as you proceed with the current work.",
-        "previousInputDetailTitle": "What is the previous activity input history?",
-        "previousInputDetail": "In a BPM process, this displays the form data entered by the worker in the previous step.\n\nBy referring to this information, you can more clearly understand the progress of the current process.\n\nExample: In an approval request → review → approval process, if you are at the 'review' step,\nthe data that was entered during the 'approval request' step will be shown."
+        "previousInputDescription": "This shows the input provided for the previous activity. Please refer to it as you proceed with the current work."
     },
     "MCPServer": {
         "searchMCPServers": "Search MCP Servers"
@@ -2609,14 +2968,11 @@
         "type": "Type",
         "environmentName": "Environment Name",
         "secretName": "Secret Name",
-        "browserUseSecretName": "Browser Use Secret Name",
         "nameRequired": "Name is required",
         "loadingEnvironments": "Loading Environments...",
         "loadingSecrets": "Loading Secrets...",
-        "loadingBrowserUseSecrets": "Loading Browser Use Secrets...",
         "environment": "Environment",
         "secret": "Secret",
-        "browserUse": "Browser Use",
         "name": "Name",
         "data": "Data",
         "actions": "Actions",
@@ -2624,26 +2980,16 @@
         "environmentUpdated": "Environment updated successfully",
         "secretCreated": "Secret created successfully",
         "secretUpdated": "Secret updated successfully",
-        "browserUseSecretCreated": "Browser Use secret created successfully",
-        "browserUseSecretUpdated": "Browser Use secret updated successfully",
         "environmentDeleted": "Environment deleted successfully",
         "secretDeleted": "Secret deleted successfully",
-        "browserUseSecretDeleted": "Browser Use secret deleted successfully",
         "errorSavingEnvironment": "Error saving environment",
         "errorSavingSecret": "Error saving secret",
-        "errorSavingBrowserUseSecret": "Error saving Browser Use secret",
         "errorDeletingEnvironment": "Error deleting environment",
         "errorDeletingSecret": "Error deleting secret",
-        "errorDeletingBrowserUseSecret": "Error deleting Browser Use secret",
         "confirmDeleteEnvironment": "Are you sure you want to delete environment \"{name}\"?",
         "confirmDeleteSecret": "Are you sure you want to delete secret \"{name}\"?",
         "confirmDeleteBrowserUseSecret": "Are you sure you want to delete Browser Use secret \"{name}\"?",
         "noBrowserUseConfig": "Browser Use configuration is not set. Click the edit button to add the configuration."
-    },
-    "BpmnUengineField": {
-        "newProcess": "New",
-        "processSelectLabel": "Process",
-        "versionSelectLabel": "Version"
     },
     "footer": {
         "BusinessNumber": "BusinessRegistration<br>No.",
@@ -2668,7 +3014,6 @@
         "versionSummary": "Version {version} · Last modified: {time}",
         "versionItemTitle": "Version {version}",
         "download": "Download",
-        "downloadVersionXML": "Download Version {version} XML",
         "changeToVersion": "Change to Version",
         "noXmlData": "No XML data available for the selected version.",
         "copiedToClipboard": "Copied to clipboard.",
@@ -2682,10 +3027,34 @@
         "empty": "No registered agents",
         "loadFailed": "Failed to load agent list"
     },
+    "SkillList": {
+        "title": "Skill List",
+        "loading": "Loading skills...",
+        "empty": "No registered skills",
+        "loadFailed": "Failed to load skill list"
+    },
+    "SkillDetail": {
+        "title": "Skill Detail",
+        "loading": "Loading skill...",
+        "loadError": "Failed to load skill",
+        "noFiles": "No files in this skill",
+        "selectFile": "Select a file from the tree to edit",
+        "addFolder": "Add folder",
+        "addFile": "Add file",
+        "filesTab": "Files",
+        "graphTab": "Graph",
+        "graphLoading": "Building reference graph...",
+        "graphLoadError": "Failed to build reference graph",
+        "graphEmpty": "No reference graph (no markdown files or links)",
+        "usedByTitle": "Used by agents",
+        "usedByLoading": "Loading agents...",
+        "usedByEmpty": "No agents are using this skill."
+    },
     "AgentChatInfo": {
         "expand": "Show more",
         "collapse": "Show less",
         "defaultAgentName": "Agent",
+        "knowledgeSetupInProgress": "Setting up knowledge",
         "labels": {
             "goal": "Goal",
             "persona": "Persona",
@@ -2698,7 +3067,13 @@
         "fallback": {
             "goal": "Agent goal is not configured yet."
         },
+        "empty": {
+            "tools": "No tools assigned.",
+            "skills": "No skills assigned.",
+            "model": "No model assigned."
+        },
         "tabs": {
+            "chat": "Conversation",
             "learning": "Learning Mode",
             "question": "Question Mode",
             "actions": "Action Mode",
@@ -2728,12 +3103,23 @@
         "download": "Download",
         "delete": "Delete",
         "uploadComplete": "Upload Complete",
-        "uploading": "Uploading",
+        "uploading": "Uploading...",
+        "complete": "Done",
+        "failed": "Failed",
         "close": "Close",
         "uploadSuccess": "File uploaded successfully.",
         "unsupportedFileType": " is an unsupported file type.",
         "fileTooLarge": "File is too large. (Maximum 50MB)",
         "fileDeleted": "File deleted successfully."
+    },
+    "FormRealtimeAssistant": {
+        "title": "Voice Agent",
+        "connected": "Connected",
+        "connecting": "Connecting",
+        "disconnected": "Disconnected",
+        "responding": "Responding",
+        "micOn": "Mic ON",
+        "inputPlaceholder": "Type a message or speak with the microphone."
     },
     "processDialog": {
         "editProcess": "Edit Process",
@@ -2885,9 +3271,12 @@
     "BpmnUengine": {
         "decreaseFontSize": "Decrease Font Size",
         "increaseFontSize": "Increase Font Size",
-        "resetZoom": "Fit to Screen (Ctrl+0)",
-        "zoomIn": "Zoom In (Ctrl++)",
-        "zoomOut": "Zoom Out (Ctrl+-)"
+        "resetZoom": "Fit to Screen",
+        "zoomIn": "Zoom In Canvas",
+        "zoomOut": "Zoom Out Canvas",
+        "autoLayout": "Auto Layout",
+        "changeOrientation": "Toggle Horizontal/Vertical",
+        "processVariables": "Process Variables"
     },
     "BpmnUengineViewer": {
         "viewParticipants": "View Participants",
@@ -2914,7 +3303,10 @@
         "tools": "Tools & Skills",
         "knowledge": "Knowledge Ontology",
         "achievements": "Achievements & Badges",
-        "settings": "Settings"
+        "settings": "Settings",
+        "knowledgeSetupPending": "Setting up initial knowledge...",
+        "knowledgeSetupSuccess": "Initial knowledge has been set.",
+        "knowledgeSetupError": "Failed to set initial knowledge."
     },
     "Gantt": {
         "description": "Description",
@@ -3025,7 +3417,6 @@
         "addTask": "Add Task",
         "editTask": "Edit Task",
         "taskName": "Task Name",
-        "taskType": "Task Type",
         "system": "System (OSS)",
         "level": "Level",
         "properties": "Properties",
@@ -3264,5 +3655,90 @@
         "checkpoints": "Checkpoints",
         "instruction": "Instruction",
         "conditionExamples": "Condition Examples"
+    },
+    "ProcessInstanceTable": {
+        "status": "Status",
+        "completedWork": "Completed Work",
+        "nextWork": "Next Work",
+        "time": "Time",
+        "userInput": "User Input",
+        "noFormContent": "No form content available.",
+        "stepFeedback": "Feedback for this step",
+        "processing": "Processing..."
+    },
+    "SkillsManagement": {
+        "title": "Skills List Management",
+        "description": "Add or remove skills here. Click a skill to open it and edit its files.",
+        "uploadedSkills": "Uploaded skills",
+        "builtinSkills": "Built-in skills",
+        "uploadedEmpty": "No uploaded skills.",
+        "builtinEmpty": "No built-in skills.",
+        "viewAs": "View as",
+        "viewTable": "Table",
+        "viewCard": "Card",
+        "viewTableHint": "Show skills in a table",
+        "viewCardHint": "Show skills as cards",
+        "addSkill": "Add skill",
+        "addFromZip": "Upload ZIP",
+        "addFromZipHint": "Upload a .zip file containing skill files",
+        "addFromRepo": "From Repository",
+        "addFromRepoHint": "Add from a Git repository URL",
+        "repositoryUrl": "Repository URL",
+        "searchPlaceholder": "Search by name or description",
+        "noSkills": "No skills to display",
+        "skillName": "Skill name",
+        "skillDescription": "Skill description",
+        "usedByAgents": "Used by",
+        "usedByAgentsSuffix": "agents",
+        "empty": "Add your first skill using one of the options below.",
+        "emptyTitle": "No skills yet",
+        "openSkill": "Open and edit files",
+        "openToEdit": "Open to edit",
+        "deleteTitle": "Delete skill",
+        "deleteMessage": "This skill will be removed. This cannot be undone.",
+        "uploading": "Uploading skill...",
+        "uploadSuccess": "Skill added successfully.",
+        "deleting": "Deleting...",
+        "deleteSuccess": "Skill deleted successfully."
+    },
+    "usage": {
+        "tabUsage": "Usage",
+        "tabSearch": "Search",
+        "finalCredit": "Final Credit",
+        "loading": "Loading...",
+        "availableCredit": "Available Credit",
+        "usedCredit": "Used Credit",
+        "periodUsage": "Usage by Period",
+        "periodSetting": "Period",
+        "thisMonth": "This Month",
+        "last7Days": "Last 7 Days",
+        "last1Month": "Last 1 Month",
+        "last3Months": "Last 3 Months",
+        "last6Months": "Last 6 Months",
+        "last1Year": "Last 1 Year",
+        "usageSummary": "Usage Summary",
+        "usageSummaryDescription": "This is an overall service summary for the tenant, showing the usage summary for the selected period.",
+        "usageCount": "Usage Count",
+        "countUnit": "{count} times",
+        "serviceUsage": "Usage by Service",
+        "serviceUsageDescription": "Displays the usage by service for the tenant during the selected period.",
+        "modelUsage": "Usage by Model",
+        "modelUsageDescription": "Displays the usage by model for the tenant during the selected period.",
+        "credit": "Credit",
+        "creditDescription": "Displays the credit balance of the tenant for the selected period.",
+        "date": "Date",
+        "creditAmount": "Credit",
+        "type": "Type",
+        "expiryDate": "Expiry Date",
+        "purchase": "Purchase",
+        "charge": "Charge",
+        "serviceName": "Service",
+        "usageCountHeader": "Count",
+        "usageQuantity": "Quantity",
+        "creditUsage": "Credit Usage",
+        "modelName": "Model",
+        "chartUsageCount": "Usage Count",
+        "chartUsageCredit": "Credit Used",
+        "noData": "No data available"
     }
 }

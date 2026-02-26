@@ -1,7 +1,11 @@
 <template>
     <div>
-        <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-            <div class="d-flex w-100">
+        <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+            <div v-if="mode == 'uEngine'" class="d-flex w-100"  >
+                <component :is="'work-history-' + mode" :instance="instance" :messages="messages" :isComplete="isComplete"
+                    @clickMessage="navigateToWorkItemByTaskId" @updated="$emit('updated')" />
+            </div>
+            <div v-else-if="messages.length > 0" class="d-flex w-100" >
                 <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
                     @clickMessage="navigateToWorkItemByTaskId" @updated="$emit('updated')" />
             </div>

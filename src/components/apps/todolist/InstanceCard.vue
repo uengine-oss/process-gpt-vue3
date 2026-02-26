@@ -483,7 +483,21 @@ export default {
         }
     },
     methods: {
-        async handleInstanceUpdated() {
+        async handleInstanceUpdated(payload) {
+            // DONE 신호를 받은 즉시 UI부터 완료 상태로 전환한다 (낙관적 업데이트)
+            if (this.instance && this.instance.status === 'NEW') {
+                this.instance = {
+                    ...this.instance,
+                    // 실제 인스턴스 상태 값은 백엔드에서 다시 받아오지만,
+                    // NEW에서 벗어났다는 것만 보장되면 되므로 우선 COMPLETED로 표시한다.
+                    status: 'COMPLETED',
+                };
+            }
+
+            // 하위 컴포넌트 강제 리렌더링을 위해 키 증가
+            this.updatedKey++;
+
+            // 이후 백엔드에서 최신 데이터를 다시 로드 (느려도 UI는 이미 완료 화면)
             await this.init();
         },
         async init() {
@@ -493,7 +507,23 @@ export default {
                 action: async () => {
                     if (!me.id) return;
                     me.isLoading = true;
-                    me.instance = await backend.getInstance(me.id);
+
+                    const serverInstance = await backend.getInstance(me.id);
+
+                    if (serverInstance) {
+                        // 로컬에서 이미 NEW가 아닌 상태로 전환했다면,
+                        // 서버가 아직 NEW라고 하더라도 NEW로 되돌리지 않도록 상태를 병합한다.
+                        if (me.instance && me.instance.status && me.instance.status !== 'NEW' && serverInstance.status === 'NEW') {
+                            me.instance = {
+                                ...serverInstance,
+                                status: me.instance.status,
+                            };
+                        } else {
+                            me.instance = serverInstance;
+                        }
+                    } else {
+                        me.instance = serverInstance;
+                    }
                     
                     if (me.instance) {
                         me.eventList = await backend.getEventList(me.instance.instId);

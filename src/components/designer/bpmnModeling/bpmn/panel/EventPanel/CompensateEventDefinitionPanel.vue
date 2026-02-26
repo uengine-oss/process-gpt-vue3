@@ -18,7 +18,6 @@
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
-import { Icon } from '@iconify/vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {

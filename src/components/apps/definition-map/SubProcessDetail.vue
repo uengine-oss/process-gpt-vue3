@@ -270,15 +270,19 @@ export default {
     watch: {
         '$route.params': {
             handler(newVal, oldVal) {
-                if(!newVal.id) return;
-                if(newVal.id !== oldVal.id) {
-                    this.init(newVal);
+                const id = this.getSubIdFromParams(newVal);
+                const oldId = oldVal && this.getSubIdFromParams(oldVal);
+                if (!id) return;
+                if (id !== oldId) {
+                    this.init({ id, name: id });
                 }
             },
         },
     },
     created() {
-        this.init(this.$route.params);
+        const params = this.$route.params;
+        const id = this.getSubIdFromParams(params);
+        this.init(id ? { id, name: params.name || id } : params);
     },
     methods: {
         async checkEditable() {
@@ -363,6 +367,13 @@ export default {
                     }
                 }
             }
+        },
+        getSubIdFromParams(params) {
+            if (!params) return null;
+            if (params.pathMatch != null) {
+                return Array.isArray(params.pathMatch) ? params.pathMatch.join('/') : params.pathMatch;
+            }
+            return params.id || null;
         },
         async init(obj) {
             var me = this;

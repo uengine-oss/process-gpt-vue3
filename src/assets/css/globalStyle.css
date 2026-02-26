@@ -1,3 +1,14 @@
+/* 사이드바 리스트 호버/활성화 백그라운드 (일괄 관리) */
+.sidebar-list-hover-bg:hover,
+.sidebar-list-hover-bg.sidebar-list-hover-bg--active {
+    background: rgba(var(--v-theme-primary), 0.10);
+    border-radius: 8px;
+    transform: translateX(2px);
+}
+.sidebar-list-hover-bg.sidebar-list-hover-bg--active .v-list-item-title {
+    color: rgba(0, 0, 0, 0.87);
+}
+
 h1, h2, h3, h4, h5, h6 {
     margin:0px !important;
 }
@@ -5,6 +16,43 @@ h1, h2, h3, h4, h5, h6 {
 hr {
     opacity: 1 !important;
 }
+
+
+/* ============================================
+   공통 프로그레스 바 스타일
+   ============================================ */
+
+/* 물결 애니메이션 프로그레스 바 */
+.progress-wave-animation .v-progress-linear__determinate {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-wave-animation .v-progress-linear__determinate::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        transparent 100%
+    );
+    animation: progress-wave-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-wave-shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
 
 .agent-chat-info-content {
     height: calc(100vh - 205px);
@@ -272,6 +320,17 @@ hr {
     fill: #68369a !important;
 }
 
+/* SKIPPED(건너뜀) - 보라색 계열(완료와 구분되도록 점선) */
+.skipped.djs-connection .djs-visual > path {
+    stroke: #9c6ade !important;
+    stroke-dasharray: 6, 4 !important;
+}
+
+.skipped.djs-connection .djs-visual > defs > marker > path {
+    stroke: #9c6ade !important;
+    fill: #9c6ade !important;
+}
+
 .running-task-line.djs-connection .djs-visual > path {
     stroke-width: 3px !important;
     stroke-dasharray: 18, 12 !important;
@@ -294,6 +353,12 @@ hr {
     stroke: #68369A !important;
 }
 
+.skipped:not(.djs-connection) .djs-visual > :nth-child(1) {
+    stroke-width: 5px !important;
+    stroke: #9c6ade !important;
+    stroke-dasharray: 6, 4 !important;
+}
+
 .stopped:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 5px !important;
     stroke: #e53935 !important;
@@ -301,6 +366,12 @@ hr {
 
 .cancelled:not(.djs-connection) .djs-visual> :nth-child(1) {
     stroke-width: 5px !important;
+    stroke: #e53935 !important;
+}
+
+.failed:not(.djs-connection):not(.generated) .djs-visual > :nth-child(2) {
+    stroke-width: 5px !important;
+    stroke-dasharray: 20, 20 !important;
     stroke: #e53935 !important;
 }
 
@@ -933,6 +1004,7 @@ hr {
 
 .instance-card-tab-6 {
     height: calc(100vh - 250px);
+    padding: 16px;
     overflow: auto;
 }
 
@@ -963,7 +1035,7 @@ hr {
 .mobile-left-menu {
     display: flex;
     flex-direction: column;
-    height: 100%
+    height: 100%;
 }
 .feedback-form {
     position: fixed;
@@ -1306,6 +1378,20 @@ hr {
         color: #bababa;
     }
 }
+
+.submit-processing-char {
+    display: inline-block;
+    animation: submit-processing-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes submit-processing-shimmer {
+    0%, 70%, 100% {
+        color: #ffffff;
+    }
+    15%, 35% {
+        color: #333333;
+    }
+}
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
@@ -1327,7 +1413,7 @@ hr {
 
 
     .agent-chat-info-content {
-        height: calc(100vh - 170px);
+        height: calc(100vh - 74px);
         overflow: auto;
     }
 }
@@ -1383,11 +1469,11 @@ hr {
     }
 
     .manage-access-tab-table-box .v-data-table {
-        height: calc(100vh - 160px) !important;
+        height: 100% !important;
     }
     
     .mcp-server-list-box {
-        height: calc(100vh - 200px) !important;
+        height: 100% !important;
         overflow: auto;
     }
 
@@ -1513,12 +1599,14 @@ hr {
     
     .is-work-height {
         height: 100vh;
+        overflow: auto;
     }
 
     
 
     .leftSidebar {
-        width: 350px !important;
+        width: 100% !important;
+        max-width: 100vw !important;
     }
 
     .instance-card-kanban-board-box {
@@ -1535,7 +1623,7 @@ hr {
     }
     .mobile-menu-nav {
         top:0px !important;
-        height: calc(100% - 90px) !important;
+        height: 100vh !important;
         border-radius: 10px !important;
         width: 100vw !important;
     }
@@ -1565,15 +1653,30 @@ hr {
         bottom: 4px;
         height: calc(100vh - 200px);
     }
-}
 
-
-@media only screen and (max-width:550px) {
     .vue-bpmn-diagram-container .djs-palette {
-        width: 230px !important;
-        height:185px !important;
+        width: 190px !important;
+        height: auto !important;
+    }
+
+    .djs-palette-entries {
+        margin-left: 36px;
+    }
+    .vue-bpmn-diagram-container .djs-palette .djs-palette-entries .entry {
+        width: 30px;
+    }
+    .djs-palette .entry {
+        font-size: 20px !important;
     }
 }
 
 
+@media only screen and (max-width:550px) {
+}
+
+.sidebar-title-icon {
+    padding-left: 8px;
+    padding-top: 2px;
+    cursor: pointer;
+}
 

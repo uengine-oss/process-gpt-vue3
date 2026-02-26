@@ -7,30 +7,39 @@
             >
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
-                    <v-row class="ma-0 pa-0 align-center">
-                        <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
+                    <v-row class="ma-0 pa-0 align-center account-settings-header-row">
+                        <v-tabs
+                            v-model="tab"
+                            bg-color="transparent"
+                            min-height="70"
+                            height="70"
+                            color="default"
+                            show-arrows
+                        >
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
                                 <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
-                                <v-tab v-if="superAdmin && !isUEngineMode" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
-                                <v-tab v-if="!isUEngineMode" value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
-                                <v-tab v-if="!isUEngineMode" value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
-                                <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab>
-                                <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
-                                    <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
-                                </v-tab>
-                                <v-tab value="TaskCatalog">
-                                    <v-icon class="mr-2" size="20">mdi-folder-cog</v-icon> {{ $t('accountTab.taskCatalog') }}
-                                </v-tab>
-                                <v-tab value="OrgChartGroup">
-                                    <v-icon class="mr-2" size="20">mdi-account-group</v-icon> {{ $t('accountTab.orgChartGroup') }}
-                                </v-tab>
+                                <template v-if="!gs">
+                                    <v-tab v-if="superAdmin && !isUEngineMode" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
+                                    <v-tab v-if="!isUEngineMode" value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
+                                    <v-tab v-if="!isUEngineMode" value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
+                                    <!-- <v-tab v-if="!isUEngineMode" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab> -->
+                                    <v-tab v-if="!isUEngineMode" value="ConnectionInfo">
+                                        <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
+                                    </v-tab>
+                                    <v-tab v-if="!isUEngineMode" value="TaskCatalog">
+                                        <v-icon class="mr-2" size="20">mdi-folder-cog</v-icon> {{ $t('accountTab.taskCatalog') }}
+                                    </v-tab>
+                                    <v-tab value="OrgChartGroup">
+                                        <v-icon class="mr-2" size="20">mdi-account-group</v-icon> {{ $t('accountTab.orgChartGroup') }}
+                                    </v-tab>
+                                </template>
                             </div>
                             <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                         </v-tabs>
-                        <div @click="goToTenantManage"
+                        <div v-if="!gs" @click="goToTenantManage"
                             class="settings-tenant-manage-btn v-tab-style text-none"
                             style="letter-spacing: 0;"
                         >
@@ -88,68 +97,72 @@
                                 <UsersIcon class="mr-2" size="16" />{{ $t('accountTab.manageAccess') }}
                             </v-btn>
 
-                            <v-btn
-                                v-if="superAdmin && !isUEngineMode"
-                                variant="text"
-                                color="default"
-                                size="small"
-                                @click="tab = 'Drive'"
-                                :class="{ 'selected-tab': tab === 'Drive' }"
-                            >
-                                <BrandGoogleDriveIcon class="mr-2" size="16" />{{ $t('accountTab.drive') }}
-                            </v-btn>
+                            <template v-if="!gs">
+                                <v-btn
+                                    v-if="superAdmin && !isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
+                                    @click="tab = 'Drive'"
+                                    :class="{ 'selected-tab': tab === 'Drive' }"
+                                >
+                                    <BrandGoogleDriveIcon class="mr-2" size="16" />{{ $t('accountTab.drive') }}
+                                </v-btn>
 
-                            <v-btn
-                                v-if="!isUEngineMode"
-                                variant="text"
-                                color="default"
-                                size="small"
-                                @click="tab = 'MCP-Servers'"
-                                :class="{ 'selected-tab': tab === 'MCP-Servers' }"
-                            >
-                                {{ $t('accountTab.mcpServers') }}
-                            </v-btn>
-                            <v-btn
-                                v-if="!isUEngineMode"
-                                variant="text"
-                                color="default"
-                                size="small"
-                                @click="tab = 'MCP-Environments'"
-                                :class="{ 'selected-tab': tab === 'MCP-Environments' }"
-                            >
-                                {{ $t('accountTab.environments') }}
-                            </v-btn>
-                            <v-btn
-                                v-if="!isUEngineMode"
-                                variant="text"
-                                color="default"
-                                size="small"
-                                @click="tab = 'ConnectionInfo'"
-                                :class="{ 'selected-tab': tab === 'ConnectionInfo' }"
-                            >
-                                <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
-                            </v-btn>
-                            <v-btn
-                                variant="text"
-                                color="default"
-                                size="small"
-                                @click="tab = 'TaskCatalog'"
-                                :class="{ 'selected-tab': tab === 'TaskCatalog' }"
-                            >
-                                <v-icon class="mr-2" size="16">mdi-folder-cog</v-icon>{{ $t('accountTab.taskCatalog') }}
-                            </v-btn>
-                            <v-btn
-                                variant="text"
-                                color="default"
-                                size="small"
-                                @click="tab = 'OrgChartGroup'"
-                                :class="{ 'selected-tab': tab === 'OrgChartGroup' }"
-                            >
-                                <v-icon class="mr-2" size="16">mdi-account-group</v-icon>{{ $t('accountTab.orgChartGroup') }}
-                            </v-btn>
+                                <v-btn
+                                    v-if="!isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
+                                    @click="tab = 'MCP-Servers'"
+                                    :class="{ 'selected-tab': tab === 'MCP-Servers' }"
+                                >
+                                    {{ $t('accountTab.mcpServers') }}
+                                </v-btn>
+                                <v-btn
+                                    v-if="!isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
+                                    @click="tab = 'MCP-Environments'"
+                                    :class="{ 'selected-tab': tab === 'MCP-Environments' }"
+                                >
+                                    {{ $t('accountTab.environments') }}
+                                </v-btn>
+                                <v-btn
+                                    v-if="!isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
+                                    @click="tab = 'ConnectionInfo'"
+                                    :class="{ 'selected-tab': tab === 'ConnectionInfo' }"
+                                >
+                                    <DatabaseIcon class="mr-2" size="16" />{{ $t('accountTab.dataSource') }}
+                                </v-btn>
+                                <v-btn
+                                    v-if="!isUEngineMode"
+                                    variant="text"
+                                    color="default"
+                                    size="small"
+                                    @click="tab = 'TaskCatalog'"
+                                    :class="{ 'selected-tab': tab === 'TaskCatalog' }"
+                                >
+                                    <v-icon class="mr-2" size="16">mdi-folder-cog</v-icon>{{ $t('accountTab.taskCatalog') }}
+                                </v-btn>
+                                <v-btn
+                                    variant="text"
+                                    color="default"
+                                    size="small"
+                                    @click="tab = 'OrgChartGroup'"
+                                    :class="{ 'selected-tab': tab === 'OrgChartGroup' }"
+                                >
+                                    <v-icon class="mr-2" size="16">mdi-account-group</v-icon>{{ $t('accountTab.orgChartGroup') }}
+                                </v-btn>
+                            </template>
                         </template>
 
                         <v-btn
+                            v-if="!gs"
                             variant="text"
                             color="default"
                             size="small"
@@ -192,7 +205,7 @@
                         <v-window-item value="Account">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <AccountTab />
                             </div>
@@ -202,7 +215,7 @@
                         <v-window-item value="ManageAccess">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <ManageAccessTab :editable="superAdmin" />
                             </div>
@@ -212,7 +225,7 @@
                         <v-window-item v-if="!isUEngineMode" value="Drive">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <DriveTab />
                             </div>
@@ -222,7 +235,7 @@
                         <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <ConnectionInfoTab />
                             </div>
@@ -239,24 +252,24 @@
                         <v-window-item v-if="!isUEngineMode" value="MCP-Environments">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
                         <!-- Skills: 스킬 탭 (accountTab.skills) -->
-                        <v-window-item v-if="!isUEngineMode" value="Skills">
-                            <div
+                        <!-- <v-window-item v-if="!isUEngineMode" value="Skills">
+                            <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <SkillsTab />
                             </div>
-                        </v-window-item>
-                        <v-window-item value="TaskCatalog">
+                        </v-window-item> -->
+                        <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
                             <div
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <TaskCatalogAdmin />
                             </div>
@@ -264,7 +277,7 @@
                         <v-window-item value="OrgChartGroup">
                             <div
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <OrgChartGroupTab />
                             </div>
@@ -329,7 +342,7 @@ export default {
                 { value: 'ManageAccess', label: 'Manage Access' },
                 { value: 'Drive', label: 'Drive' },
                 { value: 'MCP', label: 'MCP Servers' },
-                { value: 'Skills', label: 'Skills' },
+                // { value: 'Skills', label: 'Skills' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
             ],
             admin: localStorage.getItem('isAdmin') === 'true',
@@ -349,18 +362,24 @@ export default {
         isUEngineMode() {
             return window.$mode === 'uEngine';
         },
+        gs() {
+            return window.$gs;
+        },
         isMobile() {
             return window.innerWidth <= 768;
         }
     },
     methods: {
         ensureVisibleTab() {
-            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'Skills', 'ConnectionInfo']);
+            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog']);
+            const hiddenInGs = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog', 'OrgChartGroup']);
             if (!this.tab) {
                 this.tab = 'Account';
                 return;
             }
-            if (this.isUEngineMode && hiddenInUEngine.has(this.tab)) {
+            if (this.gs && hiddenInGs.has(this.tab)) {
+                this.tab = 'Account';
+            } else if (this.isUEngineMode && hiddenInUEngine.has(this.tab)) {
                 this.tab = 'Account';
             }
         },
@@ -441,6 +460,20 @@ export default {
     height: 2px;
     background-color: transparent;
     transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.account-settings-header-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+.settings-tenant-manage-btn {
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.language-chip-select-wrapper {
+    flex: 0 0 auto;
 }
 </style>
 

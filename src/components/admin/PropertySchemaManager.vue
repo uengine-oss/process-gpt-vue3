@@ -110,7 +110,7 @@
                     @click="showLayoutPreview = !showLayoutPreview"
                     :disabled="filteredSchemas.length === 0"
                 >
-                    <v-icon size="16">mdi-eye</v-icon>
+                    <v-icon start size="16">{{ showLayoutPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                     {{ $t('taskCatalog.layoutPreview') }}
                 </button>
                 <button class="add-btn" @click="openAddForm()">
@@ -224,12 +224,12 @@
                             </v-icon>
                         </td>
                         <td class="actions-cell">
-                            <button class="action-btn action-edit" @click="openEditForm(item)">
+                            <v-btn class="action-btn action-edit" @click="openEditForm(item)">
                                 <v-icon size="16">mdi-pencil</v-icon>
-                            </button>
-                            <button class="action-btn action-delete" @click="confirmDelete(item)">
+                            </v-btn>
+                            <v-btn variant="text" density="compact" icon color="error" @click="confirmDelete(item)">
                                 <v-icon size="16">mdi-delete</v-icon>
-                            </button>
+                            </v-btn>
                         </td>
                     </tr>
                 </tbody>
@@ -250,7 +250,7 @@
         </div>
 
         <!-- Delete Confirmation Dialog -->
-        <v-dialog v-model="deleteDialogOpen" max-width="400">
+        <v-dialog v-model="deleteDialogOpen" max-width="400" persistent>
             <v-card>
                 <v-card-title>{{ $t('taskCatalog.confirmDelete') }}</v-card-title>
                 <v-card-text>
@@ -787,7 +787,7 @@ export default defineComponent({
 .section-header {
     font-size: 14px;
     font-weight: 600;
-    color: #3b82f6;
+    color: rgb(var(--v-theme-primary));
     margin: 16px 0 12px 0;
     padding-bottom: 4px;
     border-bottom: 1px solid #e5e7eb;
@@ -798,7 +798,7 @@ export default defineComponent({
 
 .field-label-preview {
     font-size: 12px;
-    color: #3b82f6;
+    color: rgb(var(--v-theme-primary));
     margin-bottom: 4px;
     font-weight: 500;
 }
@@ -866,6 +866,8 @@ export default defineComponent({
     font-weight: 600;
     color: #374151;
     border-bottom: 1px solid #e5e7eb;
+}
+
 .drag-handle-cell {
     width: 28px;
     padding: 12px 4px 12px 12px !important;

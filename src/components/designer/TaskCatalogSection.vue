@@ -1,33 +1,53 @@
 <template>
     <div class="task-catalog-panel" :class="{ 'collapsed': isCollapsed }">
         <!-- Header -->
-        <div class="catalog-header" @click="isCollapsed = !isCollapsed">
+        <v-tooltip v-if="isCollapsed" location="right">
+            <template #activator="{ props }">
+                <div class="catalog-header" v-bind="props" @click="isCollapsed = !isCollapsed">
+                    <v-icon size="18" class="collapse-icon">
+                        {{ isCollapsed ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                    </v-icon>
+                </div>
+            </template>
+            <span>Task Catalog</span>
+        </v-tooltip>
+        <div v-else class="catalog-header" @click="isCollapsed = !isCollapsed">
             <div class="header-left">
                 <v-icon size="18" color="primary">mdi-folder-star</v-icon>
-                <span class="header-title">PNA Selector</span>
-                <v-chip v-if="filteredItems.length > 0" size="x-small" color="primary" variant="tonal" class="count-badge">
+                <span class="header-title">Task Catalog</span>
+                <v-chip
+                    v-if="filteredItems.length > 0"
+                    size="x-small"
+                    color="primary"
+                    variant="tonal"
+                    class="count-badge"
+                >
                     {{ filteredItems.length }}
                 </v-chip>
             </div>
             <v-icon size="18" class="collapse-icon">
-                {{ isCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
+                {{ isCollapsed ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
             </v-icon>
         </div>
 
         <div v-show="!isCollapsed" class="catalog-content">
             <!-- Search & Filter Row -->
             <div class="search-row">
-                <v-text-field
-                    v-model="searchQuery"
-                    placeholder="검색..."
-                    density="compact"
-                    variant="solo-filled"
-                    hide-details
-                    prepend-inner-icon="mdi-magnify"
-                    clearable
-                    flat
-                    class="search-input"
-                />
+                <div
+                    class="d-flex align-center border border-borderColor header-search rounded-pill px-5 search-input"
+                    style="max-width: 246px; min-width: 160px;"
+                >
+                    <Icons :icon="'magnifer-linear'" :size="20" />
+                    <v-text-field
+                        v-model="searchQuery"
+                        placeholder="검색..."
+                        variant="plain"
+                        density="compact"
+                        class="position-relative pt-0 ml-3 custom-placeholer-color"
+                        single-line
+                        hide-details
+                    />
+                </div>
                 <v-btn
                     icon
                     size="small"
@@ -276,7 +296,6 @@ export default defineComponent({
 <style scoped>
 .task-catalog-panel {
     width: 220px;
-    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
     border: 1px solid #e8e8e8;
     border-radius: 12px;
     display: flex;
@@ -288,7 +307,8 @@ export default defineComponent({
 }
 
 .task-catalog-panel.collapsed {
-    max-height: 48px;
+    max-height: 40px;
+    width: 40px;
 }
 
 /* Header */
@@ -297,9 +317,14 @@ export default defineComponent({
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: rgba(var(--v-theme-primary));
     cursor: pointer;
     user-select: none;
+}
+
+.task-catalog-panel.collapsed .catalog-header {
+    justify-content: center;
+    padding: 8px;
 }
 
 .header-left {
@@ -353,9 +378,7 @@ export default defineComponent({
 }
 
 .search-input :deep(.v-field) {
-    border-radius: 8px;
     font-size: 12px;
-    background: #f5f5f5 !important;
 }
 
 .search-input :deep(.v-field__input) {

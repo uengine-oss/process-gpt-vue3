@@ -175,6 +175,13 @@ export default {
                 localStorage.setItem('checkedProcess', JSON.stringify(this.checkedProcess));
             }
         },
+        handleDoubleClick() {
+            if (this.isExecutionByProject) return;
+            if (window.$mode === 'uEngine') {
+                const path = this.value.id ?? this.value.path;
+                if (path) this.goProcess(path, 'sub');
+            }
+        },
         deleteProcess() {
             this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
             

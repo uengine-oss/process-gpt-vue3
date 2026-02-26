@@ -17,7 +17,13 @@ export interface menu {
     subCaption?: string;
 }
 
-const sidebarItem: menu[] = [
+const isGsMode = (window as any)._env_?.VITE_GS_MODE === 'true'
+    || import.meta.env.VITE_GS_MODE === 'true';
+
+const gsHiddenTitles = ['Chats', 'Proposals', 'Dashboard', 'Heatmap'];
+const gsHiddenHeaders = ['Analytics'];
+
+const allSidebarItems: menu[] = [
     {
         title: "TodoList",
         icon: 'server-line-duotone',
@@ -123,20 +129,16 @@ const sidebarItem: menu[] = [
         title: "피벗 테이블",
         icon: 'tuning-square-2-linear',
         BgColor: 'primary',
-        to: "/analytics/pivot",
+        to: "/analytics/heatmap",
     },
-    {
-        title: "퍼포먼스",
-        icon: 'graph-up-linear',
-        BgColor: 'primary',
-        to: "/analytics/performance",
-    },
-    {
-        title: "자연어 질의",
-        icon: 'chat-round-line-linear',
-        BgColor: 'primary',
-        to: "/analytics/query",
-    },
-]
+];
+
+const sidebarItem: menu[] = isGsMode
+    ? allSidebarItems.filter(item => {
+        if (item.header && gsHiddenHeaders.includes(item.header)) return false;
+        if (item.title && gsHiddenTitles.includes(item.title)) return false;
+        return true;
+    })
+    : allSidebarItems;
 
 export default sidebarItem;

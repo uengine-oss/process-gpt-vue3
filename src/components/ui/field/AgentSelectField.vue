@@ -108,7 +108,10 @@
             </v-select>
         </div>
 
-        <div v-if="isExecute" class="d-flex justify-end mt-2">
+        <div v-if="isExecute" class="d-flex justify-end mt-2" style="gap: 8px;">
+            <v-btn v-if="showQuickCreate" @click="selectBasicLlmAgent" color="gray" variant="flat" density="compact" class="rounded-pill">
+                {{ $t('WorkItem.quickCreate') }}
+            </v-btn>
             <v-btn @click="selectAgent" color="primary" variant="flat" density="compact" class="rounded-pill">
                 {{ $t('WorkItem.select') }}
             </v-btn>
@@ -137,6 +140,10 @@ export default {
             required: true
         },
         isExecute: {
+            type: Boolean,
+            default: false
+        },
+        showQuickCreate: {
             type: Boolean,
             default: false
         },
@@ -180,6 +187,27 @@ export default {
                             },
                             {
                                 title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.2.title'
+                            }
+                        ]
+                    }
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.deepResearchCustom.title',
+                    value: 'deep-research-custom',
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.deepResearchCustom.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.title',
+                        details: [
+                            {
+                                title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.0.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.1.title'
+                            },
+                            {
+                                title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.2.title'
                             }
                         ]
                     }
@@ -241,9 +269,14 @@ export default {
                     newVal.forEach(agent => {
                         this.agentType = agent.agentType;
                         this.agentAlias = agent.alias;
-                        if (this.agentType === 'agent' && 
-                            (this.activity.orchestration === null || this.activity.orchestration === '' || this.activity.orchestration !== 'crewai-action' || this.activity.orchestration !== 'crewai-deep-research')
+                        if (
+                            this.agentType === 'agent' &&
+                            (
+                                !this.activity.orchestration ||
+                                !['crewai-action', 'crewai-deep-research', 'deep-research-custom'].includes(this.activity.orchestration)
+                            )
                         ) {
+                            // 기본값만 설정하고 사용자가 선택한 딥리서치를 덮어쓰지 않도록 방어
                             this.activity.orchestration = 'crewai-action';
                         } else if (this.agentType === 'pgagent') {
                             this.activity.orchestration = this.agentAlias;
@@ -347,6 +380,20 @@ export default {
                 return 'error';
             }
             return 'grey';
+        },
+        selectBasicLlmAgent() {
+            const basicLlmAgent = this.defaultSetting.getAgentList.find(
+                agent => agent.alias === 'default' && agent.agent_type === 'pgagent'
+            );
+            if (basicLlmAgent) {
+                const basicLlmActivity = {
+                    ...this.activity,
+                    agent: basicLlmAgent.id,
+                    agentMode: 'draft',
+                    orchestration: basicLlmAgent.alias,
+                };
+                this.$emit('update:modelValue', basicLlmActivity);
+            }
         },
         selectAgent() {
             this.$emit('update:modelValue', this.activity);

@@ -77,6 +77,7 @@ export default {
                 
                 obj.uuid = this.uuid()
                 await this.putMessage(obj)
+                this.messages.push(obj)
             }
         }
     }

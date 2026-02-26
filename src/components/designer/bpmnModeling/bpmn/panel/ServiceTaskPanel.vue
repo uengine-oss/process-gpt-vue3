@@ -239,14 +239,69 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         element: Object,
-        definition: Object
+        definition: Object,
+        isForCompensation: Boolean
     },
     async created() {
         this.isLoading = true;
+        this.copyUengineProperties = {};
+
         if (this.uengineProperties) {
             this.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
+        }
+        // _type 고정
+        this.copyUengineProperties._type = 'org.uengine.kernel.bpmn.ServiceTask';
+
+        // role 정규화 (저장 시 Role 객체 형태로 들어가야 함)
+        const laneRoleName = this.element?.lanes?.[0]?.name || '';
+        if (!this.copyUengineProperties.role || typeof this.copyUengineProperties.role === 'string') {
+            const name = typeof this.copyUengineProperties.role === 'string' ? this.copyUengineProperties.role : laneRoleName;
+            this.copyUengineProperties.role = {
+                _type: 'org.uengine.kernel.Role',
+                name: name || ''
+            };
         } else {
-            this.copyUengineProperties = {};
+            if (!this.copyUengineProperties.role._type) this.copyUengineProperties.role._type = 'org.uengine.kernel.Role';
+            if (typeof this.copyUengineProperties.role.name !== 'string') this.copyUengineProperties.role.name = laneRoleName || '';
+        }
+
+        // uriTemplate / method / payloadTemplate
+        if (typeof this.copyUengineProperties.uriTemplate !== 'string') this.copyUengineProperties.uriTemplate = this.copyUengineProperties.uriTemplate ? String(this.copyUengineProperties.uriTemplate) : '';
+        if (!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET';
+        this.copyUengineProperties.method = String(this.copyUengineProperties.method).toUpperCase();
+        if (typeof this.copyUengineProperties.inputPayloadTemplate !== 'string') {
+            this.copyUengineProperties.inputPayloadTemplate =
+                this.copyUengineProperties.inputPayloadTemplate == null ? '' : JSON.stringify(this.copyUengineProperties.inputPayloadTemplate);
+        }
+
+        // flags
+        if (typeof this.copyUengineProperties.noValidationForSSL !== 'boolean') this.copyUengineProperties.noValidationForSSL = false;
+        if (typeof this.copyUengineProperties.skipIfNotFound !== 'boolean') this.copyUengineProperties.skipIfNotFound = false;
+
+        // headers 정규화 (HttpHeader[])
+        if (!Array.isArray(this.copyUengineProperties.headers)) {
+            this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }];
+        } else if (this.copyUengineProperties.headers.length === 0) {
+            this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }];
+        } else {
+            this.copyUengineProperties.headers = this.copyUengineProperties.headers.map((h) => ({
+                name: h?.name ?? h?.key ?? '',
+                value: h?.value ?? '',
+                _type: 'org.uengine.kernel.bpmn.HttpHeader'
+            }));
+        }
+
+        // outputMapping(EventSynchronization) 초기화
+        if (!this.copyUengineProperties.outputMapping || typeof this.copyUengineProperties.outputMapping !== 'object') {
+            this.copyUengineProperties.outputMapping = {};
+        }
+        if (typeof this.copyUengineProperties.outputMapping.eventType !== 'string') this.copyUengineProperties.outputMapping.eventType = '';
+        if (!Array.isArray(this.copyUengineProperties.outputMapping.attributes)) this.copyUengineProperties.outputMapping.attributes = [];
+        if (!this.copyUengineProperties.outputMapping.mappingContext || typeof this.copyUengineProperties.outputMapping.mappingContext !== 'object') {
+            this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] };
+        }
+        if (!Array.isArray(this.copyUengineProperties.outputMapping.mappingContext.mappingElements)) {
+            this.copyUengineProperties.outputMapping.mappingContext.mappingElements = [];
         }
 
         if(!this.copyUengineProperties) this.copyUengineProperties = {}
@@ -264,6 +319,7 @@ export default {
        if(typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
             this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
         }
+
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });

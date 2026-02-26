@@ -13,12 +13,12 @@
                         @stopMessage="stopMessage"
                     >
                         <template v-slot:custom-tools>
-                            <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
+                            <div class="d-flex flex-row-reverse pr-2">
                                 <v-tooltip>
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-bind="props"
-                                            icon variant="text"
-                                            class="text-medium-emphasis"
+                                            icon variant="text" size="small"
+                                            class="text-medium-emphasis mr-2"
                                             @click="openSaveDialog"
                                         >
                                             <Icons :icon="'save'"
@@ -31,14 +31,17 @@
                                     <span>{{ $t('uiDefinition.save') }}</span>
                                 </v-tooltip>
 
-                                <v-tooltip>
+                                <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-if="isLoadedForm" 
                                             v-bind="props" 
-                                            icon  variant="text" 
+                                            icon variant="text"
                                             class="text-medium-emphasis"
-                                            @click="openDeleteDialog">
-                                            <TrashIcon size="24" />
+                                            density="comfortable"
+                                            @click="openDeleteDialog"
+                                            size="40"
+                                        >
+                                            <v-icon color="error">mdi-delete-outline</v-icon>
                                         </v-btn>
                                     </template>
                                     <span>{{ $t('uiDefinition.deleteForm') }}</span>

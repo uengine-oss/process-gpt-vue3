@@ -50,6 +50,7 @@ import { RouterView } from 'vue-router';
 import BackendFactory from "@/components/api/BackendFactory";
 import partialParse from "partial-json-parser";
 import { getMainDomainUrl } from "@/utils/domainUtils";
+import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
     components: {
@@ -68,7 +69,8 @@ export default {
         currentChatRoomId: null,
         notificationChannel: null,
         backend: null,
-        clickCount: 0
+        clickCount: 0,
+        defaultSetting: useDefaultSetting(),
     }),
     watch: {
         $route(to, from) {
@@ -102,19 +104,47 @@ export default {
 
             this.loadScreen = false;
             this.backend = BackendFactory.createBackend();
+
+            const ensureTenantAppMetadata = async () => {
+                try {
+                    if (!window.$supabase?.auth) return;
+                    const tenantName = window.$tenantName;
+                    if (!tenantName) return;
+
+                    const { data, error } = await window.$supabase.auth.getUser();
+                    if (error || !data?.user) return;
+
+                    const currentTenantId = data?.user?.app_metadata?.tenant_id;
+                    if (!currentTenantId || currentTenantId !== tenantName) {
+                        await this.backend.setTenant(tenantName);
+                    }
+                } catch (e) {
+                    console.warn('[tenant] ensureTenantAppMetadata failed:', e);
+                }
+            };
+
             if (window.$isTenantServer) {
                 await this.backend.checkDBConnection();
+                await ensureTenantAppMetadata();
                 this.loadScreen = true;
             } else {
+                // 비밀번호 재설정 화면(recovery 해시)에 있는 동안 테넌트/로그인 리디렉션 수행하지 않음
+                if (window.location.pathname === '/auth/reset-password' && window.location.hash.includes('type=recovery')) {
+                    this.loadScreen = true;
+                    return;
+                }
                 const tenantId = await this.backend.getTenant(window.$tenantName);
                 if(window.$tenantName !== 'localhost') {
                     if (!tenantId) {
                         if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
                             localStorage.removeItem('tenantId');
                         }
-                        alert(window.$tenantName + " 존재하지 않는 경로입니다.");
+                        alert(this.$t('App.tenantNotFound', { tenant: window.$tenantName }));
+                        localStorage.removeItem('tenantId');
+                        window.location.href = getMainDomainUrl('/tenant/manage?clear=true');
                         if (localStorage.getItem('email')) {
-                            window.location.href = getMainDomainUrl('/tenant/manage');
+                            localStorage.removeItem('tenantId');
+                            window.location.href = getMainDomainUrl('/tenant/manage?clear=true');
                         } else {
                             window.location.href = getMainDomainUrl('/auth/login');
                         }
@@ -131,15 +161,18 @@ export default {
                                     this.$try({}, null, {
                                         errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
                                     })
-                                    window.location.href = getMainDomainUrl('/tenant/manage');
+                                    localStorage.removeItem('tenantId');
+                                    window.location.href = getMainDomainUrl('/tenant/manage?clear=true');
                                 }
                             } else {
                                 this.$router.push('/auth/login');
                             }
                         }
+                        await ensureTenantAppMetadata();
                         this.loadScreen = true;
                     }
                 } else {
+                    await ensureTenantAppMetadata();
                     this.loadScreen = true;
                 }
             }
@@ -169,6 +202,19 @@ export default {
         },
     },
     methods: {
+        getChatRoomIdFromUrl(url) {
+            if (!url || typeof url !== 'string') return null;
+            try {
+                // 상대/절대 URL 모두 처리
+                const parsed = new URL(url, window.location.origin);
+                const id = parsed.searchParams.get('id');
+                return id ? decodeURIComponent(id) : null;
+            } catch (e) {
+                // URL() 파싱이 실패하는 경우(구형/비정상 문자열) fallback
+                const match = url.match(/[?&]id=([^&]+)/);
+                return match ? decodeURIComponent(match[1]) : null;
+            }
+        },
         closeSnackbarOnEvent() {
             // 스낵바가 열려있을 때만 클릭 카운트
             if (this.snackbar) {
@@ -180,6 +226,54 @@ export default {
                 }
             }
         },
+        async openChatFromNotification(notification) {
+            try {
+                const roomId = this.getChatRoomIdFromUrl(notification?.url) || notification?.url?.replace('/chats?id=', '');
+                if (!roomId) {
+                    if (notification?.url) this.$router.push(notification.url);
+                    return;
+                }
+
+                // 캐시 우선 사용
+                let room = null;
+                try {
+                    const idx = JSON.parse(localStorage.getItem('chatRoomIndex') || '{}');
+                    room = idx && idx[roomId] ? idx[roomId] : null;
+                } catch (e) {}
+
+                // 캐시에 없으면 fallback 조회
+                if (!room && this.backend && typeof this.backend.getChatRoom === 'function') {
+                    room = await this.backend.getChatRoom(roomId);
+                }
+
+                // 그래도 없으면 url fallback
+                if (!room) {
+                    if (notification?.url) this.$router.push(notification.url);
+                    return;
+                }
+
+                // 통합 채팅 화면(/chat)로 이동
+                await this.$router.push({ path: '/chat', query: { roomId: room.id || roomId }, hash: '' });
+
+                // 상단 채팅 noti badge에서 제거
+                window.dispatchEvent(new CustomEvent('update-notification-badge', {
+                    detail: { type: 'chat', value: false, id: room.id || roomId }
+                }));
+                // NOTE: new 해제는 실제로 방이 열려 선택(chat-room-selected)된 시점에만 처리
+
+                // DB 알림 체크 처리(가능한 경우)
+                try {
+                    if (this.backend && typeof this.backend.setNotifications === 'function') {
+                        await this.backend.setNotifications(notification);
+                    }
+                } catch (e) {}
+            } catch (e) {
+                // 최후 fallback: 기존 url
+                try {
+                    if (notification?.url) this.$router.push(notification.url);
+                } catch (e2) {}
+            }
+        },
         showNotifications(notification){
             const email = localStorage.getItem('email');
             if (notification.user_id === email && (Notification && Notification.permission === 'granted')) {
@@ -189,14 +283,15 @@ export default {
                     notiHeader = 'New Todo';
                     notiBody = notification.title || '새 할 일 목록 추가';
                 } else if(notification.type === 'chat') {
-                    if (!this.currentChatRoomId || (this.currentChatRoomId && !notification.url.includes(this.currentChatRoomId))) {
+                    const notiChatRoomId = this.getChatRoomIdFromUrl(notification.url);
+                    if (!this.currentChatRoomId || !notiChatRoomId || (this.currentChatRoomId && notiChatRoomId !== this.currentChatRoomId)) {
                         notiHeader = notification.from_user_id || '알 수 없는 사용자';
                         const chatRoomName = notification.description || '채팅방';
                         const messageContent = notification.title || '새 메시지';
                         notiBody = `${chatRoomName}\n${messageContent}`;
 
                         window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                            detail: { type: 'chat', value: true, id: notification.url.replace('/chats?id=', '')}
+                            detail: { type: 'chat', value: true, id: notiChatRoomId || notification.url.replace('/chats?id=', '')}
                         }));
                     }
                 }
@@ -209,15 +304,23 @@ export default {
                             console.log(e);
                         }
                     }
-                    new Notification(notiHeader, {
+                    const browserNoti = new Notification(notiHeader, {
                         body: notiBody,
                         icon: '/process-gpt-favicon.png',
                         badge: '/process-gpt-favicon.png',
                         tag: `noti-${notification.id || Date.now()}`,
                         data: { url: notification.url }
-                    }).onclick = function() {
+                    });
+                    browserNoti.onclick = async () => {
+                        // 클릭 시에도 닫기 버튼과 동일하게 즉시 닫기
+                        try { browserNoti.close(); } catch (e) {}
                         window.focus();
-                        window.location.href = notification.url;
+                        // 새로고침/전체 이동 금지: 좌측 채팅목록 클릭과 동일 동작
+                        if (notification?.type === 'chat') {
+                            await this.openChatFromNotification(notification);
+                        } else if (notification?.url) {
+                            this.$router.push(notification.url);
+                        }
                     };
                 }
             }

@@ -1,15 +1,15 @@
 <template>
-    <div>
-        <div v-if="!editDialog && !editSkills">
-            <!-- 편집 모드가 아닐 때만 일반 화면 표시 -->
-            <div class="text-left">
-                <v-row class="align-start pa-4 ma-0">
+    <div v-if="agentInfo">
+        <div v-if="!editDialog && !toolPriorityDialog">
+            <!-- 편집 모드가 아닐 때만 일반 화면 표시 (지식 셋팅 중일 때 테두리 linear progress) -->
+            <div class="agent-info-area" :class="{ 'agent-info-area--setup-in-progress': isKnowledgeSetupInProgress }">
+                <v-row class="align-center pa-4 ma-0">
                     <v-avatar size="24" class="mr-2 flex-shrink-0">
                         <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
                         <v-img 
-                            v-if="agentInfo.profile && imageLoaded && !isDefaultImage(agentInfo.profile)"
-                            :src="agentInfo.profile" 
-                            :alt="agentInfo.username || $t('AgentChatInfo.defaultAgentName')"
+                            v-if="agentInfo?.profile && imageLoaded && !isDefaultImage(agentInfo?.profile)"
+                            :src="agentInfo?.profile" 
+                            :alt="agentInfo?.username || $t('AgentChatInfo.defaultAgentName')"
                             cover
                             @error="handleImageError"
                             @load="handleImageLoad"
@@ -19,7 +19,7 @@
                         <v-img 
                             v-else
                             src="/images/chat-icon.png" 
-                            :alt="agentInfo.username || $t('AgentChatInfo.defaultAgentName')"
+                            :alt="agentInfo?.username || $t('AgentChatInfo.defaultAgentName')"
                             cover
                         >
                             <template v-slot:error>
@@ -27,23 +27,44 @@
                             </template>
                         </v-img>
                     </v-avatar>
-                    <div class="agent-name-wrapper">
-                        <h5 v-if="!isMobile" class="text-h6 font-weight-bold agent-name-text">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h5>
-                        <h6 v-else class="text-subtitle-1 font-weight-bold agent-name-text">{{ agentInfo.username || $t('AgentChatInfo.defaultAgentName') }}</h6>
+                    <div class="agent-name-wrapper flex-grow-1 min-width-0">
+                        <h5 v-if="!isMobile" class="text-h6 font-weight-bold agent-name-text">{{ agentInfo?.username || $t('AgentChatInfo.defaultAgentName') }}</h5>
+                        <h6 v-else class="text-subtitle-1 font-weight-bold agent-name-text">{{ agentInfo?.username || $t('AgentChatInfo.defaultAgentName') }}</h6>
                     </div>
                     
                     <!-- 수정 버튼 -->
                     <v-btn 
-                        v-if="!agentInfo.is_default"
+                        v-if="!agentInfo?.is_default"
                         @click="openEditDialog"
                         variant="text"
-                        :size="20"
+                        :size="24"
                         icon
-                        class="rounded-pill flex-shrink-0 ml-2"
+                        class="rounded-pill flex-shrink-0 mr-1"
                     >
                         <Icons :icon="'pencil'" :size="14"/>
                     </v-btn>
+                    <!-- 도구 우선순위 지정 버튼 -->
+                    <v-btn 
+                        v-if="!agentInfo?.is_default && !gs"
+                        @click="openToolPriorityDialog"
+                        variant="text"
+                        :size="24"
+                        icon
+                        class="rounded-pill flex-shrink-0 ml-1"
+                    >
+                        <v-icon size="18">mdi-sort</v-icon>
+                        <v-tooltip activator="parent" location="bottom">
+                            {{ $t('agentField.toolPriorityButton') }}
+                        </v-tooltip>
+                    </v-btn>
                 </v-row>
+
+                <template v-if="isKnowledgeSetupInProgress">
+                    <v-progress-linear indeterminate color="primary" class="agent-info-area__progress" />
+                    <div class="agent-info-area__label text-caption text-medium-emphasis px-3 py-1">
+                        {{ $t('AgentChatInfo.knowledgeSetupInProgress') }}
+                    </div>
+                </template>
                 
                 <div class="agent-chat-info-content pa-4">
                     <!-- Goal Section (agent only) -->
@@ -52,9 +73,9 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.goal') }}</span>
                     </div>
                     <p v-if="isSectionVisible('goal')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ getDisplayText(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 'goal', 50) }}
+                        {{ getDisplayText(agentInfo?.goal || $t('AgentChatInfo.fallback.goal'), 'goal', 50) }}
                         <v-btn
-                            v-if="shouldShowToggleButton(agentInfo.goal || $t('AgentChatInfo.fallback.goal'), 50)"
+                            v-if="shouldShowToggleButton(agentInfo?.goal || $t('AgentChatInfo.fallback.goal'), 50)"
                             @click="toggleTextExpansion('goal')"
                             variant="text"
                             size="small"
@@ -72,9 +93,9 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.persona') }}</span>
                     </div>
                     <p v-if="isSectionVisible('persona')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ getDisplayText(agentInfo.persona, 'persona', 50) }}
+                        {{ getDisplayText(agentInfo?.persona, 'persona', 50) }}
                         <v-btn
-                            v-if="shouldShowToggleButton(agentInfo.persona, 50)"
+                            v-if="shouldShowToggleButton(agentInfo?.persona, 50)"
                             @click="toggleTextExpansion('persona')"
                             variant="text"
                             size="small"
@@ -87,34 +108,37 @@
                     </p>
                     
                     <!-- Tools Section (agent only) -->
-                    <div v-if="isSectionVisible('tools')" class="pa-0 mb-1">
-                        <v-icon size="small" class="mr-1">mdi-tools</v-icon>
-                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.tools') }}</span>
-                    </div>
-                    <div v-if="isSectionVisible('tools')" class="mb-3">
-                        <v-chip-group class="tools-chips">
-                            <v-chip 
-                                v-for="tool in getDisplayTools()" 
-                                :key="tool"
-                                size="small"
-                                color="success"
-                                variant="outlined"
-                                class="ma-1"
-                            >
-                                {{ tool }}
-                            </v-chip>
-                            <v-btn
-                                v-if="shouldShowToolsToggle()"
-                                @click="toggleTextExpansion('tools')"
-                                variant="text"
-                                size="small"
-                                color="primary"
-                                class="pa-0 text-caption ma-1"
-                                style="min-width: auto; height: auto; vertical-align: middle;"
-                            >
-                                {{ expandedTexts.tools ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
-                            </v-btn>
-                        </v-chip-group>
+                    <div v-if="isSectionVisible('tools')">
+                        <div class="pa-0 mb-1">
+                            <v-icon size="small" class="mr-1">mdi-tools</v-icon>
+                            <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.tools') }}</span>
+                        </div>
+                        <div v-if="parsedTools && parsedTools.length > 0" class="mb-3">
+                            <v-chip-group class="tools-chips">
+                                <v-chip 
+                                    v-for="tool in getDisplayTools()" 
+                                    :key="tool"
+                                    size="small"
+                                    color="success"
+                                    variant="outlined"
+                                    class="ma-1"
+                                >
+                                    {{ tool }}
+                                </v-chip>
+                                <v-btn
+                                    v-if="shouldShowToolsToggle()"
+                                    @click="toggleTextExpansion('tools')"
+                                    variant="text"
+                                    size="small"
+                                    color="primary"
+                                    class="pa-0 text-caption ma-1"
+                                    style="min-width: auto; height: auto; vertical-align: middle;"
+                                >
+                                    {{ expandedTexts.tools ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
+                                </v-btn>
+                            </v-chip-group>
+                        </div>
+                        <p v-else class="text-body-2 text-medium-emphasis mb-3">{{ $t('AgentChatInfo.empty.tools') }}</p>
                     </div>
 
                     <!-- Endpoint Section (a2a only) -->
@@ -123,9 +147,9 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.endpoint') }}</span>
                     </div>
                     <p v-if="isSectionVisible('endpoint')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ getDisplayText(agentInfo.endpoint, 'endpoint', 50) }}
+                        {{ getDisplayText(agentInfo?.endpoint, 'endpoint', 50) }}
                         <v-btn
-                            v-if="shouldShowToggleButton(agentInfo.endpoint, 50)"
+                            v-if="shouldShowToggleButton(agentInfo?.endpoint, 50)"
                             @click="toggleTextExpansion('endpoint')"
                             variant="text"
                             size="small"
@@ -143,9 +167,9 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.description') }}</span>
                     </div>
                     <p v-if="isSectionVisible('description')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ getDisplayText(agentInfo.description, 'description', 50) }}
+                        {{ getDisplayText(agentInfo?.description, 'description', 50) }}
                         <v-btn
-                            v-if="shouldShowToggleButton(agentInfo.description, 50)"
+                            v-if="shouldShowToggleButton(agentInfo?.description, 50)"
                             @click="toggleTextExpansion('description')"
                             variant="text" size="small" color="primary" class="pa-0 text-caption ml-1" style="min-width: auto; height: auto; vertical-align: baseline;">
                             {{ expandedTexts.description ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
@@ -158,58 +182,46 @@
                         <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.alias') }}</span>
                     </div>
                     <p v-if="isSectionVisible('alias')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo.alias }}
+                        {{ agentInfo?.alias }}
                     </p>
 
                     <!-- Skills Section (agent / a2a / pgagent) -->
-                    <div v-if="isSectionVisible('skills')" class="d-flex align-center pa-0 mb-1">
-                        <span class="text-body-2 font-weight-medium mr-1">
+                    <div v-if="isSectionVisible('skills')">
+                        <div class="pa-0 mb-1">
                             <v-icon size="small" class="mr-1">mdi-brain</v-icon>
-                            {{ parsedSkills ? $t('AgentSkills.skills') : $t('agentField.agentSkills') }}
-                        </span>
-                        <v-btn
-                            v-if="agentType === 'agent' && agentInfo.id"
-                            variant="text"
-                            icon
-                            size="x-small"
-                            @click="openSkillHistory"
-                            class="ml-auto"
-                        >
-                            <v-icon size="small">mdi-history</v-icon>
-                            <v-tooltip activator="parent" location="left">
-                                스킬 변경 이력
-                            </v-tooltip>
-                        </v-btn>
+                            <span class="text-body-2 font-weight-medium">{{ $t('AgentSkills.skills') }}</span>
+                        </div>
+                        <v-chip-group v-if="parsedSkills && parsedSkills.length > 0" class="mb-3">
+                            <v-chip
+                                v-for="skill in parsedSkills"
+                                :key="skill"
+                                size="small"
+                                variant="outlined"
+                                class="ma-1"
+                            >
+                                {{ skill }}
+                            </v-chip>
+                        </v-chip-group>
+                        <p v-else class="text-body-2 text-medium-emphasis mb-3">{{ $t('AgentChatInfo.empty.skills') }}</p>
                     </div>
-                    <v-chip-group v-if="isSectionVisible('skills') && !editSkills && parsedSkills && parsedSkills.length > 0" class="mb-3">
-                        <v-chip
-                            v-for="skill in parsedSkills"
-                            :key="skill"
-                            size="small"
-                            variant="outlined"
-                            class="ma-1"
-                        >
-                            {{ skill }}
-                        </v-chip>
-                    </v-chip-group>
-                    <p v-else-if="isSectionVisible('skills') && !editSkills && !parsedSkills" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo.skills }}
-                    </p>
 
                     <!-- Model Section (agent only) -->
-                    <div v-if="isSectionVisible('model')" class="pa-0 mb-1">
-                        <v-icon size="small" class="mr-1">mdi-robot</v-icon>
-                        <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.model') }}</span>
+                    <div v-if="isSectionVisible('model')">
+                        <div class="pa-0 mb-1">
+                            <v-icon size="small" class="mr-1">mdi-robot</v-icon>
+                            <span class="text-body-2 font-weight-medium">{{ $t('AgentChatInfo.labels.model') }}</span>
+                        </div>
+                        <p v-if="agentInfo?.model" class="text-body-2 text-medium-emphasis mb-3">
+                            {{ agentInfo?.model }}
+                        </p>
+                        <p v-else class="text-body-2 text-medium-emphasis mb-3">{{ $t('AgentChatInfo.empty.model') }}</p>
                     </div>
-                    <p v-if="isSectionVisible('model')" class="text-body-2 text-medium-emphasis mb-3">
-                        {{ agentInfo.model }}
-                    </p>
                     
                     <v-divider class="mb-4"></v-divider>
                     
-                    <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 -->
+                    <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 (클릭으로만 전환, 해시/쿼리 미사용) -->
                     <v-tabs
-                        v-model="activeTab"
+                        :model-value="activeTab"
                         direction="vertical"
                         color="primary"
                         class="agent-tabs"
@@ -226,7 +238,7 @@
                         <v-divider class="mb-4"></v-divider>
                         <div class="d-flex align-center mb-1">
                             <span class="text-body-2 font-weight-medium mr-1">{{ $t('AgentChatInfo.businessRule') }}</span>
-                            <v-btn size="x-small" variant="text" icon @click="handleDmnChange(null)">
+                            <v-btn size="x-small" variant="text" icon @click="$emit('openNewDmn')">
                                 <v-icon>mdi-plus</v-icon>
                             </v-btn>
                             <v-btn
@@ -245,13 +257,18 @@
                         </div>
                         <v-tabs
                             v-if="dmnList.length > 0"
-                            v-model="selectedDmnId"
+                            :model-value="selectedDmnId"
                             direction="vertical"
                             color="primary"
                             class="agent-tabs"
-                            @update:model-value="handleDmnChange"
                         >
-                            <v-tab v-for="dmn in dmnTabList" :key="dmn.id" :value="dmn.id" class="text-left justify-start" @click="handleDmnChange(dmn.id)">
+                            <v-tab
+                                v-for="dmn in dmnTabList"
+                                :key="dmn.id"
+                                :value="dmn.id"
+                                class="text-left justify-start"
+                                @click="handleDmnClick(dmn.id)"
+                            >
                                 <Icons :icon="dmn.icon" :size="16" class="mr-2"/>
                                 {{ dmn.label }}
                             </v-tab>
@@ -261,14 +278,15 @@
             </div>
         </div>
 
-        <AgentSkills 
-            v-else-if="!editDialog && editSkills"
-            :agentInfo="agentInfo"
-            :agentSkills="parsedSkills"
-            :isLoading="isSkillLoading"
-            @closeEditSkills="toggleEdit('skills')"
-            @update:skillFileName="openSkillFile"
-        />
+        <div v-else-if="!editDialog && toolPriorityDialog && !gs">
+            <AgentToolPriority
+                :modelValue="toolPriorityDialog"
+                :agentInfo="agentInfo"
+                @update:modelValue="toolPriorityDialog = $event"
+                @agentUpdated="onToolPriorityUpdated"
+                @close="toolPriorityDialog = false"
+            />
+        </div>
 
         <!-- 편집 모드일 때 OrganizationEditDialog 표시 -->
         <div v-else>
@@ -278,21 +296,22 @@
                 :editNode="editNode"
                 @updateNode="updateAgent"
                 @closeDialog="closeEditDialog"
+                @deleteAgent="onDeleteAgent"
             />
         </div>
-
     </div>
 </template>
 
 <script>
 import OrganizationEditDialog from '@/components/ui/OrganizationEditDialog.vue';
-import AgentSkills from '@/components/AgentSkills.vue';
+import AgentToolPriority from '@/components/AgentToolPriority.vue';
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     name: 'AgentChatInfo',
     components: {
         OrganizationEditDialog,
-        AgentSkills
+        AgentToolPriority
     },
     props: {
         agentInfo: {
@@ -319,6 +338,10 @@ export default {
         isSkillLoading: {
             type: Boolean,
             default: false
+        },
+        selectedDmnId: {
+            type: String,
+            default: null
         }
     },
     data() {
@@ -353,10 +376,6 @@ export default {
                     abled: false,
                     action: () => {}
                 },
-                skills: {
-                    abled: false,
-                    action: () => {}
-                },
                 endpoint: {
                     abled: false,
                     action: () => {}
@@ -367,67 +386,77 @@ export default {
                 }
             },
             agentType: 'agent',
-            selectedDmnId: null,
-            selectedSkillsFile: null
+            toolPriorityDialog: false,
+
+            backend: null,
+            knowledgeSetupChannel: null,
+            isKnowledgeSetupInProgress: false
         }
+    },
+    created() {
+        this.backend = BackendFactory.createBackend();
     },
     mounted() {
         this.initializeImage();
     },
+    beforeUnmount() {
+        this.unsubscribeKnowledgeSetup();
+    },
     computed: {
+        gs() {
+            return window.$gs;
+        },
         tabList() {
-            if (this.agentInfo.agent_type == 'agent') {
+            if (this.agentInfo?.agent_type == 'agent') {
                 this.agentType = 'agent';
                 return [
+                    { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
                     { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
                     { label: this.$t('AgentChatInfo.tabs.question'), value: 'question', icon: 'mdi-chat' },
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' },
                     { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' },
                 ]
             } else {
-                this.agentType = this.agentInfo.agent_type;
+                this.agentType = this.agentInfo?.agent_type;
                 return [
+                    { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
                 ]
             }
         },
         
         parsedTools() {
-            if (!this.agentInfo.tools) return [];
+            if (!this.agentInfo?.tools) return [];
             
             // tools가 문자열인 경우 (쉼표로 구분된 값들)
-            if (typeof this.agentInfo.tools === 'string') {
-                return this.agentInfo.tools
+            if (typeof this.agentInfo?.tools === 'string') {
+                return this.agentInfo?.tools
                     .split(',')
                     .map(tool => tool.trim())
                     .filter(tool => tool.length > 0);
             }
             
             // tools가 배열인 경우
-            if (Array.isArray(this.agentInfo.tools)) {
-                return this.agentInfo.tools.filter(tool => tool && tool.trim().length > 0);
+            if (Array.isArray(this.agentInfo?.tools)) {
+                return this.agentInfo?.tools.filter(tool => tool && tool.trim().length > 0);
             }
             
             return [];
         },
 
         parsedSkills() {
-            if (!this.agentInfo.skills || this.agentInfo.skills === '' || this.agentInfo.agent_type === 'pgagent') return null;
+            if (!this.agentInfo?.skills || this.agentInfo?.skills === '' || this.agentInfo?.agent_type === 'pgagent') return null;
 
-            if (typeof this.agentInfo.skills === 'string') {
-                if (this.agentInfo.skills.includes(',')) {
-                    return this.agentInfo.skills
+            if (typeof this.agentInfo?.skills === 'string') {
+                if (this.agentInfo?.skills.includes(',')) {
+                    return this.agentInfo?.skills
                         .split(',')
                         .map(skill => skill.trim())
                         .filter(skill => skill.length > 0);
                 } else {
-                    return [this.agentInfo.skills.trim()];
+                    return [this.agentInfo?.skills.trim()];
                 }
             }
-        },
-
-        editSkills() {
-            return this.editProperties.skills.abled && this.agentType === 'agent';
         },
 
         dmnTabList() {
@@ -451,40 +480,61 @@ export default {
             deep: true,
             immediate: true
         },
-        $route: {
-            handler(newVal) {
-                if (newVal.query.dmnId) {
-                    this.selectedDmnId = newVal.query.dmnId;
+        'agentInfo.id': {
+            handler(agentId) {
+                this.unsubscribeKnowledgeSetup();
+                if (agentId && this.backend?.watchData && this.backend?.getAgentKnowledgeSetupLog) {
+                    this.subscribeKnowledgeSetup(agentId);
                 }
             },
-            deep: true
+            immediate: true
         }
     },
     methods: {
-        toggleEdit(type) {
-            if (this.editProperties[type].abled) {
-                this.editProperties[type].action();
-            }
-            this.editProperties[type].abled = !this.editProperties[type].abled;
-        },
-
         handleTabChange(newTab) {
-            this.$router.push({ hash: '#' + newTab });
-            this.selectedDmnId = null;
+            this.$emit('tabChange', newTab);
         },
 
-        handleDmnChange(dmnId) {
-            if (dmnId) {
-                this.selectedDmnId = dmnId;
-                this.$router.push({ query: { dmnId: dmnId }, hash: '#dmn-modeling' });
-            } else {
-                this.selectedDmnId = null;
-                this.$router.push({ query: {}, hash: '#dmn-modeling' });
+        handleDmnClick(dmnId) {
+            this.$emit('dmnChange', dmnId);
+        },
+
+        /** 에이전트 초기 지식 셋업 상태 실시간 구독 (STARTED 또는 로그 없을 때만, DONE/FAILED 시 부모에 갱신 요청 후 해제) */
+        async subscribeKnowledgeSetup(agentId) {
+            this.unsubscribeKnowledgeSetup();
+            this.isKnowledgeSetupInProgress = false;
+            if (!agentId || !this.backend?.watchData || !this.backend?.getAgentKnowledgeSetupLog) return;
+            try {
+                const log = await this.backend.getAgentKnowledgeSetupLog(agentId);
+                if (log && (log.status === 'DONE' || log.status === 'FAILED')) return;
+                this.isKnowledgeSetupInProgress = true;
+                const channel = `agent-knowledge-setup-${agentId}-${Date.now()}`;
+                this.knowledgeSetupChannel = await this.backend.watchData('agent_knowledge_setup_log', channel, (payload) => {
+                    if (!payload?.new || (payload.eventType !== 'INSERT' && payload.eventType !== 'UPDATE')) return;
+                    const row = payload.new;
+                    if (row.agent_id !== agentId) return;
+                    if (row.status === 'DONE' || row.status === 'FAILED') {
+                        this.isKnowledgeSetupInProgress = false;
+                        this.$emit('knowledgeSetupDone');
+                        this.unsubscribeKnowledgeSetup();
+                    }
+                }, { filter: `agent_id=eq.${agentId}` });
+            } catch (e) {
+                this.isKnowledgeSetupInProgress = false;
+                console.warn('[AgentChatInfo] 초기 지식 셋업 구독 실패:', e);
             }
+        },
+
+        unsubscribeKnowledgeSetup() {
+            if (this.knowledgeSetupChannel && window.$supabase) {
+                window.$supabase.removeChannel(this.knowledgeSetupChannel);
+            }
+            this.knowledgeSetupChannel = null;
+            this.isKnowledgeSetupInProgress = false;
         },
         
         initializeImage() {
-            const profileUrl = this.agentInfo.profile;
+            const profileUrl = this.agentInfo?.profile;
             
             // 기본 이미지이거나 URL이 없으면 바로 기본 이미지 표시
             if (this.isDefaultImage(profileUrl)) {
@@ -545,7 +595,7 @@ export default {
         },
 
         getCurrentAgentType() {
-            return this.agentInfo && this.agentInfo.agent_type ? this.agentInfo.agent_type : this.agentType || 'agent';
+            return this.agentInfo && this.agentInfo?.agent_type ? this.agentInfo?.agent_type : this.agentType || 'agent';
         },
 
         isSectionVisible(section) {
@@ -561,9 +611,9 @@ export default {
             this.editNode = {
                 data: {
                     ...this.agentInfo,
-                    name: this.agentInfo.username || this.agentInfo.name || this.$t('AgentChatInfo.defaultAgentName'),
-                    img: this.agentInfo.profile || this.agentInfo.img || '',
-                    type: this.agentInfo.agent_type || this.agentInfo.type || 'agent',
+                    name: this.agentInfo?.username || this.agentInfo?.name || this.$t('AgentChatInfo.defaultAgentName'),
+                    img: this.agentInfo?.profile || this.agentInfo?.img || '',
+                    type: this.agentInfo?.agent_type || this.agentInfo?.type || 'agent',
                     isAgent: true
                 }
             };
@@ -579,6 +629,9 @@ export default {
             // 부모 컴포넌트로 수정 이벤트 전달
             this.$emit('agentUpdated', editNode.data);
             this.closeEditDialog();
+        },
+        onDeleteAgent(editNode) {
+            this.$emit('deleteAgent', editNode);
         },
 
         getTruncatedText(text, maxLength) {
@@ -612,19 +665,31 @@ export default {
             return this.parsedTools && this.parsedTools.length > 4;
         },
 
-        openSkillHistory() {
-            this.$router.push({ hash: '#skill-history' });
+        openDmnHistory() {
+            this.$emit('tabChange', 'dmn-history');
         },
 
-        openDmnHistory() {
-            this.$router.push({ hash: '#dmn-history' });
-        }
+        openToolPriorityDialog() {
+            this.toolPriorityDialog = true;
+        },
 
+        onToolPriorityUpdated(updatedData) {
+            this.$emit('agentUpdated', updatedData);
+        }
     }
 }
 </script>
 
 <style scoped>
+.agent-info-area__progress {
+    margin: 0;
+}
+
+.agent-info-area__label {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
 .agent-tabs {
     width: 100%;
 }

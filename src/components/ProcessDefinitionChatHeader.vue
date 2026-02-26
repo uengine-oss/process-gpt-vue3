@@ -39,7 +39,7 @@
                                     :label="$t('ProcessDefinitionChatHeader.processDefinitionName')" variant="underlined" hide-details class="pa-0 ma-0"
                                     :maxlength="20" :counter="20"
                                 ></v-text-field>
-                                <div v-else>
+                                <div v-else-if="!isMobile">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <h5
@@ -65,6 +65,7 @@
                                     </v-tooltip>
                                 </div>
                             </div>
+                            <h5 v-else-if="modelValue" class="text-h5 mb-n1">{{ modelValue }}</h5>
                             <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                         </div>
 
@@ -72,20 +73,30 @@
                         <div v-if="chatMode != 'consulting' && fullPath != 'chat'" class="playwright-chat-header-delete-icon ml-4 flex-shrink-0  align-start">
                             <v-tooltip v-if="isDeleted" location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
-                                        density="comfortable" @click="beforeRestore"
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="beforeRestore"
                                     >
-                                    <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
+                                        <v-icon>mdi-refresh</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('processDefinition.restoreProcess') }}</span>
                             </v-tooltip>
                             <v-tooltip v-else location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
-                                        density="comfortable" @click="beforeDelete"
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="beforeDelete"
                                     >
-                                        <TrashIcon size="24" style="color:#FB977D"/>
+                                        <v-icon color="error">mdi-delete-outline</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('processDefinition.deleteProcess') }}</span>
@@ -173,7 +184,29 @@
                             <div v-else-if="bpmn && (isMobile || fullPath == 'chat' || fullPath == 'definition-map')">
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
+                                        <div v-bind="props">
+                                            <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
+                                                density="comfortable" @click="toggleLock">
+                                                <!-- lock 값에 따라 아이콘과 사이즈 분리 -->
+                                                <Icons v-if="effectiveLock" :icon="'pencil'" :size="18"/>
+                                                <Icons v-else :icon="'save'" :size="24"/>
+                                            </v-btn>
+                                        </div>
+                                    </template>
+                                    <span v-if="effectiveLock">
+                                        {{ editUser != '' && editUser != userInfo.name
+                                            ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
+                                            : $t('chat.unlock') }}
+                                    </span>
+                                    <span v-else>{{ $t('chat.lock') }}</span>
+                                </v-tooltip>
+                            </div>
+                    
+                            <!-- 저장아이콘 -->
+                            <div v-else>
+                                <v-tooltip location="bottom">   
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
                                             density="comfortable" @click="toggleLock">
                                             <Icons :icon="'save'" />
                                         </v-btn>
@@ -443,8 +476,11 @@ export default {
         Pal() {
             return window.$pal;
         },
+        effectiveLock() {
+            return this.lock && window.$mode !== 'uEngine';
+        },
         modelValueStyle() {
-            if(this.modelValue && this.modelValue !== '' && !this.lock && this.editUser != '' && this.editUser == this.userInfo.name) {
+            if(this.modelValue && this.modelValue !== '' && !this.effectiveLock && this.editUser != '' && this.editUser == this.userInfo.name) {
                 return true
             } else {
                 return false
@@ -452,7 +488,7 @@ export default {
         },
         isEditableTitle() {
             const checkGPT =  this.mode === 'ProcessGPT' ? ( this.editUser != '' && this.editUser == this.userInfo.name) : true;
-            return !this.lock && checkGPT;
+            return !this.effectiveLock && checkGPT;
         },
         hasExternalCustomerRole() {
             return this.bpmn.includes('ExternalCustomer') || this.bpmn.includes('externalCustomer');
@@ -476,10 +512,10 @@ export default {
             return window.innerWidth <= 768;
         },
         isHistoryButtonDisabled() {
-            return this.lock || !this.hasVersionsToCompare;
+            return this.effectiveLock || !this.hasVersionsToCompare;
         },
         historyTooltipText() {
-            if (this.lock) {
+            if (this.effectiveLock) {
                 return this.$t('chat.historyDisabled');
             } else if (!this.hasVersionsToCompare) {
                 return this.$t('ProcessDefinitionVersionManager.noVersionsAvailable');

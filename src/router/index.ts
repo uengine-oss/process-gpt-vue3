@@ -32,10 +32,6 @@ export const retryDynamicImport = (importFn: () => Promise<any>, retries = 3, de
 export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
-        {
-            path: '/:pathMatch(.*)*',
-            component: () => retryDynamicImport(() => import('@/views/authentication/Error.vue'))
-        },
         // 외부 고객용 폼 URL
         {
             name: 'External Forms',
@@ -64,12 +60,24 @@ export const router = createRouter({
                 showNotes: route.query.showNotes,
                 pdfSeparateFragments: route.query.pdfSeparateFragments
             })
+        },
+        // 404 등 미매칭 경로는 마지막에 매칭되도록 catch-all을 맨 뒤에 둠 (예: /auth/reset-password가 Error로 떨어지지 않도록)
+        {
+            path: '/:pathMatch(.*)*',
+            component: () => retryDynamicImport(() => import('@/views/authentication/Error.vue'))
         }
     ]
 });
 
 // 라우터 에러 상태 추적
 let hasRouterError = false;
+
+/** 비밀번호 재설정 화면에 메일 링크(recovery)로 진입한 상태인지 여부 */
+function isOnResetPasswordWithRecoveryHash(): boolean {
+    return typeof window !== 'undefined' &&
+        window.location.pathname === '/auth/reset-password' &&
+        window.location.hash.includes('type=recovery');
+}
 
 router.beforeEach(async (to: any, from: any, next: any) => {
     try {
@@ -79,9 +87,17 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             hasRouterError = false;
         }
 
+        // 비밀번호 재설정 화면(recovery 해시)에 있는 동안 테넌트 관리 등으로 나가는 네비게이션 차단 (재설정 완료 후 /auth/login 이동은 허용)
+        if (isOnResetPasswordWithRecoveryHash()) {
+            const isBlocked = to.path.startsWith('/tenant/');
+            if (isBlocked) {
+                return next(false);
+            }
+        }
+
         if (window.$mode !== 'uEngine') {
             if (to.fullPath.includes('/auth') || to.fullPath.includes('/external-forms')) {
-                next();
+                return next();
             } else {
                 if (window.$isTenantServer) {
                     if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {

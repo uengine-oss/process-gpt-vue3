@@ -51,6 +51,7 @@
                         :userList="userList"
                         @updateNode="updateNode"
                         @addMember="openAddDialog"
+                        @deleteAgent="handleDeleteAgentFromChart"
                         ref="organizationChart"
                 ></OrganizationChart>
             </template>
@@ -125,9 +126,11 @@ export default {
         }
 
         this.EventBus.on('user-deleted', this.handleUserDeleted);
+        this.EventBus.on('agentDeleted', this.handleAgentDeleted);
     },
     beforeUnmount() {
         this.EventBus.off('user-deleted', this.handleUserDeleted);
+        this.EventBus.off('agentDeleted', this.handleAgentDeleted);
     },
     computed: {
         isMobile() {
@@ -412,14 +415,20 @@ export default {
                 id: newAgent.id,
                 name: newAgent.name,
                 data: newAgent
-            }
+            };
             this.editNode.children.push(agent);
             await this.backend.putAgent(newAgent);
+
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
-            
-            // AgentList 실시간 업데이트를 위한 이벤트 발생
+
             this.EventBus.emit('agentAdded', newAgent);
+
+            this.$nextTick(() => {
+                this.$nextTick(async () => {
+                    await this.$refs.organizationChart.selectAgentById(newAgent.id, newAgent);
+                });
+            });
         },
         deleteNode(obj, children) {
             if (children && children.some(item => item.id == obj.id)) {
@@ -439,6 +448,39 @@ export default {
                 this.$refs.organizationChart.loadUserList();
                 this.$refs.organizationChart.drawTree();
             }
+        },
+        /** 에이전트 삭제 시 조직도에서도 노드 제거 (다른 페이지에서 삭제 시 동기화) */
+        async handleAgentDeleted(payload) {
+            const id = payload?.id;
+            if (!id || !this.organizationChart?.children) return;
+            this.organizationChart.children = this.deleteNode({ id }, this.organizationChart.children);
+            await this.updateNode();
+            if (this.$refs.organizationChart) {
+                this.$refs.organizationChart.loadUserList();
+                this.$refs.organizationChart.drawTree();
+            }
+        },
+        /** 조직도 편집 다이얼로그에서 에이전트 삭제 확인 시: DB 삭제 + 조직도에서 제거 */
+        async handleDeleteAgentFromChart(editNode) {
+            const id = editNode?.data?.id || editNode?.id;
+            if (!id) return;
+            const parent = this.findParentOfNode(this.organizationChart, id);
+            await this.deleteAgent(id, parent);
+            await this.updateNode();
+            if (this.$refs.organizationChart) {
+                this.$refs.organizationChart.loadUserList();
+                this.$refs.organizationChart.drawTree();
+            }
+        },
+        /** 트리에서 targetId를 가진 노드의 부모 노드 반환 */
+        findParentOfNode(node, targetId) {
+            if (!node?.children) return null;
+            for (const child of node.children) {
+                if (child.id === targetId) return node;
+                const found = this.findParentOfNode(child, targetId);
+                if (found) return found;
+            }
+            return null;
         }
     }
 }

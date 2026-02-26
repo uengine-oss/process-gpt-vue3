@@ -11,6 +11,25 @@ class StorageBaseError extends Error {
 export default class StorageBaseSupabase {
     //extends StorageBase{
 
+    async recordAuthAudit({ action, email, success, errorMessage, tenantId, metadata }) {
+        try {
+            // const supabase = window.$supabase;
+            // if (!supabase || typeof supabase.rpc !== 'function') return;
+
+            // await supabase.rpc('record_auth_audit', {
+            //     p_action: action,
+            //     p_email: email ?? null,
+            //     p_success: Boolean(success),
+            //     p_error_message: errorMessage ?? null,
+            //     p_tenant_id: tenantId ?? null,
+            //     p_metadata: metadata ?? {}
+            // });
+        } catch (e) {
+            // 감사 로그 기록 실패는 UX를 깨지 않도록 조용히 무시 (콘솔만)
+            console.warn('[auth_login_audit] 기록 실패:', e);
+        }
+    }
+
     async isConnection() {
         try {
             // 먼저 현재 세션 상태를 확인
@@ -188,6 +207,14 @@ export default class StorageBaseSupabase {
                     // 로그인 성공
                     return result.data;
                 } else if (result.error && result.error.message.includes("Email not confirmed")){
+                    await this.recordAuthAudit({
+                        action: 'login',
+                        email: userInfo.email,
+                        success: false,
+                        errorMessage: result.error.message,
+                        tenantId: window.$tenantName || null,
+                        metadata: { method: 'password', reason: 'email_not_confirmed' }
+                    });
                     // 계정 인증이 완료 되지 않았습니다. 메시지 출력 부분
                     await window.$app_.try({
                         action: () => Promise.reject(new Error()),
@@ -197,6 +224,14 @@ export default class StorageBaseSupabase {
                         error: true
                     };
                 } else {
+                    await this.recordAuthAudit({
+                        action: 'login',
+                        email: userInfo.email,
+                        success: false,
+                        errorMessage: result.error?.message || 'login_failed',
+                        tenantId: window.$tenantName || null,
+                        metadata: { method: 'password' }
+                    });
                     const users = await this.list('users');
                     if (users && users.length > 0) {
                         const checkedId = users.some((user) => user.email == userInfo.email);
@@ -221,6 +256,14 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
+                await this.recordAuthAudit({
+                    action: 'login',
+                    email: userInfo.email,
+                    success: false,
+                    errorMessage: 'not_registered_email',
+                    tenantId: window.$tenantName || null,
+                    metadata: { method: 'password', reason: 'not_registered_email' }
+                });
                 // 가입된 이메일이 아닐때 메시지 출력부분
                 await window.$app_.try({
                     action: () => Promise.reject(new Error()),
@@ -242,6 +285,28 @@ export default class StorageBaseSupabase {
                     scopes: 'openid'
                 }
             });
+
+            // OAuth는 리다이렉트 기반이라 여기서 “최종 성공/실패”를 알 수 없고,
+            // 대신 시도 시작/실패만 기록한다. (최종 성공은 SIGNED_IN 이벤트에서 기록)
+            if (error) {
+                await this.recordAuthAudit({
+                    action: 'login_oauth',
+                    email: null,
+                    success: false,
+                    errorMessage: error.message,
+                    tenantId: window.$tenantName || null,
+                    metadata: { provider: 'keycloak' }
+                });
+            } else {
+                await this.recordAuthAudit({
+                    action: 'login_oauth',
+                    email: null,
+                    success: true,
+                    errorMessage: null,
+                    tenantId: window.$tenantName || null,
+                    metadata: { provider: 'keycloak' }
+                });
+            }
         } catch (e) {
             throw new StorageBaseError('error in signInWithKeycloak', e, arguments);
         }
@@ -255,18 +320,6 @@ export default class StorageBaseSupabase {
                     error: true,
                     errorMsg: '이미 가입된 이메일입니다.'
                 };
-                // const isOwner = await this.checkTenantOwner(window.$tenantName);
-                // const role = isOwner ? 'superAdmin' : 'user';
-                // const isAdmin = isOwner ? true : false;
-                // await this.putObject('users', {
-                //     id: existUser.id,
-                //     username: userInfo.username,
-                //     email: userInfo.email,
-                //     role: role,
-                //     is_admin: isAdmin,
-                //     tenant_id: tenantId
-                // }, { onConflict: 'id' });
-                // return await this.signIn(userInfo);
             } else {
                 const result = await window.$supabase.auth.signUp({
                     email: userInfo.email,
@@ -280,36 +333,6 @@ export default class StorageBaseSupabase {
                 });
 
                 if (!result.error) {
-                    if (!window.$isTenantServer && window.$tenantName) {
-                        let role = 'user';
-                        let isAdmin = false;
-                        const existTenant = await this.getObject('tenants', { match: { id: window.$tenantName } });
-                        if (!existTenant) {
-                            await this.putObject('tenants', {
-                                id: window.$tenantName,
-                                owner: result.data.user.id
-                            });
-                            role = 'superAdmin';
-                            isAdmin = true;
-                        }
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: userInfo.username,
-                            email: userInfo.email,
-                            role: role,
-                            is_admin: isAdmin,
-                            tenant_id: window.$tenantName
-                        });
-                    } else {
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: userInfo.username,
-                            email: userInfo.email,
-                            role: 'user',
-                            is_admin: false,
-                            tenant_id: 'process-gpt'
-                        });
-                    }
                     result.data["isNewUser"] = true;
                     return result.data;
                 } else {
@@ -324,6 +347,17 @@ export default class StorageBaseSupabase {
 
     async signOut() {
         try {
+            // 가능한 한 인증된 상태에서 로그아웃 시각을 먼저 기록
+            const auditEmail = window.localStorage.getItem('email');
+            await this.recordAuthAudit({
+                action: 'logout',
+                email: auditEmail,
+                success: true,
+                errorMessage: null,
+                tenantId: window.$tenantName || null,
+                metadata: { source: 'StorageBaseSupabase.signOut' }
+            });
+
             window.localStorage.removeItem('accessToken');
             window.localStorage.removeItem('author');
             window.localStorage.removeItem('userName');
@@ -388,18 +422,18 @@ export default class StorageBaseSupabase {
                     }
                 }
             } else {
-                // 루트 페이지('/')에서는 로그인 체크를 하지 않음
-                if (window.location.pathname === '/') {
+                // 루트 페이지('/') 및 인증 플로우 페이지에서는 로그인 체크 시 리다이렉트하지 않음
+                // (비밀번호 재설정 링크 등 세션 없이 접근해야 하는 경로)
+                const path = window.location.pathname;
+                if (path === '/' || path.startsWith('/auth/')) {
                     return null;
                 }
                 
-                if (window.location.pathname != '/auth/login') {
-                    await window.$app_.try({
-                        action: () => Promise.reject(new Error()),
-                        // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
-                    });
-                    window.location.href = '/auth/login';
-                }
+                await window.$app_.try({
+                    action: () => Promise.reject(new Error()),
+                    // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
+                });
+                window.location.href = '/auth/login';
             }
         } catch (e) {
             if (e instanceof StorageBaseError && e.cause) {
@@ -413,16 +447,25 @@ export default class StorageBaseSupabase {
 
     async resetPassword(email) {
         try {
-            const baseDomain = getBaseDomain();
-            let url;
-            if (baseDomain.includes('process-gpt')) {
-                url = getMainDomainUrl('/auth/reset-password');
-            } else {
-                url = window.location.origin + '/auth/reset-password';
-            }
-            const result = await window.$supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: url,
-            });
+            // NOTE:
+            // - GoTrue/Supabase Auth는 redirectTo를 넘기지 않으면 ConfirmationURL의 redirect_to에
+            //   Site URL(대시보드 기본값)만 넣어서, 메일 링크 클릭 시 루트(/)로 이동한다.
+            // - 대시보드 "Redirect URLs"는 허용 목록일 뿐, 실제 redirect_to는 API 호출 시
+            //   redirectTo로 전달해야 반영된다. 따라서 항상 redirectTo를 넘겨 재설정 페이지로 직행하도록 한다.
+            // - 멀티테넌트 환경에서는 비밀번호 재설정 메일 링크가 메인 도메인 재설정 페이지로 가야 하므로
+            //   getMainDomainUrl('/auth/reset-password')를 사용한다. (로컬은 origin 기준)
+            const isLocal =
+                window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname === '0.0.0.0';
+
+            const options = {
+                redirectTo: isLocal
+                    ? new URL('/auth/reset-password', window.location.origin).toString()
+                    : getMainDomainUrl('/auth/reset-password'),
+            };
+
+            const result = await window.$supabase.auth.resetPasswordForEmail(email, options);
             return result;
         } catch (e) {
             throw new StorageBaseError('error in resetPassword', e, arguments);
@@ -989,13 +1032,22 @@ export default class StorageBaseSupabase {
                 if (window.$tenantName) {
                     filter.tenant_id = window.$tenantName;
                 }
-                const { data, error } = await window.$supabase
-                    .from('users')
-                    .select('*')
-                    .match(filter)
-                    .maybeSingle();
+                // 메인 도메인($tenantName 없음)에서는 동일 id로 여러 테넌트 행이 있어 maybeSingle()이 실패하므로, 한 행만 조회
+                const isMainDomain = !window.$tenantName;
+                const { data: rawData, error } = isMainDomain
+                    ? await window.$supabase
+                        .from('users')
+                        .select('*')
+                        .match(filter)
+                        .limit(1)
+                    : await window.$supabase
+                        .from('users')
+                        .select('*')
+                        .match(filter)
+                        .maybeSingle();
+                const data = isMainDomain ? (Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : null) : rawData;
 
-                if (!error) {
+                if (data && !error) {
                     window.localStorage.setItem('isAdmin', data.is_admin || false);
                     window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {
@@ -1057,9 +1109,13 @@ export default class StorageBaseSupabase {
                         const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
                         window.dispatchEvent(event);
                     }
+                } else if (!data) {
+                    await this.signOut();
+                    throw new StorageBaseError('error in writeUserData', 'user not found', arguments);
                 }
             }
         } catch (e) {
+            await this.signOut();
             throw new StorageBaseError('error in writeUserData', e, arguments);
         }
     }

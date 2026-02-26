@@ -3,13 +3,14 @@
  * Bottleneck Analysis
  * Camunda Optimize 스타일의 프로세스 병목 분석
  */
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, getCurrentInstance } from 'vue'
 import BackendFactory from '@/components/api/BackendFactory'
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue'
 import { olapApi } from '@/services/analyticsApi'
 import dayjs from 'dayjs'
 
 const backend = BackendFactory.createBackend() as any  // FTE API 포함
+const { proxy } = getCurrentInstance() as any
 
 // State
 const loading = ref(false)
@@ -23,120 +24,120 @@ const bpmnKey = ref(0)
 const showMetricInfo = ref(false)
 
 // Filters
-const periodOptions = [
-  { title: '최근 7일', value: 7 },
-  { title: '최근 30일', value: 30 },
-  { title: '최근 90일', value: 90 },
-  { title: '전체', value: 0 }
-]
+const periodOptions = computed(() => [
+  { title: proxy.$t('bottleneckAnalysis.period7days'), value: 7 },
+  { title: proxy.$t('bottleneckAnalysis.period30days'), value: 30 },
+  { title: proxy.$t('bottleneckAnalysis.period90days'), value: 90 },
+  { title: proxy.$t('bottleneckAnalysis.periodAll'), value: 0 }
+])
 const selectedPeriod = ref(30)
-const statusOptions = [
-  { title: '전체', value: 'all' },
-  { title: '완료', value: 'COMPLETED' },
-  { title: '진행중', value: 'STARTED' }
-]
+const statusOptions = computed(() => [
+  { title: proxy.$t('bottleneckAnalysis.statusAll'), value: 'all' },
+  { title: proxy.$t('bottleneckAnalysis.statusCompleted'), value: 'COMPLETED' },
+  { title: proxy.$t('bottleneckAnalysis.statusRunning'), value: 'STARTED' }
+])
 const selectedStatus = ref('all')
 
 // Metrics with descriptions (Camunda Optimize style)
 // Reference: https://docs.camunda.io/docs/components/optimize/userguide/process-analysis/user-task-analytics/
-const metricDefinitions = {
+const metricDefinitions = computed(() => ({
   duration: {
-    title: 'Total Duration',
-    subtitle: '총 소요시간',
+    title: proxy.$t('bottleneckAnalysis.metrics.duration.title'),
+    subtitle: proxy.$t('bottleneckAnalysis.metrics.duration.subtitle'),
     icon: 'mdi-timer-outline',
     color: 'primary',
-    description: 'Task가 시작된 시점부터 완료될 때까지의 전체 시간입니다. Idle Time(대기)과 Work Time(작업)을 모두 포함합니다.',
-    formula: 'AVG(end_time - start_time)',
-    formulaDesc: 'Camunda: Task 생성부터 완료까지의 평균 시간',
-    unit: '시간',
-    camundaRef: 'Total Duration = Idle Duration + Work Duration'
+    description: proxy.$t('bottleneckAnalysis.metrics.duration.description'),
+    formula: proxy.$t('bottleneckAnalysis.metrics.duration.formula'),
+    formulaDesc: proxy.$t('bottleneckAnalysis.metrics.duration.formulaDesc'),
+    unit: proxy.$t('bottleneckAnalysis.metrics.duration.unit'),
+    camundaRef: proxy.$t('bottleneckAnalysis.metrics.duration.camundaRef')
   },
   frequency: {
-    title: 'Flow Node Count',
-    subtitle: '실행 횟수',
+    title: proxy.$t('bottleneckAnalysis.metrics.frequency.title'),
+    subtitle: proxy.$t('bottleneckAnalysis.metrics.frequency.subtitle'),
     icon: 'mdi-chart-bar',
     color: 'info',
-    description: '해당 Flow Node(Activity)를 통과한 토큰(Token)의 수입니다. 프로세스에서 가장 많이 실행되는 경로를 파악할 수 있습니다.',
-    formula: 'COUNT(flow_node_instances)',
-    formulaDesc: 'Camunda: 해당 노드를 통과한 인스턴스 수',
-    unit: '회',
-    camundaRef: 'Flow Node Executions'
+    description: proxy.$t('bottleneckAnalysis.metrics.frequency.description'),
+    formula: proxy.$t('bottleneckAnalysis.metrics.frequency.formula'),
+    formulaDesc: proxy.$t('bottleneckAnalysis.metrics.frequency.formulaDesc'),
+    unit: proxy.$t('bottleneckAnalysis.metrics.frequency.unit'),
+    camundaRef: proxy.$t('bottleneckAnalysis.metrics.frequency.camundaRef')
   },
   bottleneck: {
-    title: 'Outlier Score',
-    subtitle: '이상치 점수 (Z-Score)',
+    title: proxy.$t('bottleneckAnalysis.metrics.bottleneck.title'),
+    subtitle: proxy.$t('bottleneckAnalysis.metrics.bottleneck.subtitle'),
     icon: 'mdi-alert-decagram-outline',
     color: 'error',
-    description: '평균보다 현저히 오래 걸린 인스턴스가 많은 노드를 식별합니다. Z-Score 기반으로 이상치를 탐지하여 병목 지점을 찾습니다.',
-    formula: 'Z = (X - μ) / σ',
-    formulaDesc: 'Camunda: (실제값 - 평균) ÷ 표준편차',
-    unit: 'σ',
-    camundaRef: 'Heatmap displays incidence of higher outliers based on z-score'
+    description: proxy.$t('bottleneckAnalysis.metrics.bottleneck.description'),
+    formula: proxy.$t('bottleneckAnalysis.metrics.bottleneck.formula'),
+    formulaDesc: proxy.$t('bottleneckAnalysis.metrics.bottleneck.formulaDesc'),
+    unit: proxy.$t('bottleneckAnalysis.metrics.bottleneck.unit'),
+    camundaRef: proxy.$t('bottleneckAnalysis.metrics.bottleneck.camundaRef')
   },
   rework: {
-    title: 'Rework Rate',
-    subtitle: '재작업률',
+    title: proxy.$t('bottleneckAnalysis.metrics.rework.title'),
+    subtitle: proxy.$t('bottleneckAnalysis.metrics.rework.subtitle'),
     icon: 'mdi-refresh',
     color: 'warning',
-    description: '동일 프로세스 인스턴스에서 해당 Activity가 2회 이상 실행된 비율입니다. 루프나 에러로 인한 재실행을 감지합니다.',
-    formula: '(Loops / Total) × 100',
-    formulaDesc: '(재실행 인스턴스 수 ÷ 전체 인스턴스 수) × 100',
-    unit: '%',
-    camundaRef: 'Loop detection in process flow'
+    description: proxy.$t('bottleneckAnalysis.metrics.rework.description'),
+    formula: proxy.$t('bottleneckAnalysis.metrics.rework.formula'),
+    formulaDesc: proxy.$t('bottleneckAnalysis.metrics.rework.formulaDesc'),
+    unit: proxy.$t('bottleneckAnalysis.metrics.rework.unit'),
+    camundaRef: proxy.$t('bottleneckAnalysis.metrics.rework.camundaRef')
   },
   waiting: {
-    title: 'Idle Duration',
-    subtitle: '대기 시간 (Unassigned)',
+    title: proxy.$t('bottleneckAnalysis.metrics.waiting.title'),
+    subtitle: proxy.$t('bottleneckAnalysis.metrics.waiting.subtitle'),
     icon: 'mdi-clock-alert-outline',
     color: 'secondary',
-    description: 'Task가 생성된 후 담당자에게 할당(Claim)되기까지의 대기 시간입니다. 긴 Idle Time은 리소스 부족이나 워크로드 불균형을 나타냅니다.',
-    formula: 'SUM(unassigned_periods)',
-    formulaDesc: 'Camunda: 미할당 상태였던 모든 기간의 합계',
-    unit: '시간',
-    camundaRef: 'Idle Duration = Total Duration - Work Duration'
+    description: proxy.$t('bottleneckAnalysis.metrics.waiting.description'),
+    formula: proxy.$t('bottleneckAnalysis.metrics.waiting.formula'),
+    formulaDesc: proxy.$t('bottleneckAnalysis.metrics.waiting.formulaDesc'),
+    unit: proxy.$t('bottleneckAnalysis.metrics.waiting.unit'),
+    camundaRef: proxy.$t('bottleneckAnalysis.metrics.waiting.camundaRef')
   },
   // FTE Heatmap Metrics
   workloadFte: {
-    title: 'Workload FTE',
-    subtitle: '업무량 기반 FTE',
+    title: proxy.$t('bottleneckAnalysis.metrics.workloadFte.title'),
+    subtitle: proxy.$t('bottleneckAnalysis.metrics.workloadFte.subtitle'),
     icon: 'mdi-account-hard-hat',
     color: 'indigo',
-    description: '선택 기간 동안 해당 Activity를 처리하는 데 필요한 누적 FTE입니다. 실행 횟수와 표준 작업시간을 기반으로 계산됩니다.',
-    formula: '(Count × Std_Hours) / Available_Hours',
-    formulaDesc: '(실행횟수 × 표준작업시간) ÷ 기간내 가용시간',
-    unit: 'FTE',
-    camundaRef: 'Effort per Instance 기반 FTE 산정'
+    description: proxy.$t('bottleneckAnalysis.metrics.workloadFte.description'),
+    formula: proxy.$t('bottleneckAnalysis.metrics.workloadFte.formula'),
+    formulaDesc: proxy.$t('bottleneckAnalysis.metrics.workloadFte.formulaDesc'),
+    unit: proxy.$t('bottleneckAnalysis.metrics.workloadFte.unit'),
+    camundaRef: proxy.$t('bottleneckAnalysis.metrics.workloadFte.camundaRef')
   },
   peakFte: {
-    title: 'Peak FTE',
-    subtitle: '최대 동시 FTE (P95)',
+    title: proxy.$t('bottleneckAnalysis.metrics.peakFte.title'),
+    subtitle: proxy.$t('bottleneckAnalysis.metrics.peakFte.subtitle'),
     icon: 'mdi-chart-timeline-variant',
     color: 'deep-purple',
-    description: '동시에 실행 중인 인스턴스 수의 95 백분위수입니다. 피크 시간대에 필요한 최대 인력을 나타냅니다.',
-    formula: 'P95(concurrent_instances)',
-    formulaDesc: '동시 실행 인스턴스 수의 95번째 백분위수',
-    unit: 'FTE',
-    camundaRef: 'Dynamic Concurrent Usage 기반'
+    description: proxy.$t('bottleneckAnalysis.metrics.peakFte.description'),
+    formula: proxy.$t('bottleneckAnalysis.metrics.peakFte.formula'),
+    formulaDesc: proxy.$t('bottleneckAnalysis.metrics.peakFte.formulaDesc'),
+    unit: proxy.$t('bottleneckAnalysis.metrics.peakFte.unit'),
+    camundaRef: proxy.$t('bottleneckAnalysis.metrics.peakFte.camundaRef')
   },
   loadRatio: {
-    title: 'Load Ratio',
-    subtitle: '부하율 (용량 대비)',
+    title: proxy.$t('bottleneckAnalysis.metrics.loadRatio.title'),
+    subtitle: proxy.$t('bottleneckAnalysis.metrics.loadRatio.subtitle'),
     icon: 'mdi-gauge',
     color: 'deep-orange',
-    description: '가용 FTE 대비 실제 필요 FTE의 비율입니다. 100%를 초과하면 인력이 부족한 병목 상태입니다.',
-    formula: 'Demand_FTE / Capacity_FTE × 100',
-    formulaDesc: '(필요 FTE ÷ 가용 FTE) × 100',
-    unit: '%',
-    camundaRef: 'Load Ratio > 100% = 병목 (Bottleneck)'
+    description: proxy.$t('bottleneckAnalysis.metrics.loadRatio.description'),
+    formula: proxy.$t('bottleneckAnalysis.metrics.loadRatio.formula'),
+    formulaDesc: proxy.$t('bottleneckAnalysis.metrics.loadRatio.formulaDesc'),
+    unit: proxy.$t('bottleneckAnalysis.metrics.loadRatio.unit'),
+    camundaRef: proxy.$t('bottleneckAnalysis.metrics.loadRatio.camundaRef')
   }
-}
+}))
 
-const selectedMetric = ref<keyof typeof metricDefinitions>('duration')
-const currentMetricDef = computed(() => metricDefinitions[selectedMetric.value])
+const selectedMetric = ref<string>('duration')
+const currentMetricDef = computed(() => metricDefinitions.value[selectedMetric.value])
 
 // Metric select options for dropdown
 const metricSelectOptions = computed(() => {
-  return Object.entries(metricDefinitions).map(([key, def]) => ({
+  return Object.entries(metricDefinitions.value).map(([key, def]) => ({
     value: key,
     title: def.title,
     subtitle: def.subtitle,
@@ -250,10 +251,10 @@ function parseDuration(interval: string | null): number {
 
 function formatDuration(seconds: number): string {
   if (seconds === 0) return '-'
-  if (seconds < 60) return `${Math.round(seconds)}초`
-  if (seconds < 3600) return `${Math.round(seconds / 60)}분`
-  if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}시간`
-  return `${(seconds / 86400).toFixed(1)}일`
+  if (seconds < 60) return `${Math.round(seconds)}${proxy.$t('bottleneckAnalysis.seconds')}`
+  if (seconds < 3600) return `${Math.round(seconds / 60)}${proxy.$t('bottleneckAnalysis.minutes')}`
+  if (seconds < 86400) return `${(seconds / 3600).toFixed(1)}${proxy.$t('bottleneckAnalysis.hours')}`
+  return `${(seconds / 86400).toFixed(1)}${proxy.$t('bottleneckAnalysis.days')}`
 }
 
 // Load process list
@@ -697,10 +698,10 @@ function applyHeatmapOverlay() {
       <div style="font-weight: 600; margin-bottom: 4px; color: ${color};">${metrics.activityName}</div>
       <div style="display: flex; gap: 12px;">
         <span>⏱ ${formatDuration(metrics.avgDuration)}</span>
-        <span>📊 ${metrics.frequency}회</span>
+        <span>📊 ${metrics.frequency}${proxy.$t('bottleneckAnalysis.times')}</span>
       </div>
       <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.1);">
-        병목 점수: <strong style="color: ${color};">${Math.round(metrics.normalizedBottleneck)}%</strong>
+        ${proxy.$t('bottleneckAnalysis.bottleneckScore')}: <strong style="color: ${color};">${Math.round(metrics.normalizedBottleneck)}%</strong>
       </div>
     `
 
@@ -815,7 +816,7 @@ function getMetricValue(metrics: any): number {
 function getDisplayValue(metrics: any): string {
   switch (selectedMetric.value) {
     case 'duration': return formatDuration(metrics.avgDuration)
-    case 'frequency': return `${metrics.frequency}회`
+    case 'frequency': return `${metrics.frequency}${proxy.$t('bottleneckAnalysis.times')}`
     case 'bottleneck': return `${Math.round(metrics.normalizedBottleneck)}%`
     case 'rework': return `${metrics.reworkRate.toFixed(1)}%`
     case 'waiting': return formatDuration(metrics.waitingTime)
@@ -999,43 +1000,43 @@ onMounted(() => loadProcessList())
 
 <template>
   <v-card elevation="10" class="rounded-xl">
-    <v-card-text class="pa-6">
+    <v-card-text class="pa-4">
       <!-- Header -->
       <div class="d-flex justify-space-between align-center mb-5">
         <div>
-          <h1 class="text-h5 font-weight-bold text-textPrimary">Process Analytics</h1>
-          <p class="text-body-2 text-grey100 mb-0 mt-1">히스토리 기반 프로세스 성능 분석 및 병목 지점 탐지</p>
+          <h1 class="text-h5 font-weight-bold text-textPrimary">{{ $t('bottleneckAnalysis.title') }}</h1>
+          <p class="text-body-2 text-grey100 mb-0 mt-1">{{ $t('bottleneckAnalysis.subtitle') }}</p>
         </div>
         <div class="d-flex ga-2">
           <v-btn
-            variant="text"
-            color="primary"
+            color="gray"
+            rounded="pill"
+            variant="flat"
             size="small"
             prepend-icon="mdi-information-outline"
             @click="showMetricInfo = !showMetricInfo"
           >
-            지표 설명
+            {{ $t('bottleneckAnalysis.metricInfo') }}
           </v-btn>
           <v-btn
-            variant="tonal"
-            color="indigo"
+            color="primary"
+            rounded
+            variant="flat"
             size="small"
             prepend-icon="mdi-cog-outline"
             @click="showFteSettings = true"
             :disabled="!selectedProcess"
           >
-            FTE 설정
+            {{ $t('bottleneckAnalysis.fteSettings') }}
           </v-btn>
         </div>
       </div>
-
-      <!-- Metric Info Panel -->
       <v-expand-transition>
         <v-card v-show="showMetricInfo" variant="outlined" class="rounded-lg mb-5 metric-info-card">
-          <v-card-text class="pa-4">
+        <v-card-text>
             <div class="d-flex align-center mb-4">
               <v-icon icon="mdi-lightbulb-outline" color="warning" size="20" class="mr-2" />
-              <span class="text-subtitle-2 font-weight-semibold">지표 설명 및 계산 방식</span>
+              <span class="text-subtitle-2 font-weight-semibold">{{ $t('bottleneckAnalysis.metricInfoTitle') }}</span>
             </div>
             <v-row dense>
               <v-col v-for="(def, key) in metricDefinitions" :key="key" cols="12" md="4">
@@ -1046,11 +1047,11 @@ onMounted(() => loadProcessList())
                   <div class="d-flex align-center mb-2">
                     <v-icon :icon="def.icon" :color="def.color" size="18" class="mr-2" />
                     <span class="text-body-2 font-weight-semibold">{{ def.title }}</span>
-                    <v-chip v-if="selectedMetric === key" size="x-small" color="primary" class="ml-2">선택됨</v-chip>
+                    <v-chip v-if="selectedMetric === key" size="x-small" color="primary" class="ml-2">{{ $t('bottleneckAnalysis.selected') }}</v-chip>
                   </div>
                   <p class="text-caption text-grey100 mb-2">{{ def.description }}</p>
                   <div class="formula-box">
-                    <div class="formula-label">계산 공식</div>
+                    <div class="formula-label">{{ $t('bottleneckAnalysis.formulaLabel') }}</div>
                     <code class="formula-code">{{ def.formula }}</code>
                     <div class="formula-desc">{{ def.formulaDesc }}</div>
                     <div class="camunda-ref">
@@ -1075,7 +1076,7 @@ onMounted(() => loadProcessList())
                 :items="processList"
                 item-title="name"
                 item-value="path"
-                label="분석할 프로세스 선택"
+                :label="$t('bottleneckAnalysis.selectProcess')"
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -1089,7 +1090,7 @@ onMounted(() => loadProcessList())
               <v-select
                 v-model="selectedPeriod"
                 :items="periodOptions"
-                label="기간"
+                :label="$t('bottleneckAnalysis.period')"
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -1100,11 +1101,8 @@ onMounted(() => loadProcessList())
               <v-select
                 v-model="selectedStatus"
                 :items="statusOptions"
-                label="상태"
-                density="compact"
-                variant="outlined"
+                :label="$t('bottleneckAnalysis.status')"
                 hide-details
-                bg-color="white"
               />
             </v-col>
             <v-col cols="12" md="3">
@@ -1113,7 +1111,7 @@ onMounted(() => loadProcessList())
                 :items="metricSelectOptions"
                 item-title="title"
                 item-value="value"
-                label="지표"
+                :label="$t('bottleneckAnalysis.metric')"
                 density="compact"
                 variant="outlined"
                 hide-details
@@ -1137,7 +1135,7 @@ onMounted(() => loadProcessList())
           <v-row dense class="mt-3">
             <v-col cols="12">
               <div class="metric-category-tabs">
-                <div class="category-label">기본 지표</div>
+                <div class="category-label">{{ $t('bottleneckAnalysis.basicMetrics') }}</div>
                 <v-btn-toggle
                   v-model="selectedMetric"
                   mandatory
@@ -1145,21 +1143,21 @@ onMounted(() => loadProcessList())
                   color="primary"
                   class="metric-toggle mr-4"
                 >
-                  <v-btn value="duration" size="x-small">Duration</v-btn>
-                  <v-btn value="frequency" size="x-small">Frequency</v-btn>
-                  <v-btn value="bottleneck" size="x-small">Outlier</v-btn>
+                  <v-btn value="duration" size="x-small">{{ $t('bottleneckAnalysis.btnDuration') }}</v-btn>
+                  <v-btn value="frequency" size="x-small">{{ $t('bottleneckAnalysis.btnFrequency') }}</v-btn>
+                  <v-btn value="bottleneck" size="x-small">{{ $t('bottleneckAnalysis.btnOutlier') }}</v-btn>
                 </v-btn-toggle>
-                <div class="category-label">FTE 지표</div>
+                <div class="category-label">{{ $t('bottleneckAnalysis.fteMetrics') }}</div>
                 <v-btn-toggle
                   v-model="selectedMetric"
                   mandatory
                   density="compact"
-                  color="indigo"
+                  color="primary"
                   class="metric-toggle"
                 >
-                  <v-btn value="workloadFte" size="x-small">Workload</v-btn>
-                  <v-btn value="peakFte" size="x-small">Peak</v-btn>
-                  <v-btn value="loadRatio" size="x-small">Load Ratio</v-btn>
+                  <v-btn value="workloadFte" size="x-small">{{ $t('bottleneckAnalysis.btnWorkload') }}</v-btn>
+                  <v-btn value="peakFte" size="x-small">{{ $t('bottleneckAnalysis.btnPeak') }}</v-btn>
+                  <v-btn value="loadRatio" size="x-small">{{ $t('bottleneckAnalysis.btnLoadRatio') }}</v-btn>
                 </v-btn-toggle>
               </div>
             </v-col>
@@ -1170,8 +1168,8 @@ onMounted(() => loadProcessList())
       <!-- Empty State -->
       <div v-if="!selectedProcess" class="empty-state">
         <v-icon icon="mdi-chart-timeline-variant-shimmer" size="72" color="grey-lighten-1" class="mb-4" />
-        <h3 class="text-h6 text-grey100 mb-2">프로세스를 선택하세요</h3>
-        <p class="text-body-2 text-grey100">분석할 프로세스를 선택하면 실행 히스토리 기반의<br>성능 분석 결과가 표시됩니다.</p>
+        <h3 class="text-h6 text-grey100 mb-2">{{ $t('bottleneckAnalysis.selectProcessHint') }}</h3>
+        <p class="text-body-2 text-grey100">{{ $t('bottleneckAnalysis.selectProcessDesc') }}<br>{{ $t('bottleneckAnalysis.selectProcessDesc2') }}</p>
       </div>
 
       <!-- Main Content -->
@@ -1186,9 +1184,9 @@ onMounted(() => loadProcessList())
                 <span class="text-caption ml-2">{{ currentMetricDef.subtitle }}</span>
               </div>
               <div class="heatmap-legend d-flex align-center ga-2">
-                <span class="text-caption">낮음</span>
+                <span class="text-caption">{{ $t('bottleneckAnalysis.low') }}</span>
                 <div class="legend-gradient"></div>
-                <span class="text-caption">높음</span>
+                <span class="text-caption">{{ $t('bottleneckAnalysis.high') }}</span>
               </div>
             </div>
           </v-card-text>
@@ -1202,21 +1200,19 @@ onMounted(() => loadProcessList())
                 <v-icon icon="mdi-cube-outline" size="20" />
               </div>
               <div class="stat-content">
-                <span class="stat-label">인스턴스</span>
+                <span class="stat-label">{{ $t('bottleneckAnalysis.instances') }}</span>
                 <span class="stat-value">{{ summaryStats.instances }}</span>
               </div>
             </div>
-          </v-col>
+            </v-col>
           <v-col cols="6" md="3">
-            <div class="stat-box">
               <div class="stat-icon success">
                 <v-icon icon="mdi-shape-outline" size="20" />
               </div>
               <div class="stat-content">
-                <span class="stat-label">Activity</span>
+                <span class="stat-label">{{ $t('bottleneckAnalysis.activity') }}</span>
                 <span class="stat-value">{{ summaryStats.activities }}</span>
               </div>
-            </div>
           </v-col>
           <v-col cols="6" md="3">
             <div class="stat-box">
@@ -1224,7 +1220,7 @@ onMounted(() => loadProcessList())
                 <v-icon icon="mdi-timer-sand" size="20" />
               </div>
               <div class="stat-content">
-                <span class="stat-label">평균 소요</span>
+                <span class="stat-label">{{ $t('bottleneckAnalysis.avgDuration') }}</span>
                 <span class="stat-value">{{ summaryStats.avgDuration }}</span>
               </div>
             </div>
@@ -1235,7 +1231,7 @@ onMounted(() => loadProcessList())
                 <v-icon icon="mdi-check-circle-outline" size="20" />
               </div>
               <div class="stat-content">
-                <span class="stat-label">완료율</span>
+                <span class="stat-label">{{ $t('bottleneckAnalysis.completionRate') }}</span>
                 <span class="stat-value">{{ summaryStats.completionRate }}%</span>
               </div>
             </div>
@@ -1255,14 +1251,14 @@ onMounted(() => loadProcessList())
                     </h3>
                     <v-chip v-if="loadingMetrics" size="small" color="primary" variant="tonal">
                       <v-progress-circular indeterminate size="12" width="2" class="mr-2" />
-                      분석 중...
+                      {{ $t('bottleneckAnalysis.analyzing') }}
                     </v-chip>
                   </div>
                 </div>
 
                 <div v-if="loading" class="bpmn-placeholder">
                   <v-progress-circular indeterminate color="primary" size="40" />
-                  <p class="text-body-2 text-grey100 mt-3">다이어그램 로딩 중...</p>
+                  <p class="text-body-2 text-grey100 mt-3">{{ $t('bottleneckAnalysis.loadingDiagram') }}</p>
                 </div>
 
                 <div v-else-if="bpmnXml" class="bpmn-wrapper">
@@ -1275,7 +1271,7 @@ onMounted(() => loadProcessList())
 
                 <div v-else class="bpmn-placeholder">
                   <v-icon icon="mdi-file-document-alert-outline" size="48" color="grey-lighten-1" />
-                  <p class="text-body-2 text-grey100 mt-2">BPMN 데이터를 불러올 수 없습니다</p>
+                  <p class="text-body-2 text-grey100 mt-2">{{ $t('bottleneckAnalysis.cannotLoadBpmn') }}</p>
                 </div>
               </v-card-text>
             </v-card>
@@ -1288,7 +1284,7 @@ onMounted(() => loadProcessList())
               <v-card-text class="pa-4">
                 <div class="d-flex align-center mb-3">
                   <v-icon icon="mdi-podium" color="error" size="20" class="mr-2" />
-                  <span class="text-subtitle-2 font-weight-semibold">병목 순위 Top 3</span>
+                  <span class="text-subtitle-2 font-weight-semibold">{{ $t('bottleneckAnalysis.bottleneckTop3') }}</span>
                 </div>
                 <div v-if="bottleneckRanking.length > 0" class="ranking-list">
                   <div
@@ -1313,7 +1309,7 @@ onMounted(() => loadProcessList())
                   </div>
                 </div>
                 <div v-else class="text-center pa-4">
-                  <p class="text-caption text-grey100">실행 데이터가 없습니다</p>
+                  <p class="text-caption text-grey100">{{ $t('bottleneckAnalysis.noExecutionData') }}</p>
                 </div>
               </v-card-text>
             </v-card>
@@ -1323,23 +1319,23 @@ onMounted(() => loadProcessList())
               <v-card-text class="pa-4">
                 <div class="d-flex align-center mb-3">
                   <v-icon icon="mdi-chart-box-outline" color="primary" size="20" class="mr-2" />
-                  <span class="text-subtitle-2 font-weight-semibold">소요시간 분포</span>
+                  <span class="text-subtitle-2 font-weight-semibold">{{ $t('bottleneckAnalysis.durationDistribution') }}</span>
                 </div>
                 <div class="duration-stats-grid">
                   <div class="duration-stat">
-                    <span class="stat-label-sm">최소</span>
+                    <span class="stat-label-sm">{{ $t('bottleneckAnalysis.min') }}</span>
                     <span class="stat-value-sm text-success">{{ durationStats.min }}</span>
                   </div>
                   <div class="duration-stat">
-                    <span class="stat-label-sm">최대</span>
+                    <span class="stat-label-sm">{{ $t('bottleneckAnalysis.max') }}</span>
                     <span class="stat-value-sm text-error">{{ durationStats.max }}</span>
                   </div>
                   <div class="duration-stat">
-                    <span class="stat-label-sm">중앙값</span>
+                    <span class="stat-label-sm">{{ $t('bottleneckAnalysis.median') }}</span>
                     <span class="stat-value-sm text-info">{{ durationStats.median }}</span>
                   </div>
                   <div class="duration-stat">
-                    <span class="stat-label-sm">평균</span>
+                    <span class="stat-label-sm">{{ $t('bottleneckAnalysis.avg') }}</span>
                     <span class="stat-value-sm text-primary">{{ durationStats.avg }}</span>
                   </div>
                 </div>
@@ -1350,19 +1346,19 @@ onMounted(() => loadProcessList())
             <v-card variant="outlined" class="rounded-lg">
               <v-card-text class="pa-0">
                 <div class="d-flex justify-space-between align-center pa-4 pb-2">
-                  <span class="text-subtitle-2 font-weight-semibold">Activity 상세</span>
+                  <span class="text-subtitle-2 font-weight-semibold">{{ $t('bottleneckAnalysis.activityDetail') }}</span>
                   <v-chip size="x-small" color="primary" variant="tonal">
-                    {{ activityMetrics.size }}개
+                    {{ activityMetrics.size }}
                   </v-chip>
                 </div>
                 <div class="activity-table-wrapper">
                   <v-table density="compact" class="activity-table">
                     <thead>
                       <tr>
-                        <th>Activity</th>
-                        <th class="text-right">소요</th>
-                        <th class="text-right">빈도</th>
-                        <th class="text-right">점수</th>
+                        <th>{{ $t('bottleneckAnalysis.activity') }}</th>
+                        <th class="text-right">{{ $t('bottleneckAnalysis.duration') }}</th>
+                        <th class="text-right">{{ $t('bottleneckAnalysis.frequency') }}</th>
+                        <th class="text-right">{{ $t('bottleneckAnalysis.score') }}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1385,7 +1381,7 @@ onMounted(() => loadProcessList())
                       </tr>
                       <tr v-if="activityTableData.length === 0">
                         <td colspan="4" class="text-center text-caption text-grey100 pa-4">
-                          데이터 없음
+                          {{ $t('bottleneckAnalysis.noData') }}
                         </td>
                       </tr>
                     </tbody>
@@ -1402,9 +1398,8 @@ onMounted(() => loadProcessList())
   <!-- FTE Settings Dialog -->
   <v-dialog v-model="showFteSettings" max-width="800" scrollable>
     <v-card class="rounded-lg">
-      <v-card-title class="d-flex align-center pa-4 bg-indigo-lighten-5">
-        <v-icon icon="mdi-account-hard-hat" color="indigo" class="mr-2" />
-        <span>FTE 설정</span>
+      <v-card-title class="d-flex align-center pa-4 pt-2 pb-0 bg-indigo-lighten-5">
+        <span>{{ $t('bottleneckAnalysis.fteSettings') }}</span>
         <v-spacer />
         <v-btn icon="mdi-close" variant="text" size="small" @click="showFteSettings = false" />
       </v-card-title>
@@ -1413,12 +1408,11 @@ onMounted(() => loadProcessList())
         <!-- Default Settings -->
         <v-card variant="outlined" class="rounded-lg mb-4">
           <v-card-text class="pa-4">
-            <div class="text-subtitle-2 font-weight-semibold mb-3">기본 설정</div>
+            <div class="text-subtitle-2 font-weight-semibold mb-3">{{ $t('bottleneckAnalysis.defaultSettings') }}</div>
             <v-row dense>
-              <v-col cols="6">
+                <v-col>
                 <v-text-field
-                  v-model.number="defaultStandardMinutes"
-                  label="기본 표준 작업시간 (분)"
+                  :label="$t('bottleneckAnalysis.defaultStandardMinutes')"
                   type="number"
                   density="compact"
                   variant="outlined"
@@ -1430,14 +1424,10 @@ onMounted(() => loadProcessList())
               <v-col cols="6">
                 <v-text-field
                   v-model.number="defaultAvailableFte"
-                  label="기본 가용 FTE"
+                  :label="$t('bottleneckAnalysis.defaultAvailableFte')"
                   type="number"
                   density="compact"
-                  variant="outlined"
-                  hide-details
-                  min="0.1"
                   max="100"
-                  step="0.1"
                 />
               </v-col>
             </v-row>
@@ -1448,25 +1438,26 @@ onMounted(() => loadProcessList())
         <v-card variant="outlined" class="rounded-lg mb-4">
           <v-card-text class="pa-4">
             <div class="d-flex justify-space-between align-center mb-3">
-              <span class="text-subtitle-2 font-weight-semibold">Role별 FTE 용량</span>
+              <span class="text-subtitle-2 font-weight-semibold">{{ $t('bottleneckAnalysis.roleCapacity') }}</span>
               <v-btn
                 size="small"
-                color="indigo"
-                variant="tonal"
+                color="gray"
+                rounded="pill"
+                variant="flat"
                 prepend-icon="mdi-plus"
                 @click="addNewRole"
               >
-                역할 추가
+                {{ $t('bottleneckAnalysis.addRole') }}
               </v-btn>
             </div>
             <v-table density="compact" class="fte-table">
               <thead>
                 <tr>
-                  <th>역할명</th>
-                  <th class="text-center">가용 FTE</th>
-                  <th class="text-center">일일 근무시간</th>
-                  <th class="text-center">월 근무일</th>
-                  <th class="text-center">월 용량(시간)</th>
+                  <th>{{ $t('bottleneckAnalysis.roleName') }}</th>
+                  <th class="text-center">{{ $t('bottleneckAnalysis.availableFte') }}</th>
+                  <th class="text-center">{{ $t('bottleneckAnalysis.dailyWorkHours') }}</th>
+                  <th class="text-center">{{ $t('bottleneckAnalysis.monthlyWorkDays') }}</th>
+                  <th class="text-center">{{ $t('bottleneckAnalysis.monthlyCapacity') }}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -1534,26 +1525,27 @@ onMounted(() => loadProcessList())
         <v-card variant="outlined" class="rounded-lg">
           <v-card-text class="pa-4">
             <div class="d-flex justify-space-between align-center mb-3">
-              <span class="text-subtitle-2 font-weight-semibold">Activity별 표준 작업시간</span>
+              <span class="text-subtitle-2 font-weight-semibold">{{ $t('bottleneckAnalysis.activityStandardTime') }}</span>
               <v-btn
                 size="small"
-                color="primary"
-                variant="tonal"
+                color="gray"
+                rounded="pill"
+                variant="flat"
                 prepend-icon="mdi-content-save"
                 @click="saveActivityConfigs"
                 :loading="savingConfig"
               >
-                저장
+                {{ $t('bottleneckAnalysis.save') }}
               </v-btn>
             </div>
             <div class="activity-config-wrapper">
-              <v-table density="compact" class="fte-table">
+                <v-table>
                 <thead>
-                  <tr>
-                    <th>Activity</th>
-                    <th class="text-center">표준시간(분)</th>
-                    <th class="text-center">역할</th>
-                    <th class="text-center">복잡도</th>
+                <tr>
+                    <th>{{ $t('bottleneckAnalysis.activity') }}</th>
+                    <th class="text-center">{{ $t('bottleneckAnalysis.standardMinutes') }}</th>
+                    <th class="text-center">{{ $t('bottleneckAnalysis.role') }}</th>
+                    <th class="text-center">{{ $t('bottleneckAnalysis.complexity') }}</th>
                     <th class="text-center">FTE</th>
                   </tr>
                 </thead>
@@ -1615,7 +1607,7 @@ onMounted(() => loadProcessList())
       <v-card-actions class="pa-4 pt-0">
         <v-spacer />
         <v-btn variant="text" @click="showFteSettings = false">닫기</v-btn>
-        <v-btn color="indigo" variant="flat" @click="applyFteSettings">적용</v-btn>
+        <v-btn color="primary" rounded variant="flat" @click="applyFteSettings">{{ $t('bottleneckAnalysis.apply') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

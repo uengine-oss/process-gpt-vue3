@@ -7,7 +7,7 @@
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
                 <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
-                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
@@ -94,7 +94,8 @@ import paletteProvider from './customPalette/PaletteProvider';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
 import customPopupMenu from './customPopupMenu';
-import customReplaceModule from './customReplace';
+// skt 마이그레이션 요소 변경 비활성화
+// import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
@@ -218,6 +219,8 @@ export default {
             },
             showColorRulesetDialog: false,
             colorRules: [], // Color rules loaded from BPMN XML
+            // compensate boundaryEvent ↔ 보상 task 연결 시 자동으로 compensateTask 채움
+            compensateAutoFillInstalled: false
         };
     },
     computed: {
@@ -233,6 +236,9 @@ export default {
         },
         isPal() {
             return window.$pal;
+        },
+        isPalUengine() {
+            return !!(window.$pal && window.$mode === 'uEngine');
         },
     },
     async mounted() {
@@ -566,6 +572,119 @@ export default {
             }
         },
 
+        hasCompensateEventDefinition(element) {
+            const defs = element?.businessObject?.eventDefinitions || [];
+            return Array.isArray(defs) && defs.some((d) => d?.$type === 'bpmn:CompensateEventDefinition');
+        },
+        isCompensationHandlerTask(element) {
+            return element?.businessObject?.isForCompensation === true;
+        },
+        ensureUengineJsonOnElement(element) {
+            const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
+            const bo = element?.businessObject;
+            if (!bo) return { bo: null, uengineProps: null, jsonObj: {} };
+
+            if (!bo.extensionElements) {
+                bo.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+            }
+            if (!bo.extensionElements.values) {
+                bo.extensionElements.values = [];
+            }
+            if (bo.extensionElements.values.length === 0) {
+                bo.extensionElements.values.push(
+                    bpmnFactory.create('uengine:Properties', {
+                        json: '{}',
+                        variables: []
+                    })
+                );
+            }
+
+            const uengineProps = bo.extensionElements.values[0];
+            if (typeof uengineProps.json !== 'string') uengineProps.json = '{}';
+
+            let jsonObj = {};
+            try {
+                jsonObj = JSON.parse(uengineProps.json || '{}');
+            } catch (e) {
+                jsonObj = {};
+            }
+
+            return { bo, uengineProps, jsonObj };
+        },
+        applyCompensateTaskAutoFillFromConnection(connection) {
+            if (!connection || connection?.businessObject?.$type !== 'bpmn:Association') return;
+
+            const a = connection.source;
+            const b = connection.target;
+
+            // 양방향 케이스 모두 지원
+            let boundary = null;
+            let handlerTask = null;
+
+            if (this.hasCompensateEventDefinition(a) && this.isCompensationHandlerTask(b)) {
+                boundary = a;
+                handlerTask = b;
+            } else if (this.hasCompensateEventDefinition(b) && this.isCompensationHandlerTask(a)) {
+                boundary = b;
+                handlerTask = a;
+            } else {
+                return;
+            }
+
+            const modeling = this.bpmnViewer.get('modeling');
+            const { bo, uengineProps, jsonObj } = this.ensureUengineJsonOnElement(boundary);
+            if (!bo || !uengineProps) return;
+
+            jsonObj.compensateTask = {
+                name: handlerTask?.businessObject?.name || '',
+                tracingTag: handlerTask?.businessObject?.id || handlerTask?.id || ''
+            };
+
+            uengineProps.json = JSON.stringify(jsonObj);
+
+            // 모델에 반영 (저장 시 XML에도 반영됨)
+            modeling.updateProperties(boundary, {
+                extensionElements: bo.extensionElements
+            });
+        },
+        clearCompensateTaskIfAssociationRemoved(connection) {
+            if (!connection || connection?.businessObject?.$type !== 'bpmn:Association') return;
+            const a = connection.source;
+            const b = connection.target;
+
+            // association이 제거될 때, source/target 중 compensate boundaryEvent가 있으면 compensateTask를 비움
+            const boundary = this.hasCompensateEventDefinition(a) ? a : this.hasCompensateEventDefinition(b) ? b : null;
+            if (!boundary) return;
+
+            const modeling = this.bpmnViewer.get('modeling');
+            const { bo, uengineProps, jsonObj } = this.ensureUengineJsonOnElement(boundary);
+            if (!bo || !uengineProps) return;
+
+            // 연결이 사라졌으니 초기화(기존 null 형태와 호환)
+            jsonObj.compensateTask = null;
+            uengineProps.json = JSON.stringify(jsonObj);
+            modeling.updateProperties(boundary, {
+                extensionElements: bo.extensionElements
+            });
+        },
+        setupCompensateAutoFillListeners() {
+            // 뷰어가 없거나 이미 설치했으면 스킵
+            if (!this.bpmnViewer || this.compensateAutoFillInstalled) return;
+            // 편집 모드에서만 자동 채움 (읽기모드에서는 불필요)
+            if (this.isViewMode) return;
+
+            const eventBus = this.bpmnViewer.get('eventBus');
+
+            const onConnCreate = (e) => this.applyCompensateTaskAutoFillFromConnection(e?.context?.connection);
+            const onReconnect = (e) => this.applyCompensateTaskAutoFillFromConnection(e?.context?.connection);
+            const onDelete = (e) => this.clearCompensateTaskIfAssociationRemoved(e?.context?.connection);
+
+            eventBus.on('commandStack.connection.create.executed', onConnCreate);
+            eventBus.on('commandStack.connection.reconnectEnd.executed', onReconnect);
+            eventBus.on('commandStack.connection.delete.executed', onDelete);
+
+            this.compensateAutoFillInstalled = true;
+        },
         async loadPaletteSettings() {
             try {
                 const catalogStore = useTaskCatalogStore();
@@ -586,10 +705,12 @@ export default {
             }
         },
         applyAutoLayout() {
+            if (window.$pal) return;
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
             window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
+            this.EventBus.emit('autoLayout.complete');
         },
         revertAutoLayout() {
             if (!window.BpmnAutoLayout || !window.BpmnAutoLayout.hasLayoutSnapshot()) {
@@ -966,6 +1087,7 @@ export default {
             });
         },
         changeOrientation() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
@@ -1407,7 +1529,7 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated) {
+                if(self.isAIGenerated && !(window.$pal && window.$mode === 'uEngine')) {
                     if(self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
@@ -1426,6 +1548,10 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
+                if (!(window.$pal && window.$mode === 'uEngine')) {
+                    self.applyAutoLayout();
+                }
+                self.resetZoom();
             });
             
             // 사용자가 수동으로 요소를 추가할 때 클래스 추가
@@ -1448,6 +1574,10 @@ export default {
                     self.addTestClassToElement(element, canvas);
                 }, 100);
             });
+
+            // compensate boundaryEvent ↔ 보상 task 연결 시 compensateTask 자동 채움
+            // (association 연결 시 target의 name/id를 boundaryEvent uengine:json.compensateTask로 저장)
+            this.setupCompensateAutoFillListeners();
         },
         initializeViewer() {
             var container = this.$refs.container;
@@ -1563,7 +1693,8 @@ export default {
                             customContextPadModule,
                             customReplaceElement,
                             customPopupMenu,
-                            customReplaceModule,
+                            // skt 마이그레이션 요소 변경 비활성화
+                            // customReplaceModule,
                             ZoomScroll,
                             MoveCanvas,
                             minimapModule
@@ -2545,11 +2676,21 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.7);
   padding: 4px 8px;
   border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   z-index: 10;
+}
+
+.font-size-controls-mobile {
+    top: 12px;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.controls-group {
+  display: flex;
+  align-items: center;
 }
 
 .font-size-value {

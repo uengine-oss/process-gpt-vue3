@@ -55,6 +55,8 @@
                             @multiSelect="onMultiSelect"
                             :onLoadStart="onBpmnLoadStart"
                             :onLoadEnd="onBpmnLoadEnd"
+                            @openProcessVariables="openProcessVariables"
+                            style="height: 100%"
                             >
                                 <!-- Extra controls in BpmnUengine toolbar -->
                                 <template #extra-controls>
@@ -112,7 +114,7 @@
                         </div>
                         <!-- Task Catalog Section for drag & drop -->
                         <TaskCatalogSection
-                            v-if="!isViewMode"
+                            v-if="!isViewMode && mode !== 'uEngine'"
                             :bpmnModeler="$refs.bpmnVue?.bpmnViewer"
                             class="task-catalog-floating-panel"
                         />
@@ -162,7 +164,7 @@
 
                         <!-- View Mode Property Panel (inside canvas) -->
                         <Transition name="slide-panel">
-                            <div v-if="panel && isViewMode" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
+                            <div v-if="panel && isViewMode && !isPal" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
                                 <div class="resize-handle" @mousedown="startResize"></div>
                                 <v-card elevation="4" class="view-mode-panel-card">
                                     <bpmn-property-panel
@@ -189,14 +191,6 @@
                             </div>
                         </Transition>
                     </template>
-                    
-                    <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
-                        :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
-                        v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)" v-on:update-xml="val => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)" v-on:add-shape="onAddShape"
-                        v-on:change-sequence="onChangeSequence" v-on:remove-shape="onRemoveShape"
-                        v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
             <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
@@ -224,8 +218,8 @@
                     <!-- {{ definition }} -->
                 </v-card>
             </div>
-            <div v-else-if="panel && isPal && isViewMode" style="position: fixed; z-index: 999; right: 0; top:123px; height: 100%">
-                <v-card elevation="1">
+            <div v-else-if="panel && isPal && isViewMode" class="pal-view-mode-panel" style="position: fixed; z-index: 999; right: 0; top: 123px; width: 40vw; min-width: 360px; max-width: 560px; height: calc(100vh - 123px);">
+                <v-card elevation="1" class="pal-view-mode-panel-card">
                     <bpmn-property-panel
                         ref="bpmnPropertyPanel"
                         :element="element"
@@ -503,6 +497,9 @@ export default {
         isPal() {
             return window.$pal;
         },
+        isPalUengine() {
+            return !!(window.$pal && window.$mode === 'uEngine');
+        },
         thisDefinition() {
             return {
                 processVariables: this.processVariables
@@ -672,6 +669,9 @@ export default {
         if (this.definitionPath) {
             this.loadCommentCounts();
         }
+        this.EventBus.on('autoLayout.complete', () => {
+            this.applyAutoLayout();
+        });
     },
     methods: {
         // 댓글 관련 메서드
@@ -778,6 +778,7 @@ export default {
             this.isBpmnLoading = false;
         },
         applyAutoLayout() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             const store = useBpmnStore();
             const modeler = store.getModeler;
             
@@ -793,6 +794,7 @@ export default {
             }
         },
         changeOrientation() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             const store = useBpmnStore();
             const modeler = store.getModeler;
             
@@ -1499,6 +1501,25 @@ export default {
     opacity: 1;
 }
 
+.btn-simulate {
+    margin-top:-3px;
+}
+
+@media only screen and (max-width: 550px) {
+    .btn-simulate {
+        order: 4;
+    }
+    .btn-execute {
+        order: 3;
+    }
+    .btn-variables {
+        order: 2;
+    }
+    .btn-zoom {
+        order: 1;
+    }
+}
+
 /* Task Catalog Floating Panel */
 .task-catalog-floating-panel {
     position: absolute;
@@ -1547,6 +1568,25 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+.pal-view-mode-panel {
+    display: flex;
+    flex-direction: column;
+}
+.pal-view-mode-panel-card {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 8px 0 0 8px !important;
+}
+.pal-view-mode-panel-card #property-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
 }
 
 /* Slide Panel Animation */

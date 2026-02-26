@@ -7,7 +7,7 @@
                 <v-row class="ma-0 pa-0 align-center">
                     <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1 d-flex align-center" style="min-width: 0;">
                         <!-- 전체 탭에서 도메인 표시 (이름 왼쪽) -->
-                        <v-chip v-if="!selectedDomain && value.domain"
+                        <!-- <v-chip v-if="!selectedDomain && value.domain"
                             size="x-small"
                             :style="domainColor ? { backgroundColor: domainColor, color: domainTextColor } : {}"
                             :color="domainColor ? undefined : 'primary'"
@@ -15,7 +15,7 @@
                             class="mr-2 flex-shrink-0"
                         >
                             {{ value.domain }}
-                        </v-chip>
+                        </v-chip> -->
                         <div class="text-truncate font-weight-bold cursor-pointer" style="font-size: 0.9rem;" @click="goProcess(parent.name, 'mega')">{{ value.name }}</div>
                     </v-col>
                     <v-col cols="auto" class="ma-0 pa-0">
@@ -63,7 +63,7 @@
             </div>
         </div>
         <!-- Add Sub Process Dialog: 특정 도메인 탭에서만 표시 -->
-        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && selectedDomain"
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -115,6 +115,9 @@ export default {
         window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
     computed: {
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
         domainColor() {
             if (!this.value.domain || !this.domains) return null;
             const domain = this.domains.find(d => d.name === this.value.domain);
