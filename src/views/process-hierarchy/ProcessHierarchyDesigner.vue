@@ -39,6 +39,18 @@
                     <v-icon start size="16">mdi-check-circle-outline</v-icon>
                     {{ $t('processHierarchy.validate') || 'Validate' }}
                 </v-btn>
+                <v-divider vertical class="mx-1" />
+                <v-btn
+                    :variant="isWip ? 'flat' : 'text'"
+                    :color="isWip ? 'purple' : undefined"
+                    size="small"
+                    :disabled="!processName"
+                    @click="$emit('toggleWip')"
+                >
+                    <v-icon start size="16">{{ isWip ? 'mdi-progress-wrench' : 'mdi-progress-wrench' }}</v-icon>
+                    {{ isWip ? ($t('processHierarchy.wipOn') || 'WIP 해제') : ($t('processHierarchy.wipOff') || 'WIP 설정') }}
+                </v-btn>
+                <v-divider vertical class="mx-1" />
                 <v-btn
                     variant="text"
                     size="small"
@@ -147,7 +159,7 @@ export default {
         definitionList: { type: Array, default: () => [] },
         loading: { type: Boolean, default: false },
     },
-    emits: ['openPanel', 'updateXml', 'save', 'clone', 'versionHistory', 'definition'],
+    emits: ['openPanel', 'updateXml', 'save', 'clone', 'versionHistory', 'definition', 'toggleWip'],
     data() {
         return {
             bpmnKey: 0,
@@ -171,6 +183,13 @@ export default {
                 d => (d.file_name || d.id) === this.definitionPath
             );
             return def?.version || def?.version_tag || '';
+        },
+        isWip() {
+            if (!this.definitionPath || !this.definitionList) return false;
+            const def = this.definitionList.find(
+                d => (d.file_name || d.id) === this.definitionPath
+            );
+            return def?.approval_state === 'wip' || def?.status === 'wip';
         },
     },
     watch: {

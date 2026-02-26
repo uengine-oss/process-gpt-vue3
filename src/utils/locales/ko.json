@@ -377,7 +377,27 @@
     "processArchitecture": {
         "title": "프로세스 체계도",
         "subtitle": "기업 BPMN 프로세스를 관리하고 조직하세요",
+        "toBeToggle": "To-Be 프로젝트 (차세대 BPR) 표시",
         "export": "내보내기",
+        "exportMenu": {
+            "scope": "내보내기 범위",
+            "visibleOnly": "현재 필터",
+            "fullHierarchy": "전체 계층",
+            "excel": "Excel (.xlsx)",
+            "excelDesc": "전체 프로세스 데이터 테이블",
+            "pdf": "PDF",
+            "pdfDesc": "현재 화면을 PDF로",
+            "png": "PNG 이미지",
+            "pngDesc": "현재 화면을 이미지로",
+            "json": "JSON",
+            "jsonDesc": "proc_map 원본 데이터",
+            "mermaid": "Mermaid 스크립트",
+            "mermaidDesc": "계층구조 .mmd 파일",
+            "exporting": "내보내는 중...",
+            "processingLargeData": "대량 데이터입니다. 백그라운드에서 처리 중...",
+            "exportComplete": "내보내기 완료. 다운로드합니다.",
+            "exportFailed": "내보내기에 실패했습니다. 다시 시도해주세요."
+        },
         "newProcess": "+ 새 프로세스",
         "searchPlaceholder": "프로세스 검색...",
         "allDomains": "전체 도메인",
@@ -385,8 +405,8 @@
         "noSubProcesses": "서브 프로세스 없음",
         "views": {
             "card": "카드",
-            "tree": "트리",
             "matrix": "매트릭스",
+            "tree": "트리",
             "hierarchy": "계층도"
         },
         "stats": {
@@ -401,28 +421,140 @@
             "expand": "펼치기",
             "collapse": "접기"
         },
+        "advancedFilter": {
+            "button": "필터",
+            "title": "상세 필터",
+            "status": "프로세스 상태",
+            "statusDraft": "초안",
+            "statusReview": "검토 중",
+            "statusPublicReview": "공람 중",
+            "statusPublished": "배포 완료",
+            "statusWip": "WIP",
+            "dateRange": "날짜 범위",
+            "dateNone": "전체",
+            "relative": "상대적",
+            "absolute": "절대적",
+            "relativeRange": "최근...",
+            "last7days": "최근 7일",
+            "last30days": "최근 30일",
+            "last90days": "최근 3개월",
+            "last180days": "최근 6개월",
+            "from": "시작일",
+            "to": "종료일",
+            "ownership": "담당자",
+            "ownerSearch": "담당자 검색...",
+            "ownerRole": "담당 역할",
+            "ownerRoleAny": "모든 역할",
+            "ownerRolePrimary": "Primary Owner",
+            "ownerRoleCo": "Co-Owner",
+            "ownerRoleMaster": "Master",
+            "tags": "태그",
+            "tagSearch": "태그로 필터...",
+            "presets": "필터 프리셋",
+            "savePreset": "저장",
+            "savePresetTitle": "필터 프리셋 저장",
+            "presetName": "프리셋 이름",
+            "noPresets": "저장된 프리셋이 없습니다.",
+            "reset": "초기화",
+            "apply": "적용",
+            "numericalRange": "수치 범위",
+            "fteRange": "FTE 범위",
+            "leadTimeRange": "리드타임 범위",
+            "days": "일",
+            "systems": "시스템 / OSS",
+            "systemSearch": "시스템 또는 OSS로 필터..."
+        },
         "hierarchy": {
             "selectDomain": "도메인 선택",
             "expandAll": "전체 펼치기",
             "collapseAll": "전체 접기",
             "clickToToggle": "노드 클릭으로 펼치기/접기"
         },
+        "mermaid": {
+            "zoomLevel": "확대/축소",
+            "panHint": "드래그로 이동, 스크롤로 확대/축소"
+        },
+        "tree": {
+            "moveWarningTitle": "서브 프로세스 이동",
+            "moveWarningDesc": "\"{processName}\"을(를) \"{fromMajor}\"에서 \"{toMajor}\"(으)로 이동하시겠습니까?",
+            "idRenumberAlert": "비즈니스 ID가 재채번됩니다",
+            "idRenumberDesc": "이동 후 새로운 상위 프로세스 위치에 맞는 ID가 부여됩니다.",
+            "uidPreservedNote": "내부 UID(감사 로그, 과제 매핑)는 그대로 유지됩니다.",
+            "cancel": "취소",
+            "confirmMove": "이동",
+            "moveSuccess": "\"{name}\"이(가) 이동되었습니다.",
+            "moveFailed": "프로세스 이동에 실패했습니다. 다시 시도해 주세요."
+        },
+        "search": {
+            "recentlyViewed": "최근 방문한 프로세스"
+        },
+        "myProcesses": {
+            "label": "내 프로세스",
+            "title": "내 프로세스 필터",
+            "favorites": "즐겨찾기",
+            "myCreation": "내가 생성",
+            "myOrganization": "내 조직",
+            "apply": "필터 적용",
+            "applied": "필터 적용 중"
+        },
+        "emptyState": {
+            "message": "현재 필터 조건에 맞는 프로세스가 없습니다.",
+            "resetFilters": "필터 초기화"
+        },
+        "quickFilters": {
+            "label": "퀵 필터",
+            "needFeedback": "공람 중",
+            "wil": "WIL (과제 진행 중)"
+        },
+        "board": {
+            "totalProcesses": "총 프로세스",
+            "reviewing": "공람 중",
+            "countUnit": "건",
+            "noItems": "이 카테고리에 프로세스가 없습니다",
+            "editColumnName": "컬럼명 수정",
+            "columns": {
+                "design": "설계",
+                "build": "구축",
+                "monitor": "감시",
+                "control": "제어",
+                "shared": "공통"
+            }
+        },
         "newProcessDialog": {
             "title": "새 프로세스 생성",
+            "asIs": "As-Is",
+            "toBe": "To-Be",
             "processName": "프로세스 이름",
             "processNamePlaceholder": "예: 월말 급여 마감",
             "nameRequired": "프로세스 이름을 입력하세요",
+            "similarNameWarning": "유사한 프로세스가 이미 존재합니다:",
             "hierarchyLocation": "계층 위치",
+            "hierarchyRequired": "도메인, Mega 프로세스, Major 프로세스를 선택해야 생성할 수 있습니다.",
             "domain": "도메인",
             "megaProcess": "Mega 프로세스",
             "majorProcess": "Major 프로세스",
+            "owners": "담당자",
+            "primaryOwner": "Primary Owner",
+            "ownerPlaceholder": "이름 또는 이메일로 검색...",
+            "coOwner": "Co-Owner(s)",
+            "coOwnerPlaceholder": "Co-Owner 추가...",
+            "master": "Master",
+            "masterPlaceholder": "이름 또는 이메일로 검색...",
             "creationType": "생성 방식",
             "scratch": "새로 만들기",
             "template": "템플릿",
             "clone": "복제",
             "selectTemplate": "템플릿을 선택하세요...",
             "selectCloneSource": "복제할 프로세스를 선택하세요...",
-            "createAndOpen": "생성 후 열기"
+            "pidPreview": "자동 부여 ID",
+            "sourceMapping": "소스 매핑 (As-Is 프로세스)",
+            "sourceMappingInfo": "이 To-Be 프로세스가 통폐합하거나 대체할 기존 As-Is 프로세스를 선택하세요.",
+            "selectSourceProcesses": "매핑할 As-Is 프로세스를 선택하세요...",
+            "sourceMappingPlaceholder": "프로세스 검색...",
+            "createAndOpen": "생성 후 열기",
+            "aiSuggestion": "AI 추천 위치",
+            "recommended": "추천",
+            "applySuggestion": "적용"
         }
     },
     "processHierarchy": {
@@ -462,7 +594,12 @@
         "submitForReviewAfterSave": "저장 후 검토 요청",
         "saveAndContinue": "저장",
         "savedAndSubmitted": "저장 및 검토 요청 완료",
-        "currentVersion": "현재 버전"
+        "currentVersion": "현재 버전",
+        "wipOn": "WIP 해제",
+        "wipOff": "WIP 설정",
+        "wipEnabled": "WIP 상태로 전환되었습니다.",
+        "wipDisabled": "WIP 상태가 해제되었습니다.",
+        "wipFailed": "WIP 상태 변경에 실패했습니다."
     },
     "versionComparison": {
         "title": "버전 비교",
@@ -490,10 +627,126 @@
         "selectProcessHint": "프로세스를 선택하면 버전 간 차이를 비교할 수 있습니다",
         "noVersions": "저장된 버전이 없습니다"
     },
+    "toolbarInfo": {
+        "savedAgo": "{n}분 전 저장",
+        "savedJustNow": "방금 저장",
+        "editingBy": "{name}님 수정 중",
+        "readOnly": "보기 전용",
+        "viewMode": "보기",
+        "editMode": "편집",
+        "historyMode": "히스토리"
+    },
+    "validationConsole": {
+        "title": "검증 결과",
+        "noIssues": "문제가 발견되지 않았습니다.",
+        "errorCount": "오류 {n}건",
+        "warningCount": "경고 {n}건",
+        "clickToFocus": "클릭하여 요소로 이동"
+    },
+    "futureStatus": {
+        "label": "Future Status",
+        "maintain": "유지",
+        "sunset": "삭제예정",
+        "new": "신규",
+        "automation_planned": "자동화기획중"
+    },
+    "costType": {
+        "label": "비용 유형",
+        "fte": "FTE",
+        "opex": "OPEX",
+        "contractCost": "도급비 (원)",
+        "unitPrice": "건당 단가 (원)"
+    },
+    "hitl": {
+        "label": "HITL (Human-in-the-Loop)",
+        "enabled": "HITL 활성화",
+        "capabilities": "필요 역량",
+        "capabilityPlaceholder": "역량을 입력하세요"
+    },
+    "processSummary": {
+        "generateSummary": "AI 요약 생성",
+        "generating": "요약 생성 중..."
+    },
+    "multiSelect": {
+        "title": "다중 선택 편집",
+        "selectedCount": "{n}개 요소 선택됨",
+        "mixed": "-- 혼합 --",
+        "applyChanges": "변경 적용",
+        "applyConfirm": "{n}개 요소의 [{field}]를 변경하시겠습니까?",
+        "duration": "소요시간",
+        "futureStatus": "Future Status",
+        "costType": "비용 유형",
+        "applied": "일괄 변경이 적용되었습니다."
+    },
+    "propertyDiff": {
+        "title": "속성 비교",
+        "elementName": "요소명",
+        "property": "속성",
+        "oldValue": "이전 값",
+        "newValue": "현재 값",
+        "revert": "되돌리기",
+        "noChanges": "변경된 속성이 없습니다.",
+        "revertConfirm": "이 속성을 이전 값으로 되돌리시겠습니까?",
+        "reverted": "속성이 되돌려졌습니다."
+    },
+    "approvalResetWarning": {
+        "title": "승인 초기화 경고",
+        "message": "수정하면 진행 중인 승인이 초기화됩니다. 계속하시겠습니까?",
+        "notification": "승인 상태가 초기화되었습니다.",
+        "autoTransitionComment": "공람 기간 만료에 따른 자동 전환"
+    },
+    "auditLog": {
+        "title": "감사 로그",
+        "filterAction": "액션 필터",
+        "filterActor": "수행자 검색",
+        "filterDate": "날짜 필터",
+        "columnDate": "일시",
+        "columnAction": "액션",
+        "columnActor": "수행자",
+        "columnComment": "코멘트",
+        "columnVersion": "버전",
+        "exportCsv": "CSV 내보내기",
+        "viewFullLog": "전체 로그 보기",
+        "noLogs": "로그가 없습니다."
+    },
+    "businessId": {
+        "label": "Business ID",
+        "autoGenerated": "자동 채번됨",
+        "readOnly": "Business ID (읽기전용)"
+    },
+    "manualLink": {
+        "title": "관련 매뉴얼/링크",
+        "addUrl": "URL 추가",
+        "urlPlaceholder": "https://...",
+        "noLinks": "등록된 링크가 없습니다.",
+        "openInNewTab": "새 탭에서 열기",
+        "remove": "삭제"
+    },
+    "timeTravel": {
+        "asIs": "As-Is",
+        "toBe": "To-Be",
+        "label": "시점 전환",
+        "sunset": "폐기 예정",
+        "new": "신규",
+        "automationPlanned": "자동화 예정",
+        "maintain": "유지"
+    },
+    "aiCopilot": {
+        "fileUploadPlaceholder": "PDF/Word 파일 분석은 추후 지원 예정입니다.",
+        "urlPlaceholder": "분석할 URL을 입력하세요",
+        "urlScrapePlaceholder": "URL 스크래핑은 추후 지원 예정입니다.",
+        "fetch": "가져오기",
+        "addUrl": "URL 입력"
+    },
     "progressBadge": {
         "draft": "작성중",
         "review": "검토중",
-        "published": "완료"
+        "published": "완료",
+        "public_review": "Public Review",
+        "publicReviewTooltip": "본사/현업 검토가 승인되었습니다. 자유롭게 의견을 남겨주세요.",
+        "publicReviewTooltipWithDate": "본사/현업 검토가 승인되었습니다. {date}까지 자유롭게 의견을 남겨주세요.",
+        "wip": "차세대 기획 중",
+        "sunset": "폐기 예정"
     },
     "ownerSelect": {
         "noData": "조직 구성원이 없습니다",
@@ -981,6 +1234,10 @@
     "ProcessDefinitionVersionDialog": {
         "title": "프로세스 저장",
         "title2": "버전 업",
+        "minor": "마이너 업데이트",
+        "minorDesc": "소수점 버전 증가 (예: 1.3 → 1.4)",
+        "major": "메이저 업데이트",
+        "majorDesc": "정수 버전 증가 (예: 1.3 → 2.0)",
         "minorUpdate": "현 버전",
         "majorUpdate": "주요 업데이트",
         "update": "업데이트",
@@ -1331,7 +1588,13 @@
         "laneDivideThree": "세 개의 레인으로 나누기",
         "laneEqualize": "레인 크기 동일하게",
         "connectionMulti": "메시지 연결",
-        "phase": "페이즈 추가"
+        "phase": "페이즈 추가",
+        "addComment": "코멘트 작성"
+    },
+    "reviewMode": {
+        "governancePanel": "거버넌스 검토",
+        "approvalTab": "승인 현황",
+        "commentsTab": "피드백"
     },
     "CustomReplaceElement": {
         "replace-with-call-activity": "호출 활동으로 변경",
@@ -2521,34 +2784,70 @@
     "approvalState": {
         "title": "승인 상태",
         "draft": "작성중",
-        "review": "검토중",
-        "level1": "1차 승인",
-        "level2": "2차 승인",
-        "confirmed": "확정",
+        "expertReview": "전문가 검토",
+        "publicFeedback": "전사 공람",
+        "finalEdit": "최종 편집",
+        "published": "배포 완료",
+        "reopenRequested": "개선 요청",
+        "archived": "보관됨",
         "rejected": "반려",
+        "cancelled": "취소됨",
+        "approved": "승인",
+        "pending": "대기중",
+        "parallelReview": "병렬 검토 현황",
         "submitForReview": "검토 요청",
-        "approveLevel1": "1차 승인",
-        "approveLevel2": "2차 승인",
-        "confirm": "확정",
+        "approveHQ": "본사 승인",
+        "approveField": "현업 승인",
+        "endPublicFeedback": "공람 조기 종료",
+        "publish": "배포",
         "reject": "반려",
         "reopen": "재작성",
+        "requestReopen": "개선 요청",
+        "approveReopen": "개선 승인",
+        "rejectReopen": "개선 반려",
         "comment": "코멘트",
         "commentPlaceholder": "코멘트를 입력하세요 (선택사항)",
-        "commentRequired": "반려 사유를 입력해주세요",
+        "commentRequired": "사유를 입력해주세요",
         "cancel": "취소",
         "submittedBy": "검토 요청",
-        "level1By": "1차 승인",
-        "level2By": "2차 승인",
-        "confirmedBy": "확정",
+        "publishedBy": "배포",
         "rejectedBy": "반려자",
+        "version": "버전",
+        "hqReviewer": "본사 검토자",
+        "fieldReviewer": "현업 검토자",
+        "publicFeedbackPeriod": "전사 공람 종료까지",
+        "selfApprovalBlock": "기안자와 승인자가 동일하여 승인할 수 없습니다 (Cross-Check 원칙)",
+        "unresolvedFeedbackBlock": "미해결 피드백이 존재합니다. 모든 피드백을 해결한 후 배포할 수 있습니다.",
         "viewHistory": "이력 보기",
         "noHistory": "이력이 없습니다",
+        "confirm": "확인",
         "actionSubmit": "검토 요청됨",
-        "actionApprove1": "1차 승인됨",
-        "actionApprove2": "2차 승인됨",
-        "actionConfirm": "확정됨",
+        "actionApproveHQ": "본사 승인됨",
+        "actionApproveField": "현업 승인됨",
+        "actionRejectHQ": "본사 반려",
+        "actionRejectField": "현업 반려",
+        "actionStartFeedback": "전사 공람 시작",
+        "actionAutoTransition": "공람 기간 만료 (자동 전환)",
+        "actionPublish": "배포됨",
         "actionReject": "반려됨",
-        "actionReopen": "재작성 요청됨"
+        "actionReopen": "재작성 요청됨",
+        "actionRequestReopen": "현장 개선 요청",
+        "actionApproveReopen": "개선 요청 승인",
+        "actionRejectReopen": "개선 요청 반려",
+        "actionReset": "승인 초기화",
+        "actionCancel": "취소됨",
+        "actionComment": "코멘트",
+        "deriveToBe": "To-Be 파생: 이 Published 버전을 기반으로 새 To-Be 프로세스를 만듭니다",
+        "deriveToBeLockedHint": "Published(v1.0) 이후에만 To-Be 파생이 가능합니다",
+        "requestReopenTitle": "개선 요청 (Re-open)",
+        "requestReopenReason": "개선 요청 사유",
+        "requestReopenReasonPlaceholder": "개선이 필요한 이유를 구체적으로 입력하세요...",
+        "requestReopenReasonRequired": "개선 요청 사유는 필수 입력입니다",
+        "requestReopenSubmit": "개선 요청 제출",
+        "snapshotCompare": "스냅샷 비교",
+        "compareAsIs": "As-Is 비교",
+        "compareDraft": "Draft 보기",
+        "snapshotAt": "스냅샷 시점"
     },
     "agentChat": {
         "learningModeInfo": "학습 모드: 에이전트가 사용자의 지침을 학습하여 이후 작업에 반영합니다. \n 예를 들어, \n ‘제안서 작성 시 각 회사의 CI에 맞는 컬러를 사용해.’ \n ‘정부·공공기관 대상 제안서는 반드시 한글(HWP) 형식으로 작성해.’ \n ‘B2C 제안서는 고객 이해를 돕기 위해 시각 자료를 우선 활용해.’ \n 와 같은 가이드를 학습시킬 수 있습니다.",
@@ -2862,6 +3161,7 @@
     },
     "reviewBoard": {
         "title": "프로세스 리뷰 보드",
+        "myInbox": "내 수신함",
         "subtitle": "프로세스 라이프사이클을 초안에서 배포까지 관리합니다",
         "draft": "초안",
         "review": "검토",
@@ -2898,7 +3198,18 @@
         "cancelled": "취소됨",
         "activeTab": "진행 중",
         "cancelledTab": "취소됨",
-        "noCancelled": "취소된 리뷰가 없습니다"
+        "noCancelled": "취소된 리뷰가 없습니다",
+        "approvalInbox": "내 승인함",
+        "reopenBox": "개선 요청함",
+        "mySubmissions": "내 상신함",
+        "governanceTimeline": "거버넌스 타임라인",
+        "stalledDays": "일째 정체",
+        "urgentAlert": "주의 필요",
+        "noInboxItems": "승인 대기 항목이 없습니다",
+        "noReopenItems": "개선 요청 항목이 없습니다",
+        "noSubmissions": "상신 항목이 없습니다",
+        "total": "전체",
+        "items": "건"
     },
     "approval": {
         "inProgressTitle": "승인 진행 중",

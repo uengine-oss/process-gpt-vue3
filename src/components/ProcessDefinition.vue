@@ -38,18 +38,21 @@
                             :generateFormTask="generateFormTask"
                             :isPreviewPDFDialog="isPreviewPDFDialog"
                             :isAIGenerated="isAIGenerated"
+                            :commentCounts="commentCounts"
                             @closePDFDialog="closePDFDialog"
                             v-on:error="handleError"
                             v-on:shown="handleBpmnShown"
                             v-on:openDefinition="(ele) => openSubProcess(ele)"
                             v-on:loading="handleLoading"
                             v-on:openPanel="(id) => openPanel(id)"
+                            v-on:addComment="(id) => openCommentPanelForElement(id)"
                             v-on:update-xml="(val) => $emit('update-xml', val)"
                             v-on:definition="(def) => (definitions = def)"
                             v-on:add-shape="onAddShape"
                             v-on:done="handleBpmnDone"
                             @changeElement="changeElement"
                             @update:isAIGenerated="updateIsAIGenerated"
+                            @multiSelect="onMultiSelect"
                             :onLoadStart="onBpmnLoadStart"
                             :onLoadEnd="onBpmnLoadEnd"
                             >
@@ -137,8 +140,25 @@
                                 :selectedElement="selectedElementForComment"
                                 @close="showCommentPanel = false"
                                 @commentCountChanged="loadCommentCounts"
+                                @focusElement="(id) => $refs.bpmnVue && $refs.bpmnVue.focusElement(id)"
                             />
                         </div>
+
+                        <!-- Validation Console Panel (Phase 1-3) -->
+                        <ValidationConsolePanel
+                            :show="showValidationConsole"
+                            :items="consoleValidationItems"
+                            @close="showValidationConsole = false"
+                            @focusElement="(id) => $refs.bpmnVue && $refs.bpmnVue.focusElement(id)"
+                        />
+
+                        <!-- Multi-Select Panel (Phase 2-7) -->
+                        <MultiSelectPanel
+                            v-if="multiSelectedElements.length >= 2"
+                            :selectedElements="multiSelectedElements"
+                            @close="multiSelectedElements = []"
+                            @applyBatch="onApplyBatch"
+                        />
 
                         <!-- View Mode Property Panel (inside canvas) -->
                         <div v-if="panel && isViewMode" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
@@ -340,6 +360,8 @@ import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
+import ValidationConsolePanel from '@/components/ui/ValidationConsolePanel.vue';
+import MultiSelectPanel from '@/components/ui/MultiSelectPanel.vue';
 
 const backend = BackendFactory.createBackend();
 export default {
@@ -361,7 +383,9 @@ export default {
         DryRunProcess,
         TestProcess,
         ElementCommentPanel,
-        ApprovalStatePanel
+        ApprovalStatePanel,
+        ValidationConsolePanel,
+        MultiSelectPanel
     },
     props: {
         processDefinition: Object,
@@ -374,6 +398,11 @@ export default {
         generateFormTask: Object,
         isPreviewPDFDialog: Boolean,
         isAIGenerated: Boolean,
+        showValidationConsole: Boolean,
+        consoleValidationItems: {
+            type: Array,
+            default: () => []
+        },
     },
     data: () => ({
         panel: false,
@@ -433,6 +462,9 @@ export default {
 
         // 승인 상태 패널
         showApprovalPanel: false,
+
+        // Multi-select
+        multiSelectedElements: [],
     }),
     computed: {
         mode() {
@@ -633,6 +665,21 @@ export default {
                 }
             }
         },
+        // 특정 요소 ID에 대해 코멘트 패널 열기 (context menu에서 호출)
+        openCommentPanelForElement(elementId) {
+            if (!elementId) return;
+            if (!this.$refs.bpmnVue || !this.$refs.bpmnVue.bpmnViewer) return;
+            const elementRegistry = this.$refs.bpmnVue.bpmnViewer.get('elementRegistry');
+            const el = elementRegistry.get(elementId);
+            if (!el) return;
+            const elementType = el.type || '';
+            this.selectedElementForComment = {
+                id: el.id,
+                type: elementType,
+                name: el.businessObject?.name || el.id
+            };
+            this.showCommentPanel = true;
+        },
         // Task 타입 여부 확인
         isTaskType(type) {
             if (!type) return false;
@@ -645,6 +692,44 @@ export default {
             } catch (e) {
                 console.error('댓글 개수 로드 실패:', e);
             }
+        },
+        // Phase 2-7: Multi-select handler
+        onMultiSelect(selectedElements) {
+            if (selectedElements && selectedElements.length >= 2) {
+                this.multiSelectedElements = selectedElements;
+                this.panel = false; // Hide individual panel
+            } else {
+                this.multiSelectedElements = [];
+            }
+        },
+        onApplyBatch({ elements, changes }) {
+            if (!this.$refs.bpmnVue || !this.$refs.bpmnVue.bpmnViewer) return;
+            const modeling = this.$refs.bpmnVue.bpmnViewer.get('modeling');
+            const moddle = this.$refs.bpmnVue.bpmnViewer.get('moddle');
+
+            elements.forEach(el => {
+                try {
+                    const bo = el.businessObject;
+                    if (!bo.extensionElements) {
+                        bo.extensionElements = moddle.create('bpmn:ExtensionElements', { values: [] });
+                    }
+                    let propsExt = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                    let propsObj = {};
+                    if (propsExt && propsExt.text) {
+                        try { propsObj = JSON.parse(propsExt.text); } catch {}
+                    }
+                    Object.assign(propsObj, changes);
+                    if (!propsExt) {
+                        propsExt = moddle.create('uengine:Properties', { text: JSON.stringify(propsObj) });
+                        bo.extensionElements.values.push(propsExt);
+                    } else {
+                        propsExt.text = JSON.stringify(propsObj);
+                    }
+                } catch (e) {
+                    console.warn('[MultiSelectPanel] batch update error:', e);
+                }
+            });
+            this.multiSelectedElements = [];
         },
         onApprovalStateChanged(state) {
             // 승인 상태 변경 시 처리

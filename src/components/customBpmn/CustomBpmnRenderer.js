@@ -667,6 +667,98 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       observer.disconnect();
     }, 100);
 
+    // Phase 4-2: Display Business ID label above the Task
+    const extensionElements2 = element.businessObject?.extensionElements;
+    let businessId = '';
+    if (extensionElements2 && extensionElements2.values) {
+      const uengineProps2 = extensionElements2.values.find(v => v.$type === 'uengine:Properties');
+      if (uengineProps2 && uengineProps2.json) {
+        try {
+          const props2 = JSON.parse(uengineProps2.json);
+          if (props2.businessId) businessId = props2.businessId;
+        } catch (e) { /* ignore */ }
+      }
+    }
+    if (businessId) {
+      const bidLabel = svgCreate('text');
+      svgAttr(bidLabel, {
+        x: existingWidth / 2,
+        y: -6,
+        'text-anchor': 'middle',
+        'font-size': '9px',
+        'font-family': '"Courier New", monospace',
+        'fill': '#888888',
+        'pointer-events': 'none'
+      });
+      bidLabel.textContent = businessId;
+      svgAppend(parentNode, bidLabel);
+    }
+
+    // Phase 4-3: Time-Travel Visual Cues
+    const timeTravel = window.$bpmnTimeTravel;
+    if (timeTravel === 'toBe') {
+      let futureStatus = '';
+      if (extensionElements2 && extensionElements2.values) {
+        const uengineProps3 = extensionElements2.values.find(v => v.$type === 'uengine:Properties');
+        if (uengineProps3 && uengineProps3.json) {
+          try {
+            const props3 = JSON.parse(uengineProps3.json);
+            if (props3.futureStatus) futureStatus = props3.futureStatus;
+          } catch (e) { /* ignore */ }
+        }
+      }
+
+      if (futureStatus === 'sunset') {
+        // Red dashed border + strikethrough name
+        const sunsetBorder = svgCreate('rect');
+        svgAttr(sunsetBorder, {
+          width: existingWidth, height: existingHeight,
+          rx: TASK_BORDER_RADIUS, ry: TASK_BORDER_RADIUS,
+          stroke: '#e53935', strokeWidth: 2, strokeDasharray: '6,3',
+          fill: 'none', 'pointer-events': 'none'
+        });
+        svgAppend(parentNode, sunsetBorder);
+        // Strikethrough line over name
+        const strikeY = existingHeight / 2;
+        const strikeLine = svgCreate('line');
+        svgAttr(strikeLine, {
+          x1: 10, y1: strikeY, x2: existingWidth - 10, y2: strikeY,
+          stroke: '#e53935', strokeWidth: 1.5, 'pointer-events': 'none'
+        });
+        svgAppend(parentNode, strikeLine);
+      } else if (futureStatus === 'new') {
+        // Blue glow border
+        const glowBorder = svgCreate('rect');
+        svgAttr(glowBorder, {
+          width: existingWidth + 4, height: existingHeight + 4,
+          x: -2, y: -2,
+          rx: TASK_BORDER_RADIUS + 2, ry: TASK_BORDER_RADIUS + 2,
+          stroke: '#1565c0', strokeWidth: 3, strokeOpacity: 0.6,
+          fill: 'none', 'pointer-events': 'none'
+        });
+        svgAppend(parentNode, glowBorder);
+      } else if (futureStatus === 'automation_planned') {
+        // Orange dashed border + robot icon
+        const autoBorder = svgCreate('rect');
+        svgAttr(autoBorder, {
+          width: existingWidth, height: existingHeight,
+          rx: TASK_BORDER_RADIUS, ry: TASK_BORDER_RADIUS,
+          stroke: '#f57c00', strokeWidth: 2, strokeDasharray: '6,3',
+          fill: 'none', 'pointer-events': 'none'
+        });
+        svgAppend(parentNode, autoBorder);
+        // Robot icon indicator
+        const robotIcon = svgCreate('text');
+        svgAttr(robotIcon, {
+          x: existingWidth - 14, y: 14,
+          'font-size': '12px', fill: '#f57c00', 'pointer-events': 'none'
+        });
+        robotIcon.textContent = '🤖';
+        svgAppend(parentNode, robotIcon);
+      }
+      // 'maintain' = no visual change
+    }
+
     // Display System Name / Menu Name below the Task
     if (systemName || menuName) {
       const labelParts = [];

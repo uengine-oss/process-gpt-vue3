@@ -15,9 +15,13 @@
 
         <!-- 선택된 요소 정보 -->
         <div v-if="selectedElement && isTaskType(selectedElement.type)" class="px-3 pb-2">
-            <v-chip size="small" :color="getElementColor(selectedElement.type)" variant="tonal">
+            <v-chip size="small" :color="getElementColor(selectedElement.type)" variant="tonal"
+                style="cursor: pointer;"
+                @click="$emit('focusElement', selectedElement.id)"
+            >
                 <v-icon start size="14">{{ getElementIcon(selectedElement.type) }}</v-icon>
                 {{ selectedElement.name || selectedElement.id }}
+                <v-icon end size="12">mdi-crosshairs-gps</v-icon>
             </v-chip>
         </div>
 
@@ -109,7 +113,7 @@ export default defineComponent({
             default: null
         }
     },
-    emits: ['close', 'commentCountChanged'],
+    emits: ['close', 'commentCountChanged', 'focusElement'],
     setup(props, { emit }) {
         const backend = BackendFactory.createBackend();
         const comments = ref<any[]>([]);
@@ -209,11 +213,12 @@ export default defineComponent({
             }
         };
 
-        // 댓글 해결 처리
-        const handleResolve = async (data: { commentId: string; resolved: boolean }) => {
+        // 댓글 해결 처리 (resolve_action_text 포함)
+        const handleResolve = async (data: { commentId: string; resolved: boolean; resolveActionText?: string }) => {
             try {
-                await backend.resolveElementComment(data.commentId, data.resolved);
+                await backend.resolveElementComment(data.commentId, data.resolved, data.resolveActionText);
                 await loadComments();
+                emit('commentCountChanged');
             } catch (e) {
                 console.error('댓글 해결 처리 실패:', e);
             }

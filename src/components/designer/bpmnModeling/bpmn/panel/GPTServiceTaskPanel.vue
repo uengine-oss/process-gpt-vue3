@@ -3,6 +3,22 @@
         <div class="mb-6">
             <!-- Duration -->
             <v-text-field v-model="activity.duration" label="소요시간" suffix="일" type="number" class="mb-4"></v-text-field>
+
+            <!-- Future Status (Phase 2-2) -->
+            <v-select
+                v-model="activity.futureStatus"
+                :label="$t('futureStatus.label')"
+                :items="futureStatusOptions"
+                item-title="title"
+                item-value="value"
+                density="compact"
+                variant="outlined"
+                class="mb-4"
+                hide-details
+                :disabled="isViewMode"
+                clearable
+            ></v-select>
+
             <!-- Instruction -->
             <Instruction v-model="activity.description" class="mb-4"></Instruction>
             <!-- Checkpoints -->
@@ -55,7 +71,8 @@ export default {
                 attachments: [],
                 instruction: '',
                 checkpoints: [''],
-                customProperties: []
+                customProperties: [],
+                futureStatus: null
             }
         }
     },
@@ -73,6 +90,16 @@ export default {
         me.activity.type = 'serviceTask';
         if (me.copyUengineProperties && me.copyUengineProperties.customProperties) {
             me.activity.customProperties = me.copyUengineProperties.customProperties;
+        }
+    },
+    computed: {
+        futureStatusOptions() {
+            return [
+                { title: this.$t('futureStatus.maintain'), value: 'maintain' },
+                { title: this.$t('futureStatus.sunset'), value: 'sunset' },
+                { title: this.$t('futureStatus.new'), value: 'new' },
+                { title: this.$t('futureStatus.automation_planned'), value: 'automation_planned' }
+            ];
         }
     },
     methods: {

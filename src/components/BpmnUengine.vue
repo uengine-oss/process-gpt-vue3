@@ -121,11 +121,13 @@ export default {
         'openDefinition',
         'loading',
         'openPanel',
+        'addComment',
         'updateXml',
         'definition',
         'addShape',
         'done',
-        'changeElement'
+        'changeElement',
+        'multiSelect'
     ],
     props: {
         url: {
@@ -160,6 +162,10 @@ export default {
         },
         isAIGenerated: {
             type: Boolean
+        },
+        commentCounts: {
+            type: Object,
+            default: () => ({})
         },
         onLoadStart: {
             type: Function,
@@ -395,8 +401,126 @@ export default {
                 this.$emit('closePDFDialog');
             }
         },
+        commentCounts: {
+            handler(val) {
+                this.renderCommentBadges(val);
+            },
+            deep: true
+        },
     },
     methods: {
+        // 노드별 코멘트 배지 오버레이 렌더링
+        renderCommentBadges(commentCounts) {
+            if (!this.bpmnViewer) return;
+            try {
+                const overlays = this.bpmnViewer.get('overlays');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+
+                // 기존 코멘트 배지 제거
+                overlays.remove({ type: 'comment-badge' });
+
+                if (!commentCounts || Object.keys(commentCounts).length === 0) return;
+
+                Object.entries(commentCounts).forEach(([elementId, countObj]) => {
+                    const count = typeof countObj === 'object' ? (countObj.unresolved || 0) : (countObj || 0);
+                    if (count === 0) return;
+                    const element = elementRegistry.get(elementId);
+                    if (!element) return;
+
+                    const badge = document.createElement('div');
+                    badge.className = 'comment-count-badge';
+                    badge.style.cssText = [
+                        'cursor: pointer',
+                        'min-width: 18px',
+                        'height: 18px',
+                        'background: #e53935',
+                        'border-radius: 9px',
+                        'border: 2px solid #fff',
+                        'display: flex',
+                        'align-items: center',
+                        'justify-content: center',
+                        'padding: 0 4px',
+                        'box-shadow: 0 1px 4px rgba(0,0,0,0.25)',
+                        'font-size: 10px',
+                        'font-weight: bold',
+                        'color: #fff',
+                        'font-family: Arial, sans-serif',
+                        'pointer-events: auto'
+                    ].join(';');
+                    badge.textContent = count > 99 ? '99+' : String(count);
+
+                    const self = this;
+                    badge.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        self.$emit('addComment', elementId);
+                    });
+
+                    overlays.add(elementId, 'comment-badge', {
+                        position: { top: -10, right: -10 },
+                        html: badge
+                    });
+                });
+            } catch (e) {
+                console.warn('[BpmnUengine] renderCommentBadges 오류:', e);
+            }
+        },
+
+        // 특정 요소로 캔버스 포커스 이동
+        focusElement(elementId) {
+            if (!this.bpmnViewer || !elementId) return;
+            try {
+                const canvas = this.bpmnViewer.get('canvas');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const element = elementRegistry.get(elementId);
+                if (!element) return;
+
+                const viewbox = canvas.viewbox();
+                const elementMid = {
+                    x: element.x + element.width / 2,
+                    y: element.y + element.height / 2
+                };
+                const zoom = 1.0;
+                canvas.viewbox({
+                    x: elementMid.x - (viewbox.outer.width / zoom / 2),
+                    y: elementMid.y - (viewbox.outer.height / zoom / 2),
+                    width: viewbox.outer.width / zoom,
+                    height: viewbox.outer.height / zoom
+                });
+                canvas.zoom(zoom);
+            } catch (e) {
+                console.warn('[BpmnUengine] focusElement 오류:', e);
+            }
+        },
+
+        // Phase 1-3: Apply validation markers on canvas
+        applyValidationMarkers(items) {
+            if (!this.bpmnViewer) return;
+            try {
+                const canvas = this.bpmnViewer.get('canvas');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+
+                // Remove all existing validation markers
+                elementRegistry.getAll().forEach(el => {
+                    canvas.removeMarker(el.id, 'validation-error');
+                    canvas.removeMarker(el.id, 'validation-warning');
+                });
+
+                // Add markers per item
+                (items || []).forEach(item => {
+                    if (!item.elementId) return;
+                    const el = elementRegistry.get(item.elementId);
+                    if (!el) return;
+                    if (item.level === 'error') {
+                        canvas.addMarker(item.elementId, 'validation-error');
+                    } else {
+                        canvas.addMarker(item.elementId, 'validation-warning');
+                    }
+                });
+            } catch (e) {
+                console.warn('[BpmnUengine] applyValidationMarkers error:', e);
+            }
+        },
+
         async loadPaletteSettings() {
             try {
                 const catalogStore = useTaskCatalogStore();
@@ -999,6 +1123,11 @@ export default {
                     self.$emit('openPanel', e.element.id);
                 });
 
+                // ContextPad에서 코멘트 작성 버튼 클릭 시
+                eventBus.on('element.addComment', function (e) {
+                    self.$emit('addComment', e.element.id);
+                });
+
                 // directEditing 시작/종료 시 커스텀 텍스트 처리 (인라인 편집 충돌 방지)
                 eventBus.on('directEditing.activate', function (e) {
                     // 인라인 편집 시작 시 해당 요소의 커스텀 텍스트 숨기기
@@ -1054,6 +1183,103 @@ export default {
                     }
                 });
 
+                // Phase 4-2: Business ID auto-assignment on task creation
+                eventBus.on('shape.added', function(event) {
+                    const element = event.element;
+                    if (!element || !element.type || !element.type.includes('Task')) return;
+                    // Only assign if no businessId already
+                    const extEls = element.businessObject?.extensionElements;
+                    if (extEls?.values) {
+                        const uProps = extEls.values.find(v => v.$type === 'uengine:Properties');
+                        if (uProps?.json) {
+                            try {
+                                const parsed = JSON.parse(uProps.json);
+                                if (parsed.businessId) return; // Already has one
+                            } catch(e) {}
+                        }
+                    }
+                    // Auto-assign via window.$bpmnHierarchyPath if set
+                    const hierarchyPath = window.$bpmnHierarchyPath;
+                    if (!hierarchyPath) return;
+                    // Collect existing businessIds
+                    const registry = self.bpmnViewer.get('elementRegistry');
+                    const existingIds = new Set();
+                    registry.filter(el => el.type && el.type.includes('Task')).forEach(el => {
+                        const ext = el.businessObject?.extensionElements;
+                        if (ext?.values) {
+                            const p = ext.values.find(v => v.$type === 'uengine:Properties');
+                            if (p?.json) {
+                                try {
+                                    const pj = JSON.parse(p.json);
+                                    if (pj.businessId) existingIds.add(pj.businessId);
+                                } catch(e) {}
+                            }
+                        }
+                    });
+                    // Generate new ID
+                    const prefix = `${hierarchyPath}-T`;
+                    let maxNum = 0;
+                    existingIds.forEach(id => {
+                        if (id.startsWith(prefix)) {
+                            const n = parseInt(id.slice(prefix.length), 10);
+                            if (!isNaN(n) && n > maxNum) maxNum = n;
+                        }
+                    });
+                    const newBid = `${prefix}${String(maxNum + 1).padStart(2, '0')}`;
+                    // Assign via modeling.updateProperties
+                    try {
+                        const modeling = self.bpmnViewer.get('modeling');
+                        const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
+                        let businessObject = element.businessObject;
+                        if (!businessObject.extensionElements) {
+                            businessObject.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+                        }
+                        let uProp = businessObject.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                        if (!uProp) {
+                            uProp = bpmnFactory.create('uengine:Properties', { json: '{}' });
+                            businessObject.extensionElements.values.push(uProp);
+                        }
+                        const jsonData = JSON.parse(uProp.json || '{}');
+                        jsonData.businessId = newBid;
+                        uProp.json = JSON.stringify(jsonData);
+                    } catch (e) {
+                        console.warn('[BpmnUengine] businessId assignment failed:', e);
+                    }
+                });
+
+                // Phase 4-4: SSO Lane - block direct editing for Organization type
+                eventBus.on('directEditing.activate', function(event) {
+                    const element = event.active?.element;
+                    if (!element || element.type !== 'bpmn:Lane') return;
+                    // Check if lane has Organization type
+                    const ext = element.businessObject?.extensionElements;
+                    if (ext?.values) {
+                        const uProp = ext.values.find(v => v.$type === 'uengine:Properties');
+                        if (uProp?.json) {
+                            try {
+                                const parsed = JSON.parse(uProp.json);
+                                if (parsed.roleResolutionContext?._type === 'Organization') {
+                                    // Cancel direct editing, open panel instead
+                                    const directEditing = self.bpmnViewer.get('directEditing');
+                                    directEditing.cancel();
+                                    self.$emit('openPanel', element.id);
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                });
+
+                // Phase 2-7: Multi-select detection
+                eventBus.on('selection.changed', function(event) {
+                    const newSelection = event.newSelection || [];
+                    const tasks = newSelection.filter(el => el.type && el.type.includes('Task'));
+                    if (tasks.length >= 2) {
+                        self.$emit('multiSelect', tasks);
+                    } else {
+                        self.$emit('multiSelect', []);
+                    }
+                });
+
                 // var events = ['element.hover', 'element.out', 'element.click', 'element.dblclick', 'element.mousedown', 'element.mouseup'];
                 // events.forEach(function (event) {
 
@@ -1064,8 +1290,15 @@ export default {
                     }
                     self._layoutTimeout = setTimeout(() => {
                         self.applyAutoLayout();
-                        self.$emit('update:isAIGenerated', false); 
+                        self.$emit('update:isAIGenerated', false);
                     }, 500); // 500ms 안 변하면 실행
+                }
+
+                // 코멘트 배지 렌더링 (commentCounts prop이 있을 때)
+                if (self.commentCounts && Object.keys(self.commentCounts).length > 0) {
+                    self.$nextTick(() => {
+                        self.renderCommentBadges(self.commentCounts);
+                    });
                 }
 
                 let endTime = performance.now();
@@ -1426,9 +1659,22 @@ export default {
             var zoomScroll = self.bpmnViewer.get('zoomScroll');
             var moveCanvas = self.bpmnViewer.get('MoveCanvas');
 
+            // Guard: skip if canvas container has no dimensions (prevents SVGMatrix non-finite error)
+            try {
+                var container = canvas._container || canvas.getContainer?.();
+                if (container && (container.clientWidth === 0 || container.clientHeight === 0)) {
+                    return;
+                }
+            } catch (e) { /* ignore */ }
+
             var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
 
-            zoomScroll.reset();
+            try {
+                zoomScroll.reset();
+            } catch (e) {
+                console.warn('[BpmnUengine] zoomScroll.reset() failed:', e.message);
+                return;
+            }
 
             // ✅ 1) 기본 줌: 캔버스 꽉 채우기
             canvas.zoom('fit-viewport', 'auto');
@@ -2106,6 +2352,20 @@ export default {
 </script>
 
 <style>
+
+/* Phase 1-3: Validation markers */
+.djs-element.validation-error .djs-visual rect,
+.djs-element.validation-error .djs-visual circle,
+.djs-element.validation-error .djs-visual polygon {
+    stroke: #F44336 !important;
+    stroke-width: 2px !important;
+}
+.djs-element.validation-warning .djs-visual rect,
+.djs-element.validation-warning .djs-visual circle,
+.djs-element.validation-warning .djs-visual polygon {
+    stroke: #FF9800 !important;
+    stroke-width: 2px !important;
+}
 
 .mobile-position {
     position: absolute;

@@ -156,6 +156,27 @@
                 </v-card>
             </v-row>
         </div> -->
+        <!-- Business ID (Phase 4-2, read-only) -->
+        <div v-if="copyUengineProperties.businessId" class="mt-4">
+            <v-text-field
+                :model-value="copyUengineProperties.businessId"
+                :label="$t('businessId.readOnly')"
+                density="compact"
+                variant="outlined"
+                hide-details
+                readonly
+                prepend-inner-icon="mdi-identifier"
+            />
+        </div>
+
+        <!-- Manual Links (Phase 4-1) -->
+        <div class="mt-4">
+            <ManualLinkField
+                v-model="copyUengineProperties.manualLinks"
+                :disabled="isViewMode"
+            />
+        </div>
+
         <!-- Lead Time -->
         <div class="mt-4">
             <LeadTimeInput
@@ -163,6 +184,52 @@
                 :label="$t('leadTime.title') || 'Lead Time'"
                 :disabled="isViewMode"
             />
+        </div>
+
+        <!-- Future Status (Phase 2-2) -->
+        <div class="mt-4">
+            <v-select
+                v-model="copyUengineProperties.futureStatus"
+                :label="$t('futureStatus.label')"
+                :items="futureStatusOptions"
+                item-title="title"
+                item-value="value"
+                density="compact"
+                variant="outlined"
+                hide-details
+                :disabled="isViewMode"
+                clearable
+            ></v-select>
+        </div>
+
+        <!-- Cost Type (Phase 2-3) -->
+        <div class="mt-4">
+            <div class="text-caption text-medium-emphasis mb-1">{{ $t('costType.label') }}</div>
+            <v-chip-group v-model="copyUengineProperties.costType" mandatory :disabled="isViewMode">
+                <v-chip value="FTE" size="small" variant="outlined" filter>{{ $t('costType.fte') }}</v-chip>
+                <v-chip value="OPEX" size="small" variant="outlined" filter>{{ $t('costType.opex') }}</v-chip>
+            </v-chip-group>
+            <div v-if="copyUengineProperties.costType === 'OPEX'" class="mt-2">
+                <v-text-field
+                    v-model="copyUengineProperties.contractCost"
+                    :label="$t('costType.contractCost')"
+                    type="number"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="mb-2"
+                    :disabled="isViewMode"
+                ></v-text-field>
+                <v-text-field
+                    v-model="copyUengineProperties.unitPrice"
+                    :label="$t('costType.unitPrice')"
+                    type="number"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    :disabled="isViewMode"
+                ></v-text-field>
+            </div>
         </div>
 
         <!-- Schema-based Properties -->
@@ -191,6 +258,7 @@ import { Icon } from '@iconify/vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import SchemaBasedProperties from './SchemaBasedProperties.vue';
 import LeadTimeInput from './LeadTimeInput.vue';
+import ManualLinkField from '@/components/ui/ManualLinkField.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
@@ -203,7 +271,8 @@ export default {
     components: {
         KeyValueField,
         SchemaBasedProperties,
-        LeadTimeInput
+        LeadTimeInput,
+        ManualLinkField
     },
     created() {
         if (this.uengineProperties) {
@@ -218,6 +287,9 @@ export default {
         if(!this.copyUengineProperties.schemaProperties) this.copyUengineProperties.schemaProperties = {};
         if(!this.copyUengineProperties.systemName) this.copyUengineProperties.systemName = '';
         if(!this.copyUengineProperties.menuName) this.copyUengineProperties.menuName = '';
+        if(!this.copyUengineProperties.futureStatus) this.copyUengineProperties.futureStatus = null;
+        if(!this.copyUengineProperties.costType) this.copyUengineProperties.costType = 'FTE';
+        if(!this.copyUengineProperties.manualLinks) this.copyUengineProperties.manualLinks = [];
     },
     data() {
         return {
@@ -255,6 +327,14 @@ export default {
         // });
     },
     computed: {
+        futureStatusOptions() {
+            return [
+                { title: this.$t('futureStatus.maintain'), value: 'maintain' },
+                { title: this.$t('futureStatus.sunset'), value: 'sunset' },
+                { title: this.$t('futureStatus.new'), value: 'new' },
+                { title: this.$t('futureStatus.automation_planned'), value: 'automation_planned' }
+            ];
+        },
         inputData() {
             let params = this.copyUengineProperties.parameters;
             let result = [];

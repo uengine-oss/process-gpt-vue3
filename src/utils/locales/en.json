@@ -387,7 +387,27 @@
     "processArchitecture": {
         "title": "Process Architecture",
         "subtitle": "Manage and organize your enterprise BPMN processes",
+        "toBeToggle": "To-Be Project (Next-Gen BPR)",
         "export": "Export",
+        "exportMenu": {
+            "scope": "Export Scope",
+            "visibleOnly": "Visible Only",
+            "fullHierarchy": "Full Hierarchy",
+            "excel": "Excel (.xlsx)",
+            "excelDesc": "Flat table with all process data",
+            "pdf": "PDF",
+            "pdfDesc": "Current view as PDF",
+            "png": "PNG Image",
+            "pngDesc": "Current view as image",
+            "json": "JSON",
+            "jsonDesc": "Raw proc_map data",
+            "mermaid": "Mermaid Script",
+            "mermaidDesc": "Hierarchy as .mmd file",
+            "exporting": "Exporting...",
+            "processingLargeData": "Large dataset detected. Processing in background...",
+            "exportComplete": "Export complete. Downloading...",
+            "exportFailed": "Export failed. Please try again."
+        },
         "newProcess": "+ New Process",
         "searchPlaceholder": "Search processes...",
         "allDomains": "All Domains",
@@ -395,8 +415,8 @@
         "noSubProcesses": "No sub-processes",
         "views": {
             "card": "Card",
-            "tree": "Tree",
             "matrix": "Matrix",
+            "tree": "Tree",
             "hierarchy": "Hierarchy"
         },
         "stats": {
@@ -411,28 +431,140 @@
             "expand": "Expand",
             "collapse": "Collapse"
         },
+        "advancedFilter": {
+            "button": "Filters",
+            "title": "Advanced Filters",
+            "status": "Process Status",
+            "statusDraft": "Draft",
+            "statusReview": "In Review",
+            "statusPublicReview": "Public Review",
+            "statusPublished": "Published",
+            "statusWip": "WIP",
+            "dateRange": "Date Range",
+            "dateNone": "Any",
+            "relative": "Relative",
+            "absolute": "Absolute",
+            "relativeRange": "Within last...",
+            "last7days": "Last 7 days",
+            "last30days": "Last 30 days",
+            "last90days": "Last 3 months",
+            "last180days": "Last 6 months",
+            "from": "From",
+            "to": "To",
+            "ownership": "Ownership",
+            "ownerSearch": "Filter by owner...",
+            "ownerRole": "Owner role",
+            "ownerRoleAny": "Any role",
+            "ownerRolePrimary": "Primary Owner",
+            "ownerRoleCo": "Co-Owner",
+            "ownerRoleMaster": "Master",
+            "tags": "Tags",
+            "tagSearch": "Filter by tag...",
+            "presets": "Filter Presets",
+            "savePreset": "Save",
+            "savePresetTitle": "Save Filter Preset",
+            "presetName": "Preset name",
+            "noPresets": "No saved presets.",
+            "reset": "Reset",
+            "apply": "Apply",
+            "numericalRange": "Numerical Range",
+            "fteRange": "FTE Range",
+            "leadTimeRange": "Lead-time Range",
+            "days": "days",
+            "systems": "System / OSS",
+            "systemSearch": "Filter by system or OSS..."
+        },
         "hierarchy": {
             "selectDomain": "Select Domain",
             "expandAll": "Expand All",
             "collapseAll": "Collapse All",
             "clickToToggle": "Click node to expand/collapse"
         },
+        "mermaid": {
+            "zoomLevel": "Zoom",
+            "panHint": "Drag to pan, scroll to zoom"
+        },
+        "tree": {
+            "moveWarningTitle": "Move Sub-Process",
+            "moveWarningDesc": "Move \"{processName}\" from \"{fromMajor}\" to \"{toMajor}\"?",
+            "idRenumberAlert": "Business ID will be re-numbered",
+            "idRenumberDesc": "The process will receive a new ID based on its new parent location.",
+            "uidPreservedNote": "The internal UID (audit logs, task mappings) will be preserved.",
+            "cancel": "Cancel",
+            "confirmMove": "Move",
+            "moveSuccess": "\"{name}\" has been moved.",
+            "moveFailed": "Failed to move the process. Please try again."
+        },
+        "search": {
+            "recentlyViewed": "Recently Viewed"
+        },
+        "myProcesses": {
+            "label": "My Processes",
+            "title": "My Processes Filter",
+            "favorites": "Favorites",
+            "myCreation": "My Creation",
+            "myOrganization": "My Organization",
+            "apply": "Apply Filter",
+            "applied": "Filter Active"
+        },
+        "emptyState": {
+            "message": "No processes match the current filters.",
+            "resetFilters": "Reset Filters"
+        },
+        "quickFilters": {
+            "label": "Quick Filters",
+            "needFeedback": "Need Feedback",
+            "wil": "WIL (In Progress)"
+        },
+        "board": {
+            "totalProcesses": "Total Processes",
+            "reviewing": "Reviewing",
+            "countUnit": "",
+            "noItems": "No processes in this category",
+            "editColumnName": "Edit column name",
+            "columns": {
+                "design": "Design",
+                "build": "Build",
+                "monitor": "Monitor",
+                "control": "Control",
+                "shared": "Shared"
+            }
+        },
         "newProcessDialog": {
             "title": "Create New Process",
+            "asIs": "As-Is",
+            "toBe": "To-Be",
             "processName": "Process Name",
             "processNamePlaceholder": "e.g., Monthly Payroll Closing",
             "nameRequired": "Process name is required",
+            "similarNameWarning": "Similar processes already exist:",
             "hierarchyLocation": "Hierarchy Location",
+            "hierarchyRequired": "Please select Domain, Mega Process, and Major Process to enable creation.",
             "domain": "Domain",
             "megaProcess": "Mega Process",
             "majorProcess": "Major Process",
+            "owners": "Owners",
+            "primaryOwner": "Primary Owner",
+            "ownerPlaceholder": "Search by name or email...",
+            "coOwner": "Co-Owner(s)",
+            "coOwnerPlaceholder": "Add co-owners...",
+            "master": "Master",
+            "masterPlaceholder": "Search by name or email...",
             "creationType": "Creation Type",
             "scratch": "Scratch",
             "template": "Template",
             "clone": "Clone",
             "selectTemplate": "Select a template...",
             "selectCloneSource": "Select process to clone...",
-            "createAndOpen": "Create & Open"
+            "pidPreview": "Auto-assigned ID",
+            "sourceMapping": "Source Mapping (As-Is Processes)",
+            "sourceMappingInfo": "Select existing As-Is processes that this To-Be process will consolidate or replace.",
+            "selectSourceProcesses": "Select source As-Is processes...",
+            "sourceMappingPlaceholder": "Search processes to map...",
+            "createAndOpen": "Create & Open",
+            "aiSuggestion": "AI Suggested Location",
+            "recommended": "Recommended",
+            "applySuggestion": "Apply"
         }
     },
     "processHierarchy": {
@@ -472,7 +604,12 @@
         "submitForReviewAfterSave": "Submit for review after save",
         "saveAndContinue": "Save",
         "savedAndSubmitted": "Saved and submitted for review",
-        "currentVersion": "Current version"
+        "currentVersion": "Current version",
+        "wipOn": "Clear WIP",
+        "wipOff": "Set WIP",
+        "wipEnabled": "Process marked as WIP.",
+        "wipDisabled": "WIP status cleared.",
+        "wipFailed": "Failed to update WIP status."
     },
     "versionComparison": {
         "title": "Version Comparison",
@@ -500,10 +637,126 @@
         "selectProcessHint": "Select a process to compare differences between versions",
         "noVersions": "No saved versions"
     },
+    "toolbarInfo": {
+        "savedAgo": "Saved {n}m ago",
+        "savedJustNow": "Just saved",
+        "editingBy": "{name} is editing",
+        "readOnly": "Read-only",
+        "viewMode": "View",
+        "editMode": "Edit",
+        "historyMode": "History"
+    },
+    "validationConsole": {
+        "title": "Validation Results",
+        "noIssues": "No issues found.",
+        "errorCount": "{n} error(s)",
+        "warningCount": "{n} warning(s)",
+        "clickToFocus": "Click to focus element"
+    },
+    "futureStatus": {
+        "label": "Future Status",
+        "maintain": "Maintain",
+        "sunset": "Sunset",
+        "new": "New",
+        "automation_planned": "Automation Planned"
+    },
+    "costType": {
+        "label": "Cost Type",
+        "fte": "FTE",
+        "opex": "OPEX",
+        "contractCost": "Contract Cost",
+        "unitPrice": "Unit Price"
+    },
+    "hitl": {
+        "label": "HITL (Human-in-the-Loop)",
+        "enabled": "Enable HITL",
+        "capabilities": "Required Capabilities",
+        "capabilityPlaceholder": "Enter capabilities"
+    },
+    "processSummary": {
+        "generateSummary": "Generate AI Summary",
+        "generating": "Generating summary..."
+    },
+    "multiSelect": {
+        "title": "Multi-Select Edit",
+        "selectedCount": "{n} element(s) selected",
+        "mixed": "-- Mixed --",
+        "applyChanges": "Apply Changes",
+        "applyConfirm": "Change [{field}] for {n} elements?",
+        "duration": "Duration",
+        "futureStatus": "Future Status",
+        "costType": "Cost Type",
+        "applied": "Batch changes applied."
+    },
+    "propertyDiff": {
+        "title": "Property Comparison",
+        "elementName": "Element",
+        "property": "Property",
+        "oldValue": "Previous",
+        "newValue": "Current",
+        "revert": "Revert",
+        "noChanges": "No property changes found.",
+        "revertConfirm": "Revert this property to its previous value?",
+        "reverted": "Property has been reverted."
+    },
+    "approvalResetWarning": {
+        "title": "Approval Reset Warning",
+        "message": "Saving will reset the current approval process. Continue?",
+        "notification": "Approval status has been reset.",
+        "autoTransitionComment": "Auto-transition due to public feedback period expiry"
+    },
+    "auditLog": {
+        "title": "Audit Log",
+        "filterAction": "Filter by Action",
+        "filterActor": "Search by Actor",
+        "filterDate": "Filter by Date",
+        "columnDate": "Date",
+        "columnAction": "Action",
+        "columnActor": "Actor",
+        "columnComment": "Comment",
+        "columnVersion": "Version",
+        "exportCsv": "Export CSV",
+        "viewFullLog": "View Full Log",
+        "noLogs": "No logs found."
+    },
+    "businessId": {
+        "label": "Business ID",
+        "autoGenerated": "Auto-generated",
+        "readOnly": "Business ID (Read-only)"
+    },
+    "manualLink": {
+        "title": "Related Manuals/Links",
+        "addUrl": "Add URL",
+        "urlPlaceholder": "https://...",
+        "noLinks": "No links registered.",
+        "openInNewTab": "Open in new tab",
+        "remove": "Remove"
+    },
+    "timeTravel": {
+        "asIs": "As-Is",
+        "toBe": "To-Be",
+        "label": "Time View",
+        "sunset": "Sunset",
+        "new": "New",
+        "automationPlanned": "Automation Planned",
+        "maintain": "Maintain"
+    },
+    "aiCopilot": {
+        "fileUploadPlaceholder": "PDF/Word file analysis will be supported in a future update.",
+        "urlPlaceholder": "Enter URL to analyze",
+        "urlScrapePlaceholder": "URL scraping will be supported in a future update.",
+        "fetch": "Fetch",
+        "addUrl": "Add URL"
+    },
     "progressBadge": {
         "draft": "In Progress",
         "review": "Under Review",
-        "published": "Completed"
+        "published": "Completed",
+        "public_review": "Public Review",
+        "publicReviewTooltip": "HQ/business review has been approved. Feel free to leave comments.",
+        "publicReviewTooltipWithDate": "HQ/business review has been approved. Feel free to leave comments until {date}.",
+        "wip": "WIP",
+        "sunset": "Sunset"
     },
     "ownerSelect": {
         "noData": "No organization members found",
@@ -973,6 +1226,10 @@
     "ProcessDefinitionVersionDialog": {
         "title": "Save Process",
         "title2": "Version Up",
+        "minor": "Minor Update",
+        "minorDesc": "Increment decimal version (e.g., 1.3 → 1.4)",
+        "major": "Major Update",
+        "majorDesc": "Increment integer version (e.g., 1.3 → 2.0)",
         "minorUpdate": "Minor Update",
         "majorUpdate": "Major Update",
         "update": "Update",
@@ -1322,7 +1579,13 @@
         "laneDivideThree": "Divide into Three Lanes",
         "laneEqualize": "Equalize Lane Sizes",
         "connectionMulti": "Connect using Message Flow",
-        "phase": "Add Phase"
+        "phase": "Add Phase",
+        "addComment": "Add Comment"
+    },
+    "reviewMode": {
+        "governancePanel": "Governance Review",
+        "approvalTab": "Approval Status",
+        "commentsTab": "Feedback"
     },
     "CustomReplaceElement": {
         "replace-with-call-activity": "Replace with call activity",
@@ -2500,34 +2763,70 @@
     "approvalState": {
         "title": "Approval Status",
         "draft": "Draft",
-        "review": "Under Review",
-        "level1": "Level 1 Approved",
-        "level2": "Level 2 Approved",
-        "confirmed": "Confirmed",
+        "expertReview": "Expert Review",
+        "publicFeedback": "Public Feedback",
+        "finalEdit": "Final Edit",
+        "published": "Published",
+        "reopenRequested": "Re-open Requested",
+        "archived": "Archived",
         "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "approved": "Approved",
+        "pending": "Pending",
+        "parallelReview": "Parallel Review Status",
         "submitForReview": "Submit for Review",
-        "approveLevel1": "Approve (Level 1)",
-        "approveLevel2": "Approve (Level 2)",
-        "confirm": "Confirm",
+        "approveHQ": "HQ Approve",
+        "approveField": "Field Approve",
+        "endPublicFeedback": "End Public Feedback",
+        "publish": "Publish",
         "reject": "Reject",
         "reopen": "Reopen",
+        "requestReopen": "Request Improvement",
+        "approveReopen": "Approve Re-open",
+        "rejectReopen": "Reject Re-open",
         "comment": "Comment",
         "commentPlaceholder": "Enter a comment (optional)",
-        "commentRequired": "Please provide a reason for rejection",
+        "commentRequired": "Please provide a reason",
         "cancel": "Cancel",
         "submittedBy": "Submitted by",
-        "level1By": "Level 1 approved by",
-        "level2By": "Level 2 approved by",
-        "confirmedBy": "Confirmed by",
+        "publishedBy": "Published by",
         "rejectedBy": "Rejected by",
+        "version": "Version",
+        "hqReviewer": "HQ Reviewer",
+        "fieldReviewer": "Field Reviewer",
+        "publicFeedbackPeriod": "Public feedback ends in",
+        "selfApprovalBlock": "You cannot approve your own submission (Cross-Check principle)",
+        "unresolvedFeedbackBlock": "Unresolved feedback exists. Resolve all feedback before publishing.",
         "viewHistory": "View History",
         "noHistory": "No history available",
+        "confirm": "Confirm",
         "actionSubmit": "Submitted for review",
-        "actionApprove1": "Level 1 approved",
-        "actionApprove2": "Level 2 approved",
-        "actionConfirm": "Confirmed",
+        "actionApproveHQ": "HQ Approved",
+        "actionApproveField": "Field Approved",
+        "actionRejectHQ": "HQ Rejected",
+        "actionRejectField": "Field Rejected",
+        "actionStartFeedback": "Public feedback started",
+        "actionAutoTransition": "Feedback period expired (auto-transition)",
+        "actionPublish": "Published",
         "actionReject": "Rejected",
-        "actionReopen": "Reopened for revision"
+        "actionReopen": "Reopened for revision",
+        "actionRequestReopen": "Improvement requested",
+        "actionApproveReopen": "Re-open approved",
+        "actionRejectReopen": "Re-open rejected",
+        "actionReset": "Approvals reset",
+        "actionCancel": "Cancelled",
+        "actionComment": "Comment added",
+        "deriveToBe": "Derive To-Be: Create a new To-Be process based on this Published version",
+        "deriveToBeLockedHint": "To-Be derivation is only available after Published (v1.0)",
+        "requestReopenTitle": "Request Re-open (Improvement)",
+        "requestReopenReason": "Improvement Request Reason",
+        "requestReopenReasonPlaceholder": "Please describe in detail why improvement is needed...",
+        "requestReopenReasonRequired": "Improvement request reason is required",
+        "requestReopenSubmit": "Submit Request",
+        "snapshotCompare": "Snapshot Compare",
+        "compareAsIs": "Compare As-Is",
+        "compareDraft": "Draft View",
+        "snapshotAt": "Snapshot at"
     },
     "agentChat": {
         "learningModeInfo": "Learning Mode: The agent learns and accumulates knowledge through conversations. \n For example, \n 'Use the color that matches each company's CI when writing a proposal.' \n 'Proposals for government and public institutions must be written in Korean (HWP) format.' \n 'For B2C proposals, prioritize visual materials to help customers understand.' \n You can train such guides.",
@@ -2830,6 +3129,7 @@
     },
     "reviewBoard": {
         "title": "Process Review Board",
+        "myInbox": "My Inbox",
         "subtitle": "Manage process lifecycle from draft to publication",
         "draft": "Draft",
         "review": "Review",
@@ -2866,7 +3166,18 @@
         "cancelled": "Cancelled",
         "activeTab": "Active",
         "cancelledTab": "Cancelled",
-        "noCancelled": "No cancelled reviews"
+        "noCancelled": "No cancelled reviews",
+        "approvalInbox": "Approval Inbox",
+        "reopenBox": "Re-open Request Box",
+        "mySubmissions": "My Submissions",
+        "governanceTimeline": "Governance Timeline",
+        "stalledDays": " days stalled",
+        "urgentAlert": "Attention Required",
+        "noInboxItems": "No approval items pending",
+        "noReopenItems": "No re-open requests",
+        "noSubmissions": "No submissions",
+        "total": "Total",
+        "items": "items"
     },
     "approval": {
         "inProgressTitle": "Approval In Progress",

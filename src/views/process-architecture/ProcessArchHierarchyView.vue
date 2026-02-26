@@ -130,8 +130,22 @@
                                                             >
                                                                 <div
                                                                     class="tree-node sub-node cursor-pointer"
-                                                                    @click.stop="$emit('navigate', sub.id, sub.name)"
+                                                                    @click.stop="emit('navigate', sub.id, sub.name)"
                                                                 >
+                                                                    <v-btn
+                                                                        icon
+                                                                        variant="text"
+                                                                        size="x-small"
+                                                                        :class="['fav-btn', { 'is-fav': favorites?.has(sub.id) }]"
+                                                                        @click.stop="emit('toggleFavorite', sub.id)"
+                                                                    >
+                                                                        <v-icon
+                                                                            size="12"
+                                                                            :color="favorites?.has(sub.id) ? 'amber' : 'grey-lighten-1'"
+                                                                        >
+                                                                            {{ favorites?.has(sub.id) ? 'mdi-star' : 'mdi-star-outline' }}
+                                                                        </v-icon>
+                                                                    </v-btn>
                                                                     <div class="node-name">{{ sub.name }}</div>
                                                                     <div class="node-meta d-flex align-center justify-center ga-1 mt-1">
                                                                         <ProgressBadge
@@ -309,10 +323,12 @@ const props = defineProps<{
     domains: any[];
     processStatuses: Map<string, any>;
     selectedDomain: string | null;
+    favorites?: Set<string>;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
     (e: 'navigate', id: string, name?: string): void;
+    (e: 'toggleFavorite', id: string): void;
 }>();
 
 const activeDomainIndex = ref<number | undefined>(undefined);
@@ -579,6 +595,22 @@ function collapseAll() {
 .sub-node:hover {
     background: #e3f2fd;
     border-color: #1976D2;
+}
+
+.sub-node .fav-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.sub-node:hover .fav-btn {
+    opacity: 1;
+}
+
+.sub-node .fav-btn.is-fav {
+    opacity: 1;
 }
 
 /* Fold transition */

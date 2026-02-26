@@ -64,6 +64,8 @@
                     :isAdmin="canEdit"
                     :generateFormTask="generateFormTask"
                     :isPreviewPDFDialog="isPreviewPDFDialog"
+                    :showValidationConsole="showValidationConsole"
+                    :consoleValidationItems="consoleValidationItems"
                     @closePDFDialog="isPreviewPDFDialog = false"
                     @update="updateDefinition"
                     @changeBpmn="changeBpmn"
@@ -138,9 +140,98 @@
                         </v-row>
                     </v-card>
                 </v-dialog>
+                <!-- Phase 3-2: Approval Reset Warning Dialog -->
+                <v-dialog v-model="showApprovalResetWarning" max-width="450" persistent>
+                    <v-card rounded="lg">
+                        <v-card-title class="d-flex align-center pa-4 pb-2">
+                            <v-icon size="20" color="warning" class="mr-2">mdi-alert-circle</v-icon>
+                            <span class="text-subtitle-1 font-weight-bold">{{ $t('approvalResetWarning.title') }}</span>
+                        </v-card-title>
+                        <v-card-text class="pt-2">
+                            <p class="text-body-2">{{ $t('approvalResetWarning.message') }}</p>
+                        </v-card-text>
+                        <v-card-actions class="px-4 pb-4">
+                            <v-spacer />
+                            <v-btn variant="text" size="small"
+                                @click="showApprovalResetWarning = false; resetWarningResolver && resetWarningResolver(false)">
+                                {{ $t('approvalState.cancel') || '취소' }}
+                            </v-btn>
+                            <v-btn color="warning" variant="flat" size="small"
+                                @click="showApprovalResetWarning = false; resetWarningResolver && resetWarningResolver(true)">
+                                {{ $t('approvalState.confirm') || '확인' }}
+                            </v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
             </template>
             <template v-slot:rightpart>
-                <div v-if="canEdit" class="process-consulting-ai-second-screen no-scrollbar">
+                <!-- Phase 4-5: URL Input Bar -->
+                <div v-if="showUrlInput" class="pdc-url-input-bar pa-3">
+                    <div class="d-flex align-center gap-2">
+                        <v-text-field
+                            v-model="aiCopilotUrl"
+                            :placeholder="$t('aiCopilot.urlPlaceholder')"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            prepend-inner-icon="mdi-link"
+                            @keyup.enter="fetchAiCopilotUrl"
+                        />
+                        <v-btn
+                            size="small"
+                            color="primary"
+                            variant="tonal"
+                            :disabled="!aiCopilotUrl.trim()"
+                            @click="fetchAiCopilotUrl"
+                        >
+                            {{ $t('aiCopilot.fetch') }}
+                        </v-btn>
+                        <v-btn icon variant="text" size="x-small" @click="showUrlInput = false">
+                            <v-icon size="16">mdi-close</v-icon>
+                        </v-btn>
+                    </div>
+                </div>
+                <!-- Review Mode: Governance Tab -->
+                <div v-if="reviewMode" class="pdc-review-panel no-scrollbar">
+                    <div class="pdc-review-panel__header">
+                        <v-icon size="18" class="mr-1">mdi-clipboard-check-multiple-outline</v-icon>
+                        <span class="text-subtitle-2 font-weight-medium">{{ $t('reviewMode.governancePanel') || 'Governance Review' }}</span>
+                        <v-spacer />
+                        <v-btn icon variant="text" size="x-small" @click="reviewMode = false">
+                            <v-icon size="16">mdi-close</v-icon>
+                        </v-btn>
+                    </div>
+                    <v-tabs v-model="reviewActiveTab" density="compact" class="pdc-review-tabs">
+                        <v-tab value="approval">
+                            <v-icon size="14" class="mr-1">mdi-clipboard-check-outline</v-icon>
+                            {{ $t('reviewMode.approvalTab') || '승인 현황' }}
+                        </v-tab>
+                        <v-tab value="comments">
+                            <v-icon size="14" class="mr-1">mdi-comment-text-multiple-outline</v-icon>
+                            {{ $t('reviewMode.commentsTab') || '피드백' }}
+                        </v-tab>
+                    </v-tabs>
+                    <v-window v-model="reviewActiveTab" class="pdc-review-window">
+                        <v-window-item value="approval">
+                            <ApprovalStatePanel
+                                v-if="fullPath"
+                                :procDefId="fullPath"
+                                @stateChanged="() => {}"
+                            />
+                        </v-window-item>
+                        <v-window-item value="comments">
+                            <ElementCommentPanel
+                                v-if="fullPath"
+                                :procDefId="fullPath"
+                                :selectedElement="reviewCommentElement"
+                                @close="reviewActiveTab = 'approval'"
+                                @commentCountChanged="() => {}"
+                            />
+                        </v-window-item>
+                    </v-window>
+                </div>
+                <!-- Normal Mode: Chat Panel -->
+                <div v-else-if="canEdit" class="process-consulting-ai-second-screen no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -158,16 +249,20 @@
                         @addTeamMembers="addTeamMembers"
                     >
                         <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath"
+                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode"
                                 :isEditable="isEditable"
                                 :chatMode="chatMode"
                                 :isDeleted="isDefinitionDeleted"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                :breadcrumbs="breadcrumbPath"
+                                :lastSavedTime="lastSavedTime"
+                                :approvalState="currentApprovalState"
+                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog"
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
                                 @beforeRestore="beforeRestore" @savePDF="savePDF" @capturePng="capturePng"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess" />
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess"
+                                @validateBpmn="runStandaloneValidation" @timeTravelChanged="onTimeTravelChanged" @toggleUrlInput="showUrlInput = !showUrlInput" />
                         </template>
                     </Chat>
                 </div>
@@ -193,15 +288,19 @@
                         @addTeamMembers="addTeamMembers"
                     >
                         <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath"
+                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode"
                                 :isEditable="isEditable"
                                 :chatMode="chatMode"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                :breadcrumbs="breadcrumbPath"
+                                :lastSavedTime="lastSavedTime"
+                                :approvalState="currentApprovalState"
+                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog"
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
                                 @savePDF="savePDF" @capturePng="capturePng"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess" />
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess"
+                                @validateBpmn="runStandaloneValidation" @timeTravelChanged="onTimeTravelChanged" @toggleUrlInput="showUrlInput = !showUrlInput" />
                         </template>
                     </Chat>
                 </div>
@@ -307,6 +406,8 @@ import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecut
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 import ProcessDefinitionMarketPlaceDialog from '@/components/ProcessDefinitionMarketPlaceDialog.vue';
+import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
+import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
 import { hasSubstantialChanges } from '@/utils/xmlDiff';
 import { useBpmnExport } from '@/composables/useBpmnExport';
@@ -341,7 +442,9 @@ export default {
         'process-gpt-execute': ProcessGPTExecute,
         DryRunProcess,
         TestProcess,
-        ProcessDefinitionMarketPlaceDialog
+        ProcessDefinitionMarketPlaceDialog,
+        ApprovalStatePanel,
+        ElementCommentPanel
     },
     props: {
         chatMode: {
@@ -399,6 +502,26 @@ export default {
         retryCount: 0,
         // 권한 관련
         hasWritePermission: false, // 현재 프로세스에 대한 수정 권한
+
+        // Review Mode (Board에서 [Review] 클릭 시)
+        reviewMode: false,
+        reviewId: null,
+        reviewActiveTab: 'approval', // 'approval' | 'comments'
+        reviewCommentElement: null, // 선택된 노드
+
+        // Phase 1-1: Last saved time
+        lastSavedTime: null,
+        // Phase 1-1: Approval state
+        currentApprovalState: null,
+        // Phase 1-3: Standalone validation console
+        showValidationConsole: false,
+        consoleValidationItems: [],
+        // Phase 3-2: Approval reset warning
+        showApprovalResetWarning: false,
+        resetWarningResolver: null,
+        // Phase 4-5: AI Copilot URL input
+        showUrlInput: false,
+        aiCopilotUrl: '',
     }),
     async created() {
         $try(async () => {
@@ -544,6 +667,24 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        // Phase 1-1: Breadcrumbs computed from processDefinitionMap
+        breadcrumbPath() {
+            if (!this.processDefinitionMap || !this.processDefinitionMap.mega_proc_list || !this.fullPath) return [];
+            const crumbs = [];
+            for (const mega of this.processDefinitionMap.mega_proc_list) {
+                for (const major of (mega.major_proc_list || [])) {
+                    for (const sub of (major.sub_proc_list || [])) {
+                        if (sub.id === this.fullPath || sub.name === this.projectName) {
+                            if (major.domain) crumbs.push(major.domain);
+                            crumbs.push(mega.name);
+                            crumbs.push(major.name);
+                            return crumbs;
+                        }
+                    }
+                }
+            }
+            return crumbs;
         },
         maxRetryCount() {
             // 컨설팅 모드: 최대 10번, 일반 모드: 최대 3번
@@ -846,6 +987,22 @@ export default {
                 await this.beforeSavePALUserTasks(info);
             }
 
+            // Phase 3-2: In-Review 상태에서 수정 시 승인 초기화 경고
+            if (this.currentApprovalState?.state === 'in_review') {
+                const proceed = await new Promise((resolve) => {
+                    this.resetWarningResolver = resolve;
+                    this.showApprovalResetWarning = true;
+                });
+                if (!proceed) return;
+                // Show notification that approvals were reset
+                if (this.$snackbar) {
+                    this.$snackbar.show({
+                        message: this.$t('approvalResetWarning.notification'),
+                        color: 'warning'
+                    });
+                }
+            }
+
             // 변경 사항 확인 (변동 없으면 저장 스킵)
             const store = useBpmnStore();
             const modeler = store.getModeler;
@@ -955,19 +1112,22 @@ export default {
                         results.push({
                             level: 'warning',
                             message: this.$t('validation.unconnectedElement'),
-                            elementName: task.businessObject?.name || task.id
+                            elementName: task.businessObject?.name || task.id,
+                            elementId: task.id
                         });
                     } else if (!hasIncoming) {
                         results.push({
                             level: 'warning',
                             message: this.$t('validation.noIncomingConnection'),
-                            elementName: task.businessObject?.name || task.id
+                            elementName: task.businessObject?.name || task.id,
+                            elementId: task.id
                         });
                     } else if (!hasOutgoing) {
                         results.push({
                             level: 'warning',
                             message: this.$t('validation.noOutgoingConnection'),
-                            elementName: task.businessObject?.name || task.id
+                            elementName: task.businessObject?.name || task.id,
+                            elementId: task.id
                         });
                     }
                 });
@@ -981,7 +1141,8 @@ export default {
                         results.push({
                             level: 'warning',
                             message: this.$t('validation.gatewayNeedsBranches'),
-                            elementName: gateway.businessObject?.name || gateway.id
+                            elementName: gateway.businessObject?.name || gateway.id,
+                            elementId: gateway.id
                         });
                     }
 
@@ -989,7 +1150,8 @@ export default {
                         results.push({
                             level: 'warning',
                             message: this.$t('validation.noIncomingConnection'),
-                            elementName: gateway.businessObject?.name || gateway.id
+                            elementName: gateway.businessObject?.name || gateway.id,
+                            elementId: gateway.id
                         });
                     }
                 });
@@ -1005,6 +1167,48 @@ export default {
             if (this.pendingSaveInfo) {
                 this.saveDefinition(this.pendingSaveInfo);
                 this.pendingSaveInfo = null;
+            }
+        },
+        // Phase 4-5: AI Copilot URL fetch (placeholder)
+        fetchAiCopilotUrl() {
+            if (!this.aiCopilotUrl.trim()) return;
+            this.messages.push({
+                role: 'assistant',
+                content: `🔗 **${this.aiCopilotUrl}**\n\n${this.$t('aiCopilot.urlScrapePlaceholder')}`,
+            });
+            this.aiCopilotUrl = '';
+            this.showUrlInput = false;
+        },
+        // Phase 4-3: Time-Travel toggle handler
+        onTimeTravelChanged(mode) {
+            window.$bpmnTimeTravel = mode === 'toBe' ? 'toBe' : null;
+            // Force re-render all tasks
+            const bpmnVue = this.$refs.definitionComponent?.$refs?.bpmnVue;
+            if (bpmnVue?.bpmnViewer) {
+                try {
+                    const elementRegistry = bpmnVue.bpmnViewer.get('elementRegistry');
+                    const graphicsFactory = bpmnVue.bpmnViewer.get('graphicsFactory');
+                    elementRegistry.filter(el => el.type && el.type.includes('Task')).forEach(el => {
+                        const gfx = elementRegistry.getGraphics(el);
+                        if (gfx) graphicsFactory.update('shape', el, gfx);
+                    });
+                } catch (e) {
+                    console.warn('Time-travel re-render failed:', e);
+                }
+            }
+        },
+        // Phase 1-3: Standalone validation (from Validate button)
+        async runStandaloneValidation() {
+            const results = await this.validateBpmn();
+            // Add elementId to results for focusElement
+            this.consoleValidationItems = results.map(r => ({
+                ...r,
+                elementId: r.elementId || null
+            }));
+            this.showValidationConsole = true;
+            // Apply visual markers on canvas
+            if (this.$refs.definitionComponent && this.$refs.definitionComponent.$refs.bpmnVue) {
+                this.$refs.definitionComponent.$refs.bpmnVue.applyValidationMarkers(this.consoleValidationItems);
             }
         },
         async beforeSavePALUserTasks(info) {
@@ -1088,6 +1292,18 @@ export default {
             let me = this;
             const file = event.target.files[0];
             if (!file) {
+                return;
+            }
+
+            // Phase 4-5: PDF/Word file handling (UI placeholder)
+            const lowerName = file.name.toLowerCase();
+            if (lowerName.endsWith('.pdf') || lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) {
+                // Show placeholder message for unsupported formats
+                this.messages.push({
+                    role: 'assistant',
+                    content: `📎 **${file.name}**\n\n${this.$t('aiCopilot.fileUploadPlaceholder')}`,
+                });
+                event.target.value = ''; // reset input
                 return;
             }
 
@@ -1362,6 +1578,16 @@ export default {
                 if (me.$route.query && me.$route.query.edit) {
                     me.lock = true;
                     me.toggleLock();
+                }
+                // Review Mode: Board에서 [Review] 클릭 시 진입
+                if (me.$route.query && me.$route.query.reviewMode === 'true') {
+                    me.reviewMode = true;
+                    me.reviewId = me.$route.query.reviewId || null;
+                    me.reviewActiveTab = 'approval';
+                    // View Mode 강제 (검토 중 수정 불가)
+                    me.isViewMode = true;
+                    me.lock = true;
+                    me.disableChat = true;
                 }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
@@ -2844,5 +3070,38 @@ export default {
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.5); /* 회색 오버레이 */
     z-index: 10;
+}
+
+/* Review Mode Governance Panel */
+.pdc-url-input-bar {
+    background: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+}
+.pdc-review-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fafafa;
+    overflow: hidden;
+}
+.pdc-review-panel__header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 13px;
+    gap: 4px;
+    min-height: 40px;
+    flex-shrink: 0;
+}
+.pdc-review-tabs {
+    flex-shrink: 0;
+    border-bottom: 1px solid #e0e0e0;
+    background: #fff;
+}
+.pdc-review-window {
+    flex: 1;
+    overflow-y: auto;
 }
 </style>

@@ -418,6 +418,11 @@ const MainRoutes = {
             name: 'Review Detail',
             path: '/review-board/:reviewId',
             component: () => import('@/views/review-board/ProcessReviewDetail.vue')
+        },
+        {
+            name: 'My Inbox',
+            path: '/my-inbox',
+            component: () => import('@/views/review-board/MyInbox.vue')
         }
     ]
 };

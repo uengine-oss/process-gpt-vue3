@@ -1,5 +1,30 @@
 <template>
+    <v-tooltip
+        v-if="type === 'status' && status === 'public_review' && tooltipText"
+        :text="tooltipText"
+        location="top"
+        max-width="300"
+    >
+        <template #activator="{ props: tooltipProps }">
+            <v-chip
+                v-bind="tooltipProps"
+                :color="badgeColor"
+                :variant="variant"
+                :size="size"
+                class="progress-badge"
+                :class="{ 'progress-badge-clickable': clickable }"
+                @click="handleClick"
+            >
+                <v-icon v-if="showIcon" :size="iconSize" start>{{ statusIcon }}</v-icon>
+                <span v-if="customText">{{ customText }}</span>
+                <span v-else-if="type === 'completion' && showPercentage">{{ value }}%</span>
+                <span v-else-if="type === 'status'">{{ statusText }}</span>
+                <span v-else>{{ displayText }}</span>
+            </v-chip>
+        </template>
+    </v-tooltip>
     <v-chip
+        v-else
         :color="badgeColor"
         :variant="variant"
         :size="size"
@@ -34,7 +59,7 @@ export default {
         status: {
             type: String,
             default: 'draft',
-            validator: (value) => ['draft', 'review', 'published'].includes(value)
+            validator: (value) => ['draft', 'review', 'published', 'public_review', 'wip', 'sunset'].includes(value)
         },
         // 아이콘 표시 여부
         showIcon: {
@@ -65,6 +90,16 @@ export default {
         customText: {
             type: String,
             default: ''
+        },
+        // D-day 카운트다운 (public_review 상태에서 사용)
+        dDay: {
+            type: Number,
+            default: null
+        },
+        // 검토 종료일 (public_review 상태에서 툴팁에 표시, 예: "3월 15일")
+        reviewEndDate: {
+            type: String,
+            default: ''
         }
     },
     emits: ['click'],
@@ -84,9 +119,43 @@ export default {
                 published: {
                     color: 'success',
                     icon: 'mdi-check-circle',
-                    text: this.$t('progressBadge.published') || '게시됨'
+                    text: this.$t('progressBadge.published') || '완료'
+                },
+                public_review: {
+                    color: '#1976D2',
+                    icon: 'mdi-bullhorn-outline',
+                    text: this.publicReviewText
+                },
+                wip: {
+                    color: '#7B1FA2',
+                    icon: 'mdi-pencil-ruler',
+                    text: this.$t('progressBadge.wip') || '차세대 기획 중'
+                },
+                sunset: {
+                    color: '#C62828',
+                    icon: 'mdi-archive-arrow-down-outline',
+                    text: this.$t('progressBadge.sunset') || '폐기 예정'
                 }
             };
+        },
+        publicReviewText() {
+            const baseText = this.$t('progressBadge.public_review') || 'Public Review';
+            if (this.dDay !== null && this.dDay !== undefined) {
+                return `${baseText} D-${this.dDay}`;
+            }
+            return baseText;
+        },
+        tooltipText() {
+            if (this.status === 'public_review') {
+                const endDate = this.reviewEndDate || '';
+                if (endDate) {
+                    return this.$t('progressBadge.publicReviewTooltipWithDate', { date: endDate }) ||
+                        `본사/현업 검토가 승인되었습니다. ${endDate}까지 자유롭게 의견을 남겨주세요.`;
+                }
+                return this.$t('progressBadge.publicReviewTooltip') ||
+                    '본사/현업 검토가 승인되었습니다. 자유롭게 의견을 남겨주세요.';
+            }
+            return '';
         },
         badgeColor() {
             if (this.type === 'status') {

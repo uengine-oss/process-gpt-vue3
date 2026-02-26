@@ -525,6 +525,13 @@ export default {
                     BgColor: 'primary',
                     to: '/review-board',
                     disable: false
+                },
+                {
+                    title: 'reviewBoard.myInbox',
+                    icon: 'submit-document',
+                    BgColor: 'primary',
+                    to: '/my-inbox',
+                    disable: false
                 }
             ];
 

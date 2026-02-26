@@ -28,6 +28,7 @@
                 @save="handleSave"
                 @clone="handleClone"
                 @versionHistory="handleVersionHistory"
+                @toggleWip="handleToggleWip"
             />
         </div>
 
@@ -211,6 +212,12 @@ export default {
     },
     async mounted() {
         await this.loadInitialData();
+        // Auto-select process from query parameter (from Process Architecture navigation)
+        const queryId = this.$route?.query?.id;
+        const queryName = this.$route?.query?.name;
+        if (queryId) {
+            await this.handleSelectProcess(queryId, queryName || queryId);
+        }
         window.addEventListener('mousemove', this.onResize);
         window.addEventListener('mouseup', this.stopResize);
     },
@@ -224,17 +231,21 @@ export default {
     },
     computed: {
         saveVersion() {
-            // 저장 시에는 버전을 올리지 않음. 최초 저장만 0.1
+            // 저장할 때마다 minor +1 (거버넌스: Draft 단계에서 저장 시마다 마이너 버전 자동 기록)
             const base = this.latestVersion;
             if (!base || base === '0.0') return '0.1';
-            return base;
+            const parts = String(base).split('.');
+            const major = parseInt(parts[0]) || 0;
+            const minor = (parseInt(parts[1]) || 0) + 1;
+            return `${major}.${minor}`;
         },
     },
     methods: {
         async loadInitialData() {
             this.loading = true;
             try {
-                const [procMapResult, metricsResult, defList, versionList] = await Promise.all([
+                const supabase = window.$supabase;
+                const promises = [
                     backend.getProcessDefinitionMap(),
                     backend.getMetricsMap(),
                     backend.listDefinition('', { match: { tenant_id: window.$tenantName } }),
@@ -242,7 +253,20 @@ export default {
                         sort: 'desc',
                         orderBy: 'timeStamp',
                     }),
-                ]);
+                ];
+                // proc_def_approval_state 일괄 조회
+                if (supabase) {
+                    promises.push(
+                        supabase
+                            .from('proc_def_approval_state')
+                            .select('proc_def_id, state, created_at, updated_at')
+                            .eq('tenant_id', window.$tenantName)
+                            .order('created_at', { ascending: false })
+                            .then(res => res.data || [])
+                    );
+                }
+
+                const [procMapResult, metricsResult, defList, versionList, approvalStates] = await Promise.all(promises);
                 this.procMap = procMapResult;
                 this.metricsMap = metricsResult;
 
@@ -256,11 +280,38 @@ export default {
                         }
                     });
                 }
+
+                // 각 정의의 최신 승인 상태 매핑
+                const approvalMap = {};
+                if (approvalStates && approvalStates.length > 0) {
+                    approvalStates.forEach(row => {
+                        if (row.proc_def_id && !approvalMap[row.proc_def_id]) {
+                            approvalMap[row.proc_def_id] = row.state;
+                        }
+                    });
+                }
+
                 const defs = defList || [];
                 defs.forEach(def => {
                     const id = def.id || def.file_name;
                     if (id && latestVersionMap[id]) {
                         def.version = latestVersionMap[id];
+                    }
+                    // WIP flag from definition JSONB
+                    const defObj = typeof def.definition === 'string'
+                        ? JSON.parse(def.definition || '{}')
+                        : (def.definition || {});
+                    if (defObj.wip) {
+                        def.approval_state = 'wip';
+                    }
+                    // approval_state 매핑 (proc_def 테이블에 없는 경우 보충)
+                    else if (id && approvalMap[id] && !def.approval_state) {
+                        const state = approvalMap[id];
+                        // proc_def_approval_state의 state 값을 UI 상태로 매핑
+                        if (state === 'public_feedback') def.approval_state = 'public_review';
+                        else if (state === 'in_review' || state === 'final_edit') def.approval_state = 'review';
+                        else if (state === 'published') def.approval_state = 'published';
+                        else def.approval_state = state;
                     }
                 });
                 this.definitionList = defs;
@@ -503,7 +554,7 @@ export default {
                 const xml = this.updateXmlVersion(this.pendingSaveXml, version);
                 this.bpmnXml = xml;
 
-                // 버전 정보 포함하여 저장 (같은 버전으로 덮어쓰기)
+                // 새 minor 버전으로 저장 (거버넌스: 저장 시마다 마이너 버전 자동 기록)
                 await (backend).putRawDefinition(xml, this.selectedProcessId, {
                     name: this.selectedProcessName,
                     definition: this.processDefinition?.definition || null,
@@ -597,6 +648,57 @@ export default {
                 await this.handleSave();
             } catch (e) {
                 console.error('Properties save failed:', e);
+            }
+        },
+
+        async handleToggleWip() {
+            if (!this.selectedProcessId) return;
+            const supabase = window.$supabase;
+            if (!supabase) return;
+
+            // 현재 정의 찾기
+            const def = this.definitionList.find(
+                d => (d.file_name || d.id) === this.selectedProcessId
+            );
+            if (!def) return;
+
+            const isCurrentlyWip = def.approval_state === 'wip' || def.status === 'wip';
+            const newWipFlag = !isCurrentlyWip;
+
+            try {
+                // WIP is a work-in-progress flag stored in proc_def.definition JSONB
+                const currentDef = typeof def.definition === 'string'
+                    ? JSON.parse(def.definition || '{}')
+                    : (def.definition || {});
+                currentDef.wip = newWipFlag;
+
+                const { error } = await supabase
+                    .from('proc_def')
+                    .update({ definition: currentDef })
+                    .eq('id', this.selectedProcessId);
+
+                if (error) throw error;
+
+                // 로컬 definitionList 갱신
+                def.definition = currentDef;
+                if (newWipFlag) {
+                    def.approval_state = 'wip';
+                } else {
+                    // Restore actual governance state
+                    delete def.approval_state;
+                }
+
+                if (this.$toast) {
+                    const msg = newWipFlag
+                        ? (this.$t('processHierarchy.wipEnabled') || 'WIP 상태로 전환되었습니다.')
+                        : (this.$t('processHierarchy.wipDisabled') || 'WIP 상태가 해제되었습니다.');
+                    this.$toast.success(msg);
+                }
+            } catch (e) {
+                console.error('WIP toggle failed:', e);
+                if (this.$toast) {
+                    this.$toast.error(this.$t('processHierarchy.wipFailed') || 'WIP 상태 변경에 실패했습니다.');
+                }
             }
         },
 

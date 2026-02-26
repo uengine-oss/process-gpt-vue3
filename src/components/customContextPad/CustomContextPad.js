@@ -710,6 +710,21 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
         }
       }
     };
+
+    // Task 타입에만 코멘트 작성 버튼 추가
+    const isTaskElement = element.type && element.type.includes('Task');
+    if (isTaskElement) {
+      actions['add-comment'] = {
+        group: 'edit',
+        className: 'mdi mdi-comment-plus-outline',
+        title: i18n.global.t('customContextPad.addComment') || '코멘트 작성',
+        action: {
+          click: function(event, element) {
+            eventBus.fire('element.addComment', { element: element });
+          }
+        }
+      };
+    }
   }
 
   return actions;

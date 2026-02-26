@@ -727,6 +727,7 @@ export default {
                     // 저장 성공 후 lastSavedXML 업데이트 (변경 감지용)
                     me.lastSavedXML = xmlObj.xml;
                     me.isChanged = false;
+                    me.lastSavedTime = new Date();
 
                     // Extract organization info from swimlanes and save to process_organizations table
                     try {

@@ -100,9 +100,23 @@
                                                         v-for="sub in proc.sub_proc_list"
                                                         :key="sub.id"
                                                         class="sub-row"
-                                                        @click.stop="$emit('navigate', sub.id, sub.name)"
+                                                        @click.stop="emit('navigate', sub.id, sub.name)"
                                                     >
-                                                        <span class="sub-name">{{ sub.name }}</span>
+                                                        <span class="sub-name flex-grow-1">{{ sub.name }}</span>
+                                                        <v-btn
+                                                            icon
+                                                            variant="text"
+                                                            size="x-small"
+                                                            :class="['fav-btn', { 'is-fav': favorites?.has(sub.id) }]"
+                                                            @click.stop="emit('toggleFavorite', sub.id)"
+                                                        >
+                                                            <v-icon
+                                                                size="12"
+                                                                :color="favorites?.has(sub.id) ? 'amber' : 'grey-lighten-1'"
+                                                            >
+                                                                {{ favorites?.has(sub.id) ? 'mdi-star' : 'mdi-star-outline' }}
+                                                            </v-icon>
+                                                        </v-btn>
                                                         <ProgressBadge
                                                             v-if="processStatuses.get(sub.id)"
                                                             type="status"
@@ -135,10 +149,12 @@ const props = defineProps<{
     metricsMap: any;
     processStatuses: Map<string, any>;
     selectedDomain: string | null;
+    favorites?: Set<string>;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
     (e: 'navigate', id: string, name?: string): void;
+    (e: 'toggleFavorite', id: string): void;
 }>();
 
 const expandedCells = ref(new Set<string>());
@@ -470,6 +486,19 @@ function toggleCell(key: string) {
 
 .sub-row:hover {
     background: #eff6ff;
+}
+
+.sub-row .fav-btn {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.sub-row:hover .fav-btn {
+    opacity: 1;
+}
+
+.sub-row .fav-btn.is-fav {
+    opacity: 1;
 }
 
 .sub-name {
