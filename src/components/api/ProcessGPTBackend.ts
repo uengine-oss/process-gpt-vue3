@@ -2749,18 +2749,22 @@ class ProcessGPTBackend implements Backend {
 
     async setNotifications(value: any) {
         try {
-            if (value.count > 1) {
-                const notifications = await this.fetchNotifications();
-                notifications.forEach(async (item: any) => {
-                    if (item.url === value.url && item.user_id === value.user_id) {
-                        const putObj = { id: item.id, is_checked: true };
-                        await storage.putObject('notifications', putObj);
-                    }
+            const userId = value.user_id ?? localStorage.getItem('email');
+            // 같은 채팅방(url)의 미확인 알림을 DB에서 모두 조회하여 한 번에 읽음 처리
+            if (value.url && userId) {
+                const list = await storage.list('notifications', {
+                    match: { url: value.url, user_id: userId, is_checked: false },
                 });
-            } else {
-                const putObj = { id: value.id, is_checked: true };
-                await storage.putObject('notifications', putObj);
+                await Promise.all(
+                    list.map((item: any) =>
+                        storage.putObject('notifications', { id: item.id, is_checked: true })
+                    )
+                );
+                return;
             }
+            // url 없으면 클릭한 항목만 읽음 처리
+            const putObj = { id: value.id, is_checked: true };
+            await storage.putObject('notifications', putObj);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);

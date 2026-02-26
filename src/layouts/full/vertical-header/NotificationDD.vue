@@ -147,8 +147,11 @@ export default {
                 }
             }
             await backend.setNotifications(value);
-            // 즉시 UI에서 제거(체감 개선) 후 재조회
-            this.notifications = this.notifications.filter(n => n.id !== value.id);
+            // 같은 채팅방(url) 알림은 모두 읽음 처리되므로 해당 url 항목 전부 UI에서 제거
+            const urlToRemove = value.url || '';
+            this.notifications = urlToRemove
+                ? this.notifications.filter(n => n.url !== urlToRemove)
+                : this.notifications.filter(n => n.id !== value.id);
             this.fetchNotifications();
         }
     }
