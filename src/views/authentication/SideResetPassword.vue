@@ -15,7 +15,7 @@ import ResetPassword from '@/components/auth/ResetForm.vue';
                 </div>
             </v-col>
             <v-col cols="12" lg="4" xl="4" xxl="3" class="d-flex align-center justify-center bg-surface">
-                <div class="pa-sm-7 pa-4">
+                <div class="pa-sm-7 pa-4" style="width: 280px;">
                     <h2 class="text--darken-2 text-h4 font-weight-semibold">{{ $t('forgotPassword.resetPassword') }}</h2>
                     <p class="text-subtitle-1 text-grey100 py-4 text-10">
                         {{ $t('forgotPassword.passwordExplanation') }}
