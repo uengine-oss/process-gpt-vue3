@@ -9,10 +9,13 @@
     "types": [
         {
             "name": "Properties",
-            "superClass": ["Element"],
+            "superClass": [
+                "Element"
+            ],
             "properties": [
                 {
                     "name": "json",
+                    "isAttr": true,
                     "type": "String"
                 },
                 {
@@ -24,7 +27,9 @@
         },
         {
             "name": "Variable",
-            "superClass": ["Element"],
+            "superClass": [
+                "Element"
+            ],
             "properties": [
                 {
                     "name": "key",
@@ -33,10 +38,12 @@
                 },
                 {
                     "name": "value",
+                    "isAttr": true,
                     "type": "String"
                 },
                 {
                     "name": "json",
+                    "isAttr": true,
                     "type": "String"
                 }
             ]

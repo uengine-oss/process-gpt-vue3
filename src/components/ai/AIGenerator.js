@@ -1,5 +1,6 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { getLLMConfig } from './llmConfig.js';
 const storage = StorageBaseFactory.getStorage();
 
 export default class AIGenerator {
@@ -79,15 +80,10 @@ export default class AIGenerator {
             presence_penalty: 0
         }
 
-        this.forced_vendor = "openai";
-        // this.forced_model = options && options.model ? options.model : "gpt-4.1-2025-04-14";
-        this.forced_model = "gpt-4.1-2025-04-14";
-        this.forced_model_config = {
-            temperature: 1,
-            top_p: 0.9,
-            frequency_penalty: 0,
-            presence_penalty: 0
-        }
+        const llmConfig = getLLMConfig(options?.llmPurpose || 'default');
+        this.forced_vendor = llmConfig.vendor;
+        this.forced_model = llmConfig.model;
+        this.forced_model_config = { ...llmConfig.modelConfig };
     }
 
     createPrompt() {

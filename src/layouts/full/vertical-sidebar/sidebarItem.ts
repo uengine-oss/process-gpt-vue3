@@ -99,6 +99,18 @@ const allSidebarItems: menu[] = [
         children: []
     },
     {
+        title: "프로세스 체계도",
+        icon: 'sitemap',
+        BgColor: 'primary',
+        to: "/process-architecture",
+    },
+    {
+        title: "프로세스 계층",
+        icon: 'file-tree',
+        BgColor: 'primary',
+        to: "/process-hierarchy",
+    },
+    {
         header: 'Analytics'
     },
     {
@@ -110,6 +122,12 @@ const allSidebarItems: menu[] = [
     {
         title: "Heatmap",
         icon: 'ibm-process-mining',
+        BgColor: 'primary',
+        to: "/analytics/heatmap",
+    },
+    {
+        title: "피벗 테이블",
+        icon: 'tuning-square-2-linear',
         BgColor: 'primary',
         to: "/analytics/heatmap",
     },

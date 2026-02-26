@@ -6,6 +6,7 @@
 
 <script>
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
+import zeebeModdleDescriptor from '@/components/descriptors/zeebe.json';
 import { useBpmnStore } from '@/stores/bpmn';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
@@ -58,7 +59,8 @@ export default {
                     bindTo: window
                 },
                 moddleExtensions: {
-                    uengine: uEngineModdleDescriptor
+                    uengine: uEngineModdleDescriptor,
+                    zeebe: zeebeModdleDescriptor
                 }
             },
             this.options

@@ -4,10 +4,24 @@
         style="overflow: auto;"
         class="is-work-height"
     >
-        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center" 
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center"
             :style="isMobile ? 'display: block !important;' : ''"
         >
             <div class="d-flex">
+                <!-- Back button for subprocess navigation -->
+                <v-btn
+                    v-if="subProcessBreadCrumb.length > 0 || selectedProc.major"
+                    @click="goBack"
+                    variant="text"
+                    size="small"
+                    class="mr-2"
+                    icon
+                >
+                    <v-icon>mdi-arrow-left</v-icon>
+                    <v-tooltip activator="parent" location="bottom">
+                        {{ $t('subProcessDetail.backToParent') || 'Back' }}
+                    </v-tooltip>
+                </v-btn>
                 <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis"
                     @click="goProcess()">
                     <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
@@ -154,7 +168,7 @@
         <v-card-text style="width: 100%;"
             :style="isMobile ? 'height: calc(100vh - 80px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 180px); padding: 10px;'"
         >
-            <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
+            <ProcessDefinition ref="processDefinitionRef" v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinitionData"
                 :isViewMode="isViewMode"
                 :isAdmin="isAdmin"
@@ -201,6 +215,7 @@ import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
 import { useBpmnStore } from '@/stores/bpmn';
+import { useBpmnExport } from '@/composables/useBpmnExport';
 
 const backend = BackendFactory.createBackend();
 
@@ -291,6 +306,22 @@ export default {
         goHistory(idx) {
             this.updateBpmn(this.subProcessBreadCrumb[idx].xml);
             this.removeHistoryAfterIndex(idx)
+        },
+        goBack() {
+            // Navigate back to previous subprocess or main process
+            if (this.subProcessBreadCrumb.length > 1) {
+                // Go to previous subprocess
+                const prevIdx = this.subProcessBreadCrumb.length - 2;
+                this.updateBpmn(this.subProcessBreadCrumb[prevIdx].xml);
+                this.subProcessBreadCrumb.pop();
+            } else if (this.subProcessBreadCrumb.length === 1) {
+                // Go back to main process
+                this.init(this.$route.params);
+                this.subProcessBreadCrumb = [];
+            } else if (this.selectedProc.major) {
+                // Go back to Definition Map (when accessed from Definition Map)
+                this.goProcess();
+            }
         },
         removeHistoryAfterIndex(index) {
             if (index < 0 || index >= this.subProcessBreadCrumb.length) {
@@ -402,8 +433,22 @@ export default {
                 this.$router.push(`/definitions/chat?id=${this.processDefinition.id}&name=${this.processDefinition.name}`);
             }
         },
-        capture() {
-            this.$emit('capture')
+        async capture() {
+            const processDefinitionRef = this.$refs.processDefinitionRef;
+            if (!processDefinitionRef || !processDefinitionRef.$refs?.bpmnVue) {
+                console.error('BPMN component not found');
+                return;
+            }
+
+            const bpmnVue = processDefinitionRef.$refs.bpmnVue;
+            const bpmnViewer = bpmnVue.bpmnViewer;
+
+            // 공통 유틸리티 사용
+            const { capturePng } = useBpmnExport();
+            await capturePng({
+                bpmnViewer,
+                processName: this.processDefinition?.name || 'Process Diagram'
+            });
         },
         savePDF() {
             this.isPreviewPDFDialog = false;

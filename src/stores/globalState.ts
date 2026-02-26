@@ -4,6 +4,7 @@ import { reactive, readonly } from 'vue';
 const state = reactive({
   isZoomed: false,
   isRightZoomed: false,
+  isChatHidden: false,  // 채팅창만 숨기기 (캔버스 확장 없음)
   isMobileDrawerOpen: false
 });
 
@@ -14,6 +15,9 @@ const methods = {
   },
   toggleRightZoom() {
     state.isRightZoomed = !state.isRightZoomed;
+  },
+  toggleChatHidden() {
+    state.isChatHidden = !state.isChatHidden;
   },
   setMobileDrawerOpen(value: boolean) {
     state.isMobileDrawerOpen = value;

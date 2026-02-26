@@ -627,7 +627,6 @@ export default class StorageBaseSupabase {
                 result = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
             } else {
                 result = await window.$supabase.from(obj.table).upsert(value);
-
             }
 
             const { error, status, statusText } = result

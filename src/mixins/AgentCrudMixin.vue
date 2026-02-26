@@ -262,8 +262,8 @@ export default {
                     }
                 };
                 
-                await backend.putObject('configuration', putObj);
-                
+                await backend.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
+
                 // 4. 조직도 UI 다시 그리기 (있는 경우)
                 if (this.$refs.organizationChart && this.$refs.organizationChart.drawTree) {
                     this.$refs.organizationChart.drawTree();

@@ -2,7 +2,7 @@
     <v-card
         elevation="10"
         style="background-color: rgba(255, 255, 255, 0)"
-        :class="{ 'is-deleted': isDeleted, 'user-left-part': !isAdmin }"
+        :class="{ 'is-deleted': isDeleted, 'user-left-part': !canEdit }"
     >
         <v-card v-if="isConsultingMode">
             <div :key="chatRenderKey">
@@ -46,7 +46,7 @@
              :customMenuName="$t('processDefinition.title')"
         >
             <template v-slot:leftpart>
-                <h5 v-if="!isAdmin" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
+                <h5 v-if="!canEdit" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
                     {{ projectName }}
                 </h5>
                 <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
@@ -61,9 +61,11 @@
                     :isXmlMode="isXmlMode"
                     :definitionPath="fullPath"
                     :definitionChat="this"
-                    :isAdmin="isAdmin"
+                    :isAdmin="canEdit"
                     :generateFormTask="generateFormTask"
                     :isPreviewPDFDialog="isPreviewPDFDialog"
+                    :showValidationConsole="showValidationConsole"
+                    :consoleValidationItems="consoleValidationItems"
                     @closePDFDialog="isPreviewPDFDialog = false"
                     @update="updateDefinition"
                     @changeBpmn="changeBpmn"
@@ -141,9 +143,98 @@
                         </v-row>
                     </v-card>
                 </v-dialog>
+                <!-- Phase 3-2: Approval Reset Warning Dialog -->
+                <v-dialog v-model="showApprovalResetWarning" max-width="450" persistent>
+                    <v-card rounded="lg">
+                        <v-card-title class="d-flex align-center pa-4 pb-2">
+                            <v-icon size="20" color="warning" class="mr-2">mdi-alert-circle</v-icon>
+                            <span class="text-subtitle-1 font-weight-bold">{{ $t('approvalResetWarning.title') }}</span>
+                        </v-card-title>
+                        <v-card-text class="pt-2">
+                            <p class="text-body-2">{{ $t('approvalResetWarning.message') }}</p>
+                        </v-card-text>
+                        <v-card-actions class="px-4 pb-4">
+                            <v-spacer />
+                            <v-btn variant="text" size="small"
+                                @click="showApprovalResetWarning = false; resetWarningResolver && resetWarningResolver(false)">
+                                {{ $t('approvalState.cancel') || '취소' }}
+                            </v-btn>
+                            <v-btn color="warning" variant="flat" size="small"
+                                @click="showApprovalResetWarning = false; resetWarningResolver && resetWarningResolver(true)">
+                                {{ $t('approvalState.confirm') || '확인' }}
+                            </v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
             </template>
             <template v-slot:rightpart>
-                <div v-if="isAdmin" class="process-consulting-ai-second-screen no-scrollbar">
+                <!-- Phase 4-5: URL Input Bar -->
+                <div v-if="showUrlInput" class="pdc-url-input-bar pa-3">
+                    <div class="d-flex align-center gap-2">
+                        <v-text-field
+                            v-model="aiCopilotUrl"
+                            :placeholder="$t('aiCopilot.urlPlaceholder')"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            prepend-inner-icon="mdi-link"
+                            @keyup.enter="fetchAiCopilotUrl"
+                        />
+                        <v-btn
+                            size="small"
+                            color="primary"
+                            variant="tonal"
+                            :disabled="!aiCopilotUrl.trim()"
+                            @click="fetchAiCopilotUrl"
+                        >
+                            {{ $t('aiCopilot.fetch') }}
+                        </v-btn>
+                        <v-btn icon variant="text" size="x-small" @click="showUrlInput = false">
+                            <v-icon size="16">mdi-close</v-icon>
+                        </v-btn>
+                    </div>
+                </div>
+                <!-- Review Mode: Governance Tab -->
+                <div v-if="reviewMode" class="pdc-review-panel no-scrollbar">
+                    <div class="pdc-review-panel__header">
+                        <v-icon size="18" class="mr-1">mdi-clipboard-check-multiple-outline</v-icon>
+                        <span class="text-subtitle-2 font-weight-medium">{{ $t('reviewMode.governancePanel') || 'Governance Review' }}</span>
+                        <v-spacer />
+                        <v-btn icon variant="text" size="x-small" @click="reviewMode = false">
+                            <v-icon size="16">mdi-close</v-icon>
+                        </v-btn>
+                    </div>
+                    <v-tabs v-model="reviewActiveTab" density="compact" class="pdc-review-tabs">
+                        <v-tab value="approval">
+                            <v-icon size="14" class="mr-1">mdi-clipboard-check-outline</v-icon>
+                            {{ $t('reviewMode.approvalTab') || '승인 현황' }}
+                        </v-tab>
+                        <v-tab value="comments">
+                            <v-icon size="14" class="mr-1">mdi-comment-text-multiple-outline</v-icon>
+                            {{ $t('reviewMode.commentsTab') || '피드백' }}
+                        </v-tab>
+                    </v-tabs>
+                    <v-window v-model="reviewActiveTab" class="pdc-review-window">
+                        <v-window-item value="approval">
+                            <ApprovalStatePanel
+                                v-if="fullPath"
+                                :procDefId="fullPath"
+                                @stateChanged="() => {}"
+                            />
+                        </v-window-item>
+                        <v-window-item value="comments">
+                            <ElementCommentPanel
+                                v-if="fullPath"
+                                :procDefId="fullPath"
+                                :selectedElement="reviewCommentElement"
+                                @close="reviewActiveTab = 'approval'"
+                                @commentCountChanged="() => {}"
+                            />
+                        </v-window-item>
+                    </v-window>
+                </div>
+                <!-- Normal Mode: Chat Panel -->
+                <div v-else-if="canEdit" class="process-consulting-ai-second-screen no-scrollbar">
                     <Chat
                         :prompt="prompt"
                         :name="projectName"
@@ -161,16 +252,20 @@
                         @addTeamMembers="addTeamMembers"
                     >
                         <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath"
+                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode"
                                 :isEditable="isEditable"
                                 :chatMode="chatMode"
                                 :isDeleted="isDefinitionDeleted"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                :breadcrumbs="breadcrumbPath"
+                                :lastSavedTime="lastSavedTime"
+                                :approvalState="currentApprovalState"
+                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog"
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @beforeRestore="beforeRestore" @savePDF="savePDF"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                                @beforeRestore="beforeRestore" @savePDF="savePDF" @capturePng="capturePng"
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess"
+                                @validateBpmn="runStandaloneValidation" @timeTravelChanged="onTimeTravelChanged" @toggleUrlInput="showUrlInput = !showUrlInput" />
                         </template>
                     </Chat>
                 </div>
@@ -179,7 +274,7 @@
             <template v-slot:mobileLeftContent>
                 <div class="process-consulting-ai-third-screen chat-info-view-wrapper">
                     <Chat
-                        v-if="isAdmin"
+                        v-if="canEdit"
                         :prompt="prompt"
                         :name="projectName"
                         :messages="messages"
@@ -196,14 +291,19 @@
                         @addTeamMembers="addTeamMembers"
                     >
                         <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath" 
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode" 
+                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath"
+                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode"
                                 :isEditable="isEditable"
                                 :chatMode="chatMode"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog" 
+                                :breadcrumbs="breadcrumbPath"
+                                :lastSavedTime="lastSavedTime"
+                                :approvalState="currentApprovalState"
+                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog"
                                 @executeProcess="executeProcess" @executeSimulate="executeSimulate"
                                 @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+                                @savePDF="savePDF" @capturePng="capturePng"
+                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess"
+                                @validateBpmn="runStandaloneValidation" @timeTravelChanged="onTimeTravelChanged" @toggleUrlInput="showUrlInput = !showUrlInput" />
                         </template>
                     </Chat>
                 </div>
@@ -225,9 +325,57 @@
         <v-dialog v-model="marketplaceDialog" max-width="400" persistent
             :fullscreen="isMobile"
         >
-            <process-definition-market-place-dialog :processDefinition="processDefinition" 
+            <process-definition-market-place-dialog :processDefinition="processDefinition"
                 :bpmn="bpmn" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
         </v-dialog>
+
+        <!-- BPMN Validation Dialog -->
+        <v-dialog v-model="validationDialog" max-width="600" persistent>
+            <v-card>
+                <v-card-title class="d-flex align-center">
+                    <v-icon class="mr-2" color="warning">mdi-alert-circle</v-icon>
+                    {{ $t('validation.title') }}
+                </v-card-title>
+                <v-card-text>
+                    <p class="mb-4">{{ $t('validation.warningMessage') }}</p>
+                    <v-list density="compact">
+                        <v-list-item
+                            v-for="(item, index) in validationResults"
+                            :key="index"
+                            :class="item.level === 'error' ? 'text-error' : 'text-warning'"
+                        >
+                            <template v-slot:prepend>
+                                <v-icon
+                                    :color="item.level === 'error' ? 'error' : 'warning'"
+                                    size="small"
+                                >
+                                    {{ item.level === 'error' ? 'mdi-close-circle' : 'mdi-alert' }}
+                                </v-icon>
+                            </template>
+                            <v-list-item-title>{{ item.message }}</v-list-item-title>
+                            <v-list-item-subtitle v-if="item.elementName">
+                                {{ item.elementName }}
+                            </v-list-item-subtitle>
+                        </v-list-item>
+                    </v-list>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn variant="text" @click="validationDialog = false">
+                        {{ $t('common.cancel') }}
+                    </v-btn>
+                    <v-btn
+                        color="warning"
+                        variant="flat"
+                        @click="saveIgnoringValidation"
+                        :disabled="hasValidationErrors"
+                    >
+                        {{ $t('validation.saveAnyway') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
     </v-card>
 </template>
 <script>
@@ -261,7 +409,11 @@ import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecut
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
 import ProcessDefinitionMarketPlaceDialog from '@/components/ProcessDefinitionMarketPlaceDialog.vue';
+import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
+import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { hasSubstantialChanges } from '@/utils/xmlDiff';
+import { useBpmnExport } from '@/composables/useBpmnExport';
 const storage = StorageBaseFactory.getStorage();
 
 const backend = BackendFactory.createBackend();
@@ -293,7 +445,9 @@ export default {
         'process-gpt-execute': ProcessGPTExecute,
         DryRunProcess,
         TestProcess,
-        ProcessDefinitionMarketPlaceDialog
+        ProcessDefinitionMarketPlaceDialog,
+        ApprovalStatePanel,
+        ElementCommentPanel
     },
     props: {
         chatMode: {
@@ -336,6 +490,10 @@ export default {
         isPreviewPDFDialog: false,
         marketplaceDialog: false,
         isAIGenerated: false,
+        // Validation
+        validationDialog: false,
+        validationResults: [],
+        pendingSaveInfo: null,
         organizationChart: [],
         strategy: null,
         isHorizontal: false,
@@ -343,12 +501,34 @@ export default {
         useCrewAI: false, // 테스트용 플래그
         crewAIBaseURL: 'http://localhost:8000',
         crewAISessionId: null,
-        
+
         // 실시간 JSON 파싱용
         accumulatedJSON: '',
         lastParsedJSON: null,
         isRetry: false,
         retryCount: 0,
+        // 권한 관련
+        hasWritePermission: false, // 현재 프로세스에 대한 수정 권한
+
+        // Review Mode (Board에서 [Review] 클릭 시)
+        reviewMode: false,
+        reviewId: null,
+        reviewActiveTab: 'approval', // 'approval' | 'comments'
+        reviewCommentElement: null, // 선택된 노드
+
+        // Phase 1-1: Last saved time
+        lastSavedTime: null,
+        // Phase 1-1: Approval state
+        currentApprovalState: null,
+        // Phase 1-3: Standalone validation console
+        showValidationConsole: false,
+        consoleValidationItems: [],
+        // Phase 3-2: Approval reset warning
+        showApprovalResetWarning: false,
+        resetWarningResolver: null,
+        // Phase 4-5: AI Copilot URL input
+        showUrlInput: false,
+        aiCopilotUrl: '',
     }),
     async created() {
         $try(async () => {
@@ -483,6 +663,10 @@ export default {
             const isAdmin = localStorage.getItem('isAdmin') === 'true';
             return isAdmin;
         },
+        // 편집 가능 여부: 관리자이거나 수정 권한이 있는 경우
+        canEdit() {
+            return this.isAdmin || this.hasWritePermission;
+        },
         mode(){
             return window.$mode;
         },
@@ -492,9 +676,30 @@ export default {
         isMobile() {
             return window.innerWidth <= 768;
         },
+        // Phase 1-1: Breadcrumbs computed from processDefinitionMap
+        breadcrumbPath() {
+            if (!this.processDefinitionMap || !this.processDefinitionMap.mega_proc_list || !this.fullPath) return [];
+            const crumbs = [];
+            for (const mega of this.processDefinitionMap.mega_proc_list) {
+                for (const major of (mega.major_proc_list || [])) {
+                    for (const sub of (major.sub_proc_list || [])) {
+                        if (sub.id === this.fullPath || sub.name === this.projectName) {
+                            if (major.domain) crumbs.push(major.domain);
+                            crumbs.push(mega.name);
+                            crumbs.push(major.name);
+                            return crumbs;
+                        }
+                    }
+                }
+            }
+            return crumbs;
+        },
         maxRetryCount() {
             // 컨설팅 모드: 최대 10번, 일반 모드: 최대 3번
             return this.isConsultingMode ? 10 : 3;
+        },
+        hasValidationErrors() {
+            return this.validationResults.some(item => item.level === 'error');
         },
     },
     async beforeRouteUpdate(to, from, next) {
@@ -510,20 +715,26 @@ export default {
                     next();
                     return;
                 }
-                const store = useBpmnStore();
-                const modeler = store.getModeler;
-                const xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                
-                const shouldConfirm = xmlObj && xmlObj.xml && !this.isViewMode;
+                try {
+                    const store = useBpmnStore();
+                    const modeler = store.getModeler;
+                    const xmlObj = await modeler.saveXML({ format: true, preamble: true });
 
-                if (shouldConfirm) {
-                    const answer = window.confirm(this.$t('changePath'));
-                    if (answer) {
-                        next();
+                    const shouldConfirm = xmlObj && xmlObj.xml && !this.isViewMode;
+
+                    if (shouldConfirm) {
+                        const answer = window.confirm(this.$t('changePath'));
+                        if (answer) {
+                            next();
+                        } else {
+                            next(false);
+                        }
                     } else {
-                        next(false);
+                        next();
                     }
-                } else {
+                } catch (error) {
+                    // definition 로드 실패 등의 에러 발생 시 강제 이동
+                    console.warn('Route change error, forcing navigation:', error.message);
                     next();
                 }
             } else {
@@ -560,8 +771,8 @@ export default {
             if (this.organizationChartId) {
                 putObj.uuid = this.organizationChartId;
             }
-            await this.putObject("configuration", putObj);
-        
+            await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
+
         },
         async addTeam(newTeamData){
             try {
@@ -696,6 +907,48 @@ export default {
         toggleMarketplaceDialog(value) {
             this.marketplaceDialog = value;
         },
+        async duplicateProcess() {
+            try {
+                // Generate unique name with copy suffix
+                const baseName = this.projectName;
+                let newName = `${baseName} (${this.$t('ProcessMenu.copySuffix') || '복사'})`;
+
+                // Get current BPMN XML from modeler (most up-to-date)
+                let currentBpmn = this.bpmn;
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
+                if (modeler) {
+                    try {
+                        const { xml } = await modeler.saveXML({ format: true });
+                        currentBpmn = xml;
+                    } catch (e) {
+                        console.warn('Could not get XML from modeler, using stored BPMN');
+                    }
+                }
+
+                // Save duplicated process to database
+                const result = await backend.duplicateLocalProcess(
+                    this.fullPath?.replace('.bpmn', '') || '',
+                    newName,
+                    currentBpmn,
+                    this.processDefinition
+                );
+
+                if (result.success) {
+                    // Navigate to the new process (without BPMN in URL)
+                    this.$router.push({
+                        path: `/definitions/${result.newId}`,
+                    });
+
+                    this.$toast.success(this.$t('ProcessMenu.duplicateSuccess') || '프로세스가 복사되었습니다.');
+                } else {
+                    throw new Error('Duplication failed');
+                }
+            } catch (error) {
+                console.error('Failed to duplicate process:', error);
+                this.$toast.error(this.$t('ProcessMenu.duplicateFailed') || '프로세스 복사에 실패했습니다.');
+            }
+        },
         executeProcess() {
             this.isSimulate = 'false'
             this.executeDialog = !this.executeDialog;
@@ -741,7 +994,230 @@ export default {
             if(window.$pal){
                 await this.beforeSavePALUserTasks(info);
             }
+
+            // Phase 3-2: In-Review 상태에서 수정 시 승인 초기화 경고
+            if (this.currentApprovalState?.state === 'in_review') {
+                const proceed = await new Promise((resolve) => {
+                    this.resetWarningResolver = resolve;
+                    this.showApprovalResetWarning = true;
+                });
+                if (!proceed) return;
+                // Show notification that approvals were reset
+                if (this.$snackbar) {
+                    this.$snackbar.show({
+                        message: this.$t('approvalResetWarning.notification'),
+                        color: 'warning'
+                    });
+                }
+            }
+
+            // 변경 사항 확인 (변동 없으면 저장 스킵)
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (modeler && this.lastSavedXML) {
+                try {
+                    const { xml: currentXML } = await modeler.saveXML({ format: true });
+                    if (!hasSubstantialChanges(this.lastSavedXML, currentXML)) {
+                        // 변경 사항 없음 알림
+                        if (this.$snackbar) {
+                            this.$snackbar.show({
+                                message: this.$t('save.noChanges'),
+                                color: 'info'
+                            });
+                        } else {
+                            alert(this.$t('save.noChanges'));
+                        }
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('변경 감지 실패, 저장 진행:', e);
+                }
+            }
+
+
+            // Run BPMN validation before save
+            const validationResults = await this.validateBpmn();
+            if (validationResults.length > 0) {
+                this.validationResults = validationResults;
+                this.pendingSaveInfo = info;
+                this.validationDialog = true;
+                return;
+            }
+
             this.saveDefinition(info);
+        },
+        async validateBpmn() {
+            const results = [];
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+
+            if (!modeler) return results;
+
+            try {
+                const elementRegistry = modeler.get('elementRegistry');
+                const elements = elementRegistry.getAll();
+
+                let hasStartEvent = false;
+                let hasEndEvent = false;
+                const connectedElements = new Set();
+                const gateways = [];
+                const tasks = [];
+
+                // Analyze elements
+                elements.forEach(element => {
+                    const type = element.type;
+
+                    if (type === 'bpmn:StartEvent') {
+                        hasStartEvent = true;
+                    }
+                    if (type === 'bpmn:EndEvent') {
+                        hasEndEvent = true;
+                    }
+                    if (type?.includes('Gateway')) {
+                        gateways.push(element);
+                    }
+                    if (type?.includes('Task')) {
+                        tasks.push(element);
+                    }
+
+                    // Track connected elements
+                    if (element.incoming) {
+                        element.incoming.forEach(conn => {
+                            if (conn.source) connectedElements.add(conn.source.id);
+                        });
+                    }
+                    if (element.outgoing) {
+                        element.outgoing.forEach(conn => {
+                            if (conn.target) connectedElements.add(conn.target.id);
+                        });
+                    }
+                });
+
+                // Check for start event
+                if (!hasStartEvent) {
+                    results.push({
+                        level: 'error',
+                        message: this.$t('validation.noStartEvent'),
+                        elementName: null
+                    });
+                }
+
+                // Check for end event
+                if (!hasEndEvent) {
+                    results.push({
+                        level: 'error',
+                        message: this.$t('validation.noEndEvent'),
+                        elementName: null
+                    });
+                }
+
+                // Check for unconnected tasks
+                tasks.forEach(task => {
+                    const hasIncoming = task.incoming && task.incoming.length > 0;
+                    const hasOutgoing = task.outgoing && task.outgoing.length > 0;
+
+                    if (!hasIncoming && !hasOutgoing) {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.unconnectedElement'),
+                            elementName: task.businessObject?.name || task.id,
+                            elementId: task.id
+                        });
+                    } else if (!hasIncoming) {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.noIncomingConnection'),
+                            elementName: task.businessObject?.name || task.id,
+                            elementId: task.id
+                        });
+                    } else if (!hasOutgoing) {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.noOutgoingConnection'),
+                            elementName: task.businessObject?.name || task.id,
+                            elementId: task.id
+                        });
+                    }
+                });
+
+                // Check gateways
+                gateways.forEach(gateway => {
+                    const outgoing = gateway.outgoing || [];
+                    const incoming = gateway.incoming || [];
+
+                    if (outgoing.length < 2 && gateway.type !== 'bpmn:EventBasedGateway') {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.gatewayNeedsBranches'),
+                            elementName: gateway.businessObject?.name || gateway.id,
+                            elementId: gateway.id
+                        });
+                    }
+
+                    if (incoming.length === 0) {
+                        results.push({
+                            level: 'warning',
+                            message: this.$t('validation.noIncomingConnection'),
+                            elementName: gateway.businessObject?.name || gateway.id,
+                            elementId: gateway.id
+                        });
+                    }
+                });
+
+            } catch (error) {
+                console.error('Validation error:', error);
+            }
+
+            return results;
+        },
+        saveIgnoringValidation() {
+            this.validationDialog = false;
+            if (this.pendingSaveInfo) {
+                this.saveDefinition(this.pendingSaveInfo);
+                this.pendingSaveInfo = null;
+            }
+        },
+        // Phase 4-5: AI Copilot URL fetch (placeholder)
+        fetchAiCopilotUrl() {
+            if (!this.aiCopilotUrl.trim()) return;
+            this.messages.push({
+                role: 'assistant',
+                content: `🔗 **${this.aiCopilotUrl}**\n\n${this.$t('aiCopilot.urlScrapePlaceholder')}`,
+            });
+            this.aiCopilotUrl = '';
+            this.showUrlInput = false;
+        },
+        // Phase 4-3: Time-Travel toggle handler
+        onTimeTravelChanged(mode) {
+            window.$bpmnTimeTravel = mode === 'toBe' ? 'toBe' : null;
+            // Force re-render all tasks
+            const bpmnVue = this.$refs.definitionComponent?.$refs?.bpmnVue;
+            if (bpmnVue?.bpmnViewer) {
+                try {
+                    const elementRegistry = bpmnVue.bpmnViewer.get('elementRegistry');
+                    const graphicsFactory = bpmnVue.bpmnViewer.get('graphicsFactory');
+                    elementRegistry.filter(el => el.type && el.type.includes('Task')).forEach(el => {
+                        const gfx = elementRegistry.getGraphics(el);
+                        if (gfx) graphicsFactory.update('shape', el, gfx);
+                    });
+                } catch (e) {
+                    console.warn('Time-travel re-render failed:', e);
+                }
+            }
+        },
+        // Phase 1-3: Standalone validation (from Validate button)
+        async runStandaloneValidation() {
+            const results = await this.validateBpmn();
+            // Add elementId to results for focusElement
+            this.consoleValidationItems = results.map(r => ({
+                ...r,
+                elementId: r.elementId || null
+            }));
+            this.showValidationConsole = true;
+            // Apply visual markers on canvas
+            if (this.$refs.definitionComponent && this.$refs.definitionComponent.$refs.bpmnVue) {
+                this.$refs.definitionComponent.$refs.bpmnVue.applyValidationMarkers(this.consoleValidationItems);
+            }
         },
         async beforeSavePALUserTasks(info) {
             var me = this;
@@ -879,6 +1355,18 @@ export default {
                 return;
             }
 
+            // Phase 4-5: PDF/Word file handling (UI placeholder)
+            const lowerName = file.name.toLowerCase();
+            if (lowerName.endsWith('.pdf') || lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) {
+                // Show placeholder message for unsupported formats
+                this.messages.push({
+                    role: 'assistant',
+                    content: `📎 **${file.name}**\n\n${this.$t('aiCopilot.fileUploadPlaceholder')}`,
+                });
+                event.target.value = ''; // reset input
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 const content = e.target.result;
@@ -911,23 +1399,44 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    const lockObj = await me.getData(`lock/${defId}`, { key: 'id' });
-                    if (lockObj && lockObj.id && lockObj.user_id) {
-                        me.editUser = lockObj.user_id;
-                        if (lockObj.user_id == this.userInfo.name) {
-                            me.lock = false;
-                            me.disableChat = false;
-                            me.isViewMode = false;
+                    // 비관리자 writable 권한 사용자는 lock 메커니즘 없이 바로 편집 모드
+                    if (!me.isAdmin && me.hasWritePermission) {
+                        me.editUser = me.userInfo?.name || '';
+                        me.lock = false;
+                        me.disableChat = false;
+                        me.isViewMode = false;
+                        return;
+                    }
+
+                    // 관리자는 기존 lock 메커니즘 사용
+                    try {
+                        const lockObj = await me.getData(`lock/${defId}`, { key: 'id' });
+                        if (lockObj && lockObj.id && lockObj.user_id) {
+                            me.editUser = lockObj.user_id;
+                            if (lockObj.user_id == this.userInfo.name) {
+                                me.lock = false;
+                                me.disableChat = false;
+                                me.isViewMode = false;
+                            } else {
+                                me.lock = true;
+                                me.disableChat = true;
+                                me.isViewMode = true;
+                            }
                         } else {
+                            me.editUser = '';
                             me.lock = true;
                             me.disableChat = true;
                             me.isViewMode = true;
                         }
-                    } else {
-                        me.editUser = '';
-                        me.lock = true;
-                        me.disableChat = true;
-                        me.isViewMode = true;
+                    } catch (e) {
+                        console.warn('[checkedLock] Lock 확인 실패:', e);
+                        // Lock 확인 실패 시 writable 권한이 있으면 편집 허용
+                        if (me.hasWritePermission) {
+                            me.editUser = me.userInfo?.name || '';
+                            me.lock = false;
+                            me.disableChat = false;
+                            me.isViewMode = false;
+                        }
                     }
                 }
             });
@@ -939,11 +1448,17 @@ export default {
                 action: async () => {
                     if (me.lock) {
                         // 잠금 > 수정가능 하도록
-                        if (me.processDefinition && me.useLock) {
-                            await backend.setLock({
-                                id: me.processDefinition.processDefinitionId,
-                                user_id: me.userInfo.name
-                            });
+                        // 관리자만 lock 테이블에 접근 가능 (RLS 정책)
+                        // 비관리자 writable 권한 사용자는 lock 없이 편집
+                        if (me.processDefinition && me.useLock && me.isAdmin) {
+                            try {
+                                await backend.setLock({
+                                    id: me.processDefinition.processDefinitionId,
+                                    user_id: me.userInfo.name
+                                });
+                            } catch (e) {
+                                console.warn('[toggleLock] Lock 설정 실패 (권한 없음):', e);
+                            }
                         }
                         me.editUser = me.userInfo.name;
                         me.disableChat = false;
@@ -1063,25 +1578,25 @@ export default {
                             me.afterLoadBpmn();
                         }
 
-                        // const role = localStorage.getItem('role');
-                        // if (role !== 'superAdmin') {
-                        //     // 수정 권한 체크
-                        //     const permission = await me.checkPermission(lastPath);
-                        //     if (permission && permission.writable) {
-                        //         me.isEditable = true;
-                        //         me.checkedLock(lastPath);
-                        //     } else if (permission && !permission.writable) {
-                        //         me.isEditable = false;
-                        //         me.lock = true;
-                        //         me.disableChat = true;
-                        //         me.isViewMode = true;
-                        //     }
-                        // } else {
-                        //     me.isEditable = true;
-                        //     me.checkedLock(lastPath);
-                        // }
-                        me.isEditable = true;
-                        me.checkedLock(lastPath);
+                        // 수정 권한 체크
+                        const role = localStorage.getItem('role');
+                        if (role !== 'superAdmin' && !me.isAdmin) {
+                            const permission = await backend.checkProcessPermission(lastPath);
+                            me.hasWritePermission = permission.writable || permission.isPublic;
+                            if (permission.writable || permission.isPublic) {
+                                me.isEditable = true;
+                                me.checkedLock(lastPath);
+                            } else {
+                                me.isEditable = false;
+                                me.lock = true;
+                                me.disableChat = true;
+                                me.isViewMode = true;
+                            }
+                        } else {
+                            me.hasWritePermission = true;
+                            me.isEditable = true;
+                            me.checkedLock(lastPath);
+                        }
                     } else {
                         // uEngine 모드
                         me.isEditable = true;
@@ -1123,6 +1638,16 @@ export default {
                 if (me.$route.query && me.$route.query.edit) {
                     me.lock = true;
                     me.toggleLock();
+                }
+                // Review Mode: Board에서 [Review] 클릭 시 진입
+                if (me.$route.query && me.$route.query.reviewMode === 'true') {
+                    me.reviewMode = true;
+                    me.reviewId = me.$route.query.reviewId || null;
+                    me.reviewActiveTab = 'approval';
+                    // View Mode 강제 (검토 중 수정 불가)
+                    me.isViewMode = true;
+                    me.lock = true;
+                    me.disableChat = true;
                 }
                 me.processDefinitionMap = await backend.getProcessDefinitionMap();
             } catch (e) {
@@ -1867,6 +2392,23 @@ export default {
             this.isPreviewPDFDialog = false;
             this.isPreviewPDFDialog = true;
         },
+        async capturePng() {
+            const definitionComponent = this.$refs.definitionComponent;
+            if (!definitionComponent || !definitionComponent.$refs?.bpmnVue) {
+                console.error('BPMN component not found');
+                return;
+            }
+
+            const bpmnVue = definitionComponent.$refs.bpmnVue;
+            const bpmnViewer = bpmnVue.bpmnViewer;
+
+            // 공통 유틸리티 사용
+            const { capturePng } = useBpmnExport();
+            await capturePng({
+                bpmnViewer,
+                processName: this.projectName || 'Process Diagram'
+            });
+        },
         async checkPermission(id) {
             const uid = localStorage.getItem('uid');
             const options = {
@@ -2584,5 +3126,38 @@ export default {
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.5); /* 회색 오버레이 */
     z-index: 10;
+}
+
+/* Review Mode Governance Panel */
+.pdc-url-input-bar {
+    background: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+}
+.pdc-review-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fafafa;
+    overflow: hidden;
+}
+.pdc-review-panel__header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 13px;
+    gap: 4px;
+    min-height: 40px;
+    flex-shrink: 0;
+}
+.pdc-review-tabs {
+    flex-shrink: 0;
+    border-bottom: 1px solid #e0e0e0;
+    background: #fff;
+}
+.pdc-review-window {
+    flex: 1;
+    overflow-y: auto;
 }
 </style>

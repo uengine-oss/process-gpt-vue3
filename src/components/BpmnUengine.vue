@@ -1,6 +1,6 @@
 <template>
-    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal, 'mini-preview': isPreviewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop">
-        <!-- View mode controls -->
+    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal, 'mini-preview': isPreviewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop" @contextmenu.prevent="onContextMenu">
+        <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
@@ -10,58 +10,54 @@
                 <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
-        <!-- Edit mode controls -->
-        <div v-if="!isViewMode" class="font-size-controls" :class="{ 'font-size-controls-mobile': isMobile }">
-            <div class="controls-group ga-3">
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-decrease</v-icon>
-                    </template>
-                    <span>{{ $t('BpmnUengine.decreaseFontSize') }}</span>
-                </v-tooltip>
-                <span class="font-size-value">{{ labelFontSize }}px</span>
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer;" size="20">mdi-format-font-size-increase</v-icon>
-                    </template>
-                    <span>{{ $t('BpmnUengine.increaseFontSize') }}</span>
-                </v-tooltip>
-            </div>
-            <span class="controls-divider" v-if="!isMobile">|</span>
-            <div class="controls-group ga-3">
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="20">mdi-crosshairs-gps</v-icon>
-                    </template>
-                    <span>{{ $t('BpmnUengine.resetZoom') }}</span>
-                </v-tooltip>
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="applyAutoLayout" style="color: #444; cursor: pointer; padding-bottom: 3px;" size="20">mdi-auto-fix</v-icon>
-                    </template>
-                    <span>{{ $t('BpmnUengine.autoLayout') }}</span>
-                </v-tooltip>
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="changeOrientation" style="color: #444; cursor: pointer;" size="20">mdi-crop-rotate</v-icon>
-                    </template>
-                    <span>{{ $t('BpmnUengine.changeOrientation') }}</span>
-                </v-tooltip>
-            </div>
-            <div class="controls-group ga-3">
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <v-icon v-bind="props" @click="$emit('openProcessVariables')" style="color: #444; cursor: pointer;" size="20">mdi-variable</v-icon>
-                    </template>
-                    <span>{{ $t('BpmnUengine.processVariables') }}</span>
-                </v-tooltip>
-                <v-tooltip location="bottom">
-                    <template v-slot:activator="{ props }">
-                        <Icons v-bind="props" @click="$globalState.methods.toggleZoom()" :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" :size="20" style="cursor: pointer;" />
-                    </template>
-                    <span>{{ !$globalState.state.isZoomed ? $t('BpmnUengine.zoomIn') : $t('BpmnUengine.zoomOut') }}</span>
-                </v-tooltip>
-            </div>
+        <!-- Font size and zoom controls (edit mode only) -->
+        <div v-if="!isViewMode" class="font-size-controls">
+            <!-- Extra controls slot (for parent component buttons) -->
+            <slot name="extra-controls"></slot>
+            <span v-if="$slots['extra-controls']" class="controls-divider">|</span>
+            <!-- Font size controls -->
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-decrease</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.decreaseFontSize') || 'Decrease Font Size' }}</span>
+            </v-tooltip>
+            <span class="font-size-value">{{ labelFontSize }}px</span>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-increase</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.increaseFontSize') || 'Increase Font Size' }}</span>
+            </v-tooltip>
+            <span class="controls-divider">|</span>
+            <!-- Color Ruleset button -->
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer;" size="small">mdi-palette</v-icon>
+                </template>
+                <span>Color Ruleset</span>
+            </v-tooltip>
+            <span class="controls-divider">|</span>
+            <!-- Zoom controls -->
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="small">mdi-crosshairs-gps</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.resetZoom') || 'Fit to Screen (Ctrl+0)' }}</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="zoomOut" style="color: #444; cursor: pointer;" size="small">mdi-minus</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.zoomOut') || 'Zoom Out (Ctrl+-)' }}</span>
+            </v-tooltip>
+            <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
+            <v-tooltip location="bottom">
+                <template v-slot:activator="{ props }">
+                    <v-icon v-bind="props" @click="zoomIn" style="color: #444; cursor: pointer;" size="small">mdi-plus</v-icon>
+                </template>
+                <span>{{ $t('BpmnUengine.zoomIn') || 'Zoom In (Ctrl++)' }}</span>
+            </v-tooltip>
         </div>
     </div>
     <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">
@@ -70,6 +66,12 @@
             <PDFPreviewer  :bpmnViewer="bpmnViewer" @closeDialog="closePDFDialog"/>
         </v-card>
     </v-dialog>
+    <!-- Color Ruleset Dialog -->
+    <ColorRulesetDialog
+        v-model="showColorRulesetDialog"
+        :initialRules="colorRules"
+        @save="onColorRulesSave"
+    />
 </template>
 
 <script>
@@ -96,8 +98,12 @@ import customPopupMenu from './customPopupMenu';
 // import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
+import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
 import '@/components/autoLayout/bpmn-auto-layout.js';
 import { markRaw } from 'vue';
+import minimapModule from 'diagram-js-minimap';
+import 'diagram-js-minimap/assets/diagram-js-minimap.css';
+import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 
 
 const backend = BackendFactory.createBackend();
@@ -108,6 +114,7 @@ WARNING = 0,
 
 export default {
     name: 'bpmn-uengine',
+    inheritAttrs: false,
     emits: [
         'closePDFDialog',
         'error',
@@ -115,11 +122,13 @@ export default {
         'openDefinition',
         'loading',
         'openPanel',
+        'addComment',
         'updateXml',
         'definition',
         'addShape',
         'done',
-        'changeElement'
+        'changeElement',
+        'multiSelect'
     ],
     props: {
         url: {
@@ -159,6 +168,10 @@ export default {
             type: Boolean,
             default: true
         },
+        commentCounts: {
+            type: Object,
+            default: () => ({})
+        },
         onLoadStart: {
             type: Function,
             default: () => {
@@ -175,7 +188,8 @@ export default {
         }
     },
     components: {
-        PDFPreviewer
+        PDFPreviewer,
+        ColorRulesetDialog
     },
     data: function () {
         return {
@@ -203,6 +217,8 @@ export default {
                 sequenceflow: 0,
                 participant: 0
             },
+            showColorRulesetDialog: false,
+            colorRules: [], // Color rules loaded from BPMN XML
             // compensate boundaryEvent ↔ 보상 task 연결 시 자동으로 compensateTask 채움
             compensateAutoFillInstalled: false
         };
@@ -242,6 +258,15 @@ export default {
                 // GS 모드의 definitions/chat에서는 초기 기본값(BPMN)을 주입하지 않는다.
                 this.diagramXML = null;
             } else {
+                let laneName = 'Lane 1';
+                try {
+                    const teamName = await getCurrentUserTeamName();
+                    if (teamName) {
+                        laneName = teamName;
+                    }
+                } catch (e) {
+                    console.warn('[BpmnUengine] 팀명 조회 실패, 기본값 사용:', e);
+                }
                 // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
                 this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
@@ -254,7 +279,7 @@ export default {
       <uengine:ProcessVariable key="variable2" value="value2"/>
     </uengine:ProcessVariables>
     <bpmn:laneSet id="LaneSet_1">
-      <bpmn:lane id="Lane_1" name="Lane 1">
+      <bpmn:lane id="Lane_1" name="${laneName}">
         <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>ManualTask_1</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
@@ -434,8 +459,126 @@ export default {
                 this.$emit('closePDFDialog');
             }
         },
+        commentCounts: {
+            handler(val) {
+                this.renderCommentBadges(val);
+            },
+            deep: true
+        },
     },
     methods: {
+        // 노드별 코멘트 배지 오버레이 렌더링
+        renderCommentBadges(commentCounts) {
+            if (!this.bpmnViewer) return;
+            try {
+                const overlays = this.bpmnViewer.get('overlays');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+
+                // 기존 코멘트 배지 제거
+                overlays.remove({ type: 'comment-badge' });
+
+                if (!commentCounts || Object.keys(commentCounts).length === 0) return;
+
+                Object.entries(commentCounts).forEach(([elementId, countObj]) => {
+                    const count = typeof countObj === 'object' ? (countObj.unresolved || 0) : (countObj || 0);
+                    if (count === 0) return;
+                    const element = elementRegistry.get(elementId);
+                    if (!element) return;
+
+                    const badge = document.createElement('div');
+                    badge.className = 'comment-count-badge';
+                    badge.style.cssText = [
+                        'cursor: pointer',
+                        'min-width: 18px',
+                        'height: 18px',
+                        'background: #e53935',
+                        'border-radius: 9px',
+                        'border: 2px solid #fff',
+                        'display: flex',
+                        'align-items: center',
+                        'justify-content: center',
+                        'padding: 0 4px',
+                        'box-shadow: 0 1px 4px rgba(0,0,0,0.25)',
+                        'font-size: 10px',
+                        'font-weight: bold',
+                        'color: #fff',
+                        'font-family: Arial, sans-serif',
+                        'pointer-events: auto'
+                    ].join(';');
+                    badge.textContent = count > 99 ? '99+' : String(count);
+
+                    const self = this;
+                    badge.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        self.$emit('addComment', elementId);
+                    });
+
+                    overlays.add(elementId, 'comment-badge', {
+                        position: { top: -10, right: -10 },
+                        html: badge
+                    });
+                });
+            } catch (e) {
+                console.warn('[BpmnUengine] renderCommentBadges 오류:', e);
+            }
+        },
+
+        // 특정 요소로 캔버스 포커스 이동
+        focusElement(elementId) {
+            if (!this.bpmnViewer || !elementId) return;
+            try {
+                const canvas = this.bpmnViewer.get('canvas');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const element = elementRegistry.get(elementId);
+                if (!element) return;
+
+                const viewbox = canvas.viewbox();
+                const elementMid = {
+                    x: element.x + element.width / 2,
+                    y: element.y + element.height / 2
+                };
+                const zoom = 1.0;
+                canvas.viewbox({
+                    x: elementMid.x - (viewbox.outer.width / zoom / 2),
+                    y: elementMid.y - (viewbox.outer.height / zoom / 2),
+                    width: viewbox.outer.width / zoom,
+                    height: viewbox.outer.height / zoom
+                });
+                canvas.zoom(zoom);
+            } catch (e) {
+                console.warn('[BpmnUengine] focusElement 오류:', e);
+            }
+        },
+
+        // Phase 1-3: Apply validation markers on canvas
+        applyValidationMarkers(items) {
+            if (!this.bpmnViewer) return;
+            try {
+                const canvas = this.bpmnViewer.get('canvas');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+
+                // Remove all existing validation markers
+                elementRegistry.getAll().forEach(el => {
+                    canvas.removeMarker(el.id, 'validation-error');
+                    canvas.removeMarker(el.id, 'validation-warning');
+                });
+
+                // Add markers per item
+                (items || []).forEach(item => {
+                    if (!item.elementId) return;
+                    const el = elementRegistry.get(item.elementId);
+                    if (!el) return;
+                    if (item.level === 'error') {
+                        canvas.addMarker(item.elementId, 'validation-error');
+                    } else {
+                        canvas.addMarker(item.elementId, 'validation-warning');
+                    }
+                });
+            } catch (e) {
+                console.warn('[BpmnUengine] applyValidationMarkers error:', e);
+            }
+        },
+
         hasCompensateEventDefinition(element) {
             const defs = element?.businessObject?.eventDefinitions || [];
             return Array.isArray(defs) && defs.some((d) => d?.$type === 'bpmn:CompensateEventDefinition');
@@ -575,6 +718,263 @@ export default {
             const horizontal = participant[0].di.isHorizontal;
             window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
             this.EventBus.emit('autoLayout.complete');
+        },
+        revertAutoLayout() {
+            if (!window.BpmnAutoLayout || !window.BpmnAutoLayout.hasLayoutSnapshot()) {
+                console.warn('No layout snapshot available to restore');
+                this.$root.$emit('show-snackbar', {
+                    message: this.$t('BpmnUengine.noLayoutSnapshot') || 'No layout snapshot available',
+                    color: 'warning'
+                });
+                return false;
+            }
+            const success = window.BpmnAutoLayout.restoreLayoutSnapshot(this.bpmnViewer);
+            if (success) {
+                this.$root.$emit('show-snackbar', {
+                    message: this.$t('BpmnUengine.layoutRestored') || 'Layout restored successfully',
+                    color: 'success'
+                });
+            }
+            return success;
+        },
+        hasLayoutSnapshot() {
+            return window.BpmnAutoLayout && window.BpmnAutoLayout.hasLayoutSnapshot();
+        },
+        // ========== 프로세스 간 복사/붙여넣기 기능 ==========
+        getCurrentProcessId() {
+            // 현재 프로세스 ID 가져오기 (URL 또는 props에서)
+            return this.$route?.params?.pathMatch || window.location.pathname || 'unknown';
+        },
+        saveToCrossProcessClipboard(elements) {
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+
+                // Shape 요소와 Connection 요소 분리
+                const shapes = elements.filter(el => !el.waypoints);
+                const shapeIds = new Set(shapes.map(el => el.id));
+
+                // 선택된 Shape 간의 연결선 찾기
+                const connections = [];
+                shapes.forEach(shape => {
+                    // outgoing connections
+                    if (shape.outgoing) {
+                        shape.outgoing.forEach(conn => {
+                            if (conn.target && shapeIds.has(conn.target.id)) {
+                                connections.push({
+                                    type: conn.type,
+                                    id: conn.id,
+                                    sourceId: conn.source.id,
+                                    targetId: conn.target.id,
+                                    name: conn.businessObject?.name || '',
+                                    waypoints: conn.waypoints?.map(wp => ({ x: wp.x, y: wp.y })) || [],
+                                    properties: this.extractElementProperties(conn)
+                                });
+                            }
+                        });
+                    }
+                });
+
+                const clipboardData = {
+                    processId: this.getCurrentProcessId(),
+                    timestamp: Date.now(),
+                    elements: shapes.map(el => {
+                        const businessObject = el.businessObject;
+                        return {
+                            type: el.type,
+                            id: el.id,
+                            name: businessObject?.name || '',
+                            x: el.x,
+                            y: el.y,
+                            width: el.width,
+                            height: el.height,
+                            properties: this.extractElementProperties(el)
+                        };
+                    }),
+                    connections: connections
+                };
+                localStorage.setItem('bpmn-cross-process-clipboard', JSON.stringify(clipboardData));
+                console.log('프로세스 간 클립보드에 저장됨:', clipboardData.elements.length, '개 요소,', connections.length, '개 연결선');
+            } catch (e) {
+                console.error('프로세스 간 복사 실패:', e);
+            }
+        },
+        extractElementProperties(element) {
+            const bo = element.businessObject;
+            if (!bo) return {};
+
+            const props = {
+                name: bo.name,
+                documentation: bo.documentation?.[0]?.text || ''
+            };
+
+            // uengine 확장 속성 추출
+            const extensionElements = bo.extensionElements;
+            if (extensionElements && extensionElements.values) {
+                const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                if (uengineProps && uengineProps.json) {
+                    try {
+                        props.uengineJson = uengineProps.json;
+                    } catch (e) {}
+                }
+            }
+
+            return props;
+        },
+        getFromCrossProcessClipboard() {
+            try {
+                const data = localStorage.getItem('bpmn-cross-process-clipboard');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    // 10분 이내 복사된 데이터만 유효
+                    if (Date.now() - parsed.timestamp < 10 * 60 * 1000) {
+                        return parsed;
+                    }
+                }
+            } catch (e) {
+                console.error('프로세스 간 클립보드 읽기 실패:', e);
+            }
+            return null;
+        },
+        pasteFromCrossProcessClipboard(clipboardData) {
+            if (!clipboardData || !clipboardData.elements || clipboardData.elements.length === 0) {
+                return;
+            }
+
+            try {
+                const modeling = this.bpmnViewer.get('modeling');
+                const elementFactory = this.bpmnViewer.get('elementFactory');
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const canvas = this.bpmnViewer.get('canvas');
+                const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
+
+                // 현재 뷰포트 중앙 위치 계산
+                const viewbox = canvas.viewbox();
+                const centerX = viewbox.x + viewbox.width / 2;
+                const centerY = viewbox.y + viewbox.height / 2;
+
+                // 복사된 요소들의 바운딩 박스 계산
+                let minX = Infinity, minY = Infinity;
+                clipboardData.elements.forEach(el => {
+                    if (el.x < minX) minX = el.x;
+                    if (el.y < minY) minY = el.y;
+                });
+
+                // 부모 요소 찾기 (Pool 또는 Process)
+                const rootElement = canvas.getRootElement();
+                let parent = rootElement;
+                const participants = elementRegistry.filter(el => el.type === 'bpmn:Participant');
+                if (participants.length > 0) {
+                    parent = participants[0];
+                }
+
+                // 기존 ID → 새 ID 매핑
+                const idMapping = {};
+                const timestamp = Date.now();
+
+                const createdElements = [];
+
+                // 1. Shape 요소들 생성
+                clipboardData.elements.forEach((elData, index) => {
+                    // 새 ID 생성
+                    const newId = elData.type.replace('bpmn:', '') + '_' + timestamp + '_' + index;
+                    idMapping[elData.id] = newId;
+
+                    // 새 위치 계산 (뷰포트 중앙 기준 + 오프셋)
+                    const offsetX = elData.x - minX;
+                    const offsetY = elData.y - minY;
+                    const newX = centerX + offsetX;
+                    const newY = centerY + offsetY;
+
+                    // 비즈니스 오브젝트 생성
+                    const businessObject = bpmnFactory.create(elData.type, {
+                        id: newId,
+                        name: elData.properties?.name || elData.name || ''
+                    });
+
+                    // Shape 생성
+                    const shape = elementFactory.createShape({
+                        type: elData.type,
+                        businessObject: businessObject,
+                        width: elData.width || 100,
+                        height: elData.height || 80
+                    });
+
+                    // 캔버스에 추가
+                    const createdShape = modeling.createShape(shape, { x: newX, y: newY }, parent);
+                    createdElements.push(createdShape);
+
+                    // 새로 생성된 요소 ID 저장
+                    idMapping[elData.id] = createdShape.id;
+
+                    // uengine 확장 속성 복원 (ID 참조 업데이트)
+                    if (elData.properties?.uengineJson) {
+                        try {
+                            let jsonStr = elData.properties.uengineJson;
+                            // JSON 내 ID 참조 업데이트
+                            Object.keys(idMapping).forEach(oldId => {
+                                const newId = idMapping[oldId];
+                                jsonStr = jsonStr.replace(new RegExp(oldId, 'g'), newId);
+                            });
+
+                            const moddle = this.bpmnViewer.get('moddle');
+                            const extensionElements = moddle.create('bpmn:ExtensionElements');
+                            const uengineProps = moddle.create('uengine:Properties', {
+                                json: jsonStr
+                            });
+                            extensionElements.values = [uengineProps];
+                            modeling.updateProperties(createdShape, { extensionElements });
+                        } catch (e) {
+                            console.warn('확장 속성 복원 실패:', e);
+                        }
+                    }
+                });
+
+                // 2. 연결선(SequenceFlow) 생성
+                if (clipboardData.connections && clipboardData.connections.length > 0) {
+                    clipboardData.connections.forEach((connData, index) => {
+                        try {
+                            const sourceId = idMapping[connData.sourceId];
+                            const targetId = idMapping[connData.targetId];
+
+                            if (!sourceId || !targetId) {
+                                console.warn('연결선 복원 실패: source 또는 target을 찾을 수 없음', connData);
+                                return;
+                            }
+
+                            const sourceElement = elementRegistry.get(sourceId);
+                            const targetElement = elementRegistry.get(targetId);
+
+                            if (!sourceElement || !targetElement) {
+                                console.warn('연결선 복원 실패: 요소를 찾을 수 없음', sourceId, targetId);
+                                return;
+                            }
+
+                            // 연결선 생성
+                            const connection = modeling.connect(sourceElement, targetElement, {
+                                type: connData.type || 'bpmn:SequenceFlow'
+                            });
+
+                            // 연결선 이름 설정
+                            if (connData.name) {
+                                modeling.updateProperties(connection, { name: connData.name });
+                            }
+
+                            console.log('연결선 생성:', sourceId, '->', targetId);
+                        } catch (e) {
+                            console.warn('연결선 복원 실패:', e);
+                        }
+                    });
+                }
+
+                // 생성된 요소들 선택
+                const selection = this.bpmnViewer.get('selection');
+                selection.select(createdElements);
+
+                console.log('프로세스 간 붙여넣기 완료:', createdElements.length, '개 요소,',
+                    (clipboardData.connections?.length || 0), '개 연결선');
+            } catch (e) {
+                console.error('프로세스 간 붙여넣기 실패:', e);
+            }
         },
         debounce(func, timeout) {
             let timer;
@@ -762,7 +1162,18 @@ export default {
             // });
             eventBus.on('import.done', async function (evt) {
                 self.$emit('done');
-                
+
+                // Load color rules from BPMN and store in window for renderer
+                self.$nextTick(() => {
+                    const rules = self.loadColorRulesFromBpmn();
+                    window.$bpmnColorRules = rules;
+                    self.colorRules = rules;
+                    // Apply color rules after loading to re-render tasks with correct colors
+                    self.$nextTick(() => {
+                        self.applyColorRules();
+                    });
+                });
+
                 if(self.bpmn) {
                     self.$nextTick(async () => {
                         const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
@@ -792,25 +1203,76 @@ export default {
                 
                 var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
 
-                if (allPools.length > 1) {
-                    var firstPool = allPools[0];
-                    var bbox = canvas.getAbsoluteBBox(firstPool);
-                    canvas.viewbox({
-                        x: bbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
-                        y: bbox.y - 100,
-                        width: bbox.width + 100,
-                        height: bbox.height + 100
-                    });
-                } else {
-                    canvas.zoom('fit-viewport');
-                    var viewbox = canvas.viewbox();
-                    canvas.viewbox({
-                        x: viewbox.x - 50, // 여백을 위해 약간의 오프셋을 추가
-                        y: viewbox.y - 100,
-                        width: viewbox.width + 100,
-                        height: viewbox.height + 100
-                    });
-                }
+                // 안전한 zoom 함수 - Pool을 화면 중앙에 정렬
+                const safeZoom = (retryCount = 0) => {
+                    const container = self.$refs.container;
+                    const containerWidth = container?.clientWidth || 0;
+                    const containerHeight = container?.clientHeight || 0;
+
+                    // 컨테이너 크기가 유효하지 않으면 재시도
+                    if (containerWidth <= 0 || containerHeight <= 0) {
+                        if (retryCount < 5) {
+                            setTimeout(() => safeZoom(retryCount + 1), 100);
+                        }
+                        return;
+                    }
+
+                    try {
+                        // 모든 요소의 bounding box 계산
+                        let contentBBox;
+                        if (allPools.length > 0) {
+                            // Pool이 있으면 모든 Pool의 통합 bbox 계산
+                            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                            allPools.forEach(pool => {
+                                const bbox = canvas.getAbsoluteBBox(pool);
+                                if (bbox) {
+                                    minX = Math.min(minX, bbox.x);
+                                    minY = Math.min(minY, bbox.y);
+                                    maxX = Math.max(maxX, bbox.x + bbox.width);
+                                    maxY = Math.max(maxY, bbox.y + bbox.height);
+                                }
+                            });
+                            contentBBox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+                        } else {
+                            // Pool이 없으면 전체 요소의 bbox 사용
+                            canvas.zoom('fit-viewport');
+                            contentBBox = canvas.viewbox();
+                        }
+
+                        if (contentBBox && contentBBox.width > 0 && contentBBox.height > 0) {
+                            // padding 추가
+                            const padding = 50;
+                            const contentWidth = contentBBox.width + padding * 2;
+                            const contentHeight = contentBBox.height + padding * 2;
+
+                            // 컨테이너 비율에 맞춰 zoom 계산
+                            const scaleX = containerWidth / contentWidth;
+                            const scaleY = containerHeight / contentHeight;
+                            const scale = Math.min(scaleX, scaleY, 1); // 최대 1배율
+
+                            // 중앙 정렬을 위한 viewbox 계산
+                            const viewboxWidth = containerWidth / scale;
+                            const viewboxHeight = containerHeight / scale;
+                            const centerX = contentBBox.x + contentBBox.width / 2;
+                            const centerY = contentBBox.y + contentBBox.height / 2;
+
+                            canvas.viewbox({
+                                x: centerX - viewboxWidth / 2,
+                                y: centerY - viewboxHeight / 2,
+                                width: viewboxWidth,
+                                height: viewboxHeight
+                            });
+                        }
+                    } catch (e) {
+                        // zoom 실패 시 재시도
+                        if (retryCount < 5) {
+                            setTimeout(() => safeZoom(retryCount + 1), 100);
+                        }
+                    }
+                };
+
+                // DOM 렌더링 후 zoom 실행
+                setTimeout(() => safeZoom(), 50);
                 // you may hook into any of the following events
                 if (self.isViewMode) {
                     const elementRegistry = self.bpmnViewer.get('elementRegistry');
@@ -851,6 +1313,13 @@ export default {
                         }
                     });
 
+                    // View 모드: 더블클릭 시 패널 열기
+                    eventBus.on('element.dblclick', function (e) {
+                        self.$emit('openPanel', e.element.id);
+                    });
+                } else {
+                    // Edit 모드: 더블클릭 시 인라인 텍스트 편집 (표준 BPMN UX)
+                    // CallActivity와 Collaboration만 특별 처리
                     eventBus.on('element.dblclick', function (e) {
                         if (e.element.type.includes('CallActivity')) {
                             self.$emit('openDefinition', e.element.businessObject);
@@ -869,23 +1338,197 @@ export default {
                                     }
                                 }
                             }
-                        } else {
-                            self.$emit('openPanel', e.element.id);
+                        }
+                        // Task, Event, Gateway 등은 directEditing이 자동 활성화됨 (인라인 텍스트 편집)
+                    });
+
+                    // Edit 모드: 우클릭 시 속성 패널 열기 (DOM 이벤트 사용)
+                    const canvas = self.bpmnViewer.get('canvas');
+                    const container = canvas.getContainer();
+                    container.addEventListener('contextmenu', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        // 클릭된 SVG 요소에서 data-element-id 찾기
+                        let target = event.target;
+                        let elementId = null;
+
+                        while (target && target !== container) {
+                            elementId = target.getAttribute('data-element-id');
+                            if (elementId) break;
+                            target = target.parentElement;
+                        }
+
+                        if (elementId) {
+                            // Root element나 빈 공간은 무시
+                            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                            const element = elementRegistry.get(elementId);
+                            if (element && element.type !== 'bpmn:Process' && element.type !== 'bpmn:Collaboration') {
+                                self.$emit('openPanel', elementId);
+                            }
                         }
                     });
-                } else {
-                    eventBus.on('element.dblclick', function (e) {
-                        // self.openPanel = true;
-                        self.$emit('openPanel', e.element.id);
-                    });
                 }
-                
+
+                // ContextPad에서 속성 패널 열기 버튼 클릭 시
+                eventBus.on('element.openPanel', function (e) {
+                    self.$emit('openPanel', e.element.id);
+                });
+
+                // ContextPad에서 코멘트 작성 버튼 클릭 시
+                eventBus.on('element.addComment', function (e) {
+                    self.$emit('addComment', e.element.id);
+                });
+
+                // directEditing 시작/종료 시 커스텀 텍스트 처리 (인라인 편집 충돌 방지)
+                eventBus.on('directEditing.activate', function (e) {
+                    // 인라인 편집 시작 시 해당 요소의 커스텀 텍스트 숨기기
+                    const elementId = e.active?.element?.id;
+                    if (elementId) {
+                        const container = document.querySelector(`[data-element-id="${elementId}"]`);
+                        if (container) {
+                            const customText = container.closest('.djs-element')?.querySelector('text.custom-wrapped-text');
+                            if (customText) {
+                                customText.style.display = 'none';
+                            }
+                        }
+                    }
+                });
+
+                eventBus.on('directEditing.complete', function (e) {
+                    // 인라인 편집 완료 시 해당 요소 다시 렌더링
+                    const elementId = e.active?.element?.id;
+                    if (elementId) {
+                        const elementRegistry = self.bpmnViewer.get('elementRegistry');
+                        const element = elementRegistry.get(elementId);
+                        if (element) {
+                            // 요소를 다시 렌더링하여 텍스트 업데이트
+                            const graphicsFactory = self.bpmnViewer.get('graphicsFactory');
+                            const gfx = elementRegistry.getGraphics(element);
+                            if (gfx) {
+                                graphicsFactory.update('shape', element, gfx);
+                            }
+                        }
+                    }
+                });
+
+                eventBus.on('directEditing.cancel', function (e) {
+                    // 인라인 편집 취소 시 커스텀 텍스트 다시 보이기
+                    const elementId = e.active?.element?.id;
+                    if (elementId) {
+                        const container = document.querySelector(`[data-element-id="${elementId}"]`);
+                        if (container) {
+                            const customText = container.closest('.djs-element')?.querySelector('text.custom-wrapped-text');
+                            if (customText) {
+                                customText.style.display = '';
+                            }
+                        }
+                    }
+                });
+
                 eventBus.on('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
                     if(self.bpmn) {
                         const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                         self.bpmnXML = xml;
                         self.validate();
+                    }
+                });
+
+                // Phase 4-2: Business ID auto-assignment on task creation
+                eventBus.on('shape.added', function(event) {
+                    const element = event.element;
+                    if (!element || !element.type || !element.type.includes('Task')) return;
+                    // Only assign if no businessId already
+                    const extEls = element.businessObject?.extensionElements;
+                    if (extEls?.values) {
+                        const uProps = extEls.values.find(v => v.$type === 'uengine:Properties');
+                        if (uProps?.json) {
+                            try {
+                                const parsed = JSON.parse(uProps.json);
+                                if (parsed.businessId) return; // Already has one
+                            } catch(e) {}
+                        }
+                    }
+                    // Auto-assign via window.$bpmnHierarchyPath if set
+                    const hierarchyPath = window.$bpmnHierarchyPath;
+                    if (!hierarchyPath) return;
+                    // Collect existing businessIds
+                    const registry = self.bpmnViewer.get('elementRegistry');
+                    const existingIds = new Set();
+                    registry.filter(el => el.type && el.type.includes('Task')).forEach(el => {
+                        const ext = el.businessObject?.extensionElements;
+                        if (ext?.values) {
+                            const p = ext.values.find(v => v.$type === 'uengine:Properties');
+                            if (p?.json) {
+                                try {
+                                    const pj = JSON.parse(p.json);
+                                    if (pj.businessId) existingIds.add(pj.businessId);
+                                } catch(e) {}
+                            }
+                        }
+                    });
+                    // Generate new ID
+                    const prefix = `${hierarchyPath}-T`;
+                    let maxNum = 0;
+                    existingIds.forEach(id => {
+                        if (id.startsWith(prefix)) {
+                            const n = parseInt(id.slice(prefix.length), 10);
+                            if (!isNaN(n) && n > maxNum) maxNum = n;
+                        }
+                    });
+                    const newBid = `${prefix}${String(maxNum + 1).padStart(2, '0')}`;
+                    // Assign via modeling.updateProperties
+                    try {
+                        const modeling = self.bpmnViewer.get('modeling');
+                        const bpmnFactory = self.bpmnViewer.get('bpmnFactory');
+                        let businessObject = element.businessObject;
+                        if (!businessObject.extensionElements) {
+                            businessObject.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+                        }
+                        let uProp = businessObject.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                        if (!uProp) {
+                            uProp = bpmnFactory.create('uengine:Properties', { json: '{}' });
+                            businessObject.extensionElements.values.push(uProp);
+                        }
+                        const jsonData = JSON.parse(uProp.json || '{}');
+                        jsonData.businessId = newBid;
+                        uProp.json = JSON.stringify(jsonData);
+                    } catch (e) {
+                        console.warn('[BpmnUengine] businessId assignment failed:', e);
+                    }
+                });
+
+                // Phase 4-4: SSO Lane - block direct editing for Organization type
+                eventBus.on('directEditing.activate', function(event) {
+                    const element = event.active?.element;
+                    if (!element || element.type !== 'bpmn:Lane') return;
+                    // Check if lane has Organization type
+                    const ext = element.businessObject?.extensionElements;
+                    if (ext?.values) {
+                        const uProp = ext.values.find(v => v.$type === 'uengine:Properties');
+                        if (uProp?.json) {
+                            try {
+                                const parsed = JSON.parse(uProp.json);
+                                if (parsed.roleResolutionContext?._type === 'Organization') {
+                                    // Cancel direct editing, open panel instead
+                                    const directEditing = self.bpmnViewer.get('directEditing');
+                                    directEditing.cancel();
+                                    self.$emit('openPanel', element.id);
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                });
+
+                // Phase 2-7: Multi-select detection
+                eventBus.on('selection.changed', function(event) {
+                    const newSelection = event.newSelection || [];
+                    const tasks = newSelection.filter(el => el.type && el.type.includes('Task'));
+                    if (tasks.length >= 2) {
+                        self.$emit('multiSelect', tasks);
+                    } else {
+                        self.$emit('multiSelect', []);
                     }
                 });
 
@@ -899,8 +1542,15 @@ export default {
                     }
                     self._layoutTimeout = setTimeout(() => {
                         self.applyAutoLayout();
-                        self.$emit('update:isAIGenerated', false); 
+                        self.$emit('update:isAIGenerated', false);
                     }, 500); // 500ms 안 변하면 실행
+                }
+
+                // 코멘트 배지 렌더링 (commentCounts prop이 있을 때)
+                if (self.commentCounts && Object.keys(self.commentCounts).length > 0) {
+                    self.$nextTick(() => {
+                        self.renderCommentBadges(self.commentCounts);
+                    });
                 }
 
                 let endTime = performance.now();
@@ -940,7 +1590,7 @@ export default {
             var container = this.$refs.container;
             var self = this;
             if (self.isViewMode) {
-                var Blocker = function(eventBus) {
+                var Blocker = function(eventBus, elementRegistry, graphicsFactory) {
                     const ignoreEvent = (event) => {
                         event.preventDefault();
                     };
@@ -965,9 +1615,33 @@ export default {
                     eventBus.on('directEditing.activate', ignoreEvent);
                     eventBus.on('directEditing.deactivate', ignoreEvent);
                     eventBus.on('directEditing.cancel', ignoreEvent);
+
+                    // Fix: Re-render selected elements to prevent text from disappearing
+                    // when directEditing is blocked in view mode
+                    eventBus.on('selection.changed', function(event) {
+                        const newSelection = event.newSelection || [];
+                        const oldSelection = event.oldSelection || [];
+
+                        // Re-render newly selected elements after a short delay
+                        // to ensure the text is visible after directEditing is blocked
+                        setTimeout(() => {
+                            newSelection.forEach(element => {
+                                if (element && element.type && element.type.includes('Task')) {
+                                    try {
+                                        const gfx = elementRegistry.getGraphics(element);
+                                        if (gfx) {
+                                            graphicsFactory.update('shape', element, gfx);
+                                        }
+                                    } catch (e) {
+                                        // Ignore errors
+                                    }
+                                }
+                            });
+                        }, 10);
+                    });
                 }
 
-                Blocker.$inject = ['eventBus'];
+                Blocker.$inject = ['eventBus', 'elementRegistry', 'graphicsFactory'];
                 const blockEditingInteractions = {
                     __init__: ['blocker'],
                     blocker: ['type', Blocker]
@@ -984,7 +1658,7 @@ export default {
                             {
                                 __init__: ['paletteProvider'],
                                 paletteProvider: ['type', paletteProvider],
-                                viewModeFlag: ['value', true] 
+                                viewModeFlag: ['value', true]
                             },
                             {
                                 __init__: ['contextPadProvider'],
@@ -992,7 +1666,8 @@ export default {
                             },
                             blockEditingInteractions,
                             ZoomScroll,
-                            MoveCanvas
+                            MoveCanvas,
+                            minimapModule
                         ],
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
@@ -1028,7 +1703,8 @@ export default {
                             // skt 마이그레이션 요소 변경 비활성화
                             // customReplaceModule,
                             ZoomScroll,
-                            MoveCanvas
+                            MoveCanvas,
+                            minimapModule
                         ]
                     },
                 );
@@ -1267,9 +1943,22 @@ export default {
             var zoomScroll = self.bpmnViewer.get('zoomScroll');
             var moveCanvas = self.bpmnViewer.get('MoveCanvas');
 
+            // Guard: skip if canvas container has no dimensions (prevents SVGMatrix non-finite error)
+            try {
+                var container = canvas._container || canvas.getContainer?.();
+                if (container && (container.clientWidth === 0 || container.clientHeight === 0)) {
+                    return;
+                }
+            } catch (e) { /* ignore */ }
+
             var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
 
-            zoomScroll.reset();
+            try {
+                zoomScroll.reset();
+            } catch (e) {
+                console.warn('[BpmnUengine] zoomScroll.reset() failed:', e.message);
+                return;
+            }
 
             // ✅ 1) 기본 줌: 캔버스 꽉 채우기
             canvas.zoom('fit-viewport', 'auto');
@@ -1482,26 +2171,85 @@ export default {
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             const modifierKey = isMac ? event.metaKey : event.ctrlKey;
 
-            if (!modifierKey) return;
             if (!this.bpmnViewer) return;
 
             try {
                 const copyPaste = this.bpmnViewer.get('copyPaste');
                 const commandStack = this.bpmnViewer.get('commandStack');
                 const selection = this.bpmnViewer.get('selection');
+                const modeling = this.bpmnViewer.get('modeling');
+
+                // Handle Delete/Backspace key (without modifier)
+                if (event.key === 'Delete' || event.key === 'Backspace') {
+                    const selectedElements = selection.get();
+                    if (selectedElements.length > 0) {
+                        // Filter out root elements that shouldn't be deleted
+                        const deletableElements = selectedElements.filter(el =>
+                            el.type !== 'bpmn:Process' &&
+                            el.type !== 'bpmn:Collaboration'
+                        );
+                        if (deletableElements.length > 0) {
+                            modeling.removeElements(deletableElements);
+                        }
+                    }
+                    event.preventDefault();
+                    return;
+                }
+
+                // Handle Arrow keys for element movement (without modifier)
+                if (!modifierKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                    const selectedElements = selection.get();
+                    if (selectedElements.length > 0) {
+                        const step = event.shiftKey ? 10 : 1; // Shift: 10px step, Normal: 1px step
+                        let dx = 0, dy = 0;
+
+                        switch (event.key) {
+                            case 'ArrowUp': dy = -step; break;
+                            case 'ArrowDown': dy = step; break;
+                            case 'ArrowLeft': dx = -step; break;
+                            case 'ArrowRight': dx = step; break;
+                        }
+
+                        // Move only shape elements (not connections)
+                        const shapeElements = selectedElements.filter(el =>
+                            el.waypoints === undefined && // Not a connection
+                            el.type !== 'bpmn:Process' &&
+                            el.type !== 'bpmn:Collaboration'
+                        );
+
+                        if (shapeElements.length > 0) {
+                            modeling.moveElements(shapeElements, { x: dx, y: dy });
+                        }
+                    }
+                    event.preventDefault();
+                    return;
+                }
+
+                // Handle modifier key shortcuts (Ctrl/Cmd)
+                if (!modifierKey) return;
 
                 switch (event.key.toLowerCase()) {
                     case 'c':
-                        // Copy
+                        // Copy (내부 + 프로세스 간 복사)
                         const selectedElements = selection.get();
                         if (selectedElements.length > 0) {
+                            // 내부 복사
                             copyPaste.copy(selectedElements);
+                            // 프로세스 간 복사를 위해 localStorage에 저장
+                            this.saveToCrossProcessClipboard(selectedElements);
                         }
                         event.preventDefault();
                         break;
                     case 'v':
-                        // Paste
-                        copyPaste.paste();
+                        // Paste (내부 붙여넣기 시도 후, 없으면 프로세스 간 붙여넣기)
+                        const crossProcessData = this.getFromCrossProcessClipboard();
+                        if (crossProcessData && crossProcessData.processId !== this.getCurrentProcessId()) {
+                            // 다른 프로세스에서 복사한 경우 프로세스 간 붙여넣기
+                            this.pasteFromCrossProcessClipboard(crossProcessData);
+                        } else {
+                            // 같은 프로세스 내 붙여넣기
+                            copyPaste.paste();
+                        }
                         event.preventDefault();
                         break;
                     case 'x':
@@ -1509,7 +2257,7 @@ export default {
                         const elementsTocut = selection.get();
                         if (elementsTocut.length > 0) {
                             copyPaste.copy(elementsTocut);
-                            const modeling = this.bpmnViewer.get('modeling');
+                            this.saveToCrossProcessClipboard(elementsTocut);
                             modeling.removeElements(elementsTocut);
                         }
                         event.preventDefault();
@@ -1570,6 +2318,13 @@ export default {
             }
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
+        },
+        onContextMenu(event) {
+            // 기본 브라우저 컨텍스트 메뉴 방지 (Edit 모드에서만)
+            // bpmn-js의 element.contextmenu 이벤트에서 패널을 열도록 처리
+            if (!this.isViewMode) {
+                event.preventDefault();
+            }
         },
         onDragOver(event) {
             // Enable drop
@@ -1697,12 +2452,204 @@ export default {
 
             console.log(`Created ${taskType} from catalog: ${taskName}`);
             console.log('=== createTaskFromCatalog done ===');
+        },
+        openColorRulesetDialog() {
+            // Load rules from BPMN XML before opening dialog
+            this.colorRules = this.loadColorRulesFromBpmn();
+            console.log('[BpmnUengine] Opening dialog with rules:', this.colorRules);
+            this.showColorRulesetDialog = true;
+        },
+        loadColorRulesFromBpmn() {
+            if (!this.bpmnViewer) {
+                console.log('[BpmnUengine] loadColorRulesFromBpmn: no bpmnViewer');
+                return [];
+            }
+
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const collaboration = elementRegistry.filter(e => e.type === 'bpmn:Collaboration')[0];
+
+                console.log('[BpmnUengine] loadColorRulesFromBpmn: collaboration:', collaboration?.id);
+
+                if (!collaboration || !collaboration.businessObject) {
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: no collaboration or businessObject');
+                    return [];
+                }
+
+                const businessObject = collaboration.businessObject;
+                console.log('[BpmnUengine] loadColorRulesFromBpmn: extensionElements:', businessObject.extensionElements);
+
+                if (!businessObject.extensionElements || !businessObject.extensionElements.values) {
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: no extensionElements');
+                    return [];
+                }
+
+                const uengineProps = businessObject.extensionElements.values.find(
+                    v => v.$type === 'uengine:Properties'
+                );
+
+                console.log('[BpmnUengine] loadColorRulesFromBpmn: uengineProps:', uengineProps);
+
+                if (!uengineProps || !uengineProps.json) {
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: no uengineProps or json');
+                    return [];
+                }
+
+                try {
+                    const props = JSON.parse(uengineProps.json);
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: parsed props:', props);
+                    console.log('[BpmnUengine] loadColorRulesFromBpmn: colorRules:', props.colorRules);
+                    return props.colorRules || [];
+                } catch (e) {
+                    console.warn('Failed to parse color rules from BPMN:', e);
+                    return [];
+                }
+            } catch (e) {
+                console.warn('Failed to load color rules from BPMN:', e);
+                return [];
+            }
+        },
+        saveColorRulesToBpmn(rules) {
+            console.log('[BpmnUengine] saveColorRulesToBpmn called with rules:', rules);
+
+            if (!this.bpmnViewer) {
+                console.log('[BpmnUengine] saveColorRulesToBpmn: no bpmnViewer');
+                return;
+            }
+
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const modeling = this.bpmnViewer.get('modeling');
+                const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
+
+                const collaboration = elementRegistry.filter(e => e.type === 'bpmn:Collaboration')[0];
+
+                if (!collaboration) {
+                    console.warn('[BpmnUengine] saveColorRulesToBpmn: No Collaboration element found');
+                    return;
+                }
+
+                console.log('[BpmnUengine] saveColorRulesToBpmn: collaboration:', collaboration.id);
+
+                const businessObject = collaboration.businessObject;
+
+                // Get or create extension elements
+                let extensionElements = businessObject.extensionElements;
+                if (!extensionElements) {
+                    console.log('[BpmnUengine] saveColorRulesToBpmn: creating new extensionElements');
+                    extensionElements = bpmnFactory.create('bpmn:ExtensionElements');
+                    extensionElements.values = [];
+                }
+
+                // Find or create uengine:Properties
+                let uengineProps = extensionElements.values?.find(
+                    v => v.$type === 'uengine:Properties'
+                );
+
+                let existingProps = {};
+                if (uengineProps && uengineProps.json) {
+                    try {
+                        existingProps = JSON.parse(uengineProps.json);
+                    } catch (e) {
+                        // Ignore parse error
+                    }
+                }
+
+                // Update colorRules in props
+                existingProps.colorRules = rules;
+                console.log('[BpmnUengine] saveColorRulesToBpmn: existingProps after update:', existingProps);
+
+                if (!uengineProps) {
+                    console.log('[BpmnUengine] saveColorRulesToBpmn: creating new uengineProps');
+                    uengineProps = bpmnFactory.create('uengine:Properties', {
+                        json: JSON.stringify(existingProps)
+                    });
+                    extensionElements.get('values').push(uengineProps);
+                } else {
+                    console.log('[BpmnUengine] saveColorRulesToBpmn: updating existing uengineProps');
+                    uengineProps.json = JSON.stringify(existingProps);
+                }
+
+                // Update the element
+                modeling.updateProperties(collaboration, {
+                    extensionElements: extensionElements
+                });
+
+                console.log('[BpmnUengine] saveColorRulesToBpmn: saved successfully');
+
+                // Store rules in window for renderer access
+                window.$bpmnColorRules = rules;
+
+            } catch (e) {
+                console.error('Failed to save color rules to BPMN:', e);
+            }
+        },
+        onColorRulesSave(rules) {
+            this.colorRules = rules;
+            this.saveColorRulesToBpmn(rules);
+            this.applyColorRules();
+        },
+        applyColorRules() {
+            if (!this.bpmnViewer) return;
+
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const graphicsFactory = this.bpmnViewer.get('graphicsFactory');
+
+                // Get all task elements
+                const tasks = elementRegistry.filter(e =>
+                    e.type && e.type.includes('Task')
+                );
+
+                // Re-render each task to apply new colors
+                tasks.forEach(task => {
+                    const gfx = elementRegistry.getGraphics(task);
+                    if (gfx) {
+                        graphicsFactory.update('shape', task, gfx);
+                    }
+                });
+
+            } catch (e) {
+                console.error('Failed to apply color rules:', e);
+            }
+        },
+        refreshElement(elementId) {
+            if (!this.bpmnViewer) return;
+
+            try {
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
+                const graphicsFactory = this.bpmnViewer.get('graphicsFactory');
+
+                const element = elementRegistry.get(elementId);
+                if (element) {
+                    const gfx = elementRegistry.getGraphics(element);
+                    if (gfx) {
+                        graphicsFactory.update('shape', element, gfx);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to refresh element:', e);
+            }
         }
     }
 };
 </script>
 
 <style>
+
+/* Phase 1-3: Validation markers */
+.djs-element.validation-error .djs-visual rect,
+.djs-element.validation-error .djs-visual circle,
+.djs-element.validation-error .djs-visual polygon {
+    stroke: #F44336 !important;
+    stroke-width: 2px !important;
+}
+.djs-element.validation-warning .djs-visual rect,
+.djs-element.validation-warning .djs-visual circle,
+.djs-element.validation-warning .djs-visual polygon {
+    stroke: #FF9800 !important;
+    stroke-width: 2px !important;
+}
 
 .mobile-position {
     position: absolute;
@@ -1777,5 +2724,60 @@ export default {
 .mini-preview .djs-context-pad,
 .mini-preview .djs-overlay-container {
   display: none !important;
+}
+
+/* Dynamic text color for dark backgrounds */
+.djs-element[data-dark-bg="true"] text,
+.djs-element[data-dark-bg="true"] text tspan {
+  fill: #ffffff !important;
+}
+
+.djs-element[data-dark-bg="false"] text,
+.djs-element[data-dark-bg="false"] text tspan {
+  fill: #000000 !important;
+}
+
+/* Minimap styling - positioned above BPMN.io logo */
+.djs-minimap {
+  bottom: 40px !important;
+  top: auto !important;
+  right: 10px !important;
+  left: auto !important;
+}
+
+.djs-minimap .toggle {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.djs-minimap .toggle:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Map icon */
+.djs-minimap .toggle::before {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M15 5.1L9 3 3 5.02v16.2l6-2.33 6 2.1 6-2.02V2.77L15 5.1zm0 13.79-6-2.11V5.11l6 2.11v11.67z'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.djs-minimap .map {
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
 }
 </style>
