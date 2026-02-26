@@ -69,7 +69,10 @@ export default class AIGenerator {
 
         this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay : 3000;
         
-        this.backendUrl = '/completion/langchain-chat';
+        // 로컬 개발(vite proxy)에서는 /langchain-chat로 붙어야 8000으로 프록시된다.
+        // 배포 환경에서는 /completion prefix를 유지한다.
+        const isLocalDev = window?.location?.hostname === 'localhost' || window?.location?.hostname === '127.0.0.1';
+        this.backendUrl = isLocalDev ? '/langchain-chat' : '/completion/langchain-chat';
         this.vendor = 'openai';
         this.modelConfig = {
             temperature: 1,
@@ -213,14 +216,21 @@ export default class AIGenerator {
     async checkBackendConnection() {
         try {
             // return true;
-            let response = await fetch(`${this.backendUrl}/sanity-check`);
+            const authHeaders = this.getAuthHeaders();
+            let response = await fetch(`${this.backendUrl}/sanity-check`, {
+                headers: authHeaders,
+                credentials: 'include'
+            });
             if(response.status == 401){
                 // access_token이 만료되어서 접속이 안되는 경우가 있기 때문에 이런 경우, 강재로 세션을 갱신 후, 재시도
                 const backend = BackendFactory.createBackend();
                 const tenantId = window.$tenantName;
                 await backend.setTenant(tenantId)
                 
-                response = await fetch(`${this.backendUrl}/sanity-check`);
+                response = await fetch(`${this.backendUrl}/sanity-check`, {
+                    headers: this.getAuthHeaders(),
+                    credentials: 'include'
+                });
             }
 
             if (!response.ok) {
@@ -273,6 +283,10 @@ export default class AIGenerator {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
         xhr.setRequestHeader('Content-Type', 'application/json');
+        const authHeaders = this.getAuthHeaders();
+        if (authHeaders.Authorization) {
+            xhr.setRequestHeader('Authorization', authHeaders.Authorization);
+        }
 
         // const apiProvider = await storage.getObject('api_key', {
         //     match: {
@@ -500,6 +514,14 @@ export default class AIGenerator {
 
         console.log("[*][AIGenerator] 백엔드 서버로 LLM 요청 데이터 전송", {requestData: data});
         xhr.send(JSON.stringify(data));
+    }
+
+    getAuthHeaders() {
+        const token = localStorage.getItem('keycloak') || localStorage.getItem('accessToken');
+        if (token) {
+            return { Authorization: `Bearer ${token}` };
+        }
+        return {};
     }
 
     _addDetailHighToImageUrl(messages) {

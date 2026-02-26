@@ -14,7 +14,7 @@
                     density="compact"
                     style="background-color: #808080; color: white;"
                 >{{ $t('FormWorkItem.previousStep') }}</v-btn>
-                <v-btn v-if="!isDryRun" @click="saveTask" 
+                <v-btn v-if="!isDryRun && !gs" @click="saveTask" 
                     density="compact"
                     class="mr-2 default-gray-btn" rounded variant="flat"
                 >{{ $t('FormWorkItem.intermediateSave') }}</v-btn>
@@ -129,7 +129,7 @@
                                 density="compact"
                                 style="background-color: #808080; color: white;"
                             >{{ $t('FormWorkItem.previousStep') }}</v-btn>
-                            <v-btn v-if="!isDryRun && isSimulate != 'true'"
+                            <v-btn v-if="!isDryRun && isSimulate != 'true' && !gs"
                                 @click="saveTask"
                                 class="mr-2  default-gray-btn"
                                 density="compact"
@@ -268,6 +268,9 @@ export default {
         },
         mode() {
             return window.$mode;
+        },
+        gs() {
+            return window.$gs;
         },
         hasInputFields() {
             return this.inputFields && this.inputFields.length > 0

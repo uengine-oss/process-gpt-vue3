@@ -237,8 +237,13 @@ export default {
         if (typeof this.bpmn === 'string' && this.bpmn.trim().length > 0) {
             this.diagramXML = this.bpmn;
         } else {
-            // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
-            this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
+            const isGsDefinitionChat = !!window.$gs && this.$route?.path === '/definitions/chat';
+            if (isGsDefinitionChat) {
+                // GS 모드의 definitions/chat에서는 초기 기본값(BPMN)을 주입하지 않는다.
+                this.diagramXML = null;
+            } else {
+                // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
+                this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
   <bpmn:collaboration id="Collaboration_1">
     <bpmn:participant id="Participant_1" name="Process" processRef="Process_1"/>
@@ -302,9 +307,13 @@ export default {
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
+            }
         }
         Promise.resolve()
-            .then(() => this.bpmnViewer.importXML(this.diagramXML))
+            .then(() => {
+                if (!this.diagramXML) return;
+                return this.bpmnViewer.importXML(this.diagramXML);
+            })
             .catch((e) => {
                 console.error('[BpmnUengine] 초기 import 실패:', e);
                 this.$emit('error', e);

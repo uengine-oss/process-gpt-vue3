@@ -3406,7 +3406,6 @@ class ProcessGPTBackend implements Backend {
                     putObj.is_admin = true;
                 }
                 await storage.putObject('users', putObj);
-                await storage.refreshSession();
                 return await storage.isConnection();
             } else {
                 return false;
@@ -4900,7 +4899,7 @@ class ProcessGPTBackend implements Backend {
             return await storage._watch({
                 channel: 'credit_usage',
                 table: 'credit_usage',
-                filter: `tenant_id=eq.(${window.$tenantName}))`
+                filter: `tenant_id=eq.(${window.$tenantName})`
             }, (payload) => {
                 callback(payload);
             });
