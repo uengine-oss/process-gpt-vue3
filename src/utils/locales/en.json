@@ -1167,6 +1167,8 @@
     "EventSynchronizationForm": {
         "edit": "Edit",
         "delete": "Delete",
+        "url": "URL",
+        "eventType": "Event Type",
         "dataMapping": "Data Mapping",
         "eventAttributes": "Event Attributes",
         "primaryKey": "Primary Key",
@@ -1175,6 +1177,8 @@
         "name": "Name",
         "save": "Save",
         "add": "Add",
+        "addEvent": "Add Event",
+        "eventTabLabel": "Event {n}",
         "typeDescriptionTitle": "Attribute: Defines the data to be stored for the corresponding item",
         "typeDescriptionSubTitle1": "1. Unique Key: A key that uniquely identifies each record and does not allow duplicates within the database. \n2. Correlation Key: A key used to establish and track relationships between different data, maintaining data correlations."
     },

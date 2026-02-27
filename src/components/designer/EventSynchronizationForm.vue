@@ -2,11 +2,8 @@
     <div v-if="!isLoading">
         <div flat>
             <v-col class="pa-0">
-                <v-text-field class="mb-4" :label="$t('EventSynchronizationForm.url')" v-model="value.url" v-if="selectedActivity === 'URLActivity'"></v-text-field>
-                
-
                 <v-text-field
-                    v-if="selectedActivity === 'URLActivity'"
+                    v-if="selectedActivity === 'URLActivity' && !hideEventType"
                     class="mb-4"
                     :label="$t('EventSynchronizationForm.eventType')"
                     v-model="value.eventSynchronization.eventType"
@@ -223,6 +220,11 @@ export default {
         showMapper: {
             type: Boolean,
             default: true
+        },
+        /** 상위에서 이벤트 타입 입력을 노출할 때 true (중복 방지) */
+        hideEventType: {
+            type: Boolean,
+            default: false
         }
     },
     components:{
