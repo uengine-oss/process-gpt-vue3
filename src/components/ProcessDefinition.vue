@@ -26,36 +26,93 @@
                         <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
                     </div>
                     <template v-else>
-                        <BpmnuEngine
-                        v-show="!isBpmnLoading"
-                        ref="bpmnVue"
-                        :key="bpmnKey"
-                        :bpmn="bpmn"
-                        :options="options"
-                        :isViewMode="isViewMode"
-                        :isPreviewMode="isPreviewMode"
-                        :currentActivities="currentActivities"
-                        :generateFormTask="generateFormTask"
-                        :isPreviewPDFDialog="isPreviewPDFDialog"
-                        :isAIGenerated="isAIGenerated"
-                        @closePDFDialog="closePDFDialog"
-                        v-on:error="handleError"
-                        v-on:shown="handleBpmnShown"
-                        v-on:openDefinition="(ele) => openSubProcess(ele)"
-                        v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)"
-                        v-on:update-xml="(val) => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)"
-                        v-on:add-shape="onAddShape"
-                        v-on:done="handleBpmnDone"
-                        @changeElement="changeElement"
-                        @update:isAIGenerated="updateIsAIGenerated"
-                        @openProcessVariables="openProcessVariables"
-                        :onLoadStart="onBpmnLoadStart"
-                        :onLoadEnd="onBpmnLoadEnd"
+                        <div v-show="!isBpmnLoading" style="height: 100%">
+                            <BpmnuEngine
+                            ref="bpmnVue"
+                            :key="bpmnKey"
+                            :bpmn="bpmn"
+                            :options="options"
+                            :isViewMode="isViewMode"
+                            :isPreviewMode="isPreviewMode"
+                            :currentActivities="currentActivities"
+                            :generateFormTask="generateFormTask"
+                            :isPreviewPDFDialog="isPreviewPDFDialog"
+                            :isAIGenerated="isAIGenerated"
+                            :commentCounts="commentCounts"
+                            @closePDFDialog="closePDFDialog"
+                            v-on:error="handleError"
+                            v-on:shown="handleBpmnShown"
+                            v-on:openDefinition="(ele) => openSubProcess(ele)"
+                            v-on:loading="handleLoading"
+                            v-on:openPanel="(id) => openPanel(id)"
+                            v-on:addComment="(id) => openCommentPanelForElement(id)"
+                            v-on:update-xml="(val) => $emit('update-xml', val)"
+                            v-on:definition="(def) => (definitions = def)"
+                            v-on:add-shape="onAddShape"
+                            v-on:done="handleBpmnDone"
+                            @changeElement="changeElement"
+                            @update:isAIGenerated="updateIsAIGenerated"
+                            @multiSelect="onMultiSelect"
+                            :onLoadStart="onBpmnLoadStart"
+                            :onLoadEnd="onBpmnLoadEnd"
+                            @openProcessVariables="openProcessVariables"
                             style="height: 100%"
-                        ></BpmnuEngine>
-                        <!-- Task Catalog Section -->
+                            >
+                                <!-- Extra controls in BpmnUengine toolbar -->
+                                <template #extra-controls>
+                                    <!-- 프로세스 변수 추가 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-icon v-bind="props" @click="openProcessVariables" style="color: #444; cursor: pointer;" size="small" class="cp-process-variables">mdi-variable</v-icon>
+                                        </template>
+                                        <span>{{ $t('processDefinition.processVariables') }}</span>
+                                    </v-tooltip>
+                                    <!-- 승인 상태 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-icon
+                                                v-bind="props"
+                                                @click="showApprovalPanel = !showApprovalPanel"
+                                                style="cursor: pointer;"
+                                                :style="{ color: showApprovalPanel ? '#1976d2' : '#444' }"
+                                                size="small"
+                                            >mdi-clipboard-check-outline</v-icon>
+                                        </template>
+                                        <span>{{ $t('processDefinition.approvalState') }}</span>
+                                    </v-tooltip>
+                                    <!-- 댓글 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-badge
+                                                :content="totalCommentCount"
+                                                :model-value="totalCommentCount > 0"
+                                                color="error"
+                                                overlap
+                                                offset-x="-2"
+                                                offset-y="-2"
+                                            >
+                                                <v-icon
+                                                    v-bind="props"
+                                                    @click="toggleCommentPanel"
+                                                    style="cursor: pointer;"
+                                                    :style="{ color: showCommentPanel ? '#1976d2' : '#444' }"
+                                                    size="small"
+                                                >mdi-comment-text-multiple-outline</v-icon>
+                                            </v-badge>
+                                        </template>
+                                        <span>{{ $t('processDefinition.comments') }}</span>
+                                    </v-tooltip>
+                                    <!-- 채팅창 열기/닫기 토글 버튼 -->
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props }">
+                                            <v-icon v-bind="props" @click="$globalState.methods.toggleChatHidden()" style="color: #444; cursor: pointer;" size="small">{{ $globalState.state.isChatHidden ? 'mdi-message-text' : 'mdi-message-text-outline' }}</v-icon>
+                                        </template>
+                                        <span>{{ $globalState.state.isChatHidden ? $t('processDefinition.showChat') : $t('processDefinition.hideChat') }}</span>
+                                    </v-tooltip>
+                                </template>
+                            </BpmnuEngine>
+                        </div>
+                        <!-- Task Catalog Section for drag & drop -->
                         <TaskCatalogSection
                             v-if="!isViewMode && mode !== 'uEngine'"
                             :bpmnModeler="$refs.bpmnVue?.bpmnViewer"
@@ -67,7 +124,45 @@
                             :element="element"
                             @saved="onSavedToCatalog"
                         />
-                        <!-- View Mode Property Panel -->
+
+                        <!-- 승인 상태 패널 -->
+                        <div v-if="showApprovalPanel" class="approval-state-floating-panel">
+                            <ApprovalStatePanel
+                                v-if="definitionPath"
+                                :procDefId="definitionPath"
+                                @stateChanged="onApprovalStateChanged"
+                            />
+                        </div>
+
+                        <!-- 댓글 패널 -->
+                        <div v-if="showCommentPanel" class="comment-floating-panel">
+                            <ElementCommentPanel
+                                v-if="definitionPath"
+                                :procDefId="definitionPath"
+                                :selectedElement="selectedElementForComment"
+                                @close="showCommentPanel = false"
+                                @commentCountChanged="loadCommentCounts"
+                                @focusElement="(id) => $refs.bpmnVue && $refs.bpmnVue.focusElement(id)"
+                            />
+                        </div>
+
+                        <!-- Validation Console Panel (Phase 1-3) -->
+                        <ValidationConsolePanel
+                            :show="showValidationConsole"
+                            :items="consoleValidationItems"
+                            @close="showValidationConsole = false"
+                            @focusElement="(id) => $refs.bpmnVue && $refs.bpmnVue.focusElement(id)"
+                        />
+
+                        <!-- Multi-Select Panel (Phase 2-7) -->
+                        <MultiSelectPanel
+                            v-if="multiSelectedElements.length >= 2"
+                            :selectedElements="multiSelectedElements"
+                            @close="multiSelectedElements = []"
+                            @applyBatch="onApplyBatch"
+                        />
+
+                        <!-- View Mode Property Panel (inside canvas) -->
                         <Transition name="slide-panel">
                             <div v-if="panel && isViewMode && !isPal" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
                                 <div class="resize-handle" @mousedown="startResize"></div>
@@ -96,14 +191,6 @@
                             </div>
                         </Transition>
                     </template>
-                    
-                    <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
-                        :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
-                        v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)" v-on:update-xml="val => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)" v-on:add-shape="onAddShape"
-                        v-on:change-sequence="onChangeSequence" v-on:remove-shape="onRemoveShape"
-                        v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
             <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
@@ -291,6 +378,10 @@ import SaveToCatalogDialog from '@/components/designer/SaveToCatalogDialog.vue'
 import BackendFactory from "@/components/api/BackendFactory";
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
+import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
+import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
+import ValidationConsolePanel from '@/components/ui/ValidationConsolePanel.vue';
+import MultiSelectPanel from '@/components/ui/MultiSelectPanel.vue';
 
 const backend = BackendFactory.createBackend();
 export default {
@@ -310,7 +401,11 @@ export default {
         XmlViewer,
         XMLEditor,
         DryRunProcess,
-        TestProcess
+        TestProcess,
+        ElementCommentPanel,
+        ApprovalStatePanel,
+        ValidationConsolePanel,
+        MultiSelectPanel
     },
     props: {
         processDefinition: Object,
@@ -323,6 +418,11 @@ export default {
         generateFormTask: Object,
         isPreviewPDFDialog: Boolean,
         isAIGenerated: Boolean,
+        showValidationConsole: Boolean,
+        consoleValidationItems: {
+            type: Array,
+            default: () => []
+        },
     },
     data: () => ({
         panel: false,
@@ -374,6 +474,17 @@ export default {
 
         // Task Catalog
         saveToCatalogDialogOpen: false,
+
+        // 댓글 패널
+        showCommentPanel: false,
+        selectedElementForComment: null,
+        commentCounts: {},
+
+        // 승인 상태 패널
+        showApprovalPanel: false,
+
+        // Multi-select
+        multiSelectedElements: [],
     }),
     computed: {
         mode() {
@@ -412,6 +523,9 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        totalCommentCount() {
+            return Object.values(this.commentCounts).reduce((sum, item) => sum + (item.unresolved || 0), 0);
         },
     },
     watch: {
@@ -551,11 +665,102 @@ export default {
         // LLM과 uEngine 각각 처리 필요.
         // this.processVariables = this.copyProcessDefinition.data
 
+        // 댓글 개수 로드
+        if (this.definitionPath) {
+            this.loadCommentCounts();
+        }
         this.EventBus.on('autoLayout.complete', () => {
             this.applyAutoLayout();
         });
     },
     methods: {
+        // 댓글 관련 메서드
+        toggleCommentPanel() {
+            this.showCommentPanel = !this.showCommentPanel;
+            if (this.showCommentPanel && this.element) {
+                // Task 타입인 경우에만 선택된 요소로 설정
+                const elementType = this.element.$type || '';
+                if (this.isTaskType(elementType)) {
+                    this.selectedElementForComment = {
+                        id: this.element.id,
+                        type: elementType,
+                        name: this.element.businessObject?.name || this.element.name || this.element.id
+                    };
+                } else {
+                    this.selectedElementForComment = null;
+                }
+            }
+        },
+        // 특정 요소 ID에 대해 코멘트 패널 열기 (context menu에서 호출)
+        openCommentPanelForElement(elementId) {
+            if (!elementId) return;
+            if (!this.$refs.bpmnVue || !this.$refs.bpmnVue.bpmnViewer) return;
+            const elementRegistry = this.$refs.bpmnVue.bpmnViewer.get('elementRegistry');
+            const el = elementRegistry.get(elementId);
+            if (!el) return;
+            const elementType = el.type || '';
+            this.selectedElementForComment = {
+                id: el.id,
+                type: elementType,
+                name: el.businessObject?.name || el.id
+            };
+            this.showCommentPanel = true;
+        },
+        // Task 타입 여부 확인
+        isTaskType(type) {
+            if (!type) return false;
+            return type.includes('Task') || type.includes('Activity');
+        },
+        async loadCommentCounts() {
+            if (!this.definitionPath) return;
+            try {
+                this.commentCounts = await backend.getElementCommentCounts(this.definitionPath);
+            } catch (e) {
+                console.error('댓글 개수 로드 실패:', e);
+            }
+        },
+        // Phase 2-7: Multi-select handler
+        onMultiSelect(selectedElements) {
+            if (selectedElements && selectedElements.length >= 2) {
+                this.multiSelectedElements = selectedElements;
+                this.panel = false; // Hide individual panel
+            } else {
+                this.multiSelectedElements = [];
+            }
+        },
+        onApplyBatch({ elements, changes }) {
+            if (!this.$refs.bpmnVue || !this.$refs.bpmnVue.bpmnViewer) return;
+            const modeling = this.$refs.bpmnVue.bpmnViewer.get('modeling');
+            const moddle = this.$refs.bpmnVue.bpmnViewer.get('moddle');
+
+            elements.forEach(el => {
+                try {
+                    const bo = el.businessObject;
+                    if (!bo.extensionElements) {
+                        bo.extensionElements = moddle.create('bpmn:ExtensionElements', { values: [] });
+                    }
+                    let propsExt = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                    let propsObj = {};
+                    if (propsExt && propsExt.text) {
+                        try { propsObj = JSON.parse(propsExt.text); } catch {}
+                    }
+                    Object.assign(propsObj, changes);
+                    if (!propsExt) {
+                        propsExt = moddle.create('uengine:Properties', { text: JSON.stringify(propsObj) });
+                        bo.extensionElements.values.push(propsExt);
+                    } else {
+                        propsExt.text = JSON.stringify(propsObj);
+                    }
+                } catch (e) {
+                    console.warn('[MultiSelectPanel] batch update error:', e);
+                }
+            });
+            this.multiSelectedElements = [];
+        },
+        onApprovalStateChanged(state) {
+            // 승인 상태 변경 시 처리
+            console.log('Approval state changed:', state);
+        },
         openSaveToCatalog() {
             const type = this.element?.$type || '';
             if (this.element && (type.includes('Task') || type.includes('Activity'))) {
@@ -632,7 +837,22 @@ export default {
         },
         setDefinition() {
             let self = this;
+            const store = useBpmnStore();
+            this.bpmnModeler = store.getModeler;
+
+            if (!this.bpmnModeler) {
+                console.warn('[setDefinition] bpmnModeler is null');
+                this.$emit('onLoaded');
+                return;
+            }
+
             const def = this.bpmnModeler.getDefinitions();
+            if (!def) {
+                console.warn('[setDefinition] definitions is null');
+                this.$emit('onLoaded');
+                return;
+            }
+
             let bpmnFactory = this.bpmnModeler.get('bpmnFactory');
             const processElement = def.rootElements.find((element) => element.$type === 'bpmn:Process');
             if (!processElement) {
@@ -1005,8 +1225,6 @@ export default {
             this.$emit('update');
         },
         async openPanel(id) {
-            console.log(id);
-            
             // 배경 요소 클릭 시 패널을 열지 않음
             if (id && (id.startsWith('Collaboration_') || id.startsWith('Process_'))) {
                 // 패널이 열려있는 상태에서 배경 클릭 시 저장 후 패널 닫기
@@ -1039,8 +1257,8 @@ export default {
             if (this.element) {
                 const businessObject = {};
                 businessObject.businessObject = this.element;
-                this.panel = true;
                 this.$refs.bpmnVue.extendUEngineProperties(businessObject);
+                this.panel = true;
             }
         },
         closePanel() {
@@ -1171,6 +1389,116 @@ export default {
     right: 80px;
     top: 20px;
     z-index: 1;
+}
+
+
+/* Task Catalog Floating Panel */
+.task-catalog-floating-panel {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 10;
+    background: white;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px 8px 0 0;
+}
+
+/* Comment Floating Panel */
+.comment-floating-panel {
+    position: absolute;
+    right: 12px;
+    top: 50px;
+    width: 360px;
+    max-height: calc(100% - 100px);
+    z-index: 99;
+    background: white;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Approval State Floating Panel */
+.approval-state-floating-panel {
+    position: absolute;
+    right: 12px;
+    top: 50px;
+    width: 380px;
+    z-index: 98;
+    background: white;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Panel이 둘 다 열렸을 때 위치 조정 */
+.comment-floating-panel + .approval-state-floating-panel,
+.approval-state-floating-panel ~ .comment-floating-panel {
+    top: auto;
+    bottom: 12px;
+}
+
+/* View Mode Panel Styles - Inside Canvas */
+.view-mode-panel {
+    position: absolute;
+    z-index: 100;
+    right: 12px;
+    top: 12px;
+    bottom: 12px;
+    display: flex;
+}
+
+/* Resize Handle */
+.resize-handle {
+    width: 6px;
+    cursor: ew-resize;
+    background: transparent;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    border-radius: 3px;
+    margin-right: 2px;
+}
+
+.resize-handle:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.resize-handle:active {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.view-mode-panel-card {
+    border-radius: 12px !important;
+    overflow: hidden;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Slide Panel Animation */
+.slide-panel-enter-active {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+
+.slide-panel-leave-active {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1), opacity 0.15s ease;
+}
+
+.slide-panel-enter-from {
+    transform: translateX(20px) scale(0.95);
+    opacity: 0;
+}
+
+.slide-panel-leave-to {
+    transform: translateX(20px) scale(0.95);
+    opacity: 0;
+}
+
+.slide-panel-enter-to,
+.slide-panel-leave-from {
+    transform: translateX(0) scale(1);
+    opacity: 1;
 }
 
 .btn-simulate {

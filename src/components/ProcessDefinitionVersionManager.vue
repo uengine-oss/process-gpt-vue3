@@ -811,10 +811,6 @@ export default {
 }
 
 @media only screen and (max-width:1279px) {
-    .process-definition-resize {
-        width: 100%;
-        height: calc(100% - 38px) !important;
-    }
 }
 
 .diff-titles {

@@ -24,7 +24,7 @@
 
 <script>
 import { jsPDF } from "jspdf";
-import { toPng, toJpeg } from 'html-to-image';
+import { toPng } from 'html-to-image';
 
 export default {
   name: 'PDFPreviewer',
@@ -99,7 +99,7 @@ export default {
 
                 let pages = [];
 
-                // 🔹 세로(y)는 cropHeight 만큼, 가로(x)는 cropWidth 만큼 이동 (기존 코드의 가로/세로 스텝이 뒤바뀐 버그 수정)
+                // 🔹 세로(y)는 cropHeight 만큼, 가로(x)는 cropWidth 만큼 이동
                 for (let y = svgY; y < svgY + svgHeight; y += cropHeight) {
                     for (let x = svgX; x < svgX + svgWidth; x += cropWidth) {
                         pages.push({ x, y });
@@ -158,9 +158,10 @@ export default {
       for (let i = 0; i < pages.length; i++) {
           let pageDiv = pages[i];
 
-          const imgData = await toJpeg(pageDiv, {
-              quality: 0.8, // 🔥 품질 최적화
-              cacheBust: true, // 캐시 문제 방지
+          // 🔥 고품질 PNG 사용 (pixelRatio: 2)
+          const imgData = await toPng(pageDiv, {
+              pixelRatio: 2,
+              cacheBust: true,
               backgroundColor: "white",
           });
 
@@ -172,13 +173,11 @@ export default {
 
           let renderWidth, renderHeight;
 
-          // 🔹 어느 쪽이든 "큰쪽"을 기준으로 꽉 차게: 더 길게 쓰는 축에 맞춰 최대한 키우고, 나머지는 비율 유지
+          // 🔹 어느 쪽이든 "큰쪽"을 기준으로 꽉 차게
           if (imgAspect > pageAspect) {
-              // 이미지가 더 가로로 긴 경우 → 가로를 꽉 채우고 세로는 비율에 맞춤
               renderWidth = availableWidth;
               renderHeight = availableWidth / imgAspect;
           } else {
-              // 이미지가 더 세로로 긴 경우 → 세로를 꽉 채우고 가로는 비율에 맞춤
               renderHeight = availableHeight;
               renderWidth = availableHeight * imgAspect;
           }
@@ -192,7 +191,7 @@ export default {
           } else {
               firstPage = false;
           }
-          pdf.addImage(imgData, "JPEG", x, y, renderWidth, renderHeight);
+          pdf.addImage(imgData, "PNG", x, y, renderWidth, renderHeight);
           this.progress = Math.round(((i + 1) / pages.length) * 100);
       }
 

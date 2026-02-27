@@ -38,8 +38,8 @@
                     </v-card-title>
                     <v-card-text class="pa-4 pt-0">
                         <p>{{ $t('DelegateTask.description') }}: {{ description }}</p>
-                        <p>{{ $t('DelegateTask.endDate') }}: {{ dueDate }}</p>
                         <p>{{ $t('DelegateTask.startDate') }}: {{ startDate }}</p>
+                        <p>{{ $t('DelegateTask.endDate') }}: {{ dueDate }}</p>
                         <p>{{ $t('DelegateTask.assignee') }}</p>
                         <div v-if="isLoading">
                             <v-skeleton type="list-item-two-line" height="48"></v-skeleton>
@@ -263,11 +263,11 @@ export default {
         },
         startDate(){
             if(!this.task) return '';
-            return this.task.worklist.startDate
+            return this.formatDateTime(this.task.worklist.startDate);
         },
         dueDate(){
             if(!this.task) return '';
-            return this.task.worklist.dueDate
+            return this.formatDateTime(this.task.worklist.dueDate);
         },
         defId(){
             if(!this.task) return '';
@@ -331,6 +331,17 @@ export default {
         }
     },
     methods: {
+        formatDateTime(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} / ${hours}:${minutes}`;
+        },
         async loadAssigneeInfo() {
             var me = this
             me.$try({
@@ -357,36 +368,36 @@ export default {
                                     if (!endpoint) continue;
                                     
                                     try {
-                                        let userList = null;
+                                        let user = null;
                                         
                                         // UUID 형식인지 체크 (8-4-4-4-12 형태)
                                         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(endpoint);
                                         
                                         if (isUUID) {
-                                            // UUID인 경우에만 id로 검색
-                                            userList = await backend.getUserList({
-                                                orderBy: 'id',
-                                                startAt: endpoint,
-                                                endAt: endpoint
-                                            });
+                                            try {
+                                                user = await backend.getUserById(endpoint);
+                                            } catch (e) {
+                                                user = null;
+                                            }
                                         }
                                         
-                                        // uid로 못 찾았거나 UUID가 아닌 경우 email로 검색
-                                        if (!userList || userList.length === 0) {
-                                            // email 형식인지 체크
+                                        // id로 못 찾았거나 UUID가 아닌 경우 email로 검색
+                                        if (!user) {
                                             const isEmail = endpoint.includes('@');
                                             if (isEmail) {
-                                                userList = await backend.getUserList({
+                                                const emailResult = await backend.getUserList({
                                                     orderBy: 'email',
                                                     startAt: endpoint,
                                                     endAt: endpoint
                                                 });
+                                                if (emailResult && emailResult.length > 0) {
+                                                    user = emailResult[0];
+                                                }
                                             }
                                         }
                                         
-                                        if (userList && userList.length > 0) {
-                                            // userInfoList.push(userList[0]); ???
-                                            userInfoList = [...userInfoList, ...userList];
+                                        if (user && user.id) {
+                                            userInfoList.push(user);
                                         } else {
                                             // 사용자를 찾을 수 없으면 endpoint를 이름으로 사용 (역할명 또는 삭제된 사용자)
                                             userInfoList.push({

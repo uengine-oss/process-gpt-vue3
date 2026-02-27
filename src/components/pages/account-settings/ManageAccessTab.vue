@@ -100,7 +100,7 @@
         v-model="openInviteUserCard"
         max-width="800px"
         persistent
-        :fullscreen="checkIfMobile"
+        :fullscreen="isMobile"
     >
         <v-card class="pa-4">
             <v-row class="ma-0 pa-0 align-center">
@@ -296,7 +296,14 @@ export default {
             });
         },
         async getUserList() {
-            this.users  = await backend.getUserList();
+            this.users  = await backend.getUserList({
+                orderBy: 'username',
+                sort: 'asc',
+                match: {
+                    is_agent: false,
+                    tenant_id: window.$tenantName
+                }
+            });
             this.users = this.users.map(user => {
                 return {
                     id: user.id,
@@ -344,7 +351,7 @@ export default {
                     uuid: orgData.uuid
                 };
                 
-                await backend.putObject('configuration', putObj);
+                await backend.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
                 this.EventBus.emit('user-deleted', userId);
             }
         },

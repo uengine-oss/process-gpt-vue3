@@ -17,7 +17,7 @@
                                 <v-avatar v-if="chatInfo.img">
                                     <img :src="chatInfo.img" width="50" />
                                 </v-avatar>
-                                <div>
+                                <div class="pa-4 pb-0">
                                     <h5 class="text-h5 mb-n1">{{ $t(chatInfo.title) }}</h5>
                                     <small class="textPrimary"> {{ chatInfo.subtitle }} </small>
                                 </div>
@@ -439,7 +439,7 @@
                                                                             size="x-small"
                                                                             class="message-mention-chip"
                                                                         >
-                                                                            @{{ u.username || u.mentionText || u.email || u.id }}
+                                                                            {{ u.username || u.mentionText || u.email || u.id }}
                                                                         </v-chip>
                                                                     </div>
                                                                     <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
@@ -554,7 +554,7 @@
                                                                             size="x-small"
                                                                             class="message-mention-chip"
                                                                         >
-                                                                            @{{ u.username || u.mentionText || u.email || u.id }}
+                                                                            {{ u.username || u.mentionText || u.email || u.id }}
                                                                         </v-chip>
                                                                     </div>
                                                                     <pre v-if="message.content && message.contentType != 'html'" class="text-body-1" v-html="linkify(message.content)"></pre>
@@ -1403,13 +1403,14 @@
                                 @click:close="removeMentionedUser(u)"
                                 class="mention-chip"
                             >
-                                @{{ u.username || u.mentionText || u.email || u.id }}
+                                {{ u.username || u.mentionText || u.email || u.id }}
                             </v-chip>
                         </div>
                         <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                             class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
                             auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                             @input="handleTextareaInput"
+                            @keydown="handleTextareaKeydown"
                             @keyup="handleTextareaCaretMove"
                             @click="handleTextareaCaretMove"
                             @paste="handlePaste"
@@ -1424,10 +1425,10 @@
                             </template>
                             <template v-else>
                                 <div
-                                    v-for="user in filteredUserList"
+                                    v-for="(user, idx) in filteredUserList"
                                     :key="user.id"
                                     @click="selectUser(user)"
-                                    class="user-item mention-autocomplete-item"
+                                    :class="['user-item mention-autocomplete-item', { 'mention-autocomplete-item--active': idx === mentionActiveIndex }]"
                                 >
                                     <img :src="user.profile" alt="profile" class="mention-autocomplete-avatar">
                                     <div class="mention-autocomplete-meta">
@@ -1477,16 +1478,18 @@
                                 <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
                             <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" style="flex-shrink: 0;" />
-                            <v-tooltip :text="$t('chat.headset')">
+                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn @click="openChatMenu(); recordingModeChange()"
+                                    <v-btn @click="enableDesktopVoice && (openChatMenu(), handleVoiceButtonClick())"
                                         v-bind="props"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
                                         variant="outlined"
                                         size="small"
-                                        style="border-color: #e0e0e0 !important;"
+                                        :disabled="!enableDesktopVoice"
+                                        :color="desktopVoiceActive ? 'primary' : undefined"
+                                        :style="desktopVoiceActive ? 'border-color: rgb(var(--v-theme-primary)) !important;' : 'border-color: #e0e0e0 !important;'"
                                     >
                                         <Icons :icon="'voice'" :size="16"  />
                                     </v-btn>
@@ -1598,13 +1601,14 @@
                             @click:close="removeMentionedUser(u)"
                             class="mention-chip"
                         >
-                            @{{ u.username || u.mentionText || u.email || u.id }}
+                            {{ u.username || u.mentionText || u.email || u.id }}
                         </v-chip>
                     </div>
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
                         class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="resolvedPlaceholder"
                         auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
                         @input="handleTextareaInput"
+                        @keydown="handleTextareaKeydown"
                         @keyup="handleTextareaCaretMove"
                         @click="handleTextareaCaretMove"
                         @paste="handlePaste"
@@ -1619,10 +1623,10 @@
                         </template>
                         <template v-else>
                             <div
-                                v-for="user in filteredUserList"
+                                v-for="(user, idx) in filteredUserList"
                                 :key="user.id"
                                 @click="selectUser(user)"
-                                class="user-item mention-autocomplete-item"
+                                :class="['user-item mention-autocomplete-item', { 'mention-autocomplete-item--active': idx === mentionActiveIndex }]"
                             >
                                 <img :src="user.profile" alt="profile" class="mention-autocomplete-avatar">
                                 <div class="mention-autocomplete-meta">
@@ -1776,17 +1780,18 @@
                             <Icons v-else :icon="'sharp-mic'" :size="'16'" />
                         </v-btn>
                         
-                        <v-tooltip :text="$t('chat.headset')">
+                        <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
                             <template v-slot:activator="{ props }">
-                                <v-btn @click="openChatMenu(); recordingModeChange()"
+                                <v-btn @click="enableDesktopVoice && !isGenerationFinished && (openChatMenu(), handleVoiceButtonClick())"
                                     class="mr-1 text-medium-emphasis"
                                     density="comfortable"
                                     icon
                                     variant="outlined"
                                     size="small"
                                     v-bind="props"
-                                    style="border-color: #e0e0e0 !important;"
-                                    :disabled="isGenerationFinished"
+                                    :disabled="!enableDesktopVoice || isGenerationFinished"
+                                    :color="desktopVoiceActive ? 'primary' : undefined"
+                                    :style="desktopVoiceActive ? 'border-color: rgb(var(--v-theme-primary)) !important;' : 'border-color: #e0e0e0 !important;'"
                                 >
                                     <Icons :icon="'voice'" :size="'16'"  />
                                 </v-btn>
@@ -1899,6 +1904,16 @@ export default {
         isAgentMode: Boolean,
         chatRoomId: String,
         isMobile: Boolean,
+        // 데스크탑 음성 에이전트 모드 활성화 여부 (ChatRoomPage에서 제어)
+        desktopVoiceActive: {
+            type: Boolean,
+            default: false,
+        },
+        // 말하기/듣기 버튼 노출 여부 (1:1 에이전트 대화일 때만 true)
+        enableDesktopVoice: {
+            type: Boolean,
+            default: false,
+        },
         newMessageInfo: Object,
         hideInput: {
             type: Boolean,
@@ -1986,7 +2001,11 @@ export default {
         // 미리보기/외부 링크 오픈 (ChatRoomPage에서 다이얼로그 처리)
         'preview-bpmn',
         'preview-image',
-        'open-external-url'
+        'open-external-url',
+        // 데스크탑 음성 에이전트 모드 토글
+        'desktop-voice-toggle',
+        'recording-mode-change',
+        'invite-agent',
     ],
     data() {
         return {
@@ -2060,6 +2079,7 @@ export default {
 
             // mention dropdown position (anchored near '@')
             mentionDropdownStyle: {},
+            mentionActiveIndex: 0,
             
             // 사용자 정보
             currentUserName: localStorage.getItem('userName') || '사용자',
@@ -2481,7 +2501,18 @@ export default {
         },
         recordingModeChange() {
             this.recordingMode = !this.recordingMode
+            this.$emit('recording-mode-change', this.recordingMode);
             // this.$globalState.methods.toggleRightZoom();
+        },
+        handleVoiceButtonClick() {
+            const isMobileViewport = window.innerWidth < 768;
+            if (isMobileViewport) {
+                // 모바일: 기존 풀스크린 Record.vue 열기
+                this.recordingModeChange();
+            } else {
+                // 데스크탑: 인라인 텍스트 음성 모드 토글
+                this.$emit('desktop-voice-toggle');
+            }
         },
         // 애니메이션 표시를 위해 system의 답변이 있더라도 표시 가능하게 하려고 만든 methods
         shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) {
@@ -2677,6 +2708,7 @@ export default {
             if (ctx) {
                 this.mentionStartIndex = ctx.startIndex;
                 this.mentionQuery = ctx.query;
+                this.mentionActiveIndex = 0;
                 // 위치 계산 전에 showUserList가 켜지면 (스타일 비어있는 상태로) 좌상단에 잠깐 뜨는 플래시가 발생할 수 있음
                 this.showUserList = false;
                 this.mentionDropdownStyle = { visibility: 'hidden' };
@@ -2691,16 +2723,9 @@ export default {
                 this.mentionDropdownStyle = {};
             }
 
-            // 텍스트에서 사라진 멘션은 chips에서도 제거
-            this.mentionedUsers = (Array.isArray(this.mentionedUsers) ? this.mentionedUsers : []).filter((u) => {
-                const mentionText = (u?.mentionText || u?.username || '').toString();
-                if (!mentionText) return false;
-                // 한글/공백 포함 이름도 안정적으로 유지:
-                // - "@<이름>"이 그대로 포함되면 유지
-                // - 뒤에는 공백/구두점/줄바꿈/끝이 와야 멘션으로 간주
-                const re = new RegExp(`@${this.escapeRegExp(mentionText)}(?=$|[\\s\\n\\r\\t.,;:!?()\\[\\]{}"'\\\`~<>/\\\\|])`, 'u');
-                return re.test(text || '');
-            });
+            // NOTE: 현재 UX는 "멘션은 chip으로만 표시" (텍스트에 @token을 넣지 않음)
+            // 따라서 타이핑할 때마다 텍스트 기반으로 mentionedUsers를 자동 제거하면 chip이 사라지는 버그가 발생한다.
+            // 멘션 제거는 chip의 X 버튼(`removeMentionedUser`)로만 처리한다.
 
             if (text.startsWith('>') || text.startsWith('!')) {
                 // 명령어 목록 표시 로직 추가
@@ -2717,6 +2742,50 @@ export default {
             this.$nextTick(() => {
                 this.updateMentionDropdownPosition(event);
             });
+        },
+        handleTextareaKeydown(event) {
+            if (!this.showUserList) return;
+            const key = (event?.key || '').toString();
+            const list = Array.isArray(this.filteredUserList) ? this.filteredUserList : [];
+            if (key === 'ArrowDown' || key === 'ArrowUp' || key === 'Enter' || key === 'Escape' || key === 'Tab') {
+                event.preventDefault?.();
+                event.stopPropagation?.();
+            } else {
+                return;
+            }
+
+            if (key === 'Escape' || key === 'Tab') {
+                this.showUserList = false;
+                this.mentionDropdownStyle = {};
+                return;
+            }
+
+            if (list.length === 0) return;
+
+            if (key === 'ArrowDown') {
+                this.mentionActiveIndex = (this.mentionActiveIndex + 1) % list.length;
+                this.$nextTick(() => this.scrollActiveMentionIntoView());
+                return;
+            }
+            if (key === 'ArrowUp') {
+                this.mentionActiveIndex = (this.mentionActiveIndex - 1 + list.length) % list.length;
+                this.$nextTick(() => this.scrollActiveMentionIntoView());
+                return;
+            }
+            if (key === 'Enter') {
+                const picked = list[this.mentionActiveIndex] || null;
+                if (picked) this.selectUser(picked);
+                return;
+            }
+        },
+        scrollActiveMentionIntoView() {
+            try {
+                const wrap = this.$el?.querySelector?.('.mention-autocomplete-wrap');
+                const listEl = wrap?.querySelector?.('.mention-autocomplete-list');
+                const items = listEl?.querySelectorAll?.('.mention-autocomplete-item');
+                const el = items?.[this.mentionActiveIndex];
+                el?.scrollIntoView?.({ block: 'nearest' });
+            } catch (e) {}
         },
         getActiveTextareaEl(event) {
             if (event?.target && (event.target.tagName || '').toLowerCase() === 'textarea') return event.target;
@@ -2857,7 +2926,8 @@ export default {
             const mentionText = (user?.mentionText || user?.username || '').toString();
             if (mentionText) {
                 // "@token" 제거 (토큰 뒤 공백도 같이 정리)
-                const re = new RegExp(`(^|\\s)@${this.escapeRegExp(mentionText)}(?=$|[\\s\\n\\r\\t.,;:!?()\\[\\]{}"'\\\`~<>/\\\\|])\\s*`, 'gu');
+                // NOTE: RegExp with 'u' flag disallows IdentityEscape like \`
+                const re = new RegExp(`(^|\\s)@${this.escapeRegExp(mentionText)}(?=$|[\\s\\n\\r\\t.,;:!?()\\[\\]{}"'` + '`' + `~<>/\\\\|])\\s*`, 'gu');
                 this.newMessage = (this.newMessage || '').replace(re, '$1').replace(/\s{2,}/g, ' ').trimStart();
             }
             this.showUserList = false;
@@ -2876,15 +2946,16 @@ export default {
             const before = (this.newMessage || '').substring(0, start);
             const after = (this.newMessage || '').substring(caretPos);
 
-            // 일반적인 멘션 UX: 화면에 보이는 이름 그대로 textarea에 넣는다(공백 포함).
-            // 라우팅은 payload.mentionedUsers(id) 기반이므로, 텍스트의 정규식 파싱에 의존하지 않는다.
+            // UX: 텍스트 안에 "@이름"을 중복 표시하지 않고, chip으로만 표시한다.
+            // (라우팅은 payload.mentionedUsers 기반)
             const mentionText = (user.username || user.email || user.id || '').toString().replace(/[@\r\n]/g, '').trim();
-            this.newMessage = `${before}@${mentionText} ${after}`;
+            this.newMessage = `${before}${after}`.replace(/\s{2,}/g, ' ');
 
             this.showUserList = false;
             this.mentionStartIndex = null;
             this.mentionQuery = '';
             this.mentionDropdownStyle = {};
+            this.mentionActiveIndex = 0;
 
             // Mention된 유저의 정보를 mentionedUsers 배열에 추가
             if (!this.mentionedUsers.some(mentionedUser => mentionedUser.id === user.id)) {
@@ -2896,7 +2967,7 @@ export default {
                 try {
                     const ta = this.getActiveTextareaEl();
                     if (!ta) return;
-                    const nextPos = (before.length + 1 + mentionText.length + 1); // "@"+mentionText+" "
+                    const nextPos = Math.min(before.length, (ta.value || '').length);
                     ta.focus?.();
                     ta.setSelectionRange?.(nextPos, nextPos);
                 } catch (e) {}
@@ -3862,6 +3933,9 @@ pre {
 .mention-autocomplete-item:hover {
     background: rgba(0,0,0,0.04);
 }
+.mention-autocomplete-item--active {
+    background: rgba(var(--v-theme-primary), 0.10);
+}
 .mention-autocomplete-avatar {
     width: 20px;
     height: 20px;
@@ -4093,12 +4167,13 @@ pre {
 }
 
 .agent-message {
-  margin-right: auto;
-  background-color: #f5f5f5 !important;
-  border-radius: 8px !important;
-  padding: 10px 12px;
-  display: inline-block;
-  max-width: min(720px, 80vw);
+    width: 100%;
+    margin-right: auto;
+    background-color: #f5f5f5 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px;
+    display: inline-block;
+    max-width: min(720px, 80vw);
 }
 
 .markdown-content :deep(pre),

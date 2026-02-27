@@ -4,6 +4,7 @@ const storage = StorageBaseFactory.getStorage();
 import type { Backend } from './Backend';
 import defaultProcessesData from './defaultProcesses.json';
 import { useDefaultSetting } from '@/stores/defaultSetting';
+import { runValidation } from '@/utils/bpmnValidationRules';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
 
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -116,8 +117,8 @@ class ProcessGPTBackend implements Backend {
                 }
                 let procDefs = await storage.list('proc_def', options);
                 procDefs.map((item: any) => {
-                    item.path = `${item.id}`
-                    item.name = item.name || item.path
+                    item.path = `${item.id}.bpmn`
+                    item.name = item.name || item.id
                 });
                 return procDefs
             }
@@ -203,7 +204,7 @@ class ProcessGPTBackend implements Backend {
             });
             if (procDef) {
                 procDef.isdeleted = false;
-                return await storage.putObject('proc_def', procDef);
+                return await storage.putObject('proc_def', procDef, { onConflict: 'id,tenant_id' });
             }
         } catch (e) {
             throw new Error(e.message);
@@ -253,7 +254,8 @@ class ProcessGPTBackend implements Backend {
                     });
                     return;
                 }
-                
+
+                // 먼저 proc_def_id, activity_id로 조회
                 var formDef: any = await storage.getObject('form_def', {
                     match: {
                         proc_def_id: options.proc_def_id,
@@ -263,31 +265,40 @@ class ProcessGPTBackend implements Backend {
                 });
 
                 let putObj: any = {}
+                let formId = defId.replace(/\//g, "#");
+                if (!formId || formId == 'defaultform' || formId == '') {
+                    formId = `${options.proc_def_id}_${options.activity_id?.toLowerCase()}_form`;
+                }
+
+                // formDef가 없으면 id로 한번 더 조회 (unique constraint: id, tenant_id)
+                if (!formDef) {
+                    formDef = await storage.getObject('form_def', {
+                        match: {
+                            id: formId,
+                            tenant_id: window.$tenantName
+                        }
+                    });
+                }
+
                 if (formDef) {
-                    if (!formDef.id) {
-                        formDef.id = defId.replace(/\//g, "#");
-                    }
                     putObj = {
                         uuid: formDef.uuid,
-                        id: formDef.id,
+                        id: formDef.id || formId,
                         html: xml,
-                        proc_def_id: formDef.proc_def_id,
-                        activity_id: formDef.activity_id,
+                        proc_def_id: formDef.proc_def_id || options.proc_def_id,
+                        activity_id: formDef.activity_id || options.activity_id,
                         fields_json: fieldsJson,
                         tenant_id: formDef.tenant_id
                     }
                 } else {
                     putObj = {
-                        id: defId.replace(/\//g, "#"),
+                        id: formId,
                         html: xml,
                         proc_def_id: options.proc_def_id,
                         activity_id: options.activity_id,
                         fields_json: fieldsJson,
                         tenant_id: window.$tenantName
                     }
-                }
-                if (!putObj.id || putObj.id == 'defaultform' || putObj.id == null || putObj.id == '') {
-                    putObj.id = `${putObj.proc_def_id}_${putObj.activity_id?.toLowerCase()}_form`
                 }
                 await storage.putObject('form_def', putObj);
                 return
@@ -303,32 +314,71 @@ class ProcessGPTBackend implements Backend {
                 procDef.bpmn = xml;
                 // name이 유효한 경우에만 업데이트 (null로 덮어쓰기 방지)
                 if (options.name) procDef.name = options.name;
+                if (options.owner) procDef.owner = options.owner;
+                if (options.type) procDef.type = options.type;
             } else {
+                // 신규 프로세스: 초기 bpmn/definition 포함하여 생성
                 procDef = {
                     id: defId,
                     name: options.name,
                     bpmn: xml,
-                    definition: null,
-                    owner: null,
-                    type: 'bpmn'
+                    definition: options.definition || null,
+                    owner: options.owner || null,
+                    type: options.type || 'bpmn'
                 }
             }
-            if (options.definition) procDef.definition = options.definition;
-            if (options.owner) procDef.owner = options.owner;
-            if (options.type) procDef.type = options.type;
-            await storage.putObject('proc_def', procDef);
+            await storage.putObject('proc_def', procDef, { onConflict: 'id,tenant_id' });
 
             if (options.version) {
+                let saveVersion = options.version;
+                let saveArcvId = options.arcv_id || `${defId}_${saveVersion}`;
+                let existingUuid: string | null = null;
+
+                // 동일 arcv_id가 이미 존재하는지 확인
+                try {
+                    const existingVersion = await storage.getObject('proc_def_version', {
+                        match: { arcv_id: saveArcvId }
+                    });
+                    if (existingVersion) {
+                        if (existingVersion.version_tag === 'published') {
+                            // published 버전은 불변 보호 - minor 자동 증가
+                            const parts = String(saveVersion).split('.');
+                            const major = parseInt(parts[0]) || 0;
+                            const minor = (parseInt(parts[1]) || 0) + 1;
+                            saveVersion = `${major}.${minor}`;
+                            saveArcvId = `${defId}_${saveVersion}`;
+                            // 증가된 버전도 이미 존재하면 uuid 보존
+                            try {
+                                const bumpedVersion = await storage.getObject('proc_def_version', {
+                                    match: { arcv_id: saveArcvId }
+                                });
+                                if (bumpedVersion && bumpedVersion.version_tag !== 'published') {
+                                    existingUuid = bumpedVersion.uuid;
+                                }
+                            } catch (e) { /* ignore */ }
+                        } else {
+                            // 기존 행 업데이트를 위해 uuid 보존 (PK가 uuid이므로 upsert에 필요)
+                            existingUuid = existingVersion.uuid;
+                        }
+                    }
+                } catch (e) {
+                    // 기존 버전 조회 실패 시 그대로 진행
+                }
+
                 const procDefVersion: any = {
-                    arcv_id: options.arcv_id,
+                    arcv_id: saveArcvId,
                     proc_def_id: defId,
-                    version: options.version,
+                    version: saveVersion,
                     version_tag: options.version_tag,
                     timeStamp: new Date().toISOString(),
                     snapshot: xml,
                     definition: options.definition ?? procDef.definition,
                     diff: options.diff,
                     message: options.message,
+                }
+                // 기존 행이 있으면 uuid를 포함하여 UPDATE로 동작하게 함
+                if (existingUuid) {
+                    procDefVersion.uuid = existingUuid;
                 }
                 // agent_knowledge_history.id를 proc_def_version.uuid로 설정
                 if (options.history_id) {
@@ -410,7 +460,28 @@ class ProcessGPTBackend implements Backend {
                         }
                     }
 
-                    // 버전 스냅샷이 없으면 항상 현재 proc_def 기준 bpmn 사용
+                    // 버전 스냅샷이 없으면 최신 proc_def_version에서 조회
+                    if (!data) {
+                        try {
+                            const supabase = window.$supabase;
+                            if (supabase) {
+                                const { data: latestVersion } = await supabase
+                                    .from('proc_def_version')
+                                    .select('snapshot')
+                                    .eq('proc_def_id', defId)
+                                    .eq('tenant_id', window.$tenantName)
+                                    .order('created_at', { ascending: false })
+                                    .limit(1)
+                                    .maybeSingle();
+                                if (latestVersion?.snapshot) {
+                                    data = latestVersion.snapshot;
+                                }
+                            }
+                        } catch (e) {
+                            // 최신 버전 조회 실패 시 proc_def.bpmn으로 폴백
+                        }
+                    }
+                    // 최종 폴백: proc_def.bpmn (버전이 하나도 없는 경우)
                     if (!data) {
                         data = await storage.getString(`proc_def`, { column: 'bpmn', match: { id: defId } });
                     }
@@ -442,7 +513,10 @@ class ProcessGPTBackend implements Backend {
 
         return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
     }
-
+    /**
+        process instance 실행 -> Completed (task)
+        
+    */
     async start(input: any) {
         try {
             var me = this;
@@ -1165,7 +1239,7 @@ class ProcessGPTBackend implements Backend {
             if (formId) {
                 data = await storage.getObject('form_def', {
                     match: {
-                        id: formId,
+                        formid: formId,
                         tenant_id: window.$tenantName
                     }
                 });
@@ -1388,6 +1462,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     key: 'proc_map',
+                    tenant_id: window.$tenantName
                 }
             };
             const procMap = await storage.getObject('configuration', options);
@@ -1404,18 +1479,25 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
-                if (isPal) {
-                    const usePermissions = await this.checkUsePermissions();
-                    const role = localStorage.getItem('role');
-                    if (role == 'superAdmin' || !usePermissions) {
-                        return procMap.value;
-                    } else {
-                        const filteredMap = await this.filterProcDefMap(procMap.value);
-                        return filteredMap;
-                    }
-                } else {
+
+                // 권한 체크: PAL 모드 여부와 관계없이 권한이 설정되어 있으면 필터링 적용
+                const usePermissions = await this.checkUsePermissions();
+                const role = localStorage.getItem('role');
+                const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+                // superAdmin이거나 권한 설정이 없으면 전체 반환
+                if (role === 'superAdmin' || !usePermissions) {
                     return procMap.value;
                 }
+
+                // 관리자는 전체 볼 수 있음 (권한 설정은 일반 사용자에게만 적용)
+                if (isAdmin) {
+                    return procMap.value;
+                }
+
+                // 일반 사용자는 권한에 따라 필터링
+                const filteredMap = await this.filterProcDefMap(procMap.value);
+                return filteredMap;
             }
             return {};
         } catch (error) {
@@ -1431,6 +1513,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     key: 'proc_map',
+                    tenant_id: window.$tenantName
                 },
                 column: 'uuid'
             };
@@ -1464,33 +1547,6 @@ class ProcessGPTBackend implements Backend {
     }
 
     /**
-     * 메트릭스 맵 조회 (2D 매트릭스 뷰)
-     * @returns 메트릭스 데이터 (domains, mega_processes, processes)
-     */
-    async getMetricsMap() {
-        try {
-            const options = {
-                match: {
-                    key: 'metrics',
-                }
-            };
-            const metricsMap = await storage.getObject('configuration', options);
-            if (metricsMap && metricsMap.value) {
-                return metricsMap.value;
-            }
-            // 기본 구조 반환
-            return {
-                domains: [],
-                mega_processes: [],
-                processes: []
-            };
-        } catch (error) {
-            //@ts-ignore
-            throw new Error(error.message);
-        }
-    }
-
-    /**
      * 메트릭스 맵 저장 (2D 매트릭스 뷰)
      * @param metricsData 저장할 메트릭스 데이터
      */
@@ -1499,6 +1555,7 @@ class ProcessGPTBackend implements Backend {
             const options = {
                 match: {
                     key: 'metrics',
+                    tenant_id: window.$tenantName
                 },
                 column: 'uuid'
             };
@@ -1511,6 +1568,34 @@ class ProcessGPTBackend implements Backend {
                 tenant_id: window.$tenantName
             }
             await storage.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 메트릭스 맵 조회 (2D 매트릭스 뷰)
+     * @returns 메트릭스 데이터 (domains, mega_processes, processes)
+     */
+    async getMetricsMap() {
+        try {
+            const options = {
+                match: {
+                    key: 'metrics',
+                    tenant_id: window.$tenantName
+                }
+            };
+            const metricsMap = await storage.getObject('configuration', options);
+            if (metricsMap && metricsMap.value) {
+                return metricsMap.value;
+            }
+            // 기본 구조 반환
+            return {
+                domains: [],
+                mega_processes: [],
+                processes: []
+            };
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -1765,59 +1850,215 @@ class ProcessGPTBackend implements Backend {
     }
 
     async filterProcDefMap(map: any) {
-        // 사용자 권한에 따라 필터링
+        // 사용자 권한에 따라 필터링 (user, organization, org_group 모두 체크)
         const uid = localStorage.getItem('uid');
-        const permissions = await storage.list('user_permissions', { match: { user_id: uid } });
-        if (!permissions || permissions.length === 0) {
+        if (!uid) {
             return {};
         }
-        const processList = permissions.map((permission: any) => permission.proc_def_ids);
-        let filteredMap: any = {};
 
-        if (processList.length > 0) {
-            function removeDuplicates(processList: any) {
-                const uniqueByIdAndName = (array: any) => {
-                    const seen = new Map();
-                    return array.filter((item: any) => {
-                        const key = `${item.id}-${item.name}`;
-                        if (seen.has(key)) {
-                            const existingItem = seen.get(key);
-                            if (item.major_proc_list && existingItem.major_proc_list) {
-                                existingItem.major_proc_list = item.major_proc_list.length > existingItem.major_proc_list.length ? item.major_proc_list : existingItem.major_proc_list;
-                            }
-                            if (item.sub_proc_list && existingItem.sub_proc_list) {
-                                existingItem.sub_proc_list = item.sub_proc_list.length > existingItem.sub_proc_list.length ? item.sub_proc_list : existingItem.sub_proc_list;
-                            }
-                            return false;
+        try {
+            // 1. 사용자의 조직 목록 가져오기
+            const { getCurrentUserOrganizations } = await import('@/utils/organizationUtils');
+            const userOrganizations = await getCurrentUserOrganizations();
+
+            // 2. 사용자가 속한 조직 그룹 가져오기
+            let userOrgGroupIds: string[] = [];
+            if (userOrganizations.length > 0) {
+                try {
+                    const orgGroups = await this.getOrgChartGroupList();
+                    for (const group of orgGroups) {
+                        // group.team_ids 배열에 사용자 조직이 포함되어 있는지 확인
+                        const groupTeams = await storage.list('org_chart_group_teams', { match: { group_id: group.id } });
+                        const groupTeamIds = groupTeams.map((t: any) => t.team_id);
+                        const hasUserOrg = userOrganizations.some(orgId => groupTeamIds.includes(orgId));
+                        if (hasUserOrg) {
+                            userOrgGroupIds.push(group.id);
                         }
-                        seen.set(key, item);
-                        return true;
-                    });
-                };
-
-                processList = uniqueByIdAndName(processList);
-
-                return processList.map((megaProc: any) => {
-                    if (megaProc.major_proc_list) {
-                        megaProc.major_proc_list = uniqueByIdAndName(megaProc.major_proc_list.map((majorProc: any) => {
-                            majorProc.sub_proc_list = uniqueByIdAndName(majorProc.sub_proc_list);
-                            return majorProc;
-                        }));
                     }
-                    return megaProc;
-                });
+                } catch (e) {
+                    console.warn('[filterProcDefMap] 조직 그룹 조회 실패:', e);
+                }
             }
 
-            const uniqueProcessList = removeDuplicates(processList);
-            filteredMap = {
-                mega_proc_list: uniqueProcessList
+            // 3. 모든 유형의 권한 조회 (user, organization, org_group)
+            const allPermissions: any[] = [];
+
+            // 3-1. 직접 사용자 권한 (target_type='user' 또는 legacy 권한)
+            const userPermissions = await storage.list('user_permissions', {
+                match: { user_id: uid, tenant_id: window.$tenantName }
+            });
+            if (userPermissions && userPermissions.length > 0) {
+                // target_type이 'user'이거나 없는 경우만 추가 (legacy 호환)
+                const filteredUserPerms = userPermissions.filter(
+                    (p: any) => !p.target_type || p.target_type === 'user'
+                );
+                allPermissions.push(...filteredUserPerms);
             }
-        } else {
-            filteredMap = {
-                mega_proc_list: []
+
+            // 3-2. 조직 권한 (사용자가 속한 조직에 부여된 권한)
+            for (const orgId of userOrganizations) {
+                const orgPermissions = await storage.list('user_permissions', {
+                    match: { organization_id: orgId, target_type: 'organization', tenant_id: window.$tenantName }
+                });
+                if (orgPermissions && orgPermissions.length > 0) {
+                    allPermissions.push(...orgPermissions);
+                }
+            }
+
+            // 3-3. 조직 그룹 권한
+            for (const groupId of userOrgGroupIds) {
+                const groupPermissions = await storage.list('user_permissions', {
+                    match: { org_group_id: groupId, target_type: 'org_group', tenant_id: window.$tenantName }
+                });
+                if (groupPermissions && groupPermissions.length > 0) {
+                    allPermissions.push(...groupPermissions);
+                }
+            }
+
+            // 4. 모든 권한에서 사용자에게 readable이 true인 프로세스 ID 추출
+            const accessibleProcDefIds = new Set<string>();
+            for (const permission of allPermissions) {
+                if (permission.readable === true) {
+                    if (permission.proc_def_id) {
+                        accessibleProcDefIds.add(permission.proc_def_id);
+                    }
+                    if (permission.proc_def_ids) {
+                        this.extractProcDefIds(permission.proc_def_ids, accessibleProcDefIds);
+                    }
+                }
+            }
+
+            // 5. 권한이 설정된 모든 프로세스 ID 조회 (제한된 프로세스 목록)
+            const restrictedProcDefIds = new Set<string>();
+            try {
+                const allDefinedPermissions = await storage.list('user_permissions', {
+                    match: { tenant_id: window.$tenantName }
+                });
+                if (allDefinedPermissions && allDefinedPermissions.length > 0) {
+                    for (const perm of allDefinedPermissions) {
+                        if (perm.proc_def_id) {
+                            restrictedProcDefIds.add(perm.proc_def_id);
+                        }
+                        if (perm.proc_def_ids) {
+                            this.extractProcDefIds(perm.proc_def_ids, restrictedProcDefIds);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[filterProcDefMap] 전체 권한 목록 조회 실패:', e);
+            }
+
+            // 6. 원본 맵에서 필터링
+            // - 권한이 정의되지 않은 프로세스: 모두에게 공개 (표시)
+            // - 권한이 정의된 프로세스: 사용자에게 readable 권한이 있어야 표시
+            if (!map || !map.mega_proc_list) {
+                return {};
+            }
+
+            const isProcessAllowed = (procId: string): boolean => {
+                // 권한이 정의되지 않은 프로세스는 공개
+                if (!restrictedProcDefIds.has(procId)) {
+                    return true;
+                }
+                // 권한이 정의된 프로세스는 사용자에게 접근 권한이 있어야 함
+                return accessibleProcDefIds.has(procId);
+            };
+
+            const filteredMegaList = map.mega_proc_list
+                .map((mega: any) => {
+                    if (!mega) return null;
+
+                    // mega 프로세스가 허용되는지 확인
+                    const megaAllowed = isProcessAllowed(mega.id);
+
+                    // major_proc_list 필터링
+                    let filteredMajorList: any[] = [];
+                    if (mega.major_proc_list) {
+                        filteredMajorList = mega.major_proc_list
+                            .map((major: any) => {
+                                if (!major) return null;
+
+                                // major 프로세스가 허용되는지 확인
+                                const majorAllowed = megaAllowed || isProcessAllowed(major.id);
+
+                                // sub_proc_list 필터링
+                                let filteredSubList: any[] = [];
+                                if (major.sub_proc_list) {
+                                    filteredSubList = major.sub_proc_list.filter((sub: any) =>
+                                        sub && (majorAllowed || isProcessAllowed(sub.id))
+                                    );
+                                }
+
+                                // major가 허용되거나 허용된 sub가 있으면 포함
+                                if (majorAllowed || filteredSubList.length > 0) {
+                                    return {
+                                        ...major,
+                                        sub_proc_list: majorAllowed ? major.sub_proc_list : filteredSubList
+                                    };
+                                }
+                                return null;
+                            })
+                            .filter((m: any) => m !== null);
+                    }
+
+                    // mega가 허용되거나 허용된 major가 있으면 포함
+                    if (megaAllowed || filteredMajorList.length > 0) {
+                        return {
+                            ...mega,
+                            major_proc_list: megaAllowed ? mega.major_proc_list : filteredMajorList
+                        };
+                    }
+                    return null;
+                })
+                .filter((m: any) => m !== null);
+
+            return {
+                mega_proc_list: filteredMegaList
+            };
+        } catch (error) {
+            console.error('[filterProcDefMap] 권한 필터링 오류:', error);
+            return {};
+        }
+    }
+
+    /**
+     * proc_def_ids 구조에서 모든 프로세스 ID를 추출
+     * @param procDefIds - 프로세스 정의 구조 (mega/major/sub 레벨)
+     * @param idSet - ID를 저장할 Set
+     */
+    private extractProcDefIds(procDefIds: any, idSet: Set<string>): void {
+        if (!procDefIds) return;
+
+        // 현재 노드의 ID 추가
+        if (procDefIds.id) {
+            idSet.add(procDefIds.id);
+        }
+
+        // major_proc_list (mega 레벨)
+        if (procDefIds.major_proc_list && Array.isArray(procDefIds.major_proc_list)) {
+            for (const major of procDefIds.major_proc_list) {
+                if (major && major.id) {
+                    idSet.add(major.id);
+                }
+                // sub_proc_list
+                if (major && major.sub_proc_list && Array.isArray(major.sub_proc_list)) {
+                    for (const sub of major.sub_proc_list) {
+                        if (sub && sub.id) {
+                            idSet.add(sub.id);
+                        }
+                    }
+                }
             }
         }
-        return filteredMap;
+
+        // sub_proc_list (major 레벨 - major_proc_list 없이 바로 sub_proc_list가 있는 경우)
+        if (procDefIds.sub_proc_list && Array.isArray(procDefIds.sub_proc_list)) {
+            for (const sub of procDefIds.sub_proc_list) {
+                if (sub && sub.id) {
+                    idSet.add(sub.id);
+                }
+            }
+        }
     }
 
     async mergeProcessMaps(oldValue: any, newValue: any) {
@@ -2050,8 +2291,8 @@ class ProcessGPTBackend implements Backend {
         }
 
         const fieldTags = [
-            'text-field', 'select-field', 'checkbox-field', 'radio-field', 
-            'file-field', 'label-field', 'boolean-field', 'textarea-field', 
+            'text-field', 'select-field', 'checkbox-field', 'radio-field',
+            'file-field', 'label-field', 'boolean-field', 'textarea-field',
             'user-select-field', 'report-field', 'slide-field', 'bpmn-uengine-field'
         ];
 
@@ -2254,7 +2495,10 @@ class ProcessGPTBackend implements Backend {
                 version: (workItem as any).version || null,
             };
 
-            return await me.executeInstance(input);
+            // Task 실행 속성은 DB 트리거(todolist INSERT/UPDATE)에서 자동 처리됨
+            const result = await me.executeInstance(input);
+
+            return result;
 
         } catch (error) {
             return error;
@@ -2578,10 +2822,13 @@ class ProcessGPTBackend implements Backend {
 
     async validate(xml: string) {
         try {
-            return {};
+            // BPMN XML 유효성 검사 실행
+            const i18nFunc = window.$i18n?.global?.t;
+            return runValidation(xml, i18nFunc);
         } catch (error) {
+            console.warn('BPMN validation error:', error);
             //@ts-ignore
-            throw new Error(error.message);
+            return {};
         }
     }
 
@@ -2749,18 +2996,22 @@ class ProcessGPTBackend implements Backend {
 
     async setNotifications(value: any) {
         try {
-            if (value.count > 1) {
-                const notifications = await this.fetchNotifications();
-                notifications.forEach(async (item: any) => {
-                    if (item.url === value.url && item.user_id === value.user_id) {
-                        const putObj = { id: item.id, is_checked: true };
-                        await storage.putObject('notifications', putObj);
-                    }
+            const userId = value.user_id ?? localStorage.getItem('email');
+            // 같은 채팅방(url)의 미확인 알림을 DB에서 모두 조회하여 한 번에 읽음 처리
+            if (value.url && userId) {
+                const list = await storage.list('notifications', {
+                    match: { url: value.url, user_id: userId, is_checked: false },
                 });
-            } else {
-                const putObj = { id: value.id, is_checked: true };
-                await storage.putObject('notifications', putObj);
+                await Promise.all(
+                    list.map((item: any) =>
+                        storage.putObject('notifications', { id: item.id, is_checked: true })
+                    )
+                );
+                return;
             }
+            // url 없으면 클릭한 항목만 읽음 처리
+            const putObj = { id: value.id, is_checked: true };
+            await storage.putObject('notifications', putObj);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -2936,6 +3187,7 @@ class ProcessGPTBackend implements Backend {
                     tenant_id: window.$tenantName
                 }
             }
+
             if (options) {
                 Object.keys(options).forEach((key) => {
                     filter[key] = options[key]
@@ -3004,6 +3256,7 @@ class ProcessGPTBackend implements Backend {
 
     async putAgent(newAgent: any) {
         try {
+            const isGs = window.$gs;
             const putObj: any = {
                 id: newAgent.id,
                 username: newAgent.name,
@@ -3020,14 +3273,12 @@ class ProcessGPTBackend implements Backend {
                 is_agent: newAgent.isAgent,
                 agent_type: newAgent.type,
                 alias: newAgent.alias,
-                tool_priority: newAgent.tool_priority ?? null
+                ...(isGs ? {} : { tool_priority: newAgent.tool_priority ?? null })
             }
 
-            // users 테이블 업데이트
             await storage.putObject('users', putObj);
 
-            // agent_skills 테이블 동기화
-            if (putObj.id) {
+            if (!isGs && putObj.id) {
                 const skillsArray =
                     typeof putObj.skills === 'string'
                         ? putObj.skills
@@ -3046,7 +3297,6 @@ class ProcessGPTBackend implements Backend {
                     });
                 } catch (syncError) {
                     console.error('[ProcessGPTBackend] replaceAgentSkills error:', syncError);
-                    // agent_skills 동기화 실패는 에이전트 저장 자체를 막지 않음
                 }
             }
         } catch (error) {
@@ -3342,6 +3592,51 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    // Force checkout: notify the current editor that someone else is taking over
+    async forceCheckout(id: string, newUserId: string) {
+        try {
+            const lock = await this.getLock(id);
+            if (lock && lock.user_id && lock.user_id !== newUserId) {
+                // Update lock with force_checkout info
+                const putObj: any = {
+                    id: id,
+                    user_id: lock.user_id,
+                    tenant_id: window.$tenantName,
+                    uuid: lock.uuid,
+                    force_checkout_by: newUserId,
+                    force_checkout_at: new Date().toISOString()
+                };
+                await storage.putObject('lock', putObj);
+                return { success: true, previousUser: lock.user_id };
+            }
+            return { success: false, previousUser: null };
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // Clear force checkout flags after handover is complete
+    async clearForceCheckout(id: string) {
+        try {
+            const lock = await this.getLock(id);
+            if (lock) {
+                const putObj: any = {
+                    id: id,
+                    user_id: lock.user_id,
+                    tenant_id: window.$tenantName,
+                    uuid: lock.uuid,
+                    force_checkout_by: null,
+                    force_checkout_at: null
+                };
+                await storage.putObject('lock', putObj);
+            }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
     async getTenants() {
         try {
             const uid: string = localStorage.getItem('uid') || '';
@@ -3395,16 +3690,18 @@ class ProcessGPTBackend implements Backend {
             const response = await axios.post('/completion/set-tenant', request);
             if (response.status === 200) {
                 const isOwner = await storage.checkTenantOwner(tenantId);
+                // email/username을 넣지 않으면 upsert 시 새 행은 null로 들어가 유령 레코드가 됨 (setTenant가 원인)
                 const putObj: any = {
                     id: user_id,
                     role: isOwner ? 'superAdmin' : 'user',
-                    tenant_id: tenantId
+                    tenant_id: tenantId,
+                    email: user.email ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('email') : null) ?? undefined,
+                    username: user.name ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('userName') : null) ?? undefined
                 }
                 if (isOwner) {
                     putObj.is_admin = true;
                 }
                 await storage.putObject('users', putObj);
-                await storage.refreshSession();
                 return await storage.isConnection();
             } else {
                 return false;
@@ -3805,6 +4102,66 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * Google Drive 폴더(tenant 설정에 저장된 folder_id)의 파일들을 문서 처리(인덱싱)합니다.
+     * - 기존 `processFile()`과 분리된 신규 호출로, 기존 로직에 영향이 없습니다.
+     * - 백엔드가 폴더 전체 처리를 지원하는 경우(file_path 없이 storage_type="drive") 이를 사용합니다.
+     */
+    async processDriveFolder(options?: { drive_folder_id?: string; [key: string]: any }) {
+        try {
+            const response = await axios.post('/memento/process', {
+                storage_type: 'drive',
+                tenant_id: window.$tenantName,
+                options: options || {}
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * Google Drive 폴더 문서 처리(인덱싱) 작업 상태 조회.
+     * 백엔드 구현/배포 환경에 따라 경로가 다를 수 있어, 우선순위대로 시도합니다.
+     */
+    async getDriveFolderProcessStatus(params?: { tenant_id?: string; job_id?: string }) {
+        const tenantId = params?.tenant_id || window.$tenantName;
+        const jobId = params?.job_id;
+
+        const tryGet = async (url: string) => {
+            return await axios.get(url, {
+                params: {
+                    tenant_id: tenantId,
+                    ...(jobId ? { job_id: jobId } : {})
+                },
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        };
+
+        try {
+            // 1) 문서/계획에서 기대하는 형태(기본 prefix 포함)
+            const res = await tryGet('/memento/process/drive/status');
+            return res.data;
+        } catch (e1) {
+            try {
+                // 2) prefix 없는 형태
+                const res = await tryGet('/process/drive/status');
+                return res.data;
+            } catch (e2) {
+                // 3) 일부 구현에서 사용할 수 있는 경로
+                const res = await tryGet('/memento/process/status');
+                return res.data;
+            }
+        }
+    }
+
     async getAttachments(chatRoomId: string, callback: (attachment: any) => void) {
         const channelName = `chat_attachments_${chatRoomId}_${Date.now()}`;
         const subscription = await storage.watch('chat_attachments', channelName, (payload) => {
@@ -3868,7 +4225,23 @@ class ProcessGPTBackend implements Backend {
 
     async putUserPermission(permission: any) {
         try {
-            await storage.putObject('user_permissions', permission);
+            // ID 생성: target_type에 따라 다른 조합 사용
+            let idSuffix = '';
+            if (permission.target_type === 'user') {
+                idSuffix = permission.user_id;
+            } else if (permission.target_type === 'organization') {
+                idSuffix = permission.organization_id;
+            } else if (permission.target_type === 'org_group') {
+                idSuffix = permission.org_group_id;
+            }
+
+            const permissionData = {
+                ...permission,
+                id: `${permission.proc_def_id}_${idSuffix}`,
+                tenant_id: window.$tenantName
+            };
+
+            await storage.putObject('user_permissions', permissionData);
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3886,10 +4259,11 @@ class ProcessGPTBackend implements Backend {
 
     /**
      * 사용자별 프로세스 권한 체크
-     * @param options 
+     * @param options
      *  proc_def_id: 프로세스 정의 ID
      *  user_id: 사용자 ID
-     * @returns 
+     *  user_organizations: 사용자 소속 조직 ID 배열 (선택)
+     * @returns
      */
     async getUserPermissions(options: any) {
         try {
@@ -3899,17 +4273,185 @@ class ProcessGPTBackend implements Backend {
                     p_user_id: options.user_id,
                     p_proc_def_id: options.proc_def_id
                 }
+                // 조직 정보가 있으면 추가
+                if (options.user_organizations) {
+                    filter.p_user_organizations = options.user_organizations;
+                }
             } else if (options.proc_def_id && !options.user_id) {
                 filter = {
                     p_proc_def_id: options.proc_def_id
                 }
             }
-            const result = await storage.callProcedure('check_process_permission', filter);
-            if (result && result.length > 0) {
-                return result;
-            } else {
-                return null;
+
+            // v2 함수 우선 시도, 없으면 기존 함수 사용
+            try {
+                const result = await storage.callProcedure('check_process_permission_v2', filter);
+                if (result && result.length > 0) {
+                    return result;
+                }
+            } catch (e) {
+                // v2 함수가 없으면 기존 함수 사용
+                const result = await storage.callProcedure('check_process_permission', filter);
+                if (result && result.length > 0) {
+                    return result;
+                }
             }
+            return null;
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 조직 그룹 목록 조회
+     * @returns org_chart_groups 목록
+     */
+    async getOrgChartGroupList() {
+        try {
+            const filter = {
+                match: { tenant_id: window.$tenantName },
+                orderBy: 'name',
+                sort: 'asc'
+            };
+            const result = await storage.list('org_chart_groups', filter);
+            return result || [];
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 프로세스에 대한 병합된 권한 조회 (사용자의 모든 권한 OR 병합)
+     * @param options proc_def_id, user_id, user_organizations
+     * @returns { has_readable, has_executable, has_writable }
+     */
+    async getMergedPermission(options: any) {
+        try {
+            const filter = {
+                p_proc_def_id: options.proc_def_id,
+                p_user_id: options.user_id,
+                p_user_organizations: options.user_organizations || []
+            };
+            const result = await storage.callProcedure('get_merged_permission', filter);
+            if (result && result.length > 0) {
+                return result[0];
+            }
+            return { has_readable: false, has_executable: false, has_writable: false };
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    /**
+     * 현재 사용자의 특정 프로세스에 대한 권한 체크
+     * 직접 쿼리로 사용자, 조직, 조직그룹 권한을 모두 확인하여 병합
+     * @param procDefId 프로세스 정의 ID
+     * @returns { readable, executable, writable, isPublic }
+     */
+    async checkProcessPermission(procDefId: string): Promise<{readable: boolean, executable: boolean, writable: boolean, isPublic: boolean}> {
+        try {
+            const uid = localStorage.getItem('uid');
+            const role = localStorage.getItem('role');
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+            // superAdmin 또는 admin은 모든 권한 있음
+            if (role === 'superAdmin' || isAdmin) {
+                return { readable: true, executable: true, writable: true, isPublic: false };
+            }
+
+            if (!uid) {
+                return { readable: false, executable: false, writable: false, isPublic: false };
+            }
+
+            // 해당 프로세스에 정의된 모든 권한 조회
+            const allPermissions = await storage.list('user_permissions', {
+                match: { proc_def_id: procDefId, tenant_id: window.$tenantName }
+            });
+
+            // 권한이 정의되지 않은 프로세스는 공개 (모든 권한 있음)
+            if (!allPermissions || allPermissions.length === 0) {
+                return { readable: true, executable: true, writable: true, isPublic: true };
+            }
+
+            // 사용자의 조직 목록 가져오기
+            const { getCurrentUserOrganizations } = await import('@/utils/organizationUtils');
+            const userOrganizations = await getCurrentUserOrganizations();
+
+            // 사용자가 속한 조직 그룹 가져오기
+            let userOrgGroupIds: string[] = [];
+            if (userOrganizations.length > 0) {
+                try {
+                    const orgGroups = await this.getOrgChartGroupList();
+                    for (const group of orgGroups) {
+                        const groupTeams = await storage.list('org_chart_group_teams', { match: { group_id: group.id } });
+                        const groupTeamIds = groupTeams.map((t: any) => t.team_id);
+                        const hasUserOrg = userOrganizations.some(orgId => groupTeamIds.includes(orgId));
+                        if (hasUserOrg) {
+                            userOrgGroupIds.push(group.id);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[checkProcessPermission] 조직 그룹 조회 실패:', e);
+                }
+            }
+
+            // 사용자에게 적용되는 권한 필터링
+            const applicablePermissions = allPermissions.filter((p: any) => {
+                // 직접 사용자 권한
+                if (p.target_type === 'user' && p.user_id === uid) {
+                    return true;
+                }
+                // legacy 권한 (target_type 없이 user_id만 있는 경우)
+                if (!p.target_type && p.user_id === uid) {
+                    return true;
+                }
+                // 조직 권한
+                if (p.target_type === 'organization' && userOrganizations.includes(p.organization_id)) {
+                    return true;
+                }
+                // 조직 그룹 권한
+                if (p.target_type === 'org_group' && userOrgGroupIds.includes(p.org_group_id)) {
+                    return true;
+                }
+                return false;
+            });
+
+            // 적용 가능한 권한 병합 (OR 연산)
+            let readable = false;
+            let executable = false;
+            let writable = false;
+
+            for (const perm of applicablePermissions) {
+                if (perm.readable) readable = true;
+                if (perm.executable) executable = true;
+                if (perm.writable) writable = true;
+            }
+
+            return { readable, executable, writable, isPublic: false };
+        } catch (error) {
+            console.error('[checkProcessPermission] 권한 체크 실패:', error);
+            return { readable: false, executable: false, writable: false, isPublic: false };
+        }
+    }
+
+    /**
+     * 프로세스별 권한 목록 조회 (설정된 모든 권한)
+     * @param procDefId 프로세스 정의 ID
+     * @returns 권한 목록
+     */
+    async getPermissionsByProcDef(procDefId: string) {
+        try {
+            const filter = {
+                match: {
+                    proc_def_id: procDefId,
+                    tenant_id: window.$tenantName
+                }
+            };
+            const result = await storage.list('user_permissions', filter);
+            return result || [];
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -3926,6 +4468,96 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             console.log(error)
+        }
+    }
+
+    /**
+     * 현재 사용자가 접근 가능한 모든 proc_def_id 목록 조회
+     * 사용자, 조직, 조직그룹 기반 권한 모두 체크
+     * @param permissionType - 'readable' | 'executable' | 'writable'
+     * @returns proc_def_id 배열
+     */
+    async getAccessibleProcDefIds(permissionType: 'readable' | 'executable' | 'writable' = 'readable'): Promise<string[]> {
+        const uid = localStorage.getItem('uid');
+        if (!uid) {
+            return [];
+        }
+
+        try {
+            // 1. 사용자의 조직 목록 가져오기
+            const { getCurrentUserOrganizations } = await import('@/utils/organizationUtils');
+            const userOrganizations = await getCurrentUserOrganizations();
+
+            // 2. 사용자가 속한 조직 그룹 가져오기
+            let userOrgGroupIds: string[] = [];
+            if (userOrganizations.length > 0) {
+                try {
+                    const orgGroups = await this.getOrgChartGroupList();
+                    for (const group of orgGroups) {
+                        const groupTeams = await storage.list('org_chart_group_teams', { match: { group_id: group.id } });
+                        const groupTeamIds = groupTeams.map((t: any) => t.team_id);
+                        const hasUserOrg = userOrganizations.some(orgId => groupTeamIds.includes(orgId));
+                        if (hasUserOrg) {
+                            userOrgGroupIds.push(group.id);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[getAccessibleProcDefIds] 조직 그룹 조회 실패:', e);
+                }
+            }
+
+            // 3. 모든 유형의 권한 조회
+            const allPermissions: any[] = [];
+
+            // 사용자 직접 권한
+            const userPermissions = await storage.list('user_permissions', {
+                match: { user_id: uid, tenant_id: window.$tenantName }
+            });
+            if (userPermissions && userPermissions.length > 0) {
+                const filteredUserPerms = userPermissions.filter(
+                    (p: any) => !p.target_type || p.target_type === 'user'
+                );
+                allPermissions.push(...filteredUserPerms);
+            }
+
+            // 조직 권한
+            for (const orgId of userOrganizations) {
+                const orgPermissions = await storage.list('user_permissions', {
+                    match: { organization_id: orgId, target_type: 'organization', tenant_id: window.$tenantName }
+                });
+                if (orgPermissions && orgPermissions.length > 0) {
+                    allPermissions.push(...orgPermissions);
+                }
+            }
+
+            // 조직 그룹 권한
+            for (const groupId of userOrgGroupIds) {
+                const groupPermissions = await storage.list('user_permissions', {
+                    match: { org_group_id: groupId, target_type: 'org_group', tenant_id: window.$tenantName }
+                });
+                if (groupPermissions && groupPermissions.length > 0) {
+                    allPermissions.push(...groupPermissions);
+                }
+            }
+
+            // 4. 지정된 권한 타입이 있는 것만 필터링
+            const filteredPermissions = allPermissions.filter(p => p[permissionType] === true);
+
+            // 5. proc_def_id 추출
+            const accessibleIds = new Set<string>();
+            for (const permission of filteredPermissions) {
+                if (permission.proc_def_id) {
+                    accessibleIds.add(permission.proc_def_id);
+                }
+                if (permission.proc_def_ids) {
+                    this.extractProcDefIds(permission.proc_def_ids, accessibleIds);
+                }
+            }
+
+            return Array.from(accessibleIds);
+        } catch (error) {
+            console.error('[getAccessibleProcDefIds] 오류:', error);
+            return [];
         }
     }
 
@@ -4008,7 +4640,8 @@ class ProcessGPTBackend implements Backend {
     async listMarketplaceDefinition(tagOrKeyword?: string, isSearch: boolean = false, limit?: number, offset: number = 0) {
         try {
             const selectColumns = 'uuid, id, name, description, image, tags, author_name, author_uid, import_count, category';
-            
+
+
             // 검색 기능이 활성화된 경우 - DB 레벨에서 검색
             if (isSearch && tagOrKeyword && tagOrKeyword.trim() !== '') {
                 const keyword = tagOrKeyword.trim();
@@ -4261,14 +4894,15 @@ class ProcessGPTBackend implements Backend {
 
     async duplicateLocalProcess(sourceId: string, newName: string, bpmn: string, definition?: any): Promise<{ success: boolean; newId: string }> {
         try {
-            // Generate new ID from name
-            let newId = newName.replace(/[/.]/g, '_').replace(/\s+/g, '_');
+            // Generate new ID from source ID with _copy suffix
+            let newId = `${sourceId}_copy`;
+            let counter = 1;
 
-            // Check if ID already exists
-            const existing = await storage.getObject('proc_def', { match: { id: newId } });
-            if (existing) {
-                // Append timestamp to make unique
-                newId = `${newId}_${Date.now()}`;
+            // Check if ID already exists and find unique ID
+            let existing = await storage.getObject('proc_def', { match: { id: newId } });
+            while (existing) {
+                newId = `${sourceId}_copy${counter++}`;
+                existing = await storage.getObject('proc_def', { match: { id: newId } });
             }
 
             // Create new process definition
@@ -4282,7 +4916,7 @@ class ProcessGPTBackend implements Backend {
                 isdeleted: false
             };
 
-            await storage.putObject('proc_def', newProcDef);
+            await storage.putObject('proc_def', newProcDef, { onConflict: 'id,tenant_id' });
 
             return {
                 success: true,
@@ -4838,7 +5472,7 @@ class ProcessGPTBackend implements Backend {
             return await storage._watch({
                 channel: 'credit_usage',
                 table: 'credit_usage',
-                filter: `tenant_id=eq.(${window.$tenantName}))`
+                filter: `tenant_id=eq.(${window.$tenantName})`
             }, (payload) => {
                 callback(payload);
             });
@@ -5668,6 +6302,8 @@ class ProcessGPTBackend implements Backend {
             workItem.version_tag = 'minor';
             workItem.status = 'SUBMITTED';
             await storage.putObject('todolist', workItem);
+
+            await storage.putObject('proc_def', process, { onConflict: 'id,tenant_id' });
         } catch (error) {
             throw new Error(error.message);
         }
@@ -5890,6 +6526,24 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * 에이전트 초기 지식 셋업 로그 조회 (agent_knowledge_setup_log).
+     * @returns 해당 agent_id의 로그 행 1개 또는 null
+     */
+    async getAgentKnowledgeSetupLog(agentId: string): Promise<any | null> {
+        try {
+            const list = await storage.list('agent_knowledge_setup_log', {
+                match: { agent_id: agentId }
+            });
+            if (list && list.length > 0) {
+                return list[0];
+            }
+            return null;
+        } catch (error) {
+            return null;
+        }
+    }
+
     async getTenantInfo(id: string) {
         try {
             const response = await storage.getObject('tenants', {
@@ -6023,6 +6677,20 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             console.error('테넌트 스킬 목록 조회 실패:', error);
+            return [];
+        }
+    }
+
+    async getTenantBuiltinSkills() {
+        try {
+            const response = await axios.get('/claude-skills/skills/list-builtin');
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                return [];
+            }
+        } catch (error) {
+            console.error('기본 내장 스킬 목록 조회 실패:', error);
             return [];
         }
     }
@@ -6172,7 +6840,7 @@ class ProcessGPTBackend implements Backend {
         });
     }
 
-    async getPropertySchemas(taskType?: string) {
+    async getPropertySchemas(taskType?: string, appliesTo?: string) {
         const storage = StorageBaseFactory.getStorage();
         const queryOptions: any = {
             match: { tenant_id: window.$tenantName },
@@ -6181,8 +6849,12 @@ class ProcessGPTBackend implements Backend {
         if (taskType) {
             queryOptions.match.task_type = taskType;
         }
-        const result = await storage.list('task_property_schema', queryOptions);
-        return result || [];
+        let result = await storage.list('task_property_schema', queryOptions);
+        result = result || [];
+        if (appliesTo && appliesTo !== 'all') {
+            result = result.filter((s: any) => s.applies_to === appliesTo || s.applies_to === 'both');
+        }
+        return result;
     }
 
     async savePropertySchema(schema: any) {
@@ -6263,7 +6935,7 @@ class ProcessGPTBackend implements Backend {
         }
         return data?.[0] || { id, is_enabled: isEnabled };
     }
-    
+
     async getSkillHistory(agentId: string, skillName?: string) {
         try {
             const options: any = {
@@ -6287,6 +6959,80 @@ class ProcessGPTBackend implements Backend {
             return [];
         }
     }
+
+    // ============================================
+    // Task Execution Properties API (분석용)
+    // ============================================
+
+
+    /**
+     * Task 완료 시 상태 업데이트
+     */
+    async updateTaskExecutionCompletion(params: {
+        procInstId: string;
+        activityId: string;
+        status: 'COMPLETED' | 'CANCELLED' | 'FAILED';
+    }): Promise<any> {
+        const storage = StorageBaseFactory.getStorage();
+
+        // 기존 STARTED 상태 레코드 찾기
+        const existingRecord = await storage.getObject('task_execution_properties', {
+            match: {
+                proc_inst_id: params.procInstId,
+                activity_id: params.activityId,
+                execution_status: 'STARTED',
+                tenant_id: window.$tenantName
+            }
+        });
+
+        if (existingRecord && existingRecord.id) {
+            const completedAt = new Date().toISOString();
+            const startedAt = new Date(existingRecord.started_at);
+            const durationMs = new Date(completedAt).getTime() - startedAt.getTime();
+            const durationSeconds = Math.floor(durationMs / 1000);
+
+            await storage.putObject('task_execution_properties', {
+                id: existingRecord.id,
+                execution_status: params.status,
+                completed_at: completedAt,
+                actual_duration: `${durationSeconds} seconds`
+            }, { onConflict: 'id' });
+
+            return { ...existingRecord, execution_status: params.status, completed_at: completedAt };
+        }
+        return null;
+    }
+
+    /**
+     * Task 실행 속성 목록 조회 (분석용)
+     */
+    async getTaskExecutionProperties(options?: {
+        procDefId?: string;
+        systemName?: string;
+        agentMode?: string;
+        dateFrom?: string;
+        dateTo?: string;
+        limit?: number;
+    }): Promise<any[]> {
+        const storage = StorageBaseFactory.getStorage();
+        const queryOptions: any = {
+            match: { tenant_id: window.$tenantName },
+            orderBy: 'started_at',
+            sort: 'desc'
+        };
+
+        if (options?.procDefId) queryOptions.match.proc_def_id = options.procDefId;
+        if (options?.systemName) queryOptions.match.system_name = options.systemName;
+        if (options?.agentMode) queryOptions.match.agent_mode = options.agentMode;
+        if (options?.limit) queryOptions.size = options.limit;
+
+        const result = await storage.list('task_execution_properties', queryOptions);
+        return result || [];
+    }
+
+    // ============================================
+    // FTE Heatmap API
+    // ============================================
 
     async getDmnHistory(agentId: string, ruleId?: string) {
         try {
@@ -6494,71 +7240,6 @@ class ProcessGPTBackend implements Backend {
         return data;
     }
 
-    /**
-     * Task 완료 시 상태 업데이트
-     */
-    async updateTaskExecutionCompletion(params: {
-        procInstId: string;
-        activityId: string;
-        status: 'COMPLETED' | 'CANCELLED' | 'FAILED';
-    }): Promise<any> {
-        const storage = StorageBaseFactory.getStorage();
-
-        // 기존 STARTED 상태 레코드 찾기
-        const existingRecord = await storage.getObject('task_execution_properties', {
-            match: {
-                proc_inst_id: params.procInstId,
-                activity_id: params.activityId,
-                execution_status: 'STARTED',
-                tenant_id: window.$tenantName
-            }
-        });
-
-        if (existingRecord && existingRecord.id) {
-            const completedAt = new Date().toISOString();
-            const startedAt = new Date(existingRecord.started_at);
-            const durationMs = new Date(completedAt).getTime() - startedAt.getTime();
-            const durationSeconds = Math.floor(durationMs / 1000);
-
-            await storage.putObject('task_execution_properties', {
-                id: existingRecord.id,
-                execution_status: params.status,
-                completed_at: completedAt,
-                actual_duration: `${durationSeconds} seconds`
-            }, { onConflict: 'id' });
-
-            return { ...existingRecord, execution_status: params.status, completed_at: completedAt };
-        }
-        return null;
-    }
-
-    /**
-     * Task 실행 속성 목록 조회 (분석용)
-     */
-    async getTaskExecutionProperties(options?: {
-        procDefId?: string;
-        systemName?: string;
-        agentMode?: string;
-        dateFrom?: string;
-        dateTo?: string;
-        limit?: number;
-    }): Promise<any[]> {
-        const storage = StorageBaseFactory.getStorage();
-        const queryOptions: any = {
-            match: { tenant_id: window.$tenantName },
-            orderBy: 'started_at',
-            sort: 'desc'
-        };
-
-        if (options?.procDefId) queryOptions.match.proc_def_id = options.procDefId;
-        if (options?.systemName) queryOptions.match.system_name = options.systemName;
-        if (options?.agentMode) queryOptions.match.agent_mode = options.agentMode;
-        if (options?.limit) queryOptions.size = options.limit;
-
-        const result = await storage.list('task_execution_properties', queryOptions);
-        return result || [];
-    }
-
     // ============================================
     // FTE Heatmap API
     // ============================================
@@ -6754,6 +7435,1289 @@ class ProcessGPTBackend implements Backend {
         } catch (e) {
             console.error('[ProcessGPTBackend] getFteSnapshots error:', e);
             return [];
+        }
+    }
+
+    // =====================================================
+    // 노드 단위 댓글 API
+    // =====================================================
+
+    /**
+     * 프로세스 정의의 특정 요소에 대한 댓글 목록 조회
+     */
+    async getElementComments(procDefId: string, elementId?: string): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            let query = supabase
+                .from('proc_def_comments')
+                .select('*')
+                .eq('proc_def_id', procDefId)
+                .eq('tenant_id', window.$tenantName)
+                .order('created_at', { ascending: true });
+
+            if (elementId) {
+                query = query.eq('element_id', elementId);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getElementComments error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 프로세스 정의의 모든 요소에 대한 댓글 개수 조회
+     */
+    async getElementCommentCounts(procDefId: string): Promise<Record<string, { total: number; unresolved: number }>> {
+        const supabase = window.$supabase;
+        if (!supabase) return {};
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_element_comment_counts')
+                .select('*')
+                .eq('proc_def_id', procDefId);
+
+            if (error) throw error;
+
+            const result: Record<string, { total: number; unresolved: number }> = {};
+            (data || []).forEach((item: any) => {
+                result[item.element_id] = {
+                    total: item.total_count || 0,
+                    unresolved: item.unresolved_count || 0
+                };
+            });
+            return result;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getElementCommentCounts error:', e);
+            return {};
+        }
+    }
+
+    /**
+     * 댓글 추가
+     */
+    async addElementComment(comment: {
+        procDefId: string;
+        elementId: string;
+        elementType?: string;
+        elementName?: string;
+        content: string;
+        parentCommentId?: string;
+    }): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        const user = window.$user || {};
+        const data = {
+            proc_def_id: comment.procDefId,
+            element_id: comment.elementId,
+            element_type: comment.elementType || null,
+            element_name: comment.elementName || null,
+            author_id: user.id || 'anonymous',
+            author_name: user.name || user.email || 'Anonymous',
+            content: comment.content,
+            parent_comment_id: comment.parentCommentId || null,
+            tenant_id: window.$tenantName
+        };
+
+        try {
+            const { data: result, error } = await supabase
+                .from('proc_def_comments')
+                .insert(data)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return result;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] addElementComment error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * 댓글 수정
+     */
+    async updateElementComment(commentId: string, content: string): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_comments')
+                .update({ content })
+                .eq('id', commentId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] updateElementComment error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * 댓글 삭제
+     */
+    async deleteElementComment(commentId: string): Promise<void> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase
+                .from('proc_def_comments')
+                .delete()
+                .eq('id', commentId);
+
+            if (error) throw error;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] deleteElementComment error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * 댓글 해결 처리
+     */
+    async resolveElementComment(commentId: string, resolved: boolean = true, resolveActionText?: string): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        const user = window.$user || {};
+        const updateData: any = {
+            is_resolved: resolved
+        };
+
+        if (resolved) {
+            updateData.resolved_by = user.name || user.email || 'Unknown';
+            updateData.resolved_at = new Date().toISOString();
+            if (resolveActionText) updateData.resolve_action_text = resolveActionText;
+        } else {
+            updateData.resolved_by = null;
+            updateData.resolved_at = null;
+            updateData.resolve_action_text = null;
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_comments')
+                .update(updateData)
+                .eq('id', commentId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] resolveElementComment error:', e);
+            throw e;
+        }
+    }
+
+    // =====================================================
+    // 프로세스 승인 워크플로우 API
+    // =====================================================
+
+    /**
+     * 프로세스 정의의 최신 승인 상태 조회
+     */
+    async getApprovalState(procDefId: string): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return null;
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .select('*')
+                .eq('proc_def_id', procDefId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getApprovalState error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * 특정 리뷰 건 조회 (review_id로)
+     */
+    async getApprovalStateById(reviewId: string): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return null;
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .select('*')
+                .eq('id', reviewId)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getApprovalStateById error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * 검토 요청 (draft → in_review) - 새 리뷰 건 생성 + HQ/Field 병렬 승인 시작
+     * 기존 진행 중인 리뷰가 있으면 자동 취소 후 새로 생성
+     */
+    async submitForReview(procDefId: string, comment?: string, version?: string, reviewers?: {
+        hq?: { id: string; name: string };
+        field?: { id: string; name: string };
+    }): Promise<any> {
+        // 기존 활성 리뷰 모두 일괄 취소
+        const supabase = window.$supabase;
+        if (supabase) {
+            try {
+                await supabase
+                    .from('proc_def_approval_state')
+                    .update({
+                        state: 'cancelled',
+                        reject_comment: 'Cancelled: new review submitted',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('proc_def_id', procDefId)
+                    .eq('tenant_id', window.$tenantName)
+                    .not('state', 'in', '("draft","published","rejected","cancelled","archived")');
+            } catch (e) {
+                console.warn('[ProcessGPTBackend] Failed to cancel existing reviews:', e);
+            }
+        }
+        return this._changeApprovalState(procDefId, 'submit', 'in_review', comment, { version, reviewers });
+    }
+
+    /**
+     * 본사(HQ) 승인 - 병렬 승인 중 하나
+     * HQ + Field 모두 승인 시 자동으로 public_feedback 진입
+     */
+    async approveHQ(reviewId: string, comment?: string): Promise<any> {
+        return this._changeApprovalState(reviewId, 'approve_hq', 'in_review', comment);
+    }
+
+    /**
+     * 현업(Field) 승인 - 병렬 승인 중 하나
+     * HQ + Field 모두 승인 시 자동으로 public_feedback 진입
+     */
+    async approveField(reviewId: string, comment?: string): Promise<any> {
+        return this._changeApprovalState(reviewId, 'approve_field', 'in_review', comment);
+    }
+
+    /**
+     * 본사(HQ) 반려 - 병렬 검토 중 반려
+     */
+    async rejectHQ(reviewId: string, comment: string): Promise<any> {
+        return this._changeApprovalState(reviewId, 'reject_hq', 'rejected', comment);
+    }
+
+    /**
+     * 현업(Field) 반려 - 병렬 검토 중 반려
+     */
+    async rejectField(reviewId: string, comment: string): Promise<any> {
+        return this._changeApprovalState(reviewId, 'reject_field', 'rejected', comment);
+    }
+
+    /**
+     * 최종 배포 (final_edit → published)
+     * 미해결 피드백이 0건이어야만 실행 가능
+     */
+    async publishDefinition(reviewId: string, comment?: string): Promise<any> {
+        // 미해결 피드백 검증
+        const supabase = window.$supabase;
+        if (supabase) {
+            const state = await this.getApprovalStateById(reviewId);
+            if (state) {
+                const { data: unresolvedComments } = await supabase
+                    .from('proc_def_comments')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('proc_def_id', state.proc_def_id)
+                    .eq('tenant_id', window.$tenantName)
+                    .eq('is_resolved', false)
+                    .is('parent_comment_id', null);
+                if (unresolvedComments && (unresolvedComments as any).length > 0) {
+                    throw new Error('미해결 피드백이 존재합니다. 모든 피드백을 해결한 후 배포할 수 있습니다.');
+                }
+            }
+        }
+        return this._changeApprovalState(reviewId, 'publish', 'published', comment);
+    }
+
+    /**
+     * 공람 조기 종료 (public_feedback → final_edit)
+     */
+    async endPublicFeedback(reviewId: string, comment?: string): Promise<any> {
+        return this._changeApprovalState(reviewId, 'end_public_feedback', 'final_edit', comment);
+    }
+
+    /**
+     * 반려 (어느 상태에서든 → rejected)
+     */
+    async rejectDefinition(procDefIdOrReviewId: string, comment: string): Promise<any> {
+        return this._changeApprovalState(procDefIdOrReviewId, 'reject', 'rejected', comment);
+    }
+
+    /**
+     * 재작성 (rejected → draft)
+     */
+    async reopenDefinition(procDefIdOrReviewId: string, comment?: string): Promise<any> {
+        return this._changeApprovalState(procDefIdOrReviewId, 'reopen', 'draft', comment);
+    }
+
+    /**
+     * 승인 취소 (진행 중인 리뷰 → cancelled)
+     */
+    async cancelApproval(procDefIdOrReviewId: string, comment?: string): Promise<any> {
+        return this._changeApprovalState(procDefIdOrReviewId, 'cancel', 'cancelled', comment);
+    }
+
+    /**
+     * 현장 개선 요청 (Published 모델에 대한 수정 요청)
+     */
+    async requestReopen(procDefId: string, reason: string): Promise<any> {
+        return this._changeApprovalState(procDefId, 'request_reopen', 'reopen_requested', reason);
+    }
+
+    /**
+     * 개선 요청 승인 (Master) → 자동으로 v(N+1).0 Draft 생성
+     */
+    async approveReopen(reviewId: string, comment?: string): Promise<any> {
+        const result = await this._changeApprovalState(reviewId, 'approve_reopen', 'draft', comment);
+
+        // 새 Draft 리뷰 자동 생성 (v(N+1).0)
+        if (result) {
+            const supabase = window.$supabase;
+            if (supabase) {
+                const currentMajor = result.major_version || 1;
+                const newVersion = `v${currentMajor + 1}.0`;
+
+                const { data: newDraft } = await supabase
+                    .from('proc_def_approval_state')
+                    .insert({
+                        proc_def_id: result.proc_def_id,
+                        state: 'draft',
+                        major_version: currentMajor + 1,
+                        minor_version: 0,
+                        version_label: newVersion,
+                        root_cause_review_id: result.id,
+                        submitted_by: result.reopen_requested_by,
+                        tenant_id: result.tenant_id,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select()
+                    .single();
+
+                return newDraft || result;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 개선 요청 반려 (Master) → 현행 유지 (published 상태로 복원)
+     */
+    async rejectReopen(reviewId: string, comment?: string): Promise<any> {
+        return this._changeApprovalState(reviewId, 'reject_reopen', 'published', comment);
+    }
+
+    /**
+     * 승인 Reset: 모델 수정 발생 시 기존 병렬 승인 내역 초기화
+     */
+    async resetApprovals(reviewId: string): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return null;
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .update({
+                    hq_status: 'pending',
+                    hq_reviewed_at: null,
+                    hq_review_comment: null,
+                    field_status: 'pending',
+                    field_reviewed_at: null,
+                    field_review_comment: null,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', reviewId)
+                .eq('state', 'in_review')
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // 이력 기록
+            if (data) {
+                await supabase.from('proc_def_approval_history').insert({
+                    proc_def_id: data.proc_def_id,
+                    review_id: data.id,
+                    action: 'reset_approvals',
+                    from_state: 'in_review',
+                    to_state: 'in_review',
+                    actor_id: 'system',
+                    actor_name: 'System',
+                    comment: '모델 수정으로 인한 승인 내역 초기화',
+                    tenant_id: window.$tenantName
+                });
+            }
+
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] resetApprovals error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Self-Approval 체크: 기안자와 현재 사용자가 동일한지 확인
+     */
+    async checkSelfApproval(reviewId: string): Promise<boolean> {
+        const supabase = window.$supabase;
+        if (!supabase) return false;
+
+        try {
+            const state = await this.getApprovalStateById(reviewId);
+            if (!state) return false;
+
+            const { data: authData } = await supabase.auth.getUser();
+            if (!authData?.user) return false;
+
+            const { data: userData } = await supabase
+                .from('users')
+                .select('username')
+                .eq('id', authData.user.id)
+                .limit(1)
+                .maybeSingle();
+
+            const currentUserName = userData?.username || authData.user.email || '';
+            return state.submitted_by === currentUserName;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * 3-Way Inbox 데이터 조회
+     * @param inbox - 'approval' | 'reopen' | 'submissions'
+     */
+    async getReviewBoardByInbox(inbox: 'approval' | 'reopen' | 'submissions'): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+        const tenantId = window.$tenantName;
+
+        try {
+            let userId = '';
+            let userName = '';
+            const { data: authData } = await supabase.auth.getUser();
+            if (authData?.user) {
+                userId = authData.user.id;
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('username')
+                    .eq('id', authData.user.id)
+                    .limit(1)
+                    .maybeSingle();
+                userName = userData?.username || authData.user.email || '';
+            }
+
+            let query = supabase.from('v_review_board').select('*').eq('tenant_id', tenantId);
+
+            switch (inbox) {
+                case 'approval':
+                    // 내가 HQ 또는 Field 검토자로 지정된 건 (pending 상태)
+                    query = query.or(
+                        `and(hq_reviewer_id.eq.${userId},hq_status.eq.pending),and(field_reviewer_id.eq.${userId},field_status.eq.pending),assigned_reviewer_id.eq.${userId}`
+                    );
+                    break;
+                case 'reopen':
+                    // Re-open 요청 건 (Master 전용)
+                    query = query.eq('state', 'reopen_requested');
+                    break;
+                case 'submissions':
+                    // 내가 상신한 건
+                    query = query.eq('submitted_by', userName);
+                    break;
+            }
+
+            const { data, error } = await query.order('updated_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getReviewBoardByInbox error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 스냅샷 저장 (stage 진입 시점의 BPMN 상태)
+     */
+    async saveSnapshot(reviewId: string, procDefId: string, stage: string, bpmnXml: string, bpmnJson?: any): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return null;
+
+        try {
+            const state = await this.getApprovalStateById(reviewId);
+            const { data, error } = await supabase
+                .from('proc_def_snapshots')
+                .insert({
+                    review_id: reviewId,
+                    proc_def_id: procDefId,
+                    stage,
+                    major_version: state?.major_version,
+                    minor_version: state?.minor_version,
+                    bpmn_xml: bpmnXml,
+                    bpmn_json: bpmnJson || null,
+                    tenant_id: window.$tenantName
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] saveSnapshot error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * 스냅샷 조회 (비교용)
+     */
+    async getSnapshots(reviewId: string): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_snapshots')
+                .select('*')
+                .eq('review_id', reviewId)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getSnapshots error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 진행 중인(활성) 승인 건 조회 (draft/confirmed/rejected/cancelled 제외)
+     */
+    async getActiveApprovalState(procDefId: string): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return null;
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .select('*')
+                .eq('proc_def_id', procDefId)
+                .eq('tenant_id', window.$tenantName)
+                .not('state', 'in', '("draft","published","rejected","cancelled","archived")')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getActiveApprovalState error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * 승인 상태 변경 내부 메서드
+     * - submit: 항상 새 리뷰 건 INSERT (per-submission)
+     * - approve_hq/approve_field: 병렬 승인 처리, 양측 완료 시 자동 공람 진입
+     * - publish: proc_def.bpmn 반영 + 구버전 아카이빙
+     * - request_reopen: Published → reopen_requested
+     * - approve_reopen/reject_reopen: Master 판단
+     * @param procDefIdOrReviewId - submit/request_reopen 시 proc_def_id, 그 외 review_id 또는 proc_def_id
+     */
+    private async _changeApprovalState(
+        procDefIdOrReviewId: string,
+        action: string,
+        toState: string,
+        comment?: string,
+        options?: {
+            version?: string;
+            assignedReviewer?: { id: string; name: string };
+            reviewers?: {
+                hq?: { id: string; name: string };
+                field?: { id: string; name: string };
+            };
+        }
+    ): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        // Supabase auth에서 유저 정보 조회
+        let userId = 'anonymous';
+        let userName = 'Anonymous';
+        try {
+            const { data: authData } = await supabase.auth.getUser();
+            if (authData?.user) {
+                userId = authData.user.id;
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('username, email')
+                    .eq('id', authData.user.id)
+                    .limit(1)
+                    .maybeSingle();
+                userName = userData?.username || authData.user.email || 'Anonymous';
+            }
+        } catch (authErr) {
+            console.warn('Failed to get user info for approval:', authErr);
+        }
+        const now = new Date().toISOString();
+
+        try {
+            let currentState: any = null;
+            let procDefId: string;
+
+            if (action === 'submit' || action === 'request_reopen') {
+                // submit/request_reopen: procDefIdOrReviewId는 proc_def_id
+                procDefId = procDefIdOrReviewId;
+                if (action === 'request_reopen') {
+                    // Published 상태의 최신 리뷰 조회
+                    currentState = await this.getApprovalState(procDefIdOrReviewId);
+                }
+            } else {
+                // 다른 액션: reviewId(UUID) 또는 proc_def_id로 조회
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(procDefIdOrReviewId);
+                if (isUUID) {
+                    currentState = await this.getApprovalStateById(procDefIdOrReviewId);
+                }
+                if (!currentState) {
+                    currentState = await this.getApprovalState(procDefIdOrReviewId);
+                }
+                if (!currentState) {
+                    throw new Error('No active review found for: ' + procDefIdOrReviewId);
+                }
+                procDefId = currentState.proc_def_id;
+            }
+
+            const fromState = currentState?.state || 'draft';
+
+            if (action === 'submit') {
+                // version이 없으면 최신 버전 자동 조회
+                let submitVersion = options?.version || null;
+                if (!submitVersion) {
+                    try {
+                        const { data: latestVer } = await supabase
+                            .from('proc_def_version')
+                            .select('version')
+                            .eq('proc_def_id', procDefId)
+                            .eq('tenant_id', window.$tenantName)
+                            .order('timeStamp', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+                        if (latestVer?.version) {
+                            submitVersion = latestVer.version;
+                        }
+                    } catch (e) {
+                        console.warn('[_changeApprovalState] Failed to fetch latest version:', e);
+                    }
+                }
+
+                // 새 리뷰 건 INSERT (병렬 승인 검토자 포함)
+                const stateData: any = {
+                    proc_def_id: procDefId,
+                    state: toState,
+                    version: submitVersion,
+                    submitted_by: userName,
+                    submitted_at: now,
+                    submit_comment: comment || null,
+                    // 병렬 승인 검토자 지정
+                    hq_reviewer_id: options?.reviewers?.hq?.id || null,
+                    hq_reviewer_name: options?.reviewers?.hq?.name || null,
+                    hq_status: 'pending',
+                    field_reviewer_id: options?.reviewers?.field?.id || null,
+                    field_reviewer_name: options?.reviewers?.field?.name || null,
+                    field_status: 'pending',
+                    tenant_id: window.$tenantName,
+                    created_at: now,
+                    updated_at: now
+                };
+
+                const { data, error } = await supabase
+                    .from('proc_def_approval_state')
+                    .insert(stateData)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                currentState = data;
+            } else {
+                // 기존 리뷰 건 UPDATE
+                const updateData: any = {
+                    state: toState,
+                    updated_at: now
+                };
+
+                // 다음 담당자 지정
+                if (options?.assignedReviewer) {
+                    updateData.assigned_reviewer_id = options.assignedReviewer.id;
+                    updateData.assigned_reviewer_name = options.assignedReviewer.name;
+                }
+
+                switch (action) {
+                    // === 병렬 승인 (HQ) ===
+                    case 'approve_hq':
+                        updateData.hq_status = 'approved';
+                        updateData.hq_reviewed_at = now;
+                        updateData.hq_review_comment = comment || null;
+                        // 양측 모두 승인 완료 시 → 자동 공람 진입
+                        if (currentState.field_status === 'approved') {
+                            updateData.state = 'public_feedback';
+                            updateData.public_feedback_started_at = now;
+                            updateData.public_feedback_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                            toState = 'public_feedback';
+                        }
+                        break;
+
+                    // === 병렬 승인 (Field) ===
+                    case 'approve_field':
+                        updateData.field_status = 'approved';
+                        updateData.field_reviewed_at = now;
+                        updateData.field_review_comment = comment || null;
+                        // 양측 모두 승인 완료 시 → 자동 공람 진입
+                        if (currentState.hq_status === 'approved') {
+                            updateData.state = 'public_feedback';
+                            updateData.public_feedback_started_at = now;
+                            updateData.public_feedback_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                            toState = 'public_feedback';
+                        }
+                        break;
+
+                    // === 공람 조기 종료 ===
+                    case 'end_public_feedback':
+                        updateData.public_feedback_auto_transitioned = true;
+                        break;
+
+                    // === 병렬 반려 ===
+                    case 'reject_hq':
+                        updateData.hq_status = 'rejected';
+                        updateData.hq_reviewed_at = now;
+                        updateData.hq_review_comment = comment || null;
+                        updateData.rejected_by_id = userId;
+                        updateData.rejected_by_name = userName;
+                        updateData.rejected_at = now;
+                        updateData.reject_comment = `[HQ] ${comment || ''}`;
+                        break;
+
+                    case 'reject_field':
+                        updateData.field_status = 'rejected';
+                        updateData.field_reviewed_at = now;
+                        updateData.field_review_comment = comment || null;
+                        updateData.rejected_by_id = userId;
+                        updateData.rejected_by_name = userName;
+                        updateData.rejected_at = now;
+                        updateData.reject_comment = `[Field] ${comment || ''}`;
+                        break;
+
+                    // === 최종 배포 ===
+                    case 'publish':
+                        updateData.published_by_id = userId;
+                        updateData.published_by_name = userName;
+                        updateData.published_at = now;
+                        updateData.publish_comment = comment || null;
+                        // 거버넌스 버전 규칙:
+                        // - 최초 배포(major_version=0): v1.0
+                        // - Re-open Draft(major_version이 이미 N+1로 설정됨): 그대로 유지
+                        const currentMajor = currentState.major_version || 0;
+                        if (currentMajor === 0) {
+                            // 최초 배포: v0.x → v1.0
+                            updateData.major_version = 1;
+                            updateData.minor_version = 0;
+                            updateData.version_label = 'v1.0';
+                        } else {
+                            // Re-open 후 배포: major는 draft 생성 시 이미 설정됨, minor=0 확정
+                            updateData.major_version = currentMajor;
+                            updateData.minor_version = 0;
+                            updateData.version_label = `v${currentMajor}.0`;
+                        }
+                        // proc_def.bpmn 반영
+                        try {
+                            let publishVersion = currentState.version;
+
+                            // version이 없으면 최신 버전 자동 조회 (fallback)
+                            if (!publishVersion) {
+                                const { data: latestVer } = await supabase
+                                    .from('proc_def_version')
+                                    .select('version')
+                                    .eq('proc_def_id', procDefId)
+                                    .eq('tenant_id', window.$tenantName)
+                                    .order('timeStamp', { ascending: false })
+                                    .limit(1)
+                                    .maybeSingle();
+                                if (latestVer?.version) {
+                                    publishVersion = latestVer.version;
+                                }
+                            }
+
+                            if (publishVersion) {
+                                const { data: versionData } = await supabase
+                                    .from('proc_def_version')
+                                    .select('*')
+                                    .eq('proc_def_id', procDefId)
+                                    .eq('version', publishVersion)
+                                    .eq('tenant_id', window.$tenantName)
+                                    .limit(1)
+                                    .maybeSingle();
+                                if (versionData?.snapshot) {
+                                    const procDefUpdate: any = { bpmn: versionData.snapshot };
+                                    if (versionData.definition) procDefUpdate.definition = versionData.definition;
+                                    await supabase
+                                        .from('proc_def')
+                                        .update(procDefUpdate)
+                                        .eq('id', procDefId)
+                                        .eq('tenant_id', window.$tenantName);
+
+                                    // 이전 published 태그 해제 (동일 proc_def의 다른 버전들)
+                                    await supabase
+                                        .from('proc_def_version')
+                                        .update({ version_tag: null })
+                                        .eq('proc_def_id', procDefId)
+                                        .eq('tenant_id', window.$tenantName)
+                                        .eq('version_tag', 'published');
+
+                                    // 현재 버전에 published 태그 설정
+                                    await supabase
+                                        .from('proc_def_version')
+                                        .update({ version_tag: 'published' })
+                                        .eq('arcv_id', versionData.arcv_id);
+                                }
+                            } else {
+                                console.warn('[ProcessGPTBackend] publish: No version found for proc_def_id:', procDefId);
+                            }
+                            // 이전 published 건 아카이빙
+                            await supabase
+                                .from('proc_def_approval_state')
+                                .update({ state: 'archived', updated_at: now })
+                                .eq('proc_def_id', procDefId)
+                                .eq('state', 'published')
+                                .eq('tenant_id', window.$tenantName)
+                                .neq('id', currentState.id);
+                        } catch (publishErr) {
+                            console.warn('[ProcessGPTBackend] Failed to update proc_def.bpmn on publish:', publishErr);
+                        }
+                        break;
+
+                    // === Re-open 요청 ===
+                    case 'request_reopen':
+                        updateData.reopen_requested_by = userName;
+                        updateData.reopen_requested_at = now;
+                        updateData.reopen_reason = comment || null;
+                        break;
+
+                    case 'approve_reopen':
+                        updateData.reopen_approved_by = userName;
+                        updateData.reopen_approved_at = now;
+                        break;
+
+                    case 'reject_reopen':
+                        // 현행 유지: published로 복원
+                        updateData.reopen_reason = null;
+                        updateData.reopen_requested_by = null;
+                        updateData.reopen_requested_at = null;
+                        break;
+
+                    // === 기존 액션 하위호환 ===
+                    case 'reject':
+                        updateData.rejected_by_id = userId;
+                        updateData.rejected_by_name = userName;
+                        updateData.rejected_at = now;
+                        updateData.reject_comment = comment || null;
+                        break;
+                    case 'reopen':
+                        break;
+                    case 'cancel':
+                        updateData.reject_comment = comment || 'Cancelled due to new version save';
+                        break;
+                }
+
+                const { data, error } = await supabase
+                    .from('proc_def_approval_state')
+                    .update(updateData)
+                    .eq('id', currentState.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                currentState = data;
+            }
+
+            // 이력 기록 (review_id 연결)
+            await supabase.from('proc_def_approval_history').insert({
+                proc_def_id: procDefId,
+                review_id: currentState.id,
+                action: action,
+                from_state: fromState,
+                to_state: toState,
+                actor_id: userId,
+                actor_name: userName,
+                comment: comment || null,
+                tenant_id: window.$tenantName
+            });
+
+            // 공람 자동 진입 시 스냅샷 저장
+            if (toState === 'public_feedback') {
+                try {
+                    const { data: procDef } = await supabase
+                        .from('proc_def')
+                        .select('bpmn')
+                        .eq('id', procDefId)
+                        .eq('tenant_id', window.$tenantName)
+                        .maybeSingle();
+                    if (procDef?.bpmn) {
+                        await this.saveSnapshot(currentState.id, procDefId, 'public_feedback', procDef.bpmn);
+                    }
+                } catch (snapErr) {
+                    console.warn('[ProcessGPTBackend] Failed to save public_feedback snapshot:', snapErr);
+                }
+            }
+
+            return currentState;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] _changeApprovalState error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * 승인 이력 조회
+     * @param procDefIdOrReviewId - proc_def_id 또는 review_id
+     * @param byReviewId - true이면 review_id로 조회
+     */
+    async getApprovalHistory(procDefIdOrReviewId: string, byReviewId?: boolean): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            let query = supabase
+                .from('proc_def_approval_history')
+                .select('*')
+                .eq('tenant_id', window.$tenantName);
+
+            if (byReviewId) {
+                query = query.eq('review_id', procDefIdOrReviewId);
+            } else {
+                query = query.eq('proc_def_id', procDefIdOrReviewId);
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getApprovalHistory error:', e);
+            return [];
+        }
+    }
+
+    // =====================================================
+    // Review Board & KPI API
+    // =====================================================
+
+    /**
+     * 리뷰 보드 데이터 조회 (v_review_board 뷰) - 리뷰 건별 조회
+     */
+    async getReviewBoardData(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+        const tenantId = window.$tenantName;
+
+        try {
+            // Try view first
+            const { data, error } = await supabase
+                .from('v_review_board')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .order('updated_at', { ascending: false });
+
+            if (!error && data) return data;
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] v_review_board not available, using fallback:', e);
+        }
+
+        // Fallback: direct query (리뷰 건별)
+        try {
+            const { data: states, error: stErr } = await supabase
+                .from('proc_def_approval_state')
+                .select('*')
+                .eq('tenant_id', tenantId)
+                .order('updated_at', { ascending: false });
+            if (stErr || !states) return [];
+
+            const procDefIds = [...new Set(states.map((s: any) => s.proc_def_id))];
+            if (!procDefIds.length) return [];
+
+            const { data: defs } = await supabase
+                .from('proc_def')
+                .select('id, name, owner')
+                .eq('tenant_id', tenantId)
+                .eq('isdeleted', false)
+                .in('id', procDefIds);
+            const defMap: Record<string, any> = {};
+            (defs || []).forEach((d: any) => { defMap[d.id] = d; });
+
+            return states
+                .filter((s: any) => defMap[s.proc_def_id])
+                .map((s: any) => {
+                    const def = defMap[s.proc_def_id];
+                    return {
+                        review_id: s.id,
+                        proc_def_id: s.proc_def_id,
+                        process_name: def.name,
+                        owner: def.owner,
+                        state: s.state,
+                        version: s.version || null,
+                        submitted_by: s.submitted_by,
+                        submitted_at: s.submitted_at,
+                        reviewer_level1_name: s.reviewer_level1_name,
+                        reviewed_at_level1: s.reviewed_at_level1,
+                        confirmed_by_name: s.confirmed_by_name,
+                        confirmed_at: s.confirmed_at,
+                        rejected_by_name: s.rejected_by_name,
+                        rejected_at: s.rejected_at,
+                        reject_comment: s.reject_comment,
+                        comment_count: 0,
+                        tenant_id: s.tenant_id,
+                        updated_at: s.updated_at,
+                    };
+                });
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getReviewBoardData fallback error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 2.3: Cross-version Governance Timeline
+     * 특정 프로세스의 모든 리뷰 사이클과 이력을 시간순으로 조합
+     */
+    async getCrossVersionTimeline(procDefId: string): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+        const tenantId = window.$tenantName;
+
+        try {
+            // 1. 해당 proc_def_id의 모든 approval_state (리뷰 사이클) 조회
+            const { data: cycles, error: cycleErr } = await supabase
+                .from('proc_def_approval_state')
+                .select('*')
+                .eq('proc_def_id', procDefId)
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: true });
+
+            if (cycleErr) throw cycleErr;
+
+            // 2. 해당 proc_def_id의 모든 approval_history 조회
+            const { data: actions, error: actErr } = await supabase
+                .from('proc_def_approval_history')
+                .select('*')
+                .eq('proc_def_id', procDefId)
+                .eq('tenant_id', tenantId)
+                .order('created_at', { ascending: true });
+
+            if (actErr) throw actErr;
+
+            // 3. 두 데이터를 합산해서 시간순 정렬
+            const timeline: any[] = [];
+
+            // 리뷰 사이클 시작점 추가
+            (cycles || []).forEach((c: any) => {
+                timeline.push({
+                    type: 'cycle_start',
+                    cycle_id: c.id,
+                    version: c.version || '',
+                    state: c.state,
+                    created_at: c.created_at,
+                });
+            });
+
+            // 개별 액션 추가
+            (actions || []).forEach((a: any) => {
+                timeline.push({
+                    type: 'action',
+                    cycle_id: a.review_id,
+                    action: a.action,
+                    actor_id: a.actor_id,
+                    actor_name: a.actor_name,
+                    comment: a.comment,
+                    from_state: a.from_state,
+                    to_state: a.to_state,
+                    resolved: a.resolved,
+                    resolve_action_text: a.resolve_action_text,
+                    created_at: a.created_at,
+                });
+            });
+
+            // 최근 날짜순 정렬 (descending)
+            timeline.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+            return timeline;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getCrossVersionTimeline error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * KPI 파이프라인 요약 (v_kpi_pipeline_summary 뷰)
+     */
+    async getKpiPipelineSummary(): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return null;
+
+        try {
+            const { data, error } = await supabase
+                .from('v_kpi_pipeline_summary')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getKpiPipelineSummary error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * KPI 도메인별 진행 현황 (v_kpi_domain_progress 뷰)
+     */
+    async getKpiDomainProgress(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('v_kpi_domain_progress')
+                .select('*')
+                .eq('tenant_id', window.$tenantName);
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getKpiDomainProgress error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * KPI 주간 배포 속도 (v_weekly_deployment_velocity 뷰)
+     */
+    async getKpiWeeklyVelocity(weeks: number = 10): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('v_weekly_deployment_velocity')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .order('week_start', { ascending: false })
+                .limit(weeks);
+
+            if (error) throw error;
+            return (data || []).reverse();
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getKpiWeeklyVelocity error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * KPI 목표 조회 (kpi_targets 테이블)
+     */
+    async getKpiTargets(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('kpi_targets')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .order('period_start', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getKpiTargets error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * KPI 목표 생성/수정 (kpi_targets 테이블 upsert)
+     */
+    async upsertKpiTarget(targetData: any): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const payload = {
+                ...targetData,
+                tenant_id: window.$tenantName,
+                updated_at: new Date().toISOString()
+            };
+            const { data, error } = await supabase
+                .from('kpi_targets')
+                .upsert(payload, { onConflict: 'tenant_id,period_type,period_start' })
+                .select()
+                .maybeSingle();
+
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] upsertKpiTarget error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * 최신 버전 번호 조회
+     */
+    async getLatestVersionNumber(procDefId: string): Promise<string> {
+        const supabase = window.$supabase;
+        if (!supabase) return '1.0';
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_version')
+                .select('version')
+                .eq('proc_def_id', procDefId)
+                .eq('tenant_id', window.$tenantName)
+                .order('version', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (error) throw error;
+            return data?.version || '1.0';
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getLatestVersionNumber error:', e);
+            return '1.0';
         }
     }
 }

@@ -14,7 +14,7 @@
                     density="compact"
                     style="background-color: #808080; color: white;"
                 >{{ $t('FormWorkItem.previousStep') }}</v-btn>
-                <v-btn v-if="!isDryRun" @click="saveTask" 
+                <v-btn v-if="!isDryRun && !gs" @click="saveTask" 
                     density="compact"
                     class="mr-2 default-gray-btn" rounded variant="flat"
                 >{{ $t('FormWorkItem.intermediateSave') }}</v-btn>
@@ -94,7 +94,7 @@
                                     <!-- 직접 입력 탭 -->
                                     <!-- <v-window-item value="direct-input"> -->
                                         <!-- 슬랏으로 버튼 추가 영역  -->
-                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
+                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem || isGeneratingExample"></DynamicForm>
                                         <!-- <div v-if="!isCompleted" class="mb-4">
                                             <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
                                             <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
@@ -129,7 +129,7 @@
                                 density="compact"
                                 style="background-color: #808080; color: white;"
                             >{{ $t('FormWorkItem.previousStep') }}</v-btn>
-                            <v-btn v-if="!isDryRun && isSimulate != 'true'"
+                            <v-btn v-if="!isDryRun && isSimulate != 'true' && !gs"
                                 @click="saveTask"
                                 class="mr-2  default-gray-btn"
                                 density="compact"
@@ -148,7 +148,8 @@
                                 rounded variant="flat"
                                 :disabled="isLoading"
                                 :loading="isLoading"
-                            >{{ $t('FormWorkItem.submitComplete') }}</v-btn>
+                            >{{ $t('FormWorkItem.submitComplete') }}
+                            </v-btn>
                         </v-row>
                     </div>
                 </v-card-text>
@@ -219,6 +220,10 @@ export default {
             default: "false"
         },
         isFinishedAgentGeneration: Boolean,
+        isGeneratingExample: {
+            type: Boolean,
+            default: false
+        },
         processDefinition: Object,
         isOwnWorkItem: Boolean,
         isInWorkItem: {
@@ -263,6 +268,9 @@ export default {
         },
         mode() {
             return window.$mode;
+        },
+        gs() {
+            return window.$gs;
         },
         hasInputFields() {
             return this.inputFields && this.inputFields.length > 0

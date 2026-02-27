@@ -64,14 +64,75 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
       const shape = elementFactory.createShape(assign({ type }, options));
       create.start(event, shape, { source: element });
     }
-  
+
     const append = autoPlace
       ? function (_, element) {
           const shape = elementFactory.createShape(assign({ type }, options));
+
+          // Check if this is a Task type (for middle insertion)
+          const isTaskType = type.includes('Task');
+
+          // Check if source element is a Gateway (don't insert in middle for Gateway sources)
+          const isSourceGateway = element.type && element.type.includes('Gateway');
+
+          // Check if we should insert in the middle of a flow
+          // Only for Task types, and not when source is a Gateway
+          if (isTaskType && !isSourceGateway) {
+            const outgoingConnections = element.outgoing || [];
+
+            // Only insert in middle if there's exactly one outgoing connection
+            if (outgoingConnections.length === 1) {
+              const connection = outgoingConnections[0];
+              const targetElement = connection.target;
+
+              // Insert in middle if there's a valid target
+              if (targetElement) {
+                try {
+                  // Calculate position for new shape (between source and target)
+                  const sourceCenter = {
+                    x: element.x + element.width / 2,
+                    y: element.y + element.height / 2
+                  };
+                  const targetCenter = {
+                    x: targetElement.x + targetElement.width / 2,
+                    y: targetElement.y + targetElement.height / 2
+                  };
+
+                  // Position new shape in the middle
+                  const newPosition = {
+                    x: (sourceCenter.x + targetCenter.x) / 2,
+                    y: (sourceCenter.y + targetCenter.y) / 2
+                  };
+
+                  // Store original target before modifying
+                  const originalTarget = targetElement;
+
+                  // Create the new shape at the calculated position
+                  const newShape = modeling.createShape(shape, newPosition, element.parent);
+
+                  // Reconnect: element -> newShape (modify existing connection)
+                  modeling.reconnectEnd(connection, newShape, {
+                    x: newShape.x + newShape.width / 2,
+                    y: newShape.y + newShape.height / 2
+                  });
+
+                  // Create new connection: newShape -> originalTarget
+                  modeling.connect(newShape, originalTarget);
+
+                  return;
+                } catch (e) {
+                  console.warn('Failed to insert task in middle of flow:', e);
+                  // Fall through to default behavior
+                }
+              }
+            }
+          }
+
+          // Default behavior: append without insertion
           autoPlace.append(element, shape);
         }
       : appendStart;
-  
+
     const previewAppend = autoPlace
       ? function (_, element) {
           try {
@@ -79,13 +140,13 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
           } catch (e) {
             console.warn('[appendPreview] 실패:', e);
           }
-  
+
           return () => {
             appendPreview.cleanUp();
           };
         }
       : null;
-  
+
     return {
       group: 'model',
       className,
@@ -145,6 +206,78 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
 
   function divideIntoThreeLanes(event) {
     modeling.splitLane(element, 3);
+  }
+
+  // Equalize lane sizes within a participant
+  function equalizeLaneSizes(event, targetElement) {
+    const participant = targetElement.type === 'bpmn:Participant'
+      ? targetElement
+      : targetElement.parent;
+
+    if (!participant || participant.type !== 'bpmn:Participant') {
+      console.warn('No participant found for lane equalization');
+      return;
+    }
+
+    const lanes = participant.children.filter(child => child.type === 'bpmn:Lane');
+    if (lanes.length < 2) {
+      console.warn('Need at least 2 lanes to equalize');
+      return;
+    }
+
+    const isHorizontal = participant.di?.isHorizontal !== false;
+
+    if (isHorizontal) {
+      // Horizontal layout: equalize heights
+      const totalHeight = participant.height;
+      const laneHeaderHeight = 30; // Header area for participant name
+      const availableHeight = totalHeight - laneHeaderHeight;
+      const equalHeight = Math.floor(availableHeight / lanes.length);
+
+      // Sort lanes by Y position
+      const sortedLanes = [...lanes].sort((a, b) => a.y - b.y);
+
+      sortedLanes.forEach((lane, index) => {
+        const isLast = index === sortedLanes.length - 1;
+        const newHeight = isLast
+          ? availableHeight - (equalHeight * (sortedLanes.length - 1))
+          : equalHeight;
+
+        const newY = participant.y + laneHeaderHeight + (equalHeight * index);
+
+        modeling.resizeShape(lane, {
+          x: lane.x,
+          y: newY,
+          width: lane.width,
+          height: newHeight
+        });
+      });
+    } else {
+      // Vertical layout: equalize widths
+      const totalWidth = participant.width;
+      const laneHeaderWidth = 30; // Header area for participant name
+      const availableWidth = totalWidth - laneHeaderWidth;
+      const equalWidth = Math.floor(availableWidth / lanes.length);
+
+      // Sort lanes by X position
+      const sortedLanes = [...lanes].sort((a, b) => a.x - b.x);
+
+      sortedLanes.forEach((lane, index) => {
+        const isLast = index === sortedLanes.length - 1;
+        const newWidth = isLast
+          ? availableWidth - (equalWidth * (sortedLanes.length - 1))
+          : equalWidth;
+
+        const newX = participant.x + laneHeaderWidth + (equalWidth * index);
+
+        modeling.resizeShape(lane, {
+          x: newX,
+          y: lane.y,
+          width: newWidth,
+          height: lane.height
+        });
+      });
+    }
   }
 
   function getDi(element) {
@@ -321,6 +454,16 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
           }
         }
       },
+      'lane-equalize': {
+        group: 'lane',
+        className: 'mdi mdi-equal',
+        title: i18n.global.t('customContextPad.laneEqualize') || 'Equalize Lane Sizes',
+        action: {
+          click: function (event, targetElement) {
+            equalizeLaneSizes(event, targetElement);
+          }
+        }
+      },
       'connect': {
         group: 'connect',
         className: 'bpmn-icon-connection-multi',
@@ -373,12 +516,12 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
   }
   if (actions['append.append-task']) {
     const newAction = appendAction(
-      'bpmn:UserTask',
+      'bpmn:ManualTask',
       actions['append.append-task'].className,
       i18n.global.t('customContextPad.task'),
       {}
     );
-  
+
     actions['append.append-task'].action = newAction.action;
   }
   if (actions['append.intermediate-event']) {
@@ -388,28 +531,159 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     actions['append.text-annotation'].title = i18n.global.t('customContextPad.textAnnotation');
   }
   if (actions['replace']) {
+    const selection = injector.get('selection');
+    const bpmnReplace = injector.get('bpmnReplace');
+    const popupMenu = injector.get('popupMenu');
+
     actions['replace'] = {
       group: 'edit',
       className: 'bpmn-icon-screw-wrench',
       title: i18n.global.t('customContextPad.replace'),
       action: {
         click: function (event, element) {
-          var position = assign({
-            x: event.x,
-            y: event.y
-          },
-            {
-              cursor: { x: event.x, y: event.y }
-            });
+          // 여러 Task가 선택된 경우 동시 타입 변경
+          const selectedElements = selection.get();
+          const selectedTasks = selectedElements.filter(el => el.type && el.type.includes('Task'));
 
-          popupMenu.open(element, 'bpmn-replace', position, {
-            title: i18n.global.t('customContextPad.replace'),
-            width: 300,
-            search: true
-          });
+          if (selectedTasks.length > 1) {
+            // 다중 Task 선택 시 HTML 기반 드롭다운 메뉴 표시
+            showMultiTaskReplaceMenu(event, selectedTasks, bpmnReplace, selection);
+          } else {
+            // 단일 요소 선택 시 기존 동작
+            var position = assign({
+              x: event.x,
+              y: event.y
+            },
+              {
+                cursor: { x: event.x, y: event.y }
+              });
+
+            popupMenu.open(element, 'bpmn-replace', position, {
+              title: i18n.global.t('customContextPad.replace'),
+              width: 300,
+              search: true
+            });
+          }
         }
       }
     }
+  }
+
+  // 다중 Task 타입 변경 메뉴 표시 함수
+  function showMultiTaskReplaceMenu(event, selectedTasks, bpmnReplace, selection) {
+    // 기존 메뉴 제거
+    const existingMenu = document.getElementById('multi-task-replace-menu');
+    if (existingMenu) {
+      existingMenu.remove();
+    }
+
+    // 사용 가능한 Task 타입 목록
+    const taskTypes = [
+      { type: 'bpmn:ManualTask', label: i18n.global.t('CustomReplaceElement.replace-with-manual-task') || 'Manual Task', icon: '✋' },
+      { type: 'bpmn:ServiceTask', label: i18n.global.t('CustomReplaceElement.replace-with-service-task') || 'Service Task', icon: '⚙️' },
+      { type: 'bpmn:UserTask', label: i18n.global.t('CustomReplaceElement.replace-with-user-task') || 'User Task', icon: '👤' },
+      { type: 'bpmn:ScriptTask', label: i18n.global.t('CustomReplaceElement.replace-with-script-task') || 'Script Task', icon: '📜' },
+      { type: 'bpmn:BusinessRuleTask', label: i18n.global.t('CustomReplaceElement.replace-with-rule-task') || 'Business Rule Task', icon: '📋' },
+      { type: 'bpmn:SendTask', label: i18n.global.t('CustomReplaceElement.replace-with-send-task') || 'Send Task', icon: '📤' },
+      { type: 'bpmn:ReceiveTask', label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task', icon: '📥' }
+    ];
+
+    // 활성화된 Task 타입만 필터링
+    const enabledTypes = window.$enabledPaletteTaskTypes?.map(t => t.task_type) ||
+      window.$paletteSettings?.visibleTaskTypes ||
+      ['bpmn:ManualTask', 'bpmn:ServiceTask'];
+
+    const filteredTaskTypes = taskTypes.filter(t => enabledTypes.includes(t.type));
+
+    // 메뉴 컨테이너 생성
+    const menu = document.createElement('div');
+    menu.id = 'multi-task-replace-menu';
+    menu.style.cssText = `
+      position: fixed;
+      left: ${event.clientX || event.x}px;
+      top: ${event.clientY || event.y}px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 10000;
+      min-width: 200px;
+      padding: 4px 0;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+    `;
+
+    // 헤더
+    const header = document.createElement('div');
+    header.style.cssText = 'padding: 8px 12px; font-weight: bold; border-bottom: 1px solid #eee; color: #333;';
+    header.textContent = `타입 변경 (${selectedTasks.length}개 Task)`;
+    menu.appendChild(header);
+
+    // 메뉴 아이템 생성
+    filteredTaskTypes.forEach(taskType => {
+      const item = document.createElement('div');
+      item.style.cssText = `
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      `;
+      item.innerHTML = `<span>${taskType.icon}</span><span>${taskType.label}</span>`;
+
+      item.addEventListener('mouseenter', () => {
+        item.style.backgroundColor = '#f0f0f0';
+      });
+      item.addEventListener('mouseleave', () => {
+        item.style.backgroundColor = 'white';
+      });
+
+      item.addEventListener('click', () => {
+        // 선택된 모든 Task의 타입 변경
+        const replacedElements = [];
+        selectedTasks.forEach(task => {
+          try {
+            const replaced = bpmnReplace.replaceElement(task, { type: taskType.type });
+            replacedElements.push(replaced);
+          } catch (e) {
+            console.warn('Task 타입 변경 실패:', task.id, e);
+          }
+        });
+
+        // 변경된 요소들 다시 선택
+        if (replacedElements.length > 0) {
+          selection.select(replacedElements);
+        }
+
+        console.log(`${selectedTasks.length}개 Task를 ${taskType.type}으로 변경 완료`);
+        menu.remove();
+      });
+
+      menu.appendChild(item);
+    });
+
+    // 문서에 메뉴 추가
+    document.body.appendChild(menu);
+
+    // 메뉴 외부 클릭 시 닫기
+    const closeMenu = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', closeMenu);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener('click', closeMenu);
+    }, 100);
+
+    // ESC 키로 닫기
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        menu.remove();
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
   }
   if (actions['connect']) {
     actions['connect'].title = i18n.global.t('customContextPad.connect');
@@ -418,5 +692,189 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     actions['delete'].title = i18n.global.t('customContextPad.delete');
   }
 
+  // 속성 패널 열기 버튼 추가 (Task, Event, Gateway 등)
+  const editableTypes = ['Task', 'Event', 'Gateway', 'SubProcess', 'CallActivity'];
+  const isEditable = editableTypes.some(type => element.type && element.type.includes(type));
+
+  if (isEditable) {
+    const eventBus = injector.get('eventBus');
+
+    actions['open-panel'] = {
+      group: 'edit',
+      className: 'mdi mdi-card-text-outline',
+      title: i18n.global.t('customContextPad.openPanel') || '속성 패널 열기',
+      action: {
+        click: function(event, element) {
+          // openPanel 이벤트 발생
+          eventBus.fire('element.openPanel', { element: element });
+        }
+      }
+    };
+
+    // Task 타입에만 코멘트 작성 버튼 추가
+    const isTaskElement = element.type && element.type.includes('Task');
+    if (isTaskElement) {
+      actions['add-comment'] = {
+        group: 'edit',
+        className: 'mdi mdi-comment-plus-outline',
+        title: i18n.global.t('customContextPad.addComment') || '코멘트 작성',
+        action: {
+          click: function(event, element) {
+            eventBus.fire('element.addComment', { element: element });
+          }
+        }
+      };
+    }
+  }
+
   return actions;
 };
+
+// 다중 선택 시 ContextPad 엔트리
+ContextPadProvider.prototype.getMultiElementContextPadEntries = function(elements) {
+  const {
+    _modeling: modeling,
+    _injector: injector
+  } = this;
+
+  const actions = {};
+
+  // Task 요소만 필터링
+  const taskElements = elements.filter(el => el.type && el.type.includes('Task'));
+
+  // Task가 2개 이상 선택된 경우 타입 변경 액션 추가
+  if (taskElements.length >= 1) {
+    const bpmnReplace = injector.get('bpmnReplace');
+    const selection = injector.get('selection');
+
+    actions['multi-replace'] = {
+      group: 'edit',
+      className: 'bpmn-icon-screw-wrench',
+      title: i18n.global.t('customContextPad.replaceMultipleTasks') || `타입 변경 (${taskElements.length}개 Task)`,
+      action: {
+        click: function(event, elements) {
+          showMultiTaskReplaceMenuForElements(event, taskElements, bpmnReplace, selection);
+        }
+      }
+    };
+  }
+
+  return actions;
+};
+
+// 다중 Task 타입 변경 메뉴 (다중 선택용)
+function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, selection) {
+  // 기존 메뉴 제거
+  const existingMenu = document.getElementById('multi-task-replace-menu');
+  if (existingMenu) {
+    existingMenu.remove();
+  }
+
+  // 사용 가능한 Task 타입 목록
+  const taskTypes = [
+    { type: 'bpmn:ManualTask', label: i18n.global.t('CustomReplaceElement.replace-with-manual-task') || 'Manual Task', icon: '✋' },
+    { type: 'bpmn:ServiceTask', label: i18n.global.t('CustomReplaceElement.replace-with-service-task') || 'Service Task', icon: '⚙️' },
+    { type: 'bpmn:UserTask', label: i18n.global.t('CustomReplaceElement.replace-with-user-task') || 'User Task', icon: '👤' },
+    { type: 'bpmn:ScriptTask', label: i18n.global.t('CustomReplaceElement.replace-with-script-task') || 'Script Task', icon: '📜' },
+    { type: 'bpmn:BusinessRuleTask', label: i18n.global.t('CustomReplaceElement.replace-with-rule-task') || 'Business Rule Task', icon: '📋' },
+    { type: 'bpmn:SendTask', label: i18n.global.t('CustomReplaceElement.replace-with-send-task') || 'Send Task', icon: '📤' },
+    { type: 'bpmn:ReceiveTask', label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task', icon: '📥' }
+  ];
+
+  // 활성화된 Task 타입만 필터링
+  const enabledTypes = window.$enabledPaletteTaskTypes?.map(t => t.task_type) ||
+    window.$paletteSettings?.visibleTaskTypes ||
+    ['bpmn:ManualTask', 'bpmn:ServiceTask'];
+
+  const filteredTaskTypes = taskTypes.filter(t => enabledTypes.includes(t.type));
+
+  // 메뉴 컨테이너 생성
+  const menu = document.createElement('div');
+  menu.id = 'multi-task-replace-menu';
+  menu.style.cssText = `
+    position: fixed;
+    left: ${event.clientX || event.x || 100}px;
+    top: ${event.clientY || event.y || 100}px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 10000;
+    min-width: 200px;
+    padding: 4px 0;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+  `;
+
+  // 헤더
+  const header = document.createElement('div');
+  header.style.cssText = 'padding: 8px 12px; font-weight: bold; border-bottom: 1px solid #eee; color: #333;';
+  header.textContent = `타입 변경 (${selectedTasks.length}개 Task)`;
+  menu.appendChild(header);
+
+  // 메뉴 아이템 생성
+  filteredTaskTypes.forEach(taskType => {
+    const item = document.createElement('div');
+    item.style.cssText = `
+      padding: 8px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    `;
+    item.innerHTML = `<span>${taskType.icon}</span><span>${taskType.label}</span>`;
+
+    item.addEventListener('mouseenter', () => {
+      item.style.backgroundColor = '#f0f0f0';
+    });
+    item.addEventListener('mouseleave', () => {
+      item.style.backgroundColor = 'white';
+    });
+
+    item.addEventListener('click', () => {
+      // 선택된 모든 Task의 타입 변경
+      const replacedElements = [];
+      selectedTasks.forEach(task => {
+        try {
+          const replaced = bpmnReplace.replaceElement(task, { type: taskType.type });
+          replacedElements.push(replaced);
+        } catch (e) {
+          console.warn('Task 타입 변경 실패:', task.id, e);
+        }
+      });
+
+      // 변경된 요소들 다시 선택
+      if (replacedElements.length > 0) {
+        selection.select(replacedElements);
+      }
+
+      console.log(`${selectedTasks.length}개 Task를 ${taskType.type}으로 변경 완료`);
+      menu.remove();
+    });
+
+    menu.appendChild(item);
+  });
+
+  // 문서에 메뉴 추가
+  document.body.appendChild(menu);
+
+  // 메뉴 외부 클릭 시 닫기
+  const closeMenu = (e) => {
+    if (!menu.contains(e.target)) {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+    }
+  };
+  setTimeout(() => {
+    document.addEventListener('click', closeMenu);
+  }, 100);
+
+  // ESC 키로 닫기
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') {
+      menu.remove();
+      document.removeEventListener('keydown', handleEsc);
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
+}

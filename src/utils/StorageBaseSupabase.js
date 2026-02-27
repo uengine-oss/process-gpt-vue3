@@ -320,18 +320,6 @@ export default class StorageBaseSupabase {
                     error: true,
                     errorMsg: '이미 가입된 이메일입니다.'
                 };
-                // const isOwner = await this.checkTenantOwner(window.$tenantName);
-                // const role = isOwner ? 'superAdmin' : 'user';
-                // const isAdmin = isOwner ? true : false;
-                // await this.putObject('users', {
-                //     id: existUser.id,
-                //     username: userInfo.username,
-                //     email: userInfo.email,
-                //     role: role,
-                //     is_admin: isAdmin,
-                //     tenant_id: tenantId
-                // }, { onConflict: 'id' });
-                // return await this.signIn(userInfo);
             } else {
                 const result = await window.$supabase.auth.signUp({
                     email: userInfo.email,
@@ -345,36 +333,6 @@ export default class StorageBaseSupabase {
                 });
 
                 if (!result.error) {
-                    if (!window.$isTenantServer && window.$tenantName) {
-                        let role = 'user';
-                        let isAdmin = false;
-                        const existTenant = await this.getObject('tenants', { match: { id: window.$tenantName } });
-                        if (!existTenant) {
-                            await this.putObject('tenants', {
-                                id: window.$tenantName,
-                                owner: result.data.user.id
-                            });
-                            role = 'superAdmin';
-                            isAdmin = true;
-                        }
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: userInfo.username,
-                            email: userInfo.email,
-                            role: role,
-                            is_admin: isAdmin,
-                            tenant_id: window.$tenantName
-                        });
-                    } else {
-                        await this.putObject('users', {
-                            id: result.data.user.id,
-                            username: userInfo.username,
-                            email: userInfo.email,
-                            role: 'user',
-                            is_admin: false,
-                            tenant_id: 'process-gpt'
-                        });
-                    }
                     result.data["isNewUser"] = true;
                     return result.data;
                 } else {
@@ -490,20 +448,22 @@ export default class StorageBaseSupabase {
     async resetPassword(email) {
         try {
             // NOTE:
-            // - 프로덕션은 Supabase Dashboard의 "Site URL / Redirect URLs" 설정을 사용한다.
-            // - 여기서 redirectTo를 강제로 넘기면 대시보드 설정을 덮어써서(특히 멀티테넌트/도메인 환경에서)
-            //   이메일 링크가 "이상한 URL"로 생성될 수 있다.
-            //
-            // 개발 환경(로컬)에서만 redirectTo를 명시적으로 지정한다.
+            // - GoTrue/Supabase Auth는 redirectTo를 넘기지 않으면 ConfirmationURL의 redirect_to에
+            //   Site URL(대시보드 기본값)만 넣어서, 메일 링크 클릭 시 루트(/)로 이동한다.
+            // - 대시보드 "Redirect URLs"는 허용 목록일 뿐, 실제 redirect_to는 API 호출 시
+            //   redirectTo로 전달해야 반영된다. 따라서 항상 redirectTo를 넘겨 재설정 페이지로 직행하도록 한다.
+            // - 멀티테넌트 환경에서는 비밀번호 재설정 메일 링크가 메인 도메인 재설정 페이지로 가야 하므로
+            //   getMainDomainUrl('/auth/reset-password')를 사용한다. (로컬은 origin 기준)
             const isLocal =
                 window.location.hostname === 'localhost' ||
                 window.location.hostname === '127.0.0.1' ||
                 window.location.hostname === '0.0.0.0';
 
-            const options = {};
-            if (isLocal) {
-                options.redirectTo = new URL('/auth/reset-password', window.location.origin).toString();
-            }
+            const options = {
+                redirectTo: isLocal
+                    ? new URL('/auth/reset-password', window.location.origin).toString()
+                    : getMainDomainUrl('/auth/reset-password'),
+            };
 
             const result = await window.$supabase.auth.resetPasswordForEmail(email, options);
             return result;
@@ -667,7 +627,6 @@ export default class StorageBaseSupabase {
                 result = await window.$supabase.from(obj.table).upsert(value).eq(obj.searchKey, obj.searchVal);
             } else {
                 result = await window.$supabase.from(obj.table).upsert(value);
-
             }
 
             const { error, status, statusText } = result
@@ -1073,13 +1032,22 @@ export default class StorageBaseSupabase {
                 if (window.$tenantName) {
                     filter.tenant_id = window.$tenantName;
                 }
-                const { data, error } = await window.$supabase
-                    .from('users')
-                    .select('*')
-                    .match(filter)
-                    .maybeSingle();
+                // 메인 도메인($tenantName 없음)에서는 동일 id로 여러 테넌트 행이 있어 maybeSingle()이 실패하므로, 한 행만 조회
+                const isMainDomain = !window.$tenantName;
+                const { data: rawData, error } = isMainDomain
+                    ? await window.$supabase
+                        .from('users')
+                        .select('*')
+                        .match(filter)
+                        .limit(1)
+                    : await window.$supabase
+                        .from('users')
+                        .select('*')
+                        .match(filter)
+                        .maybeSingle();
+                const data = isMainDomain ? (Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : null) : rawData;
 
-                if (!error) {
+                if (data && !error) {
                     window.localStorage.setItem('isAdmin', data.is_admin || false);
                     window.localStorage.setItem('picture', data.profile || '');
                     if (data.role && data.role !== '') {
@@ -1141,9 +1109,13 @@ export default class StorageBaseSupabase {
                         const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
                         window.dispatchEvent(event);
                     }
+                } else if (!data) {
+                    await this.signOut();
+                    throw new StorageBaseError('error in writeUserData', 'user not found', arguments);
                 }
             }
         } catch (e) {
+            await this.signOut();
             throw new StorageBaseError('error in writeUserData', e, arguments);
         }
     }

@@ -72,9 +72,11 @@ export const router = createRouter({
 // 라우터 에러 상태 추적
 let hasRouterError = false;
 
-function hasRecoveryTokenInHash(): boolean {
-    if (typeof window === 'undefined' || !window.location.hash) return false;
-    return /type=recovery|access_token=/.test(window.location.hash);
+/** 비밀번호 재설정 화면에 메일 링크(recovery)로 진입한 상태인지 여부 */
+function isOnResetPasswordWithRecoveryHash(): boolean {
+    return typeof window !== 'undefined' &&
+        window.location.pathname === '/auth/reset-password' &&
+        window.location.hash.includes('type=recovery');
 }
 
 router.beforeEach(async (to: any, from: any, next: any) => {
@@ -85,9 +87,12 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             hasRouterError = false;
         }
 
-        // 이메일 복구 링크가 루트(/) 등 다른 경로로 열렸을 때 비밀번호 재설정 페이지로 보냄
-        if (hasRecoveryTokenInHash() && !to.path.includes('/auth/reset-password')) {
-            return next({ path: '/auth/reset-password', hash: window.location.hash });
+        // 비밀번호 재설정 화면(recovery 해시)에 있는 동안 테넌트 관리 등으로 나가는 네비게이션 차단 (재설정 완료 후 /auth/login 이동은 허용)
+        if (isOnResetPasswordWithRecoveryHash()) {
+            const isBlocked = to.path.startsWith('/tenant/');
+            if (isBlocked) {
+                return next(false);
+            }
         }
 
         if (window.$mode !== 'uEngine') {
@@ -95,11 +100,7 @@ router.beforeEach(async (to: any, from: any, next: any) => {
                 return next();
             } else {
                 if (window.$isTenantServer) {
-                    // 비밀번호 재설정(복구) 플로우 중에는 세션이 있어도 테넌트 관리로 보내지 않음
                     if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {
-                        if (to.path === '/auth/reset-password' || hasRecoveryTokenInHash()) {
-                            return next();
-                        }
                         return next('/tenant/manage');
                     } else if (to.fullPath === '/' || 
                         to.matched.some((record) => TenantRoutes.children.includes(record as any))) {

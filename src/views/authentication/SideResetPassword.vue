@@ -1,26 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
 import Logo from '@/layouts/full/logo/Logo.vue';
 import ResetPassword from '@/components/auth/ResetForm.vue';
-import StorageBaseFactory from '@/utils/StorageBaseFactory';
-
-onMounted(async () => {
-    // 이메일 링크로 들어온 경우 해시에 복구 토큰이 있음. 이때는 signOut하면 안 됨(복구 세션 제거됨).
-    const hash = window.location.hash || '';
-    const hasRecoveryToken = /type=recovery|access_token=/.test(hash);
-
-    // 비밀번호 재설정은 이메일 링크(복구 토큰)로만 진행하므로, 복구 링크가 아닐 때만 기존 로그인 세션을 비운다.
-    if (hasRecoveryToken) return;
-
-    const storage = StorageBaseFactory.getStorage();
-    try {
-        if (await storage.isConnection()) {
-            await storage.signOut();
-        }
-    } catch (e) {
-        console.warn('[SideResetPassword] 세션 정리 중 오류:', e);
-    }
-});
 </script>
 
 <template>
@@ -35,7 +15,7 @@ onMounted(async () => {
                 </div>
             </v-col>
             <v-col cols="12" lg="4" xl="4" xxl="3" class="d-flex align-center justify-center bg-surface">
-                <div class="pa-sm-7 pa-4">
+                <div class="pa-sm-7 pa-4" style="width: 280px;">
                     <h2 class="text--darken-2 text-h4 font-weight-semibold">{{ $t('forgotPassword.resetPassword') }}</h2>
                     <p class="text-subtitle-1 text-grey100 py-4 text-10">
                         {{ $t('forgotPassword.passwordExplanation') }}

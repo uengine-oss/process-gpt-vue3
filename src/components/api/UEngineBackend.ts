@@ -2037,7 +2037,21 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async saveTaskExecutionProperties(params: any): Promise<any> {
+    async getData(path: string, options: any): Promise<any> {
+        console.warn("getData is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    // Task Execution Properties API (분석용) - UEngine 모드에서는 미지원
+    async saveTaskExecutionProperties(params: {
+        procDefId: string;
+        procInstId: string;
+        activityId: string;
+        activityName?: string;
+        todoId?: string;
+        properties: any;
+        executorEmail?: string;
+    }): Promise<any> {
         console.warn("saveTaskExecutionProperties is not implemented - only use Process-GPT Mode");
         return null;
     }

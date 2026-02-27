@@ -1,0 +1,801 @@
+// ============================================
+// Property Panel - Modern UI/UX Design
+// ============================================
+// Applies to both Edit and View modes
+
+// Design Tokens
+$accent-primary: #6366f1;
+$accent-secondary: #8b5cf6;
+$accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+
+$text-primary: #1e293b;
+$text-secondary: #475569;
+$text-muted: #94a3b8;
+
+$bg-primary: #ffffff;
+$bg-secondary: #f8fafc;
+$bg-tertiary: #f1f5f9;
+
+$border-light: #e2e8f0;
+$border-medium: #cbd5e1;
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+$shadow-focus: 0 0 0 3px rgba($accent-primary, 0.15);
+
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 14px;
+
+$transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+$transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+$transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+$font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+// ============================================
+// Base Panel Styles
+// ============================================
+#property-panel {
+  font-family: $font-family;
+  background: $bg-primary;
+
+  // ============================================
+  // Header Area
+  // ============================================
+  > .v-row:first-child {
+    background: $bg-primary;
+    border-bottom: 1px solid $border-light;
+
+    .bpmn-property-panel-name {
+      .v-field {
+        background: $bg-secondary;
+        border: 1px solid transparent;
+
+        &:hover {
+          background: $bg-tertiary;
+          border-color: $border-medium;
+        }
+
+        &.v-field--focused {
+          background: $bg-primary;
+          border-color: $accent-primary;
+          box-shadow: $shadow-focus;
+        }
+      }
+
+      .v-field__input {
+        font-size: 1rem;
+        font-weight: 600;
+        color: $text-primary;
+      }
+    }
+
+    // Header action buttons
+    .panel-close-btn {
+      width: 36px !important;
+      height: 36px !important;
+      border-radius: $radius-md !important;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: $bg-tertiary !important;
+      }
+
+      .v-icon {
+        font-size: 20px;
+        color: $text-secondary;
+        transition: color $transition-fast;
+      }
+
+      &:hover .v-icon {
+        color: $text-primary;
+      }
+    }
+  }
+
+  // ============================================
+  // Tabs - Modern Pill Style
+  // ============================================
+  .v-tabs {
+    background: $bg-secondary;
+    border-radius: $radius-lg;
+    padding: 4px;
+    margin: 0 0 16px 0;
+    min-height: 44px;
+
+    .v-slide-group__content {
+      gap: 4px;
+    }
+
+    .v-tab {
+      font-family: $font-family;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: 0;
+      color: $text-secondary;
+      border-radius: $radius-md;
+      min-height: 36px;
+      padding: 0 16px;
+      transition: all $transition-base;
+
+      &:hover:not(.v-tab--selected) {
+        color: $text-primary;
+        background: rgba($accent-primary, 0.08);
+      }
+
+      &.v-tab--selected {
+        font-weight: 600;
+        color: $accent-primary;
+        background: $bg-primary;
+        box-shadow: $shadow-sm;
+      }
+    }
+
+    // Hide default indicator
+    .v-tabs-slider-wrapper {
+      display: none;
+    }
+  }
+
+  // ============================================
+  // Input Fields - Refined Style
+  // ============================================
+  .v-text-field,
+  .v-textarea,
+  .v-select,
+  .v-autocomplete,
+  .v-file-input {
+    .v-field {
+      border-radius: $radius-md !important;
+      border: 1px solid $border-light;
+      background: $bg-primary;
+      transition: all $transition-base;
+      position: relative;
+
+      &:not(.v-field--disabled):hover {
+        border-color: $border-medium;
+        background: $bg-secondary;
+      }
+
+      &.v-field--focused {
+        border-color: $accent-primary !important;
+        box-shadow: $shadow-focus !important;
+        background: $bg-primary;
+      }
+
+      // Outline variant specific
+      &.v-field--variant-outlined {
+        .v-field__outline {
+          --v-field-border-opacity: 0;
+        }
+      }
+
+      // Input text
+      .v-field__input {
+        font-family: $font-family;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $text-primary;
+        padding-top: 8px;
+        padding-bottom: 8px;
+
+        // Placeholder 스타일링 - 깜빡임 방지
+        &::placeholder {
+          color: transparent !important;
+          transition: color $transition-base;
+        }
+      }
+
+      // Focus/Active 상태가 아닐 때 placeholder 표시
+      &:not(.v-field--focused):not(.v-field--active) {
+        .v-field__input::placeholder {
+          color: $text-muted !important;
+        }
+      }
+
+      // Textarea
+      textarea {
+        font-family: $font-family;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $text-primary;
+        line-height: 1.5;
+
+        &::placeholder {
+          color: transparent !important;
+          transition: color $transition-base;
+        }
+      }
+
+      &:not(.v-field--focused):not(.v-field--active) {
+        textarea::placeholder {
+          color: $text-muted !important;
+        }
+      }
+
+      // Floating label - 테두리에 가려지지 않도록 배경 추가
+      .v-label {
+        font-family: $font-family;
+        font-size: 0.875rem;
+        color: $text-muted;
+        transition: all $transition-base;
+        background: transparent;
+        padding: 0;
+
+        &.v-field-label--floating {
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: $accent-primary;
+          transform: translateY(-50%);
+          // 라벨 뒤에 배경을 넣어서 border를 가림
+          background: $bg-primary;
+          padding: 0 6px;
+          margin-left: -6px;
+          // z-index로 border 위에 표시
+          z-index: 1;
+          // 텍스트 잘림 방지 - 전체 문자열 표시
+          max-width: none !important;
+          width: auto !important;
+          overflow: visible !important;
+          text-overflow: clip !important;
+          white-space: nowrap !important;
+        }
+      }
+
+      // Hover 상태에서 floating label 배경 조정
+      &:not(.v-field--disabled):hover {
+        .v-label.v-field-label--floating {
+          background: $bg-secondary;
+        }
+      }
+
+      // Focus 상태에서 floating label 배경
+      &.v-field--focused {
+        .v-label.v-field-label--floating {
+          background: $bg-primary;
+        }
+      }
+
+      // Suffix/Prefix
+      .v-field__append-inner,
+      .v-field__prepend-inner {
+        color: $text-muted;
+
+        .v-icon {
+          font-size: 20px;
+          opacity: 0.7;
+        }
+      }
+    }
+
+    // Compact density
+    &.v-input--density-compact .v-field {
+      border-radius: $radius-sm !important;
+      min-height: 40px;
+
+      .v-field__input {
+        padding-top: 6px;
+        padding-bottom: 6px;
+        min-height: 40px;
+      }
+    }
+
+    // Helper text
+    .v-messages {
+      font-family: $font-family;
+      font-size: 0.75rem;
+      color: $text-muted;
+    }
+  }
+
+  // ============================================
+  // Select/Autocomplete Dropdown
+  // ============================================
+  .v-select,
+  .v-autocomplete {
+    .v-field__append-inner {
+      .v-icon {
+        transition: transform $transition-fast;
+      }
+    }
+
+    &.v-select--active-menu,
+    &.v-autocomplete--active-menu {
+      .v-field__append-inner .v-icon {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  // ============================================
+  // Chips - Modern Style
+  // ============================================
+  .v-chip {
+    font-family: $font-family;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: $radius-sm !important;
+    transition: all $transition-fast;
+
+    &.v-chip--size-small {
+      height: 24px;
+      padding: 0 8px;
+    }
+
+    &.v-chip--size-x-small {
+      height: 20px;
+      padding: 0 6px;
+      font-size: 0.7rem;
+    }
+
+    // Closable chips in select
+    .v-chip__close {
+      margin-left: 4px;
+      font-size: 14px;
+      opacity: 0.7;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  // ============================================
+  // Buttons - Refined
+  // ============================================
+  .v-btn {
+    font-family: $font-family;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    border-radius: $radius-md !important;
+    transition: all $transition-base;
+
+    &.v-btn--variant-elevated,
+    &.v-btn--variant-flat {
+      box-shadow: $shadow-sm;
+
+      &:hover {
+        box-shadow: $shadow-md;
+        transform: translateY(-1px);
+      }
+    }
+
+    &.v-btn--variant-outlined {
+      border-width: 1.5px;
+    }
+
+    &.v-btn--variant-text {
+      &:hover {
+        background: $bg-tertiary;
+      }
+    }
+  }
+
+  // ============================================
+  // Cards - Section Containers
+  // ============================================
+  .v-card {
+    border-radius: $radius-lg !important;
+    border: 1px solid $border-light;
+    box-shadow: none !important;
+    overflow: hidden;
+    transition: all $transition-base;
+
+    &:hover {
+      border-color: $border-medium;
+    }
+
+    .v-card-title {
+      font-family: $font-family;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: $text-primary;
+      padding: 16px;
+      border-bottom: 1px solid $border-light;
+      background: $bg-secondary;
+    }
+
+    .v-card-text {
+      padding: 16px;
+    }
+
+    // Nested cards
+    .v-card {
+      background: $bg-secondary;
+
+      .v-card-title {
+        background: $bg-tertiary;
+      }
+    }
+  }
+
+  // ============================================
+  // Checkboxes & Switches
+  // ============================================
+  .v-checkbox,
+  .v-switch {
+    .v-label {
+      font-family: $font-family;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: $text-secondary;
+    }
+
+    .v-selection-control__wrapper {
+      .v-icon {
+        transition: all $transition-fast;
+      }
+    }
+
+    &.v-input--is-focused {
+      .v-selection-control__wrapper {
+        box-shadow: $shadow-focus;
+        border-radius: 4px;
+      }
+    }
+  }
+
+  .v-checkbox {
+    .v-selection-control__input {
+      .v-icon {
+        color: $border-medium;
+      }
+    }
+
+    &.v-checkbox--checked {
+      .v-selection-control__input .v-icon {
+        color: $accent-primary;
+      }
+    }
+  }
+
+  // ============================================
+  // Dividers - Subtle
+  // ============================================
+  .v-divider {
+    border-color: $border-light;
+    opacity: 1;
+    margin: 16px 0;
+  }
+
+  // ============================================
+  // Section Labels & Typography
+  // ============================================
+  .text-subtitle-1 {
+    font-family: $font-family;
+    font-size: 0.9375rem !important;
+    font-weight: 600 !important;
+    color: $text-primary;
+    margin-bottom: 12px;
+  }
+
+  .text-subtitle-2 {
+    font-family: $font-family;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    color: $text-secondary;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .text-caption {
+    font-family: $font-family;
+    font-size: 0.75rem;
+    color: $text-muted;
+  }
+
+  // ============================================
+  // Window/Tab Content
+  // ============================================
+  .v-window-item {
+    padding: 0;
+
+    > .pa-4 {
+      padding: 20px !important;
+    }
+  }
+
+  // ============================================
+  // Lists
+  // ============================================
+  .v-list {
+    background: transparent;
+    padding: 4px;
+
+    .v-list-item {
+      border-radius: $radius-sm;
+      margin-bottom: 2px;
+      min-height: 40px;
+      padding: 8px 12px;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: $bg-tertiary;
+      }
+
+      &.v-list-item--active {
+        background: rgba($accent-primary, 0.1);
+
+        .v-list-item-title {
+          color: $accent-primary;
+          font-weight: 600;
+        }
+      }
+
+      .v-list-item-title {
+        font-family: $font-family;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: $text-primary;
+      }
+
+      .v-list-item-subtitle {
+        font-family: $font-family;
+        font-size: 0.75rem;
+        color: $text-muted;
+      }
+    }
+  }
+
+  // ============================================
+  // Tables
+  // ============================================
+  .v-table {
+    font-family: $font-family;
+    border-radius: $radius-md;
+    overflow: hidden;
+
+    thead {
+      background: $bg-secondary;
+
+      th {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: $text-secondary;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid $border-light !important;
+        padding: 12px 16px;
+      }
+    }
+
+    tbody {
+      tr {
+        transition: background $transition-fast;
+
+        &:hover {
+          background: $bg-secondary;
+        }
+
+        td {
+          font-size: 0.875rem;
+          color: $text-primary;
+          border-bottom: 1px solid $border-light !important;
+          padding: 12px 16px;
+        }
+      }
+    }
+  }
+
+  // ============================================
+  // Expansion Panels
+  // ============================================
+  .v-expansion-panels {
+    .v-expansion-panel {
+      border-radius: $radius-md !important;
+      border: 1px solid $border-light;
+      margin-bottom: 8px;
+
+      &::before {
+        box-shadow: none !important;
+      }
+
+      .v-expansion-panel-title {
+        font-family: $font-family;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: $text-primary;
+        padding: 16px;
+        min-height: 48px;
+
+        &:hover {
+          background: $bg-secondary;
+        }
+      }
+
+      .v-expansion-panel-text {
+        padding: 0 16px 16px;
+
+        &__wrapper {
+          padding-top: 0;
+        }
+      }
+    }
+  }
+
+  // ============================================
+  // Radio Groups
+  // ============================================
+  .v-radio-group {
+    .v-radio {
+      .v-label {
+        font-family: $font-family;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: $text-secondary;
+      }
+
+      .v-selection-control__input {
+        .v-icon {
+          color: $border-medium;
+        }
+      }
+
+      &.v-radio--checked {
+        .v-selection-control__input .v-icon {
+          color: $accent-primary;
+        }
+
+        .v-label {
+          color: $text-primary;
+        }
+      }
+    }
+  }
+
+  // ============================================
+  // Tooltips (when inside panel)
+  // ============================================
+  .v-tooltip {
+    .v-overlay__content {
+      font-family: $font-family;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: $text-primary;
+      border-radius: $radius-sm;
+      padding: 6px 10px;
+    }
+  }
+
+  // ============================================
+  // Empty States
+  // ============================================
+  .text-center.text-grey-500,
+  .text-center.text-grey {
+    font-family: $font-family;
+    color: $text-muted !important;
+
+    .v-icon {
+      opacity: 0.5;
+      margin-bottom: 8px;
+    }
+  }
+
+  // ============================================
+  // Scrollbar Styling
+  // ============================================
+  &::-webkit-scrollbar,
+  .v-card-text::-webkit-scrollbar,
+  .v-window-item::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track,
+  .v-card-text::-webkit-scrollbar-track,
+  .v-window-item::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb,
+  .v-card-text::-webkit-scrollbar-thumb,
+  .v-window-item::-webkit-scrollbar-thumb {
+    background: $border-light;
+    border-radius: 3px;
+
+    &:hover {
+      background: $border-medium;
+    }
+  }
+}
+
+// ============================================
+// View Mode Specific Enhancements
+// ============================================
+#property-panel.view-mode-panel-content,
+.view-mode-panel-content #property-panel {
+  // Read-only badge in header
+  .view-mode-header {
+    background: linear-gradient(to right, $bg-secondary, $bg-primary);
+
+    .v-chip {
+      background: rgba($accent-primary, 0.1);
+      color: $accent-primary;
+      font-weight: 600;
+    }
+  }
+
+  // Disabled fields look cleaner
+  .v-field--disabled {
+    opacity: 1 !important;
+
+    .v-field__input,
+    textarea {
+      color: $text-primary !important;
+      -webkit-text-fill-color: $text-primary !important;
+    }
+
+    .v-label {
+      color: $text-muted !important;
+
+      // View mode에서도 floating label 배경 유지
+      &.v-field-label--floating {
+        background: $bg-secondary !important;
+      }
+    }
+  }
+
+  // View mode field styling
+  .v-field {
+    background: $bg-secondary !important;
+    border-color: transparent !important;
+
+    &:hover {
+      background: $bg-secondary !important;
+      border-color: transparent !important;
+    }
+
+    // View mode에서 floating label 배경
+    .v-label.v-field-label--floating {
+      background: $bg-secondary !important;
+    }
+  }
+
+  // Cards in view mode
+  .v-card {
+    background: $bg-secondary;
+    border-color: $border-light;
+  }
+
+  // Section labels more visible
+  .text-subtitle-1,
+  .text-subtitle-2 {
+    color: $accent-primary;
+  }
+}
+
+// ============================================
+// Menu Dropdowns (Global - for selects)
+// ============================================
+.v-menu > .v-overlay__content {
+  border-radius: $radius-md !important;
+  box-shadow: $shadow-md !important;
+  border: 1px solid $border-light;
+
+  .v-list {
+    padding: 4px;
+
+    .v-list-item {
+      border-radius: $radius-sm;
+      margin: 2px 0;
+      min-height: 40px;
+
+      &:hover {
+        background: $bg-tertiary;
+      }
+
+      &.v-list-item--active {
+        background: rgba($accent-primary, 0.1);
+
+        .v-list-item-title {
+          color: $accent-primary;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}

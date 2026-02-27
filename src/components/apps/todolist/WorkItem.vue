@@ -38,7 +38,7 @@
                     <v-spacer></v-spacer>
                    
                     <!-- 위임하기 UI -->
-                    <v-row class="ma-0 pa-0"  v-if="!isCompleted && isOwnWorkItem && isSimulate != 'true'">
+                    <v-row class="ma-0 pa-0" v-if="!isCompleted && (isNoAssignee || !isOwnWorkItem) && isSimulate != 'true'">
                         <v-spacer></v-spacer>
                         <v-tooltip :text="$t('WorkItem.delegate')">
                             <template v-slot:activator="{ props }">
@@ -48,27 +48,13 @@
                                     v-bind="props"
                                     style="cursor: pointer;"
                                 >
-                                    <div style="position: absolute; top: 60px; right: 20px;">
-                                        <v-avatar size="32">
-                                            <v-img src="/images/defaultUser.png" />
-                                        </v-avatar>
-                                    </div>
-                                    <!-- 현재 담당자 정보 표시 -->
-                                    <!-- <div v-if="assigneeUserInfo && assigneeUserInfo.length > 0">
-                                        <div v-if="false" v-for="user in assigneeUserInfo" :key="user.email">
-                                            <div class="d-flex align-center">
-                                                <v-img v-if="user.profile" :src="user.profile" width="32px" height="32px"
-                                                    class="rounded-circle img-fluid"
-                                                />
-                                                <v-avatar v-else size="32">
-                                                    <Icons :icon="'user-circle-bold'" :size="32" />
-                                                </v-avatar>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <v-avatar v-else size="32">
-                                        <v-img src="/images/defaultUser.png" />
-                                    </v-avatar> -->
+                                    <v-avatar size="32">
+                                        <v-img 
+                                            :src="assigneeUserInfo && assigneeUserInfo[0] && assigneeUserInfo[0].profile 
+                                                ? assigneeUserInfo[0].profile 
+                                                : '/images/defaultUser.png'" 
+                                        />
+                                    </v-avatar>
                                 </div>
                             </template>
                         </v-tooltip>
@@ -339,6 +325,7 @@
                             @backToPrevStep="backToPrevStep"
                             :is-simulate="isSimulate"
                             :is-finished-agent-generation="isFinishedAgentGeneration"
+                            :is-generating-example="isGeneratingExample"
                             :processDefinition="processDefinition"
                         >   
                             <template #form-work-item-action-label>
@@ -348,10 +335,10 @@
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
                                     class="work-item-form-btn-box align-center"
                                 >
-                                    <v-btn
+                                    <v-btn v-if="!gs"
                                         class="mr-1"
-                                        color="primary"
-                                        :variant="isMobile ? 'outlined' : 'flat'"
+                                        color="gray"
+                                        variant="flat"
                                         :icon="isMobile"
                                         density="comfortable"
                                         :size="isMobile ? 'small' : 'default'"
@@ -376,7 +363,7 @@
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
                                     <v-menu
-                                        v-if="!isMobile"
+                                        v-if="!isMobile && !gs"
                                         v-model="researchMethodMenu"
                                         :close-on-content-click="false"
                                         location="bottom"
@@ -385,7 +372,8 @@
                                             <v-btn class="mr-1"
                                                 density="comfortable"
                                                 rounded
-                                                style="background-color: #808080; color: white;"
+                                                color="gray"
+                                                variant="flat"
                                                 v-bind="props"
                                                 :loading="isGeneratingExample"
                                                 :disabled="isGeneratingExample"
@@ -405,6 +393,7 @@
                                                 :model-value="selectedAgent"
                                                 :backend="backend"
                                                 :is-execute="true"
+                                                :show-quick-create="true"
                                                 @update:model-value="updateWorkItem"
                                             />
                                         </v-card>
@@ -433,7 +422,7 @@
                                     >
                                         <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
                                     </v-btn>
-                                    <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                                    <v-btn v-if="!isMicRecording && !isMicRecorderLoading && !gs" @click="startVoiceRecording()"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
@@ -444,7 +433,7 @@
                                     >
                                         <Icons :icon="'sharp-mic'" :size="'16'" />
                                     </v-btn>
-                                    <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                                    <v-btn v-else-if="!isMicRecorderLoading && !gs" @click="stopVoiceRecording()"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
@@ -825,6 +814,9 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
         currentRunningResearchMethod() {
             // 에이전트가 진행 중이고 workItem에 orchestration 정보가 있는 경우
             if (this.isAgentBusy && this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {
@@ -896,6 +888,10 @@ export default {
 
             return false;
            
+        },
+        isNoAssignee() {
+            const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;
+            return !endpoint;
         },
         mode() {
             return window.$mode;
@@ -2061,11 +2057,22 @@ export default {
                     try {
                         const latestWorkItem = await this.backend.getWorkItem(me.workItem.worklist.taskId);
                         if (latestWorkItem && latestWorkItem.worklist.endpoint) {
-                            me.assigneeUserInfo = await this.backend.getUserList({
-                                orderBy: 'id',
-                                startAt: latestWorkItem.worklist.endpoint,
-                                endAt: latestWorkItem.worklist.endpoint
-                            });
+                            const endpoint = latestWorkItem.worklist.endpoint;
+                            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(endpoint);
+                            if (isUUID) {
+                                try {
+                                    const user = await this.backend.getUserById(endpoint);
+                                    me.assigneeUserInfo = user ? [user] : null;
+                                } catch (e) {
+                                    me.assigneeUserInfo = null;
+                                }
+                            } else {
+                                me.assigneeUserInfo = await this.backend.getUserList({
+                                    orderBy: 'email',
+                                    startAt: endpoint,
+                                    endAt: endpoint
+                                });
+                            }
                         } else {
                             me.assigneeUserInfo = null;
                         }

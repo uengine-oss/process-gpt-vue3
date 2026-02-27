@@ -28,12 +28,10 @@
                         <template v-slot:activator="{ props }">
                             <div
                                 v-bind="props"
-                                class="skill-item"
+                                :class="['skill-item', 'sidebar-list-hover-bg', { 'sidebar-list-hover-bg--active': isSkillSelected(skill.name) }]"
                                 @click="goToSkillDetail(skill.name)"
                             >
-                                <div class="skill-icon-wrap">
-                                    <v-icon size="20" color="primary">mdi-lightning-bolt-outline</v-icon>
-                                </div>
+                                <v-icon size="20">mdi-lightning-bolt-outline</v-icon>
                                 <div class="skill-info">
                                     <span class="skill-name">{{ skill.name || 'Unnamed Skill' }}</span>
                                     <span v-if="skill.description" class="skill-description">{{ skill.description }}</span>
@@ -61,11 +59,18 @@ export default {
     data() {
         return {
             skillList: [],
-            isLoading: false
+            isLoading: false,
+            selectedSkillName: null
         };
     },
     async mounted() {
         await this.loadSkillList();
+        this.updateSelectedSkill();
+    },
+    watch: {
+        '$route'() {
+            this.updateSelectedSkill();
+        }
     },
     methods: {
         async loadSkillList() {
@@ -90,6 +95,19 @@ export default {
         goToSkillDetail(skillName) {
             if (!skillName) return;
             this.$router.push(`/skills/${encodeURIComponent(skillName)}`);
+        },
+
+        updateSelectedSkill() {
+            const currentPath = this.$route.path;
+            if (currentPath.startsWith('/skills/')) {
+                this.selectedSkillName = decodeURIComponent(currentPath.replace('/skills/', ''));
+            } else {
+                this.selectedSkillName = null;
+            }
+        },
+
+        isSkillSelected(skillName) {
+            return this.selectedSkillName === skillName;
         },
 
         onExpanded() {},
@@ -132,22 +150,6 @@ export default {
     cursor: pointer;
     transition: all 0.2s ease;
     gap: 12px;
-}
-
-.skill-item:hover {
-    background-color: #e8f5e9;
-    transform: translateX(2px);
-}
-
-.skill-icon-wrap {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: rgba(103, 126, 234, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
 }
 
 .skill-info {

@@ -5,7 +5,7 @@
             <template #activator="{ props }">
                 <div class="catalog-header" v-bind="props" @click="isCollapsed = !isCollapsed">
                     <v-icon size="18" class="collapse-icon">
-                        {{ isCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
+                        {{ isCollapsed ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
                     </v-icon>
                 </div>
             </template>
@@ -26,7 +26,7 @@
                 </v-chip>
             </div>
             <v-icon size="18" class="collapse-icon">
-                {{ isCollapsed ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
+                {{ isCollapsed ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
             </v-icon>
         </div>
 

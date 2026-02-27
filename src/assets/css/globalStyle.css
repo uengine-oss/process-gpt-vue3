@@ -1004,6 +1004,7 @@ hr {
 
 .instance-card-tab-6 {
     height: calc(100vh - 250px);
+    padding: 16px;
     overflow: auto;
 }
 
@@ -1377,6 +1378,20 @@ hr {
         color: #bababa;
     }
 }
+
+.submit-processing-char {
+    display: inline-block;
+    animation: submit-processing-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes submit-processing-shimmer {
+    0%, 70%, 100% {
+        color: #ffffff;
+    }
+    15%, 35% {
+        color: #333333;
+    }
+}
 @media only screen and (max-width: 1450px) {
     .vue-bpmn-diagram-container .djs-palette {
         width: 375px !important;
@@ -1398,7 +1413,7 @@ hr {
 
 
     .agent-chat-info-content {
-        height: calc(100vh - 170px);
+        height: calc(100vh - 74px);
         overflow: auto;
     }
 }
@@ -1638,13 +1653,30 @@ hr {
         bottom: 4px;
         height: calc(100vh - 200px);
     }
+
+    .vue-bpmn-diagram-container .djs-palette {
+        width: 190px !important;
+        height: auto !important;
+    }
+
+    .djs-palette-entries {
+        margin-left: 36px;
+    }
+    .vue-bpmn-diagram-container .djs-palette .djs-palette-entries .entry {
+        width: 30px;
+    }
+    .djs-palette .entry {
+        font-size: 20px !important;
+    }
 }
 
 
 @media only screen and (max-width:550px) {
-    .vue-bpmn-diagram-container .djs-palette {
-        width: 230px !important;
-        height:185px !important;
-    }
+}
+
+.sidebar-title-icon {
+    padding-left: 8px;
+    padding-top: 2px;
+    cursor: pointer;
 }
 
