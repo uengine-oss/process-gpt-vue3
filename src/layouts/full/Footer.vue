@@ -4,7 +4,7 @@
         <div class="footer-content ma-0 pa-3 text-center">
             <!-- Copyright -->
             <div class="mb-2 text-caption text-medium-emphasis">
-                Copyright © uEngine Solutions.<br>All Rights Reserved
+                프로세스 지피티 v1.0 (Process-GPT v1.0)<br>Copyright © uEngine Solutions.<br>All Rights Reserved
             </div>
             
             <!-- 회사 정보 -->

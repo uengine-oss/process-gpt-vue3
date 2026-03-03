@@ -308,7 +308,7 @@ export default {
             }
         },
         useMarketplace() {
-            return this.mode == 'ProcessGPT';
+            return this.mode == 'ProcessGPT' && !window.$gs;
         },
         isMobile() {
             return window.innerWidth <= 768;

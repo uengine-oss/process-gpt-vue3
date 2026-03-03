@@ -348,7 +348,7 @@
                                         <v-icon>mdi-robot</v-icon>
                                         <span v-if="!isMobile" class="ms-1">{{ $t('FormRealtimeAssistant.title') }}</span>
                                     </v-btn>
-                                    <v-btn v-if="hasGeneratedContent && (!selectedResearchMethod || selectedResearchMethod === 'default')"
+                                    <v-btn v-if="!gs && hasGeneratedContent && (!selectedResearchMethod || selectedResearchMethod === 'default')"
                                         @click="resetGeneratedContent"
                                         :disabled="isGeneratingExample"
                                         :class="isMobile ? 'mr-1 text-medium-emphasis' : 'mr-1'"
@@ -399,7 +399,7 @@
                                         </v-card>
                                     </v-menu>
                                     <!-- 피드백 버튼만 유지 -->
-                                    <v-btn v-if="isSimulate == 'true' && !isMobile"
+                                    <v-btn v-if="isSimulate == 'true' && !isMobile && !gs"
                                         class="feedback-btn rounded-pill mr-1" 
                                         variant="elevated" 
                                         density="comfortable"
@@ -410,7 +410,7 @@
                                         <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
                                         <span v-if="!showFeedbackForm" class="ms-2">{{ $t('feedback') || 'Feedback' }}</span>
                                     </v-btn>
-                                    <v-btn v-if="isSimulate == 'true' && isMobile"
+                                    <v-btn v-if="isSimulate == 'true' && isMobile && !gs"
                                         @click="toggleFeedback"
                                         :disabled="isGeneratingExample"
                                         class="mr-1 text-medium-emphasis"
@@ -445,7 +445,7 @@
                                         <Icons :icon="'stop'" :size="'16'" />
                                     </v-btn>
                                     
-                                    <v-btn v-if="isMobile"
+                                    <v-btn v-if="isMobile && !(gs && isSimulate == 'true')"
                                         @click="beforeGenerateExample"
                                         :loading="isGeneratingExample"
                                         :disabled="isGeneratingExample"
@@ -782,7 +782,7 @@ export default {
             // 현재 폼(html/formData)에 반영 대상(definition/version) 주입
             // formData가 아직 없을 수 있으므로, formData-updated에서도 한 번 더 시도함
             this.injectDeployTargetToBpmnField(this.html, this.formData);
-            if(this.isSimulate == 'true' && !this.generator) {
+            if(this.isSimulate == 'true' && !this.generator && !this.gs) {
                 this.beforeGenerateExample();
             }
         });
@@ -944,6 +944,11 @@ export default {
         },
         tabList() {
             if (this.mode == 'ProcessGPT') {
+                if (this.gs && this.isSimulate == 'true') {
+                    return this.bpmn
+                        ? [{ value: 'progress', label: this.$t('WorkItem.progress') }]
+                        : [{ value: 'chatbot', label: this.$t('WorkItem.chatbot') }];
+                }
                 let tabs = [];
                 
                 if(this.bpmn && this.isStarted) {
@@ -972,7 +977,7 @@ export default {
                 }
                 
                 // currentRunningResearchMethod가 있으면 agent-monitor 탭 추가
-                if (this.currentRunningResearchMethod && !tabs.find(t => t.value === 'agent-monitor')) {
+                if (!this.gs && this.currentRunningResearchMethod && !tabs.find(t => t.value === 'agent-monitor')) {
                     tabs.push({ value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') });
                 }
                 
@@ -1037,7 +1042,7 @@ export default {
         },
         currentRunningResearchMethod(newValue) {
             // currentRunningResearchMethod가 있으면 agent-monitor 탭으로 변경
-            if (newValue) {
+            if (newValue && !(this.gs && this.isSimulate == 'true')) {
                 this.selectedTab = 'agent-monitor';
             }
         },
@@ -1062,7 +1067,7 @@ export default {
         selectedAgent: {
             handler(newVal) {
                 if (newVal && newVal.agentMode && newVal.agentMode !== 'none') {
-                    if (newVal.orchestration === 'default') {
+                    if (newVal.orchestration === 'default' && !(this.gs && this.isSimulate == 'true')) {
                         this.beforeGenerateExample(null);
                     }
                 }
@@ -1529,6 +1534,7 @@ export default {
             }
         },
         async beforeGenerateExample(researchMethod = null) {
+            if (this.gs && this.isSimulate == 'true') return;
             // 빠른 생성 실행 시 selectedResearchMethod 설정
             if (!researchMethod) {
                 this.selectedResearchMethod = 'default';

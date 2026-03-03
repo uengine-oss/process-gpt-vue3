@@ -13,7 +13,7 @@
 
 <script>
 import { RouterLink } from 'vue-router';
-import logo from '@/assets/images/logos/logo-dark.svg'; // import를 사용하여 이미지 경로를 가져옵니다.
+import logo from '@/assets/images/logos/logo-dark-gs.svg'; // import를 사용하여 이미지 경로를 가져옵니다.
 import uEngine6Logo from '@/assets/images/logos/uEngine6-logo.png'; // import를 사용하여 이미지 경로를 가져옵니다.
 
 export default {

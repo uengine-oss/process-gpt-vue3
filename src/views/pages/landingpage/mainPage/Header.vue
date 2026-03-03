@@ -2,7 +2,7 @@
   <header class="header-main">
     <div class="container">
       <div class="logo">
-        <img src="@/assets/images/logos/logo-dark.svg" alt="Process GPT 로고" @click="goHome" style="cursor: pointer;" />
+        <img src="@/assets/images/logos/logo-dark-gs.svg" alt="Process GPT 로고" @click="goHome" style="cursor: pointer;" />
         <!-- <h1>Process GPT</h1> -->
       </div>
       <nav class="nav">

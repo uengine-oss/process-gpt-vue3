@@ -18,6 +18,7 @@ export default class AgentChatGenerator extends AIGenerator {
     async generate() {
         this.state = 'running';
         try {
+            const apiBase = import.meta.env.DEV ? '' : '/completion';
             const data = {
                 text: this.message,
                 chat_room_id: this.chatRoomId,
@@ -35,7 +36,7 @@ export default class AgentChatGenerator extends AIGenerator {
                 });
             }
             
-            const response = await fetch('/completion/multi-agent/chat', {
+            const response = await fetch(`${apiBase}/multi-agent/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

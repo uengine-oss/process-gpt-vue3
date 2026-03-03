@@ -28,8 +28,13 @@ const emailRules = ref([
     (v: string) => /.+@.+\..+/.test(v) || proxy.$t('createAccount.invalidEmailFormat')
 ]);
 const username = ref('');
+const isGsMode = !!window.$gs;
+const userNameLabelKey = isGsMode ? 'createAccount.userNameGs' : 'createAccount.userName';
+const enterNameKey = isGsMode ? 'createAccount.enterNickname' : 'createAccount.enterName';
+const invalidUsernameCharsKey = isGsMode ? 'createAccount.invalidNicknameChars' : 'createAccount.invalidUsernameChars';
 const usernameRules = ref([
-    (v: string) => !!v || proxy.$t('createAccount.enterName'),
+    (v: string) => !!v || proxy.$t(enterNameKey),
+    (v: string) => /^[a-zA-Z0-9가-힣_]+$/.test(v) || proxy.$t(invalidUsernameCharsKey),
 ]);
 
 // 비밀번호 일치 여부 검증 함수
@@ -42,7 +47,11 @@ function validate(values: any, { setErrors }: any) {
     // 필수 입력값 및 이메일 형식 검증
     let hasError = false;
     if (!username.value) {
-        setErrors({ username: proxy.$t('createAccount.enterName') });
+        setErrors({ username: proxy.$t(enterNameKey) });
+        hasError = true;
+    }
+    if (username.value && !/^[a-zA-Z0-9가-힣_]+$/.test(username.value)) {
+        setErrors({ username: proxy.$t(invalidUsernameCharsKey) });
         hasError = true;
     }
     if (!email.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
@@ -92,7 +101,7 @@ function validate(values: any, { setErrors }: any) {
         </v-label>
         <v-divider class="mb-4" />
 
-        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
+        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t(userNameLabelKey) }}</v-label>
         <VTextField 
             v-model="username" 
             :rules="usernameRules" 

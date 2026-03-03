@@ -115,7 +115,21 @@ export default {
                     if (error || !data?.user) return;
 
                     const currentTenantId = data?.user?.app_metadata?.tenant_id;
-                    if (!currentTenantId || currentTenantId !== tenantName) {
+                    let needSetTenant = !currentTenantId || currentTenantId !== tenantName;
+
+                    if (!needSetTenant) {
+                        try {
+                            const currentUserInfo = await this.backend.getUserInfo();
+                            if (!currentUserInfo?.uid) {
+                                needSetTenant = true;
+                            }
+                        } catch (e) {
+                            // auth는 되었지만 public.users 레코드가 없으면 setTenant로 복구한다.
+                            needSetTenant = true;
+                        }
+                    }
+
+                    if (needSetTenant) {
                         await this.backend.setTenant(tenantName);
                     }
                 } catch (e) {

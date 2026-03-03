@@ -55,7 +55,7 @@
         <div v-if="useOrchestration" class="mt-4">
             <v-select 
                 v-model="activity.orchestration" 
-                :items="orchestrationItems" 
+                :items="availableOrchestrationItems" 
                 item-title="titleKey"
                 item-value="value"
                 density="compact" 
@@ -241,11 +241,18 @@ export default {
         }
     },
     computed: {
+        gs() {
+            return !!window.$gs;
+        },
         useAgentSelect() {
             return this.activity.agentMode && this.activity.agentMode !== 'none';
         },
         useOrchestration() {
             return this.useAgentSelect && this.agentType === 'agent';
+        },
+        availableOrchestrationItems() {
+            if (!this.gs) return this.orchestrationItems;
+            return this.orchestrationItems.filter(item => item.value !== 'deep-research-custom');
         }
     },
     watch: {
@@ -323,6 +330,9 @@ export default {
                 agentMode: 'none',
                 orchestration: null,
             };
+        }
+        if (this.gs && this.activity.orchestration === 'deep-research-custom') {
+            this.activity.orchestration = 'crewai-action';
         }
     },
     async mounted() {

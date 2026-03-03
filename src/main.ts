@@ -218,10 +218,43 @@ async function setupSupabase() {
         return;
     }
     
-    const supabaseUrl = window._env_?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+    const rawSupabaseUrl = window._env_?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+    const normalizeSupabaseUrl = (url: string) => {
+        if (!url || window.location.protocol !== 'https:') return url;
+
+        try {
+            const parsed = new URL(url);
+            if (parsed.protocol !== 'http:') return url;
+
+            const isLocalHost =
+                parsed.hostname === 'localhost' ||
+                parsed.hostname === '127.0.0.1' ||
+                parsed.hostname === '0.0.0.0';
+
+            if (isLocalHost) {
+                // HTTPS 페이지에서는 ws://가 차단되므로, localhost Supabase 주소를
+                // 현재 접속 호스트 기반의 Kong HTTPS 포트(8443)로 강제 보정한다.
+                return `https://${window.location.hostname}:8443`;
+            }
+
+            parsed.protocol = 'https:';
+            if (parsed.port === '54321') {
+                parsed.port = '8443';
+            }
+            return parsed.toString().replace(/\/$/, '');
+        } catch (e) {
+            console.warn('[Main] Invalid VITE_SUPABASE_URL. Using raw value.', e);
+            return url;
+        }
+    };
+
+    const supabaseUrl = normalizeSupabaseUrl(rawSupabaseUrl);
     const supabaseKey = window._env_?.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_KEY;
 
     try {
+        if (rawSupabaseUrl !== supabaseUrl) {
+            console.info('[Main] Supabase URL normalized for HTTPS:', supabaseUrl);
+        }
         Object.defineProperty(window, '$supabase', {
             value: createClient(
                 supabaseUrl,
@@ -243,6 +276,7 @@ async function setupSupabase() {
 }
 
 let authAuditListenerAttached = false;
+
 function setupAuthAuditLogging() {
     if (authAuditListenerAttached) return;
     if (!window.$supabase) return;
@@ -262,25 +296,27 @@ function setupAuthAuditLogging() {
             const email = session?.user?.email ?? null;
             const provider = session?.user?.app_metadata?.provider ?? null;
 
-            const rpcPromise = window.$supabase.rpc('record_auth_audit', {
-                p_action: 'login',
-                p_email: email,
-                p_success: true,
-                p_error_message: null,
-                p_tenant_id: (window.$tenantName as any) || null,
-                p_metadata: {
-                    source: 'onAuthStateChange',
-                    event,
-                    provider
-                }
-            });
-            void rpcPromise.then(({ error }: any) => {
-                if (error) {
-                    console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', error);
-                }
-            }).catch((e: any) => {
-                console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', e);
-            });
+            void (async () => {
+                const rpcPromise = window.$supabase.rpc('record_auth_audit', {
+                    p_action: 'login',
+                    p_email: email,
+                    p_success: true,
+                    p_error_message: null,
+                    p_tenant_id: (window.$tenantName as any) || null,
+                    p_metadata: {
+                        source: 'onAuthStateChange',
+                        event,
+                        provider
+                    }
+                });
+                void rpcPromise.then(({ error }: any) => {
+                    if (error) {
+                        console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', error);
+                    }
+                }).catch((e: any) => {
+                    console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', e);
+                });
+            })();
         } catch (e) {
             // 감사 로그 실패는 앱 동작에 영향 없도록 무시
             console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', e);

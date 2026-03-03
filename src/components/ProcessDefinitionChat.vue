@@ -1495,6 +1495,29 @@ export default {
         async afterGenerationFinished(response) {
             let jsonProcess = null;
             if (typeof response === 'string') {
+                const trimmedResponse = response.trim();
+                // JSON이 아닌 일반 텍스트 응답은 재시도/파싱 루프를 타지 않고 마지막 버블을 갱신한다.
+                if (!trimmedResponse.includes('{')) {
+                    const lastIndex = this.messages.length - 1;
+                    if (lastIndex >= 0) {
+                        const lastMessage = this.messages[lastIndex];
+                        this.messages[lastIndex] = {
+                            ...lastMessage,
+                            role: "system",
+                            content: response,
+                            timeStamp: Date.now(),
+                            isLoading: false
+                        };
+                    } else {
+                        this.messages.push({
+                            role: "system",
+                            content: response,
+                            timeStamp: Date.now(),
+                            isLoading: false
+                        });
+                    }
+                    return;
+                }
                 try {
                     jsonProcess = await this.parseJsonProcess(response);
                 } catch(e){
@@ -2092,9 +2115,9 @@ export default {
                     // 응답 시작
                     this.messages[aiMessageIndex] = {
                         role: "assistant", 
-                        content: "",
+                        content: data.content || "답변 생성 중...",
                         timeStamp: Date.now(),
-                        isLoading: false,
+                        isLoading: true,
                         isStreaming: true
                     };
                     this.chatRenderKey++;
@@ -2114,6 +2137,9 @@ export default {
                     
                 case 'response_chunk':
                     // 일반 응답 텍스트 점진적 추가
+                    if (this.messages[aiMessageIndex].isLoading) {
+                        this.messages[aiMessageIndex].content = "";
+                    }
                     this.messages[aiMessageIndex].content += data.content;
                     this.messages[aiMessageIndex].isLoading = false;
                     this.chatRenderKey++;

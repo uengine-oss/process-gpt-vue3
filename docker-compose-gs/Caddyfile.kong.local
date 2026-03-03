@@ -1,0 +1,13 @@
+{
+	auto_https off
+}
+
+:54322 {
+	reverse_proxy http://127.0.0.1:54321 {
+		# Inject the client IP observed at the host edge.
+		header_up X-Forwarded-For {http.request.remote.host}
+		header_up X-Real-IP {http.request.remote.host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up Host {host}
+	}
+}

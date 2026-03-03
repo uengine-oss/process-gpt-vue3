@@ -234,7 +234,7 @@
                     </v-tabs>
 
                     <!-- DMN Tabs -->
-                    <div v-if="!editDialog && agentType === 'agent'">
+                    <div v-if="!editDialog && agentType === 'agent' && !gs">
                         <v-divider class="mb-4"></v-divider>
                         <div class="d-flex align-center mb-1">
                             <span class="text-body-2 font-weight-medium mr-1">{{ $t('AgentChatInfo.businessRule') }}</span>
@@ -409,6 +409,12 @@ export default {
         tabList() {
             if (this.agentInfo?.agent_type == 'agent') {
                 this.agentType = 'agent';
+                if (this.gs) {
+                    return [
+                        { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
+                        { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' },
+                    ]
+                }
                 return [
                     { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
                     { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
@@ -418,6 +424,12 @@ export default {
                 ]
             } else {
                 this.agentType = this.agentInfo?.agent_type;
+                if (this.gs) {
+                    return [
+                        { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
+                        { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' },
+                    ]
+                }
                 return [
                     { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
@@ -506,6 +518,9 @@ export default {
             if (!agentId || !this.backend?.watchData || !this.backend?.getAgentKnowledgeSetupLog) return;
             try {
                 const log = await this.backend.getAgentKnowledgeSetupLog(agentId);
+                // 로그가 없으면 "대기 중" 상태를 강제로 띄우지 않는다.
+                // (설정 워커가 없는 환경에서 무한 로딩 방지)
+                if (!log) return;
                 if (log && (log.status === 'DONE' || log.status === 'FAILED')) return;
                 this.isKnowledgeSetupInProgress = true;
                 const channel = `agent-knowledge-setup-${agentId}-${Date.now()}`;
@@ -587,10 +602,16 @@ export default {
          * - pgagent: alias, description, skills
          */
         getSectionConfig() {
-            return {
+            const config = {
                 agent: ['goal', 'persona', 'tools', 'skills', 'model'],
                 a2a: ['endpoint', 'description', 'skills'],
                 pgagent: ['alias', 'description', 'skills']
+            };
+            if (!this.gs) return config;
+            return {
+                agent: config.agent.filter(section => section !== 'tools' && section !== 'skills'),
+                a2a: config.a2a.filter(section => section !== 'skills'),
+                pgagent: config.pgagent.filter(section => section !== 'skills')
             };
         },
 

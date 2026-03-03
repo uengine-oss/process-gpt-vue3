@@ -44,7 +44,7 @@
                 </v-menu>
             </div>
             <v-spacer></v-spacer>
-            <v-tooltip v-if="!isViewMode && isTaskElement && !isUEngineMode" location="bottom">
+            <v-tooltip v-if="!isViewMode && isTaskElement && !isUEngineMode && !gs" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="$emit('saveToCatalog')" icon variant="text" density="comfortable" class="panel-close-btn">
                         <v-icon>mdi-folder-plus</v-icon>
@@ -260,6 +260,9 @@ export default {
         this.removeModelChangeListener();
     },
     computed: {
+        gs() {
+            return !!window.$gs;
+        },
         filteredTemplateOptions() {
             const filtered = this.templateOptions.filter(option => option.includes(this.name));
             return filtered? filtered : [];

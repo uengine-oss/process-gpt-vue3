@@ -185,7 +185,7 @@
                                 <span>{{ $t('processDefinitionMap.save') }}</span>
                             </v-tooltip>
 
-                            <v-tooltip v-if="!gs" :text="$t('processDefinitionMap.downloadImage')">
+                            <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
                                 <template v-slot:activator="{ props }">
                                                 <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
                                         <Icons :icon="'image-download'" />
@@ -689,14 +689,16 @@ export default {
                 icon: 'image-download', 
                 title: 'processDefinitionMap.usageGuide.details.1.title' 
             },
-            { 
-                icon: 'magic', 
-                title: 'processDefinitionMap.usageGuide.details.2.title' 
-            },
-            { 
-                icon: 'market', 
-                title: 'processDefinitionMap.usageGuide.details.3.title' 
-            }
+            ...(!window.$gs ? [
+                { 
+                    icon: 'magic', 
+                    title: 'processDefinitionMap.usageGuide.details.2.title' 
+                },
+                { 
+                    icon: 'market', 
+                    title: 'processDefinitionMap.usageGuide.details.3.title' 
+                }
+            ] : [])
         ],
         generator: null,
         initialConsultingMessage: null,

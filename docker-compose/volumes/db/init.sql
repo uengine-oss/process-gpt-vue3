@@ -3261,3 +3261,38 @@ END;
 $$ LANGUAGE plpgsql STABLE;
 
 GRANT EXECUTE ON FUNCTION public.agent_needing_knowledge_setup(integer) TO anon;
+
+-- ============================================================================
+-- Mem0 vector store RPC (학습/지식관리 탭에서 사용)
+-- ============================================================================
+create or replace function public.get_memories(agent text, lim int default 100)
+returns setof vecs.memories
+language sql stable
+security definer
+as $$
+  select *
+  from vecs.memories
+  where (agent is null or metadata->>'agent_id' = agent)
+  order by id
+  limit lim;
+$$;
+
+create or replace function public.delete_memory(mem_id text)
+returns void
+language sql volatile
+security definer
+as $$
+  delete from vecs.memories where id = mem_id;
+$$;
+
+create or replace function public.delete_memories_by_agent(agent text)
+returns void
+language sql volatile
+security definer
+as $$
+  delete from vecs.memories where metadata->>'agent_id' = agent;
+$$;
+
+grant execute on function public.get_memories(text, int) to anon, authenticated, service_role;
+grant execute on function public.delete_memory(text) to anon, authenticated, service_role;
+grant execute on function public.delete_memories_by_agent(text) to anon, authenticated, service_role;

@@ -197,7 +197,8 @@ export default class StorageBaseSupabase {
                 filter.match.tenant_id = window.$tenantName;
             }
             const existUser = await this.getObject('users', filter);
-            if ((window.$isTenantServer && !window.$tenantName) || (existUser && existUser.id)) {
+            const allowAuthWithoutUserRow = Boolean(window.$gs && window.$tenantName === 'localhost');
+            if ((window.$isTenantServer && !window.$tenantName) || (existUser && existUser.id) || allowAuthWithoutUserRow) {
                 const result = await window.$supabase.auth.signInWithPassword({
                     email: userInfo.email,
                     password: userInfo.password
@@ -311,6 +312,7 @@ export default class StorageBaseSupabase {
             throw new StorageBaseError('error in signInWithKeycloak', e, arguments);
         }
     }
+
     async signUp(userInfo) {
         try {
             const tenantId = window.$tenantName || 'process-gpt';
@@ -1046,7 +1048,42 @@ export default class StorageBaseSupabase {
                         .select('*')
                         .match(filter)
                         .maybeSingle();
-                const data = isMainDomain ? (Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : null) : rawData;
+                let data = isMainDomain ? (Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : null) : rawData;
+
+                // GS localhost 인증 플로우에서는 auth 세션이 먼저 생기고 public.users는 나중에 생성될 수 있다.
+                // 이 경우 즉시 로그아웃하지 말고 최소 사용자 레코드를 자동 복구한다.
+                if (!data && window.$gs && window.$tenantName === 'localhost') {
+                    const sessionUser = value?.session?.user;
+                    if (sessionUser?.id) {
+                        const fallbackUser = {
+                            id: sessionUser.id,
+                            tenant_id: 'localhost',
+                            email: sessionUser.email ?? null,
+                            username: sessionUser.user_metadata?.name ?? sessionUser.email ?? null,
+                            role: 'user'
+                        };
+
+                        const { error: upsertError } = await window.$supabase
+                            .from('users')
+                            .upsert(fallbackUser, { onConflict: 'id,tenant_id' });
+
+                        if (upsertError) {
+                            console.error('[auth] failed to auto-provision users row:', upsertError);
+                        } else {
+                            const { data: recoveredData, error: recoveredError } = await window.$supabase
+                                .from('users')
+                                .select('*')
+                                .match(filter)
+                                .maybeSingle();
+                            if (!recoveredError && recoveredData) {
+                                data = recoveredData;
+                                console.info('[auth] users row auto-provisioned for', sessionUser.id);
+                            } else {
+                                console.error('[auth] users row still missing after auto-provision:', recoveredError);
+                            }
+                        }
+                    }
+                }
 
                 if (data && !error) {
                     window.localStorage.setItem('isAdmin', data.is_admin || false);

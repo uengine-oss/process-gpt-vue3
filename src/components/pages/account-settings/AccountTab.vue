@@ -92,7 +92,7 @@ export default {
         formFields: [
             {
                 key: 'name',
-                label: 'accountTab.name',
+                label: window.$gs ? 'accountTab.nickname' : 'accountTab.name',
                 type: 'text',
                 model: '',
                 readonly: false
@@ -136,11 +136,19 @@ export default {
             this.imageChangeDialog = false;
         },
         async updateUser() {
+            const username = this.formFields.find(f => f.key === 'name').model;
+            if (username && !/^[a-zA-Z0-9가-힣_]+$/.test(username)) {
+                window.$app_.snackbarMessage = this.$t(window.$gs ? 'accountTab.invalidNicknameChars' : 'createAccount.invalidUsernameChars');
+                window.$app_.snackbarColor = 'error';
+                window.$app_.snackbar = true;
+                return;
+            }
+
             try {
                 const userInfo = {
                     id: this.userInfo.uid,
                     email: this.formFields.find(f => f.key === 'email').model,
-                    username: this.formFields.find(f => f.key === 'name').model,
+                    username,
                     profile: this.selectedProfileImage
                 }
                 await backend.updateUserInfo({ type: 'update', user: userInfo });

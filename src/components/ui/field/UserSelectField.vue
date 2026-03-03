@@ -179,9 +179,11 @@ export default {
 
         if(this.useAgent) {
             // 기본 에이전트 목록 추가
-            const defaultSetting = useDefaultSetting();
-            const defaultAgentList = defaultSetting.getAgentList;
-            this.userList = [...defaultAgentList, ...this.userList];
+            if (!window.$gs) {
+                const defaultSetting = useDefaultSetting();
+                const defaultAgentList = defaultSetting.getAgentList;
+                this.userList = [...defaultAgentList, ...this.userList];
+            }
 
             if (this.onlyAgent) {
                 const agentList = this.userList.filter(member => member.is_agent);

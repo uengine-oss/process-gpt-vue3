@@ -700,7 +700,7 @@
                                                 </div>
 
                                                 <!-- markdown message -->
-                                                <div v-else-if="markdownEnabled && ((message.contentType && message.contentType == 'markdown') || (message.role == 'system' && !message.contentType))" 
+                                                <div v-else-if="markdownEnabled && !message.isLoading && message.content && message.content.toString().trim() !== '' && ((message.contentType && message.contentType == 'markdown') || (message.role == 'system' && !message.contentType))" 
                                                     :class="agentMessage || message.role == 'system' ? 'agent-message' : 'other-message'"
                                                 >
                                                     <div v-html="renderedMarkdown(message.content)" 
@@ -780,10 +780,10 @@
                                                             @mouseleave="replyIndex = -1"
                                                         >
                                                         <div
-                                                            v-if="chatRoomMode && (message.role === 'assistant' || message.role === 'agent') && message.isLoading"
+                                                            v-if="message.isLoading"
                                                             class="chat-room-loading-indicator"
                                                         >
-                                                            <template v-if="getRunningToolCall(message)">
+                                                            <template v-if="chatRoomMode && (message.role === 'assistant' || message.role === 'agent') && getRunningToolCall(message)">
                                                                 <div class="chat-room-tool-calls">
                                                                     <div class="chat-room-tool-call-item">
                                                                         <v-icon size="14" color="primary" class="mr-1">mdi-wrench</v-icon>
@@ -1457,7 +1457,7 @@
                         </v-row >
                         
                         <div>
-                            <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                            <v-btn v-if="showVoiceControls && !isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
@@ -1467,7 +1467,7 @@
                             >
                                 <Icons :icon="'sharp-mic'" :size="'16'" />
                             </v-btn>
-                            <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                            <v-btn v-else-if="showVoiceControls && !isMicRecorderLoading" @click="stopVoiceRecording()"
                                 class="mr-1 text-medium-emphasis"
                                 density="comfortable"
                                 icon
@@ -1477,8 +1477,8 @@
                             >
                                 <Icons :icon="'stop'" :size="'16'" />
                             </v-btn>
-                            <Icons v-if="isMicRecorderLoading" :icon="'bubble-loading'" style="flex-shrink: 0;" />
-                            <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
+                            <Icons v-if="showVoiceControls && isMicRecorderLoading" :icon="'bubble-loading'" style="flex-shrink: 0;" />
+                            <v-tooltip v-if="showVoiceControls" :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
                                 <template v-slot:activator="{ props }">
                                     <v-btn @click="enableDesktopVoice && (openChatMenu(), handleVoiceButtonClick())"
                                         v-bind="props"
@@ -1766,6 +1766,7 @@
                         </template>
                         <template v-else>
                         <v-btn
+                            v-if="showVoiceControls"
                             class="mr-1 text-medium-emphasis"
                             density="comfortable"
                             icon
@@ -1780,7 +1781,7 @@
                             <Icons v-else :icon="'sharp-mic'" :size="'16'" />
                         </v-btn>
                         
-                        <v-tooltip :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
+                        <v-tooltip v-if="showVoiceControls" :text="enableDesktopVoice ? $t('chat.headset') : '에이전트와 1:1 대화에서만 사용할 수 있습니다'">
                             <template v-slot:activator="{ props }">
                                 <v-btn @click="enableDesktopVoice && !isGenerationFinished && (openChatMenu(), handleVoiceButtonClick())"
                                     class="mr-1 text-medium-emphasis"
@@ -2313,6 +2314,13 @@ export default {
                 return this.$t(isDefinitionMap ? 'chat.definitionMapInputMessage' : 'chat.inputMessage');
             } catch (e) {
                 return this.$t('chat.inputMessage');
+            }
+        },
+        showVoiceControls() {
+            try {
+                return !window?.$gs;
+            } catch (e) {
+                return true;
             }
         }
     },

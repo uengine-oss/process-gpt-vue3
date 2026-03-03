@@ -57,21 +57,21 @@
         <template v-else-if="(settingInfo.settingType === 'items') && isShowCheck(settingInfo)">
           <v-tabs v-model="componentProps['localIsDynamicLoad']" color="primary" fixed-tabs>
               <v-tab value="fixed">{{ $t('FormDefinitionPanel.fixed') }}</v-tab>
-              <v-tab value="urlBinding">{{ $t('FormDefinitionPanel.urlBinding') }}</v-tab>
-              <v-tab value="dataBinding">{{ $t('FormDefinitionPanel.dataBinding') }}</v-tab>
+              <v-tab v-if="!(gs && isRadioField)" value="urlBinding">{{ $t('FormDefinitionPanel.urlBinding') }}</v-tab>
+              <v-tab v-if="!(gs && isRadioField)" value="dataBinding">{{ $t('FormDefinitionPanel.dataBinding') }}</v-tab>
           </v-tabs>
           <v-window v-model="componentProps['localIsDynamicLoad']" class="fill-height">
               <v-window-item value="fixed" class="fill-height" style="overflow-y: auto; padding:5px;">
                 <FormDefinitionPanelItemTable v-model="componentProps[settingInfo.dataToUse]"></FormDefinitionPanelItemTable>
               </v-window-item>
 
-              <v-window-item value="urlBinding" class="fill-height pa-5" style="overflow-y: auto">
+              <v-window-item v-if="!(gs && isRadioField)" value="urlBinding" class="fill-height pa-5" style="overflow-y: auto">
                 <v-text-field label="URL" ref="localDynamicLoadURL" v-model.trim="componentProps['localDynamicLoadURL']" @keyup.enter="save"></v-text-field>
                 <v-text-field label="Key JSON Path" ref="localDynamicLoadKeyJsonPath" v-model.trim="componentProps['localDynamicLoadKeyJsonPath']" @keyup.enter="save"></v-text-field>
                 <v-text-field label="Value JSON Path" ref="localDynamicLoadValueJsonPath" v-model.trim="componentProps['localDynamicLoadValueJsonPath']" @keyup.enter="save"></v-text-field>
               </v-window-item>
 
-              <v-window-item value="dataBinding" class="fill-height pa-5" style="overflow-y: auto">
+              <v-window-item v-if="!(gs && isRadioField)" value="dataBinding" class="fill-height pa-5" style="overflow-y: auto">
                 <v-select label="Data Source" ref="localDynamicDataSource" v-model.trim="componentProps['localDynamicDataSource']" :items="dataSources" :item-title="item => item.key" :item-value="item => item.key" @keyup.enter="save"></v-select>
                 <div v-if="componentProps['localDynamicDataSource']">
                   <v-select label="Data Select" ref="localDynamicLoadURLName" v-model.trim="componentProps['localDynamicLoadURLName']" :items="dataSourcePaths" :item-title="item => item.key" :item-value="item => item.key" @keyup.enter="save"></v-select>
@@ -114,6 +114,12 @@
       FormDefinitionPanelItemTable
     },
     computed: {
+      gs() {
+        return !!window.$gs;
+      },
+      isRadioField() {
+        return this.componentRef?.tagName === 'radio-field';
+      },
       dataSourcePaths() {
         if(!this.dataSource) return []
         return Object.entries(this.dataSource.paths).map(([key, value]) => ({
@@ -246,6 +252,9 @@
 
       if(!this.componentProps['localIsDynamicLoad']) {
           this.componentProps['localIsDynamicLoad'] = 'fixed'
+      }
+      if (this.gs && this.isRadioField && this.componentProps['localIsDynamicLoad'] !== 'fixed') {
+          this.componentProps['localIsDynamicLoad'] = 'fixed';
       }
 
       this.loadDataSource();

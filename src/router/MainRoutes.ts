@@ -7,7 +7,7 @@ const gsExcludedRoutes = [
     'Business Rules', 'Business Rules New', 'Business Rules Detail',
     'Chat Room', 'InstanceHistoryViewer', 'TaskCatalogAdmin',
     'Chats', 'Proposals', 'Calendar',
-    'Usage', 'Agent Chat', 'Pricing',
+    'Usage', 'Pricing',
     'Payment Success', 'Payment Fail',
     'BSCard', 'Schedule',
 ];

@@ -6,7 +6,7 @@
         <v-divider class="mb-4" />       
        
         <!-- #region 테넌트 가입 정보 입력 -->
-        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
+        <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t(userNameLabelKey) }}</v-label>
         <VTextField 
             v-model="accountInfo.username" 
             :rules="accountInfoRules.username" 
@@ -60,18 +60,29 @@ export default {
             username: '',
             email: '',
             password: ''
-        },
-        accountInfoRules: {
-            username: [
-                (v) => !!v || 'Name is required',
-                (v) => (v && v.length <= 10) || 'Name must be less than 10 characters'
-            ],
-            email: [(v) => !!v || 'E-mail is required', (v) => /.+@.+\..+/.test(v) || 'E-mail must be valid'],
-            password: [
-                (v) => !!v || 'Password is required',
-            ],
         }
     }),
+    computed: {
+        isGsMode() {
+            return !!window.$gs;
+        },
+        userNameLabelKey() {
+            return this.isGsMode ? 'createAccount.userNameGs' : 'createAccount.userName';
+        },
+        accountInfoRules() {
+            return {
+                username: [
+                    (v) => !!v || this.$t(this.isGsMode ? 'createAccount.enterNickname' : 'createAccount.enterName'),
+                    (v) => (v && v.length <= 10) || this.$t(this.isGsMode ? 'createAccount.nicknameMaxLength' : 'createAccount.nameMaxLength'),
+                    (v) => /^[a-zA-Z0-9가-힣_]+$/.test(v) || this.$t(this.isGsMode ? 'createAccount.invalidNicknameChars' : 'createAccount.invalidUsernameChars')
+                ],
+                email: [(v) => !!v || 'E-mail is required', (v) => /.+@.+\..+/.test(v) || 'E-mail must be valid'],
+                password: [
+                    (v) => !!v || 'Password is required',
+                ]
+            };
+        }
+    },
 
     methods: {
         async processTenantSignup() {

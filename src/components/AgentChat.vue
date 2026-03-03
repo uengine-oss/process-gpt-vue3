@@ -218,7 +218,7 @@ export default {
         if (hashTab && this.tabHandlers && this.tabHandlers[hashTab]) {
             this.activeTab = hashTab;
         } else {
-            this.activeTab = 'chat';
+            this.activeTab = window.$gs ? 'learning' : 'chat';
         }
         await this.init();
         this.subscribeDmnRealtime(this.id);
@@ -226,6 +226,7 @@ export default {
         this.EventBus.on('dmn-saved', (data) => {
             // 현재 에이전트 소유의 DMN 저장일 때만 탭 전환 (클릭 없이 다른 에이전트 화면이 바뀌지 않도록)
             if (data?.owner != null && data.owner !== this.agentInfo?.id) return;
+            if (window.$gs) return;
             this.selectedDmnId = data.id;
             this.activeTab = 'dmn-modeling';
         });
@@ -234,7 +235,7 @@ export default {
             // 현재 에이전트 소유의 DMN 삭제일 때만 탭/목록 갱신
             if (data?.owner != null && data.owner !== this.agentInfo?.id) return;
             this.selectedDmnId = null;
-            this.activeTab = this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions';
+            this.activeTab = window.$gs ? 'learning' : (this.agentInfo.agent_type == 'agent' ? 'learning' : 'actions');
             this.getDMNList();
         });
     },
@@ -248,23 +249,26 @@ export default {
          */
         setupTabHandlers() {
             const agentType = this.agentInfo?.agent_type || 'agent';
+            const isGsMode = !!window.$gs;
             const handlers = {};
 
             // tabList에 따라 조건부로 탭 핸들러 구성
             if (agentType === 'agent') {
                 // 채팅 모드 (최상단)
-                handlers['chat'] = {
-                    component: 'ChatRoomPage',
-                    props: (vm) => ({
-                        embedded: true,
-                        contextAgentId: vm.id,
-                        initialRoomId: vm.$route?.query?.roomId || null
-                    }),
-                    events: () => ({}),
-                    activate: async () => {
-                        this.selectedDmnId = null;
-                    }
-                };
+                if (!isGsMode) {
+                    handlers['chat'] = {
+                        component: 'ChatRoomPage',
+                        props: (vm) => ({
+                            embedded: true,
+                            contextAgentId: vm.id,
+                            initialRoomId: vm.$route?.query?.roomId || null
+                        }),
+                        events: () => ({}),
+                        activate: async () => {
+                            this.selectedDmnId = null;
+                        }
+                    };
+                }
 
                 // 학습 모드
                 handlers['learning'] = {
@@ -279,16 +283,18 @@ export default {
                 };
 
                 // 질문 모드
-                handlers['question'] = {
-                    component: 'AgentChatQuestion',
-                    props: (vm) => ({}),
-                    events: (vm) => ({
-                        stopMessage: vm.stopMessage
-                    }),
-                    activate: async () => {
-                        this.selectedDmnId = null;
-                    }
-                };
+                if (!isGsMode) {
+                    handlers['question'] = {
+                        component: 'AgentChatQuestion',
+                        props: (vm) => ({}),
+                        events: (vm) => ({
+                            stopMessage: vm.stopMessage
+                        }),
+                        activate: async () => {
+                            this.selectedDmnId = null;
+                        }
+                    };
+                }
 
                 // 지식 관리
                 handlers['knowledge'] = {
@@ -306,42 +312,76 @@ export default {
                     }
                 };
 
-                // 비즈니스 규칙 학습 (agent일 때만)
-                handlers['dmn-modeling'] = {
-                    component: 'BusinessRuleLearning',
-                    props: (vm) => ({
-                        ownerInfo: vm.agentInfo,
-                        dmnId: vm.selectedDmnId
-                    }),
-                    events: () => ({}),
-                    activate: () => {}
-                };
+                if (!isGsMode) {
+                    // 비즈니스 규칙 학습 (agent일 때만)
+                    handlers['dmn-modeling'] = {
+                        component: 'BusinessRuleLearning',
+                        props: (vm) => ({
+                            ownerInfo: vm.agentInfo,
+                            dmnId: vm.selectedDmnId
+                        }),
+                        events: () => ({}),
+                        activate: () => {}
+                    };
 
-                // 스킬 변경 이력 (agent일 때만)
-                handlers['skill-history'] = {
-                    component: 'AgentSkillHistory',
-                    props: (vm) => ({
-                        agentId: vm.agentInfo.id,
-                        showHistory: true
-                    }),
-                    events: () => ({}),
-                    activate: () => {}
-                };
+                    // 스킬 변경 이력 (agent일 때만)
+                    handlers['skill-history'] = {
+                        component: 'AgentSkillHistory',
+                        props: (vm) => ({
+                            agentId: vm.agentInfo.id,
+                            showHistory: true
+                        }),
+                        events: () => ({}),
+                        activate: () => {}
+                    };
 
-                // 비즈니스 규칙 변경 이력 (agent일 때만)
-                handlers['dmn-history'] = {
-                    component: 'AgentDmnHistory',
-                    props: (vm) => ({
-                        agentId: vm.agentInfo.id,
-                        showHistory: true
-                    }),
-                    events: () => ({}),
-                    activate: () => {}
-                };
+                    // 비즈니스 규칙 변경 이력 (agent일 때만)
+                    handlers['dmn-history'] = {
+                        component: 'AgentDmnHistory',
+                        props: (vm) => ({
+                            agentId: vm.agentInfo.id,
+                            showHistory: true
+                        }),
+                        events: () => ({}),
+                        activate: () => {}
+                    };
+                }
+            }
+
+            // GS 모드에서는 학습/지식관리만 노출
+            if (isGsMode) {
+                if (!handlers['learning']) {
+                    handlers['learning'] = {
+                        component: 'AgentChatLearning',
+                        props: () => ({}),
+                        events: (vm) => ({
+                            stopMessage: vm.stopMessage
+                        }),
+                        activate: async () => {
+                            this.selectedDmnId = null;
+                        }
+                    };
+                }
+                if (!handlers['knowledge']) {
+                    handlers['knowledge'] = {
+                        component: 'AgentKnowledgeManagement',
+                        props: (vm) => ({
+                            knowledges: vm.knowledges,
+                            isLoading: vm.isKnowledgeLoading
+                        }),
+                        events: (vm) => ({
+                            deleteKnowledge: vm.deleteKnowledge
+                        }),
+                        activate: async () => {
+                            this.selectedDmnId = null;
+                            await this.getKnowledge();
+                        }
+                    };
+                }
             }
 
             // 채팅 모드 (모든 agent_type 공통)
-            if (!handlers['chat']) {
+            if (!handlers['chat'] && !isGsMode) {
                 handlers['chat'] = {
                     component: 'ChatRoomPage',
                     props: (vm) => ({
@@ -357,16 +397,18 @@ export default {
             }
 
             // 액션 모드 (모든 agent_type에 공통)
-            handlers['actions'] = {
-                component: 'AgentChatActions',
-                props: (vm) => ({
-                    agentInfo: vm.agentInfo
-                }),
-                events: () => ({}),
-                activate: async () => {
-                    this.selectedDmnId = null;
-                }
-            };
+            if (!isGsMode) {
+                handlers['actions'] = {
+                    component: 'AgentChatActions',
+                    props: (vm) => ({
+                        agentInfo: vm.agentInfo
+                    }),
+                    events: () => ({}),
+                    activate: async () => {
+                        this.selectedDmnId = null;
+                    }
+                };
+            }
 
             this.tabHandlers = handlers;
         },
@@ -380,7 +422,7 @@ export default {
                     this.idJustChanged = false;
                     this.selectedDmnId = null;
                 }
-                this.activeTab = 'chat';
+                this.activeTab = window.$gs ? 'learning' : 'chat';
                 await this.getDMNList();
             } finally {
                 this.isInitializing = false;
@@ -389,6 +431,7 @@ export default {
 
         /** 탭 내 클릭으로 DMN 선택 시에만 비즈니스 규칙 화면으로 전환 (init/에이전트 전환 시 자동 호출 방지) */
         onDmnChange(dmnId) {
+            if (window.$gs) return;
             this.selectedDmnId = dmnId;
             if (dmnId != null) {
                 this.activeTab = 'dmn-modeling';
@@ -396,6 +439,7 @@ export default {
         },
         /** 새 비즈니스 규칙 만들기(plus) 클릭 시에만 호출 */
         onOpenNewDmn() {
+            if (window.$gs) return;
             this.selectedDmnId = null;
             this.activeTab = 'dmn-modeling';
         },
@@ -478,8 +522,14 @@ export default {
             const options = {
                 agent_id: this.id
             }
-            this.knowledges = await this.backend.getVecsDocuments(options);
-            this.isKnowledgeLoading = false;
+            try {
+                this.knowledges = await this.backend.getVecsDocuments(options);
+            } catch (e) {
+                console.warn('[AgentChat] 지식 조회 실패:', e);
+                this.knowledges = [];
+            } finally {
+                this.isKnowledgeLoading = false;
+            }
         },
         async deleteKnowledge(options) {
             await this.backend.deleteVecsDocument(options);

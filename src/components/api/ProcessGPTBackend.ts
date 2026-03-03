@@ -3380,10 +3380,27 @@ class ProcessGPTBackend implements Backend {
             if (!tenantId) {
                 return;
             }
-            const user: any = await this.getUserInfo();
-            if (!user || !user.uid) {
-                return false;
+            let user: any = null;
+            try {
+                user = await this.getUserInfo();
+            } catch (e) {
+                // users 테이블 레코드가 아직 없을 수 있으므로 auth 사용자 정보로 fallback
             }
+
+            if (!user || !user.uid) {
+                const authResult = await window.$supabase.auth.getUser();
+                const authUser = authResult?.data?.user;
+                if (!authUser?.id) {
+                    return false;
+                }
+
+                user = {
+                    uid: authUser.id,
+                    email: authUser.email ?? null,
+                    name: authUser.user_metadata?.name ?? authUser.email ?? null
+                };
+            }
+
             const user_id = user.uid;
             const request = {
                 input: {
@@ -3397,7 +3414,14 @@ class ProcessGPTBackend implements Backend {
             }
             const response = await axios.post('/completion/set-tenant', request);
             if (response.status === 200) {
-                const isOwner = await storage.checkTenantOwner(tenantId);
+                let isOwner = false;
+                try {
+                    isOwner = await storage.checkTenantOwner(tenantId);
+                } catch (e) {
+                    // 신규 가입 직후에는 public.users 레코드가 아직 없어 owner 체크가 실패할 수 있다.
+                    // 이 경우에도 기본 사용자 레코드 생성은 계속 진행한다.
+                    console.warn('[setTenant] checkTenantOwner skipped:', e);
+                }
                 // email/username을 넣지 않으면 upsert 시 새 행은 null로 들어가 유령 레코드가 됨 (setTenant가 원인)
                 const putObj: any = {
                     id: user_id,
@@ -3416,7 +3440,7 @@ class ProcessGPTBackend implements Backend {
             }
         } catch (error) {
             //@ts-ignore
-            // console.log(error);
+            console.error('[setTenant] failed:', error);
             return false;
             // throw new Error(error.message);
         }
