@@ -3,7 +3,7 @@ import { i18n } from '@/main';
 import { indexOf } from 'lodash';
 
 export default function ContextPadProvider(config, injector, eventBus, contextPad,
-  modeling, elementFactory, connect, create, popupMenu, canvas, rules, translate, autoPlace) {
+  modeling, elementFactory, connect, create, popupMenu, canvas, rules, translate, autoPlace, selection) {
 
   const originalContextPadProvider = injector.get('contextPadProvider');
   this._config = config;
@@ -19,8 +19,9 @@ export default function ContextPadProvider(config, injector, eventBus, contextPa
   this._rules = rules;
   this._translate = translate;
   this._autoPlace = autoPlace;
+  this._selection = selection;
 
-  contextPad.registerProvider(this);
+  contextPad.registerProvider(500, this);
 
   this._originalGetContextPadEntries = originalContextPadProvider.getContextPadEntries.bind(originalContextPadProvider);
 }
@@ -38,7 +39,8 @@ ContextPadProvider.$inject = [
   'canvas',
   'rules',
   'translate',
-  'autoPlace'
+  'autoPlace',
+  'selection'
 ];
 
 ContextPadProvider.prototype.getContextPadEntries = function (element) {
@@ -48,7 +50,8 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     _connect: connect,
     _elementFactory: elementFactory,
     _create: create,
-    _injector: injector
+    _injector: injector,
+    _selection: selection
   } = this;
   function removeElement(e) {
     modeling.removeElements([element]);
@@ -286,96 +289,377 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
   }
 
   function splitPhaseContainer(phaseContainer, numPhases) {
-    const laneSet = phaseContainer.businessObject.laneSets[0];
+    // PhaseContainer는 processRef로 별도 Process를 참조 (heonum 구조)
+    const processRef = phaseContainer.businessObject.processRef;
+    const laneSet = processRef && processRef.laneSets && processRef.laneSets[0];
     if (!laneSet) {
-      console.error("🚨 LaneSet을 찾을 수 없습니다.");
+      console.error("🚨 PhaseContainer processRef의 LaneSet을 찾을 수 없습니다.");
       return;
     }
 
     for (let i = 0; i < numPhases; i++) {
-      // ✅ Phase 생성 (Lane 대신 Phase 사용)
       const phase = elementFactory._moddle.create('phase:Phase', {
         id: `Phase_${Math.random().toString(36).substr(2, 9)}`,
         name: `Phase ${i + 1}`
       });
-
       laneSet.lanes.push(phase);
     }
-
-    // ✅ LaneSet 업데이트
-    modeling.updateProperties(phaseContainer, {
-      laneSets: [laneSet]
-    });
-
     console.log(`✅ ${numPhases}개의 Phase 추가 완료.`);
   }
 
+  function isPhaseContainerShape(shape) {
+    return shape && (shape.type === 'phase:PhaseContainer' || (shape.businessObject && shape.businessObject.$type === 'phase:PhaseContainer'));
+  }
+
+  /** PhaseContainer가 세로 배치(왼쪽 붙음)인지: 높이 > 너비 */
+  function isPhaseContainerVertical(phaseContainer) {
+    if (!phaseContainer || phaseContainer.width == null || phaseContainer.height == null) return false;
+    return phaseContainer.height > phaseContainer.width;
+  }
+
+  /** Phase 좌/우에 새 Phase 추가 후 전체 너비 재배분 */
+  function insertPhaseAt(phaseElement, side) {
+    const phaseContainer = phaseElement.parent;
+    if (!isPhaseContainerShape(phaseContainer)) {
+      console.error('🚨 Phase의 부모 PhaseContainer를 찾을 수 없습니다.');
+      return;
+    }
+    const processRef = phaseContainer.businessObject.processRef;
+    const laneSet = processRef && processRef.laneSets && processRef.laneSets[0];
+    if (!laneSet || !laneSet.lanes) {
+      console.error('🚨 PhaseContainer processRef의 LaneSet을 찾을 수 없습니다.');
+      return;
+    }
+    const currentBo = phaseElement.businessObject;
+    const index = laneSet.lanes.indexOf(currentBo);
+    if (index < 0) return;
+    const insertIndex = side === 'left' ? index : index + 1;
+    const newPhaseBo = elementFactory._moddle.create('phase:Phase', {
+      id: `Phase_${Math.random().toString(36).substr(2, 9)}`,
+      name: `Phase ${laneSet.lanes.length + 1}`
+    });
+
+    const pcX = phaseContainer.x;
+    const pcY = phaseContainer.y;
+    const pcW = phaseContainer.width;
+    const pcH = phaseContainer.height;
+    const newPhaseCount = laneSet.lanes.length + 1;
+
+    if (isPhaseContainerVertical(phaseContainer)) {
+      const phaseHeight = pcH / newPhaseCount;
+      const newBounds = { x: pcX, y: pcY + insertIndex * phaseHeight, width: pcW, height: phaseHeight };
+      const newPhaseShape = elementFactory.createShape({
+        type: 'phase:Phase',
+        businessObject: newPhaseBo,
+        width: newBounds.width,
+        height: newBounds.height,
+        isHorizontal: true
+      });
+      modeling.createShape(newPhaseShape, newBounds, phaseContainer);
+      const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
+      if (addedIndex >= 0) {
+        laneSet.lanes.splice(addedIndex, 1);
+        laneSet.lanes.splice(insertIndex, 0, newPhaseBo);
+      }
+      const phaseCount = laneSet.lanes.length;
+      const phaseHeightFinal = pcH / phaseCount;
+      for (let i = 0; i < phaseCount; i++) {
+        const phaseBo = laneSet.lanes[i];
+        const h = i === phaseCount - 1 ? pcH - phaseHeightFinal * (phaseCount - 1) : phaseHeightFinal;
+        const bounds = { x: pcX, y: pcY + i * phaseHeightFinal, width: pcW, height: h };
+        const existing = phaseContainer.children.find(c => c.businessObject === phaseBo);
+        if (existing) {
+          modeling.resizeShape(existing, bounds);
+        } else {
+          const phaseShape = elementFactory.createShape({
+            type: 'phase:Phase',
+            businessObject: phaseBo,
+            width: bounds.width,
+            height: bounds.height,
+            isHorizontal: true
+          });
+          modeling.createShape(phaseShape, bounds, phaseContainer);
+        }
+      }
+      if (selection && newPhaseShape) selection.select(newPhaseShape);
+      return;
+    }
+
+    const phaseWidth = pcW / newPhaseCount;
+    const newBounds = { x: pcX + insertIndex * phaseWidth, y: pcY, width: phaseWidth, height: pcH };
+    const newPhaseShape = elementFactory.createShape({
+      type: 'phase:Phase',
+      businessObject: newPhaseBo,
+      width: newBounds.width,
+      height: newBounds.height,
+      isHorizontal: false
+    });
+    modeling.createShape(newPhaseShape, newBounds, phaseContainer);
+    const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
+    if (addedIndex >= 0) {
+      laneSet.lanes.splice(addedIndex, 1);
+      laneSet.lanes.splice(insertIndex, 0, newPhaseBo);
+    }
+
+    const phaseCount = laneSet.lanes.length;
+    const phaseWidthFinal = pcW / phaseCount;
+    for (let i = 0; i < phaseCount; i++) {
+      const phaseBo = laneSet.lanes[i];
+      const w = i === phaseCount - 1 ? pcW - phaseWidthFinal * (phaseCount - 1) : phaseWidthFinal;
+      const bounds = { x: pcX + i * phaseWidthFinal, y: pcY, width: w, height: pcH };
+      const existing = phaseContainer.children.find(c => c.businessObject === phaseBo);
+      if (existing) {
+        modeling.resizeShape(existing, bounds);
+      } else {
+        const phaseShape = elementFactory.createShape({
+          type: 'phase:Phase',
+          businessObject: phaseBo,
+          width: bounds.width,
+          height: bounds.height,
+          isHorizontal: false
+        });
+        modeling.createShape(phaseShape, bounds, phaseContainer);
+      }
+    }
+    if (selection && newPhaseShape) selection.select(newPhaseShape);
+  }
+
+  /** PhaseContainer 맨 앞/맨 뒤에 Phase 하나 추가 후 전체 너비 재배분 */
+  function addPhaseToContainer(phaseContainerElement, position) {
+    if (!isPhaseContainerShape(phaseContainerElement)) return;
+    const processRef = phaseContainerElement.businessObject.processRef;
+    const laneSet = processRef && processRef.laneSets && processRef.laneSets[0];
+    if (!laneSet || !laneSet.lanes) return;
+    const newPhaseBo = elementFactory._moddle.create('phase:Phase', {
+      id: `Phase_${Math.random().toString(36).substr(2, 9)}`,
+      name: `Phase ${laneSet.lanes.length + 1}`
+    });
+
+    const pcX = phaseContainerElement.x;
+    const pcY = phaseContainerElement.y;
+    const pcW = phaseContainerElement.width;
+    const pcH = phaseContainerElement.height;
+    const newPhaseCount = laneSet.lanes.length + 1;
+    const insertIndex = position === 'start' ? 0 : laneSet.lanes.length;
+
+    if (isPhaseContainerVertical(phaseContainerElement)) {
+      const phaseHeight = pcH / newPhaseCount;
+      const newBounds = { x: pcX, y: pcY + insertIndex * phaseHeight, width: pcW, height: phaseHeight };
+      const newPhaseShape = elementFactory.createShape({
+        type: 'phase:Phase',
+        businessObject: newPhaseBo,
+        width: newBounds.width,
+        height: newBounds.height,
+        isHorizontal: true
+      });
+      modeling.createShape(newPhaseShape, newBounds, phaseContainerElement);
+      if (position === 'start') {
+        const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
+        if (addedIndex >= 0) {
+          laneSet.lanes.splice(addedIndex, 1);
+          laneSet.lanes.unshift(newPhaseBo);
+        }
+      }
+      const phaseCount = laneSet.lanes.length;
+      const phaseHeightFinal = pcH / phaseCount;
+      for (let i = 0; i < phaseCount; i++) {
+        const phaseBo = laneSet.lanes[i];
+        const h = i === phaseCount - 1 ? pcH - phaseHeightFinal * (phaseCount - 1) : phaseHeightFinal;
+        const bounds = { x: pcX, y: pcY + i * phaseHeightFinal, width: pcW, height: h };
+        const existing = phaseContainerElement.children.find(c => c.businessObject === phaseBo);
+        if (existing) {
+          modeling.resizeShape(existing, bounds);
+        } else {
+          const phaseShape = elementFactory.createShape({
+            type: 'phase:Phase',
+            businessObject: phaseBo,
+            width: bounds.width,
+            height: bounds.height,
+            isHorizontal: true
+          });
+          modeling.createShape(phaseShape, bounds, phaseContainerElement);
+        }
+      }
+      if (selection && newPhaseShape) selection.select(newPhaseShape);
+      return;
+    }
+
+    const phaseWidth = pcW / newPhaseCount;
+    const newBounds = { x: pcX + insertIndex * phaseWidth, y: pcY, width: phaseWidth, height: pcH };
+    const newPhaseShape = elementFactory.createShape({
+      type: 'phase:Phase',
+      businessObject: newPhaseBo,
+      width: newBounds.width,
+      height: newBounds.height,
+      isHorizontal: false
+    });
+    modeling.createShape(newPhaseShape, newBounds, phaseContainerElement);
+    if (position === 'start') {
+      const addedIndex = laneSet.lanes.indexOf(newPhaseBo);
+      if (addedIndex >= 0) {
+        laneSet.lanes.splice(addedIndex, 1);
+        laneSet.lanes.unshift(newPhaseBo);
+      }
+    }
+
+    const phaseCount = laneSet.lanes.length;
+    const phaseWidthFinal = pcW / phaseCount;
+    for (let i = 0; i < phaseCount; i++) {
+      const phaseBo = laneSet.lanes[i];
+      const w = i === phaseCount - 1 ? pcW - phaseWidthFinal * (phaseCount - 1) : phaseWidthFinal;
+      const bounds = { x: pcX + i * phaseWidthFinal, y: pcY, width: w, height: pcH };
+      const existing = phaseContainerElement.children.find(c => c.businessObject === phaseBo);
+      if (existing) {
+        modeling.resizeShape(existing, bounds);
+      } else {
+        const phaseShape = elementFactory.createShape({
+          type: 'phase:Phase',
+          businessObject: phaseBo,
+          width: bounds.width,
+          height: bounds.height,
+          isHorizontal: false
+        });
+        modeling.createShape(phaseShape, bounds, phaseContainerElement);
+      }
+    }
+    if (selection && newPhaseShape) selection.select(newPhaseShape);
+  }
 
   function addPhaseContainer(participantElement) {
+    const parentElement = participantElement.parent;
+    if (!parentElement) {
+      console.error("🚨 Participant의 부모 요소를 찾을 수 없습니다.", participantElement);
+      return null;
+    }
 
+    const participantDi = getDi(participantElement);
+    if (!participantDi) {
+      console.error("🚨 Participant의 DI 정보가 없습니다.", participantElement);
+      return null;
+    }
+
+    const participantBounds = participantElement.getBounds ? participantElement.getBounds() : { x: participantElement.x, y: participantElement.y, width: participantElement.width, height: participantElement.height };
+    const isParticipantVertical = participantDi.isHorizontal === false;
 
     const processBo = elementFactory._moddle.create('bpmn:Process', {
       id: `Process_${Math.random().toString(36).substr(2, 9)}`,
       isExecutable: false,
       laneSets: []
-    })
-
-    // ✅ Participant의 부모 요소 가져오기
-    const parentElement = participantElement.parent;
-    if (!parentElement) {
-      console.error("🚨 Participant의 부모 요소를 찾을 수 없습니다.", participantElement);
-      return;
-    }
-
-    // ✅ DI 정보 가져오기
-    const participantDi = getDi(participantElement);
-    if (!participantDi) {
-      console.error("🚨 Participant의 DI 정보가 없습니다.", participantElement);
-      return;
-    }
-
-    // ✅ BusinessObject 생성
-    const phaseContainerBO = elementFactory._moddle.create('phase:PhaseContainer', {
-      id: `PhaseContainer_${Math.random().toString(36).substr(2, 9)}`,
-      numPhases: 0,
-      processRef: processBo,
-      isHorizontal: false
     });
 
-    // ✅ LaneSet 추가 (splitLane()을 위해 필요)
     const laneSet = elementFactory._moddle.create('bpmn:LaneSet', {
       id: `LaneSet_${Math.random().toString(36).substr(2, 9)}`,
       lanes: []
     });
-    processBo.laneSets = [laneSet];  // ✅ LaneSet 추가
+    processBo.laneSets = [laneSet];
 
-    // ✅ DI 정보 생성
+    const definitions = parentElement.businessObject.$parent;
+    if (definitions && definitions.get('rootElements')) {
+      definitions.get('rootElements').push(processBo);
+    }
+
+    const phaseNames = ['Phase 1', 'Phase 2', 'Phase 3'];
+    const phaseBos = [];
+    for (let i = 0; i < 3; i++) {
+      phaseBos.push(elementFactory._moddle.create('phase:Phase', {
+        id: `Phase_${Math.random().toString(36).substr(2, 9)}`,
+        name: phaseNames[i]
+      }));
+    }
+
+    if (isParticipantVertical) {
+      const phaseStripWidth = 60;
+      const phaseContainerBO = elementFactory._moddle.create('phase:PhaseContainer', {
+        id: `PhaseContainer_${Math.random().toString(36).substr(2, 9)}`,
+        numPhases: 3,
+        processRef: processBo,
+        isHorizontal: true
+      });
+      const pcX = participantBounds.x - phaseStripWidth;
+      const pcY = participantBounds.y;
+      const pcW = phaseStripWidth;
+      const pcH = participantBounds.height;
+
+      const phaseContainerDI = elementFactory._moddle.create('bpmndi:BPMNShape', {
+        id: `DI_${phaseContainerBO.id}`,
+        bpmnElement: phaseContainerBO,
+        isHorizontal: true,
+        bounds: { x: pcX, y: pcY, width: pcW, height: pcH }
+      });
+      phaseContainerDI.$parent = participantDi.$parent;
+
+      const parentBO = parentElement.businessObject;
+      if (!Array.isArray(parentBO.children)) {
+        parentBO.children = [];
+      }
+      parentBO.children.push(phaseContainerBO);
+
+      let planeElement = participantDi.$parent.get('planeElement');
+      if (!Array.isArray(planeElement)) {
+        planeElement = [planeElement];
+        participantDi.$parent.set('planeElement', planeElement);
+      }
+      planeElement.push(phaseContainerDI);
+
+      const phaseContainer = elementFactory.createShape({
+        type: 'phase:PhaseContainer',
+        businessObject: phaseContainerBO,
+        width: pcW,
+        height: pcH,
+        isHorizontal: true
+      });
+      modeling.createShape(phaseContainer, { x: pcX, y: pcY }, parentElement);
+      modeling.resizeShape(phaseContainer, { x: pcX, y: pcY, width: pcW, height: pcH });
+
+      const phaseHeight = Math.floor(pcH / 3);
+      for (let i = 0; i < 3; i++) {
+        const phaseBo = phaseBos[i];
+        const phaseH = i === 2 ? pcH - phaseHeight * 2 : phaseHeight;
+        const bounds = { x: pcX, y: pcY + i * phaseHeight, width: pcW, height: phaseH };
+        const phaseShape = elementFactory.createShape({
+          type: 'phase:Phase',
+          businessObject: phaseBo,
+          width: bounds.width,
+          height: bounds.height,
+          isHorizontal: true
+        });
+        modeling.createShape(phaseShape, bounds, phaseContainer);
+      }
+      console.log("✅ PhaseContainer + Phase 3개 생성 완료 (세로 participant, 왼쪽, isHorizontal: true):", phaseContainer);
+      return phaseContainer;
+    }
+
+    const phaseContainerBO = elementFactory._moddle.create('phase:PhaseContainer', {
+      id: `PhaseContainer_${Math.random().toString(36).substr(2, 9)}`,
+      numPhases: 3,
+      processRef: processBo,
+      isHorizontal: false
+    });
+
+    const phaseHeight = 60;
+    const phaseContainerHeight = phaseHeight;
+    const phaseContainerY = participantBounds.y - phaseContainerHeight;
+
     const phaseContainerDI = elementFactory._moddle.create('bpmndi:BPMNShape', {
       id: `DI_${phaseContainerBO.id}`,
       bpmnElement: phaseContainerBO,
       isHorizontal: false,
       bounds: {
-        x: participantElement.x + participantElement.width / 2,
-        y: participantElement.y - 30, // ✅ Participant 위쪽에 배치
-        width: participantElement.width,
-        height: 90
+        x: participantBounds.x,
+        y: phaseContainerY,
+        width: participantBounds.width,
+        height: phaseContainerHeight
       }
     });
-
-    phaseContainerDI.isHorizontal = false
-
-    // ✅ 반드시 $parent를 설정
+    phaseContainerDI.isHorizontal = false;
     phaseContainerDI.$parent = participantDi.$parent;
 
-    // ✅ 부모-자식 관계 초기화
     const parentBO = parentElement.businessObject;
-
     if (!Array.isArray(parentBO.children)) {
       parentBO.children = [];
     }
     parentBO.children.push(phaseContainerBO);
 
-    // ✅ planeElement 배열이 맞는지 확인 후 push
     let planeElement = participantDi.$parent.get('planeElement');
     if (!Array.isArray(planeElement)) {
       planeElement = [planeElement];
@@ -383,77 +667,108 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     }
     planeElement.push(phaseContainerDI);
 
-    // ✅ PhaseContainer 생성
     const phaseContainer = elementFactory.createShape({
       type: 'phase:PhaseContainer',
       businessObject: phaseContainerBO,
-      width: participantElement.width,
-      height: 90,
+      width: participantBounds.width,
+      height: phaseContainerHeight,
       isHorizontal: false
     });
 
+    const pcX = participantBounds.x;
+    const pcY = participantBounds.y - phaseContainerHeight;
+    const pcW = participantBounds.width;
+    const pcH = phaseContainerHeight;
 
-    // ✅ PhaseContainer의 위치 설정
-    const position = {
-      x: participantElement.x + participantElement.width / 2,
-      y: participantElement.y - 45
-    };
-
-    // ✅ PhaseContainer를 `Participant`의 부모에 추가
+    const position = { x: pcX, y: pcY };
     modeling.createShape(phaseContainer, position, parentElement);
+    modeling.resizeShape(phaseContainer, { x: pcX, y: pcY, width: pcW, height: pcH });
 
-    console.log("✅ PhaseContainer 생성 완료:", phaseContainer);
+    const phaseWidth = Math.floor(pcW / 3);
+    for (let i = 0; i < 3; i++) {
+      const phaseBo = phaseBos[i];
+      const phaseW = i === 2 ? pcW - phaseWidth * 2 : phaseWidth;
+      const bounds = {
+        x: pcX + i * phaseWidth,
+        y: pcY,
+        width: phaseW,
+        height: phaseHeight
+      };
+      const phaseShape = elementFactory.createShape({
+        type: 'phase:Phase',
+        businessObject: phaseBo,
+        width: bounds.width,
+        height: bounds.height,
+        isHorizontal: false
+      });
+      modeling.createShape(phaseShape, bounds, phaseContainer);
+    }
+
+    console.log("✅ PhaseContainer + Phase 3개 생성 완료 (heonum 구조):", phaseContainer);
     return phaseContainer;
   }
 
-
   const actions = this._originalGetContextPadEntries(element);
-  if (element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane' || element.type === 'phase:PhaseContainer') {
-    const isHorizontal = element.di.isHorizontal
+  const isPhase = element.businessObject && element.businessObject.$type === 'phase:Phase';
+  const isPhaseContainer = element.type === 'phase:PhaseContainer' || (element.businessObject && element.businessObject.$type === 'phase:PhaseContainer');
+  const usePhaseAdd = isPhase || isPhaseContainer;
+  const showLaneGroup = element.type === 'bpmn:Participant' || element.type === 'bpmn:Lane' || element.type === 'phase:PhaseContainer' || element.type === 'phase:Phase' || usePhaseAdd;
+  const needPhaseUpdater = showLaneGroup && usePhaseAdd;
+  const phaseContainerForPad = usePhaseAdd ? (isPhase ? element.parent : element) : null;
+  const isPhaseVertical = phaseContainerForPad && isPhaseContainerVertical(phaseContainerForPad);
+
+  if (showLaneGroup) {
+    const isHorizontal = element.di && element.di.isHorizontal;
     assign(actions, {
       'lane-insert-above': {
         group: 'lane',
-        className: isHorizontal ? 'bpmn-icon-lane-insert-above' : 'bpmn-icon-lane-insert-above icon-rotate-270',
-        title: isHorizontal ? i18n.global.t('customContextPad.laneAbove') : i18n.global.t('customContextPad.laneToTheLeft'),
+        className: usePhaseAdd ? (isPhaseVertical ? 'mdi mdi-arrow-up-bold' : 'mdi mdi-arrow-left-bold') : (isHorizontal ? 'bpmn-icon-lane-insert-above' : 'bpmn-icon-lane-insert-above icon-rotate-270'),
+        title: usePhaseAdd ? (isPhaseVertical ? i18n.global.t('customContextPad.phaseAbove') : i18n.global.t('customContextPad.phaseLeft')) : (isHorizontal ? i18n.global.t('customContextPad.laneAbove') : i18n.global.t('customContextPad.laneToTheLeft')),
         action: {
-          click: actions['lane-insert-above'].action.click
+          click: usePhaseAdd
+            ? function (event, el) {
+                if (isPhase) insertPhaseAt(el, 'left');
+                else addPhaseToContainer(el, 'start');
+              }
+            : (actions['lane-insert-above'] && actions['lane-insert-above'].action.click)
         }
       },
       'lane-insert-below': {
         group: 'lane',
-        className: isHorizontal ? 'bpmn-icon-lane-insert-below' : 'bpmn-icon-lane-insert-below icon-rotate-270',
-        title: isHorizontal ? i18n.global.t('customContextPad.laneBelow') : i18n.global.t('customContextPad.laneToTheRight'),
+        className: usePhaseAdd ? (isPhaseVertical ? 'mdi mdi-arrow-down-bold' : 'mdi mdi-arrow-right-bold') : (isHorizontal ? 'bpmn-icon-lane-insert-below' : 'bpmn-icon-lane-insert-below icon-rotate-270'),
+        title: usePhaseAdd ? (isPhaseVertical ? i18n.global.t('customContextPad.phaseBelow') : i18n.global.t('customContextPad.phaseRight')) : (isHorizontal ? i18n.global.t('customContextPad.laneBelow') : i18n.global.t('customContextPad.laneToTheRight')),
         action: {
-          click: actions['lane-insert-below'].action.click
+          click: usePhaseAdd
+            ? function (event, el) {
+                if (isPhase) insertPhaseAt(el, 'right');
+                else addPhaseToContainer(el, 'end');
+              }
+            : (actions['lane-insert-below'] && actions['lane-insert-below'].action.click)
         }
       },
-      'lane-divide-two': {
-        group: 'lane',
-        className: isHorizontal ? 'bpmn-icon-lane-divide-two' : 'bpmn-icon-lane-divide-two icon-rotate-270',
-        title: i18n.global.t('customContextPad.laneDivideTwo'),
-        action: {
-          click: divideIntoTwoLanes
-        }
-      },
-      'lane-divide-three': {
-        group: 'lane',
-        className: isHorizontal ? 'bpmn-icon-lane-divide-three' : 'bpmn-icon-lane-divide-three icon-rotate-270',
-        title: i18n.global.t('customContextPad.laneDivideThree'),
-        action: {
-          click: divideIntoThreeLanes
-        }
-      },
-      'lane-insert-single': {
-        group: 'lane',
-        className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
-        title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
-        action: {
-          click: function (event, element) {
+      ...(usePhaseAdd ? {} : {
+        'lane-divide-two': {
+          group: 'lane',
+          className: isHorizontal ? 'bpmn-icon-lane-divide-two' : 'bpmn-icon-lane-divide-two icon-rotate-270',
+          title: i18n.global.t('customContextPad.laneDivideTwo'),
+          action: { click: divideIntoTwoLanes }
+        },
+        'lane-divide-three': {
+          group: 'lane',
+          className: isHorizontal ? 'bpmn-icon-lane-divide-three' : 'bpmn-icon-lane-divide-three icon-rotate-270',
+          title: i18n.global.t('customContextPad.laneDivideThree'),
+          action: { click: divideIntoThreeLanes }
+        },
+        'lane-insert-single': {
+          group: 'lane',
+          className: isHorizontal ? 'bpmn-icon-participant' : 'bpmn-icon-participant icon-rotate-90',
+          title: isHorizontal ? i18n.global.t('customContextPad.lane') : i18n.global.t('customContextPad.laneToTheLeft'),
+          action: function (event, element) {
             const laneCount = element.children.filter(child => child.type === 'bpmn:Lane').length;
             insertLanes(1);
           }
         }
-      },
+      }),
       'lane-equalize': {
         group: 'lane',
         className: 'mdi mdi-equal',
@@ -483,29 +798,23 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
           title: i18n.global.t('customContextPad.phase'),
           action: {
             click: function (event, element) {
-              const phaseContainer = addPhaseContainer(element);
-
-              modeling.splitLane(phaseContainer, 3);
+              addPhaseContainer(element);
             }
           }
         }
       });
     }
 
-    if (element.type === 'phase:PhaseContainer') {
-      assign(actions, {
-        'append.phase': {
-          group: 'model',
-          className: 'bpmn-icon-phase',
-          title: i18n.global.t('customContextPad.phase'),
-          action: {
-            click: function (event, element) {
-              splitPhaseContainer(element, 3); // 기본 2개로 나누기
-            }
-          }
-        }
-      });
-    }
+  }
+
+  if (needPhaseUpdater) {
+    return function (entries) {
+      assign(entries, actions);
+      delete entries['lane-divide-two'];
+      delete entries['lane-divide-three'];
+      delete entries['lane-insert-single']; // Phase 선택 시 "페이즈 추가" 버튼 제거 (위/아래/좌/우만 유지)
+      return entries;
+    };
   }
 
   if (actions['append.end-event']) {

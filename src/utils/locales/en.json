@@ -883,6 +883,7 @@
         "saveAndContinue": "Save",
         "savedAndSubmitted": "Saved and submitted for review",
         "currentVersion": "Current (latest)",
+        "noVersion": "No version",
         "wipOn": "Clear WIP",
         "wipOff": "Set WIP",
         "wipEnabled": "Process marked as WIP.",
@@ -1906,6 +1907,10 @@
         "laneEqualize": "Equalize Lane Sizes",
         "connectionMulti": "Connect using Message Flow",
         "phase": "Add Phase",
+        "phaseLeft": "Add phase to the left",
+        "phaseRight": "Add phase to the right",
+        "phaseAbove": "Add phase above",
+        "phaseBelow": "Add phase below",
         "addComment": "Add Comment"
     },
     "reviewMode": {
