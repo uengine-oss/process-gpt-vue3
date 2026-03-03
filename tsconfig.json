@@ -10,7 +10,7 @@
             "@/*": ["./src/*"]
         },
         "allowJs": true,
-        "verbatimModuleSyntax": true, // 추가된 옵션
+        // "verbatimModuleSyntax": true, // 추가된 옵션 - disabled due to diagram-js compatibility
         "ignoreDeprecations": "5.0",
         "target": "ESNext",
         "moduleResolution": "Node",

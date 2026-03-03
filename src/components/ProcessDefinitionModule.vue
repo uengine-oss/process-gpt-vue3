@@ -8,6 +8,8 @@ import FormDefinitionModule from './FormDefinitionModule.vue';
 import BPMNXmlGenerator from './BPMNXmlGenerator.vue';
 import partialParse from "partial-json-parser";
 import JSON5 from 'json5';
+import { getCurrentUserTeamName } from '@/utils/organizationUtils';
+import { getBpmnModelService } from '@/services/bpmnModelService';
 
 const backend = BackendFactory.createBackend();
 
@@ -34,6 +36,8 @@ export default {
         datasourceSchema: null,
         definitionOptimizer: null,
         useOptimize: false,
+        lastSavedXML: '',  // 마지막 저장된 XML (변경 감지용)
+        lastSavedXMLHash: '',  // 마지막 저장된 XML 해시
     }),
     computed: {
         lastPath() {
@@ -491,7 +495,33 @@ export default {
                     let retryCount = 0;
                     const maxRetries = 3;
                     const retryDelay = 1000; // 1초
-                    
+
+                    // Pool/Lane 자동 설정
+                    try {
+                        const elementRegistry = modeler.get('elementRegistry');
+                        const modeling = modeler.get('modeling');
+
+                        // Pool(Participant) 이름을 프로세스명으로 설정
+                        const participants = elementRegistry.filter(el => el.type === 'bpmn:Participant');
+                        if (participants.length > 0 && info.name) {
+                            modeling.updateProperties(participants[0], { name: info.name });
+                        }
+
+                        // Lane 이름을 사용자 팀명으로 설정 (기본값인 경우에만)
+                        const userTeamName = await getCurrentUserTeamName();
+                        if (userTeamName) {
+                            const lanes = elementRegistry.filter(el => el.type === 'bpmn:Lane');
+                            if (lanes.length > 0) {
+                                const firstLane = lanes[0];
+                                const laneName = firstLane.businessObject?.name;
+                                if (!laneName || laneName === 'Lane 1' || laneName === 'Lane') {
+                                    modeling.updateProperties(firstLane, { name: userTeamName });
+                                }
+                            }
+                        }
+                    } catch (poolLaneError) {
+                        console.warn('[saveDefinition] Pool/Lane 자동 설정 실패:', poolLaneError);
+                    }
 
                     async function saveXML() {
                         try {
@@ -694,6 +724,29 @@ export default {
                     await me.saveModel(info, xmlObj.xml);
                     me.bpmn = xmlObj.xml;
 
+                    // Phase 1: XML 파싱하여 정규화된 테이블에 저장 (비동기, 실패해도 저장은 진행)
+                    try {
+                        const bpmnModelService = getBpmnModelService();
+                        await bpmnModelService.saveModel(info.proc_def_id, {
+                            xml_content: xmlObj.xml
+                        });
+                        console.log('[saveDefinition] BPMN 모델 파싱 완료');
+                    } catch (parseError) {
+                        console.warn('[saveDefinition] BPMN 모델 파싱 실패 (저장은 정상 완료):', parseError);
+                    }
+
+                    // 저장 성공 후 lastSavedXML 업데이트 (변경 감지용)
+                    me.lastSavedXML = xmlObj.xml;
+                    me.isChanged = false;
+                    me.lastSavedTime = new Date();
+
+                    // Extract organization info from swimlanes and save to process_organizations table
+                    try {
+                        await me.updateProcessOrganizations(info.proc_def_id, modeler);
+                    } catch (e) {
+                        console.warn('Failed to update process organizations:', e);
+                    }
+
                     let processInfo = {
                         bpmn: me.bpmn,
                         def: me.processDefinition
@@ -718,6 +771,156 @@ export default {
                 },
                 successMsg: this.$t('successMsg.save')
             });
+        },
+        async updateProcessOrganizations(procDefId, modeler) {
+            if (!procDefId || !modeler) {
+                console.log('[updateProcessOrganizations] Missing procDefId or modeler');
+                return;
+            }
+
+            try {
+                // Extract organizations from lanes
+                const organizations = this.extractOrganizationsFromLanes(modeler);
+                console.log('[updateProcessOrganizations] Extracted organizations:', organizations);
+
+                const supabase = window.$supabase;
+                if (!supabase) {
+                    console.log('[updateProcessOrganizations] No supabase instance');
+                    return;
+                }
+
+                const tenantId = window.$tenantName || 'default';
+
+                // Delete existing mappings for this process
+                const { error: deleteError } = await supabase
+                    .from('process_organizations')
+                    .delete()
+                    .eq('tenant_id', tenantId)
+                    .eq('proc_def_id', procDefId);
+
+                if (deleteError) {
+                    console.warn('[updateProcessOrganizations] Error deleting existing mappings:', deleteError);
+                }
+
+                // Insert new mappings
+                if (organizations.length > 0) {
+                    const insertData = organizations.map(org => ({
+                        tenant_id: tenantId,
+                        proc_def_id: procDefId,
+                        organization_id: org.id,
+                        organization_name: org.name,
+                        organization_type: org.type || 'team'
+                    }));
+
+                    const { error: insertError } = await supabase
+                        .from('process_organizations')
+                        .insert(insertData);
+
+                    if (insertError) {
+                        console.error('[updateProcessOrganizations] Error inserting mappings:', insertError);
+                    } else {
+                        console.log('[updateProcessOrganizations] Saved organizations for process:', procDefId, organizations);
+                    }
+                } else {
+                    console.log('[updateProcessOrganizations] No organizations to save for process:', procDefId);
+                }
+            } catch (error) {
+                console.error('[updateProcessOrganizations] Error:', error);
+            }
+        },
+        extractOrganizationsFromLanes(modeler) {
+            const organizations = [];
+            const seenIds = new Set();
+
+            try {
+                const definitions = modeler.getDefinitions();
+                console.log('[extractOrganizationsFromLanes] definitions:', definitions);
+                if (!definitions || !definitions.rootElements) {
+                    console.log('[extractOrganizationsFromLanes] No definitions or rootElements');
+                    return organizations;
+                }
+
+                for (const rootElement of definitions.rootElements) {
+                    console.log('[extractOrganizationsFromLanes] rootElement.$type:', rootElement.$type);
+                    if (rootElement.$type !== 'bpmn:Process') continue;
+
+                    const laneSets = rootElement.laneSets || [];
+                    console.log('[extractOrganizationsFromLanes] laneSets count:', laneSets.length);
+
+                    for (const laneSet of laneSets) {
+                        const lanes = laneSet.lanes || [];
+                        console.log('[extractOrganizationsFromLanes] lanes count:', lanes.length);
+
+                        for (const lane of lanes) {
+                            console.log('[extractOrganizationsFromLanes] lane name:', lane.name, 'id:', lane.id);
+
+                            // Get extensionElements
+                            const extElements = lane.extensionElements;
+                            console.log('[extractOrganizationsFromLanes] extensionElements:', extElements);
+
+                            if (!extElements || !extElements.values) {
+                                console.log('[extractOrganizationsFromLanes] No extensionElements.values for lane:', lane.name);
+                                continue;
+                            }
+
+                            console.log('[extractOrganizationsFromLanes] extensionElements.values:', extElements.values);
+
+                            // Parse extensionElements.values to find roleResolutionContext
+                            for (const ext of extElements.values) {
+                                console.log('[extractOrganizationsFromLanes] ext:', ext);
+                                console.log('[extractOrganizationsFromLanes] ext.$type:', ext.$type);
+                                console.log('[extractOrganizationsFromLanes] ext.json:', ext.json);
+
+                                try {
+                                    let props = null;
+
+                                    // Case 1: uengine:Properties with json string
+                                    if (ext.json) {
+                                        console.log('[extractOrganizationsFromLanes] Parsing ext.json');
+                                        props = JSON.parse(ext.json);
+                                    }
+                                    // Case 2: uengine:Properties with $body
+                                    else if (ext.$body) {
+                                        console.log('[extractOrganizationsFromLanes] Parsing ext.$body');
+                                        props = JSON.parse(ext.$body);
+                                    }
+                                    // Case 3: Direct properties object
+                                    else if (ext.roleResolutionContext) {
+                                        console.log('[extractOrganizationsFromLanes] Using ext directly');
+                                        props = ext;
+                                    }
+
+                                    console.log('[extractOrganizationsFromLanes] parsed props:', props);
+
+                                    if (props && props.roleResolutionContext) {
+                                        const roleCtx = props.roleResolutionContext;
+                                        console.log('[extractOrganizationsFromLanes] roleResolutionContext:', roleCtx);
+
+                                        if (roleCtx._type === 'Organization' && roleCtx.organizationId) {
+                                            console.log('[extractOrganizationsFromLanes] Found Organization:', roleCtx.organizationId, roleCtx.organizationName);
+                                            if (!seenIds.has(roleCtx.organizationId)) {
+                                                seenIds.add(roleCtx.organizationId);
+                                                organizations.push({
+                                                    id: roleCtx.organizationId,
+                                                    name: roleCtx.organizationName || roleCtx.organizationId,
+                                                    type: roleCtx.organizationType || 'team'
+                                                });
+                                            }
+                                        }
+                                    }
+                                } catch (parseError) {
+                                    console.warn('[extractOrganizationsFromLanes] Failed to parse lane properties:', parseError, 'ext:', ext);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[extractOrganizationsFromLanes] Error:', error);
+            }
+
+            console.log('[extractOrganizationsFromLanes] Final organizations:', organizations);
+            return organizations;
         },
         async saveSchedule(info, version) {
             const parser = new DOMParser();

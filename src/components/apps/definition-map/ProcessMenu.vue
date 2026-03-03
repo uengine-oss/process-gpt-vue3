@@ -13,7 +13,7 @@
                     </v-btn>
                 </template>
             </v-tooltip>
-            <v-tooltip v-if="isPal" :text="$t('ProcessMenu.setPermission')">
+            <v-tooltip v-if="canSetPermission" :text="$t('ProcessMenu.setPermission')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="setPermission"
                         icon v-bind="props"
@@ -32,6 +32,17 @@
                         size="small"
                     >
                         <Icons :icon="'pencil'" :width="12" :height="12" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip v-if="type === 'sub'" :text="$t('ProcessMenu.setOwner')">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="setOwner"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <v-icon size="12">mdi-account-edit</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
@@ -74,7 +85,7 @@ export default {
         type: String,
         process: Object,
         enableEdit: Boolean,
-        selectedDomain: String,
+        selectedDomain: [String, Number],
     },
     data: () => ({
         newProcess: {
@@ -96,6 +107,13 @@ export default {
         },
         isPal() {
             return typeof window !== 'undefined' && window.$pal;
+        },
+        isAdmin() {
+            return localStorage.getItem('isAdmin') === 'true';
+        },
+        canSetPermission() {
+            // PAL 모드이거나 관리자 권한이 있으면 표시
+            return this.isPal || this.isAdmin;
         },
         addTooltipText() {
             if (this.type === 'mega') {
@@ -125,6 +143,9 @@ export default {
         },
         duplicateProcess() {
             this.$emit("duplicate", this.process);
+        },
+        setOwner() {
+            this.$emit("setOwner", this.process);
         },
         addProcess() {
             this.$emit("add");

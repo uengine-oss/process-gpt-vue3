@@ -1541,8 +1541,8 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
             <input
                 type="file"
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
-                ref="unifiedFileInput"
+                accept=".pdf,.doc,.docx,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                ref="pdfUploader"
                 class="d-none"
                 @change="changeImage"
             >
@@ -3272,7 +3272,7 @@ export default {
             // Allow PDF + common Office + image formats (stored to Supabase, converted/OCR’d server-side).
             const name = (file.name || '').toLowerCase();
             const allowedExt = [
-                '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+                '.pdf', '.doc', '.docx', '.hwpx', '.xls', '.xlsx', '.ppt', '.pptx',
                 '.txt', '.csv',
                 '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'
             ];

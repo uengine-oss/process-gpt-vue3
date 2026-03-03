@@ -6,10 +6,10 @@ CREATE TABLE IF NOT EXISTS public.task_execution_properties (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id text DEFAULT public.tenant_id(),
 
-    -- 실행 컨텍스트 정보 (formHandler 등 standalone task는 null 가능)
-    proc_def_id text,
+    -- 실행 컨텍스트 정보
+    proc_def_id text NOT NULL,
     proc_inst_id text NOT NULL,
-    activity_id text,
+    activity_id text NOT NULL,
     activity_name text,
     todo_id uuid,
 

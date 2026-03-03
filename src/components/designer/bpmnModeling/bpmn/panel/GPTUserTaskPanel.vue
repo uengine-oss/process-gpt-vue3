@@ -11,11 +11,114 @@
         </v-tabs>
         <v-window v-model="activeTab">
             <v-window-item value="setting" class="pa-4">
+                <!-- Business ID (Phase 4-2, read-only) -->
+                <v-text-field
+                    v-if="activity.businessId"
+                    :model-value="activity.businessId"
+                    :label="$t('businessId.readOnly')"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    readonly
+                    prepend-inner-icon="mdi-identifier"
+                    class="mb-4"
+                />
+
+                <!-- Manual Links (Phase 4-1) -->
+                <ManualLinkField
+                    v-model="activity.manualLinks"
+                    :disabled="isViewMode"
+                    class="mb-4"
+                />
+
+                <!-- System Name / Menu Name -->
+                <v-row class="ma-0 pa-0 mb-4">
+                    <v-col cols="6" class="pa-0 pr-2">
+                        <v-text-field
+                            v-model="activity.systemName"
+                            :label="$t('BpmnPropertyPanel.systemName') || 'System Name'"
+                            :disabled="isViewMode"
+                            density="compact"
+                            variant="outlined"
+                        ></v-text-field>
+                    </v-col>
+                    <v-col cols="6" class="pa-0 pl-2">
+                        <v-text-field
+                            v-model="activity.menuName"
+                            :label="$t('BpmnPropertyPanel.menuName') || 'Menu Name'"
+                            :disabled="isViewMode"
+                            density="compact"
+                            variant="outlined"
+                        ></v-text-field>
+                    </v-col>
+                </v-row>
+
                 <!-- Duration -->
                 <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
-                
+
+                <!-- Future Status (Phase 2-2) -->
+                <v-select
+                    v-model="activity.futureStatus"
+                    :label="$t('futureStatus.label')"
+                    :items="futureStatusOptions"
+                    item-title="title"
+                    item-value="value"
+                    density="compact"
+                    variant="outlined"
+                    class="mb-4"
+                    hide-details
+                    :disabled="isViewMode"
+                    clearable
+                ></v-select>
+
+                <!-- Cost Type (Phase 2-3) -->
+                <div class="mb-4">
+                    <div class="text-caption text-medium-emphasis mb-1">{{ $t('costType.label') }}</div>
+                    <v-chip-group v-model="activity.costType" mandatory :disabled="isViewMode">
+                        <v-chip value="FTE" size="small" variant="outlined" filter>{{ $t('costType.fte') }}</v-chip>
+                        <v-chip value="OPEX" size="small" variant="outlined" filter>{{ $t('costType.opex') }}</v-chip>
+                    </v-chip-group>
+                    <!-- FTE: duration field is already above -->
+                    <!-- OPEX: contract cost / unit price -->
+                    <div v-if="activity.costType === 'OPEX'" class="mt-2">
+                        <v-text-field
+                            v-model="activity.contractCost"
+                            :label="$t('costType.contractCost')"
+                            type="number"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            class="mb-2"
+                            :disabled="isViewMode"
+                        ></v-text-field>
+                        <v-text-field
+                            v-model="activity.unitPrice"
+                            :label="$t('costType.unitPrice')"
+                            type="number"
+                            density="compact"
+                            variant="outlined"
+                            hide-details
+                            :disabled="isViewMode"
+                        ></v-text-field>
+                    </div>
+                </div>
+
                 <!-- Description -->
                 <Description v-model="activity.description" class="mb-4"></Description>
+
+                <!-- AI Summary Button (Phase 2-6) -->
+                <v-btn
+                    v-if="!isViewMode"
+                    size="small"
+                    variant="tonal"
+                    color="primary"
+                    class="mb-4"
+                    :loading="isGeneratingSummary"
+                    @click="generateAISummary"
+                >
+                    <v-icon start size="16">mdi-auto-fix</v-icon>
+                    {{ $t('processSummary.generateSummary') }}
+                </v-btn>
                 
                 <!-- Instruction -->
                 <Instruction
@@ -56,7 +159,34 @@
                     @update:modelValue="(newVal) => activity = newVal"
                     class="mb-4"
                 ></AgentSelectField>
-                
+
+                <!-- HITL Toggle (Phase 2-4) -->
+                <div class="mb-4">
+                    <v-switch
+                        v-model="activity.hitlEnabled"
+                        :label="$t('hitl.enabled')"
+                        density="compact"
+                        hide-details
+                        :disabled="isViewMode"
+                        color="primary"
+                    ></v-switch>
+                    <v-combobox
+                        v-if="activity.hitlEnabled"
+                        v-model="activity.hitlCapabilities"
+                        :label="$t('hitl.capabilities')"
+                        :placeholder="$t('hitl.capabilityPlaceholder')"
+                        :items="availableCapabilities"
+                        multiple
+                        chips
+                        closable-chips
+                        density="compact"
+                        variant="outlined"
+                        class="mt-2"
+                        hide-details
+                        :disabled="isViewMode"
+                    ></v-combobox>
+                </div>
+
                 <v-divider class="mb-4"></v-divider>
                 
                 <!-- Custom Properties (Key-Value) -->
@@ -126,11 +256,13 @@ import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import Description from '@/components/designer/DescriptionField.vue';
 import AgentSelectField from '@/components/ui/field/AgentSelectField.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
+import ManualLinkField from '@/components/ui/ManualLinkField.vue';
 
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
 
 import BackendFactory from '@/components/api/BackendFactory';
+import ProcessSummaryGenerator from '@/components/ai/ProcessSummaryGenerator.js';
 
 export default {
     name: 'gpt-user-task-panel',
@@ -140,7 +272,8 @@ export default {
         Description,
         FormDefinition,
         AgentSelectField,
-        KeyValueField
+        KeyValueField,
+        ManualLinkField
     },
     props: {
         uengineProperties: Object,
@@ -171,8 +304,17 @@ export default {
                 orchestration: null,
                 tool: '',
                 inputData: [],
-                customProperties: []
+                customProperties: [],
+                systemName: '',
+                menuName: '',
+                futureStatus: null,
+                costType: 'FTE',
+                contractCost: null,
+                unitPrice: null,
+                hitlEnabled: false,
+                hitlCapabilities: []
             },
+            isGeneratingSummary: false,
             formId: '',
             tempFormHtml: '',
             activeTab: 'setting',
@@ -188,6 +330,11 @@ export default {
 
         if (this.element.lanes?.length > 0) {
             this.activity.role = this.element.lanes[0].name;
+            // Phase 2-3: Auto-set costType based on lane
+            const laneName = this.element.lanes[0].name || '';
+            if (/외부|external|협력사/i.test(laneName)) {
+                this.activity.costType = 'OPEX';
+            }
         }
 
         // processDefinition에서 기본값 설정 (편집 내용이 사라진 경우 폴백 처리)
@@ -211,6 +358,10 @@ export default {
             if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
             if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
             if (this.copyUengineProperties.customProperties !== undefined) this.activity.customProperties = this.copyUengineProperties.customProperties;
+            if (this.copyUengineProperties.systemName !== undefined) this.activity.systemName = this.copyUengineProperties.systemName;
+            if (this.copyUengineProperties.menuName !== undefined) this.activity.menuName = this.copyUengineProperties.menuName;
+            if (this.copyUengineProperties.manualLinks !== undefined) this.activity.manualLinks = this.copyUengineProperties.manualLinks;
+            if (this.copyUengineProperties.businessId !== undefined) this.activity.businessId = this.copyUengineProperties.businessId;
         }
 
         if (this.activity.inputData) {
@@ -288,7 +439,64 @@ export default {
             }
         },
     },
+    computed: {
+        // Phase 2-2: Future Status options
+        futureStatusOptions() {
+            return [
+                { title: this.$t('futureStatus.maintain'), value: 'maintain' },
+                { title: this.$t('futureStatus.sunset'), value: 'sunset' },
+                { title: this.$t('futureStatus.new'), value: 'new' },
+                { title: this.$t('futureStatus.automation_planned'), value: 'automation_planned' }
+            ];
+        },
+        // Phase 2-3: Check if lane is external
+        isExternalLane() {
+            const laneName = this.element?.lanes?.[0]?.name || '';
+            return /외부|external|협력사/i.test(laneName);
+        },
+        // Phase 2-4: Available capabilities (static list, can be extended)
+        availableCapabilities() {
+            return [
+                'Data Analysis', 'Decision Making', 'Exception Handling',
+                'Customer Communication', 'Quality Review', 'Compliance Check',
+                'Technical Expertise', 'Process Improvement'
+            ];
+        }
+    },
     methods: {
+        // Phase 2-6: AI Summary generation
+        async generateAISummary() {
+            this.isGeneratingSummary = true;
+            try {
+                const { useBpmnStore } = await import('@/stores/bpmn');
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
+                if (!modeler) return;
+
+                const elementRegistry = modeler.get('elementRegistry');
+                const elements = elementRegistry.getAll();
+                const elementsText = elements
+                    .filter(el => el.type && (el.type.includes('Task') || el.type.includes('Event') || el.type.includes('Gateway')))
+                    .map(el => `[${el.type.replace('bpmn:', '')}] ${el.businessObject?.name || el.id}`)
+                    .join('\n');
+
+                const generator = new ProcessSummaryGenerator({
+                    onModelCreated: () => {},
+                    onGenerationFinished: (result) => {
+                        if (result) {
+                            this.activity.description = typeof result === 'string' ? result : result.text || '';
+                        }
+                        this.isGeneratingSummary = false;
+                    },
+                    onModelStopped: () => { this.isGeneratingSummary = false; }
+                }, { elementsText, preferredLanguage: window.countryCode === 'ko' ? 'Korean' : 'English' });
+
+                await generator.generate();
+            } catch (e) {
+                console.error('[GPTUserTaskPanel] generateAISummary error:', e);
+                this.isGeneratingSummary = false;
+            }
+        },
         async loadMentionCandidates() {
             const candidates = [];
 
@@ -461,7 +669,9 @@ export default {
                 attachments: me.activity.attachments,
                 inputData: me.activity.inputData,
                 tool: me.activity.tool,
-                customProperties: me.activity.customProperties
+                customProperties: me.activity.customProperties,
+                systemName: me.activity.systemName,
+                menuName: me.activity.menuName
             };
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);

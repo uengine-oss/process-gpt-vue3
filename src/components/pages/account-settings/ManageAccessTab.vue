@@ -351,7 +351,7 @@ export default {
                     uuid: orgData.uuid
                 };
                 
-                await backend.putObject('configuration', putObj);
+                await backend.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
                 this.EventBus.emit('user-deleted', userId);
             }
         },

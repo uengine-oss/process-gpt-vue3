@@ -13,7 +13,19 @@
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
-                <v-icon v-if="!isPal" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+                <v-icon @click="capturePng" style="color: #444; cursor: pointer;">mdi-download</v-icon>
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-icon
+                            v-bind="props"
+                            @click="showExpandedProcessView"
+                            style="color: #444; cursor: pointer;"
+                            :class="{ 'text-primary': showExpandedView }"
+                        >mdi-sitemap</v-icon>
+                    </template>
+                    <span>{{ $t('BpmnUengineViewer.expandedView') }}</span>
+                </v-tooltip>
             </div>
         </div>
         <!-- 참여자 보기 툴팁 -->
@@ -92,14 +104,61 @@
             </v-row>
         </div>
 
+        <!-- 전체 연결 조회 다이얼로그 -->
+        <v-dialog v-model="showExpandedView" max-width="600" scrollable>
+            <v-card>
+                <v-card-title class="d-flex align-center">
+                    <v-icon class="mr-2">mdi-sitemap</v-icon>
+                    {{ $t('BpmnUengineViewer.expandedViewTitle') }}
+                    <v-spacer />
+                    <v-btn icon variant="text" size="small" @click="showExpandedView = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-divider />
+                <v-card-text class="pa-0">
+                    <div v-if="expandedViewLoading" class="d-flex justify-center align-center pa-8">
+                        <v-progress-circular indeterminate />
+                    </div>
+                    <div v-else-if="expandedProcessList.length === 0" class="text-center pa-8 text-grey">
+                        <v-icon size="48" color="grey-lighten-1">mdi-folder-open-outline</v-icon>
+                        <div class="mt-2">{{ $t('BpmnUengineViewer.noSubProcesses') }}</div>
+                    </div>
+                    <v-list v-else density="compact">
+                        <v-list-item
+                            v-for="(item, index) in expandedProcessList"
+                            :key="index"
+                            :style="{ paddingLeft: (item.depth * 16 + 16) + 'px' }"
+                            @click="navigateToProcess(item.childDefId); showExpandedView = false;"
+                        >
+                            <template #prepend>
+                                <v-icon size="18" color="primary">
+                                    {{ item.depth === 1 ? 'mdi-subdirectory-arrow-right' : 'mdi-minus' }}
+                                </v-icon>
+                            </template>
+                            <v-list-item-title>{{ item.activityName }}</v-list-item-title>
+                            <v-list-item-subtitle class="text-caption">
+                                {{ item.childDefId }}
+                            </v-list-item-subtitle>
+                            <template #append>
+                                <v-icon size="16">mdi-chevron-right</v-icon>
+                            </template>
+                        </v-list-item>
+                    </v-list>
+                </v-card-text>
+            </v-card>
+        </v-dialog>
+
     </div>
 </template>
 
 <script>
 import uEngineModdleDescriptor from '@/components/descriptors/uEngine.json';
+import zeebeModdleDescriptor from '@/components/descriptors/zeebe.json';
 import 'bpmn-js/dist/assets/diagram-js.css';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
+import domtoimage from 'dom-to-image';
 import ZoomScroll from './customZoomScroll';
 // import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
 import MoveCanvas from './customMoveCanvas';
@@ -183,7 +242,11 @@ export default {
             laneAssignments: [],
             // 최초 로딩 시 포커싱할 태스크 ID 목록
             focusedTaskIds: [],
-            initialFocusDone: false
+            initialFocusDone: false,
+            // 전체 연결 조회 관련
+            showExpandedView: false,
+            expandedViewLoading: false,
+            expandedProcessList: []
         };
     },
     computed: {
@@ -247,19 +310,22 @@ export default {
         diffActivities(newVal) {
             if (newVal && Object.keys(newVal).length > 0) {
                 const canvas = this.bpmnViewer.get('canvas');
-                // 이전 마커 제거 (선택 사항)
+                const elementRegistry = this.bpmnViewer.get('elementRegistry');
                 Object.keys(newVal).forEach(activityId => {
-                    canvas.removeMarker(activityId, 'bpmn-diff-added');
-                    canvas.removeMarker(activityId, 'bpmn-diff-deleted');
-                    canvas.removeMarker(activityId, 'bpmn-diff-modified');
-                });
-                
-                // 새 마커 추가
-                Object.keys(newVal).forEach(activityId => {
-                    const changeType = newVal[activityId];
-                    if (activityId && changeType) {
-                        const markerClass = `bpmn-diff-${changeType}`;
-                        canvas.addMarker(activityId, markerClass);
+                    try {
+                        const el = elementRegistry.get(activityId);
+                        if (!el) return;
+                        // 이전 마커 제거
+                        canvas.removeMarker(activityId, 'bpmn-diff-added');
+                        canvas.removeMarker(activityId, 'bpmn-diff-deleted');
+                        canvas.removeMarker(activityId, 'bpmn-diff-modified');
+                        // 새 마커 추가
+                        const changeType = newVal[activityId];
+                        if (changeType) {
+                            canvas.addMarker(activityId, `bpmn-diff-${changeType}`);
+                        }
+                    } catch (e) {
+                        // 개별 마커 적용 실패 시 나머지 계속 진행
                     }
                 });
             }
@@ -346,8 +412,8 @@ export default {
                 const callId = callJson.definitionId;
                 const callDefinition = await backend.getRawDefinition(callId.replace('.bpmn', ''), { type: 'bpmn', version: callJson.version });
                 const previewerXML = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-                
-                
+
+
                 const previewerObject = {
                     xml: previewerXML.xml,
                     name: self.bpmnViewer._definitions.name.slice(self.bpmnViewer._definitions.name.indexOf('/') + 1),
@@ -356,6 +422,115 @@ export default {
                 }
                 self.previewersXMLLists.push(previewerObject);
                 self.diagramXML = callDefinition;
+            }
+        },
+        /**
+         * 모든 서브프로세스/CallActivity를 펼쳐서 연결된 프로세스 목록 가져오기
+         */
+        async getExpandedSubProcessList() {
+            const self = this;
+            const elementRegistry = self.bpmnViewer.get('elementRegistry');
+            const expandedList = [];
+            const visited = new Set();
+
+            // 재귀적으로 서브프로세스 탐색
+            const exploreSubProcesses = async (defId, depth = 0) => {
+                if (visited.has(defId) || depth > 5) return; // 순환 참조 및 깊이 제한
+                visited.add(defId);
+
+                try {
+                    const definition = await backend.getRawDefinition(defId.replace('.bpmn', ''));
+                    if (!definition || !definition.bpmn) return;
+
+                    // 임시 뷰어로 XML 파싱
+                    const tempViewer = new BpmnViewer({
+                        moddleExtensions: {
+                            uEngine: uEngineModdleDescriptor,
+                            zeebe: zeebeModdleDescriptor,
+                            phase: phaseModdle
+                        }
+                    });
+
+                    await tempViewer.importXML(definition.bpmn);
+                    const tempRegistry = tempViewer.get('elementRegistry');
+
+                    // CallActivity 및 SubProcess 요소 찾기
+                    const callActivities = tempRegistry.filter(el =>
+                        el.type === 'bpmn:CallActivity' || el.type === 'bpmn:SubProcess'
+                    );
+
+                    for (const activity of callActivities) {
+                        const callJsonText = activity.businessObject?.extensionElements?.values?.[0]?.$children?.[0]?.$body;
+                        if (callJsonText) {
+                            try {
+                                const callJson = JSON.parse(callJsonText);
+                                const childDefId = callJson.definitionId;
+                                if (childDefId && !visited.has(childDefId)) {
+                                    expandedList.push({
+                                        parentDefId: defId,
+                                        childDefId: childDefId,
+                                        activityId: activity.id,
+                                        activityName: activity.businessObject?.name || activity.id,
+                                        depth: depth + 1
+                                    });
+                                    await exploreSubProcesses(childDefId, depth + 1);
+                                }
+                            } catch (e) {
+                                // JSON 파싱 실패 무시
+                            }
+                        }
+                    }
+
+                    tempViewer.destroy();
+                } catch (e) {
+                    console.error('서브프로세스 탐색 실패:', defId, e);
+                }
+            };
+
+            // 현재 정의에서 시작
+            const currentDefId = self.bpmnViewer._definitions?.id || '';
+            await exploreSubProcesses(currentDefId);
+
+            return expandedList;
+        },
+        /**
+         * 프로세스 전체 연결 뷰 표시 (모든 서브프로세스 펼침)
+         */
+        async showExpandedProcessView() {
+            const self = this;
+            self.expandedViewLoading = true;
+            self.expandedProcessList = [];
+
+            try {
+                const list = await self.getExpandedSubProcessList();
+                self.expandedProcessList = list;
+                self.showExpandedView = true;
+            } catch (e) {
+                console.error('전체 연결 조회 실패:', e);
+            } finally {
+                self.expandedViewLoading = false;
+            }
+        },
+        /**
+         * 펼쳐진 뷰에서 특정 프로세스로 이동
+         */
+        async navigateToProcess(defId) {
+            try {
+                const definition = await backend.getRawDefinition(defId.replace('.bpmn', ''));
+                if (definition && definition.bpmn) {
+                    // 현재 상태 저장
+                    const previewerXML = await this.bpmnViewer.saveXML({ format: true, preamble: true });
+                    const previewerObject = {
+                        xml: previewerXML.xml,
+                        name: this.bpmnViewer._definitions.name?.slice(this.bpmnViewer._definitions.name.indexOf('/') + 1) || 'Process',
+                        activityStatus: this.activityStatus,
+                        instanceId: this.currentInstanceId
+                    };
+                    this.previewersXMLLists.push(previewerObject);
+                    this.diagramXML = definition.bpmn;
+                }
+            } catch (e) {
+                console.error('프로세스 이동 실패:', e);
             }
         },
         async setSubProcessInstance(instanceId) {
@@ -376,23 +551,25 @@ export default {
         resetZoom() {
             try {
                 var self = this;
-                
+
                 // 컨테이너 유효성 검사
                 const container = self.$refs.container;
                 if (!container) {
                     return;
                 }
-                
+
                 const containerRect = container.getBoundingClientRect();
-                if (!containerRect || containerRect.width === 0 || containerRect.height === 0) {
+                const containerWidth = containerRect?.width || 0;
+                const containerHeight = containerRect?.height || 0;
+                if (containerWidth === 0 || containerHeight === 0) {
                     return;
                 }
-                
+
                 // BPMN viewer 유효성 검사
                 if (!self.bpmnViewer) {
                     return;
                 }
-                
+
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
                 var zoomScroll = self.bpmnViewer.get('zoomScroll');
@@ -406,10 +583,53 @@ export default {
 
                 zoomScroll.reset();
 
-                // ✅ 1) 기본 줌: 캔버스 꽉 채우기
-                canvas.zoom('fit-viewport', 'auto');
+                // Pool을 화면 중앙에 정렬
+                let contentBBox;
+                if (allPools.length > 0) {
+                    // Pool이 있으면 모든 Pool의 통합 bbox 계산
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    allPools.forEach(pool => {
+                        const bbox = canvas.getAbsoluteBBox(pool);
+                        if (bbox) {
+                            minX = Math.min(minX, bbox.x);
+                            minY = Math.min(minY, bbox.y);
+                            maxX = Math.max(maxX, bbox.x + bbox.width);
+                            maxY = Math.max(maxY, bbox.y + bbox.height);
+                        }
+                    });
+                    contentBBox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+                } else {
+                    // Pool이 없으면 전체 요소의 bbox 사용
+                    canvas.zoom('fit-viewport');
+                    contentBBox = canvas.viewbox();
+                }
 
-                // ✅ 2) 줌 제한 핸들러
+                if (contentBBox && contentBBox.width > 0 && contentBBox.height > 0) {
+                    // padding 추가
+                    const padding = 50;
+                    const contentWidth = contentBBox.width + padding * 2;
+                    const contentHeight = contentBBox.height + padding * 2;
+
+                    // 컨테이너 비율에 맞춰 zoom 계산
+                    const scaleX = containerWidth / contentWidth;
+                    const scaleY = containerHeight / contentHeight;
+                    const scale = Math.min(scaleX, scaleY, 1); // 최대 1배율
+
+                    // 중앙 정렬을 위한 viewbox 계산
+                    const viewboxWidth = containerWidth / scale;
+                    const viewboxHeight = containerHeight / scale;
+                    const centerX = contentBBox.x + contentBBox.width / 2;
+                    const centerY = contentBBox.y + contentBBox.height / 2;
+
+                    canvas.viewbox({
+                        x: centerX - viewboxWidth / 2,
+                        y: centerY - viewboxHeight / 2,
+                        width: viewboxWidth,
+                        height: viewboxHeight
+                    });
+                }
+
+                // ✅ 줌 제한 핸들러
                 canvas._eventBus.on('zoom', function(event) {
                     let zoomLevel = event.scale;
 
@@ -425,18 +645,15 @@ export default {
                     });
                 });
 
-                // ✅ 3) 꽉 찬 상태의 bbox 가져오기
+                // 꽉 찬 상태의 bbox 가져오기
                 const bbox = canvas.viewbox();
-                
+
                 // bbox 유효성 검사
                 if (!bbox || !Number.isFinite(bbox.width) || !Number.isFinite(bbox.height) || !Number.isFinite(bbox.scale)) {
                     return;
                 }
 
-                // ✅ 4) 필요하면 여기서 padding / 이동 조정하고 싶으면 scroll 사용
-                // 예: canvas.scroll({ dx: 50, dy: 50 });
-
-                // ✅ 5) zoomScroll, moveCanvas 동기화
+                // zoomScroll, moveCanvas 동기화
                 moveCanvas.canvasSize = {
                     height: bbox.height,
                     width: bbox.width,
@@ -471,6 +688,23 @@ export default {
         zoomOut() {
             const zoomScroll = this.bpmnViewer.get('zoomScroll');
             zoomScroll.stepZoom(-1);
+        },
+        capturePng() {
+            const container = this.$refs.container;
+            if (!container) return;
+
+            domtoimage.toPng(container, { bgcolor: 'white' })
+                .then((dataUrl) => {
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = 'process_diagram.png';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch((error) => {
+                    console.error('PNG capture failed:', error);
+                });
         },
         goToPreviewer(index) {
             this.diagramXML = this.previewersXMLLists[index].xml;
@@ -598,10 +832,17 @@ export default {
                 // 차이점 시각화 처리 추가
                 if (self.diffActivities && Object.keys(self.diffActivities).length > 0) {
                     Object.keys(self.diffActivities).forEach(activityId => {
-                        const changeType = self.diffActivities[activityId];
-                        if (activityId && changeType) {
-                            const markerClass = `bpmn-diff-${changeType}`;
-                            canvas.addMarker(activityId, markerClass);
+                        try {
+                            const changeType = self.diffActivities[activityId];
+                            if (activityId && changeType) {
+                                const el = elementRegistry.get(activityId);
+                                if (el) {
+                                    const markerClass = `bpmn-diff-${changeType}`;
+                                    canvas.addMarker(activityId, markerClass);
+                                }
+                            }
+                        } catch (e) {
+                            // 개별 마커 적용 실패 시 나머지 계속 진행
                         }
                     });
                 }
@@ -655,6 +896,8 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
+
+                self.$emit('rendered');
             });
         },
         initializeViewer() {
@@ -716,6 +959,7 @@ export default {
                         ],
                         moddleExtensions: {
                             uengine: uEngineModdleDescriptor,
+                            zeebe: zeebeModdleDescriptor,
                             phase: phaseModdle
                         },
                         propertiesPanel: {}
@@ -983,6 +1227,7 @@ export default {
             this.resizeObserver.observe(container);
         },
         onContainerResizeFinished() {
+            return;
             const container = this.$refs.container;
             if (!container || this.isAIGenerated || !container.getBoundingClientRect) return;
 
@@ -1103,12 +1348,11 @@ export default {
 }
 
 .bpmn-diff-modified .djs-visual > :nth-child(1) {
-    stroke: #2ecc71 !important; /* 초록색 - 수정된 항목 */
-    /* stroke: #3498db !important; 파란색 - 수정된 항목 */
+    stroke: #f39c12 !important; /* 주황색 - 수정된 항목 */
     stroke-width: 3px !important;
 }
 
-/* 연결선(Sequence Flow)만을 위한 스타일 - 추가/삭제만 */
+/* 연결선(Sequence Flow)만을 위한 스타일 */
 [data-element-id*="SequenceFlow"].bpmn-diff-added .djs-visual > path {
     stroke: #2ecc71 !important; /* 초록색 - 추가된 연결선 */
     stroke-width: 3px !important;
@@ -1116,6 +1360,11 @@ export default {
 
 [data-element-id*="SequenceFlow"].bpmn-diff-deleted .djs-visual > path {
     stroke: #e74c3c !important; /* 빨간색 - 삭제된 연결선 */
+    stroke-width: 3px !important;
+}
+
+[data-element-id*="SequenceFlow"].bpmn-diff-modified .djs-visual > path {
+    stroke: #f39c12 !important; /* 주황색 - 수정된 연결선 */
     stroke-width: 3px !important;
 }
 

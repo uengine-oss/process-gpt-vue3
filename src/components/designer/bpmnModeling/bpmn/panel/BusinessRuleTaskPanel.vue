@@ -1,5 +1,22 @@
 <template>
     <div>
+        <!-- Lead Time -->
+        <div class="mt-4">
+            <LeadTimeInput
+                v-model="copyUengineProperties.leadTime"
+                :label="$t('leadTime.title') || 'Lead Time'"
+                :disabled="isViewMode"
+            />
+        </div>
+
+
+        <div class="mt-3">
+            <KeyValueField
+                v-model="copyUengineProperties.customProperties"
+                :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
+                :readonly="isViewMode"
+                />
+        </div>
         <!-- (A) 룰 선택 -->
         <div class="mb-4">
             <v-row class="ma-0 pa-0 align-center mb-2">
@@ -171,6 +188,8 @@
 </template>
 
 <script>
+import KeyValueField from '@/components/designer/KeyValueField.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
 import { parseDmnXml } from '@/utils/dmnParser';
@@ -185,12 +204,26 @@ export default {
     props: {
         uengineProperties: Object,
         processDefinitionId: String,
+        isViewMode: Boolean,
         processDefinition: Object,
         element: Object,
         isViewMode: Boolean,
         roles: Array,
         definition: Object,
         name: String
+    },
+    components: {
+        KeyValueField,
+        LeadTimeInput
+    },
+    created() {
+        if (this.uengineProperties) {
+            this.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
+        } else {
+            this.copyUengineProperties = {};
+        }
+        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
+        
     },
     emits: ['update:uengineProperties'],
     data() {

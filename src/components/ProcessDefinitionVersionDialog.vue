@@ -102,15 +102,25 @@
                         </div>
                         <v-select
                             v-model="information.version_tag"
-                            :items="versionTagItems"
+                            :items="[
+                                {title: $t('ProcessDefinitionVersionDialog.minor') + ' (' + $t('ProcessDefinitionVersionDialog.minorDesc') + ')', value: 'minor'},
+                                {title: $t('ProcessDefinitionVersionDialog.major') + ' (' + $t('ProcessDefinitionVersionDialog.majorDesc') + ')', value: 'major'}
+                            ]"
                             :label="$t('ProcessDefinitionVersionDialog.versionTag')"
-                            class="pb-2"
-                            hide-details
+                            :rules="[v => !!v || $t('ProcessDefinitionVersionDialog.versionTagRequired')]"
+                            variant="outlined"
                             density="compact"
-                        ></v-select>
+                            class="mb-2"
+                        >
+                            <template #prepend-inner>
+                                <span class="text-body-2 text-medium-emphasis mr-1">v{{ information.version || '0.0' }} →</span>
+                            </template>
+                            <template #append-inner>
+                                <v-chip size="small" color="primary" variant="flat">v{{ newVersion }}</v-chip>
+                            </template>
+                        </v-select>
                         <div class="position-relative">
                             <v-textarea class="process-definition-version-dialog-textarea"
-                                v-if="information.version_tag === 'major' || information.version_tag === 'minor'"
                                 v-model="information.message"
                                 :label="$t('ProcessDefinitionVersionDialog.message')"
                                 hide-details
@@ -214,7 +224,8 @@ export default {
             diff: null,
             timeStamp: null,
             message: null,
-            releaseName: null
+            releaseName: null,
+            owner: null  // 담당자
         },
         isOpen: false, // inner var
         isMobile: window.innerWidth <= 768,
@@ -257,7 +268,6 @@ export default {
             ];
         },
         newVersion() {
-            // 현재 버전 X.Y 기준으로 major/minor에 따라 다음 버전 계산
             let baseVersion = this.information.version || '0.0';
             let major = Math.floor(parseFloat(baseVersion)) || 0;
             let minor = baseVersion.toString().includes('.')
@@ -265,16 +275,13 @@ export default {
                 : 0;
 
             if (this.information.version_tag === 'major') {
-                // 메이저: X.Y -> (X+1).0
                 major += 1;
                 return `${major}.0`;
             }
             if (this.information.version_tag === 'minor') {
-                // 마이너: X.Y -> X.(Y+1)
                 minor += 1;
                 return `${major}.${minor}`;
             }
-            // 태그가 없으면 기존 버전 그대로 노출
             return baseVersion;
         },
         useLock() {
@@ -567,6 +574,7 @@ export default {
                         if (versionInfo.length > 0) {
                             me.information = versionInfo[0];
                             me.information.name = me.processName ? me.processName : definitionInfo.name;
+                            me.information.owner = definitionInfo.owner || '';  // 기존 담당자 로드
                             me.information.message = '';
                         } else {
                             me.information = {
@@ -578,7 +586,8 @@ export default {
                                 diff: null,
                                 timeStamp: null,
                                 message: null,
-                                version_tag: 'minor'
+                                version_tag: 'minor',
+                                owner: definitionInfo.owner || ''  // 기존 담당자 로드
                             };
                         }
                         if (me.mode === 'ProcessGPT') {
@@ -797,7 +806,7 @@ export default {
                         arcv_id: me.process
                             ? `${me.process.processDefinitionId}_${me.newVersion}`
                             : `${me.information.proc_def_id}_${me.newVersion}`,
-                        version: me.information.version_tag ? me.newVersion : null,
+                        version: me.newVersion,
                         version_tag: me.information.version_tag,
                         name: me.information.name,
                         proc_def_id: me.information.proc_def_id,
@@ -806,7 +815,8 @@ export default {
                         type: 'bpmn',
                         message: me.information.message,
                         release: me.isRelease,
-                        releaseName: me.information.releaseName
+                        releaseName: me.information.releaseName,
+                        owner: me.information.owner  // 담당자
                     });
                 }
             });
@@ -837,11 +847,6 @@ export default {
                 return false;
             }
 
-            // 버전 태그 필수: 선택되지 않은 경우 저장 불가
-            if (!this.information.version_tag) {
-                return false;
-            }
-            
             // ID 중복 안전장치: 중복 ID이면서 덮어쓰기 미확인 시 저장 불가
             if (this.isDuplicateId && !this.overwriteConfirm) {
                 return false;

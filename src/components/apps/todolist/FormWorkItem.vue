@@ -14,7 +14,7 @@
                     density="compact"
                     style="background-color: #808080; color: white;"
                 >{{ $t('FormWorkItem.previousStep') }}</v-btn>
-                <v-btn v-if="!isDryRun" @click="saveTask" 
+                <v-btn v-if="!isDryRun && !gs" @click="saveTask" 
                     density="compact"
                     class="mr-2 default-gray-btn" rounded variant="flat"
                 >{{ $t('FormWorkItem.intermediateSave') }}</v-btn>
@@ -129,7 +129,7 @@
                                 density="compact"
                                 style="background-color: #808080; color: white;"
                             >{{ $t('FormWorkItem.previousStep') }}</v-btn>
-                            <v-btn v-if="!isDryRun && isSimulate != 'true'"
+                            <v-btn v-if="!isDryRun && isSimulate != 'true' && !gs"
                                 @click="saveTask"
                                 class="mr-2  default-gray-btn"
                                 density="compact"
@@ -269,6 +269,9 @@ export default {
         mode() {
             return window.$mode;
         },
+        gs() {
+            return window.$gs;
+        },
         hasInputFields() {
             return this.inputFields && this.inputFields.length > 0
         }
@@ -387,13 +390,30 @@ export default {
                 action: async () => {
                     // 안전한 formDefId 설정
                     try {
-                        if(me.processDefinition 
+                        // 1) 활동에 설정된 tool(formHandler)을 최우선으로 사용
+                        const activityTool = me.workItem?.activity?.tool || me.workItem?.worklist?.tool;
+                        if (activityTool && activityTool.includes('formHandler:')) {
+                            me.formDefId = activityTool.split('formHandler:')[1];
+                        } else if (activityTool && activityTool.includes(':')) {
+                            // 기타 handler 패턴 대비
+                            me.formDefId = activityTool.split(':')[1];
+                        }
+
+                        // 2) tool 정보가 없으면 프로세스 정의 ID + 액티비티 ID 규칙을 그대로 적용
+                        if (!me.formDefId
+                        && me.processDefinition 
                         && me.processDefinition.processDefinitionId
                         && me.workItem
                         && me.workItem.activity
                         && me.workItem.activity.tracingTag) {
-                            me.formDefId = `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag.toLowerCase()}_form`;
-                        } else {
+                            const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_');
+                            const procId = normalizeIdPart(me.processDefinition.processDefinitionId);
+                            const activityId = normalizeIdPart(me.workItem.activity.tracingTag);
+                            me.formDefId = `${procId}_${activityId}_form`;
+                        }
+
+                        // 3) 레거시 호환: 여전히 없으면 worklist.tool 기반으로 폼 ID 추론
+                        if (!me.formDefId) {
                             const tool = me.workItem?.worklist?.tool;
                             me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
                         }
@@ -410,8 +430,15 @@ export default {
                         }
                     }
                     if(me.isSimulate == 'true' && window.location.pathname == '/definition-map') {
-                        const formId = me.workItem.worklist.adhoc ? 'defaultform' : `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag}_form`;
-                        me.html = localStorage.getItem(formId);    
+                        const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_');
+                        const formId = me.workItem?.worklist?.adhoc
+                            ? 'defaultform'
+                            : (me.processDefinition && me.processDefinition.processDefinitionId && me.workItem && me.workItem.activity && me.workItem.activity.tracingTag)
+                                ? `${normalizeIdPart(me.processDefinition.processDefinitionId)}_${normalizeIdPart(me.workItem.activity.tracingTag)}_form`
+                                : null;
+                        if (formId) {
+                            me.html = localStorage.getItem(formId);
+                        }
                     }
                     if(!me.html) {
                         const options = {

@@ -19,6 +19,9 @@
                         <v-btn value="xml" size="small" class="bpmn-toggle-btn">
                             <v-icon size="18" :color="bpmnViewMode === 'xml' ? 'primary' : undefined">mdi-xml</v-icon>
                         </v-btn>
+                        <v-btn value="ontology" size="small" class="bpmn-toggle-btn">
+                            <v-icon size="18" :color="bpmnViewMode === 'ontology' ? 'primary' : undefined">mdi-graph-outline</v-icon>
+                        </v-btn>
                     </v-btn-toggle>
                     <v-btn icon variant="text" @click="bpmnPreviewDialog = false">
                         <v-icon>mdi-close</v-icon>
@@ -37,8 +40,12 @@
                         />
                     </div>
                     <!-- XML 뷰 -->
-                    <div v-else class="bpmn-preview-container">
+                    <div v-else-if="bpmnViewMode === 'xml'" class="bpmn-preview-container">
                         <pre class="bpmn-xml-content">{{ selectedBpmn?.bpmn_xml }}</pre>
+                    </div>
+                    <!-- Ontology Graph 뷰 -->
+                    <div v-else class="bpmn-ontology-container">
+                        <OntologyGraphViewer :definition="selectedBpmn?.definition" />
                     </div>
                 </v-card-text>
                 <v-card-actions>
@@ -182,6 +189,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import { getValidToken } from '@/utils/supabaseAuth.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import Chat from '@/components/ui/Chat.vue';
 import ChatThread from '@/components/chat/ChatThread.vue';
 
@@ -191,6 +199,7 @@ export default {
     name: 'WorkAssistantChatPanel',
     components: {
         ProcessDefinition,
+        OntologyGraphViewer,
         Chat,
         ChatThread
     },
@@ -240,7 +249,7 @@ export default {
             pdf2bpmnEventsChannelByTaskId: {},
             // BPMN 미리보기
             bpmnPreviewDialog: false,
-            bpmnViewMode: 'diagram',  // 'diagram' | 'xml'
+            bpmnViewMode: 'diagram',  // 'diagram' | 'xml' | 'ontology'
             selectedBpmn: null,
             // 음성 인식 관련
             isMicRecording: false,
@@ -2068,22 +2077,27 @@ export default {
         async showBpmnPreview(bpmn) {
             const me = this;
             
-            // bpmn_xml이 없으면 DB에서 로드
-            if (!bpmn.bpmn_xml && bpmn.process_id) {
+            // bpmn_xml / definition이 없으면 DB에서 로드
+            if ((!bpmn.bpmn_xml || !bpmn.definition) && bpmn.process_id) {
                 try {
                     console.log(`[WorkAssistantChatPanel] Loading BPMN XML for: ${bpmn.process_id}`);
                     
                     const { data, error } = await window.$supabase
                         .from('proc_def')
-                        .select('bpmn')
+                        .select('bpmn, definition')
                         .eq('id', bpmn.process_id)
                         .single();
                     
                     if (error) {
                         console.error('[WorkAssistantChatPanel] Error loading BPMN:', error);
-                    } else if (data && data.bpmn) {
-                        bpmn.bpmn_xml = data.bpmn;
-                        console.log(`[WorkAssistantChatPanel] Loaded BPMN XML, length: ${data.bpmn.length}`);
+                    } else if (data) {
+                        if (data.bpmn) {
+                            bpmn.bpmn_xml = data.bpmn;
+                            console.log(`[WorkAssistantChatPanel] Loaded BPMN XML, length: ${data.bpmn.length}`);
+                        }
+                        if (data.definition) {
+                            bpmn.definition = data.definition;
+                        }
                     }
                 } catch (e) {
                     console.error('[WorkAssistantChatPanel] Error in showBpmnPreview:', e);
@@ -2832,9 +2846,14 @@ export default {
 }
 
 .bpmn-preview-container {
-    max-height: 450px;
+    height: 450px;
     overflow: auto;
     background: #1e293b;
+}
+
+.bpmn-ontology-container {
+    height: 450px;
+    background: #0b1220;
 }
 
 .bpmn-xml-content {

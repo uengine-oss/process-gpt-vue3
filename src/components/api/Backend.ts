@@ -140,6 +140,10 @@ export interface Backend {
     getUserInfo(): Promise<any>;
     getData(path: string, options: any): Promise<any>;
 
+    // User & Data API
+    getUserInfo(): Promise<any>;
+    getData(path: string, options: any): Promise<any>;
+
     // Task Catalog API
     getTaskSystems(): Promise<any>;
     saveTaskSystem(system: any): Promise<any>;
@@ -171,13 +175,11 @@ export interface Backend {
         properties: any;
         executorEmail?: string;
     }): Promise<any>;
-    
     updateTaskExecutionCompletion(params: {
         procInstId: string;
         activityId: string;
         status: 'COMPLETED' | 'CANCELLED' | 'FAILED';
     }): Promise<any>;
-
     getTaskExecutionProperties(options?: {
         procDefId?: string;
         systemName?: string;

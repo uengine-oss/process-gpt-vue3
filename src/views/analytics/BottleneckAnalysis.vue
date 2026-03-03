@@ -1031,11 +1031,9 @@ onMounted(() => loadProcessList())
           </v-btn>
         </div>
       </div>
-
-      <!-- Metric Info Panel -->
       <v-expand-transition>
         <v-card v-show="showMetricInfo" variant="outlined" class="rounded-lg mb-5 metric-info-card">
-          <v-card-text class="pa-4">
+        <v-card-text>
             <div class="d-flex align-center mb-4">
               <v-icon icon="mdi-lightbulb-outline" color="warning" size="20" class="mr-2" />
               <span class="text-subtitle-2 font-weight-semibold">{{ $t('bottleneckAnalysis.metricInfoTitle') }}</span>
@@ -1104,10 +1102,7 @@ onMounted(() => loadProcessList())
                 v-model="selectedStatus"
                 :items="statusOptions"
                 :label="$t('bottleneckAnalysis.status')"
-                density="compact"
-                variant="outlined"
                 hide-details
-                bg-color="white"
               />
             </v-col>
             <v-col cols="12" md="3">
@@ -1209,9 +1204,8 @@ onMounted(() => loadProcessList())
                 <span class="stat-value">{{ summaryStats.instances }}</span>
               </div>
             </div>
-          </v-col>
+            </v-col>
           <v-col cols="6" md="3">
-            <div class="stat-box">
               <div class="stat-icon success">
                 <v-icon icon="mdi-shape-outline" size="20" />
               </div>
@@ -1219,7 +1213,6 @@ onMounted(() => loadProcessList())
                 <span class="stat-label">{{ $t('bottleneckAnalysis.activity') }}</span>
                 <span class="stat-value">{{ summaryStats.activities }}</span>
               </div>
-            </div>
           </v-col>
           <v-col cols="6" md="3">
             <div class="stat-box">
@@ -1417,9 +1410,8 @@ onMounted(() => loadProcessList())
           <v-card-text class="pa-4">
             <div class="text-subtitle-2 font-weight-semibold mb-3">{{ $t('bottleneckAnalysis.defaultSettings') }}</div>
             <v-row dense>
-              <v-col cols="6">
+                <v-col>
                 <v-text-field
-                  v-model.number="defaultStandardMinutes"
                   :label="$t('bottleneckAnalysis.defaultStandardMinutes')"
                   type="number"
                   density="compact"
@@ -1435,11 +1427,7 @@ onMounted(() => loadProcessList())
                   :label="$t('bottleneckAnalysis.defaultAvailableFte')"
                   type="number"
                   density="compact"
-                  variant="outlined"
-                  hide-details
-                  min="0.1"
                   max="100"
-                  step="0.1"
                 />
               </v-col>
             </v-row>
@@ -1551,9 +1539,9 @@ onMounted(() => loadProcessList())
               </v-btn>
             </div>
             <div class="activity-config-wrapper">
-              <v-table density="compact" class="fte-table">
+                <v-table>
                 <thead>
-                  <tr>
+                <tr>
                     <th>{{ $t('bottleneckAnalysis.activity') }}</th>
                     <th class="text-center">{{ $t('bottleneckAnalysis.standardMinutes') }}</th>
                     <th class="text-center">{{ $t('bottleneckAnalysis.role') }}</th>
@@ -1618,6 +1606,7 @@ onMounted(() => loadProcessList())
 
       <v-card-actions class="pa-4 pt-0">
         <v-spacer />
+        <v-btn variant="text" @click="showFteSettings = false">닫기</v-btn>
         <v-btn color="primary" rounded variant="flat" @click="applyFteSettings">{{ $t('bottleneckAnalysis.apply') }}</v-btn>
       </v-card-actions>
     </v-card>

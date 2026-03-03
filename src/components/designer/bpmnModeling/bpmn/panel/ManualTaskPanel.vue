@@ -1,5 +1,27 @@
 <template>
     <div>
+        <!-- System Name / Menu Name -->
+        <v-row class="ma-0 pa-0 mb-4">
+            <v-col cols="6" class="pa-0 pr-2">
+                <v-text-field
+                    v-model="copyUengineProperties.systemName"
+                    :label="$t('BpmnPropertyPanel.systemName') || 'System Name'"
+                    :disabled="isViewMode"
+                    density="compact"
+                    variant="outlined"
+                ></v-text-field>
+            </v-col>
+            <v-col cols="6" class="pa-0 pl-2">
+                <v-text-field
+                    v-model="copyUengineProperties.menuName"
+                    :label="$t('BpmnPropertyPanel.menuName') || 'Menu Name'"
+                    :disabled="isViewMode"
+                    density="compact"
+                    variant="outlined"
+                ></v-text-field>
+            </v-col>
+        </v-row>
+
         <div v-if="inputData.length > 0" style="margin-bottom: 20px">
             <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
@@ -134,6 +156,83 @@
                 </v-card>
             </v-row>
         </div> -->
+        <!-- Business ID (Phase 4-2, read-only) -->
+        <div v-if="copyUengineProperties.businessId" class="mt-4">
+            <v-text-field
+                :model-value="copyUengineProperties.businessId"
+                :label="$t('businessId.readOnly')"
+                density="compact"
+                variant="outlined"
+                hide-details
+                readonly
+                prepend-inner-icon="mdi-identifier"
+            />
+        </div>
+
+        <!-- Manual Links (Phase 4-1) -->
+        <div class="mt-4">
+            <ManualLinkField
+                v-model="copyUengineProperties.manualLinks"
+                :disabled="isViewMode"
+            />
+        </div>
+
+        <!-- Lead Time -->
+        <div class="mt-4">
+            <LeadTimeInput
+                v-model="copyUengineProperties.leadTime"
+                :label="$t('leadTime.title') || 'Lead Time'"
+                :disabled="isViewMode"
+            />
+        </div>
+
+        <!-- Future Status (Phase 2-2) -->
+        <div class="mt-4">
+            <v-select
+                v-model="copyUengineProperties.futureStatus"
+                :label="$t('futureStatus.label')"
+                :items="futureStatusOptions"
+                item-title="title"
+                item-value="value"
+                density="compact"
+                variant="outlined"
+                hide-details
+                :disabled="isViewMode"
+                clearable
+            ></v-select>
+        </div>
+
+        <!-- Cost Type (Phase 2-3) -->
+        <div class="mt-4">
+            <div class="text-caption text-medium-emphasis mb-1">{{ $t('costType.label') }}</div>
+            <v-chip-group v-model="copyUengineProperties.costType" mandatory :disabled="isViewMode">
+                <v-chip value="FTE" size="small" variant="outlined" filter>{{ $t('costType.fte') }}</v-chip>
+                <v-chip value="OPEX" size="small" variant="outlined" filter>{{ $t('costType.opex') }}</v-chip>
+            </v-chip-group>
+            <div v-if="copyUengineProperties.costType === 'OPEX'" class="mt-2">
+                <v-text-field
+                    v-model="copyUengineProperties.contractCost"
+                    :label="$t('costType.contractCost')"
+                    type="number"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    class="mb-2"
+                    :disabled="isViewMode"
+                ></v-text-field>
+                <v-text-field
+                    v-model="copyUengineProperties.unitPrice"
+                    :label="$t('costType.unitPrice')"
+                    type="number"
+                    density="compact"
+                    variant="outlined"
+                    hide-details
+                    :disabled="isViewMode"
+                ></v-text-field>
+            </div>
+        </div>
+
+
         <!-- Schema-based Properties -->
         <div class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
@@ -233,6 +332,8 @@ import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import SchemaBasedProperties from './SchemaBasedProperties.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
+import ManualLinkField from '@/components/ui/ManualLinkField.vue';
 // import { setPropeties } from '@/components/designer/bpmnModeling/bpmn/panel/CommonPanel.ts';
 
 export default {
@@ -244,7 +345,9 @@ export default {
     },
     components: {
         KeyValueField,
-        SchemaBasedProperties
+        SchemaBasedProperties,
+        LeadTimeInput,
+        ManualLinkField
     },
     created() {
         if (this.uengineProperties) {
@@ -257,6 +360,11 @@ export default {
         });
         if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
         if(!this.copyUengineProperties.schemaProperties) this.copyUengineProperties.schemaProperties = {};
+        if(!this.copyUengineProperties.systemName) this.copyUengineProperties.systemName = '';
+        if(!this.copyUengineProperties.menuName) this.copyUengineProperties.menuName = '';
+        if(!this.copyUengineProperties.futureStatus) this.copyUengineProperties.futureStatus = null;
+        if(!this.copyUengineProperties.costType) this.copyUengineProperties.costType = 'FTE';
+        if(!this.copyUengineProperties.manualLinks) this.copyUengineProperties.manualLinks = [];
     },
     data() {
         return {
@@ -309,6 +417,14 @@ export default {
         // });
     },
     computed: {
+        futureStatusOptions() {
+            return [
+                { title: this.$t('futureStatus.maintain'), value: 'maintain' },
+                { title: this.$t('futureStatus.sunset'), value: 'sunset' },
+                { title: this.$t('futureStatus.new'), value: 'new' },
+                { title: this.$t('futureStatus.automation_planned'), value: 'automation_planned' }
+            ];
+        },
         inputData() {
             let params = this.copyUengineProperties.parameters;
             let result = [];
@@ -425,3 +541,114 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+/* ============================================
+   Manual Task Panel - Refined Design
+   ============================================ */
+
+/* Section headers */
+:deep(.text-subtitle-2) {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px !important;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+/* Data chips */
+:deep(.v-chip) {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.75rem !important;
+    font-weight: 500;
+    height: 30px !important;
+    border-radius: 10px !important;
+    transition: all 150ms ease;
+}
+
+:deep(.v-chip.text-body-2) {
+    background: rgba(248, 250, 252, 0.8) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    color: #475569 !important;
+}
+
+:deep(.v-chip.text-body-2:hover) {
+    background: rgba(99, 102, 241, 0.08) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: #6366f1 !important;
+}
+
+:deep(.v-chip--variant-outlined[color="primary"]) {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: #6366f1 !important;
+}
+
+/* Table styling */
+:deep(.v-table) {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    border-radius: 12px !important;
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.6) !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+:deep(.v-table thead) {
+    background: linear-gradient(180deg, rgba(248, 250, 252, 0.9) 0%, rgba(241, 245, 249, 0.9) 100%);
+}
+
+:deep(.v-table th) {
+    font-size: 0.6875rem !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
+}
+
+:deep(.v-table td) {
+    font-size: 0.8125rem !important;
+    font-weight: 500;
+    color: #334155 !important;
+    padding: 10px 16px !important;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.4) !important;
+}
+
+:deep(.v-table tr:last-child td) {
+    border-bottom: none !important;
+}
+
+:deep(.v-table tr:hover td) {
+    background: rgba(99, 102, 241, 0.04) !important;
+}
+
+/* Input fields in table */
+:deep(.v-table .v-text-field) {
+    margin: 0 !important;
+}
+
+:deep(.v-table .v-field) {
+    min-height: 36px !important;
+    font-size: 0.8125rem !important;
+}
+
+/* Section dividers */
+div[style*="margin-bottom: 20px"] {
+    margin-bottom: 24px !important;
+}
+
+div[style*="margin-bottom: -8px"] {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.6875rem !important;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px !important;
+}
+</style>

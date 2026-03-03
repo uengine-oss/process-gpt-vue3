@@ -19,10 +19,6 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointE
 
 const store = useOlapStore()
 const { proxy } = getCurrentInstance()
-const loading = ref(false)
-const syncing = ref(false)
-
-// Chart ready flags
 const chartsReady = ref(false)
 
 // Chart data - shallowRef 사용 (vue-chartjs 권장)
@@ -383,16 +379,6 @@ const statsCards = computed(() => {
       icon: 'mdi-cube-outline',
       color: 'primary',
       bgColor: 'lightprimary'
-    },
-    {
-      title: proxy.$t('analyticsDashboard.totalTasks'),
-      value: tasks.total_tasks ?? 0,
-      subtitle: tasks.avg_duration_sec
-        ? proxy.$t('analyticsDashboard.avgProcessingTimeValue', { value: Math.round(tasks.avg_duration_sec) })
-        : proxy.$t('analyticsDashboard.avgProcessingTimeNone'),
-      icon: 'mdi-checkbox-marked-circle-outline',
-      color: 'success',
-      bgColor: 'lightsuccess'
     },
     {
       title: proxy.$t('analyticsDashboard.agentTasks'),
@@ -774,16 +760,15 @@ async function syncDepartments() {
         </v-col>
 
         <!-- Monthly Trend -->
-        <v-col cols="12" md="8" class="d-flex">
-          <v-card variant="outlined" class="rounded-lg flex-grow-1">
+        <v-col cols="12" md="8">
+          <v-card variant="outlined" class="rounded-lg">
             <v-card-text class="pa-4">
-              <div class="d-flex justify-space-between align-center mb-3">
+              <div>
                 <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.monthlyTrend') }}</h3>
                 <v-chip size="x-small" color="info" variant="tonal">{{ $t('analyticsDashboard.last6Months') }}</v-chip>
               </div>
               <div v-if="canRenderMonthlyTrend" class="chart-wrapper">
                 <Line
-                  :chartData="safeMonthlyTrendData"
                   :chartOptions="lineChartOptions"
                 />
               </div>
@@ -856,19 +841,17 @@ async function syncDepartments() {
         </v-col>
 
         <!-- Domain 별 Sub Process Count -->
-        <v-col cols="12" md="5" class="d-flex">
-          <v-card variant="outlined" class="rounded-lg flex-grow-1">
-            <v-card-text class="pa-4">
+        <v-col cols="12" md="5">
+          <v-card variant="outlined" class="rounded-lg">
+            <v-card-text class="pa-5">
               <div class="d-flex justify-space-between align-center mb-4">
-                <h3 class="text-h6 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.domainSubProcess') }}</h3>
-                <v-chip size="small" color="warning" variant="tonal">
+                <h3 class="text-h6 font-weight-semibold text-textPrimary">Domain별 Sub Process</h3>
                   {{ $t('analyticsDashboard.totalCount', { count: domainData.reduce((a, b) => a + b.subProcessCount, 0) }) }}
                 </v-chip>
               </div>
               <div v-if="domainData.length > 0" class="domain-list">
                 <div
                   v-for="item in domainData"
-                  :key="item.domain"
                   class="domain-item"
                 >
                   <div class="d-flex justify-space-between align-center mb-2">
@@ -948,23 +931,6 @@ async function syncDepartments() {
                 <div class="comparison-col agent-col">
                   <div class="comparison-header">
                     <v-icon icon="mdi-robot" color="primary" size="20" class="mr-1" />
-                    <span class="font-weight-semibold">{{ $t('analyticsDashboard.agent') }}</span>
-                  </div>
-                  <div class="comparison-stat">
-                    <span class="stat-value text-primary">{{ getAgentStats?.total_tasks || 0 }}</span>
-                    <span class="stat-label">{{ $t('analyticsDashboard.tasks') }}</span>
-                  </div>
-                  <div class="comparison-stat">
-                    <span class="stat-value text-primary">{{ getAgentStats?.avg_duration_sec?.toFixed(0) || 0 }}{{ $t('analyticsDashboard.seconds') }}</span>
-                    <span class="stat-label">{{ $t('analyticsDashboard.avgProcessingTime') }}</span>
-                  </div>
-                  <div class="comparison-stat">
-                    <span class="stat-value text-success">{{ getAgentStats?.first_time_right_pct?.toFixed(1) || 0 }}%</span>
-                    <span class="stat-label">{{ $t('analyticsDashboard.firstTimeRight') }}</span>
-                  </div>
-                  <div class="comparison-stat">
-                    <span class="stat-value text-error">{{ getAgentStats?.error_rate_pct?.toFixed(1) || 0 }}%</span>
-                    <span class="stat-label">{{ $t('analyticsDashboard.errorRate') }}</span>
                   </div>
                 </div>
 
@@ -973,7 +939,6 @@ async function syncDepartments() {
                   <span class="vs-text">VS</span>
                 </div>
 
-                <!-- Human Column -->
                 <div class="comparison-col human-col">
                   <div class="comparison-header">
                     <v-icon icon="mdi-account" color="indigo" size="20" class="mr-1" />

@@ -64,6 +64,18 @@
                                             class="ml-1"
                                         >mdi-alert</v-icon>
                                     </v-btn>
+                                    <span
+                                        v-if="participantsPreviewText"
+                                        class="participants-preview"
+                                        role="button"
+                                        tabindex="0"
+                                        :title="participantsPreviewTooltip"
+                                        @click="openParticipantsView"
+                                        @keydown.enter.stop.prevent="openParticipantsView"
+                                        @keydown.space.stop.prevent="openParticipantsView"
+                                    >
+                                        {{ participantsPreviewText }}
+                                    </span>
                                     <!-- 에이전트 연결중(웜업) 표시: 참가자 옆 원형 로딩 -->
                                     <template v-if="hasAgentWarming">
                                         <v-progress-circular
@@ -613,6 +625,9 @@
                         <v-btn value="xml" size="small">
                             <v-icon size="18" :color="bpmnViewMode === 'xml' ? 'primary' : undefined">mdi-xml</v-icon>
                         </v-btn>
+                        <v-btn value="ontology" size="small">
+                            <v-icon size="18" :color="bpmnViewMode === 'ontology' ? 'primary' : undefined">mdi-graph-outline</v-icon>
+                        </v-btn>
                     </v-btn-toggle>
                     <v-btn icon variant="text" @click="bpmnPreviewDialog = false">
                         <v-icon>mdi-close</v-icon>
@@ -629,8 +644,18 @@
                             isAIGenerated="true"
                         />
                     </div>
-                    <div v-else class="bpmn-preview-container">
+                    <div v-else-if="bpmnViewMode === 'xml'" class="bpmn-preview-container">
                         <pre class="bpmn-xml-content">{{ selectedBpmn?.bpmn_xml }}</pre>
+                    </div>
+                    <div v-else class="bpmn-ontology-container">
+                        <div v-if="neo4jGraphLoading" class="bpmn-ontology-state">
+                            <v-progress-circular indeterminate size="22" class="mr-2" />
+                            Neo4j 그래프 로딩 중...
+                        </div>
+                        <div v-else-if="neo4jGraphError" class="bpmn-ontology-state">
+                            {{ neo4jGraphError }}
+                        </div>
+                        <OntologyGraphViewer v-else :elements="neo4jGraphElements" />
                     </div>
                 </v-card-text>
                 <v-card-actions>
@@ -678,6 +703,7 @@ import Chat from '@/components/ui/Chat.vue';
 import VoiceAgentDesktopMode from '@/components/ui/VoiceAgentDesktopMode.vue';
 import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
+import OntologyGraphViewer from '@/components/ui/OntologyGraphViewer.vue';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 import agentRouterService from '@/services/AgentRouterService';
 import workAssistantAgentService from '@/services/WorkAssistantAgentService.js';
@@ -717,6 +743,7 @@ export default {
         UnifiedChatInput,
         Chat,
         ProcessDefinition,
+        OntologyGraphViewer,
         VoiceAgentDesktopMode,
     },
     data() {
@@ -781,8 +808,12 @@ export default {
 
             // 프리뷰 UI (BPMN/이미지) - WorkAssistantChatPanel과 동일한 UX를 ChatRoomPage에서 제공
             bpmnPreviewDialog: false,
-            bpmnViewMode: 'diagram',
+            bpmnViewMode: 'diagram', // diagram | xml | ontology
             selectedBpmn: null,
+            neo4jGraphLoading: false,
+            neo4jGraphError: '',
+            neo4jGraphElements: [],
+            pdf2bpmnApiBaseResolved: '',
             imagePreviewDialog: false,
             previewImageUrl: null,
 
@@ -995,6 +1026,53 @@ export default {
             });
             return others.length > 0 ? others : parts.filter(Boolean);
         },
+        participantsPreviewText() {
+            const parts = Array.isArray(this.participantUsersForView) ? this.participantUsersForView : [];
+            if (parts.length === 0) return '';
+
+            const me = this.normalizeParticipant(this.userInfo);
+            const others = me ? parts.filter(p => p && !this.participantMatches(p, me)) : parts.filter(Boolean);
+            const base = (others.length > 0 ? others : parts).filter(Boolean);
+
+            const getName = (p) => (p?.username || p?.name || p?.userName || p?.email || p?.id || '').toString().trim();
+            const seen = new Set();
+            const names = [];
+            for (const p of base) {
+                const n = getName(p);
+                if (!n) continue;
+                const key = n.toLowerCase();
+                if (seen.has(key)) continue;
+                seen.add(key);
+                names.push(n);
+            }
+            if (names.length === 0) return '';
+
+            const maxNames = 2;
+            const shown = names.slice(0, maxNames);
+            const rest = names.length - shown.length;
+            return rest > 0 ? `${shown.join(', ')} 외 ${rest}` : shown.join(', ');
+        },
+        participantsPreviewTooltip() {
+            const parts = Array.isArray(this.participantUsersForView) ? this.participantUsersForView : [];
+            if (parts.length === 0) return '';
+
+            const me = this.normalizeParticipant(this.userInfo);
+            const others = me ? parts.filter(p => p && !this.participantMatches(p, me)) : parts.filter(Boolean);
+            const base = (others.length > 0 ? others : parts).filter(Boolean);
+
+            const getName = (p) => (p?.username || p?.name || p?.userName || p?.email || p?.id || '').toString().trim();
+            const seen = new Set();
+            const names = [];
+            for (const p of base) {
+                const n = getName(p);
+                if (!n) continue;
+                const key = n.toLowerCase();
+                if (seen.has(key)) continue;
+                seen.add(key);
+                names.push(n);
+            }
+            return names.join(', ');
+        },
         // 음성 세션 시작 시 서버에 주입할 대화 히스토리 (최근 20턴)
         currentVoiceHistory() {
             const msgs = Array.isArray(this.messages) ? this.messages : [];
@@ -1097,7 +1175,12 @@ export default {
                 this.messages = [];
                 await this.bootstrapTargetUser(newUserId);
             }
-        }
+        },
+        bpmnViewMode(newVal) {
+            if (newVal === 'ontology') {
+                this.ensureNeo4jGraphLoaded();
+            }
+        },
     },
     async beforeUnmount() {
         try {
@@ -2600,6 +2683,15 @@ export default {
             const allCandidates = [...inRoomAgents, ...directoryAgents];
             const agents_info = this.buildAgentsInfoForRouting(allCandidates);
             const candidate_agent_ids = allCandidates.map(a => a.id).filter(Boolean);
+
+            // For router rules (e.g., 1:1 room -> current agent must reply)
+            const roomParticipants = this.getNormalizedParticipants().filter(p => !this.isSystemParticipant(p));
+            const room_participant_ids = roomParticipants.map(p => (p?.id || '').toString()).filter(Boolean);
+            const room_member_count = roomParticipants.length;
+            const current_agent_id =
+                room_member_count === 2 && Array.isArray(inRoomAgentsRaw) && inRoomAgentsRaw.length === 1 && inRoomAgentsRaw[0]?.id
+                    ? inRoomAgentsRaw[0].id
+                    : null;
             try {
                 const tenant_id = window.$tenantName || localStorage.getItem('tenantId') || '';
                 const user_uid = this.userInfo?.uid || this.userInfo?.id || '';
@@ -2611,6 +2703,9 @@ export default {
                     conversation_id: this.currentChatRoom?.id || null,
                     tenant_id,
                     user_uid,
+                    room_member_count,
+                    room_participant_ids,
+                    ...(current_agent_id ? { current_agent_id } : {}),
                 });
                 const should = !!routed?.should_intervene;
                 const selected = Array.isArray(routed?.selected_agent_ids) ? routed.selected_agent_ids : [];
@@ -2623,24 +2718,13 @@ export default {
                 const pickedInRoom = inRoomAgentsRaw.filter(a => selectedSet.has(a.id));
                 const pickedOutRoom = directoryAgents.filter(a => selectedSet.has(a.id));
 
-                if (pickedInRoom.length > 0) {
-                    return pickedInRoom.map(a => ({
-                        ...a,
-                        policy: 'must_reply',
-                        __routingLoadingUuid: routingLoadingUuid,
-                        __routingDecision: {
-                            should_intervene: true,
-                            reply_mode: routed?.reply_mode || null,
-                            reason: routed?.reason || '',
-                            confidence: routed?.confidence ?? null,
-                            agent_selection_reason: routed?.agent_selection_reason || null,
-                        }
-                    }));
-                }
+                const hasPickedInRoom = pickedInRoom.length > 0;
 
-                // 방 안에 선택된 에이전트가 없고, 방 밖 후보만 선택된 경우 → 초대 카드 표시
+                // 방 밖 후보가 선택된 경우 → 초대 카드 표시
+                // (mixed case: 방 안 응답 + 방 밖 추천이 동시에 있으면 둘 다 표시)
                 if (pickedOutRoom.length > 0) {
-                    this.removeRoutingLoadingMessage(routingLoadingUuid);
+                    // 방 안 응답이 없을 때만 routing loading bubble을 먼저 제거(기존 동작 유지)
+                    if (!hasPickedInRoom) this.removeRoutingLoadingMessage(routingLoadingUuid);
                     try {
                         const recommendUuid = this.uuid();
                         const nowIso = new Date().toISOString();
@@ -2689,12 +2773,49 @@ export default {
                             });
                         }
                     } catch (e) {}
+                }
+
+                if (hasPickedInRoom) {
+                    return pickedInRoom.map(a => ({
+                        ...a,
+                        policy: 'must_reply',
+                        __routingLoadingUuid: routingLoadingUuid,
+                        __routingDecision: {
+                            should_intervene: true,
+                            reply_mode: routed?.reply_mode || null,
+                            reason: routed?.reason || '',
+                            confidence: routed?.confidence ?? null,
+                            agent_selection_reason: routed?.agent_selection_reason || null,
+                        }
+                    }));
+                }
+
+                // 방 안에 선택된 에이전트가 없고, 방 밖 후보만 선택된 경우
+                if (pickedOutRoom.length > 0) {
                     return [];
                 }
 
                 this.removeRoutingLoadingMessage(routingLoadingUuid);
                 return [];
             } catch (e) {
+                // fallback 1) 1:1(나+현재 에이전트)인 경우 → 현재 에이전트 반드시 응답
+                if (current_agent_id) {
+                    const current = inRoomAgentsRaw.find(a => a?.id === current_agent_id) || null;
+                    if (current) {
+                        return [{
+                            ...current,
+                            policy: 'must_reply',
+                            __routingLoadingUuid: routingLoadingUuid,
+                            __routingDecision: {
+                                should_intervene: true,
+                                reply_mode: 'answer',
+                                reason: 'router_failed_fallback_to_current_agent',
+                                confidence: null,
+                                agent_selection_reason: null,
+                            }
+                        }];
+                    }
+                }
                 // fallback: 메인만 호출(단, 방에 참여 중인 경우)
                 const main = inRoomAgentsRaw.find(a => a?.id === PROCESS_GPT_AGENT_ID);
                 if (!main) {
@@ -3683,15 +3804,20 @@ export default {
             const me = this;
             if (!bpmn) return;
 
-            if (!bpmn.bpmn_xml && bpmn.process_id && window.$supabase) {
+            // Always open preview in BPMN(diagram) mode
+            me.bpmnViewMode = 'diagram';
+
+            // bpmn_xml/definition이 없으면 DB에서 로드
+            if ((!bpmn.bpmn_xml || !bpmn.definition) && bpmn.process_id && window.$supabase) {
                 try {
                     const { data, error } = await window.$supabase
                         .from('proc_def')
-                        .select('bpmn')
+                        .select('bpmn, definition')
                         .eq('id', bpmn.process_id)
                         .single();
-                    if (!error && data?.bpmn) {
-                        bpmn.bpmn_xml = data.bpmn;
+                    if (!error && data) {
+                        if (data.bpmn) bpmn.bpmn_xml = data.bpmn;
+                        if (data.definition) bpmn.definition = data.definition;
                     }
                 } catch (e) {
                     // ignore
@@ -3699,7 +3825,131 @@ export default {
             }
 
             me.selectedBpmn = bpmn;
+            me.neo4jGraphLoading = false;
+            me.neo4jGraphError = '';
+            me.neo4jGraphElements = [];
             me.bpmnPreviewDialog = true;
+        },
+
+        _getPdf2BpmnApiBase() {
+            const fromEnv = (import.meta.env.VITE_PDF2BPMN_API_BASE_URL || '').trim();
+            return (fromEnv || 'http://localhost:8012/api').replace(/\/+$/, '');
+        },
+
+        async _resolvePdf2BpmnApiBase() {
+            // 캐시
+            if (this.pdf2bpmnApiBaseResolved) return this.pdf2bpmnApiBaseResolved;
+
+            const candidates = [];
+
+            // 1) env override
+            const envBase = (import.meta.env.VITE_PDF2BPMN_API_BASE_URL || '').trim();
+            if (envBase) candidates.push(envBase.replace(/\/+$/, ''));
+
+            // 2) 로컬/compose 기본 포트들 (우선 순위 높게)
+            candidates.push('http://localhost:8012/api');
+            candidates.push('http://127.0.0.1:8012/api');
+            candidates.push('http://localhost:8001/api');
+            candidates.push('http://127.0.0.1:8001/api');
+            // (방어) 일부 환경에서 run_server가 8000으로 떠 있을 수 있음
+            candidates.push('http://localhost:8000/api');
+            candidates.push('http://127.0.0.1:8000/api');
+
+            // 3) nginx 경유(같은 origin) - dev 서버에서는 index.html이 나올 수 있어 뒤로 미룸
+            try {
+                const origin = String(window?.location?.origin || '').replace(/\/+$/, '');
+                if (origin) {
+                    candidates.push(`${origin}/bpmn-extractor/api`);
+                }
+            } catch (e) {
+                // ignore
+            }
+
+            const unique = Array.from(new Set(candidates.map((x) => String(x || '').trim()).filter(Boolean)));
+
+            const tryHealth = async (base) => {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 1500);
+                try {
+                    const url = `${base.replace(/\/+$/, '')}/health`;
+                    const res = await fetch(url, { signal: controller.signal });
+                    if (!res.ok) return false;
+
+                    // IMPORTANT: dev 서버/프록시가 index.html을 200으로 줄 수 있어 JSON 여부까지 확인
+                    const ct = String(res.headers.get('content-type') || '').toLowerCase();
+                    if (!ct.includes('application/json')) return false;
+                    const data = await res.json().catch(() => null);
+                    return !!data && data.status === 'ok';
+                } catch (e) {
+                    return false;
+                } finally {
+                    clearTimeout(timer);
+                }
+            };
+
+            for (const base of unique) {
+                // eslint-disable-next-line no-await-in-loop
+                const ok = await tryHealth(base);
+                if (ok) {
+                    this.pdf2bpmnApiBaseResolved = base.replace(/\/+$/, '');
+                    return this.pdf2bpmnApiBaseResolved;
+                }
+            }
+
+            // fallback: 그래도 못 찾으면 기존 기본값 반환(에러 메시지에 후보 목록 표시)
+            return this._getPdf2BpmnApiBase();
+        },
+
+        _getNeo4jProcIdFromDefinition(definition) {
+            const def = definition && typeof definition === 'object' ? definition : null;
+            const ex = def && def.extraction && typeof def.extraction === 'object' ? def.extraction : null;
+            return (ex && String(ex.neo4j_proc_id || '').trim()) || '';
+        },
+
+        async ensureNeo4jGraphLoaded() {
+            const me = this;
+            if (!me.selectedBpmn) return;
+            if (me.neo4jGraphLoading) return;
+            if (Array.isArray(me.neo4jGraphElements) && me.neo4jGraphElements.length > 0) return;
+
+            const neo4jProcId = me._getNeo4jProcIdFromDefinition(me.selectedBpmn?.definition);
+            if (!neo4jProcId) {
+                me.neo4jGraphError =
+                    '이 프로세스에 연결된 Neo4j proc_id(extraction.neo4j_proc_id)를 찾을 수 없습니다. (pdf2bpmn 최신 버전으로 생성된 프로세스인지 확인해주세요)';
+                return;
+            }
+
+            me.neo4jGraphLoading = true;
+            me.neo4jGraphError = '';
+
+            try {
+                const base = await me._resolvePdf2BpmnApiBase();
+                const url = `${base}/processes/${encodeURIComponent(neo4jProcId)}/graph`;
+                const res = await fetch(url, { method: 'GET' });
+                if (!res.ok) throw new Error(`status=${res.status}`);
+                const ct = String(res.headers.get('content-type') || '').toLowerCase();
+                if (!ct.includes('application/json')) {
+                    const text = await res.text().catch(() => '');
+                    const head = String(text || '').slice(0, 120).replace(/\s+/g, ' ');
+                    throw new Error(`non-json response (content-type=${ct || 'unknown'}): ${head}`);
+                }
+                const data = await res.json();
+                me.neo4jGraphElements = Array.isArray(data?.elements) ? data.elements : [];
+                if (me.neo4jGraphElements.length === 0) {
+                    me.neo4jGraphError = 'Neo4j 그래프 데이터가 비어있습니다.';
+                }
+            } catch (e) {
+                const hint = [
+                    'bpmn-extractor(API)가 실행 중인지 확인해주세요.',
+                    '- Docker Compose: `docker compose up -d bpmn-extractor` (또는 전체 스택 up)',
+                    '- 또는 로컬: PDF2BPMN API를 실행(예: pdf2bpmn 저장소에서 `uv run python run.py api`)',
+                    '- 필요 시 프론트 `.env`에 `VITE_PDF2BPMN_API_BASE_URL` 설정',
+                    '  - 현재 원프로세스 실행이라면: `VITE_PDF2BPMN_API_BASE_URL=http://localhost:8012/api` 권장',
+                ].join('\n');
+                me.neo4jGraphError = `Neo4j 그래프 조회 실패: ${e?.message || e}\n\n${hint}`;
+            } finally {
+                me.neo4jGraphLoading = false;
+            }
         },
 
         openImagePreview(imageUrl) {
@@ -3943,6 +4193,48 @@ export default {
     min-height: 44px;
 }
 
+/* ===== BPMN Preview (diagram/xml/ontology) ===== */
+.bpmn-diagram-container {
+    height: 450px;
+    background: #f8fafc;
+    position: relative;
+}
+
+.bpmn-preview-container {
+    height: 450px;
+    overflow: auto;
+    background: #1e293b;
+}
+
+.bpmn-xml-content {
+    padding: 16px;
+    margin: 0;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.bpmn-ontology-container {
+    height: 450px;
+    background: #0b1220;
+    position: relative;
+}
+
+.bpmn-ontology-state {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    color: #cbd5e1;
+    font-size: 13px;
+    text-align: center;
+}
+
 .room-tabs {
     flex: 1;
     min-width: 0;
@@ -4077,6 +4369,25 @@ export default {
 .participants-count {
     font-weight: 700;
     color: rgba(0, 0, 0, 0.65);
+}
+
+.participants-preview {
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 260px;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.55);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1;
+}
+.participants-preview::before {
+    content: '·';
+    margin-right: 6px;
+    color: rgba(0, 0, 0, 0.25);
 }
 </style>
 
