@@ -93,7 +93,7 @@
             ref="fileInput"
             type="file"
             multiple
-            accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+            accept=".pdf,.doc,.docx,.hwpx,.txt,.csv,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
             style="display: none"
             @change="onFileSelect"
         >
@@ -293,7 +293,7 @@ export default {
 
         validateFile(file) {
             var me = this;
-            const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.csv', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
+            const allowedTypes = ['.pdf', '.doc', '.docx', '.hwpx', '.txt', '.csv', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
             const fileExtension = this.getFileExtension(file.name);
             
             if (!allowedTypes.includes(fileExtension)) {
@@ -328,6 +328,7 @@ export default {
                 '.pdf': 'mdi-file-pdf-box',
                 '.doc': 'mdi-file-word-box',
                 '.docx': 'mdi-file-word-box',
+                '.hwpx': 'mdi-file-document-outline',
                 '.txt': 'mdi-file-document',
                 '.csv': 'mdi-file-delimited',
                 '.xls': 'mdi-file-excel-box',
@@ -350,6 +351,7 @@ export default {
                 '.pdf': 'red',
                 '.doc': 'blue',
                 '.docx': 'blue',
+                '.hwpx': 'blue',
                 '.txt': 'grey',
                 '.csv': 'green',
                 '.xls': 'green',

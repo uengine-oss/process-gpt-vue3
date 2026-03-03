@@ -967,6 +967,7 @@ export default {
             if (lowerFileName.endsWith('.pdf')) return 'application/pdf';
             if (lowerFileName.endsWith('.doc')) return 'application/msword';
             if (lowerFileName.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            if (lowerFileName.endsWith('.hwpx')) return 'application/vnd.hancom.hwpx';
             if (lowerFileName.endsWith('.xls')) return 'application/vnd.ms-excel';
             if (lowerFileName.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
             if (lowerFileName.endsWith('.ppt')) return 'application/vnd.ms-powerpoint';

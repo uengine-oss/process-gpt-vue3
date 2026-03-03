@@ -1357,7 +1357,7 @@ export default {
 
             // Phase 4-5: PDF/Word file handling (UI placeholder)
             const lowerName = file.name.toLowerCase();
-            if (lowerName.endsWith('.pdf') || lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) {
+            if (lowerName.endsWith('.pdf') || lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || lowerName.endsWith('.hwpx')) {
                 // Show placeholder message for unsupported formats
                 this.messages.push({
                     role: 'assistant',
