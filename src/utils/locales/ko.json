@@ -1026,6 +1026,7 @@
         "saveAndContinue": "저장",
         "savedAndSubmitted": "저장 및 검토 요청 완료",
         "currentVersion": "현재 (최신 저장본)",
+        "noVersion": "버전 없음",
         "wipOn": "WIP 해제",
         "wipOff": "WIP 설정",
         "wipEnabled": "WIP 상태로 전환되었습니다.",
@@ -1799,6 +1800,8 @@
         "name": "이름",
         "save": "저장",
         "add": "추가",
+        "addEvent": "이벤트 추가",
+        "eventTabLabel": "이벤트 {n}",
         "typeDescriptionTitle": "속성: 해당 항목에 대해 저장할 데이터를 정의",
         "typeDescriptionSubTitle1": "1. 고유 키 : 각 레코드를 고유하게 식별하는 키로, 데이터베이스 내에서 중복을 허용하지 않습니다. \n2. 관계 키 : 서로 다른 데이터 간의 관계를 설정하고 추적하는 데 사용되는 키로, 데이터의 연관성을 유지합니다."
     },
@@ -2069,6 +2072,10 @@
         "laneEqualize": "레인 크기 동일하게",
         "connectionMulti": "메시지 연결",
         "phase": "페이즈 추가",
+        "phaseLeft": "왼쪽에 페이즈 추가",
+        "phaseRight": "오른쪽에 페이즈 추가",
+        "phaseAbove": "위쪽에 페이즈 추가",
+        "phaseBelow": "아래쪽에 페이즈 추가",
         "addComment": "코멘트 작성"
     },
     "reviewMode": {

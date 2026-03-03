@@ -482,35 +482,45 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
 
   drawCustomPhase(parentNode, shape, element) {
-    console.log("🔹 Custom Phase 렌더링 시작:", element);
-
-    // ✅ 기존 shape의 크기 가져오기
     const existingWidth = shape.width.baseVal.value;
     const existingHeight = shape.height.baseVal.value;
+    const isVertical = existingHeight > existingWidth;
 
-    // ✅ 기본 스타일 설정
-    const fillColor = element.businessObject.fillColor || '#f4f8fc'; // 연한 청록색
-    const strokeColor = element.businessObject.strokeColor || '#4e72be'; // 빨간색 테두리
+    const fillColor = element.businessObject.fillColor || '#f4f8fc';
+    const strokeColor = element.businessObject.strokeColor || '#4e72be';
 
-    // ✅ Notched Tag (Phase 형태) 그리기
-    const phaseVisual = drawNotchTag(parentNode, existingWidth, existingHeight, fillColor, strokeColor);
-    
+    const phaseVisual = drawNotchTag(parentNode, existingWidth, existingHeight, fillColor, strokeColor, 0, 0, isVertical);
 
     const text = parentNode.children[1];
-    svgAttr(text, {
+    if (isVertical) {
+      const centerX = existingWidth / 2;
+      const centerY = existingHeight / 2;
+      svgAttr(text, {
+        x: centerX,
+        y: centerY,
+        'text-anchor': 'middle',
+        'alignment-baseline': 'middle',
+        'font-size': '14px',
+        'font-family': 'Arial, sans-serif',
+        'fill': '#333',
+        'font-weight': 'bold',
+        transform: `rotate(-90, ${centerX}, ${centerY})`
+      });
+    } else {
+      svgAttr(text, {
         x: existingWidth / 2,
-        y: existingHeight - 30, // 하단에 배치
+        y: existingHeight - 30,
         'text-anchor': 'middle',
         'alignment-baseline': 'middle',
         'font-size': '20px',
         'font-family': 'Arial, sans-serif',
         'fill': '#333',
         'font-weight': 'bold'
-    });
+      });
+    }
     text.textContent = element.businessObject.name;
 
     prependTo(phaseVisual, parentNode);
-    // ✅ 기존 shape 제거
     svgRemove(shape);
   }
 
@@ -816,15 +826,26 @@ export default class CustomBpmnRenderer extends BaseRenderer {
 
       const customMarkerUrl = createCustomMarker(parentNode, strokeColor);
 
+      const currentWaypoints = element.waypoints;
+      // waypoints가 없거나 부족하면 기본 렌더러 사용 (일부 엣지는 로드 순서 등으로 waypoints가 아직 없을 수 있음)
+      if (!currentWaypoints || currentWaypoints.length < 2) {
+        const options = {
+          stroke: strokeColor,
+          strokeWidth: '2',
+          markerEnd: customMarkerUrl
+        };
+        return this.bpmnRenderer.drawConnection(parentNode, element, options);
+      }
+
       // Get all sequence flows to find intersections
       const allConnections = this.elementRegistry.filter(e => is(e, 'bpmn:SequenceFlow'));
-      const currentWaypoints = element.waypoints;
 
       // Find intersection points with other connections
       const intersections = [];
       allConnections.forEach(otherConn => {
         if (otherConn.id === element.id) return;
         const otherWaypoints = otherConn.waypoints;
+        if (!otherWaypoints || otherWaypoints.length < 2) return;
 
         // Check each segment of current connection against each segment of other connection
         for (let i = 0; i < currentWaypoints.length - 1; i++) {
@@ -855,22 +876,26 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         return distA - distB;
       });
 
-      // Draw path with line jumps at intersections
-      if (intersections.length > 0) {
-        const path = createPathWithLineJumps(currentWaypoints, intersections);
+      try {
+        // Draw path with line jumps at intersections
+        if (intersections.length > 0) {
+          const path = createPathWithLineJumps(currentWaypoints, intersections);
 
-        svgAttr(path, {
-          stroke: strokeColor,
-          strokeWidth: '2',
-          fill: 'none',
-          markerEnd: customMarkerUrl
-        });
+          svgAttr(path, {
+            stroke: strokeColor,
+            strokeWidth: '2',
+            fill: 'none',
+            markerEnd: customMarkerUrl
+          });
 
-        svgAppend(parentNode, path);
-        return path;
+          svgAppend(parentNode, path);
+          return path;
+        }
+      } catch (err) {
+        console.warn('[CustomBpmnRenderer] drawConnection line-jump failed, using default:', element.id, err);
       }
 
-      // No intersections, draw normal connection
+      // No intersections or fallback: draw normal connection
       const options = {
         stroke: strokeColor,
         strokeWidth: '2',
@@ -1008,30 +1033,45 @@ function drawRect(parentNode, width, height, borderRadius, strokeColor, fillColo
   return rect;
 }
 
-function drawNotchTag(parentNode, width, height, fillColor, strokeColor, x = 0, y = 0) {
-  console.log(`🟡 Notched Tag 렌더링 시작 | 위치: (X=${x}, Y=${y})`);
+/**
+ * 노치 태그 그리기 (가로: 왼쪽 노치, 오른쪽 뾰족)
+ * @param {boolean} vertical - true면 같은 모양을 시계 방향 90° 회전해서 그림
+ */
+function drawNotchTag(parentNode, width, height, fillColor, strokeColor, x = 0, y = 0, vertical = false) {
+  const notchDepth = 30;
+  const tipSize = 30;
+  const notchSize = -notchDepth;
 
-  const notchSize = -30; // 왼쪽에 파인 부분 크기
-  const tipSize = 30; // 오른쪽 뾰족한 부분 크기
+  const w = vertical ? height : width;
+  const h = vertical ? width : height;
 
   const pathData = `
-      M ${notchSize},0 
-      L ${width - tipSize},0 
-      L ${width},${height / 2} 
-      L ${width - tipSize},${height} 
-      L ${notchSize},${height} 
-      L 0,${height / 2} 
-      Z
+    M ${notchSize},0
+    L ${w - tipSize},0
+    L ${w},${h / 2}
+    L ${w - tipSize},${h}
+    L ${notchSize},${h}
+    L 0,${h / 2}
+    Z
   `;
 
-  // ✅ SVG Path 생성
+  let transform;
+  if (vertical) {
+    const pathCenterX = w / 2 - notchDepth / 2;
+    const pathCenterY = h / 2;
+    const topOffset = notchDepth;
+    transform = `translate(${x}, ${y + topOffset}) translate(${width / 2}, ${height / 2}) scale(-1, -1) translate(${-width / 2}, ${-height / 2}) translate(${h / 2}, ${w / 2 + notchDepth / 2}) rotate(-90) translate(${-pathCenterX}, ${-pathCenterY})`;
+  } else {
+    transform = `translate(${x + notchDepth}, ${y})`;
+  }
+
   const path = svgCreate('path');
   svgAttr(path, {
-      d: pathData,
-      fill: fillColor,
-      stroke: strokeColor,
-      strokeWidth: 2,
-      transform: `translate(${x + 30}, ${y})` // ✅ 위치 조정
+    d: pathData,
+    fill: fillColor,
+    stroke: strokeColor,
+    strokeWidth: 2,
+    transform
   });
 
   svgAppend(parentNode, path);
