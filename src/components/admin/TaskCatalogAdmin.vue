@@ -26,9 +26,16 @@
 
                 <!-- Tab Content -->
                 <v-card-text class="pa-4">
+                    <!-- 테스크 종류 설정 -->
                     <TaskTypeSettings v-if="activeTab === 'taskTypes'" />
+
+                    <!-- System(OSS) 관리 -->
                     <SystemManager v-if="activeTab === 'systems'" />
+
+                    <!-- 속성 스키마 -->
                     <PropertySchemaManager v-if="activeTab === 'schemas'" />
+
+                    <!-- 카탈로그 -->
                     <TaskCatalogList v-if="activeTab === 'catalog'" />
                 </v-card-text>
             </template>

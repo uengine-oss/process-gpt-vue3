@@ -916,6 +916,8 @@
         "historyDisabled": "버전 히스토리 : 편집모드에서 확인 가능합니다.",
         "import": "BPMN 파일 불러오기",
         "addImage": "이미지 추가",
+        "addFile": "파일 첨부",
+        "onlyImageAllowed": "이 영역에서는 이미지 파일만 첨부할 수 있습니다. (JPG, PNG, GIF, WEBP)",
         "fileUpLoad": "파일 업로드",
         "isEnableProcessGPT": "Process GPT 활성화",
         "isDisableProcessGPT": "Process GPT 비활성화",
@@ -1098,7 +1100,8 @@
         "passwordMismatch": "비밀번호가 일치하지 않습니다",
         "signUp": "회원가입",
         "checkEmailMessage": "회원가입이 완료되었습니다. 이메일 함을 확인하여 계정을 활성화하세요.",
-        "registrationFailed": "회원가입 과정에서 오류가 발생했습니다. 입력 정보를 확인 후 다시 시도해주세요."
+        "registrationFailed": "회원가입 과정에서 오류가 발생했습니다. 입력 정보를 확인 후 다시 시도해주세요.",
+        "passwordMinLength": "비밀번호는 8자리 이상이어야 합니다"
     },
     "createAdminAccount": {
         "createAccountHeader": "어드민 정보",
@@ -3137,7 +3140,8 @@
         "colSpan": "열 너비",
         "sectionName": "섹션명",
         "layoutPreview": "레이아웃 미리보기",
-        "layoutPreviewTitle": "패널 레이아웃 미리보기"
+        "layoutPreviewTitle": "패널 레이아웃 미리보기",
+        "edit": "수정"
     },
     "fteInput": {
         "title": "FTE 입력",
@@ -3340,5 +3344,9 @@
         "chartUsageCount": "사용 횟수",
         "chartUsageCredit": "사용 크레딧",
         "noData": "데이터가 없습니다"
+    },
+    "sidebar": {
+        "dragHint": "드래그하여 원하는 위치로 이동할 수 있습니다",
+        "dontShowAgain": "다시 표시하지 않음"
     }
 }

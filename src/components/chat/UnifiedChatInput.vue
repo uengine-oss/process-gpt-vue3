@@ -14,7 +14,13 @@
         </div>
 
         <!-- 입력 필드 - Chat 컴포넌트 사용 -->
-        <div class="input-wrapper">
+        <div
+            class="input-wrapper"
+            :class="{ 'drag-over-highlight': isDragOver }"
+            @dragover.prevent="isDragOver = true"
+            @dragleave="isDragOver = false"
+            @drop.prevent.stop="handleWrapperDrop"
+        >
             <Chat
                 ref="inputChat"
                 :workAssistantAgentMode="true"
@@ -115,7 +121,18 @@ export default {
             ];
         }
     },
+    data() {
+        return {
+            isDragOver: false,
+        };
+    },
     methods: {
+        handleWrapperDrop(e) {
+            this.isDragOver = false;
+            const files = e.dataTransfer?.files;
+            if (!files || files.length === 0) return;
+            this.$refs.inputChat?.changeImage({ target: { files } });
+        },
         // ChatRoomPage(메시지 리스트)에서 reply 클릭 시, 입력창(Chat)의 reply UI를 사용하기 위한 브릿지
         setReply(message) {
             try {
@@ -202,6 +219,18 @@ export default {
 /* 입력 필드 */
 .input-wrapper {
     width: 100%;
+    position: relative;
+}
+
+.input-wrapper.drag-over-highlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px dashed rgb(var(--v-theme-primary));
+    border-radius: 12px;
+    background-color: rgba(var(--v-theme-primary), 0.06);
+    z-index: 10000;
+    pointer-events: none;
 }
 
 @media (max-width: 768px) {

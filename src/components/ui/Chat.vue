@@ -1250,11 +1250,11 @@
                     <div v-if="!workAssistantAgentMode" style="position:relative; z-index: 9999; margin-bottom: 10px;">
                         <v-row class="pa-0 ma-0">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
-                                <v-tooltip :text="$t('chat.addImage')">
+                                <v-tooltip :text="$t('chat.addFile')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
                                             style="width:30px; height:30px;" :disabled="disableChat">
-                                            <Icons :icon="'add-media-image'" :size="20" />
+                                            <v-icon size="20">mdi-attachment</v-icon>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -1407,13 +1407,17 @@
                             </v-chip>
                         </div>
                         <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                            class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="$t('chat.inputMessage')"
+                            :class="['shadow-none message-input-box delete-input-details cp-chat', { 'textarea-drag-over': isDragOverTextarea }]"
+                            density="compact" :placeholder="$t('chat.inputMessage')"
                             auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat"
                             @input="handleTextareaInput"
                             @keydown="handleTextareaKeydown"
                             @keyup="handleTextareaCaretMove"
                             @click="handleTextareaCaretMove"
                             @paste="handlePaste"
+                            @dragover.prevent="isDragOverTextarea = true"
+                            @dragleave="isDragOverTextarea = false"
+                            @drop.prevent.stop="handleTextareaDrop"
                         >
                         </v-textarea>
                         
@@ -1535,13 +1539,12 @@
             :style="inputOnly ? 'background: transparent; border-radius: 0; box-shadow: none;' : ''"
         >
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
-            <input type="file" accept="image/*" ref="uploader" class="d-none" @change="changeImage">
             <input
                 type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
-                ref="pdfUploader"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                ref="unifiedFileInput"
                 class="d-none"
-                @change="handlePdfSelect"
+                @change="changeImage"
             >
             <div style="z-index: 9999;" class="d-flex flex-wrap">
                 <div v-for="(image, index) in attachedImages" :key="index" class="image-preview-item">
@@ -1605,7 +1608,8 @@
                         </v-chip>
                     </div>
                     <v-textarea variant="solo" hide-details v-model="newMessage" color="primary"
-                        class="shadow-none message-input-box delete-input-details cp-chat" density="compact" :placeholder="resolvedPlaceholder"
+                        class="shadow-none message-input-box delete-input-details cp-chat"
+                        density="compact" :placeholder="resolvedPlaceholder"
                         auto-grow rows="1" @keypress.enter="beforeSend" :disabled="disableChat || isGenerationFinished"
                         @input="handleTextareaInput"
                         @keydown="handleTextareaKeydown"
@@ -1663,27 +1667,11 @@
                                         </v-btn>
                                     </template>
                                 </v-tooltip> -->
-                                <v-tooltip :text="$t('chat.addImage')">
+                                <v-tooltip :text="$t('chat.addFile')">
                                     <template v-slot:activator="{ props }">
                                         <v-btn icon variant="text" class="text-medium-emphasis" @click="openChatMenu(); uploadImage()" v-bind="props"
                                             style="width:30px; height:30px; margin-left:5px;" :disabled="disableChat || isGenerationFinished">
-                                            <Icons :icon="'add-media-image'" :size="20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                                <!-- PDF 업로드 버튼: 메인/패널 공통으로 Chat 내부에서 처리 -->
-                                <v-tooltip text="파일 업로드">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis"
-                                            v-bind="props"
-                                            style="width:30px; height:30px; margin-left:5px;"
-                                            :disabled="disableChat || isGenerationFinished"
-                                            @click="openChatMenu(); triggerPdfSelect()"
-                                        >
-                                            <v-icon size="20">mdi-file-outline</v-icon>
+                                            <v-icon size="20">mdi-attachment</v-icon>
                                         </v-btn>
                                     </template>
                                 </v-tooltip>
@@ -2042,6 +2030,7 @@ export default {
             selectedPdfFile: null,
             uploadedPdfInfo: null,
             isPdfUploading: false,
+            isDragOverTextarea: false,
             showNewMessageNoti: false,
             lastMessage: { name: '', content: '' },
             showNewMessageNotiTimer: null,
@@ -3361,13 +3350,20 @@ export default {
             });
         },
         uploadImage() {
-            this.$refs.uploader.value = '';
-            this.$refs.uploader.click();
+            const input = this.$refs.unifiedFileInput || this.$refs.uploader;
+            if (!input) return;
+            input.value = '';
+            input.click();
         },
         async changeImage(e) {
             const me = this;
             const imageFile = e?.target?.files?.[0];
             if (!imageFile) return;
+
+            if (!imageFile.type.startsWith('image/')) {
+                this.handlePdfSelect(e);
+                return;
+            }
             
             if (window.location.hostname !== 'localhost') {
                 const originalName = imageFile.name || '';
@@ -3497,9 +3493,18 @@ export default {
             
             return false;
         },
-        // 클립보드에서 이미지 붙여넣기 처리 함수
+        handleTextareaDrop(e) {
+            this.isDragOverTextarea = false;
+            const files = e.dataTransfer?.files;
+            if (!files || files.length === 0) return;
+            const file = files[0];
+            if (!file.type.startsWith('image/')) {
+                alert(this.$t('chat.onlyImageAllowed'));
+                return;
+            }
+            this.changeImage({ target: { files } });
+        },
         handlePaste(event) {
-            // 클립보드 데이터 확인
             const items = (event.clipboardData || event.originalEvent.clipboardData).items;
             let imageFound = false;
             
@@ -3785,6 +3790,12 @@ export default {
 .message-input-box .v-field__append-inner,
 .v-field__prepend-inner {
     padding: 0px !important;
+}
+
+.textarea-drag-over .v-field {
+    outline: 2px dashed rgb(var(--v-theme-primary));
+    outline-offset: -2px;
+    background-color: rgba(var(--v-theme-primary), 0.04);
 }
 
 /* 라우터 로딩(에이전트 선정 중) - '...'만 표시 */

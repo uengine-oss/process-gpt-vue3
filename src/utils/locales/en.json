@@ -760,6 +760,8 @@
         "historyDisabled": "history button : Available in edit mode.",
         "import": "Import BPMN File",
         "addImage": "Add Image",
+        "addFile": "Attach File",
+        "onlyImageAllowed": "Only image files can be attached here. (JPG, PNG, GIF, WEBP)",
         "fileUpLoad": "File Up Load",
         "isEnableProcessGPT": "Enable Process GPT",
         "isDisableProcessGPT": "Disable Process GPT",
@@ -940,7 +942,8 @@
         "passwordMismatch": "Passwords do not match",
         "signUp": "Sign In",
         "checkEmailMessage": "Your registration is complete. Please check your email to activate your account.",
-        "registrationFailed": "There was an error during the registration process. Please check your information and try again."
+        "registrationFailed": "There was an error during the registration process. Please check your information and try again.",
+        "passwordMinLength": "Password must be at least 8 characters"
     },
     "createAdminAccount": {
         "createAccountHeader": "Admin Info",
@@ -2914,7 +2917,8 @@
         "colSpan": "Column Span",
         "sectionName": "Section Name",
         "layoutPreview": "Layout Preview",
-        "layoutPreviewTitle": "Panel Layout Preview"
+        "layoutPreviewTitle": "Panel Layout Preview",
+        "edit": "Edit"
     },
     "fteInput": {
         "title": "FTE Input",
@@ -3060,5 +3064,9 @@
         "chartUsageCount": "Usage Count",
         "chartUsageCredit": "Credit Used",
         "noData": "No data available"
+    },
+    "sidebar": {
+        "dragHint": "Drag to move to your preferred position",
+        "dontShowAgain": "Don't show again"
     }
 }

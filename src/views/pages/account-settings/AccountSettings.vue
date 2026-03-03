@@ -262,6 +262,8 @@
                                 <SkillsTab />
                             </div>
                         </v-window-item> -->
+                        
+                        <!-- task 설정 탭 -->
                         <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
                             <div
                                 style="overflow: auto;"

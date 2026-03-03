@@ -8,7 +8,7 @@
         </v-alert>
 
         <!-- Filter Row -->
-        <div class="d-flex align-center justify-space-between pa-0 pt-4 pb-4">
+        <div :class="isMobile ? 'd-flex flex-column pa-0 pt-4 pb-4' : 'd-flex align-center justify-space-between pa-0 pt-4 pb-4'">
             <v-select
                 v-model="selectedTaskType"
                 :items="availableTaskTypes"
@@ -19,10 +19,10 @@
                 variant="outlined"
                 density="compact"
                 hide-details
-                class="flex-grow-0"
-                style="min-width: 250px;"
+                :class="isMobile ? '' : 'flex-grow-0'"
+                :style="isMobile ? '' : 'min-width: 250px;'"
             />
-            <div class="d-flex ga-2">
+            <div :class="isMobile ? 'd-flex ga-2 mt-3 ml-auto' : 'd-flex ga-2'">
                 <!-- [BLOCK:button.secondary.v1] -->
                 <v-btn
                     color="gray"
@@ -104,8 +104,8 @@
             </div>
         </v-expand-transition>
 
-        <!-- [BLOCK:table.simple.v1] -->
-        <v-card class="pa-0" variant="outlined">
+        <!-- Desktop: [BLOCK:table.simple.v1] -->
+        <v-card v-if="!isMobile" class="pa-0" variant="outlined">
             <v-table density="comfortable">
                 <thead>
                     <tr>
@@ -153,6 +153,44 @@
                 </tbody>
             </v-table>
         </v-card>
+
+        <!-- Mobile: Card Layout -->
+        <div v-else>
+            <div v-if="loading" class="text-center pa-8">
+                <v-progress-circular indeterminate size="32" color="primary" />
+            </div>
+            <div v-else-if="filteredSchemas.length === 0" class="text-center pa-8 text-medium-emphasis">
+                {{ selectedTaskType ? $t('taskCatalog.noSchemas') : $t('taskCatalog.selectTaskTypeFirst') }}
+            </div>
+            <div v-else class="d-flex flex-column ga-3">
+                <v-card v-for="item in filteredSchemas" :key="item.id" variant="outlined" class="pa-4">
+                    <div class="d-flex justify-space-between align-start">
+                        <div class="flex-grow-1">
+                            <div class="text-subtitle-2 font-weight-bold">{{ item.property_label }}</div>
+                            <div class="text-caption text-grey font-weight-medium mt-1">{{ item.property_key }}</div>
+                        </div>
+                        <div class="d-flex align-center">
+                            <!-- [BLOCK:button.icon.v1] -->
+                            <v-btn variant="text" density="compact" icon @click="openDialog(item)">
+                                <v-icon size="16">mdi-pencil</v-icon>
+                            </v-btn>
+                            <v-btn variant="text" density="compact" icon color="error" @click="confirmDelete(item)">
+                                <v-icon size="16">mdi-delete</v-icon>
+                            </v-btn>
+                        </div>
+                    </div>
+                    <div class="d-flex align-center ga-2 mt-3">
+                        <v-chip size="small" variant="tonal">{{ item.property_type }}</v-chip>
+                        <v-chip :color="item.is_mandatory ? 'error' : 'grey'" size="small" variant="tonal">
+                            {{ item.is_mandatory ? $t('taskCatalog.mandatory') : $t('taskCatalog.optional') }}
+                        </v-chip>
+                        <v-chip size="small" variant="tonal" color="info">
+                            {{ $t('taskCatalog.order') }}: {{ item.display_order }}
+                        </v-chip>
+                    </div>
+                </v-card>
+            </div>
+        </div>
 
         <!-- Add/Edit Dialog -->
         <PropertySchemaDialog
@@ -208,6 +246,7 @@ export default defineComponent({
         const store = useTaskCatalogStore();
 
         const loading = computed(() => store?.loading || false);
+        const isMobile = computed(() => window.innerWidth <= 768);
 
         const selectedTaskType = ref(null);
         const dialogOpen = ref(false);
@@ -307,6 +346,7 @@ export default defineComponent({
         return {
             store,
             loading,
+            isMobile,
             selectedTaskType,
             availableTaskTypes,
             headers,

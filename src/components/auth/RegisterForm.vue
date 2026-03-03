@@ -18,6 +18,7 @@ const showConfirmPassword = ref(false);
 const email = ref('');
 const passwordRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterPassword'),
+    (v: string) => (v && v.length >= 8) || proxy.$t('createAccount.passwordMinLength'),
 ]);
 const emailRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterEmail'), 
@@ -47,6 +48,9 @@ function validate(values: any, { setErrors }: any) {
     }
     if (!password.value) {
         setErrors({ password: proxy.$t('createAccount.enterPassword') });
+        hasError = true;
+    } else if (password.value.length < 8) {
+        setErrors({ password: proxy.$t('createAccount.passwordMinLength') });
         hasError = true;
     }
     if (!confirmPassword.value || password.value !== confirmPassword.value) {
