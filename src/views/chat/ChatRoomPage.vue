@@ -181,7 +181,7 @@
                         ref="composer"
                         variant="inline"
                         :showExamples="false"
-                        :disableChat="isSending || hasAbortableStream"
+                        :disableChat="false"
                         :showStopButton="hasAbortableStream"
                         :userList="userList"
                         :currentChatRoom="currentChatRoom"
@@ -298,7 +298,7 @@
                             ref="composer"
                             variant="inline"
                             :showExamples="false"
-                            :disableChat="isSending || hasAbortableStream"
+                            :disableChat="false"
                             :showStopButton="hasAbortableStream"
                             :userList="userList"
                             :currentChatRoom="draftUserContextRoom"
@@ -415,7 +415,7 @@
                         ref="composer"
                         variant="inline"
                         :showExamples="false"
-                        :disableChat="isSending || hasAbortableStream"
+                        :disableChat="false"
                         :showStopButton="hasAbortableStream"
                         :userList="userList"
                         :currentChatRoom="draftContextRoom"
@@ -833,6 +833,7 @@ export default {
             participantsDialog: false,
             participantsDraft: [],
             deleteDialog: false,
+            chatAccessHeartbeatTimer: null,
         };
     },
     computed: {
@@ -1147,7 +1148,11 @@ export default {
         roomId: {
             immediate: true,
             async handler(newRoomId, oldRoomId) {
-                if (!newRoomId) return;
+                if (!newRoomId) {
+                    this.stopChatAccessHeartbeat();
+                    this.EventBus.emit('chat-room-unselected');
+                    return;
+                }
                 if (newRoomId === oldRoomId) return;
 
                 const isVoiceDraftTransition = this.isDesktopVoiceActive && !oldRoomId;
@@ -1183,6 +1188,8 @@ export default {
         },
     },
     async beforeUnmount() {
+        this.stopChatAccessHeartbeat();
+        this.EventBus.emit('chat-room-unselected');
         try {
             if (this.chatsWatchRef && typeof this.chatsWatchRef.unsubscribe === 'function') {
                 this.chatsWatchRef.unsubscribe();
@@ -1197,6 +1204,63 @@ export default {
         this.abortAllAgentStreams();
     },
     methods: {
+        focusComposerInput() {
+            try {
+                const composer = this.$refs?.composer;
+                const composerEl = composer?.$el || null;
+                if (!composerEl) return;
+
+                const activeEl = document?.activeElement || null;
+                const focusedOutsideComposer =
+                    !!activeEl &&
+                    activeEl !== document.body &&
+                    activeEl !== document.documentElement &&
+                    !composerEl.contains(activeEl);
+
+                // 사용자가 의도적으로 다른 영역을 클릭한 경우에는 포커스를 강제로 가져오지 않음
+                if (focusedOutsideComposer) return;
+
+                this.$nextTick(() => {
+                    try {
+                        const textarea = composerEl.querySelector('textarea:not([disabled])');
+                        if (!textarea) return;
+                        textarea.focus({ preventScroll: true });
+                        const len = (textarea.value || '').length;
+                        if (typeof textarea.setSelectionRange === 'function') {
+                            textarea.setSelectionRange(len, len);
+                        }
+                    } catch (e) {}
+                });
+            } catch (e) {}
+        },
+        async updateChatAccessPage(roomId) {
+            try {
+                const rid = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+                const email = this.userInfo?.email || null;
+                if (!rid || !email) return;
+                if (backend?.saveAccessPage) {
+                    await backend.saveAccessPage(email, `chat:${rid}`);
+                }
+            } catch (e) {
+                // 알림 억제 보조 기능: 실패해도 채팅 UX는 유지
+            }
+        },
+        startChatAccessHeartbeat(roomId) {
+            this.stopChatAccessHeartbeat();
+            const rid = (roomId || this.currentChatRoom?.id || this.roomId || '').toString();
+            if (!rid) return;
+
+            this.updateChatAccessPage(rid);
+            this.chatAccessHeartbeatTimer = setInterval(() => {
+                this.updateChatAccessPage(rid);
+            }, 60 * 1000);
+        },
+        stopChatAccessHeartbeat() {
+            if (this.chatAccessHeartbeatTimer) {
+                clearInterval(this.chatAccessHeartbeatTimer);
+                this.chatAccessHeartbeatTimer = null;
+            }
+        },
         handleBeforeReply(message) {
             try {
                 this.$refs.composer?.setReply?.(message);
@@ -1330,6 +1394,7 @@ export default {
         async handleSendMessageUserContextDraft(payload) {
             if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !payload.file)) return;
             if (!this.userInfo || !this.targetUser) return;
+            if (this.isSending) return;
 
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
@@ -1389,11 +1454,13 @@ export default {
                 // ignore
             } finally {
                 this.isSending = false;
+                this.focusComposerInput();
             }
         },
         async handleSendMessageContextDraft(payload) {
             if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !payload.file)) return;
             if (!this.userInfo || !this.contextAgentId) return;
+            if (this.isSending) return;
 
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
@@ -1457,6 +1524,7 @@ export default {
                 // ignore
             } finally {
                 this.isSending = false;
+                this.focusComposerInput();
             }
         },
         resetDraft() {
@@ -1557,8 +1625,10 @@ export default {
                 // 방 정보는 _ensureRoomForVoice에서 이미 세팅됨 — 구독·워밍업만 수행
                 await this.subscribeToRoom(roomId);
                 this.EventBus.emit('chat-room-selected', roomId);
+                this.startChatAccessHeartbeat(roomId);
                 this.warmupAgentsForCurrentRoom();
                 this.$nextTick(() => this.scrollToBottomSafe?.());
+                this.focusComposerInput();
             } catch (e) {
                 // ignore — 실패해도 음성 대화는 계속
             }
@@ -1577,17 +1647,22 @@ export default {
                 await this.loadMessages(roomId);
                 await this.subscribeToRoom(roomId);
                 this.EventBus.emit('chat-room-selected', roomId);
+                this.startChatAccessHeartbeat(roomId);
                 this.warmupAgentsForCurrentRoom();
                 this.$nextTick(() => this.scrollToBottomSafe());
-
-                // definition-map 메인 채팅에서 생성된 방: 첫 메시지에 대한 에이전트 응답 kick-off
-                await this.maybeKickoffFromSession(roomId);
+                this.focusComposerInput();
             } catch (e) {
                 this.currentChatRoom = null;
                 this.messages = [];
             } finally {
                 this.isLoadingRoom = false;
             }
+
+            // definition-map 메인 채팅에서 생성된 방:
+            // 화면 로딩을 막지 않도록 kickoff는 백그라운드로 시작한다.
+            this.$nextTick(() => {
+                this.maybeKickoffFromSession(roomId).catch(() => {});
+            });
         },
         async maybeKickoffFromSession(roomId) {
             try {
@@ -2175,8 +2250,6 @@ export default {
         async handleSendMessage(payload) {
             if (!payload || (!payload.text && (!payload.images || payload.images.length === 0) && !payload.file)) return;
             if (!this.currentChatRoom?.id) return;
-            // 더블 submit 방지
-            if (this.isSending) return;
             const text = (payload.text || '').trim();
             const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
             const hasFile = !!payload.file;
@@ -2235,6 +2308,8 @@ export default {
                 this.messages.push(msg);
                 this.EventBus.emit('chat-rooms-updated');
                 this.$nextTick(() => this.scrollToBottomSafe());
+                this.focusComposerInput();
+                this.updateChatAccessPage(this.currentChatRoom?.id);
 
                 // ---- 멀티 에이전트 라우팅/스트리밍 ----
                 const agentTargets = await this.resolveAgentTargetsForMessage(msg.content || '', msg.mentionedUsers || []);
@@ -2245,6 +2320,7 @@ export default {
                 // ignore
             } finally {
                 this.isSending = false;
+                this.focusComposerInput();
             }
         },
 
