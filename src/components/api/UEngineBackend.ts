@@ -222,7 +222,7 @@ class UEngineBackend implements Backend {
         return response.data;
     }
     // @ts-ignore
-    async getRawDefinition(defPath: string, options) {
+    async getRawDefinition(defPath: string, options?: any) {
         if (options.type == 'deleted') return null;
         let path = `/definition/raw/${defPath}.${options.type}`;
         if (options.version) {

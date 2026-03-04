@@ -186,7 +186,7 @@ export default defineComponent({
     },
     emits: ['close', 'commentCountChanged', 'focusElement'],
     setup(props, { emit }) {
-        const backend = BackendFactory.createBackend();
+        const backend = BackendFactory.createBackend() as any;
         const commentViewMode = ref<'element' | 'process'>('element');
         const comments = ref<any[]>([]);
         const processComments = ref<any[]>([]);
@@ -420,7 +420,7 @@ export default defineComponent({
 
         // 현재 사용자 ID 설정
         onMounted(() => {
-            currentUserId.value = window.$user?.id || '';
+            currentUserId.value = (window as any).$user?.id || '';
             loadRounds();
         });
 

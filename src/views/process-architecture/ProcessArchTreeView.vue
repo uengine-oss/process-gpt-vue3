@@ -167,8 +167,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, getCurrentInstance } from 'vue';
 import ProgressBadge from '@/components/ui/ProgressBadge.vue';
+
+const instance = getCurrentInstance();
+const t = (key: string, params?: any) => {
+    const fn = instance?.proxy?.$t;
+    return fn ? (fn as any)(key, params) : key;
+};
 
 const props = defineProps<{
     procMap: any;

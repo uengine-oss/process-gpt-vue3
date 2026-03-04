@@ -329,7 +329,7 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
-    async getRawDefinition(defId: string, options: any) {
+    async getRawDefinition(defId: string, options?: any) {
         try {
             if (!defId) return;
 
@@ -2396,7 +2396,7 @@ class ProcessGPTBackend implements Backend {
     async validate(xml: string) {
         try {
             // BPMN XML 유효성 검사 실행
-            const i18nFunc = window.$i18n?.global?.t;
+            const i18nFunc = (window as any).$i18n?.global?.t;
             return runValidation(xml, i18nFunc);
         } catch (error) {
             console.warn('BPMN validation error:', error);
@@ -6573,7 +6573,7 @@ class ProcessGPTBackend implements Backend {
         const supabase = window.$supabase;
         if (!supabase) throw new Error('Supabase not initialized');
 
-        const user = window.$user || {};
+        const user = (window as any).$user || {};
         const data = {
             proc_def_id: comment.procDefId,
             element_id: comment.elementId,
@@ -6652,7 +6652,7 @@ class ProcessGPTBackend implements Backend {
         const supabase = window.$supabase;
         if (!supabase) throw new Error('Supabase not initialized');
 
-        const user = window.$user || {};
+        const user = (window as any).$user || {};
         const updateData: any = {
             is_resolved: resolved
         };
@@ -7816,7 +7816,7 @@ class ProcessGPTBackend implements Backend {
             const supabase = window.$supabase;
             if (!supabase) return;
 
-            const userName = window.$userName || 'system';
+            const userName = (window as any).$userName || 'system';
             const tenantId = window.$tenantName || 'default';
 
             await supabase.from('proc_def_approval_history').insert({

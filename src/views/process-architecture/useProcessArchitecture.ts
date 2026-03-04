@@ -87,30 +87,18 @@ export function useProcessArchitecture() {
     const currentUserId: Ref<string> = ref((window as any).$user?.id || '');
 
     // Advanced filter state (AND-combined with quick filters)
-    const advancedFilters: Ref<{
-        statuses: string[];
-        dateMode: 'none' | 'relative' | 'absolute';
-        relativeDays: number | null;
-        dateFrom: string;
-        dateTo: string;
-        owners: string[];
-        ownerRole: 'any' | 'primary' | 'co' | 'master';
-        tags: string[];
-        fteRange: [number, number];
-        leadTimeRange: [number, number];
-        systems: string[];
-    }> = ref({
-        statuses: [],
-        dateMode: 'none',
-        relativeDays: 30,
+    const advancedFilters = ref({
+        statuses: [] as string[],
+        dateMode: 'none' as 'none' | 'relative' | 'absolute',
+        relativeDays: 30 as number,
         dateFrom: '',
         dateTo: '',
-        owners: [],
-        ownerRole: 'any',
-        tags: [],
-        fteRange: [0, 10],
-        leadTimeRange: [0, 365],
-        systems: []
+        owners: [] as string[],
+        ownerRole: 'any' as 'any' | 'primary' | 'co' | 'master',
+        tags: [] as string[],
+        fteRange: [0, 10] as [number, number],
+        leadTimeRange: [0, 365] as [number, number],
+        systems: [] as string[]
     });
 
     async function loadData() {

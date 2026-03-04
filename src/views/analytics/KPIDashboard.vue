@@ -229,7 +229,7 @@ onMounted(loadData)
                     </div>
                     <div class="d-flex align-center">
                         <div style="width: 160px; height: 160px; position: relative">
-                            <Doughnut v-if="canRenderDoughnut" :data="achievementChartData" :options="doughnutOptions" />
+                            <Doughnut v-if="canRenderDoughnut" :chart-data="achievementChartData" :chart-options="doughnutOptions" />
                             <div class="doughnut-center-text">
                                 <span class="text-h5 font-weight-bold">{{ store.achievementRate }}%</span>
                             </div>
@@ -305,7 +305,7 @@ onMounted(loadData)
                 <v-card variant="outlined" rounded="lg" class="pa-4">
                     <span class="text-subtitle-1 font-weight-bold mb-3 d-block">{{ $t('analytics.domainProgress') }}</span>
                     <div style="height: 280px">
-                        <Bar v-if="canRenderDomainChart" :data="domainChartData" :options="barOptions" />
+                        <Bar v-if="canRenderDomainChart" :chart-data="domainChartData" :chart-options="barOptions" />
                         <div v-else-if="chartsReady" class="d-flex justify-center align-center" style="height: 100%">
                             <div class="text-center">
                                 <v-icon size="40" color="grey-lighten-2">mdi-chart-bar</v-icon>
@@ -326,7 +326,7 @@ onMounted(loadData)
                         </v-chip>
                     </div>
                     <div style="height: 280px">
-                        <Line v-if="canRenderVelocityChart" :data="velocityChartData" :options="lineOptions" />
+                        <Line v-if="canRenderVelocityChart" :chart-data="velocityChartData" :chart-options="lineOptions" />
                         <div v-else-if="chartsReady" class="d-flex justify-center align-center" style="height: 100%">
                             <div class="text-center">
                                 <v-icon size="40" color="grey-lighten-2">mdi-chart-line</v-icon>

@@ -188,10 +188,10 @@ function getDomainProcessCount(domainId: string): number {
     return props.metricsMap.processes.filter((p: any) => p.domain_id === domainId).length;
 }
 
-function domainCellStyle(domain: any) {
+function domainCellStyle(domain: any): Record<string, string> {
     return {
         '--domain-color': domain.color || '#78909C'
-    };
+    } as Record<string, string>;
 }
 
 function toggleCell(key: string) {

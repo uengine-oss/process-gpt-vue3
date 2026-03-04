@@ -2394,15 +2394,15 @@ export default {
 /* Font size controls */
 .font-size-controls {
   position: absolute;
-  top: 16px;
+  bottom: 16px;
   right: 16px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 4px 8px;
-  border-radius: 4px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.97);
+  padding: 4px 10px;
+  border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
   z-index: 10;
 }
 
