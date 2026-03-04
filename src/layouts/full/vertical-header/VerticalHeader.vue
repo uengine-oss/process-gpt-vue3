@@ -72,7 +72,7 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'user-admin',
         to: '/admin',
         disable: false,
-        isVisible: isAdmin // Only visible if isAdmin is true
+        isVisible: isAdmin && !(window as any).$pal // 관리자만 표시, PAL 모드에서는 숨김
     },
     // {
     //     title: 'headerMenu.calendar',
@@ -85,7 +85,8 @@ const sidebarItems = ref<SidebarItem[]>([
 
 // 생명주기 훅 사용
 onBeforeMount(() => {
-    if (window.$mode === 'ProcessGPT') {
+    // ProcessGPT 모드 또는 PAL 모드에서는 관리자 페이지 메뉴 숨김
+    if (window.$mode === 'ProcessGPT' || (window as any).$pal) {
         sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/admin');
     }
     window.addEventListener('scroll', handleScroll);
