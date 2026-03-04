@@ -73,12 +73,6 @@ const allSidebarItems: menu[] = [
         to: "/system",
     },
     {
-        title: "프로세스 정의",
-        icon: 'chat-dots-linear',
-        BgColor: 'primary',
-        to: "/definitions/chat",
-    },
-    {
         title: "화면 정의",
         icon: 'chat-dots-linear',
         BgColor: 'primary',
