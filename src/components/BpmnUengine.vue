@@ -1310,9 +1310,24 @@ export default {
                         }
                     });
 
-                    // View 모드: 더블클릭 시 패널 열기
+                    // View 모드: 더블클릭 시 CallActivity/SubProcess(definitionId 있음)면 프로세스로 이동(openDefinition), 그 외는 패널 열기
                     eventBus.on('element.dblclick', function (e) {
-                        self.$emit('openPanel', e.element.id);
+                        const el = e.element;
+                        const bo = el.businessObject;
+                        let emitNavigate = false;
+                        if (el.type && el.type.includes('CallActivity')) {
+                            emitNavigate = !!(bo?.extensionElements?.values?.[0]?.json);
+                        } else if (el.type && el.type.includes('SubProcess') && bo?.extensionElements?.values?.[0]?.json) {
+                            try {
+                                const p = JSON.parse(bo.extensionElements.values[0].json);
+                                emitNavigate = !!(p && p.definitionId);
+                            } catch (_) {}
+                        }
+                        if (emitNavigate) {
+                            self.$emit('openDefinition', bo);
+                        } else {
+                            self.$emit('openPanel', el.id);
+                        }
                     });
                 } else {
                     // Edit 모드: 더블클릭 시 인라인 텍스트 편집 (표준 BPMN UX)

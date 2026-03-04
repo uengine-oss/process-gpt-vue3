@@ -159,7 +159,8 @@ const allRoutes = [
     },
     {
         name: 'Sub Process Detail',
-        path: '/definition-map/sub/:pathMatch(.*)*',
+        // (.+) 로 나머지 경로 전체(슬래시·점 포함, 예: 부산은행/credit_review_call.bpmn)를 한 번에 캡처
+        path: '/definition-map/sub/:pathMatch(.+)',
         component: () => import('@/components/apps/definition-map/ProcessDefinitionMap.vue'),
         props: { componentName: 'SubProcessDetail' }
     },

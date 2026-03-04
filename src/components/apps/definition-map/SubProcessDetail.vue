@@ -336,25 +336,25 @@ export default {
         },
         async openSubProcess(e) {
             let me = this;
-            if(this.Pal) {
-                if(e.extensionElements?.values[0]) {
-                    let json = '';
-                    try{
-                        json = JSON.parse(e.extensionElements.values[0].$children[0].$body);
-                    } catch(error) {
-                        json = JSON.parse(e.extensionElements.values[0].json);
-                    }
-                    if(json.definitionId) { 
-                        const defInfo = await backend.getRawDefinition(json.definitionId, null);
-                        if (defInfo) {
-                            let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
-                            me.subProcessBreadCrumb.push(obj)
-                            me.selectedSubProcess = e.extensionElements.values[0].definition
-                            me.updateBpmn(defInfo.bpmn)
+            if (this.Pal) {
+                if (e.extensionElements?.values?.[0]) {
+                    let json = {};
+                    try {
+                        const raw = e.extensionElements.values[0];
+                        json = raw.$children?.[0]?.$body
+                            ? JSON.parse(raw.$children[0].$body)
+                            : JSON.parse(raw.json || '{}');
+                    } catch (_) {}
+                    if (json.definitionId) {
+                        const rawId = String(json.definitionId).trim();
+                        const normalizedId = rawId.replace(/\.bpmn$/i, '');
+                        if (normalizedId) {
+                            me.$router.push(`/definition-map/sub/${normalizedId}`);
+                            return;
                         }
                     }
                 }
-            } else {
+            } else if (!this.Pal) {
                 if (e.extensionElements?.values[0]?.definition) {
                     const backend = BackendFactory.createBackend();
                     const defId = e.extensionElements.values[0].definition;
