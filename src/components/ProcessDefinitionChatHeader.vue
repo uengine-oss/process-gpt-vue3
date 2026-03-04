@@ -97,17 +97,25 @@
                         </div>
                         <!-- 저장 관련 버튼  -->
                         <div class="mr-4 d-flex">
-                            <!-- 파일업로드 아이콘 -->
-                            <v-tooltip v-if="fullPath != 'definition-map' && !Pal" location="bottom">
+                            <!-- BPMN 가져오기 메뉴 (직접 불러오기 / 엑셀 업로드) - PAL 모드에서도 표시 -->
+                            <v-menu v-if="fullPath != 'definition-map'" offset-y location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="triggerFileInput">
-                                        <Icons :icon="'upload'" />
-                                    </v-btn>
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props: tooltipProps }">
+                                            <v-btn v-bind="{ ...props, ...tooltipProps }" icon variant="text" class="text-medium-emphasis" density="comfortable">
+                                                <Icons :icon="'upload'" />
+                                            </v-btn>
+                                        </template>
+                                        <span>{{ $t('chat.importMenu') }}</span>
+                                    </v-tooltip>
                                 </template>
-                                <span>{{ $t('chat.import') }}</span>
-                            </v-tooltip>
-                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold, .csv, .xlsx" style="display: none" />
+                                <v-list density="compact">
+                                    <v-list-item @click="triggerBpmnFileInput" :title="$t('chat.importBpmnFile')" />
+                                    <v-list-item @click="triggerExcelFileInput" :title="$t('chat.importFromExcel')" />
+                                </v-list>
+                            </v-menu>
+                            <input type="file" ref="fileInput" @change="onBpmnFileChange" accept=".bpmn,.jsonold,.csv" style="display: none" />
+                            <input type="file" ref="excelFileInput" @change="onExcelFileChange" accept=".xlsx,.xls" style="display: none" />
                     
                             <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map' && !isMobile">
                                 <!-- ProcessDefinitionChatHeader.vue 프로세스 정의 수정 및 저장 아이콘 -->
@@ -334,11 +342,19 @@ export default {
             console.log("simulate")
             this.$emit('executeSimulate');
         },
-        triggerFileInput() {
+        triggerBpmnFileInput() {
             this.$refs.fileInput.click();
         },
-        handleFileChange(event) {
-            this.$emit('handleFileChange', event);
+        triggerExcelFileInput() {
+            this.$refs.excelFileInput.click();
+        },
+        onBpmnFileChange(event) {
+            this.$emit('handleFileChange', event, { source: 'bpmn' });
+            event.target.value = '';
+        },
+        onExcelFileChange(event) {
+            this.$emit('handleFileChange', event, { source: 'excel' });
+            event.target.value = '';
         },
         toggleLock() {
             this.$emit('toggleLock');

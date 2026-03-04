@@ -805,11 +805,15 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
   });
 
   // Add task types based on palette settings
-  // Use new table-based palette task types if available
+  // uEngine·PAL 모드: 팔레트에는 "사용자 작업"만 표시 (ManualTask 대신 UserTask 사용)
+  var isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
   var enabledTaskTypes = window.$enabledPaletteTaskTypes || [];
   var visibleTaskTypes = enabledTaskTypes.length > 0
     ? enabledTaskTypes.map(t => t.task_type)
     : (window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask']);
+  if (isUEngineOrPal) {
+    visibleTaskTypes = ['bpmn:UserTask'];
+  }
 
   if (visibleTaskTypes.includes('bpmn:ManualTask')) {
     actions['create.manual-task'] = createAction(

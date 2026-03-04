@@ -708,6 +708,11 @@ export default {
                 ]),
             ];
 
+            // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
+            if (this.pal) {
+                this.analyticsItem = [];
+            }
+
             if (!this.JMS) {
                 this.definitionItem.forEach((item) => {
                     if (item.disable) {

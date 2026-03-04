@@ -3,7 +3,7 @@
         <!-- Header -->
         <div class="properties-header">
             <div class="d-flex align-center justify-space-between px-4 pt-3">
-                <span class="text-subtitle-1 font-weight-bold">Properties</span>
+                <span class="text-subtitle-1 font-weight-bold">{{ $t('processHierarchy.properties') }}</span>
                 <v-btn icon variant="text" size="x-small" @click="$emit('close')">
                     <v-icon size="16">mdi-close</v-icon>
                 </v-btn>
@@ -17,11 +17,11 @@
             >
                 <v-tab value="process" size="small">
                     <v-icon size="14" start>mdi-cog-outline</v-icon>
-                    Process
+                    {{ $t('processHierarchy.processTab') }}
                 </v-tab>
                 <v-tab value="task" size="small">
                     <v-icon size="14" start>mdi-cursor-default-click</v-icon>
-                    Task
+                    {{ $t('processHierarchy.taskTab') }}
                     <v-badge v-if="element" dot color="primary" inline class="ml-1" />
                 </v-tab>
             </v-tabs>
@@ -37,7 +37,7 @@
                         <div class="section-group">
                             <div class="section-title" @click="toggle('proc-basic')">
                                 <v-icon size="14" class="mr-1">{{ isOpen('proc-basic') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                Basic
+                                {{ $t('processHierarchy.basic') }}
                             </div>
                             <div v-show="isOpen('proc-basic')" class="section-body">
                                 <!-- Schema fields for Process -->
@@ -114,19 +114,19 @@
                                 </template>
                                 <!-- Fallback if no schema fields -->
                                 <template v-if="processFields.length === 0">
-                                    <label class="field-label">Title</label>
-                                    <v-text-field v-model="processForm.title" density="compact" variant="outlined" hide-details class="mb-3" placeholder="Process name" />
-                                    <label class="field-label">Description</label>
-                                    <v-textarea v-model="processForm.description" density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3" placeholder="Describe the process..." />
+                                    <label class="field-label">{{ $t('processHierarchy.titleField') }}</label>
+                                    <v-text-field v-model="processForm.title" density="compact" variant="outlined" hide-details class="mb-3" :placeholder="$t('processHierarchy.processNamePlaceholder')" />
+                                    <label class="field-label">{{ $t('processHierarchy.description') }}</label>
+                                    <v-textarea v-model="processForm.description" density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3" :placeholder="$t('processHierarchy.describeProcessPlaceholder')" />
                                 </template>
                             </div>
                         </div>
 
-                        <!-- FTE Calculator -->
-                        <div class="section-group">
+                        <!-- FTE Calculator (PAL 모드에서 숨김) -->
+                        <div v-if="!isPalMode" class="section-group">
                             <div class="section-title" @click="toggle('proc-fte')">
                                 <v-icon size="14" class="mr-1">{{ isOpen('proc-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                FTE Calculator
+                                {{ $t('processHierarchy.fteCalculator') }}
                                 <v-icon size="14" class="ml-1" color="grey">mdi-information-outline</v-icon>
                                 <v-chip v-if="processFteValue" size="x-small" variant="tonal" color="primary" class="ml-auto">
                                     FTE {{ processFteValue }}
@@ -134,10 +134,10 @@
                             </div>
                             <div v-show="isOpen('proc-fte')" class="section-body">
                                 <!-- Input Mode Toggle -->
-                                <label class="field-label">Input Mode</label>
+                                <label class="field-label">{{ $t('processHierarchy.inputMode') }}</label>
                                 <v-btn-toggle v-model="processForm.fte.inputMode" mandatory density="compact" class="mb-3 fte-mode-toggle" color="primary">
-                                    <v-btn value="direct" size="small">Direct %</v-btn>
-                                    <v-btn value="time" size="small">Time-Freq-People</v-btn>
+                                    <v-btn value="direct" size="small">{{ $t('processHierarchy.directPercent') }}</v-btn>
+                                    <v-btn value="time" size="small">{{ $t('processHierarchy.timeFreqPeople') }}</v-btn>
                                 </v-btn-toggle>
 
                                 <!-- Direct % Mode -->
@@ -154,7 +154,7 @@
                                 <template v-else>
                                     <v-row dense>
                                         <v-col cols="6">
-                                            <label class="field-label">Freq. Cycle</label>
+                                            <label class="field-label">{{ $t('processHierarchy.freqCycle') }}</label>
                                             <v-select
                                                 v-model="processForm.fte.freqCycle"
                                                 :items="freqCycleOptions"
@@ -162,19 +162,19 @@
                                             />
                                         </v-col>
                                         <v-col cols="6">
-                                            <label class="field-label">Freq. Count</label>
+                                            <label class="field-label">{{ $t('processHierarchy.freqCount') }}</label>
                                             <v-text-field
                                                 v-model.number="processForm.fte.freqCount"
                                                 density="compact" variant="outlined" hide-details type="number" min="0"
                                             />
                                         </v-col>
                                     </v-row>
-                                    <label class="field-label mt-3">Time per Task (hours)</label>
+                                    <label class="field-label mt-3">{{ $t('processHierarchy.timePerTaskHours') }}</label>
                                     <v-text-field
                                         v-model.number="processForm.fte.timePerTask"
                                         density="compact" variant="outlined" hide-details type="number" min="0" step="0.1"
                                     />
-                                    <label class="field-label mt-3">Headcount</label>
+                                    <label class="field-label mt-3">{{ $t('processHierarchy.headcount') }}</label>
                                     <v-text-field
                                         v-model.number="processForm.fte.headcount"
                                         density="compact" variant="outlined" hide-details type="number" min="1"
@@ -184,10 +184,10 @@
                                 <!-- Calculated FTE Result -->
                                 <div v-if="processFteValue" class="fte-result-card mt-3">
                                     <div class="d-flex align-center justify-space-between">
-                                        <span class="fte-result-label">CALCULATED FTE</span>
+                                        <span class="fte-result-label">{{ $t('processHierarchy.calculatedFte') }}</span>
                                         <v-btn variant="text" size="x-small" color="primary" class="text-none">
                                             <v-icon size="12" start>mdi-sync</v-icon>
-                                            Sync with Global FTE
+                                            {{ $t('processHierarchy.syncWithGlobalFte') }}
                                         </v-btn>
                                     </div>
                                     <div class="fte-result-value">{{ processFteValue }} FTE</div>
@@ -202,11 +202,11 @@
                             </div>
                         </div>
 
-                        <!-- System Mapping -->
-                        <div class="section-group">
+                        <!-- System Mapping (PAL 모드에서 숨김) -->
+                        <div v-if="!isPalMode" class="section-group">
                             <div class="section-title" @click="toggle('proc-system')">
                                 <v-icon size="14" class="mr-1">{{ isOpen('proc-system') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                System Mapping
+                                {{ $t('processHierarchy.systemMapping') }}
                                 <v-chip v-if="processForm.systems && processForm.systems.length" size="x-small" variant="tonal" class="ml-auto">
                                     {{ processForm.systems.length }}
                                 </v-chip>
@@ -214,7 +214,7 @@
                             <div v-show="isOpen('proc-system')" class="section-body">
                                 <v-combobox
                                     v-model="processForm.systems"
-                                    label="연관 시스템"
+                                    :label="$t('processHierarchy.systems')"
                                     density="compact" variant="outlined" hide-details
                                     multiple chips closable-chips :delimiters="[',']"
                                 />
@@ -223,7 +223,7 @@
 
                         <v-btn color="primary" block variant="flat" class="mt-4 save-btn" @click="saveProcess">
                             <v-icon start size="16">mdi-content-save</v-icon>
-                            Save Changes
+                            {{ $t('processHierarchy.saveChanges') }}
                         </v-btn>
                     </div>
                 </v-window-item>
@@ -236,12 +236,61 @@
                             {{ element.businessObject?.name || element.id }}
                         </div>
 
-                        <div class="pa-4">
+                        <!-- PAL 모드 + Call Activity: PALCallActivityPanel 사용 -->
+                        <div v-if="usePalCallActivityPanel" class="pa-4">
+                            <PALCallActivityPanel
+                                ref="palCallActivityPanel"
+                                :element="element"
+                                :isViewMode="isViewMode"
+                                :uengineProperties="palCallActivityProperties"
+                                @update:uengineProperties="onPalCallActivityPropertiesUpdate"
+                            />
+                            <v-btn
+                                v-if="!isViewMode"
+                                color="primary"
+                                block
+                                variant="flat"
+                                class="mt-4 save-btn"
+                                @click="savePalCallActivity"
+                            >
+                                <v-icon start size="16">mdi-content-save</v-icon>
+                                {{ $t('processHierarchy.save') }}
+                            </v-btn>
+                        </div>
+
+                        <!-- PAL 모드 + 태스크: PALUserTaskPanel 사용 -->
+                        <div v-else-if="usePalUserTaskPanel" class="pa-4">
+                            <PALUserTaskPanel
+                                ref="palPanel"
+                                :element="element"
+                                :processDefinition="processDefinition || {}"
+                                :processDefinitionId="definitionPath"
+                                :isViewMode="isViewMode"
+                                :roles="roles"
+                                :definition="definition"
+                                :name="element.businessObject?.name || ''"
+                                :uengineProperties="palUengineProperties"
+                                @update:uengineProperties="onPalUenginePropertiesUpdate"
+                            />
+                            <v-btn
+                                v-if="!isViewMode"
+                                color="primary"
+                                block
+                                variant="flat"
+                                class="mt-4 save-btn"
+                                @click="savePalTask"
+                            >
+                                <v-icon start size="16">mdi-content-save</v-icon>
+                                {{ $t('processHierarchy.save') }}
+                            </v-btn>
+                        </div>
+
+                        <div v-else class="pa-4">
                             <!-- Basic -->
                             <div class="section-group">
                                 <div class="section-title" @click="toggle('task-basic')">
                                     <v-icon size="14" class="mr-1">{{ isOpen('task-basic') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                    Basic
+                                    {{ $t('processHierarchy.basic') }}
                                 </div>
                                 <div v-show="isOpen('task-basic')" class="section-body">
                                     <label class="field-label">Title</label>
@@ -302,9 +351,9 @@
                                     </template>
                                     <!-- Fallback if no schema -->
                                     <template v-if="taskFields.length === 0">
-                                        <label class="field-label">Description</label>
-                                        <v-textarea v-model="taskForm.description" density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3" placeholder="Describe the task..." />
-                                        <label class="field-label">Manual Link</label>
+                                        <label class="field-label">{{ $t('processHierarchy.description') }}</label>
+                                        <v-textarea v-model="taskForm.description" density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3" :placeholder="$t('processHierarchy.describeTaskPlaceholder')" />
+                                        <label class="field-label">{{ $t('processHierarchy.manualLink') }}</label>
                                         <v-text-field v-model="taskForm.manualLink" density="compact" variant="outlined" hide-details placeholder="https://...">
                                             <template v-slot:prepend-inner><v-icon size="14" color="grey">mdi-link-variant</v-icon></template>
                                         </v-text-field>
@@ -312,21 +361,21 @@
                                 </div>
                             </div>
 
-                            <!-- FTE Calculator (Task) -->
-                            <div class="section-group">
+                            <!-- FTE Calculator (Task, PAL 모드에서 숨김) -->
+                            <div v-if="!isPalMode" class="section-group">
                                 <div class="section-title" @click="toggle('task-fte')">
                                     <v-icon size="14" class="mr-1">{{ isOpen('task-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                    FTE Calculator
+                                    {{ $t('processHierarchy.fteCalculator') }}
                                     <v-icon size="14" class="ml-1" color="grey">mdi-information-outline</v-icon>
                                     <v-chip v-if="taskFteValue" size="x-small" variant="tonal" color="primary" class="ml-auto">
                                         FTE {{ taskFteValue }}
                                     </v-chip>
                                 </div>
                                 <div v-show="isOpen('task-fte')" class="section-body">
-                                    <label class="field-label">Input Mode</label>
+                                    <label class="field-label">{{ $t('processHierarchy.inputMode') }}</label>
                                     <v-btn-toggle v-model="taskForm.fte.inputMode" mandatory density="compact" class="mb-3 fte-mode-toggle" color="primary">
-                                        <v-btn value="direct" size="small">Direct %</v-btn>
-                                        <v-btn value="time" size="small">Time-Freq-People</v-btn>
+                                        <v-btn value="direct" size="small">{{ $t('processHierarchy.directPercent') }}</v-btn>
+                                        <v-btn value="time" size="small">{{ $t('processHierarchy.timeFreqPeople') }}</v-btn>
                                     </v-btn-toggle>
                                     <template v-if="taskForm.fte.inputMode === 'direct'">
                                         <label class="field-label">FTE (%)</label>
@@ -335,25 +384,25 @@
                                     <template v-else>
                                         <v-row dense>
                                             <v-col cols="6">
-                                                <label class="field-label">Freq. Cycle</label>
+                                                <label class="field-label">{{ $t('processHierarchy.freqCycle') }}</label>
                                                 <v-select v-model="taskForm.fte.freqCycle" :items="freqCycleOptions" density="compact" variant="outlined" hide-details />
                                             </v-col>
                                             <v-col cols="6">
-                                                <label class="field-label">Freq. Count</label>
+                                                <label class="field-label">{{ $t('processHierarchy.freqCount') }}</label>
                                                 <v-text-field v-model.number="taskForm.fte.freqCount" density="compact" variant="outlined" hide-details type="number" min="0" />
                                             </v-col>
                                         </v-row>
-                                        <label class="field-label mt-3">Time per Task (hours)</label>
+                                        <label class="field-label mt-3">{{ $t('processHierarchy.timePerTaskHours') }}</label>
                                         <v-text-field v-model.number="taskForm.fte.timePerTask" density="compact" variant="outlined" hide-details type="number" min="0" step="0.1" />
-                                        <label class="field-label mt-3">Headcount</label>
+                                        <label class="field-label mt-3">{{ $t('processHierarchy.headcount') }}</label>
                                         <v-text-field v-model.number="taskForm.fte.headcount" density="compact" variant="outlined" hide-details type="number" min="1" />
                                     </template>
                                     <div v-if="taskFteValue" class="fte-result-card mt-3">
                                         <div class="d-flex align-center justify-space-between">
-                                            <span class="fte-result-label">CALCULATED FTE</span>
+                                            <span class="fte-result-label">{{ $t('processHierarchy.calculatedFte') }}</span>
                                             <v-btn variant="text" size="x-small" color="primary" class="text-none">
                                                 <v-icon size="12" start>mdi-sync</v-icon>
-                                                Sync with Global FTE
+                                                {{ $t('processHierarchy.syncWithGlobalFte') }}
                                             </v-btn>
                                         </div>
                                         <div class="fte-result-value">{{ taskFteValue }} FTE</div>
@@ -368,16 +417,16 @@
                                 </div>
                             </div>
 
-                            <!-- System Mapping (Task) -->
-                            <div class="section-group">
+                            <!-- System Mapping (Task, PAL 모드에서 숨김) -->
+                            <div v-if="!isPalMode" class="section-group">
                                 <div class="section-title" @click="toggle('task-system')">
                                     <v-icon size="14" class="mr-1">{{ isOpen('task-system') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-                                    System Mapping
+                                    {{ $t('processHierarchy.systemMapping') }}
                                 </div>
                                 <div v-show="isOpen('task-system')" class="section-body">
                                     <v-combobox
                                         v-model="taskForm.systems"
-                                        label="연관 시스템"
+                                        :label="$t('processHierarchy.systems')"
                                         density="compact" variant="outlined" hide-details
                                         multiple chips closable-chips :delimiters="[',']"
                                     />
@@ -386,7 +435,7 @@
 
                             <v-btn color="primary" block variant="flat" class="mt-4 save-btn" @click="saveTask">
                                 <v-icon start size="16">mdi-content-save</v-icon>
-                                Save Changes
+                                {{ $t('processHierarchy.saveChanges') }}
                             </v-btn>
                         </div>
                     </div>
@@ -397,10 +446,10 @@
                             <v-icon size="48" color="grey-lighten-2">mdi-cursor-default-click-outline</v-icon>
                         </div>
                         <div class="text-subtitle-2 text-medium-emphasis mt-3">
-                            BPMN 캔버스에서 요소를 클릭하세요
+                            {{ $t('processHierarchy.selectElement') }}
                         </div>
                         <div class="text-caption text-disabled mt-1">
-                            Task, Event, Gateway 등의 요소를 선택하면 속성을 편집할 수 있습니다
+                            {{ $t('processHierarchy.selectElementHint') }}
                         </div>
                     </div>
                 </v-window-item>
@@ -412,6 +461,8 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import { useTaskCatalogStore } from '@/stores/taskCatalog';
+import PALUserTaskPanel from '@/components/designer/bpmnModeling/bpmn/panel/PALUserTaskPanel.vue';
+import PALCallActivityPanel from '@/components/designer/bpmnModeling/bpmn/panel/PALCallActivityPanel.vue';
 
 const ANNUAL_WORKING_HOURS = 2080; // 52 weeks × 40 hours
 
@@ -447,6 +498,7 @@ function calcFte(fte) {
 
 export default {
     name: 'ProcessHierarchyProperties',
+    components: { PALUserTaskPanel, PALCallActivityPanel },
     props: {
         processDefinition: { type: Object, default: null },
         element: { type: Object, default: null },
@@ -477,9 +529,28 @@ export default {
             },
             dbSelectItems: {},
             freqCycleOptions: ['Yearly', 'Monthly', 'Weekly', 'Daily'],
+            palUengineProperties: {},
+            palCallActivityProperties: {},
         };
     },
     computed: {
+        isPalMode() {
+            return typeof window !== 'undefined' && window.$pal;
+        },
+        isTaskElement() {
+            const type = this.element?.businessObject?.$type || this.element?.type || '';
+            return type.includes('Task') || type.includes('Activity');
+        },
+        usePalUserTaskPanel() {
+            return this.isPalMode && this.isTaskElement && !this.isCallActivityElement;
+        },
+        isCallActivityElement() {
+            const type = this.element?.businessObject?.$type || this.element?.type || '';
+            return type === 'bpmn:CallActivity' || type.includes('CallActivity');
+        },
+        usePalCallActivityPanel() {
+            return this.isPalMode && this.isCallActivityElement;
+        },
         catalogStore() {
             return useTaskCatalogStore();
         },
@@ -527,7 +598,13 @@ export default {
         element(val) {
             if (val) {
                 this.activeTab = 'task';
-                this.loadTaskProperties(val);
+                if (this.usePalCallActivityPanel) {
+                    this.initPalCallActivityFromElement(val);
+                } else if (this.usePalUserTaskPanel) {
+                    this.initPalUenginePropertiesFromElement(val);
+                } else {
+                    this.loadTaskProperties(val);
+                }
             }
         },
     },
@@ -645,8 +722,116 @@ export default {
             });
 
             if (this.$toast) {
-                this.$toast.success('Task 속성이 저장되었습니다.');
+                this.$toast.success(this.$t('processHierarchy.taskSaveSuccess'));
             }
+        },
+
+        // PAL 모드: PALUserTaskPanel용 초기값 및 저장
+        initPalCallActivityFromElement(el) {
+            const bo = el.businessObject || el;
+            let props = {};
+            if (bo?.extensionElements?.values?.[0]?.json) {
+                try {
+                    props = JSON.parse(bo.extensionElements.values[0].json);
+                } catch (_) {}
+            }
+            this.palCallActivityProperties = { ...props, definitionId: props.definitionId || '' };
+        },
+        onPalCallActivityPropertiesUpdate(newProps) {
+            this.palCallActivityProperties = newProps || {};
+        },
+        writePalCallActivityToElement() {
+            if (!this.element) return;
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (!modeler) return;
+
+            const modeling = modeler.get('modeling');
+            const elementRegistry = modeler.get('elementRegistry');
+            const bpmnFactory = modeler.get('bpmnFactory');
+            const bo = this.element.businessObject;
+            const shapeElement = elementRegistry.get(bo.id);
+            if (!shapeElement) return;
+
+            const json = JSON.stringify(this.palCallActivityProperties || {});
+            let otherExtValues = [];
+            if (bo.extensionElements?.values) {
+                otherExtValues = bo.extensionElements.values.filter(v => v.$type !== 'uengine:Properties');
+            }
+            let variables = [];
+            if (this.palCallActivityProperties?.customProperties && Array.isArray(this.palCallActivityProperties.customProperties)) {
+                variables = this.palCallActivityProperties.customProperties
+                    .filter(p => p.key && p.key.trim())
+                    .map(p => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
+            }
+            const uengineEl = bpmnFactory.create('uengine:Properties', { json, variables });
+            const newExtElements = bpmnFactory.create('bpmn:ExtensionElements', {
+                values: [...otherExtValues, uengineEl],
+            });
+            modeling.updateProperties(shapeElement, { extensionElements: newExtElements });
+
+            if (this.$toast) {
+                this.$toast.success(this.$t('processHierarchy.callActivitySaveSuccess'));
+            }
+        },
+        async savePalCallActivity() {
+            if (this.$refs.palCallActivityPanel && typeof this.$refs.palCallActivityPanel.beforeSave === 'function') {
+                await this.$refs.palCallActivityPanel.beforeSave();
+            }
+            this.$nextTick(() => this.writePalCallActivityToElement());
+        },
+        initPalUenginePropertiesFromElement(el) {
+            const bo = el.businessObject || el;
+            let props = {};
+            if (bo?.extensionElements?.values?.[0]?.json) {
+                try {
+                    props = JSON.parse(bo.extensionElements.values[0].json);
+                } catch (_) {}
+            }
+            this.palUengineProperties = { ...props };
+        },
+        onPalUenginePropertiesUpdate(newProps) {
+            this.palUengineProperties = newProps || {};
+        },
+        writePalTaskToElement() {
+            if (!this.element) return;
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (!modeler) return;
+
+            const modeling = modeler.get('modeling');
+            const elementRegistry = modeler.get('elementRegistry');
+            const bpmnFactory = modeler.get('bpmnFactory');
+            const bo = this.element.businessObject;
+            const shapeElement = elementRegistry.get(bo.id);
+            if (!shapeElement) return;
+
+            const json = JSON.stringify(this.palUengineProperties || {});
+            let otherExtValues = [];
+            if (bo.extensionElements?.values) {
+                otherExtValues = bo.extensionElements.values.filter(v => v.$type !== 'uengine:Properties');
+            }
+            let variables = [];
+            if (this.palUengineProperties?.customProperties && Array.isArray(this.palUengineProperties.customProperties)) {
+                variables = this.palUengineProperties.customProperties
+                    .filter(p => p.key && p.key.trim())
+                    .map(p => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
+            }
+            const uengineEl = bpmnFactory.create('uengine:Properties', { json, variables });
+            const newExtElements = bpmnFactory.create('bpmn:ExtensionElements', {
+                values: [...otherExtValues, uengineEl],
+            });
+            modeling.updateProperties(shapeElement, { extensionElements: newExtElements });
+
+            if (this.$toast) {
+                this.$toast.success(this.$t('processHierarchy.taskSaveSuccess'));
+            }
+        },
+        async savePalTask() {
+            if (this.$refs.palPanel && typeof this.$refs.palPanel.beforeSave === 'function') {
+                await this.$refs.palPanel.beforeSave();
+            }
+            this.$nextTick(() => this.writePalTaskToElement());
         },
     },
 };

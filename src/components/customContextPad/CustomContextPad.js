@@ -824,8 +824,12 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
     actions['append.gateway'].title = i18n.global.t('customContextPad.gateway');
   }
   if (actions['append.append-task']) {
+    // uEngine·PAL 모드: 추가되는 태스크는 UserTask, 그 외는 ManualTask
+    const appendTaskType = (typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal))
+      ? 'bpmn:UserTask'
+      : 'bpmn:ManualTask';
     const newAction = appendAction(
-      'bpmn:ManualTask',
+      appendTaskType,
       actions['append.append-task'].className,
       i18n.global.t('customContextPad.task'),
       {}
@@ -897,10 +901,13 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
       { type: 'bpmn:ReceiveTask', label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task', icon: '📥' }
     ];
 
-    // 활성화된 Task 타입만 필터링
-    const enabledTypes = window.$enabledPaletteTaskTypes?.map(t => t.task_type) ||
-      window.$paletteSettings?.visibleTaskTypes ||
-      ['bpmn:ManualTask', 'bpmn:ServiceTask'];
+    // 활성화된 Task 타입만 필터링 (uEngine·PAL 모드: UserTask만)
+    const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
+    const enabledTypes = isUEngineOrPal
+      ? ['bpmn:UserTask']
+      : (window.$enabledPaletteTaskTypes?.map(t => t.task_type) ||
+          window.$paletteSettings?.visibleTaskTypes ||
+          ['bpmn:ManualTask', 'bpmn:ServiceTask']);
 
     const filteredTaskTypes = taskTypes.filter(t => enabledTypes.includes(t.type));
 
@@ -1090,10 +1097,13 @@ function showMultiTaskReplaceMenuForElements(event, selectedTasks, bpmnReplace, 
     { type: 'bpmn:ReceiveTask', label: i18n.global.t('CustomReplaceElement.replace-with-receive-task') || 'Receive Task', icon: '📥' }
   ];
 
-  // 활성화된 Task 타입만 필터링
-  const enabledTypes = window.$enabledPaletteTaskTypes?.map(t => t.task_type) ||
-    window.$paletteSettings?.visibleTaskTypes ||
-    ['bpmn:ManualTask', 'bpmn:ServiceTask'];
+  // 활성화된 Task 타입만 필터링 (uEngine·PAL 모드: UserTask만)
+  const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
+  const enabledTypes = isUEngineOrPal
+    ? ['bpmn:UserTask']
+    : (window.$enabledPaletteTaskTypes?.map(t => t.task_type) ||
+        window.$paletteSettings?.visibleTaskTypes ||
+        ['bpmn:ManualTask', 'bpmn:ServiceTask']);
 
   const filteredTaskTypes = taskTypes.filter(t => enabledTypes.includes(t.type));
 

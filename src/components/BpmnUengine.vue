@@ -83,6 +83,7 @@ import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRul
 import '@/components/autoLayout/bpmn-auto-layout.js';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
+import { uengineJsonElementToAttr, uengineJsonAttrToElement, isUengineMode } from '@/utils/uengineXmlTransform';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 
@@ -207,7 +208,9 @@ export default {
     computed: {
         async getXML() {
             let xmlObj = await this.bpmnViewer.saveXML({ format: true, preamble: true });
-            return xmlObj.xml;
+            let xml = xmlObj.xml;
+            if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
+            return xml;
         },
         mode() {
             return window.$mode;
@@ -248,7 +251,13 @@ export default {
                 } catch (e) {
                     console.warn('[BpmnUengine] 팀명 조회 실패, 기본값 사용:', e);
                 }
-                // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
+                // 모드별 기본 태스크: pal 또는 uEngine → UserTask, 그 외 → ManualTask
+                const isUEngineMode = !!(window.$pal || window.$mode === 'uEngine');
+                const taskId = isUEngineMode ? 'UserTask_1' : 'ManualTask_1';
+                const taskTag = isUEngineMode ? 'userTask' : 'manualTask';
+                const taskName = isUEngineMode ? 'User Task' : 'Manual Task';
+                const taskShapeId = taskId + '_di';
+                // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> Task -> EndEvent
                 this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
   <bpmn:collaboration id="Collaboration_1">
@@ -262,22 +271,22 @@ export default {
     <bpmn:laneSet id="LaneSet_1">
       <bpmn:lane id="Lane_1" name="${laneName}">
         <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>ManualTask_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>${taskId}</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:manualTask id="ManualTask_1" name="Manual Task">
+    <bpmn:${taskTag} id="${taskId}" name="${taskName}">
       <bpmn:incoming>Flow_1</bpmn:incoming>
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
-    </bpmn:manualTask>
+    </bpmn:${taskTag}>
     <bpmn:endEvent id="EndEvent_1" name="End">
       <bpmn:incoming>Flow_2</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="ManualTask_1"/>
-    <bpmn:sequenceFlow id="Flow_2" sourceRef="ManualTask_1" targetRef="EndEvent_1"/>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="${taskId}"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="${taskId}" targetRef="EndEvent_1"/>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
@@ -293,7 +302,7 @@ export default {
           <dc:Bounds x="238" y="225" width="24" height="14"/>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ManualTask_1_di" bpmnElement="ManualTask_1">
+      <bpmndi:BPMNShape id="${taskShapeId}" bpmnElement="${taskId}">
         <dc:Bounds x="340" y="160" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
@@ -318,7 +327,9 @@ export default {
         Promise.resolve()
             .then(() => {
                 if (!this.diagramXML) return;
-                return this.bpmnViewer.importXML(this.diagramXML);
+                let xml = this.diagramXML;
+                if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
+                return this.bpmnViewer.importXML(xml);
             })
             .catch((e) => {
                 console.error('[BpmnUengine] 초기 import 실패:', e);
@@ -358,7 +369,9 @@ export default {
                     if (!this.bpmnViewer) return;
                     this.onLoadStart();
                     this.diagramXML = newVal;
-                    await this.bpmnViewer.importXML(newVal);
+                    let xml = newVal;
+                    if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
+                    await this.bpmnViewer.importXML(xml);
                 } catch (e) {
                     console.error('[BpmnUengine] bpmn prop 변경시 import 실패:', e);
                     this.$emit('error', e);
@@ -687,13 +700,15 @@ export default {
                 window.$paletteSettings = catalogStore.paletteSettings;
             } catch (error) {
                 console.error('Failed to load palette settings:', error);
-                // Set default settings
+                // Set default settings (pal 또는 uEngine: UserTask만 사용, 그 외: ManualTask·ServiceTask)
                 window.$enabledPaletteTaskTypes = [];
-                window.$paletteSettings = { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+                window.$paletteSettings = (window.$pal || window.$mode === 'uEngine')
+                    ? { visibleTaskTypes: ['bpmn:UserTask'] }
+                    : { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
             }
         },
         applyAutoLayout() {
-            if (window.$pal) return;
+            // PAL 모드에서도 엑셀→BPMN 로드 시 자동 레이아웃 적용
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
@@ -1157,7 +1172,8 @@ export default {
 
                 if(self.bpmn) {
                     self.$nextTick(async () => {
-                        const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
                         self.bpmnXML = xml;
                         self.validate();
                     });
@@ -1294,9 +1310,24 @@ export default {
                         }
                     });
 
-                    // View 모드: 더블클릭 시 패널 열기
+                    // View 모드: 더블클릭 시 CallActivity/SubProcess(definitionId 있음)면 프로세스로 이동(openDefinition), 그 외는 패널 열기
                     eventBus.on('element.dblclick', function (e) {
-                        self.$emit('openPanel', e.element.id);
+                        const el = e.element;
+                        const bo = el.businessObject;
+                        let emitNavigate = false;
+                        if (el.type && el.type.includes('CallActivity')) {
+                            emitNavigate = !!(bo?.extensionElements?.values?.[0]?.json);
+                        } else if (el.type && el.type.includes('SubProcess') && bo?.extensionElements?.values?.[0]?.json) {
+                            try {
+                                const p = JSON.parse(bo.extensionElements.values[0].json);
+                                emitNavigate = !!(p && p.definitionId);
+                            } catch (_) {}
+                        }
+                        if (emitNavigate) {
+                            self.$emit('openDefinition', bo);
+                        } else {
+                            self.$emit('openPanel', el.id);
+                        }
                     });
                 } else {
                     // Edit 모드: 더블클릭 시 인라인 텍스트 편집 (표준 BPMN UX)
@@ -1410,7 +1441,8 @@ export default {
                 eventBus.on('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
                     if(self.bpmn) {
-                        const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
                         self.bpmnXML = xml;
                         self.validate();
                     }
@@ -1517,14 +1549,14 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated && !(window.$pal && window.$mode === 'uEngine')) {
+                if(self.isAIGenerated) {
                     if(self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
                     self._layoutTimeout = setTimeout(() => {
                         self.applyAutoLayout();
                         self.$emit('update:isAIGenerated', false);
-                    }, 500); // 500ms 안 변하면 실행
+                    }, 500); // 500ms 안 변하면 실행 (PAL 모드 포함)
                 }
 
                 // 코멘트 배지 렌더링 (commentCounts prop이 있을 때)
@@ -1536,9 +1568,8 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
-                if (!(window.$pal && window.$mode === 'uEngine')) {
-                    self.applyAutoLayout();
-                }
+                // PAL 모드에서도 엑셀 등으로 BPMN 로드 시 자동 레이아웃 적용
+                self.applyAutoLayout();
                 self.resetZoom();
             });
             
@@ -2384,8 +2415,9 @@ export default {
                 return;
             }
 
-            // Determine task type - use stored type from catalog
-            let taskType = catalogItem.task_type || 'bpmn:ManualTask';
+            // Determine task type - use stored type from catalog (pal 또는 uEngine 기본: UserTask)
+            const defaultTaskType = (window.$pal || window.$mode === 'uEngine') ? 'bpmn:UserTask' : 'bpmn:ManualTask';
+            let taskType = catalogItem.task_type || defaultTaskType;
             // Ensure taskType has bpmn: prefix
             if (!taskType.startsWith('bpmn:')) {
                 taskType = 'bpmn:' + taskType;

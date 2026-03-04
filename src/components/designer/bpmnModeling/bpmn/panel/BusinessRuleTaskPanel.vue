@@ -199,7 +199,9 @@ export default {
     name: 'business-rule-task-panel',
     components: {
         Mapper,
-        DmnStructureView
+        DmnStructureView,
+        KeyValueField,
+        LeadTimeInput
     },
     props: {
         uengineProperties: Object,
@@ -211,10 +213,6 @@ export default {
         roles: Array,
         definition: Object,
         name: String
-    },
-    components: {
-        KeyValueField,
-        LeadTimeInput
     },
     created() {
         if (this.uengineProperties) {

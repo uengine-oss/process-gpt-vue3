@@ -893,11 +893,15 @@ class UEngineBackend implements Backend {
 
         const megaList = ensureList(data.mega_proc_list ?? data.megaProcList ?? data.content);
         if (megaList.length === 0 && Array.isArray(data)) {
-            const subList = (data as any[]).map((d: any) => ({
-                id: d.id ?? d.path ?? String(d),
-                name: d.name ?? d.label ?? d.id ?? d.path ?? String(d),
-                path: d.path ?? d.id
-            }));
+            const subList = (data as any[]).map((d: any) => {
+                const rawId = d.id ?? d.path ?? String(d);
+                const id = typeof rawId === 'string' ? rawId.trim() : rawId;
+                return {
+                    id,
+                    name: d.name ?? d.label ?? d.id ?? d.path ?? String(d),
+                    path: d.path ?? d.id
+                };
+            });
             return {
                 mega_proc_list: [
                     {
@@ -924,7 +928,9 @@ class UEngineBackend implements Backend {
                             id: j.id ?? j.name,
                             sub_proc_list: subList.map((sub: any) => {
                                 const s = ensureName(sub);
-                                return { ...s, id: s.id ?? s.name ?? s.path };
+                                // path 우선 사용(경로는 공백 없이 API 식별자로 쓰임), 없으면 id/name. 앞뒤 공백 제거.
+                                const rawId = s.id ?? s.path ?? s.name ?? '';
+                                return { ...s, id: typeof rawId === 'string' ? rawId.trim() : rawId };
                             })
                         };
                     })
@@ -2012,8 +2018,8 @@ class UEngineBackend implements Backend {
     }
 
     async getPaletteSettings(): Promise<any> {
-        console.warn("getPaletteSettings is not implemented - only use Process-GPT Mode");
-        return { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+        // uEngine 모드: 사용자 작업(UserTask)만 팔레트에 표시
+        return { visibleTaskTypes: ['bpmn:UserTask'] };
     }
 
     async savePaletteSettings(settings: any): Promise<any> {

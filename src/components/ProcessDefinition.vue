@@ -778,7 +778,7 @@ export default {
             this.isBpmnLoading = false;
         },
         applyAutoLayout() {
-            if (window.$pal && window.$mode === 'uEngine') return;
+            // PAL 모드에서도 엑셀→BPMN 로드 후 자동 레이아웃 허용
             const store = useBpmnStore();
             const modeler = store.getModeler;
             

@@ -302,6 +302,9 @@ export default {
             if(type.indexOf('task') > -1 && this.isPALMode) {
                 type = 'pal-user-task';
             }
+            if (type === 'call-activity' && this.isPALMode) {
+                type = 'pal-call-activity';
+            }
             if (this.isGPTMode) {
                 if(type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task' || type == 'lane') {
                     type = 'gpt-' + type;

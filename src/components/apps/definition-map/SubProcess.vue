@@ -12,6 +12,7 @@
                     <template #default="tooltipProps">
                         <div v-bind="tooltipProps"
                             @click="handleClick"
+                            @dblclick.stop="handleDoubleClick"
                             @mouseenter="loadProcessInfo"
                             class="ma-0 pa-0 d-flex align-center"
                             style="flex: 1; min-width: 0; gap: 4px;"
@@ -177,9 +178,11 @@ export default {
         },
         handleDoubleClick() {
             if (this.isExecutionByProject) return;
-            if (window.$mode === 'uEngine') {
-                const path = this.value.id ?? this.value.path;
-                if (path) this.goProcess(path, 'sub');
+            const path = this.value.id ?? this.value.path;
+            if (!path) return;
+            // PAL 모드 또는 uEngine 모드: 더블클릭 시 SubProcessDetail 화면으로 이동
+            if (window.$pal || window.$mode === 'uEngine') {
+                this.goProcess(path, 'sub');
             }
         },
         deleteProcess() {

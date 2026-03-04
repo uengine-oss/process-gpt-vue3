@@ -1348,10 +1348,29 @@ export default {
                 }
             });
         },
-        handleFileChange(event) {
+        async handleExcelFileUpload(file) {
+            const me = this;
+            try {
+                const { excelFileToBpmnXml } = await import('@/utils/excelToBpmn.js');
+                const processName = (file.name || '').replace(/\.[^.]+$/, '').trim() || '엑셀 프로세스';
+                const bpmnXml = await excelFileToBpmnXml(file, processName);
+                me.loadBPMN(bpmnXml);
+                me.isAIGenerated = true;
+                me.definitionChangeCount++;
+            } catch (err) {
+                console.error('엑셀 → BPMN 변환 실패:', err);
+                alert(err?.message || '엑셀 파일 변환 중 오류가 발생했습니다. 엑셀 형식(5행 헤더, 6행부터 데이터)을 확인해 주세요.');
+            }
+        },
+        handleFileChange(event, options) {
             let me = this;
             const file = event.target.files[0];
             if (!file) {
+                return;
+            }
+
+            if (options?.source === 'excel') {
+                me.handleExcelFileUpload(file);
                 return;
             }
 
@@ -1363,7 +1382,7 @@ export default {
                     role: 'assistant',
                     content: `📎 **${file.name}**\n\n${this.$t('aiCopilot.fileUploadPlaceholder')}`,
                 });
-                event.target.value = ''; // reset input
+                event.target.value = '';
                 return;
             }
 
@@ -1378,9 +1397,8 @@ export default {
                     jsonContent = me.convertOldJson(JSON.parse(content));
                     convertedBpmn = me.createBpmnXml(jsonContent);
                 }
-                if(file.name.indexOf('.csv') != -1 || file.name.indexOf('.xlsx') != -1) {
+                if(file.name.indexOf('.csv') != -1) {
                     jsonContent = me.convertCSVToJSON(content);
-                    console.log("convertCSVToJSON", jsonContent);
                     if(jsonContent) {
                         convertedBpmn = me.createBpmnXml(jsonContent);
                     }
