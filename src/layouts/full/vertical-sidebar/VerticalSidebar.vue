@@ -1,6 +1,5 @@
 <template>
-    <v-btn
-        icon
+    <v-btn icon
         v-if="globalIsMobile.value"
         v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
@@ -8,7 +7,7 @@
         size="40"
         color="primary"
     >
-        <Icons :icon="'list-bold-duotone'" />
+        <Icons :icon="'list-bold-duotone'"/>
     </v-btn>
     <v-badge
         v-if="notiCount > 0"
@@ -1019,5 +1018,12 @@ export default {
 .bpmn-sidebar-icon:before {
     margin-left: 0 !important;
     margin-right: 0 !important;
+}
+
+.mobile-side-bar-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 48px;
+    z-index: 999;
 }
 </style>

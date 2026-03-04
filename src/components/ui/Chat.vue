@@ -1541,8 +1541,8 @@
             <input type="file" accept="image/*" capture="camera" ref="captureImg" class="d-none" @change="changeImage">
             <input
                 type="file"
-                accept=".pdf,.doc,.docx,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
-                ref="pdfUploader"
+                accept="image/*,.pdf,.doc,.docx,.hwpx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
+                ref="unifiedFileInput"
                 class="d-none"
                 @change="changeImage"
             >

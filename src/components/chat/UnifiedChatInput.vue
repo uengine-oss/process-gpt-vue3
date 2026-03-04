@@ -194,7 +194,6 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-bottom: 16px;
 }
 
 .example-chip {
@@ -235,11 +234,12 @@ export default {
 
 @media (max-width: 768px) {
     .main-chat-input-container {
-        padding: 0px;
+        padding: 8px;
     }
 
     .example-prompts {
         gap: 6px;
+        margin-bottom: 8px;
     }
 
     .example-chip {

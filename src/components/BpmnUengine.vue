@@ -2780,4 +2780,11 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
+
+@media only screen and (max-width: 768px) {
+    .djs-minimap {
+        bottom: 50px !important;
+        right: 60px !important;
+    }
+}
 </style>
