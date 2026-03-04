@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form } from 'vee-validate';
-import { ref, getCurrentInstance, defineProps } from 'vue';
+import { ref, computed, getCurrentInstance, defineProps } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
@@ -18,10 +18,7 @@ const showConfirmPassword = ref(false);
 const email = ref('');
 const passwordRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterPassword'),
-    (v: string) => v.length >= 8 || proxy.$t('createAccount.passwordMinLength'),
-    (v: string) => /[a-zA-Z]/.test(v) || proxy.$t('createAccount.passwordNeedLetter'),
-    (v: string) => /[0-9]/.test(v) || proxy.$t('createAccount.passwordNeedNumber'),
-    (v: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v) || proxy.$t('createAccount.passwordNeedSpecial'),
+    (v: string) => (v.length >= 8 && /[a-zA-Z]/.test(v) && /[0-9]/.test(v) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v)) || proxy.$t('createAccount.passwordRequirement'),
 ]);
 const emailRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterEmail'), 
@@ -38,6 +35,17 @@ const confirmPasswordRules = ref([
     (v: string) => v === password.value || proxy.$t('createAccount.passwordMismatch')
 ]);
 
+const isRegisterFormValid = computed(() => {
+    if (!username.value) return false;
+    if (!email.value || !/.+@.+\..+/.test(email.value)) return false;
+    if (!password.value || password.value.length < 8) return false;
+    if (!/[a-zA-Z]/.test(password.value)) return false;
+    if (!/[0-9]/.test(password.value)) return false;
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value)) return false;
+    if (!confirmPassword.value || confirmPassword.value !== password.value) return false;
+    return true;
+});
+
 function validate(values: any, { setErrors }: any) {
     // 필수 입력값 및 이메일 형식 검증
     let hasError = false;
@@ -52,8 +60,8 @@ function validate(values: any, { setErrors }: any) {
     if (!password.value) {
         setErrors({ password: proxy.$t('createAccount.enterPassword') });
         hasError = true;
-    } else if (password.value.length < 8) {
-        setErrors({ password: proxy.$t('createAccount.passwordMinLength') });
+    } else if (password.value.length < 8 || !/[a-zA-Z]/.test(password.value) || !/[0-9]/.test(password.value) || !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value)) {
+        setErrors({ password: proxy.$t('createAccount.passwordRequirement') });
         hasError = true;
     }
     if (!confirmPassword.value || password.value !== confirmPassword.value) {
@@ -141,6 +149,7 @@ function validate(values: any, { setErrors }: any) {
             block 
             rounded="pill"
             :loading="isSubmitting"
+            :disabled="!isRegisterFormValid"
             type="submit"
         >{{ $t('createAccount.signUp') }}</v-btn>
     </Form>
