@@ -708,7 +708,7 @@ export default {
             }
         },
         applyAutoLayout() {
-            if (window.$pal) return;
+            // PAL 모드에서도 엑셀→BPMN 로드 시 자동 레이아웃 적용
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
@@ -1534,14 +1534,14 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated && !(window.$pal && window.$mode === 'uEngine')) {
+                if(self.isAIGenerated) {
                     if(self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
                     self._layoutTimeout = setTimeout(() => {
                         self.applyAutoLayout();
                         self.$emit('update:isAIGenerated', false);
-                    }, 500); // 500ms 안 변하면 실행
+                    }, 500); // 500ms 안 변하면 실행 (PAL 모드 포함)
                 }
 
                 // 코멘트 배지 렌더링 (commentCounts prop이 있을 때)
@@ -1553,9 +1553,8 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
-                if (!(window.$pal && window.$mode === 'uEngine')) {
-                    self.applyAutoLayout();
-                }
+                // PAL 모드에서도 엑셀 등으로 BPMN 로드 시 자동 레이아웃 적용
+                self.applyAutoLayout();
                 self.resetZoom();
             });
             

@@ -97,8 +97,8 @@
                         </div>
                         <!-- 저장 관련 버튼  -->
                         <div class="mr-4 d-flex">
-                            <!-- BPMN 가져오기 메뉴 (직접 불러오기 / 엑셀 업로드) -->
-                            <v-menu v-if="fullPath != 'definition-map' && !Pal" offset-y location="bottom">
+                            <!-- BPMN 가져오기 메뉴 (직접 불러오기 / 엑셀 업로드) - PAL 모드에서도 표시 -->
+                            <v-menu v-if="fullPath != 'definition-map'" offset-y location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props: tooltipProps }">
