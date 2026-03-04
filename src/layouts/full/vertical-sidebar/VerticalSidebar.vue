@@ -314,12 +314,12 @@
                                             v-bind="props"
                                             icon
                                             variant="text"
-                                            size="x-small"
-                                            density="compact"
-                                            class="mr-1"
+                                            size="small"
+                                            density="comfortable"
+                                            class="mr-1 process-section-dropdown-btn"
                                             @click.stop.prevent
                                         >
-                                            <v-icon icon="mdi-dots-vertical" size="14" />
+                                            <v-icon icon="mdi-dots-vertical" size="20" />
                                         </v-btn>
                                     </template>
                                 <v-list density="compact" min-width="160">
@@ -1076,5 +1076,11 @@ export default {
     right: 16px;
     bottom: 58px;
     z-index: 999;
+}
+
+/* 프로세스 정의 옆 점 세 개 버튼 클릭 영역 확대 */
+.process-section-dropdown-btn {
+    min-width: 36px !important;
+    min-height: 36px !important;
 }
 </style>
