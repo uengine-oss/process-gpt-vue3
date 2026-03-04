@@ -164,9 +164,9 @@ export default {
                         }
                         return;
                     } else {
-                        // 루트 페이지 및 인증 관련 페이지인 경우 로그인 체크 건너뛰기
-                        const skipLoginCheck = window.location.pathname === '/' || window.location.pathname.startsWith('/auth/') 
-                        || window.location.port === '8088';
+                        // 루트 페이지 및 인증 관련 페이지인 경우에만 로그인 체크를 건너뛴다.
+                        // NOTE: 포트 기준 예외(8088)는 보호 페이지 무인증 진입을 허용해 결함을 유발하므로 제외한다.
+                        const skipLoginCheck = window.location.pathname === '/' || window.location.pathname.startsWith('/auth/');
                         const userInfo = await this.backend.getUserInfo();
                         if(!skipLoginCheck) {
                             if(userInfo) {
