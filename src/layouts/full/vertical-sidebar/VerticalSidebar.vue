@@ -4,6 +4,7 @@
         v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
         class="mobile-side-bar-btn"
+        :style="mobileSideBarBtnStyle"
         size="40"
         color="primary"
     >
@@ -13,6 +14,7 @@
         v-if="notiCount > 0"
         v-show="!$globalState.state.isMobileDrawerOpen"
         class="mobile-side-bar-btn"
+        :style="mobileSideBarBtnStyle"
         :content="notiCount"
         :model-value="notiCount > 0"
         color="error"
@@ -414,6 +416,10 @@ export default {
         notiCount: 0
     }),
     computed: {
+        mobileSideBarBtnStyle() {
+            const isDefinitionsChat = this.$route?.path?.includes('definitions/chat');
+            return isDefinitionsChat ? { bottom: '48px' } : {};
+        },
         JMS() {
             return window.$jms;
         },
@@ -1023,7 +1029,7 @@ export default {
 .mobile-side-bar-btn {
     position: fixed;
     right: 16px;
-    bottom: 48px;
+    bottom: 58px;
     z-index: 999;
 }
 </style>

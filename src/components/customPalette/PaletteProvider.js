@@ -902,7 +902,7 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
     },
     'revert-layout': {
       group: 'collaboration',
-      className: 'mdi mdi-undo-variant',
+      className: 'mdi mdi-restore',
       title: i18n.global.t('PaletteProvider.revertLayout') || 'Revert Layout',
       action: {
         click: function(event) {

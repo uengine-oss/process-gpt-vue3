@@ -1,20 +1,21 @@
 <template>
-    <v-card class="element-comment-panel" elevation="0">
+    <v-card class="element-comment-panel pa-0" elevation="0">
         <!-- 헤더 -->
-        <v-card-title class="d-flex align-center pa-3 pb-2">
-            <v-icon class="mr-2" size="20">mdi-comment-text-multiple-outline</v-icon>
-            <span class="text-subtitle-1 font-weight-medium">{{ $t('elementComment.title') }}</span>
-            <v-spacer />
-            <v-chip v-if="comments.length > 0" size="x-small" color="primary" variant="tonal">
-                {{ comments.length }}
-            </v-chip>
-            <v-btn icon variant="text" size="small" @click="$emit('close')">
+        <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+            <div class="d-flex align-center">
+                <v-icon class="mr-2" size="20">mdi-comment-text-multiple-outline</v-icon>
+                <span class="text-subtitle-1 font-weight-medium">{{ $t('elementComment.title') }}</span>
+                <v-chip v-if="comments.length > 0" size="x-small" color="primary" variant="tonal" class="ml-2">
+                    {{ comments.length }}
+                </v-chip>
+            </div>
+            <v-btn variant="text" density="compact" icon @click="$emit('close')">
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-card-title>
 
         <!-- 선택된 요소 정보 -->
-        <div v-if="selectedElement && isTaskType(selectedElement.type)" class="px-3 pb-2">
+        <div v-if="selectedElement && isTaskType(selectedElement.type)" class="px-4 pb-2 pt-2">
             <v-chip size="small" :color="getElementColor(selectedElement.type)" variant="tonal"
                 style="cursor: pointer;"
                 @click="$emit('focusElement', selectedElement.id)"
@@ -26,9 +27,9 @@
         </div>
 
         <!-- Task가 아닌 경우 안내 -->
-        <div v-else class="px-3 pb-2">
-            <v-alert type="info" density="compact" variant="tonal">
-                {{ $t('elementComment.selectTaskToComment') }}
+        <div v-else class="px-4 pb-2 pt-2">
+            <v-alert dense outlined type="info" color="gray" class="pa-4 pt-2 pb-2">
+                <span class="text-body-1">{{ $t('elementComment.selectTaskToComment') }}</span>
             </v-alert>
         </div>
 
@@ -36,11 +37,11 @@
 
         <!-- 댓글 목록 -->
         <v-card-text class="pa-0 comment-list-container">
-            <div v-if="loading" class="d-flex justify-center align-center pa-4">
-                <v-progress-circular indeterminate size="24" />
+            <div v-if="loading" class="d-flex justify-center align-center pa-8">
+                <v-progress-circular indeterminate size="32" color="primary" />
             </div>
 
-            <div v-else-if="comments.length === 0" class="text-center pa-4 text-grey">
+            <div v-else-if="comments.length === 0" class="text-center pa-8 text-medium-emphasis">
                 <v-icon size="48" color="grey-lighten-1">mdi-comment-off-outline</v-icon>
                 <div class="mt-2 text-body-2">{{ $t('elementComment.noComments') }}</div>
             </div>
@@ -67,7 +68,7 @@
         <v-divider />
 
         <!-- 댓글 입력 (Task 타입일 때만 활성화) -->
-        <v-card-actions v-if="selectedElement && isTaskType(selectedElement.type)" class="pa-3">
+        <v-card-actions v-if="selectedElement && isTaskType(selectedElement.type)" class="d-flex align-center pa-4">
             <v-textarea
                 v-model="newComment"
                 :placeholder="$t('elementComment.placeholder')"
@@ -81,6 +82,7 @@
             />
             <v-btn
                 icon
+                variant="text"
                 color="primary"
                 class="ml-2"
                 :disabled="!newComment.trim()"

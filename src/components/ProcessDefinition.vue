@@ -74,7 +74,7 @@
                                                 v-bind="props"
                                                 @click="showApprovalPanel = !showApprovalPanel"
                                                 style="cursor: pointer;"
-                                                :style="{ color: showApprovalPanel ? '#1976d2' : '#444' }"
+                                                :color="showApprovalPanel ? 'primary' : ''"
                                                 size="small"
                                             >mdi-clipboard-check-outline</v-icon>
                                         </template>
@@ -95,7 +95,7 @@
                                                     v-bind="props"
                                                     @click="toggleCommentPanel"
                                                     style="cursor: pointer;"
-                                                    :style="{ color: showCommentPanel ? '#1976d2' : '#444' }"
+                                                    :color="showCommentPanel ? 'primary' : ''"
                                                     size="small"
                                                 >mdi-comment-text-multiple-outline</v-icon>
                                             </v-badge>
@@ -103,7 +103,7 @@
                                         <span>{{ $t('processDefinition.comments') }}</span>
                                     </v-tooltip>
                                     <!-- 채팅창 열기/닫기 토글 버튼 -->
-                                    <v-tooltip location="bottom">
+                                    <v-tooltip v-if="!isMobile" location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <v-icon v-bind="props" @click="$globalState.methods.toggleChatHidden()" style="color: #444; cursor: pointer;" size="small">{{ $globalState.state.isChatHidden ? 'mdi-message-text' : 'mdi-message-text-outline' }}</v-icon>
                                         </template>
@@ -1409,7 +1409,7 @@ export default {
     position: absolute;
     right: 12px;
     top: 50px;
-    width: 360px;
+    width: 350px;
     max-height: calc(100% - 100px);
     z-index: 99;
     background: white;
@@ -1423,7 +1423,7 @@ export default {
     position: absolute;
     right: 12px;
     top: 50px;
-    width: 380px;
+    width: 350px;
     z-index: 98;
     background: white;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);

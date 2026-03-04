@@ -1,124 +1,164 @@
 <template>
     <div class="schema-manager">
-        <!-- Add New Field Form -->
-        <div v-if="showAddForm" class="add-form-card">
-            <div class="add-form-title">{{ editingSchema ? $t('taskCatalog.editProperty') : 'Add New Field' }}</div>
-            <div class="add-form-body">
-                <div class="form-row">
-                    <div class="form-group" style="flex: 2;">
-                        <label class="form-label">{{ $t('taskCatalog.fieldName') }} *</label>
-                        <input
+        <!-- Add / Edit Field Dialog -->
+        <v-dialog v-model="showAddForm" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '700px'" persistent>
+            <v-card>
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    {{ editingSchema ? $t('taskCatalog.editProperty') : $t('taskCatalog.addField') }}
+                    <v-btn variant="text" density="compact" icon @click="cancelForm">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-4">
+                    <div :class="isMobile ? 'd-flex flex-column ga-3 mb-3' : 'd-flex ga-4 mb-3'">
+                        <v-text-field
                             v-model="formData.property_label"
-                            class="form-input"
+                            :label="$t('taskCatalog.fieldName') + ' *'"
                             :placeholder="$t('taskCatalog.fieldNamePlaceholder')"
+                            variant="outlined"
+                            density="compact"
+                            hide-details
+                            :style="isMobile ? '' : 'flex: 2;'"
+                        />
+                        <v-select
+                            v-model="formData.property_type"
+                            :items="propertyTypes"
+                            item-title="label"
+                            item-value="value"
+                            :label="$t('taskCatalog.fieldType')"
+                            variant="outlined"
+                            density="compact"
+                            hide-details
+                            :style="isMobile ? '' : 'flex: 1.5;'"
+                        />
+                        <v-select
+                            v-model="formData.applies_to"
+                            :items="availableTargets.filter(t => t.value !== '__all__')"
+                            item-title="label"
+                            item-value="value"
+                            :label="$t('taskCatalog.appliesTo')"
+                            variant="outlined"
+                            density="compact"
+                            hide-details
+                            :style="isMobile ? '' : 'flex: 1.5;'"
                         />
                     </div>
-                    <div class="form-group" style="flex: 1.5;">
-                        <label class="form-label">{{ $t('taskCatalog.fieldType') }}</label>
-                        <select v-model="formData.property_type" class="form-select">
-                            <option v-for="pt in propertyTypes" :key="pt.value" :value="pt.value">{{ pt.label }}</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="flex: 1.5;">
-                        <label class="form-label">{{ $t('taskCatalog.appliesTo') }}</label>
-                        <select v-model="formData.applies_to" class="form-select">
-                            <option v-for="opt in availableTargets.filter(t => t.value !== '__all__')" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group" style="flex: 2;">
-                        <label class="form-label">{{ $t('taskCatalog.placeholder') }}</label>
-                        <input
+                    <div :class="isMobile ? 'd-flex flex-column ga-3 mb-3' : 'd-flex ga-4 mb-3'">
+                        <v-text-field
                             v-model="formData.placeholder"
-                            class="form-input"
+                            :label="$t('taskCatalog.placeholder')"
                             :placeholder="$t('taskCatalog.placeholderPlaceholder')"
+                            variant="outlined"
+                            density="compact"
+                            hide-details
+                            :style="isMobile ? '' : 'flex: 2;'"
                         />
-                    </div>
-                    <div class="form-group" style="flex: 1.5;" v-if="formData.property_type === 'db-select' || formData.property_type === 'formula'">
-                        <label class="form-label">{{ $t('taskCatalog.config') }}</label>
-                        <input
+                        <v-text-field
+                            v-if="formData.property_type === 'db-select' || formData.property_type === 'formula'"
                             v-model="configText"
-                            class="form-input"
+                            :label="$t('taskCatalog.config')"
                             :placeholder="$t('taskCatalog.configPlaceholder')"
+                            variant="outlined"
+                            density="compact"
+                            hide-details
+                            :style="isMobile ? '' : 'flex: 1.5;'"
+                        />
+                        <div v-else :style="isMobile ? 'display:none;' : 'flex: 1.5;'"></div>
+                        <v-text-field
+                            v-model.number="formData.display_order"
+                            :label="$t('taskCatalog.order')"
+                            type="number"
+                            min="0"
+                            variant="outlined"
+                            density="compact"
+                            hide-details
+                            :style="isMobile ? '' : 'flex: 1;'"
                         />
                     </div>
-                    <div class="form-group" style="flex: 1.5;" v-else></div>
-                    <div class="form-group" style="flex: 1;">
-                        <label class="form-label">{{ $t('taskCatalog.order') }}</label>
-                        <input v-model.number="formData.display_order" class="form-input" type="number" min="0" />
+                    <div class="d-flex ga-4 mb-3">
+                        <v-checkbox
+                            v-model="formData.is_mandatory"
+                            :label="$t('taskCatalog.mandatory')"
+                            density="compact"
+                            hide-details
+                            color="primary"
+                        />
+                        <v-checkbox
+                            v-model="formData.visible_by_default"
+                            :label="$t('taskCatalog.visibleByDefault')"
+                            density="compact"
+                            hide-details
+                            color="primary"
+                        />
                     </div>
-                </div>
-                <div class="form-row-checkboxes">
-                    <label class="checkbox-label">
-                        <input type="checkbox" v-model="formData.is_mandatory" />
-                        <span>{{ $t('taskCatalog.mandatory') }}</span>
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" v-model="formData.visible_by_default" />
-                        <span>{{ $t('taskCatalog.visibleByDefault') }}</span>
-                    </label>
-                </div>
-                <!-- Options for select type -->
-                <div v-if="formData.property_type === 'select'" class="options-section">
-                    <label class="form-label">{{ $t('taskCatalog.options') }}</label>
-                    <div
-                        v-for="(option, index) in formData.options"
-                        :key="index"
-                        class="option-row"
-                    >
-                        <input v-model="option.label" class="form-input" :placeholder="$t('taskCatalog.optionLabel')" />
-                        <input v-model="option.value" class="form-input" :placeholder="$t('taskCatalog.optionValue')" />
-                        <button class="option-remove-btn" @click="removeOption(index)">
-                            <v-icon size="14">mdi-minus</v-icon>
-                        </button>
+                    <!-- Options for select type -->
+                    <div v-if="formData.property_type === 'select'" class="mb-3">
+                        <div class="text-subtitle-2 mb-2">{{ $t('taskCatalog.options') }}</div>
+                        <div
+                            v-for="(option, index) in formData.options"
+                            :key="index"
+                            class="d-flex ga-2 mb-2 align-center"
+                        >
+                            <v-text-field v-model="option.label" :placeholder="$t('taskCatalog.optionLabel')" variant="outlined" density="compact" hide-details />
+                            <v-text-field v-model="option.value" :placeholder="$t('taskCatalog.optionValue')" variant="outlined" density="compact" hide-details />
+                            <v-btn icon variant="text" density="compact" color="error" @click="removeOption(index)">
+                                <v-icon size="14">mdi-minus</v-icon>
+                            </v-btn>
+                        </div>
+                        <v-btn variant="text" color="primary" size="small" @click="addOption">
+                            <v-icon size="14" class="mr-1">mdi-plus</v-icon>
+                            {{ $t('taskCatalog.addOption') }}
+                        </v-btn>
                     </div>
-                    <button class="option-add-btn" @click="addOption">
-                        <v-icon size="14">mdi-plus</v-icon>
-                        {{ $t('taskCatalog.addOption') }}
-                    </button>
-                </div>
-                <div class="form-actions">
-                    <button class="btn-primary" :disabled="!formData.property_label || saving" @click="saveField">
+                </v-card-text>
+                <v-card-actions class="d-flex justify-end align-center pa-4">
+                    <v-btn color="primary" rounded variant="flat" :disabled="!formData.property_label || saving" @click="saveField">
                         <v-progress-circular v-if="saving" indeterminate size="14" width="2" class="mr-1" />
                         {{ editingSchema ? $t('taskCatalog.save') : $t('taskCatalog.addField') }}
-                    </button>
-                    <button class="btn-text" @click="cancelForm">{{ $t('taskCatalog.cancel') }}</button>
-                </div>
-            </div>
-        </div>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
 
         <!-- Filter Row -->
-        <div class="filter-row">
-            <div class="filter-select-wrapper">
+        <div :class="isMobile ? 'd-flex flex-column ga-3 mb-5' : 'd-flex align-center justify-space-between mb-5 ga-4'">
+            <div :class="isMobile ? '' : 'flex-grow-0'" :style="isMobile ? '' : 'min-width: 250px;'">
                 <v-select
                     v-model="selectedTarget"
                     :items="availableTargets"
                     :label="$t('taskCatalog.appliesTo') || '적용 대상'"
                     item-title="label"
                     item-value="value"
+                    clearable
                     variant="outlined"
                     density="compact"
                     hide-details
-                    class="flat-select"
+                    :style="isMobile ? '' : 'min-width: 250px;'"
                 />
             </div>
-            <div class="filter-actions">
-                <button
-                    class="preview-btn"
-                    :class="{ active: showLayoutPreview }"
+            <div class="d-flex ga-2 ml-auto">
+                <v-btn
+                    variant="flat"
+                    rounded
+                    color="gray"
                     @click="showLayoutPreview = !showLayoutPreview"
                     :disabled="filteredSchemas.length === 0"
                 >
                     <v-icon start size="16">{{ showLayoutPreview ? 'mdi-eye-off' : 'mdi-eye' }}</v-icon>
                     {{ $t('taskCatalog.layoutPreview') }}
-                </button>
-                <button class="add-btn" @click="openAddForm()">
-                    <v-icon size="16">mdi-plus</v-icon>
+                </v-btn>
+                <v-btn color="primary" rounded variant="flat" @click="openAddForm()">
+                    <v-icon size="16" class="mr-1">mdi-plus</v-icon>
                     {{ $t('taskCatalog.addField') }}
-                </button>
+                </v-btn>
             </div>
         </div>
+
+        <!-- Field Types Guide -->
+        <v-alert dense outlined type="info" color="gray" class="mt-4 mb-4 pa-4 pt-2 pb-2">
+            <span class="text-body-2 font-weight-bold d-block mb-1">{{ $t('taskCatalog.fieldTypesGuide') }}</span>
+            <span class="text-body-2" style="white-space: pre-line;">{{ isMobile ? $t('taskCatalog.fieldTypesGuideText.mobile') : $t('taskCatalog.fieldTypesGuideText.pc') }}</span>
+        </v-alert>
 
         <!-- Layout Preview Section -->
         <v-expand-transition>
@@ -162,9 +202,9 @@
             </div>
         </v-expand-transition>
 
-        <!-- Table -->
-        <div class="flat-table-container">
-            <table class="flat-table">
+        <!-- Table (Desktop) -->
+        <v-card v-if="!isMobile" class="pa-0" variant="outlined">
+            <v-table density="comfortable">
                 <thead>
                     <tr>
                         <th style="width: 28px;"></th>
@@ -179,43 +219,43 @@
                 </thead>
                 <tbody>
                     <tr v-if="loading">
-                        <td colspan="8" class="loading-cell">
-                            <v-progress-circular indeterminate size="24" color="primary" />
+                        <td colspan="8" class="text-center pa-8">
+                            <v-progress-circular indeterminate size="32" color="primary" />
                         </td>
                     </tr>
                     <tr v-else-if="filteredSchemas.length === 0">
-                        <td colspan="8" class="empty-cell">
+                        <td colspan="8" class="text-center pa-8 text-medium-emphasis">
                             {{ $t('taskCatalog.noSchemas') || 'No property schemas found.' }}
                         </td>
                     </tr>
                     <tr v-else v-for="item in filteredSchemas" :key="item.id">
-                        <td class="drag-handle-cell">
+                        <td style="width: 28px; padding: 12px 4px 12px 12px; cursor: grab;">
                             <v-icon size="14" color="grey-lighten-1">mdi-drag-vertical</v-icon>
                         </td>
                         <td>
-                            <div class="field-name">{{ item.property_label }}</div>
-                            <div v-if="item.placeholder" class="field-placeholder">Placeholder: {{ item.placeholder }}</div>
+                            <div class="font-weight-medium">{{ item.property_label }}</div>
+                            <div v-if="item.placeholder" class="text-caption text-medium-emphasis mt-1">Placeholder: {{ item.placeholder }}</div>
                         </td>
                         <td>
-                            <span class="type-badge">{{ getTypeLabel(item.property_type) }}</span>
+                            <v-chip size="x-small" variant="tonal" color="default" label>{{ getTypeLabel(item.property_type) }}</v-chip>
                         </td>
                         <td>
-                            <span class="applies-badge" :class="getAppliesToClass(item.applies_to)">
+                            <v-chip size="x-small" variant="tonal" :color="getAppliesToChipColor(item.applies_to)" label>
                                 {{ getAppliesToLabel(item.applies_to) }}
-                            </span>
+                            </v-chip>
                         </td>
                         <td>
-                            <span v-if="item.config" class="config-text">
+                            <span v-if="item.config" class="text-caption" style="font-family: monospace; background: #f5f5f5; padding: 2px 8px; border-radius: 4px;">
                                 <template v-if="item.property_type === 'db-select'">DB: {{ item.config.table || '' }}</template>
                                 <template v-else-if="item.property_type === 'formula'">{{ item.config.expression || '' }}</template>
                                 <template v-else>{{ JSON.stringify(item.config) }}</template>
                             </span>
                         </td>
-                        <td class="center-cell">
+                        <td style="text-align: center;">
                             <v-icon v-if="item.is_mandatory" size="18" color="primary">mdi-checkbox-marked</v-icon>
                             <v-icon v-else size="18" color="grey-lighten-2">mdi-checkbox-blank-outline</v-icon>
                         </td>
-                        <td class="center-cell">
+                        <td style="text-align: center;">
                             <v-icon
                                 size="18"
                                 :color="item.visible_by_default !== false ? 'primary' : 'grey-lighten-2'"
@@ -223,43 +263,101 @@
                                 {{ item.visible_by_default !== false ? 'mdi-eye' : 'mdi-eye-off' }}
                             </v-icon>
                         </td>
-                        <td class="actions-cell">
-                            <v-btn class="action-btn action-edit" @click="openEditForm(item)">
-                                <v-icon size="16">mdi-pencil</v-icon>
-                            </v-btn>
-                            <v-btn variant="text" density="compact" icon color="error" @click="confirmDelete(item)">
-                                <v-icon size="16">mdi-delete</v-icon>
-                            </v-btn>
+                        <td style="text-align: right;">
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click="openEditForm(item)">
+                                        <v-icon size="16">mdi-pencil</v-icon>
+                                    </v-btn>
+                                </template>
+                                {{ $t('taskCatalog.editProperty') }}
+                            </v-tooltip>
+                            <v-tooltip location="bottom">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click="confirmDelete(item)">
+                                        <v-icon color="error">mdi-delete-outline</v-icon>
+                                    </v-btn>
+                                </template>
+                                {{ $t('taskCatalog.delete') }}
+                            </v-tooltip>
                         </td>
                     </tr>
                 </tbody>
-            </table>
-        </div>
+            </v-table>
+        </v-card>
 
-        <!-- Field Types Guide -->
-        <div class="field-types-guide">
-            <div class="guide-title">{{ $t('taskCatalog.fieldTypesGuide') }}</div>
-            <div class="guide-content">
-                <span class="guide-item"><strong class="guide-type text">Text:</strong> Single-line text input</span>
-                <span class="guide-item"><strong class="guide-type number">Number:</strong> Numeric input with validation</span>
-                <span class="guide-item"><strong class="guide-type textarea">Text Area:</strong> Multi-line text input</span>
-                <span class="guide-item"><strong class="guide-type url">URL:</strong> URL input with link validation</span>
-                <span class="guide-item"><strong class="guide-type dbselect">DB-Select:</strong> Dropdown from database table</span>
-                <span class="guide-item"><strong class="guide-type formula">Formula:</strong> Calculated field from expression</span>
+        <!-- Card List (Mobile) -->
+        <div v-else>
+            <div v-if="loading" class="text-center pa-8">
+                <v-progress-circular indeterminate size="32" color="primary" />
             </div>
+            <div v-else-if="filteredSchemas.length === 0" class="text-center pa-8 text-medium-emphasis">
+                {{ $t('taskCatalog.noSchemas') || 'No property schemas found.' }}
+            </div>
+            <v-card
+                v-else
+                v-for="item in filteredSchemas"
+                :key="item.id"
+                variant="outlined"
+                class="mb-3"
+            >
+                <v-card-text class="pa-3 pb-0">
+                    <div class="d-flex align-center justify-space-between mb-2">
+                        <div class="font-weight-bold text-body-1">{{ item.property_label }}</div>
+                        <div class="d-flex ga-1">
+                            <v-btn icon variant="text" density="compact" @click="openEditForm(item)">
+                                <v-icon size="16">mdi-pencil</v-icon>
+                            </v-btn>
+                            <v-btn icon variant="text" density="compact" @click="confirmDelete(item)">
+                                <v-icon size="16" color="error">mdi-delete-outline</v-icon>
+                            </v-btn>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column ga-1 mb-2">
+                        <div class="d-flex align-center">
+                            <span class="text-caption text-medium-emphasis" style="min-width: 70px;">{{ $t('taskCatalog.fieldType') }}</span>
+                            <v-chip size="x-small" variant="tonal" color="default" label>{{ getTypeLabel(item.property_type) }}</v-chip>
+                        </div>
+                        <div class="d-flex align-center">
+                            <span class="text-caption text-medium-emphasis" style="min-width: 70px;">{{ $t('taskCatalog.appliesTo') }}</span>
+                            <v-chip size="x-small" variant="tonal" :color="getAppliesToChipColor(item.applies_to)" label>{{ getAppliesToLabel(item.applies_to) }}</v-chip>
+                        </div>
+                        <div class="d-flex align-center">
+                            <span class="text-caption text-medium-emphasis" style="min-width: 70px;">{{ $t('taskCatalog.mandatory') }}</span>
+                            <v-icon size="16" :color="item.is_mandatory ? 'primary' : 'grey-lighten-2'">{{ item.is_mandatory ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline' }}</v-icon>
+                        </div>
+                        <div class="d-flex align-center">
+                            <span class="text-caption text-medium-emphasis" style="min-width: 70px;">{{ $t('taskCatalog.visible') }}</span>
+                            <v-icon size="16" :color="item.visible_by_default !== false ? 'primary' : 'grey-lighten-2'">{{ item.visible_by_default !== false ? 'mdi-eye' : 'mdi-eye-off' }}</v-icon>
+                        </div>
+                    </div>
+                    <div v-if="item.placeholder" class="text-caption text-medium-emphasis mb-1">
+                        Placeholder: {{ item.placeholder }}
+                    </div>
+                    <div v-if="item.config" class="text-caption text-medium-emphasis mb-1" style="font-family: monospace;">
+                        <template v-if="item.property_type === 'db-select'">DB: {{ item.config.table || '' }}</template>
+                        <template v-else-if="item.property_type === 'formula'">{{ item.config.expression || '' }}</template>
+                        <template v-else>{{ JSON.stringify(item.config) }}</template>
+                    </div>
+                </v-card-text>
+            </v-card>
         </div>
 
         <!-- Delete Confirmation Dialog -->
         <v-dialog v-model="deleteDialogOpen" max-width="400" persistent>
             <v-card>
-                <v-card-title>{{ $t('taskCatalog.confirmDelete') }}</v-card-title>
-                <v-card-text>
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    {{ $t('taskCatalog.confirmDelete') }}
+                    <v-btn variant="text" density="compact" icon @click="deleteDialogOpen = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-4 pb-0">
                     {{ $t('taskCatalog.deleteSchemaConfirm', { name: deletingSchema?.property_label }) }}
                 </v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn variant="text" @click="deleteDialogOpen = false">{{ $t('taskCatalog.cancel') }}</v-btn>
-                    <v-btn color="error" :loading="loading" @click="deleteSchema">{{ $t('taskCatalog.delete') }}</v-btn>
+                <v-card-actions class="d-flex justify-end align-center pa-4">
+                    <v-btn color="gray" rounded="pill" variant="flat" @click="deleteDialogOpen = false">{{ $t('taskCatalog.cancel') }}</v-btn>
+                    <v-btn color="error" rounded variant="flat" :loading="loading" @click="deleteSchema">{{ $t('taskCatalog.delete') }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -279,6 +377,7 @@ export default defineComponent({
 
         const loading = computed(() => store?.loading || false);
         const saving = ref(false);
+        const isMobile = computed(() => window.innerWidth <= 768);
 
         const selectedTarget = ref(null);
         const showAddForm = ref(false);
@@ -321,9 +420,7 @@ export default defineComponent({
 
         const filteredSchemas = computed(() => {
             let schemas = store.propertySchemas || [];
-            // Filter out built-in keys
             schemas = schemas.filter(s => !BUILT_IN_PROPERTY_KEYS.includes(s.property_key));
-            // Filter by selected target
             if (selectedTarget.value && selectedTarget.value !== '__all__') {
                 schemas = schemas.filter(s => {
                     const at = s.applies_to || 'both';
@@ -485,7 +582,14 @@ export default defineComponent({
             if (val === 'process') return 'process';
             if (val === 'both') return 'both';
             if (val === 'task') return 'task';
-            return 'specific_task'; // bpmn:ManualTask, etc.
+            return 'specific_task';
+        };
+
+        const getAppliesToChipColor = (val) => {
+            if (val === 'both') return 'info';
+            if (val === 'process') return 'warning';
+            if (val === 'task') return 'success';
+            return 'secondary';
         };
 
         const getAppliesToLabel = (val) => {
@@ -498,6 +602,7 @@ export default defineComponent({
             store,
             loading,
             saving,
+            isMobile,
             selectedTarget,
             availableTargets,
             filteredSchemas,
@@ -511,6 +616,7 @@ export default defineComponent({
             configText,
             propertyTypes,
             getAppliesToClass,
+            getAppliesToChipColor,
             openAddForm,
             openEditForm,
             cancelForm,
@@ -528,253 +634,7 @@ export default defineComponent({
 
 <style scoped>
 .schema-manager {
-    padding: 24px;
-}
-
-/* Add Form Card */
-.add-form-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    overflow: hidden;
-}
-
-.add-form-title {
-    padding: 14px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #1f2937;
-    background: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.add-form-body {
-    padding: 20px;
-}
-
-.form-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 14px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #4b5563;
-    margin-bottom: 6px;
-}
-
-.form-input {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #1f2937;
-    background: #fff;
-    outline: none;
-    transition: border-color 0.15s;
-}
-.form-input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-.form-input::placeholder {
-    color: #9ca3af;
-}
-
-.form-select {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #1f2937;
-    background: #fff;
-    outline: none;
-    cursor: pointer;
-}
-.form-select:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.form-row-checkboxes {
-    display: flex;
-    gap: 24px;
-    margin-bottom: 16px;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: #4b5563;
-    cursor: pointer;
-}
-.checkbox-label input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    accent-color: #3b82f6;
-}
-
-.options-section {
-    margin-bottom: 16px;
-}
-
-.option-row {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
-    align-items: center;
-}
-.option-row .form-input {
-    flex: 1;
-}
-
-.option-remove-btn {
-    width: 28px;
-    height: 28px;
-    border: none;
-    border-radius: 4px;
-    background: #fef2f2;
-    color: #ef4444;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.option-add-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: #3b82f6;
-    background: none;
-    border: 1px dashed #93c5fd;
-    border-radius: 4px;
-    padding: 4px 10px;
-    cursor: pointer;
-}
-
-.form-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.btn-primary {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 8px 20px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-}
-.btn-primary:hover:not(:disabled) {
-    background: #2563eb;
-}
-.btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.btn-text {
-    padding: 8px 16px;
-    background: none;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #6b7280;
-    cursor: pointer;
-}
-.btn-text:hover {
-    background: #f3f4f6;
-}
-
-/* Filter Row */
-.filter-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    gap: 16px;
-}
-
-.filter-select-wrapper {
-    flex: 1;
-    max-width: 300px;
-}
-
-.flat-select :deep(.v-field) {
-    border-radius: 6px;
-}
-
-.filter-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.preview-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #ffffff;
-    color: #6b7280;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-.preview-btn:hover:not(:disabled) {
-    border-color: #3b82f6;
-    color: #3b82f6;
-}
-.preview-btn.active {
-    background: #eff6ff;
-    border-color: #3b82f6;
-    color: #3b82f6;
-}
-.preview-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.add-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-.add-btn:hover:not(:disabled) {
-    background: #2563eb;
-}
-
-.add-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    padding: 0px;
 }
 
 /* Layout Preview */
@@ -842,168 +702,4 @@ export default defineComponent({
     top: 2px;
     left: 2px;
 }
-
-/* Flat Table */
-.flat-table-container {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.flat-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.flat-table thead {
-    background: #f9fafb;
-}
-
-.flat-table th {
-    padding: 12px 16px;
-    text-align: left;
-    font-weight: 600;
-    color: #374151;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.drag-handle-cell {
-    width: 28px;
-    padding: 12px 4px 12px 12px !important;
-    cursor: grab;
-}
-
-.field-name {
-    font-weight: 500;
-    color: #1f2937;
-}
-
-.field-placeholder {
-    font-size: 11px;
-    color: #9ca3af;
-    margin-top: 2px;
-}
-
-.center-cell {
-    text-align: center;
-}
-
-.loading-cell,
-.empty-cell {
-    text-align: center;
-    padding: 40px 16px !important;
-    color: #9ca3af;
-}
-
-/* Badges */
-.type-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-    color: #6b7280;
-}
-
-.applies-badge {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 600;
-    background: #f3f4f6;
-    color: #4b5563;
-}
-.applies-badge.both {
-    background: #dbeafe;
-    color: #1d4ed8;
-}
-.applies-badge.process {
-    background: #fef3c7;
-    color: #92400e;
-}
-.applies-badge.task {
-    background: #d1fae5;
-    color: #065f46;
-}
-.applies-badge.specific_task {
-    background: #ede9fe;
-    color: #5b21b6;
-}
-
-.config-text {
-    font-family: monospace;
-    font-size: 12px;
-    color: #6b7280;
-    background: #f9fafb;
-    padding: 2px 8px;
-    border-radius: 4px;
-}
-
-/* Actions */
-.actions-cell {
-    text-align: right;
-    display: flex;
-    justify-content: flex-end;
-    gap: 4px;
-}
-
-.action-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s ease;
-}
-.action-btn:hover { background-color: #f3f4f6; }
-
-.action-edit { color: #6b7280; }
-.action-edit:hover { color: #3b82f6; background-color: #eff6ff; }
-.action-delete { color: #9ca3af; }
-.action-delete:hover { color: #ef4444; background-color: #fef2f2; }
-
-/* Field Types Guide */
-.field-types-guide {
-    margin-top: 20px;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px 20px;
-}
-
-.guide-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 10px;
-}
-
-.guide-content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 24px;
-}
-
-.guide-item {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.guide-type {
-    font-weight: 600;
-}
-.guide-type.text { color: #059669; }
-.guide-type.number { color: #d97706; }
-.guide-type.textarea { color: #7c3aed; }
-.guide-type.url { color: #2563eb; }
-.guide-type.dbselect { color: #dc2626; }
-.guide-type.formula { color: #059669; }
 </style>

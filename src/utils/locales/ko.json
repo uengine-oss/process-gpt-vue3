@@ -3700,7 +3700,10 @@
         "fieldNamePlaceholder": "예: 위험 수준",
         "placeholderPlaceholder": "예: 값을 입력하세요...",
         "fieldTypesGuide": "필드 타입 안내",
-        "fieldTypesGuideText": "Text: 한 줄 텍스트 입력 | Number: 숫자 입력 | Text Area: 여러 줄 텍스트 입력 | URL: 링크 입력 | DB-Select: DB 테이블 드롭다운 | Formula: 수식 기반 자동 계산",
+        "fieldTypesGuideText": {
+            "pc": "Text: 한 줄 텍스트 입력 | Number: 숫자 입력 | Text Area: 여러 줄 텍스트 입력 | URL: 링크 입력 | DB-Select: DB 테이블 드롭다운 | Formula: 수식 기반 자동 계산",
+            "mobile": "Text: 한 줄 텍스트 입력\nNumber: 숫자 입력\nText Area: 여러 줄 텍스트 입력\nURL: 링크 입력\nDB-Select: DB 테이블 드롭다운\nFormula: 수식 기반 자동 계산"
+        },
         "both": "양쪽",
         "process": "프로세스",
         "task": "Task",

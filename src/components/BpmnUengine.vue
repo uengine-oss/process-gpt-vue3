@@ -11,53 +11,34 @@
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
-        <div v-if="!isViewMode" class="font-size-controls">
+        <div v-if="!isViewMode" :class="['font-size-controls', { 'font-size-controls-mobile': isMobile }]">
             <!-- Extra controls slot (for parent component buttons) -->
-            <slot name="extra-controls"></slot>
-            <span v-if="$slots['extra-controls']" class="controls-divider">|</span>
+            <div class="controls-row">
+                <slot name="extra-controls"></slot>
+                <!-- Color Ruleset button -->
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer;" size="small">mdi-palette</v-icon>
+                    </template>
+                    <span>Color Ruleset</span>
+                </v-tooltip>
+            </div>
             <!-- Font size controls -->
-            <v-tooltip location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-decrease</v-icon>
-                </template>
-                <span>{{ $t('BpmnUengine.decreaseFontSize') || 'Decrease Font Size' }}</span>
-            </v-tooltip>
-            <span class="font-size-value">{{ labelFontSize }}px</span>
-            <v-tooltip location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-increase</v-icon>
-                </template>
-                <span>{{ $t('BpmnUengine.increaseFontSize') || 'Increase Font Size' }}</span>
-            </v-tooltip>
-            <span class="controls-divider">|</span>
-            <!-- Color Ruleset button -->
-            <v-tooltip location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer;" size="small">mdi-palette</v-icon>
-                </template>
-                <span>Color Ruleset</span>
-            </v-tooltip>
-            <span class="controls-divider">|</span>
-            <!-- Zoom controls -->
-            <v-tooltip location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="small">mdi-crosshairs-gps</v-icon>
-                </template>
-                <span>{{ $t('BpmnUengine.resetZoom') || 'Fit to Screen (Ctrl+0)' }}</span>
-            </v-tooltip>
-            <v-tooltip location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="zoomOut" style="color: #444; cursor: pointer;" size="small">mdi-minus</v-icon>
-                </template>
-                <span>{{ $t('BpmnUengine.zoomOut') || 'Zoom Out (Ctrl+-)' }}</span>
-            </v-tooltip>
-            <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
-            <v-tooltip location="bottom">
-                <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="zoomIn" style="color: #444; cursor: pointer;" size="small">mdi-plus</v-icon>
-                </template>
-                <span>{{ $t('BpmnUengine.zoomIn') || 'Zoom In (Ctrl++)' }}</span>
-            </v-tooltip>
+            <div class="controls-row">
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-decrease</v-icon>
+                    </template>
+                    <span>{{ $t('BpmnUengine.decreaseFontSize') || 'Decrease Font Size' }}</span>
+                </v-tooltip>
+                <span class="font-size-value">{{ labelFontSize }}px</span>
+                <v-tooltip location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-increase</v-icon>
+                    </template>
+                    <span>{{ $t('BpmnUengine.increaseFontSize') || 'Increase Font Size' }}</span>
+                </v-tooltip>
+            </div>
         </div>
     </div>
     <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">
@@ -2690,9 +2671,16 @@ export default {
 }
 
 .font-size-controls-mobile {
-    top: 12px;
+    top: 16px;
     flex-direction: column;
     align-items: flex-end;
+    gap: 4px;
+}
+
+.controls-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .controls-group {

@@ -3476,7 +3476,10 @@
         "fieldNamePlaceholder": "e.g., Risk Level",
         "placeholderPlaceholder": "e.g., Enter value...",
         "fieldTypesGuide": "Field Types Guide",
-        "fieldTypesGuideText": "Text: Single-line text input | Number: Numeric input with validation | Text Area: Multi-line text input | URL: URL input with link validation | DB-Select: Dropdown from database table | Formula: Calculated field from expression",
+        "fieldTypesGuideText": {
+            "pc": "Text: Single-line text input | Number: Numeric input | Text Area: Multi-line text input | URL: URL input | DB-Select: Dropdown from DB table | Formula: Calculated field",
+            "mobile": "Text: Single-line text input\nNumber: Numeric input\nText Area: Multi-line text input\nURL: URL input\nDB-Select: Dropdown from DB table\nFormula: Calculated field"
+        },
         "both": "Both",
         "process": "Process",
         "task": "Task",
