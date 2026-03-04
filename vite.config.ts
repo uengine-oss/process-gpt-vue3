@@ -11,6 +11,22 @@ const env = loadEnv('development', process.cwd(), '')
 const require = createRequire(import.meta.url);
 const monacoEditorPlugin = require('vite-plugin-monaco-editor').default || require('vite-plugin-monaco-editor');
 
+function spaFallbackPlugin() {
+    return {
+        name: 'spa-fallback-definition-map',
+        configureServer(server: any) {
+            const handler = (req: any, res: any, next: any) => {
+                const url = req.url?.split('?')[0] || '';
+                if (req.method === 'GET' && url.startsWith('/definition-map')) {
+                    req.url = '/index.html';
+                }
+                next();
+            };
+            server.middlewares.stack.unshift({ route: '', handle: handler });
+        },
+    };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
     define: {
@@ -18,6 +34,7 @@ export default defineConfig({
         // SUPABASE_KEY: `"${env.SERVICE_ROLE_KEY}"`
     },
     plugins: [
+        spaFallbackPlugin(),
         vue(),
         vuetify({
             autoImport: true,

@@ -110,7 +110,7 @@
             <v-card rounded="lg">
                 <v-card-title class="d-flex align-center pa-4 pb-2">
                     <v-icon class="mr-2" color="primary">mdi-content-save-check</v-icon>
-                    {{ $t('processHierarchy.saveVersion') || '버전 저장' }}
+                    {{ $t('processHierarchy.saveVersion') }}
                     <v-spacer />
                     <v-btn icon variant="text" size="small" @click="saveVersionDialog = false">
                         <v-icon>mdi-close</v-icon>
@@ -119,13 +119,13 @@
                 <v-card-text class="px-4 pb-2">
                     <div class="d-flex align-center mb-4 pa-3 rounded-lg" style="background: #f5f7fa;">
                         <v-icon size="18" class="mr-2" color="grey-darken-1">mdi-tag-outline</v-icon>
-                        <span class="text-body-2 text-medium-emphasis">{{ $t('processHierarchy.currentVersion') || '현재 버전' }}:</span>
+                        <span class="text-body-2 text-medium-emphasis">{{ $t('processHierarchy.currentVersionLabel') }}:</span>
                         <v-chip size="small" color="primary" variant="flat" class="ml-2">v{{ saveVersion }}</v-chip>
                     </div>
                     <v-textarea
                         v-model="saveVersionMessage"
-                        :label="$t('processHierarchy.changeNote') || '변경 사항 메모'"
-                        :placeholder="$t('processHierarchy.changeNotePlaceholder') || '이 버전에서 변경된 내용을 간단히 기록하세요'"
+                        :label="$t('processHierarchy.changeNote')"
+                        :placeholder="$t('processHierarchy.changeNotePlaceholder')"
                         variant="outlined"
                         density="compact"
                         rows="2"
@@ -134,7 +134,7 @@
                     />
                     <v-checkbox
                         v-model="submitReviewAfterSave"
-                        :label="$t('processHierarchy.submitForReviewAfterSave') || '저장 후 검토 요청'"
+                        :label="$t('processHierarchy.submitForReviewAfterSave')"
                         color="primary"
                         density="compact"
                         hide-details
@@ -143,11 +143,11 @@
                 <v-card-actions class="pa-4 pt-2">
                     <v-spacer />
                     <v-btn variant="text" @click="saveVersionDialog = false" :disabled="savingVersion">
-                        {{ $t('common.cancel') || '취소' }}
+                        {{ $t('common.cancel') }}
                     </v-btn>
                     <v-btn color="primary" variant="flat" @click="confirmSaveVersion" :loading="savingVersion">
                         <v-icon start>mdi-content-save</v-icon>
-                        {{ $t('processHierarchy.saveAndContinue') || '저장' }}
+                        {{ $t('processHierarchy.saveAndContinue') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -323,13 +323,14 @@ export default {
         },
 
         async handleSelectProcess(id, name) {
-            if (this.selectedProcessId === id) return;
+            const normalizedId = typeof id === 'string' ? id.trim() : id;
+            if (this.selectedProcessId === normalizedId) return;
 
             // 이전 element 선택 초기화
             this.selectedElement = null;
-            this.selectedProcessId = id;
+            this.selectedProcessId = normalizedId;
             this.selectedProcessName = name;
-            await this.loadProcess(id);
+            await this.loadProcess(normalizedId);
         },
 
         async loadProcess(id) {
@@ -338,19 +339,26 @@ export default {
             this.bpmnXml = '';
             try {
                 // definitionList에서 해당 프로세스 찾기
-                const def = this.definitionList.find(d => d.id === id || d.file_name === id);
+                let def = this.definitionList.find(d => d.id === id || d.file_name === id);
+
+                // uEngine 모드: definitionList에 없으면 getRawDefinition으로 직접 로드 (트리 id는 map 기준이라 listDefinition 결과와 불일치할 수 있음)
+                if (!def && typeof window !== 'undefined' && window.$mode === 'uEngine') {
+                    const rawBpmn = await backend.getRawDefinition(id, { type: 'bpmn' });
+                    if (rawBpmn && typeof rawBpmn === 'string') {
+                        def = {
+                            id,
+                            file_name: id,
+                            bpmn: rawBpmn,
+                            definition: {},
+                        };
+                    }
+                }
 
                 if (def) {
                     this.processDefinition = def;
                     this.bpmnXml = def.bpmn || '';
                     this.processVariables = def.definition?.data || [];
-
-                    // roles 추출 (definition에서 가져오기)
-                    if (def.definition?.roles) {
-                        this.roles = def.definition.roles;
-                    } else {
-                        this.roles = [];
-                    }
+                    this.roles = def.definition?.roles || [];
                 } else {
                     this.processDefinition = null;
                     this.bpmnXml = '';
@@ -498,7 +506,7 @@ export default {
             } catch (e) {
                 console.error('Save preparation failed:', e);
                 if (this.$toast) {
-                    this.$toast.error('저장 준비에 실패했습니다.');
+                    this.$toast.error(this.$t('processHierarchy.savePrepFailed'));
                 }
             }
         },
@@ -577,8 +585,8 @@ export default {
 
                 if (this.$toast) {
                     const msg = this.submitReviewAfterSave
-                        ? (this.$t('processHierarchy.savedAndSubmitted') || `v${version} 저장 및 검토 요청 완료`)
-                        : (this.$t('successMsg.save') || '저장되었습니다.');
+                        ? this.$t('processHierarchy.savedAndSubmitted')
+                        : this.$t('successMsg.save');
                     this.$toast.success(msg);
                 }
 
@@ -587,7 +595,7 @@ export default {
             } catch (e) {
                 console.error('Save failed:', e);
                 if (this.$toast) {
-                    this.$toast.error('저장에 실패했습니다.');
+                    this.$toast.error(this.$t('processHierarchy.saveFailed'));
                 }
             } finally {
                 this.savingVersion = false;
@@ -605,7 +613,7 @@ export default {
                     currentBpmn = xml;
                 }
 
-                const newName = (this.selectedProcessName || 'Process') + ' (Copy)';
+                const newName = (this.selectedProcessName || this.$t('processHierarchy.defaultProcessName')) + ' ' + this.$t('processHierarchy.copySuffix');
                 const result = await (backend).duplicateLocalProcess(
                     this.selectedProcessId,
                     newName,
@@ -615,14 +623,14 @@ export default {
 
                 if (result && result.success) {
                     if (this.$toast) {
-                        this.$toast.success(this.$t('ProcessMenu.duplicateSuccess') || '프로세스가 복사되었습니다.');
+                        this.$toast.success(this.$t('ProcessMenu.duplicateSuccess'));
                     }
                     await this.loadInitialData();
                 }
             } catch (e) {
                 console.error('Clone failed:', e);
                 if (this.$toast) {
-                    this.$toast.error(this.$t('ProcessMenu.duplicateFailed') || '프로세스 복사에 실패했습니다.');
+                    this.$toast.error(this.$t('ProcessMenu.duplicateFailed'));
                 }
             }
         },
@@ -690,14 +698,14 @@ export default {
 
                 if (this.$toast) {
                     const msg = newWipFlag
-                        ? (this.$t('processHierarchy.wipEnabled') || 'WIP 상태로 전환되었습니다.')
-                        : (this.$t('processHierarchy.wipDisabled') || 'WIP 상태가 해제되었습니다.');
+                        ? this.$t('processHierarchy.wipEnabled')
+                        : this.$t('processHierarchy.wipDisabled');
                     this.$toast.success(msg);
                 }
             } catch (e) {
                 console.error('WIP toggle failed:', e);
                 if (this.$toast) {
-                    this.$toast.error(this.$t('processHierarchy.wipFailed') || 'WIP 상태 변경에 실패했습니다.');
+                    this.$toast.error(this.$t('processHierarchy.wipFailed'));
                 }
             }
         },

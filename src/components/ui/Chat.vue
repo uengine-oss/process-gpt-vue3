@@ -2,9 +2,9 @@
     <div v-if="!workAssistantAgentMode" style="background-color: rgba( 255, 255, 255, 1 );"
         class="chat-info-view-wrapper"
     >
-        <div class="chat-info-view-wrapper">
-            <div class="chat-info-view-area">
-                <div class="chat-info-view-area" style="position: relative;">
+        <div class="chat-info-view-wrapper" style="min-height: 0;">
+            <div class="chat-info-view-area" style="min-height: 0;">
+                <div class="chat-info-view-area" style="position: relative; min-height: 0;">
                     <slot name="custom-chat-top"></slot>
                     <slot name="custom-title" v-if="!workAssistantAgentMode">
                         <div v-if="name && name !== '' || chatInfo">
@@ -54,8 +54,9 @@
                         </v-icon>
                     </div>
 
-                    <perfect-scrollbar v-if="!workAssistantAgentMode"
-                        :class="['h-100 chat-view-box', { 'chat-room-mode': chatRoomMode }]"
+                    <div v-if="!workAssistantAgentMode" class="chat-split-container" :class="{ 'chat-split-active': showAgentMessagePanel }">
+                    <perfect-scrollbar
+                        :class="['h-100 chat-view-box', { 'chat-room-mode': chatRoomMode }, showAgentMessagePanel ? 'chat-view-box-split-left' : '']"
                         ref="scrollContainer"
                         @scroll="handleScroll"
                     >
@@ -105,7 +106,7 @@
                                 </div>
                                 
                                 <div
-                                    v-for="(message, index) in filteredMessages"
+                                    v-for="(message, index) in userFilteredMessages"
                                     :key="index"
                                     class="py-1 px-3 chat-message-row"
                                     :class="{ 'chat-message-row--highlight': highlightedMessageUuid && message && message.uuid === highlightedMessageUuid }"
@@ -122,7 +123,7 @@
                                     
                                     <!-- PDF2BPMN 진행 카드 (마지막 메시지 하단) -->
                                     <div
-                                        v-if="chatRoomMode && pdf2bpmnProgress && pdf2bpmnProgress.isActive && index === filteredMessages.length - 1"
+                                        v-if="chatRoomMode && pdf2bpmnProgress && pdf2bpmnProgress.isActive && index === userFilteredMessages.length - 1"
                                         class="pdf2bpmn-progress-wrap mb-2"
                                     >
                                         <div class="d-flex align-center mb-1">
@@ -250,7 +251,7 @@
                                     </div>
 
                                     <AgentsChat v-else-if="message && message._template === 'agent'" :message="message"
-                                        :agentInfo="agentInfo" :totalSize="filteredMessages.length" :currentIndex="index"
+                                        :agentInfo="agentInfo" :totalSize="userFilteredMessages.length" :currentIndex="index"
                                     />
                                     <div v-else>
                                         <div>
@@ -324,7 +325,7 @@
                                                                         <v-icon size="18">mdi-pencil</v-icon>
                                                                     </v-btn>
                                                                     <v-btn
-                                                                        v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
+                                                                        v-if="shouldDisplayGeneratedWorkList(type, userFilteredMessages, generatedWorkList, index)"
                                                                         @click="showGeneratedWorkList = !showGeneratedWorkList"
                                                                         icon
                                                                         variant="text"
@@ -571,7 +572,7 @@
                                                                             <icons :icon="'pencil'" :size="20"  />
                                                                         </v-btn>
             
-                                                                        <div v-if="shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index)"
+                                                                        <div v-if="shouldDisplayGeneratedWorkList(type, userFilteredMessages, generatedWorkList, index)"
                                                                             :key="isRender"
                                                                         >
                                                                             <div @click="showGeneratedWorkList = !showGeneratedWorkList"
@@ -593,7 +594,7 @@
                                                     </div>
                                                 </div>
 
-                                                <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, filteredMessages, generatedWorkList, index) && generatedWorkList.length > 0" class="mt-3">
+                                                <v-card v-if="showGeneratedWorkList && shouldDisplayGeneratedWorkList(type, userFilteredMessages, generatedWorkList, index) && generatedWorkList.length > 0" class="mt-3">
                                                     <v-btn @click="deleteAllWorkList()"
                                                         size="small" icon density="comfortable"
                                                         style="position:absolute; right:5px; top:5px; z-index:1;"
@@ -768,7 +769,7 @@
                                                 <div v-else class="w-100 pb-3">
                                                     <div class="progress-border" :class="{ 'animate': borderCompletedAnimated }" >
                                                         <template
-                                                            v-if="message.role == 'system' && filteredMessages.length - 1 == index">
+                                                            v-if="message.role == 'system' && userFilteredMessages.length - 1 == index">
                                                             <div class="progress-border-span"
                                                                 :class="{ 'opacity': !borderCompletedAnimated }" v-for="n in 5"
                                                                 :key="n"></div>
@@ -1108,7 +1109,7 @@
                                                                     class="text-body-1"
                                                                     >{{ message.jsonContent }}
                                                                 </pre>
-                                                                <v-card v-if="(type == 'AssistantChats' && isMobile && index === filteredMessages.length - 1) || isViewWork == index">
+                                                                <v-card v-if="(type == 'AssistantChats' && isMobile && index === userFilteredMessages.length - 1) || isViewWork == index">
                                                                     <div v-if="message.specific">
                                                                         <v-card-title style="margin-bottom: -10px;"><h3>Title:</h3></v-card-title>
                                                                         <v-card-text>
@@ -1182,7 +1183,7 @@
                                                                 </v-card>
                                                             </div>
                                                             <!--   -->
-                                                            <v-progress-linear v-if="filteredMessages.length - 1 == index && isLoading"
+                                                            <v-progress-linear v-if="userFilteredMessages.length - 1 == index && isLoading"
                                                                 style="margin-top: -4px; border-radius: 0 0 10px 10px; width: 99%;"
                                                                 indeterminate class="my-progress-linear">
                                                             </v-progress-linear>
@@ -1238,8 +1239,8 @@
                                         </div>
                                     </div>
                                     <AgentsChat
-                                        v-if="type == 'instances' && agentInfo.isRunning && filteredMessages.length == 0"
-                                        class="px-5 py-1" :agentInfo="agentInfo" :totalSize="filteredMessages.length"
+                                        v-if="type == 'instances' && agentInfo.isRunning && userFilteredMessages.length == 0"
+                                        class="px-5 py-1" :agentInfo="agentInfo" :totalSize="userFilteredMessages.length"
                                         :currentIndex="-1" />
 
                                 </div>
@@ -1247,6 +1248,18 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
+                    <AgentMessagePanel
+                        v-if="showAgentMessagePanel"
+                        class="chat-view-box-split-right"
+                        :messages="agentFilteredMessages"
+                        :agentInfo="agentInfo"
+                        :userInfo="userInfo"
+                        :userList="userList"
+                        @invite-agent="(payload) => $emit('invite-agent', payload)"
+                        @preview-image="(url) => $emit('preview-image', url)"
+                        @preview-bpmn="(bpmn) => $emit('preview-bpmn', bpmn)"
+                    />
+                    </div>
                     <div v-if="!workAssistantAgentMode" style="position:relative; z-index: 9999; margin-bottom: 10px;">
                         <v-row class="pa-0 ma-0">
                             <div v-if="isOpenedChatMenu" class="chat-menu-background">
@@ -1853,6 +1866,7 @@ import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ChatRoomNameGenerator from "@/components/ai/ChatRoomNameGenerator.js";
 import ProcessWorkResult from './ProcessWorkResult.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
+import AgentMessagePanel from '@/components/ui/AgentMessagePanel.vue';
 import { marked } from 'marked';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -1867,7 +1881,8 @@ export default {
         DynamicForm,
         SummaryButton,
         ProcessWorkResult,
-        DetailComponent
+        DetailComponent,
+        AgentMessagePanel
     },
     mixins: [
         ProgressAnimated,
@@ -2231,6 +2246,35 @@ export default {
             }
             return list;
         },
+        isMultiHumanChatRoom() {
+            const parts = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
+            const humanParticipants = parts.filter(p => {
+                if (!p) return false;
+                if (p.isAgent === true || p.agent === true || p.is_agent === true) return false;
+                const at = (p.agent_type || p.agentType || '').toString().toLowerCase();
+                if (at === 'agent') return false;
+                if (p.id === 'system_id' || p.email === 'system@uengine.org') return false;
+                const roleOrType = (p.role || p.type || '').toString().toLowerCase();
+                if (roleOrType === 'agent' || roleOrType === 'assistant') return false;
+                return true;
+            });
+            return humanParticipants.length >= 2;
+        },
+        agentFilteredMessages() {
+            return this.filteredMessages.filter(m => this.isAgentRelatedMessage(m));
+        },
+        userFilteredMessages() {
+            if (!this.showAgentMessagePanel) {
+                return this.filteredMessages;
+            }
+            return this.filteredMessages.filter(m => !this.isAgentRelatedMessage(m));
+        },
+        isAgentPanelWidthAvailable() {
+            return this.windowWidth >= 1279;
+        },
+        showAgentMessagePanel() {
+            return this.isMultiHumanChatRoom && this.agentFilteredMessages.length > 0 && this.isAgentPanelWidthAvailable;
+        },
         // isLoading 상태의 변화를 감시합니다.
         isLoading: {
             get() {
@@ -2306,6 +2350,16 @@ export default {
         }
     },
     methods: {
+        isAgentRelatedMessage(message) {
+            if (!message) return false;
+            return !!(
+                message.__routingLoading ||
+                message.__agentInviteRecommendation ||
+                message._template === 'agent' ||
+                message.role === 'agent' ||
+                message.role === 'assistant'
+            );
+        },
         getLoadingLabel(message) {
             return (message?.content || '생각 중...');
         },
@@ -3446,9 +3500,9 @@ export default {
             this.attachedImages.splice(index, 1);
         },
         shouldDisplayUserInfo(message, index) {
-            if (index === 0) return true; // 첫 번째 메시지는 항상 유저 정보 표시
+            if (index === 0) return true;
             
-            const prevMessage = this.filteredMessages[index - 1];
+            const prevMessage = this.userFilteredMessages[index - 1];
             
             // 이전 메시지와 보낸 사람이 다르면 유저 정보 표시
             if (message.email !== prevMessage.email) return true;
@@ -3470,10 +3524,9 @@ export default {
         },
         shouldDisplayMessageTimestamp(message, index) {
             
-            const prevMessage = this.filteredMessages[index - 1];
+            const prevMessage = this.userFilteredMessages[index - 1];
             
-            // 다음 메시지가 있는지 확인
-            const nextMessage = index < this.filteredMessages.length - 1 ? this.filteredMessages[index + 1] : null;
+            const nextMessage = index < this.userFilteredMessages.length - 1 ? this.userFilteredMessages[index + 1] : null;
             
             // 다음 메시지가 없거나, 다음 메시지의 이메일이 현재 메시지와 다르면 true 반환
             if (!nextMessage || message.email !== nextMessage.email) return true;
@@ -3560,19 +3613,18 @@ export default {
                 // 첫 메시지가 오늘 날짜인 경우
                 if (currentDate.toDateString() === today.toDateString()) {
                     // 오늘이 아닌 이전 메시지가 있는지 확인
-                    const hasOlderMessages = this.filteredMessages.some((msg, idx) => {
+                    const hasOlderMessages = this.userFilteredMessages.some((msg, idx) => {
                         if (!msg.timeStamp || idx === 0) return false;
                         const msgDate = new Date(msg.timeStamp);
                         return msgDate.toDateString() !== today.toDateString();
                     });
-                    // 오늘이 아닌 메시지가 있을 때만 "오늘" 구분선 표시
                     return hasOlderMessages;
                 }
                 return true;
             }
             
             if (index > 0) {
-                const prevMessage = this.filteredMessages[index - 1];
+                const prevMessage = this.userFilteredMessages[index - 1];
                 const currentDate = new Date(message.timeStamp);
                 const prevDate = new Date(prevMessage.timeStamp);
                 
@@ -4507,5 +4559,27 @@ pre {
 .pdf2bpmn-bpmn-card {
   cursor: pointer;
   border-radius: 12px;
+}
+
+.chat-split-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.chat-split-container.chat-split-active {
+  flex-direction: row;
+}
+.chat-split-active .chat-view-box-split-left {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+.chat-view-box-split-right {
+  width: 380px;
+  min-width: 320px;
+  max-width: 420px;
+  flex-shrink: 0;
 }
 </style>

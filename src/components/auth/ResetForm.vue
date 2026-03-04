@@ -15,10 +15,7 @@ const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) 
 const password = ref('');
 const passwordRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterPassword'),
-    (v: string) => v.length >= 8 || proxy.$t('createAccount.passwordMinLength'),
-    (v: string) => /[a-zA-Z]/.test(v) || proxy.$t('createAccount.passwordNeedLetter'),
-    (v: string) => /[0-9]/.test(v) || proxy.$t('createAccount.passwordNeedNumber'),
-    (v: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v) || proxy.$t('createAccount.passwordNeedSpecial'),
+    (v: string) => (v.length >= 8 && /[a-zA-Z]/.test(v) && /[0-9]/.test(v) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v)) || proxy.$t('createAccount.passwordRequirement'),
 ]);
 
 const confirmPassword = ref('');
