@@ -102,6 +102,7 @@ import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRul
 import '@/components/autoLayout/bpmn-auto-layout.js';
 import { markRaw } from 'vue';
 import minimapModule from 'diagram-js-minimap';
+import { uengineJsonElementToAttr, uengineJsonAttrToElement, isUengineMode } from '@/utils/uengineXmlTransform';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 
@@ -226,7 +227,9 @@ export default {
     computed: {
         async getXML() {
             let xmlObj = await this.bpmnViewer.saveXML({ format: true, preamble: true });
-            return xmlObj.xml;
+            let xml = xmlObj.xml;
+            if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
+            return xml;
         },
         mode() {
             return window.$mode;
@@ -337,7 +340,9 @@ export default {
         Promise.resolve()
             .then(() => {
                 if (!this.diagramXML) return;
-                return this.bpmnViewer.importXML(this.diagramXML);
+                let xml = this.diagramXML;
+                if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
+                return this.bpmnViewer.importXML(xml);
             })
             .catch((e) => {
                 console.error('[BpmnUengine] 초기 import 실패:', e);
@@ -377,7 +382,9 @@ export default {
                     if (!this.bpmnViewer) return;
                     this.onLoadStart();
                     this.diagramXML = newVal;
-                    await this.bpmnViewer.importXML(newVal);
+                    let xml = newVal;
+                    if (isUengineMode()) xml = uengineJsonElementToAttr(xml);
+                    await this.bpmnViewer.importXML(xml);
                 } catch (e) {
                     console.error('[BpmnUengine] bpmn prop 변경시 import 실패:', e);
                     this.$emit('error', e);
@@ -1176,7 +1183,8 @@ export default {
 
                 if(self.bpmn) {
                     self.$nextTick(async () => {
-                        const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
                         self.bpmnXML = xml;
                         self.validate();
                     });
@@ -1429,7 +1437,8 @@ export default {
                 eventBus.on('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
                     if(self.bpmn) {
-                        const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        let { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
+                        if (isUengineMode()) xml = uengineJsonAttrToElement(xml);
                         self.bpmnXML = xml;
                         self.validate();
                     }
