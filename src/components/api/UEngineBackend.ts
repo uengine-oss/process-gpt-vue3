@@ -2012,8 +2012,8 @@ class UEngineBackend implements Backend {
     }
 
     async getPaletteSettings(): Promise<any> {
-        console.warn("getPaletteSettings is not implemented - only use Process-GPT Mode");
-        return { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+        // uEngine 모드: 사용자 작업(UserTask)만 팔레트에 표시
+        return { visibleTaskTypes: ['bpmn:UserTask'] };
     }
 
     async savePaletteSettings(settings: any): Promise<any> {

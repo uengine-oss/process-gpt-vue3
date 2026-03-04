@@ -248,7 +248,13 @@ export default {
                 } catch (e) {
                     console.warn('[BpmnUengine] 팀명 조회 실패, 기본값 사용:', e);
                 }
-                // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
+                // 모드별 기본 태스크: pal 또는 uEngine → UserTask, 그 외 → ManualTask
+                const isUEngineMode = !!(window.$pal || window.$mode === 'uEngine');
+                const taskId = isUEngineMode ? 'UserTask_1' : 'ManualTask_1';
+                const taskTag = isUEngineMode ? 'userTask' : 'manualTask';
+                const taskName = isUEngineMode ? 'User Task' : 'Manual Task';
+                const taskShapeId = taskId + '_di';
+                // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> Task -> EndEvent
                 this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
   <bpmn:collaboration id="Collaboration_1">
@@ -262,22 +268,22 @@ export default {
     <bpmn:laneSet id="LaneSet_1">
       <bpmn:lane id="Lane_1" name="${laneName}">
         <bpmn:flowNodeRef>StartEvent_1</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>ManualTask_1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>${taskId}</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_1</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_1</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:manualTask id="ManualTask_1" name="Manual Task">
+    <bpmn:${taskTag} id="${taskId}" name="${taskName}">
       <bpmn:incoming>Flow_1</bpmn:incoming>
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
-    </bpmn:manualTask>
+    </bpmn:${taskTag}>
     <bpmn:endEvent id="EndEvent_1" name="End">
       <bpmn:incoming>Flow_2</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="ManualTask_1"/>
-    <bpmn:sequenceFlow id="Flow_2" sourceRef="ManualTask_1" targetRef="EndEvent_1"/>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="${taskId}"/>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="${taskId}" targetRef="EndEvent_1"/>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
@@ -293,7 +299,7 @@ export default {
           <dc:Bounds x="238" y="225" width="24" height="14"/>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ManualTask_1_di" bpmnElement="ManualTask_1">
+      <bpmndi:BPMNShape id="${taskShapeId}" bpmnElement="${taskId}">
         <dc:Bounds x="340" y="160" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
@@ -687,9 +693,11 @@ export default {
                 window.$paletteSettings = catalogStore.paletteSettings;
             } catch (error) {
                 console.error('Failed to load palette settings:', error);
-                // Set default settings
+                // Set default settings (pal 또는 uEngine: UserTask만 사용, 그 외: ManualTask·ServiceTask)
                 window.$enabledPaletteTaskTypes = [];
-                window.$paletteSettings = { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+                window.$paletteSettings = (window.$pal || window.$mode === 'uEngine')
+                    ? { visibleTaskTypes: ['bpmn:UserTask'] }
+                    : { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
             }
         },
         applyAutoLayout() {
@@ -2384,8 +2392,9 @@ export default {
                 return;
             }
 
-            // Determine task type - use stored type from catalog
-            let taskType = catalogItem.task_type || 'bpmn:ManualTask';
+            // Determine task type - use stored type from catalog (pal 또는 uEngine 기본: UserTask)
+            const defaultTaskType = (window.$pal || window.$mode === 'uEngine') ? 'bpmn:UserTask' : 'bpmn:ManualTask';
+            let taskType = catalogItem.task_type || defaultTaskType;
             // Ensure taskType has bpmn: prefix
             if (!taskType.startsWith('bpmn:')) {
                 taskType = 'bpmn:' + taskType;

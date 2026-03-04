@@ -21,6 +21,11 @@ CustomReplaceMenuProvider.$inject = [
  * Get enabled task types from window global
  */
 CustomReplaceMenuProvider.prototype._getEnabledTaskTypes = function() {
+    // uEngine·PAL 모드: UserTask만 사용
+    const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
+    if (isUEngineOrPal) {
+        return ['bpmn:UserTask'];
+    }
     const enabledTypes = window.$enabledPaletteTaskTypes || [];
     if (enabledTypes.length > 0) {
         return enabledTypes.map(t => t.task_type);
