@@ -129,9 +129,37 @@ export function useBpmnExport() {
         isPreviewPDFDialog.value = false;
     }
 
+    /**
+     * [2.1.11] SVG로 BPMN 다이어그램 다운로드
+     */
+    async function captureSvg(options: BpmnExportOptions): Promise<void> {
+        const { bpmnViewer, processName = 'Process Diagram' } = options;
+
+        if (!bpmnViewer) {
+            console.error('BPMN viewer not found');
+            return;
+        }
+
+        try {
+            const { svg } = await bpmnViewer.saveSVG();
+
+            const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${processName}.svg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        } catch (error) {
+            console.error('SVG export failed:', error);
+        }
+    }
+
     return {
         isPreviewPDFDialog,
         capturePng,
+        captureSvg,
         openPdfPreview,
         closePdfPreview
     };

@@ -1,15 +1,57 @@
 <template>
-    <div class="process-hierarchy-container">
+    <v-card elevation="10" class="process-hierarchy-container rounded-xl">
         <!-- Left Panel: Tree -->
-        <div class="hierarchy-left-panel" :style="{ width: leftPanelWidth + 'px' }">
-            <ProcessHierarchyTree
-                :procMap="procMap"
-                :metricsMap="metricsMap"
-                :definitionList="definitionList"
-                :selectedId="selectedProcessId"
-                @select="handleSelectProcess"
-            />
-            <div class="resize-handle-left" @mousedown="startResizeLeft"></div>
+        <div class="hierarchy-left-panel" :style="{ width: isLeftCollapsed ? '40px' : leftPanelWidth + 'px' }">
+            <!-- Collapsed Mini Bar -->
+            <div v-if="isLeftCollapsed" class="collapsed-sidebar">
+                <v-tooltip v-for="item in collapsedMenuItems" :key="item.icon" location="right">
+                    <template v-slot:activator="{ props }">
+                        <div
+                            v-bind="props"
+                            class="collapsed-menu-icon"
+                            :class="{ 'collapsed-menu-icon--active': item.active }"
+                            @click="item.action"
+                        >
+                            <v-icon size="18" :color="item.active ? 'primary' : 'grey-darken-1'">{{ item.icon }}</v-icon>
+                        </div>
+                    </template>
+                    <div class="collapsed-tooltip-content">
+                        <div class="font-weight-bold text-body-2">{{ item.name }}</div>
+                        <div class="text-caption" style="opacity: 0.85;">{{ item.desc }}</div>
+                    </div>
+                </v-tooltip>
+                <v-divider class="my-1" style="width: 24px; opacity: 0.3;" />
+                <v-tooltip location="right">
+                    <template v-slot:activator="{ props }">
+                        <div v-bind="props" class="collapsed-menu-icon" @click="toggleLeftPanel">
+                            <v-icon size="18" color="grey-darken-1">mdi-chevron-right</v-icon>
+                        </div>
+                    </template>
+                    <span class="text-caption">{{ $t('processHierarchy.expandPanel') || '패널 펼치기' }}</span>
+                </v-tooltip>
+            </div>
+            <!-- Full Tree -->
+            <template v-else>
+                <ProcessHierarchyTree
+                    :procMap="procMap"
+                    :metricsMap="metricsMap"
+                    :definitionList="definitionList"
+                    :selectedId="selectedProcessId"
+                    :collapsed="false"
+                    @select="handleSelectProcess"
+                />
+                <div class="resize-handle-left" @mousedown="startResizeLeft"></div>
+            </template>
+            <!-- Toggle Button -->
+            <v-btn
+                icon
+                size="x-small"
+                variant="text"
+                class="collapse-toggle-btn"
+                @click="toggleLeftPanel"
+            >
+                <v-icon size="16">{{ isLeftCollapsed ? 'mdi-chevron-right' : 'mdi-chevron-left' }}</v-icon>
+            </v-btn>
         </div>
 
         <!-- Center Panel: BPMN Designer -->
@@ -22,6 +64,7 @@
                 :definitionPath="selectedProcessId"
                 :definitionList="definitionList"
                 :loading="loading"
+                :recoveryBackup="recoveryBackup"
                 @openPanel="handleOpenPanel"
                 @updateXml="handleUpdateXml"
                 @definition="handleDefinition"
@@ -29,11 +72,13 @@
                 @clone="handleClone"
                 @versionHistory="handleVersionHistory"
                 @toggleWip="handleToggleWip"
+                @dismissBackup="dismissBackup"
+                @recoverBackup="recoverFromBackup"
             />
         </div>
 
         <!-- Right Panel: Properties -->
-        <div v-if="showProperties" class="hierarchy-right-panel" :style="{ width: rightPanelWidth + 'px' }">
+        <div v-if="showProperties && selectedProcessId" class="hierarchy-right-panel" :style="{ width: rightPanelWidth + 'px' }">
             <div class="resize-handle-right" @mousedown="startResizeRight"></div>
             <ProcessHierarchyProperties
                 :processDefinition="processDefinition"
@@ -45,6 +90,7 @@
                 :definition="bpmnDefinitions"
                 @save="handlePropertiesSave"
                 @close="handleCloseProperties"
+                @focusElement="handleFocusElement"
             />
         </div>
 
@@ -152,12 +198,35 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-    </div>
+
+        <!-- [6.3.1] Version Conflict Dialog -->
+        <v-dialog v-model="conflictDialog" max-width="440" persistent>
+            <v-card rounded="lg">
+                <v-card-title class="d-flex align-center pa-4 pb-2">
+                    <v-icon class="mr-2" color="error">mdi-alert-decagram</v-icon>
+                    {{ $t('processHierarchy.versionConflict') || '버전 충돌' }}
+                </v-card-title>
+                <v-card-text class="px-4 pb-2">
+                    {{ $t('processHierarchy.conflictMessage') || '다른 사용자가 이미 같은 버전을 저장했습니다. 새 Draft(v0.1)로 저장하시겠습니까?' }}
+                </v-card-text>
+                <v-card-actions class="pa-4 pt-2">
+                    <v-spacer />
+                    <v-btn variant="text" @click="conflictDialog = false">
+                        {{ $t('common.cancel') || '취소' }}
+                    </v-btn>
+                    <v-btn color="primary" variant="flat" @click="forceSaveAsNewDraft">
+                        {{ $t('processHierarchy.saveAsNewDraft') || '새 Draft로 저장' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+    </v-card>
 </template>
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { saveBackup, getBackup, deleteBackup } from '@/utils/localBackup';
 import ProcessHierarchyTree from './ProcessHierarchyTree.vue';
 import ProcessHierarchyDesigner from './ProcessHierarchyDesigner.vue';
 import ProcessHierarchyProperties from './ProcessHierarchyProperties.vue';
@@ -202,6 +271,13 @@ export default {
             // Approval warning
             approvalWarningDialog: false,
             activeApprovalState: null,
+            // [6.2.1-2] Local backup recovery
+            recoveryBackup: null,
+            // Left panel collapse
+            isLeftCollapsed: false,
+            savedLeftWidth: 280,
+            // [6.3.1] Version conflict
+            conflictDialog: false,
             leftPanelWidth: 280,
             rightPanelWidth: 340,
             resizing: null,
@@ -220,16 +296,64 @@ export default {
         }
         window.addEventListener('mousemove', this.onResize);
         window.addEventListener('mouseup', this.stopResize);
+        // [6.2.1] Offline 감지 → 자동 로컬 백업
+        this._offlineHandler = async () => {
+            if (this.bpmnXml && this.selectedProcessId) {
+                await saveBackup({
+                    procDefId: this.selectedProcessId,
+                    xml: this.bpmnXml,
+                    processName: this.selectedProcessName || '',
+                    timestamp: Date.now(),
+                });
+                console.info('[LocalBackup] Auto-saved due to offline event');
+            }
+        };
+        window.addEventListener('offline', this._offlineHandler);
     },
     beforeUnmount() {
         window.removeEventListener('mousemove', this.onResize);
         window.removeEventListener('mouseup', this.stopResize);
+        if (this._offlineHandler) {
+            window.removeEventListener('offline', this._offlineHandler);
+        }
         if (this.selectionListenerCleanup) {
             this.selectionListenerCleanup();
             this.selectionListenerCleanup = null;
         }
     },
     computed: {
+        collapsedMenuItems() {
+            return [
+                {
+                    icon: 'mdi-file-tree',
+                    name: this.$t('processHierarchy.title') || '프로세스 계층도',
+                    desc: this.$t('processHierarchy.treeDesc') || '프로세스 트리에서 편집할 프로세스를 선택합니다.',
+                    active: !!this.selectedProcessId,
+                    action: () => this.toggleLeftPanel(),
+                },
+                {
+                    icon: 'mdi-content-save-outline',
+                    name: this.$t('processHierarchy.save') || '저장',
+                    desc: this.$t('processHierarchy.saveDesc') || '현재 프로세스를 버전과 함께 저장합니다.',
+                    active: false,
+                    action: () => { if (this.selectedProcessId) this.handleSave(); },
+                },
+                {
+                    icon: 'mdi-history',
+                    name: this.$t('processHierarchy.versionHistory') || '버전 이력',
+                    desc: this.$t('processHierarchy.versionHistoryDesc') || '버전 간 차이를 비교하고 이전 버전으로 되돌립니다.',
+                    active: false,
+                    action: () => { if (this.selectedProcessId) this.handleVersionHistory(); },
+                },
+                {
+                    icon: 'mdi-cog-outline',
+                    name: this.$t('processHierarchy.properties') || '속성 패널',
+                    desc: this.$t('processHierarchy.propertiesDesc') || '선택된 요소의 속성을 편집합니다.',
+                    active: this.showProperties,
+                    action: () => { this.showProperties = !this.showProperties; },
+                },
+            ];
+        },
         saveVersion() {
             // 저장할 때마다 minor +1 (거버넌스: Draft 단계에서 저장 시마다 마이너 버전 자동 기록)
             const base = this.latestVersion;
@@ -329,7 +453,32 @@ export default {
             this.selectedElement = null;
             this.selectedProcessId = id;
             this.selectedProcessName = name;
+            this.recoveryBackup = null;
             await this.loadProcess(id);
+
+            // [6.2.2] 로컬 백업 확인
+            try {
+                const backup = await getBackup(id);
+                if (backup) {
+                    this.recoveryBackup = backup;
+                }
+            } catch (e) { /* ignore */ }
+        },
+
+        async recoverFromBackup() {
+            if (!this.recoveryBackup) return;
+            this.bpmnXml = this.recoveryBackup.xml;
+            if (this.$toast) {
+                this.$toast.success(this.$t('processHierarchy.recoveryApplied') || '로컬 백업이 복구되었습니다. 저장해주세요.');
+            }
+            this.recoveryBackup = null;
+        },
+
+        async dismissBackup() {
+            if (this.recoveryBackup) {
+                await deleteBackup(this.recoveryBackup.procDefId);
+                this.recoveryBackup = null;
+            }
         },
 
         async loadProcess(id) {
@@ -446,6 +595,7 @@ export default {
         },
 
         handleCloseProperties() {
+            this.showProperties = false;
             this.selectedElement = null;
         },
 
@@ -454,6 +604,14 @@ export default {
         },
 
         async handleSave() {
+            const designer = this.$refs.designer;
+
+            // To-Be 모드에서 저장 시: To-Be XML을 definition.tobe_bpmn에 저장
+            if (designer && designer.toBeMode) {
+                await this.handleSaveToBe();
+                return;
+            }
+
             const store = useBpmnStore();
             const modeler = store.getModeler;
             if (!modeler) return;
@@ -503,6 +661,45 @@ export default {
             }
         },
 
+        async handleSaveToBe() {
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (!modeler || !this.selectedProcessId) return;
+
+            try {
+                const { xml } = await modeler.saveXML({ format: true, preamble: true });
+
+                // definition JSON에 tobe_bpmn 저장
+                const currentDef = this.processDefinition?.definition || {};
+                const updatedDef = { ...currentDef, tobe_bpmn: xml };
+
+                const supabase = window.$supabase;
+                if (supabase) {
+                    await supabase
+                        .from('proc_def')
+                        .update({ definition: updatedDef })
+                        .eq('id', this.selectedProcessId);
+                }
+
+                // 로컬 상태 업데이트
+                if (this.processDefinition) {
+                    this.processDefinition.definition = updatedDef;
+                }
+                // designer의 toBeBlueprintXml도 동기화
+                const designer = this.$refs.designer;
+                if (designer) designer.toBeBlueprintXml = xml;
+
+                if (this.$toast) {
+                    this.$toast.success('To-Be Blueprint가 저장되었습니다.');
+                }
+            } catch (e) {
+                console.error('To-Be save failed:', e);
+                if (this.$toast) {
+                    this.$toast.error('To-Be Blueprint 저장에 실패했습니다.');
+                }
+            }
+        },
+
         updateXmlVersion(xml, version) {
             try {
                 const parser = new DOMParser();
@@ -546,6 +743,39 @@ export default {
             this.saveVersionDialog = true;
         },
 
+        async captureThumbnail() {
+            try {
+                const store = useBpmnStore();
+                const modeler = store.getModeler;
+                if (!modeler) return null;
+                const { svg } = await modeler.saveSVG();
+                // SVG → Canvas → base64 PNG (max 320px wide)
+                return await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const maxW = 320;
+                        const scale = Math.min(maxW / img.width, 1);
+                        const w = Math.round(img.width * scale);
+                        const h = Math.round(img.height * scale);
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/png', 0.8));
+                    };
+                    img.onerror = () => resolve(null);
+                    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+                    img.src = URL.createObjectURL(blob);
+                });
+            } catch (e) {
+                console.warn('Thumbnail capture failed:', e);
+                return null;
+            }
+        },
+
         async confirmSaveVersion() {
             this.savingVersion = true;
             try {
@@ -554,10 +784,15 @@ export default {
                 const xml = this.updateXmlVersion(this.pendingSaveXml, version);
                 this.bpmnXml = xml;
 
+                // [6.1.2] Canvas 썸네일 캡처 → definition JSON에 저장
+                const thumbnail = await this.captureThumbnail();
+                const definition = { ...(this.processDefinition?.definition || {}), };
+                if (thumbnail) definition.thumbnail = thumbnail;
+
                 // 새 minor 버전으로 저장 (거버넌스: 저장 시마다 마이너 버전 자동 기록)
                 await (backend).putRawDefinition(xml, this.selectedProcessId, {
                     name: this.selectedProcessName,
-                    definition: this.processDefinition?.definition || null,
+                    definition,
                     version: version,
                     version_tag: null,
                     arcv_id: `${this.selectedProcessId}_${version}`,
@@ -582,12 +817,42 @@ export default {
                     this.$toast.success(msg);
                 }
 
+                // [6.2.1] Save 성공 시 로컬 백업 삭제
+                if (this.selectedProcessId) {
+                    deleteBackup(this.selectedProcessId).catch(() => {});
+                }
+                this.recoveryBackup = null;
+
                 // definitionList 갱신
                 await this.loadInitialData();
             } catch (e) {
                 console.error('Save failed:', e);
-                if (this.$toast) {
-                    this.$toast.error('저장에 실패했습니다.');
+                // [6.3.1] 409 Conflict detection
+                if (e?.status === 409 || e?.code === '23505' || e?.message?.includes('conflict') || e?.message?.includes('duplicate')) {
+                    this.conflictDialog = true;
+                    this.savingVersion = false;
+                    return;
+                }
+                // [6.2.1] Save 실패 시 IndexedDB 로컬 백업
+                try {
+                    const xml = this.pendingSaveXml || this.bpmnXml;
+                    if (xml && this.selectedProcessId) {
+                        await saveBackup({
+                            procDefId: this.selectedProcessId,
+                            xml,
+                            processName: this.selectedProcessName || '',
+                            timestamp: Date.now(),
+                            version: this.saveVersion,
+                        });
+                        if (this.$toast) {
+                            this.$toast.warning(this.$t('processHierarchy.savedLocally') || '서버 저장 실패. 로컬에 백업되었습니다.');
+                        }
+                    }
+                } catch (backupErr) {
+                    console.warn('Local backup also failed:', backupErr);
+                    if (this.$toast) {
+                        this.$toast.error('저장에 실패했습니다.');
+                    }
                 }
             } finally {
                 this.savingVersion = false;
@@ -702,6 +967,36 @@ export default {
             }
         },
 
+        handleFocusElement(elementId) {
+            if (!elementId) return;
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (!modeler) return;
+            try {
+                const elementRegistry = modeler.get('elementRegistry');
+                const canvas = modeler.get('canvas');
+                const selection = modeler.get('selection');
+                const element = elementRegistry.get(elementId);
+                if (!element) return;
+                // Center viewport on the element
+                canvas.scrollToElement(element);
+                // Select the element
+                selection.select(element);
+            } catch (e) {
+                console.warn('Focus element failed:', e);
+            }
+        },
+
+        toggleLeftPanel() {
+            if (this.isLeftCollapsed) {
+                this.isLeftCollapsed = false;
+                this.leftPanelWidth = this.savedLeftWidth;
+            } else {
+                this.savedLeftWidth = this.leftPanelWidth;
+                this.isLeftCollapsed = true;
+            }
+        },
+
         // Resize handlers
         startResizeLeft(e) {
             this.resizing = 'left';
@@ -728,6 +1023,43 @@ export default {
         stopResize() {
             this.resizing = null;
         },
+
+        async forceSaveAsNewDraft() {
+            this.conflictDialog = false;
+            this.savingVersion = true;
+            try {
+                const version = '0.1';
+                const xml = this.updateXmlVersion(this.pendingSaveXml, version);
+                this.bpmnXml = xml;
+
+                const thumbnail = await this.captureThumbnail();
+                const definition = { ...(this.processDefinition?.definition || {}) };
+                if (thumbnail) definition.thumbnail = thumbnail;
+
+                const newArcvId = `${this.selectedProcessId}_${version}_${Date.now()}`;
+                await (backend).putRawDefinition(xml, this.selectedProcessId, {
+                    name: this.selectedProcessName,
+                    definition,
+                    version: version,
+                    version_tag: null,
+                    arcv_id: newArcvId,
+                    message: this.saveVersionMessage || null,
+                });
+
+                this.saveVersionDialog = false;
+                if (this.$toast) {
+                    this.$toast.success(this.$t('processHierarchy.forceSavedAsDraft') || '새 Draft(v0.1)로 저장되었습니다.');
+                }
+                await this.loadInitialData();
+            } catch (e2) {
+                console.error('Force save as draft failed:', e2);
+                if (this.$toast) {
+                    this.$toast.error('저장에 실패했습니다.');
+                }
+            } finally {
+                this.savingVersion = false;
+            }
+        },
     },
 };
 </script>
@@ -735,7 +1067,7 @@ export default {
 <style scoped>
 .process-hierarchy-container {
     display: flex;
-    height: calc(100vh - 125px);
+    height: calc(100vh - 140px);
     overflow: hidden;
     position: relative;
     background: #fafafa;
@@ -746,6 +1078,7 @@ export default {
     flex-shrink: 0;
     border-right: 1px solid #e0e0e0;
     overflow: hidden;
+    transition: width 0.25s ease;
 }
 
 .hierarchy-center-panel {
@@ -760,7 +1093,9 @@ export default {
     position: relative;
     flex-shrink: 0;
     border-left: 1px solid #e0e0e0;
-    overflow-y: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .resize-handle-left {
@@ -795,5 +1130,50 @@ export default {
     top: 50%;
     transform: translateY(-50%);
     z-index: 5;
+}
+
+.collapsed-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 12px;
+    gap: 4px;
+    height: 100%;
+    background: #fafafa;
+}
+
+.collapsed-menu-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.collapsed-menu-icon:hover {
+    background-color: #e3f2fd;
+}
+
+.collapsed-menu-icon--active {
+    background-color: #e8eaf6;
+}
+
+.collapsed-tooltip-content {
+    max-width: 200px;
+    line-height: 1.4;
+}
+
+.collapse-toggle-btn {
+    position: absolute;
+    top: 8px;
+    right: -14px;
+    z-index: 15;
+    background: #fff !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 </style>

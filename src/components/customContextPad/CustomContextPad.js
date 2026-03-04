@@ -711,9 +711,9 @@ ContextPadProvider.prototype.getContextPadEntries = function (element) {
       }
     };
 
-    // Task 타입에만 코멘트 작성 버튼 추가
+    // Task 타입에만 코멘트 작성 버튼 추가 (PAL mode only)
     const isTaskElement = element.type && element.type.includes('Task');
-    if (isTaskElement) {
+    if (window.$pal && isTaskElement) {
       actions['add-comment'] = {
         group: 'edit',
         className: 'mdi mdi-comment-plus-outline',

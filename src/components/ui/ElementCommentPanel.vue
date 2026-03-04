@@ -5,31 +5,66 @@
             <v-icon class="mr-2" size="20">mdi-comment-text-multiple-outline</v-icon>
             <span class="text-subtitle-1 font-weight-medium">{{ $t('elementComment.title') }}</span>
             <v-spacer />
-            <v-chip v-if="comments.length > 0" size="x-small" color="primary" variant="tonal">
-                {{ comments.length }}
+            <v-chip v-if="commentViewMode === 'element' ? comments.length > 0 : processComments.length > 0" size="x-small" color="primary" variant="tonal">
+                {{ commentViewMode === 'element' ? comments.length : processComments.length }}
             </v-chip>
             <v-btn icon variant="text" size="small" @click="$emit('close')">
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-card-title>
 
-        <!-- 선택된 요소 정보 -->
-        <div v-if="selectedElement && isTaskType(selectedElement.type)" class="px-3 pb-2">
-            <v-chip size="small" :color="getElementColor(selectedElement.type)" variant="tonal"
-                style="cursor: pointer;"
-                @click="$emit('focusElement', selectedElement.id)"
-            >
-                <v-icon start size="14">{{ getElementIcon(selectedElement.type) }}</v-icon>
-                {{ selectedElement.name || selectedElement.id }}
-                <v-icon end size="12">mdi-crosshairs-gps</v-icon>
-            </v-chip>
+        <!-- Tab toggle: Element vs Process-wide -->
+        <div class="comment-tabs px-3 pb-1">
+            <v-btn-toggle v-model="commentViewMode" mandatory density="compact" color="primary" class="w-100">
+                <v-btn value="element" size="x-small" class="flex-grow-1">
+                    <v-icon start size="12">mdi-cursor-default-click</v-icon>
+                    요소 코멘트
+                </v-btn>
+                <v-btn value="process" size="x-small" class="flex-grow-1">
+                    <v-icon start size="12">mdi-file-tree-outline</v-icon>
+                    전체 피드백
+                </v-btn>
+            </v-btn-toggle>
         </div>
 
-        <!-- Task가 아닌 경우 안내 -->
-        <div v-else class="px-3 pb-2">
-            <v-alert type="info" density="compact" variant="tonal">
-                {{ $t('elementComment.selectTaskToComment') }}
-            </v-alert>
+        <!-- 선택된 요소 정보 (element mode only) -->
+        <template v-if="commentViewMode === 'element'">
+            <div v-if="selectedElement && isTaskType(selectedElement.type)" class="px-3 pb-2">
+                <v-chip size="small" :color="getElementColor(selectedElement.type)" variant="tonal"
+                    style="cursor: pointer;"
+                    @click="$emit('focusElement', selectedElement.id)"
+                >
+                    <v-icon start size="14">{{ getElementIcon(selectedElement.type) }}</v-icon>
+                    {{ selectedElement.name || selectedElement.id }}
+                    <v-icon end size="12">mdi-crosshairs-gps</v-icon>
+                </v-chip>
+            </div>
+
+            <!-- Task가 아닌 경우 안내 -->
+            <div v-else class="px-3 pb-2">
+                <v-alert type="info" density="compact" variant="tonal">
+                    {{ $t('elementComment.selectTaskToComment') }}
+                </v-alert>
+            </div>
+        </template>
+
+        <!-- [3.18] Round Tabs -->
+        <div v-if="rounds.length > 1" class="round-tabs px-3 pb-1">
+            <v-chip-group v-model="activeRound" selected-class="text-primary">
+                <v-chip :value="null" size="x-small" variant="outlined" filter>
+                    전체
+                </v-chip>
+                <v-chip
+                    v-for="r in rounds"
+                    :key="r"
+                    :value="r"
+                    size="x-small"
+                    variant="outlined"
+                    filter
+                >
+                    Round {{ r }}
+                </v-chip>
+            </v-chip-group>
         </div>
 
         <v-divider />
@@ -40,26 +75,62 @@
                 <v-progress-circular indeterminate size="24" />
             </div>
 
-            <div v-else-if="comments.length === 0" class="text-center pa-4 text-grey">
-                <v-icon size="48" color="grey-lighten-1">mdi-comment-off-outline</v-icon>
-                <div class="mt-2 text-body-2">{{ $t('elementComment.noComments') }}</div>
-            </div>
+            <!-- Element comments (existing) -->
+            <template v-else-if="commentViewMode === 'element'">
+                <div v-if="comments.length === 0" class="text-center pa-4 text-grey">
+                    <v-icon size="48" color="grey-lighten-1">mdi-comment-off-outline</v-icon>
+                    <div class="mt-2 text-body-2">{{ $t('elementComment.noComments') }}</div>
+                </div>
 
-            <div v-else class="comment-list pa-2">
-                <div
-                    v-for="comment in rootComments"
-                    :key="comment.id"
-                    class="comment-item mb-2"
-                >
-                    <CommentThread
-                        :comment="comment"
-                        :replies="getReplies(comment.id)"
-                        :currentUserId="currentUserId"
-                        @reply="handleReply"
-                        @edit="handleEdit"
-                        @delete="handleDelete"
-                        @resolve="handleResolve"
-                    />
+                <div v-else class="comment-list pa-2">
+                    <div
+                        v-for="comment in filteredRootComments"
+                        :key="comment.id"
+                        class="comment-item mb-2"
+                    >
+                        <CommentThread
+                            :comment="comment"
+                            :replies="getReplies(comment.id)"
+                            :currentUserId="currentUserId"
+                            @reply="handleReply"
+                            @edit="handleEdit"
+                            @delete="handleDelete"
+                            @resolve="handleResolve"
+                        />
+                    </div>
+                </div>
+            </template>
+
+            <!-- Process-wide comments -->
+            <div v-else-if="commentViewMode === 'process'" class="comment-list pa-2">
+                <div v-if="processComments.length === 0" class="text-center pa-4 text-grey">
+                    <v-icon size="48" color="grey-lighten-1">mdi-comment-off-outline</v-icon>
+                    <div class="mt-2 text-body-2">프로세스 전체 피드백이 없습니다</div>
+                </div>
+                <div v-for="comment in filteredProcessRootComments" :key="comment.id" class="comment-item mb-2">
+                    <div class="process-comment-card" :class="{ 'process-comment-card--resolved': comment.is_resolved }">
+                        <div class="d-flex align-center justify-space-between mb-1">
+                            <div class="d-flex align-center ga-1">
+                                <v-chip size="x-small" variant="tonal" color="primary">
+                                    {{ comment.author_name || '익명' }}
+                                </v-chip>
+                                <v-chip v-if="comment.element_id" size="x-small" variant="outlined"
+                                    style="cursor: pointer;" @click="$emit('focusElement', comment.element_id)">
+                                    <v-icon start size="10">mdi-target</v-icon>
+                                    {{ comment.element_name || comment.element_id }}
+                                </v-chip>
+                                <v-chip v-else size="x-small" variant="tonal" color="grey">
+                                    프로세스
+                                </v-chip>
+                            </div>
+                            <v-icon v-if="comment.is_resolved" size="16" color="success">mdi-check-circle</v-icon>
+                            <v-chip v-else size="x-small" color="warning" variant="flat">미해결</v-chip>
+                        </div>
+                        <div class="text-body-2 mt-1" :class="{ 'text-medium-emphasis': comment.is_resolved }">
+                            {{ comment.comment || comment.content || '' }}
+                        </div>
+                        <div class="text-caption text-disabled mt-1">{{ formatRelativeTime(comment.created_at) }}</div>
+                    </div>
                 </div>
             </div>
         </v-card-text>
@@ -116,15 +187,62 @@ export default defineComponent({
     emits: ['close', 'commentCountChanged', 'focusElement'],
     setup(props, { emit }) {
         const backend = BackendFactory.createBackend();
+        const commentViewMode = ref<'element' | 'process'>('element');
         const comments = ref<any[]>([]);
+        const processComments = ref<any[]>([]);
         const loading = ref(false);
         const submitting = ref(false);
         const newComment = ref('');
         const currentUserId = ref('');
+        const activeRound = ref<number | null>(null); // null = 전체
+        const rounds = ref<number[]>([]);
 
         // 루트 댓글 (부모가 없는 댓글)
         const rootComments = computed(() => {
             return comments.value.filter(c => !c.parent_comment_id);
+        });
+
+        // 프로세스 전체 루트 댓글
+        const processRootComments = computed(() => {
+            return processComments.value.filter(c => !c.parent_comment_id);
+        });
+
+        // 라운드 수 계산 (proc_def_approval_state 제출 횟수 기반)
+        const loadRounds = async () => {
+            if (!props.procDefId) return;
+            try {
+                const supabase = (window as any).$supabase;
+                if (!supabase) return;
+                const { data } = await supabase
+                    .from('proc_def_approval_state')
+                    .select('id')
+                    .eq('proc_def_id', props.procDefId)
+                    .eq('tenant_id', (window as any).$tenantName)
+                    .order('created_at', { ascending: true });
+                const count = data?.length || 1;
+                rounds.value = Array.from({ length: count }, (_, i) => i + 1);
+                activeRound.value = null; // 전체 보기가 기본
+            } catch (e) {
+                rounds.value = [1];
+            }
+        };
+
+        const filteredComments = computed(() => {
+            if (activeRound.value === null) return comments.value;
+            return comments.value.filter(c => (c.submission_round || 1) === activeRound.value);
+        });
+
+        const filteredRootComments = computed(() => {
+            return filteredComments.value.filter(c => !c.parent_comment_id);
+        });
+
+        const filteredProcessComments = computed(() => {
+            if (activeRound.value === null) return processComments.value;
+            return processComments.value.filter(c => (c.submission_round || 1) === activeRound.value);
+        });
+
+        const filteredProcessRootComments = computed(() => {
+            return filteredProcessComments.value.filter(c => !c.parent_comment_id);
         });
 
         // 특정 댓글의 답글 목록
@@ -147,6 +265,45 @@ export default defineComponent({
             } finally {
                 loading.value = false;
             }
+        };
+
+        // 프로세스 전체 댓글 로드
+        const loadProcessComments = async () => {
+            if (!props.procDefId) return;
+            loading.value = true;
+            try {
+                const supabase = (window as any).$supabase;
+                if (supabase) {
+                    const { data } = await supabase
+                        .from('proc_def_comments')
+                        .select('*')
+                        .eq('proc_def_id', props.procDefId)
+                        .order('created_at', { ascending: false })
+                        .limit(100);
+                    processComments.value = data || [];
+                }
+            } catch (e) {
+                console.error('전체 피드백 로드 실패:', e);
+            } finally {
+                loading.value = false;
+            }
+        };
+
+        // 상대 시간 포맷
+        const formatRelativeTime = (dateStr: string) => {
+            if (!dateStr) return '';
+            try {
+                const d = new Date(dateStr);
+                const now = new Date();
+                const diffMs = now.getTime() - d.getTime();
+                const diffMin = Math.floor(diffMs / 60000);
+                if (diffMin < 1) return '방금 전';
+                if (diffMin < 60) return `${diffMin}분 전`;
+                const diffHours = Math.floor(diffMin / 60);
+                if (diffHours < 24) return `${diffHours}시간 전`;
+                const diffDays = Math.floor(diffHours / 24);
+                return `${diffDays}일 전`;
+            } catch { return dateStr; }
         };
 
         // 댓글 작성
@@ -264,24 +421,45 @@ export default defineComponent({
         // 현재 사용자 ID 설정
         onMounted(() => {
             currentUserId.value = window.$user?.id || '';
+            loadRounds();
         });
 
         // 선택된 요소가 변경되면 댓글 로드
         watch(() => props.selectedElement, () => {
-            if (props.selectedElement) {
-                loadComments();
-            } else {
-                comments.value = [];
+            if (commentViewMode.value === 'element') {
+                if (props.selectedElement) {
+                    loadComments();
+                    loadRounds();
+                } else {
+                    comments.value = [];
+                }
             }
         }, { immediate: true });
 
+        // 탭 모드 변경 시 댓글 로드
+        watch(commentViewMode, (mode) => {
+            if (mode === 'process') {
+                loadProcessComments();
+                loadRounds();
+            } else if (props.selectedElement) {
+                loadComments();
+            }
+        });
+
         return {
+            commentViewMode,
             comments,
+            processComments,
             loading,
             submitting,
             newComment,
             currentUserId,
+            activeRound,
+            rounds,
             rootComments,
+            processRootComments,
+            filteredRootComments,
+            filteredProcessRootComments,
             getReplies,
             submitComment,
             handleReply,
@@ -290,7 +468,8 @@ export default defineComponent({
             handleResolve,
             getElementIcon,
             getElementColor,
-            isTaskType
+            isTaskType,
+            formatRelativeTime
         };
     }
 });
@@ -315,5 +494,29 @@ export default defineComponent({
 
 .comment-item {
     border-radius: 8px;
+}
+
+.comment-tabs {
+    margin-top: 4px;
+}
+.comment-tabs .v-btn {
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+.process-comment-card {
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+.process-comment-card--resolved {
+    opacity: 0.6;
+    background: #fafafa;
+}
+.round-tabs {
+    margin-top: 2px;
+}
+.round-tabs .v-chip {
+    font-size: 10px;
 }
 </style>

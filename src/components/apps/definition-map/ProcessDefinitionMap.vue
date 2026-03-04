@@ -91,13 +91,25 @@
                     <span v-if="useLock && lock && userName && userName != editUser" class="ml-1">
                         {{ $t('processDefinitionMap.editingUser', {name: editUser}) }}
                     </span>
-                    <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="capturePng">
-                                <Icons :icon="'image-download'" />
-                            </v-btn>
+                    <v-menu>
+                        <template v-slot:activator="{ props: menuProps }">
+                            <v-tooltip :text="$t('processDefinitionMap.downloadImage')">
+                                <template v-slot:activator="{ props: tooltipProps }">
+                                    <v-btn v-bind="{ ...menuProps, ...tooltipProps }" icon variant="text" :size="24" class="ml-3">
+                                        <Icons :icon="'image-download'" />
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
                         </template>
-                    </v-tooltip>
+                        <v-list density="compact">
+                            <v-list-item @click="capturePng">
+                                <v-list-item-title>PNG</v-list-item-title>
+                            </v-list-item>
+                            <v-list-item @click="captureSvg">
+                                <v-list-item-title>SVG</v-list-item-title>
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
 
                     <!-- 미분류 프로세스 관리 버튼 -->
                     <v-tooltip v-if="enableEdit && orphanProcessCount > 0" :text="$t('processDefinitionMap.manageOrphans') || '미분류 프로세스 관리'">
@@ -1401,19 +1413,29 @@ export default {
             domtoimage.toPng(node, { bgcolor: 'white' })
                 .then(function (dataUrl) {
                     const link = document.createElement('a');
-                    // Set the link's href to the data URL of the PNG image
                     link.href = dataUrl;
-                    // Configure the download attribute of the link
                     link.download = 'process_definition_map.png';
-                    // Append the link to the body
                     document.body.appendChild(link);
-                    // Trigger the download by simulating a click on the link
                     link.click();
-                    // Remove the link from the body
                     document.body.removeChild(link);
                 })
                 .catch(function (error) {
                     console.error('oops, something went wrong!', error);
+                });
+        },
+        captureSvg() {
+            var node = document.getElementById('processMap');
+            domtoimage.toSvg(node, { bgcolor: 'white' })
+                .then(function (dataUrl) {
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = 'process_definition_map.svg';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                })
+                .catch(function (error) {
+                    console.error('SVG export failed:', error);
                 });
         },
         goProcessMap() {

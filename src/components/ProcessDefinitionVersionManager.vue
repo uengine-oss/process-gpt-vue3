@@ -362,7 +362,20 @@ export default {
             this.handleBeforeChange(index);
             this.versionListExpanded = false;
         },
-        changeXML() {
+        async changeXML() {
+            // [2.5.6] 버전 복구 시 시스템 코멘트 자동 기록
+            try {
+                const version = this.currentSelectedVersion || '';
+                const comment = `버전 ${version} 의 데이터를 복구함 (Version Restore)`;
+                await backend.addApprovalHistory(
+                    this.process.processDefinitionId,
+                    'version_restore',
+                    comment
+                );
+            } catch (e) {
+                console.warn('Failed to record version restore history:', e);
+            }
+
             this.$emit('changeXML', {
                 "id": this.process.processDefinitionId,
                 "name": this.currentSelectedVersionName,

@@ -1,5 +1,5 @@
 <template>
-    <div class="version-comparison-page">
+    <v-card elevation="10" class="version-comparison-page rounded-xl">
         <!-- Header Bar -->
         <div class="comparison-header">
             <div class="header-left">
@@ -13,6 +13,17 @@
                 </span>
             </div>
             <div class="header-right">
+                <v-chip
+                    :color="syncScroll ? 'primary' : 'grey'"
+                    :variant="syncScroll ? 'flat' : 'outlined'"
+                    size="small"
+                    class="mr-2"
+                    style="cursor: pointer;"
+                    @click="syncScroll = !syncScroll"
+                >
+                    <v-icon start size="14">{{ syncScroll ? 'mdi-link' : 'mdi-link-off' }}</v-icon>
+                    {{ $t('versionComparison.syncScroll') || '동기 스크롤' }}
+                </v-chip>
                 <v-btn
                     variant="outlined"
                     size="small"
@@ -199,6 +210,13 @@
 
                 <v-divider />
 
+                <!-- Diff Summary Text -->
+                <div v-if="diffSummaryText" class="diff-summary-block pa-3">
+                    <v-icon size="14" color="grey-darken-1" class="mr-1">mdi-text-box-outline</v-icon>
+                    <span class="diff-summary-text">{{ diffSummaryText }}</span>
+                </div>
+                <v-divider v-if="diffSummaryText" />
+
                 <div class="diff-list" v-if="changes.length > 0">
                     <div
                         v-for="(change, i) in changes"
@@ -240,7 +258,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </v-card>
 </template>
 
 <script>
@@ -504,6 +522,10 @@ export default {
             diffActivitiesB: {},
             diffLoading: false,
 
+            // Sync scroll
+            syncScroll: true,
+            isSyncing: false,
+
             // Layout
             leftPanelWidth: 240,
             resizing: false,
@@ -527,6 +549,72 @@ export default {
                 });
             });
             return items;
+        },
+
+        diffSummaryText() {
+            if (!this.changes || this.changes.length === 0) return '';
+
+            // 엘리먼트 타입을 한국어 카테고리로 매핑
+            const categoryMap = {
+                task: '태스크',
+                userTask: '태스크',
+                serviceTask: '태스크',
+                manualTask: '태스크',
+                scriptTask: '태스크',
+                sendTask: '태스크',
+                receiveTask: '태스크',
+                businessRuleTask: '태스크',
+                startEvent: '이벤트',
+                endEvent: '이벤트',
+                intermediateThrowEvent: '이벤트',
+                intermediateCatchEvent: '이벤트',
+                boundaryEvent: '이벤트',
+                exclusiveGateway: '게이트웨이',
+                parallelGateway: '게이트웨이',
+                inclusiveGateway: '게이트웨이',
+                eventBasedGateway: '게이트웨이',
+                complexGateway: '게이트웨이',
+                subProcess: '서브프로세스',
+                callActivity: '콜 액티비티',
+                sequenceFlow: '시퀀스 플로우',
+                participant: '풀',
+                lane: '레인',
+            };
+
+            // type + category 별로 카운트 집계
+            const counts = {};
+            this.changes.forEach(change => {
+                const category = categoryMap[change.elementType] || change.elementType;
+                const key = `${change.type}__${category}`;
+                counts[key] = (counts[key] || 0) + 1;
+            });
+
+            // 변경 타입별 한국어 접미사
+            const typeLabel = {
+                added: '추가',
+                removed: '삭제',
+                modified: '수정',
+            };
+
+            // 타입 순서: added -> removed -> modified
+            const typeOrder = ['added', 'removed', 'modified'];
+            const parts = [];
+
+            typeOrder.forEach(type => {
+                // 해당 타입의 카테고리별 카운트를 모아 정리
+                const categoryParts = [];
+                Object.entries(counts).forEach(([key, count]) => {
+                    const [t, cat] = key.split('__');
+                    if (t === type) {
+                        categoryParts.push(`${cat} ${count}개`);
+                    }
+                });
+                if (categoryParts.length > 0) {
+                    parts.push(`${categoryParts.join(', ')} ${typeLabel[type]}`);
+                }
+            });
+
+            return parts.join(', ');
         },
     },
     async mounted() {
@@ -738,11 +826,45 @@ export default {
                         try {
                             const canvas = viewer.bpmnViewer.get('canvas');
                             canvas.zoom('fit-viewport', 'auto');
+
+                            // [2.6.2] Setup sync scroll
+                            this.setupSyncScroll(viewer);
                         } catch (e) {
                             // fallback
                         }
                     }
                 }, 150);
+            });
+        },
+
+        setupSyncScroll(viewer) {
+            if (!viewer?.bpmnViewer) return;
+            const canvas = viewer.bpmnViewer.get('canvas');
+            const isA = viewer === this.$refs.viewerA;
+
+            canvas.on('viewbox.changed', () => {
+                if (!this.syncScroll || this.isSyncing) return;
+
+                const otherViewer = isA ? this.$refs.viewerB : this.$refs.viewerA;
+                if (!otherViewer?.bpmnViewer) return;
+
+                this.isSyncing = true;
+                try {
+                    const otherCanvas = otherViewer.bpmnViewer.get('canvas');
+                    const sourceVb = canvas.viewbox();
+                    otherCanvas.viewbox({
+                        x: sourceVb.x,
+                        y: sourceVb.y,
+                        width: sourceVb.width,
+                        height: sourceVb.height,
+                    });
+                } catch (e) {
+                    // ignore
+                } finally {
+                    this.$nextTick(() => {
+                        this.isSyncing = false;
+                    });
+                }
             });
         },
 
@@ -1020,6 +1142,20 @@ export default {
 .dot-added { background: #4caf50; }
 .dot-modified { background: #ff9800; }
 .dot-removed { background: #f44336; }
+
+/* Diff Summary */
+.diff-summary-block {
+    display: flex;
+    align-items: flex-start;
+    background: #f8f9fa;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+}
+.diff-summary-text {
+    font-size: 12px;
+    color: #374151;
+    line-height: 1.5;
+}
 
 /* Diff list */
 .diff-list {

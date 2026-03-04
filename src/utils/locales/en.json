@@ -35,7 +35,16 @@
         "branchingRequired": "Branching Required",
         "conditionMissing": "Condition Missing",
         "assigneeRequired": "Assignee Required",
-        "clearOverlays": "Clear Overlays"
+        "clearOverlays": "Clear Overlays",
+        "isolatedNode": "Isolated node: no connections at all.",
+        "isolated": "Isolated",
+        "danglingFlow": "Dangling flow: missing source or target.",
+        "dangling": "Dangling Flow",
+        "processNameRequired": "Process name is required.",
+        "passthroughGateway": "Useless pass-through gateway: has exactly 1 incoming and 1 outgoing flow. Consider removing it.",
+        "missingDefaultFlow": "ExclusiveGateway has multiple outgoing flows but no default flow is set.",
+        "eventBasedGatewayInsufficient": "EventBasedGateway must have at least 2 outgoing connections.",
+        "emptyLane": "Lane contains no flow nodes (tasks, events, or gateways)."
     },
     "save": {
         "noChanges": "No changes to save."
@@ -474,6 +483,12 @@
             "systems": "System / OSS",
             "systemSearch": "Filter by system or OSS..."
         },
+        "filterPreset": {
+            "button": "Presets",
+            "empty": "No saved presets",
+            "saveCurrent": "Save current filters",
+            "namePrompt": "Enter preset name"
+        },
         "hierarchy": {
             "selectDomain": "Select Domain",
             "expandAll": "Expand All",
@@ -609,7 +624,12 @@
         "wipOff": "Set WIP",
         "wipEnabled": "Process marked as WIP.",
         "wipDisabled": "WIP status cleared.",
-        "wipFailed": "Failed to update WIP status."
+        "wipFailed": "Failed to update WIP status.",
+        "futureStatus": "Future Status",
+        "savedLocally": "Server save failed. Backed up locally.",
+        "localBackupFound": "Unsaved local backup found.",
+        "recoverBackup": "Recover",
+        "recoveryApplied": "Local backup recovered. Please save."
     },
     "versionComparison": {
         "title": "Version Comparison",
@@ -3187,5 +3207,52 @@
         "currentState": "Current State",
         "version": "Version",
         "submittedBy": "Submitted by"
+    },
+    "analysisDashboard": {
+        "title": "Analysis Dashboard",
+        "subtitle": "Leverage accumulated process data to gain strategic insights.",
+        "domainScope": "Domain Scope",
+        "allDomains": "All Domains",
+        "organization": "Organization",
+        "allOrgs": "All Organizations",
+        "dateRange": "Date Range",
+        "vsLastQuarter": "vs Last Quarter",
+        "strategyBoard": "Strategy Board",
+        "operationalBoard": "Operational Board",
+        "intelligenceBoard": "Intelligence Board",
+        "overallProgress": "Overall Process Digitization Progress",
+        "processesUnit": " processes",
+        "domainKpiProgress": "Domain KPI Progress",
+        "detailList": "Detail List",
+        "countUnit": "",
+        "processName": "Process Name",
+        "submitter": "Submitter",
+        "elapsedDays": "Elapsed",
+        "days": " days",
+        "viewApproval": "View Approval",
+        "noData": "No data available",
+        "pipelineFunnel": "Pipeline Funnel (Conversion Rate)",
+        "weeklyVelocity": "Weekly Velocity & ETA",
+        "perWeek": "/week",
+        "weeks": " weeks",
+        "bottleneckTitle": "Process Bottleneck List (Top 10 by FTE)",
+        "department": "Department",
+        "staleTitle": "Update Recency (Zombie Process Management)",
+        "all": "All",
+        "monthsInactive": " months inactive",
+        "lastModified": "Last Modified",
+        "status": "Status",
+        "refreshRequest": "Request Update",
+        "externalIntegrationPlanned": "External integration planned.",
+        "actionRequiredTitle": "Action Required (Delayed & Pending)",
+        "issueType": "Type",
+        "assignee": "Assignee",
+        "delayedReview": "Delayed Review",
+        "reopenPending": "Re-open Pending",
+        "bprGapAnalysis": "BPR Gap Analysis (As-Is vs Target)",
+        "fteOssCorrelation": "FTE vs OSS Correlation",
+        "automationMatrix": "Automation Opportunity Matrix",
+        "dxRate": "DX Rate (Digital Transformation Index)",
+        "dataCollecting": "Collecting data..."
     }
 }

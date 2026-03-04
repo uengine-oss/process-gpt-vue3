@@ -1,5 +1,22 @@
 <template>
     <div class="hierarchy-tree">
+        <!-- Collapsed Mini View -->
+        <div v-if="collapsed" class="tree-collapsed">
+            <div
+                v-for="sub in allSubProcesses"
+                :key="sub.id"
+                class="collapsed-item"
+                :class="{ 'collapsed-item-selected': selectedId === sub.id }"
+                :title="sub.name"
+                @click="selectProcess(sub)"
+            >
+                <v-icon size="14" :color="selectedId === sub.id ? 'primary' : 'grey'">
+                    mdi-file-document-outline
+                </v-icon>
+            </div>
+        </div>
+
+        <template v-else>
         <!-- Header -->
         <div v-if="!hideHeader" class="tree-header pa-4 pb-2">
             <div class="text-h6 font-weight-bold">
@@ -106,6 +123,7 @@
                 </div>
             </div>
         </div>
+        </template>
     </div>
 </template>
 
@@ -118,6 +136,7 @@ export default {
         definitionList: { type: Array, default: () => [] },
         selectedId: { type: String, default: '' },
         hideHeader: { type: Boolean, default: false },
+        collapsed: { type: Boolean, default: false },
     },
     emits: ['select'],
     data() {
@@ -217,6 +236,19 @@ export default {
             }
 
             return nodes;
+        },
+        allSubProcesses() {
+            const subs = [];
+            for (const mega of this.treeNodes) {
+                for (const domain of (mega.children || [])) {
+                    for (const major of (domain.children || [])) {
+                        for (const sub of (major.children || [])) {
+                            subs.push(sub);
+                        }
+                    }
+                }
+            }
+            return subs;
         },
         filteredTreeNodes() {
             if (!this.searchText) return this.treeNodes;
@@ -343,5 +375,34 @@ export default {
     font-size: 10px;
     font-weight: 600;
     letter-spacing: 0.02em;
+}
+
+.tree-collapsed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    gap: 2px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.collapsed-item {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.collapsed-item:hover {
+    background-color: #f5f5f5;
+}
+
+.collapsed-item-selected {
+    background-color: #e3f2fd !important;
 }
 </style>

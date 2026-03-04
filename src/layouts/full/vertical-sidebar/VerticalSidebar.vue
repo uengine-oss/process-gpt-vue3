@@ -30,6 +30,8 @@
         :rail="customizer.mini_sidebar"
         expand-on-hover
         width="275"
+        @mouseenter="isRailHovered = true"
+        @mouseleave="isRailHovered = false"
     >
         <v-row class="pa-5 pl-4 ma-0 is-sidebar-pc">
             <Logo :style="logoPadding" />
@@ -102,150 +104,238 @@
 
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col v-if="isShowInstances" class="pa-0 mb-4">
-                    <div v-if="!pal && !JMS" class="d-flex align-center">
-                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
-                            {{ $t('VerticalSidebar.instanceList') }}
-                        </div>
-                        <div v-for="item in instanceItem" :key="item.title">
-                            <v-tooltip location="bottom" :text="$t(item.title)">
-                                <template v-slot:activator="{ props }">
-                                    <div class="pl-2 pt-1">
-                                        <Icons
-                                            @click="navigateTo(item.to)"
-                                            v-bind="props"
-                                            :icon="item.icon"
-                                            :size="16"
-                                            :color="'#808080'"
-                                            style="cursor: pointer; width: 16px; height: 16px"
-                                        />
-                                    </div>
+                    <!-- Rail mode: icon -->
+                    <v-tooltip v-if="isRailCollapsed" location="right">
+                        <template v-slot:activator="{ props }">
+                            <v-list-item v-bind="props" density="compact" class="rail-icon-item">
+                                <template v-slot:prepend>
+                                    <v-icon size="20">mdi-play-circle-outline</v-icon>
                                 </template>
-                            </v-tooltip>
+                            </v-list-item>
+                        </template>
+                        <div>
+                            <div class="font-weight-bold text-body-2">{{ $t('VerticalSidebar.instanceList') || '프로세스 인스턴스' }}</div>
+                            <div class="text-caption" style="opacity:0.85;">실행 중인 프로세스 인스턴스 목록을 확인합니다.</div>
                         </div>
-                    </div>
-
-                    <ProcessInstanceList @update:instanceLists="handleInstanceListUpdate" />
+                    </v-tooltip>
+                    <!-- Expanded mode: full -->
+                    <template v-if="!isRailCollapsed">
+                        <div v-if="!pal && !JMS" class="d-flex align-center">
+                            <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                                {{ $t('VerticalSidebar.instanceList') }}
+                            </div>
+                            <div v-for="item in instanceItem" :key="item.title">
+                                <v-tooltip location="bottom" :text="$t(item.title)">
+                                    <template v-slot:activator="{ props }">
+                                        <div class="pl-2 pt-1">
+                                            <Icons
+                                                @click="navigateTo(item.to)"
+                                                v-bind="props"
+                                                :icon="item.icon"
+                                                :size="16"
+                                                :color="'#808080'"
+                                                style="cursor: pointer; width: 16px; height: 16px"
+                                            />
+                                        </div>
+                                    </template>
+                                </v-tooltip>
+                            </div>
+                        </div>
+                        <ProcessInstanceList @update:instanceLists="handleInstanceListUpdate" />
+                    </template>
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 -->
-                <div class="mb-4">
-                    <v-row class="align-center pa-0 ma-0">
-                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
-                            {{ $t('VerticalSidebar.agentList') }}
-                        </div>
-                        <div v-if="isAdmin" v-for="item in organizationItem" :key="item.title">
-                            <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
-                                <template v-slot:activator="{ props }">
-                                    <Icons
-                                        @click="navigateTo(item.to)"
-                                        v-bind="props"
-                                        class="ml-2"
-                                        :icon="item.icon"
-                                        :size="item.size || 20"
-                                        :color="'#808080'"
-                                        style="cursor: pointer"
-                                    />
+                <div v-if="!pal" class="mb-4">
+                    <!-- Rail mode: icon -->
+                    <v-tooltip v-if="isRailCollapsed" location="right">
+                        <template v-slot:activator="{ props }">
+                            <v-list-item v-bind="props" density="compact" class="rail-icon-item">
+                                <template v-slot:prepend>
+                                    <v-icon size="20">mdi-robot-outline</v-icon>
                                 </template>
-                            </v-tooltip>
+                            </v-list-item>
+                        </template>
+                        <div>
+                            <div class="font-weight-bold text-body-2">{{ $t('VerticalSidebar.agentList') || '에이전트' }}</div>
+                            <div class="text-caption" style="opacity:0.85;">AI 에이전트 목록을 관리하고 실행합니다.</div>
                         </div>
-                    </v-row>
-                    <v-col class="pa-0">
-                        <AgentList />
-                    </v-col>
+                    </v-tooltip>
+                    <!-- Expanded mode: full -->
+                    <template v-if="!isRailCollapsed">
+                        <v-row class="align-center pa-0 ma-0">
+                            <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                                {{ $t('VerticalSidebar.agentList') }}
+                            </div>
+                            <div v-if="isAdmin" v-for="item in organizationItem" :key="item.title">
+                                <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
+                                    <template v-slot:activator="{ props }">
+                                        <Icons
+                                            @click="navigateTo(item.to)"
+                                            v-bind="props"
+                                            class="ml-2"
+                                            :icon="item.icon"
+                                            :size="item.size || 20"
+                                            :color="'#808080'"
+                                            style="cursor: pointer"
+                                        />
+                                    </template>
+                                </v-tooltip>
+                            </div>
+                        </v-row>
+                        <v-col class="pa-0">
+                            <AgentList />
+                        </v-col>
+                    </template>
                 </div>
 
                 <!-- 프로세스 관리 타이틀 + 목록 -->
                 <div v-if="processItem.length > 0" class="mb-4">
-                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
-                        {{ $t('processHierarchy.processManagement') || '프로세스 관리' }}
-                    </div>
-                    <v-col class="pa-0">
-                        <v-list-item
-                            v-for="item in processItem"
-                            :key="item.title"
-                            :to="item.to"
-                            :disabled="item.disable"
-                            density="compact"
-                            class="leftPadding"
-                        >
-                            <template v-slot:prepend>
-                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                    <!-- Rail mode: icons -->
+                    <template v-if="isRailCollapsed">
+                        <v-tooltip v-for="item in processItem" :key="'rail-'+item.title" location="right">
+                            <template v-slot:activator="{ props }">
+                                <v-list-item v-bind="props" :to="item.to" :disabled="item.disable" density="compact" class="rail-icon-item">
+                                    <template v-slot:prepend>
+                                        <Icons :icon="item.icon" :size="20" />
+                                    </template>
+                                </v-list-item>
                             </template>
-                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
-                        </v-list-item>
-                    </v-col>
+                            <div>
+                                <div class="font-weight-bold text-body-2">{{ $t(item.title) }}</div>
+                                <div class="text-caption" style="opacity:0.85;">{{ getRailMenuDesc(item.title) }}</div>
+                            </div>
+                        </v-tooltip>
+                    </template>
+                    <!-- Expanded mode: full -->
+                    <template v-else>
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                            {{ $t('processHierarchy.processManagement') || '프로세스 관리' }}
+                        </div>
+                        <v-col class="pa-0">
+                            <v-list-item
+                                v-for="item in processItem"
+                                :key="item.title"
+                                :to="item.to"
+                                :disabled="item.disable"
+                                density="compact"
+                                class="leftPadding"
+                            >
+                                <template v-slot:prepend>
+                                    <Icons :icon="item.icon" :size="20" class="mr-2" />
+                                </template>
+                                <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                            </v-list-item>
+                        </v-col>
+                    </template>
                 </div>
 
                 <!-- Analytics 타이틀 + 목록 -->
                 <div v-if="analyticsItem.length > 0" class="mb-4">
-                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">Analytics</div>
-                    <v-col class="pa-0">
-                        <v-list-item
-                            v-for="item in analyticsItem"
-                            :key="item.title"
-                            :to="item.to"
-                            :disabled="item.disable"
-                            density="compact"
-                            class="leftPadding"
-                        >
-                            <template v-slot:prepend>
-                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                    <!-- Rail mode: icons -->
+                    <template v-if="isRailCollapsed">
+                        <v-tooltip v-for="item in analyticsItem" :key="'rail-'+item.title" location="right">
+                            <template v-slot:activator="{ props }">
+                                <v-list-item v-bind="props" :to="item.to" :disabled="item.disable" density="compact" class="rail-icon-item">
+                                    <template v-slot:prepend>
+                                        <Icons :icon="item.icon" :size="20" />
+                                    </template>
+                                </v-list-item>
                             </template>
-                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
-                        </v-list-item>
-                    </v-col>
+                            <div>
+                                <div class="font-weight-bold text-body-2">{{ $t(item.title) }}</div>
+                                <div class="text-caption" style="opacity:0.85;">{{ getRailMenuDesc(item.title) }}</div>
+                            </div>
+                        </v-tooltip>
+                    </template>
+                    <!-- Expanded mode: full -->
+                    <template v-else>
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">Analytics</div>
+                        <v-col class="pa-0">
+                            <v-list-item
+                                v-for="item in analyticsItem"
+                                :key="item.title"
+                                :to="item.to"
+                                :disabled="item.disable"
+                                density="compact"
+                                class="leftPadding"
+                            >
+                                <template v-slot:prepend>
+                                    <Icons :icon="item.icon" :size="20" class="mr-2" />
+                                </template>
+                                <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                            </v-list-item>
+                        </v-col>
+                    </template>
                 </div>
 
-                <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
-                <v-col class="pa-0">
-                    <!-- definition menu item -->
-                    <template v-for="(item, index) in definitionItem" :key="item.title">
-                        <!-- Item Sub Header -->
-                        <div v-if="item.header && index === 0" style="font-size: 14px" class="text-medium-emphasis cp-menu mt-3 ml-2">
-                            {{ $t(item.header) }}
+                <!-- 정의관리 타이틀 + 목록 -->
+                <v-col v-if="!pal" class="pa-0">
+                    <!-- Rail mode: icon -->
+                    <v-tooltip v-if="isRailCollapsed" location="right">
+                        <template v-slot:activator="{ props }">
+                            <v-list-item v-bind="props" :to="'/definitions/chat'" density="compact" class="rail-icon-item">
+                                <template v-slot:prepend>
+                                    <v-icon size="20">mdi-file-document-multiple-outline</v-icon>
+                                </template>
+                            </v-list-item>
+                        </template>
+                        <div>
+                            <div class="font-weight-bold text-body-2">{{ $t('definitionManagement.title') || '프로세스 정의 관리' }}</div>
+                            <div class="text-caption" style="opacity:0.85;">BPMN 프로세스 정의를 생성하고 편집합니다.</div>
                         </div>
-                        <v-row v-if="item.header && !item.disable" class="pa-0 ma-0">
-                            <template v-for="subItem in definitionItem" :key="subItem.title">
-                                <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-if="!subItem.header && !subItem.disable"
-                                            @click="navigateTo(subItem.to)"
-                                            v-bind="props"
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis cp-menu"
-                                            density="comfortable"
-                                        >
-                                            <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                            </template>
-                        </v-row>
-                        <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
+                    </v-tooltip>
+                    <!-- Expanded mode: full -->
+                    <template v-if="!isRailCollapsed">
+                        <template v-for="(item, index) in definitionItem" :key="item.title">
+                            <div v-if="item.header && index === 0" style="font-size: 14px" class="text-medium-emphasis cp-menu mt-3 ml-2">
+                                {{ $t(item.header) }}
+                            </div>
+                            <v-row v-if="item.header && !item.disable" class="pa-0 ma-0">
+                                <template v-for="subItem in definitionItem" :key="subItem.title">
+                                    <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-if="!subItem.header && !subItem.disable"
+                                                @click="navigateTo(subItem.to)"
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis cp-menu"
+                                                density="comfortable"
+                                            >
+                                                <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                </template>
+                            </v-row>
+                            <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
+                        </template>
                     </template>
                 </v-col>
-                <v-col class="pa-0">
-                    <ExpandableList
-                        v-if="definitionList && definitionList.children"
-                        :items="definitionList.children"
-                        :limit="10"
-                        @expanded="onDefinitionsExpanded"
-                        @collapsed="onDefinitionsCollapsed"
-                    >
-                        <template #items="{ displayedItems }">
-                            <NavCollapse
-                                v-for="(definition, i) in displayedItems"
-                                :key="i"
-                                :item="definition"
-                                class="leftPadding"
-                                @update:item="(def) => (displayedItems[i] = def)"
-                                :level="0"
-                                :type="'definition-list'"
-                            />
-                        </template>
-                    </ExpandableList>
+                <v-col v-if="!pal" class="pa-0">
+                    <template v-if="!isRailCollapsed">
+                        <ExpandableList
+                            v-if="definitionList && definitionList.children"
+                            :items="definitionList.children"
+                            :limit="10"
+                            @expanded="onDefinitionsExpanded"
+                            @collapsed="onDefinitionsCollapsed"
+                        >
+                            <template #items="{ displayedItems }">
+                                <NavCollapse
+                                    v-for="(definition, i) in displayedItems"
+                                    :key="i"
+                                    :item="definition"
+                                    class="leftPadding"
+                                    @update:item="(def) => (displayedItems[i] = def)"
+                                    :level="0"
+                                    :type="'definition-list'"
+                                />
+                            </template>
+                        </ExpandableList>
+                    </template>
                 </v-col>
             </v-list>
             <Footer class="mt-2" />
@@ -340,7 +430,8 @@ export default {
         },
         isNewProjectOpen: false,
         deletedDefinitionList: [],
-        notiCount: 0
+        notiCount: 0,
+        isRailHovered: false
     }),
     computed: {
         JMS() {
@@ -364,6 +455,9 @@ export default {
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
             return isAdmin;
+        },
+        isRailCollapsed() {
+            return this.customizer.mini_sidebar && !this.isRailHovered;
         }
     },
     async mounted() {
@@ -496,8 +590,8 @@ export default {
                 ];
             }
 
-            // 프로세스 관리 메뉴
-            this.processItem = [
+            // 프로세스 관리 메뉴 (PAL mode only)
+            this.processItem = window.$pal ? [
                 {
                     title: 'processArchitecture.title',
                     icon: 'sitemap',
@@ -533,10 +627,10 @@ export default {
                     to: '/my-inbox',
                     disable: false
                 }
-            ];
+            ] : [];
 
-            // Analytics 메뉴
-            this.analyticsItem = [
+            // Analytics 메뉴 (PAL mode only)
+            this.analyticsItem = window.$pal ? [
                 {
                     title: 'analytics.dashboard',
                     icon: 'dashboard',
@@ -557,8 +651,15 @@ export default {
                     BgColor: 'primary',
                     to: '/analytics/kpi',
                     disable: false
+                },
+                {
+                    title: 'analysisDashboard.title',
+                    icon: 'dashboard',
+                    BgColor: 'primary',
+                    to: '/analysis-dashboard',
+                    disable: false
                 }
-            ];
+            ] : [];
 
             if (!this.JMS) {
                 this.definitionItem.forEach((item) => {
@@ -827,6 +928,20 @@ export default {
         handleInstanceListUpdate(instanceList) {
             this.instanceLists = instanceList;
         },
+        getRailMenuDesc(titleKey) {
+            const descMap = {
+                'processArchitecture.title': '전사 프로세스 체계도를 조회하고 관리합니다.',
+                'processHierarchy.title': '프로세스 계층도에서 BPMN을 편집합니다.',
+                'versionComparison.title': '프로세스 버전 간 차이를 비교합니다.',
+                'reviewBoard.title': '프로세스 검토/승인 현황을 관리합니다.',
+                'reviewBoard.myInbox': '나에게 할당된 검토 요청을 확인합니다.',
+                'analytics.dashboard': '프로세스 분석 대시보드를 조회합니다.',
+                'analytics.heatmap': '프로세스 실행 히트맵을 확인합니다.',
+                'analytics.kpi': 'KPI 지표를 모니터링합니다.',
+                'analysisDashboard.title': '종합 분석 대시보드를 조회합니다.',
+            };
+            return descMap[titleKey] || '';
+        },
         onDefinitionsExpanded() {
             // 확장 시 필요한 로직이 있다면 여기에 추가
         },
@@ -840,5 +955,15 @@ export default {
 <style scoped>
 .mobile-no-padding-bottom {
     padding-bottom: 0px !important;
+}
+
+.rail-icon-item {
+    min-height: 36px !important;
+    padding: 4px 8px !important;
+    border-radius: 8px;
+    margin: 1px 4px;
+}
+.rail-icon-item:hover {
+    background-color: rgba(var(--v-theme-primary), 0.08);
 }
 </style>

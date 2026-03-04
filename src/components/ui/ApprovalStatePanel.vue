@@ -205,17 +205,22 @@
         <!-- 액션 버튼 -->
         <v-card-actions class="pa-3 flex-wrap ga-1">
             <!-- Draft → 검토 요청 -->
-            <v-btn
-                v-if="canSubmitForReview"
-                color="primary"
-                variant="tonal"
-                size="small"
-                :loading="actionLoading"
-                @click="openActionDialog('submit')"
-            >
-                <v-icon start>mdi-send</v-icon>
-                {{ $t('approvalState.submitForReview') }}
-            </v-btn>
+            <v-tooltip v-if="isDraft" :text="hasValidationErrors ? ($t('approvalState.validationErrorsExist') || '검증 에러가 존재합니다. 에러를 해결한 후 검토를 요청해주세요.') : ''" :disabled="!hasValidationErrors">
+                <template #activator="{ props: tp }">
+                    <v-btn
+                        v-bind="tp"
+                        color="primary"
+                        variant="tonal"
+                        size="small"
+                        :loading="actionLoading"
+                        :disabled="hasValidationErrors"
+                        @click="openActionDialog('submit')"
+                    >
+                        <v-icon start>mdi-send</v-icon>
+                        {{ $t('approvalState.submitForReview') }}
+                    </v-btn>
+                </template>
+            </v-tooltip>
 
             <!-- HQ 승인 -->
             <v-btn
@@ -483,6 +488,10 @@ export default defineComponent({
         procDefId: {
             type: String,
             required: true
+        },
+        hasValidationErrors: {
+            type: Boolean,
+            default: false
         }
     },
     emits: ['stateChanged', 'deriveToBe', 'navigateToElement'],
@@ -623,7 +632,9 @@ export default defineComponent({
         });
 
         // 권한 체크
-        const canSubmitForReview = computed(() => approvalState.value?.state === 'draft');
+        const isDraft = computed(() => approvalState.value?.state === 'draft');
+        // [4.4.7] 검증 에러 잔존 시 Request Review 비활성화
+        const canSubmitForReview = computed(() => isDraft.value && !props.hasValidationErrors);
         const canApproveHQ = computed(() =>
             approvalState.value?.state === 'in_review' && hqStatus.value === 'pending'
         );
@@ -875,7 +886,7 @@ export default defineComponent({
             hqStatusLabel, fieldStatusLabel,
             publicFeedbackDday,
             isPublishedState, versionDisplayLabel, canDeriveToBase,
-            canSubmitForReview, canApproveHQ, canApproveField,
+            isDraft, canSubmitForReview, canApproveHQ, canApproveField,
             canEndPublicFeedback,
             canPublish, canPublishEnabled,
             canRequestReopen, canApproveReopen, canRejectReopen,

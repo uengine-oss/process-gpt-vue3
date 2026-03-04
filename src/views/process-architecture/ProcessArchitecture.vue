@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="0" class="process-architecture" style="overflow: auto; height: 100%;">
+    <v-card elevation="10" class="process-architecture rounded-xl" style="overflow: auto; height: 100%;">
         <!-- Header -->
         <div class="pa-6 pb-0">
             <div class="d-flex align-center justify-space-between mb-1">
@@ -200,6 +200,52 @@
                         {{ advancedFilterCount }}
                     </v-chip>
                 </v-btn>
+
+                <!-- Filter Preset Menu -->
+                <v-menu location="bottom start">
+                    <template #activator="{ props: menuProps }">
+                        <v-btn
+                            v-bind="menuProps"
+                            variant="outlined"
+                            size="small"
+                            prepend-icon="mdi-content-save-outline"
+                            append-icon="mdi-chevron-down"
+                        >
+                            {{ $t('processArchitecture.filterPreset.button') }}
+                        </v-btn>
+                    </template>
+                    <v-card min-width="240" class="pa-1">
+                        <v-list v-if="filterPresets.length > 0" density="compact" class="py-0">
+                            <v-list-item
+                                v-for="preset in filterPresets"
+                                :key="preset.id"
+                                :title="preset.name"
+                                :subtitle="new Date(preset.createdAt).toLocaleDateString()"
+                                @click="loadFilterPreset(preset.id)"
+                            >
+                                <template #append>
+                                    <v-btn
+                                        icon="mdi-delete-outline"
+                                        size="x-small"
+                                        variant="text"
+                                        color="grey"
+                                        @click.stop="deleteFilterPreset(preset.id)"
+                                    />
+                                </template>
+                            </v-list-item>
+                        </v-list>
+                        <div v-else class="px-3 py-3 text-center text-caption text-grey">
+                            {{ $t('processArchitecture.filterPreset.empty') }}
+                        </div>
+                        <v-divider class="my-1" />
+                        <v-list-item
+                            prepend-icon="mdi-plus"
+                            :title="$t('processArchitecture.filterPreset.saveCurrent')"
+                            density="compact"
+                            @click="onSaveFilterPreset"
+                        />
+                    </v-card>
+                </v-menu>
 
                 <!-- My Processes Filter (inline chips) -->
                 <div class="d-flex align-center ga-1">
@@ -466,7 +512,11 @@ const {
     loadCurrentUserOrgs,
     showToBe,
     saveProcMap,
-    advancedFilters
+    advancedFilters,
+    filterPresets,
+    saveFilterPreset,
+    loadFilterPreset,
+    deleteFilterPreset
 } = useProcessArchitecture();
 
 const isAdmin = computed(() => {
@@ -614,6 +664,13 @@ function resetAllFilters() {
     myProcessFilter.value.myCreation = false;
     myProcessFilter.value.myOrganization = false;
     resetAdvancedFilters();
+}
+
+function onSaveFilterPreset() {
+    const name = window.prompt(t('processArchitecture.filterPreset.namePrompt'));
+    if (name && name.trim()) {
+        saveFilterPreset(name.trim());
+    }
 }
 
 // Sync chip group index with selectedDomain

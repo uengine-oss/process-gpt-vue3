@@ -19,8 +19,24 @@ export interface RecentlyViewedItem {
     visitedAt: number;
 }
 
+export interface FilterPreset {
+    id: string;
+    name: string;
+    createdAt: number;
+    filters: {
+        searchQuery: string;
+        selectedDomains: string[];
+        quickFilterNeedFeedback: boolean;
+        quickFilterWIL: boolean;
+        showToBe: boolean;
+        myProcessFilter: { enabled: boolean; favorites: boolean; myCreation: boolean; myOrganization: boolean };
+        advancedFilters: any;
+    };
+}
+
 const RECENTLY_VIEWED_KEY = 'process_recently_viewed';
 const FAVORITES_KEY = 'process_favorites';
+const FILTER_PRESETS_KEY = 'process_filter_presets';
 const MAX_RECENTLY_VIEWED = 10;
 
 export function useProcessArchitecture() {
@@ -50,6 +66,9 @@ export function useProcessArchitecture() {
     const processStatuses: Ref<Map<string, ProcessStatus>> = ref(new Map());
     const allProcDefs: Ref<any[]> = ref([]);
     const showToBe = ref(false);
+
+    // Filter presets - persisted in localStorage
+    const filterPresets: Ref<FilterPreset[]> = ref(loadFilterPresets());
 
     // Recently viewed - persisted in localStorage
     const recentlyViewed: Ref<RecentlyViewedItem[]> = ref(loadRecentlyViewed());
@@ -504,6 +523,56 @@ export function useProcessArchitecture() {
         } catch {}
     }
 
+    function loadFilterPresets(): FilterPreset[] {
+        try {
+            const raw = localStorage.getItem(FILTER_PRESETS_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch { return []; }
+    }
+
+    function persistFilterPresets() {
+        localStorage.setItem(FILTER_PRESETS_KEY, JSON.stringify(filterPresets.value));
+    }
+
+    function saveFilterPreset(name: string) {
+        const preset: FilterPreset = {
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            name,
+            createdAt: Date.now(),
+            filters: {
+                searchQuery: searchQuery.value,
+                selectedDomains: [...selectedDomains.value],
+                quickFilterNeedFeedback: quickFilterNeedFeedback.value,
+                quickFilterWIL: quickFilterWIL.value,
+                showToBe: showToBe.value,
+                myProcessFilter: { ...myProcessFilter.value },
+                advancedFilters: JSON.parse(JSON.stringify(advancedFilters.value)),
+            },
+        };
+        filterPresets.value.push(preset);
+        persistFilterPresets();
+    }
+
+    function loadFilterPreset(presetId: string) {
+        const preset = filterPresets.value.find(p => p.id === presetId);
+        if (!preset) return;
+        const f = preset.filters;
+        searchQuery.value = f.searchQuery || '';
+        selectedDomains.value = f.selectedDomains || [];
+        quickFilterNeedFeedback.value = f.quickFilterNeedFeedback || false;
+        quickFilterWIL.value = f.quickFilterWIL || false;
+        showToBe.value = f.showToBe || false;
+        myProcessFilter.value = f.myProcessFilter || { enabled: false, favorites: false, myCreation: false, myOrganization: false };
+        if (f.advancedFilters) {
+            advancedFilters.value = JSON.parse(JSON.stringify(f.advancedFilters));
+        }
+    }
+
+    function deleteFilterPreset(presetId: string) {
+        filterPresets.value = filterPresets.value.filter(p => p.id !== presetId);
+        persistFilterPresets();
+    }
+
     function addToRecentlyViewed(id: string, name: string) {
         const existing = recentlyViewed.value.filter(item => item.id !== id);
         const updated = [{ id, name, visitedAt: Date.now() }, ...existing].slice(0, MAX_RECENTLY_VIEWED);
@@ -584,6 +653,10 @@ export function useProcessArchitecture() {
         myProcessFilter,
         loadCurrentUserOrgs,
         saveProcMap,
-        advancedFilters
+        advancedFilters,
+        filterPresets,
+        saveFilterPreset,
+        loadFilterPreset,
+        deleteFilterPreset
     };
 }

@@ -4,6 +4,9 @@
 // window.console.log = () => {};
 // window.console.error = () => {};
 
+// PAL mode flag — 라우터 모듈보다 먼저 평가되도록 최우선 import
+import './palMode';
+
 import '@/scss/style.scss';
 import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor';
 import { createClient } from '@supabase/supabase-js';
@@ -37,8 +40,8 @@ import setLocale from './plugins/setLocale';
 
 // icon
 import { Icon } from '@iconify/vue';
-import Icons from '@/components/ui-components/Icons.vue'
-import InfoAlert from '@/components/ui/InfoAlert.vue'
+import Icons from '@/components/ui-components/Icons.vue';
+import InfoAlert from '@/components/ui/InfoAlert.vue';
 
 // css
 import '@/assets/css/globalStyle.css';
@@ -62,14 +65,14 @@ import type { KeycloakOnLoad } from 'keycloak-js';
 import Keycloak from 'keycloak-js';
 import loadbpmnComponents from './components/designer/bpmnModeling/bpmn';
 import loadOpengraphComponents from './opengraph';
-import DetailComponent from './components/ui-components/details/DetailComponent.vue'
+import DetailComponent from './components/ui-components/details/DetailComponent.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
 // vue-
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
-import ganttastic from '@infectoone/vue-ganttastic'
+import ganttastic from '@infectoone/vue-ganttastic';
 import { ref } from 'vue';
 
 // 동적 언어 설정 함수
@@ -101,7 +104,7 @@ async function detectLanguage(): Promise<'ko' | 'en'> {
             const response = await fetch(service.url, {
                 signal: controller.signal,
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'User-Agent': 'ProcessGPT-App/1.0'
                 }
             });
@@ -119,7 +122,7 @@ async function detectLanguage(): Promise<'ko' | 'en'> {
             const data = await response.json();
             const country = service.parser(data);
 
-            return country === "KR" ? 'ko' : 'en';
+            return country === 'KR' ? 'ko' : 'en';
         } catch (error) {
             // 다음 서비스로 계속 시도
             continue;
@@ -138,7 +141,7 @@ const i18n = createI18n({
     messages
 });
 
-// 국가별언어를 전역으로 .js 파일에서도 사용 가능하게 추가 
+// 국가별언어를 전역으로 .js 파일에서도 사용 가능하게 추가
 (window as any).$i18n = i18n;
 
 // EventBus
@@ -161,12 +164,6 @@ declare global {
         $app_?: any;
     }
 }
-
-Object.defineProperty(window, '$pal', {
-    value: false,
-    writable: false,
-    configurable: false
-});
 
 // 반응형 모바일 상태 생성
 const globalIsMobile = ref(window.innerWidth <= 768);
@@ -198,7 +195,6 @@ Object.defineProperty(window, '$jms', {
     configurable: false
 });
 
-
 async function setupSupabase() {
     // window.$mode = 'uEngine';
     // window.$mode = 'ProcessGPT';
@@ -215,16 +211,12 @@ async function setupSupabase() {
 
     try {
         Object.defineProperty(window, '$supabase', {
-            value: createClient(
-                supabaseUrl,
-                supabaseKey,
-                {
-                    auth: {
-                        autoRefreshToken: true,
-                        persistSession: true
-                    }
+            value: createClient(supabaseUrl, supabaseKey, {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true
                 }
-            ),
+            }),
             writable: false,
             configurable: false
         });
@@ -243,7 +235,8 @@ async function setupTenant() {
             writable: false,
             configurable: true
         });
-    } else if (window.location.host.includes('localhost') ||
+    } else if (
+        window.location.host.includes('localhost') ||
         window.location.host.includes('192.168') ||
         window.location.host.includes('127.0.0.1')
     ) {
@@ -300,10 +293,12 @@ async function initializeApp() {
         // 심각한 에러가 아닌 경우 무시하고 계속 진행
         const errorMessage = (err instanceof Error ? err.message : String(err)) || '';
 
-        if (errorMessage.includes('putObject') ||
+        if (
+            errorMessage.includes('putObject') ||
             errorMessage.includes('setCalendarData') ||
             errorMessage.includes('Cannot read properties of null') ||
-            errorMessage.includes('400 (Bad Request)')) {
+            errorMessage.includes('400 (Bad Request)')
+        ) {
             console.warn('[Vue Error Handler] 비즈니스 로직 에러 - 계속 진행');
             return;
         }
@@ -373,7 +368,7 @@ async function initializeApp() {
     app.use(VCalendar, {});
     app.use(VueTablerIcons);
     app.component('Icon', Icon);
-    app.component('Icons', Icons)
+    app.component('Icons', Icons);
     app.component('InfoAlert', InfoAlert);
     app.component('DetailComponent', DetailComponent);
     app.directive('hammer', hammerDirective);
@@ -421,7 +416,6 @@ async function initializeApp() {
         componentName: 'vuediff'
     });
 
-
     if (window.$mode == 'uEngine') {
         (async () => {
             try {
@@ -452,7 +446,6 @@ async function initializeApp() {
                         localStorage.setItem('picture', localStorage.getItem('picture') || defaultPicture);
                     }
                 }
-
             } catch (error) {
                 console.error(`Failed to initialize adapter: ${error}`);
             }

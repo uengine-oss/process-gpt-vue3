@@ -128,6 +128,7 @@
                             <ApprovalStatePanel
                                 v-if="definitionPath"
                                 :procDefId="definitionPath"
+                                :hasValidationErrors="hasValidationErrors"
                                 @stateChanged="onApprovalStateChanged"
                             />
                         </div>
@@ -467,6 +468,13 @@ export default {
         multiSelectedElements: [],
     }),
     computed: {
+        // [4.4.7] 검증 에러 존재 여부 (Request Review 비활성화 연동)
+        hasValidationErrors() {
+            if (!this.validationList || typeof this.validationList !== 'object') return false;
+            return Object.values(this.validationList).some(items =>
+                Array.isArray(items) && items.some(item => item.errorLevel === 1 || item.level === 'error')
+            );
+        },
         mode() {
             if (window.$mode == 'ProcessGPT') {
                 return 'LLM';

@@ -55,20 +55,21 @@
 </template>
 
 <script>
-import BackendFactory from '@/components/api/BackendFactory';
-const backend = BackendFactory.createBackend();
+import { useNotificationStore } from '@/stores/notification';
 
 export default {
     data: () => ({
         isConfirm: false,
-        notifications: [],
     }),
     computed: {
+        notificationStore() {
+            return useNotificationStore();
+        },
+        notifications() {
+            return this.notificationStore.notifications;
+        },
         notiCount() {
-            if (this.notifications.length > 0) {
-                return this.notifications.length;
-            }
-            return 0;
+            return this.notificationStore.unreadCount;
         },
     },
     watch: {
@@ -79,32 +80,16 @@ export default {
         }
     },
     async mounted() {
-        this.fetchNotifications();
-
-        await backend.watchNotifications((noti) => {
-            if (noti && noti.new && noti.new.is_checked === false) {
-                this.fetchNotifications();
-                if(localStorage.getItem('email') && noti.new.user_id === localStorage.getItem('email')) {
-                    this.$emit('newNotification', noti.new.type);
-                }
-                if(noti.eventType === 'INSERT') {
-                    this.EventBus.emit('show-notification', noti.new);
-                }
-            }
-        });
+        await this.notificationStore.init();
     },
     methods: {
-        async fetchNotifications() {
-            this.notifications = await backend.fetchNotifications();
-        },
         async checkNotification(value) {
             if (value.type == 'workitem') {
                 this.$router.push('/todolist');
             } else {
                 this.$router.push(value.url);
             }
-            await backend.setNotifications(value);
-            this.fetchNotifications();
+            await this.notificationStore.markAsRead(value);
         }
     }
 }

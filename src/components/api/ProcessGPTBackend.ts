@@ -242,11 +242,13 @@ class ProcessGPTBackend implements Backend {
             });
 
             if (procDef) {
-                // publish(confirm) 시에만 proc_def.bpmn/definition 업데이트
-                // 저장 시에는 proc_def_version에만 저장하고, proc_def는 메타정보(name, owner)만 업데이트
                 procDef.name = options.name;
                 if (options.owner) procDef.owner = options.owner;
                 if (options.type) procDef.type = options.type;
+                // definition 동기화 (tobe_bpmn 등 메타정보 유지)
+                if (options.definition) {
+                    procDef.definition = options.definition;
+                }
             } else {
                 // 신규 프로세스: 초기 bpmn/definition 포함하여 생성
                 procDef = {
@@ -2581,6 +2583,29 @@ class ProcessGPTBackend implements Backend {
         }
     }
 
+    /**
+     * [3.19] 알림 생성
+     */
+    async createNotification(notification: {
+        user_id: string;
+        type: string;
+        title: string;
+        description?: string;
+        url?: string;
+    }): Promise<any> {
+        try {
+            const data = {
+                ...notification,
+                tenant_id: window.$tenantName,
+                is_checked: false,
+                time_stamp: new Date().toISOString(),
+            };
+            return await storage.putObject('notifications', data);
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] createNotification error:', e);
+        }
+    }
+
     async search(keyword: string, callback?: (results: any[]) => void) {
         try {
             let results: any[] = [];
@@ -2939,7 +2964,8 @@ class ProcessGPTBackend implements Backend {
             var putObj: any = {
                 id: lockObj.id,
                 user_id: lockObj.user_id,
-                tenant_id: window.$tenantName
+                tenant_id: window.$tenantName,
+                heartbeat_at: new Date().toISOString(),
             };
             const lock = await this.getLock(lockObj.id);
             if (lock && lock.tenant_id === window.$tenantName) {
@@ -2948,6 +2974,55 @@ class ProcessGPTBackend implements Backend {
             } else {
                 await storage.putObject('lock', putObj);
             }
+        } catch (error) {
+            //@ts-ignore
+            throw new Error(error.message);
+        }
+    }
+
+    // [G.12] Heartbeat 업데이트 (편집 중 주기적으로 호출)
+    async updateLockHeartbeat(id: string) {
+        try {
+            const lock = await this.getLock(id);
+            if (lock && lock.tenant_id === window.$tenantName) {
+                lock.heartbeat_at = new Date().toISOString();
+                await storage.putObject('lock', lock);
+            }
+        } catch (error) {
+            // heartbeat 실패 시 무시
+            console.warn('Lock heartbeat update failed:', error);
+        }
+    }
+
+    // [G.12] Stale lock 확인 (60분 이상 heartbeat 없으면 만료로 판단)
+    async isLockStale(id: string, thresholdMinutes: number = 60): Promise<boolean> {
+        try {
+            const lock = await this.getLock(id);
+            if (!lock) return true;
+            const heartbeat = lock.heartbeat_at ? new Date(lock.heartbeat_at).getTime() : 0;
+            const now = Date.now();
+            return (now - heartbeat) > thresholdMinutes * 60 * 1000;
+        } catch (error) {
+            return true;
+        }
+    }
+
+    // [G.12] Stale lock 자동 해제 (lock 획득 시 stale 감지 → 기존 lock 제거 후 새로 설정)
+    async acquireLockWithStaleCheck(lockObj: any, thresholdMinutes: number = 60) {
+        try {
+            const lock = await this.getLock(lockObj.id);
+            if (lock && lock.user_id !== lockObj.user_id) {
+                const isStale = await this.isLockStale(lockObj.id, thresholdMinutes);
+                if (isStale) {
+                    // Stale lock 자동 해제
+                    await this.deleteLock(lockObj.id);
+                } else {
+                    // 다른 사용자가 활발히 편집 중
+                    return { acquired: false, lockedBy: lock.user_id };
+                }
+            }
+            await this.setLock(lockObj);
+            return { acquired: true, lockedBy: null };
         } catch (error) {
             //@ts-ignore
             throw new Error(error.message);
@@ -6425,7 +6500,7 @@ class ProcessGPTBackend implements Backend {
     /**
      * 프로세스 정의의 특정 요소에 대한 댓글 목록 조회
      */
-    async getElementComments(procDefId: string, elementId?: string): Promise<any[]> {
+    async getElementComments(procDefId: string, elementId?: string, options?: { round?: number }): Promise<any[]> {
         const supabase = window.$supabase;
         if (!supabase) return [];
 
@@ -6439,6 +6514,10 @@ class ProcessGPTBackend implements Backend {
 
             if (elementId) {
                 query = query.eq('element_id', elementId);
+            }
+
+            if (options?.round) {
+                query = query.eq('submission_round', options.round);
             }
 
             const { data, error } = await query;
@@ -6489,6 +6568,7 @@ class ProcessGPTBackend implements Backend {
         elementName?: string;
         content: string;
         parentCommentId?: string;
+        submissionRound?: number;
     }): Promise<any> {
         const supabase = window.$supabase;
         if (!supabase) throw new Error('Supabase not initialized');
@@ -6503,6 +6583,7 @@ class ProcessGPTBackend implements Backend {
             author_name: user.name || user.email || 'Anonymous',
             content: comment.content,
             parent_comment_id: comment.parentCommentId || null,
+            submission_round: comment.submissionRound || 1,
             tenant_id: window.$tenantName
         };
 
@@ -6678,7 +6759,33 @@ class ProcessGPTBackend implements Backend {
                 console.warn('[ProcessGPTBackend] Failed to cancel existing reviews:', e);
             }
         }
-        return this._changeApprovalState(procDefId, 'submit', 'in_review', comment, { version, reviewers });
+        const result = await this._changeApprovalState(procDefId, 'submit', 'in_review', comment, { version, reviewers });
+
+        // [3.19] Notify reviewers
+        try {
+            if (reviewers?.hq?.id) {
+                await this.createNotification({
+                    user_id: reviewers.hq.id,
+                    type: 'review_request',
+                    title: `검토 요청: ${procDefId}`,
+                    description: comment || '새 검토 요청이 도착했습니다.',
+                    url: `/process-hierarchy?id=${procDefId}`,
+                });
+            }
+            if (reviewers?.field?.id) {
+                await this.createNotification({
+                    user_id: reviewers.field.id,
+                    type: 'review_request',
+                    title: `검토 요청: ${procDefId}`,
+                    description: comment || '새 검토 요청이 도착했습니다.',
+                    url: `/process-hierarchy?id=${procDefId}`,
+                });
+            }
+        } catch (e) {
+            console.warn('[ProcessGPTBackend] Failed to create review notifications:', e);
+        }
+
+        return result;
     }
 
     /**
@@ -7698,6 +7805,484 @@ class ProcessGPTBackend implements Backend {
         } catch (e) {
             console.error('[ProcessGPTBackend] getLatestVersionNumber error:', e);
             return '1.0';
+        }
+    }
+
+    /**
+     * [2.5.6] 승인 이력에 시스템 코멘트 기록 (버전 복구 등)
+     */
+    async addApprovalHistory(procDefId: string, action: string, comment: string) {
+        try {
+            const supabase = window.$supabase;
+            if (!supabase) return;
+
+            const userName = window.$userName || 'system';
+            const tenantId = window.$tenantName || 'default';
+
+            await supabase.from('proc_def_approval_history').insert({
+                proc_def_id: procDefId,
+                action: action,
+                from_state: 'draft',
+                to_state: 'draft',
+                actor_id: userName,
+                actor_name: userName,
+                comment: comment,
+                tenant_id: tenantId,
+            });
+        } catch (e) {
+            console.error('[ProcessGPTBackend] addApprovalHistory error:', e);
+        }
+    }
+
+    // ============== Analysis Dashboard APIs ==============
+
+    /**
+     * 고비용 프로세스 Top 10 (activity_config FTE 합산 기준)
+     */
+    async getBottleneckTop10(filters?: any): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const tenantId = window.$tenantName;
+            const storage = StorageBaseFactory.getStorage();
+
+            // 1) activity_config에서 프로세스별 FTE 합산
+            const allConfigs = await storage.list('activity_config', {
+                match: { tenant_id: tenantId }
+            });
+
+            // proc_def_id별 FTE 합산
+            const fteByProc: Record<string, number> = {};
+            (allConfigs || []).forEach((cfg: any) => {
+                const pid = cfg.proc_def_id;
+                if (!pid) return;
+                const minutes = cfg.standard_minutes || 0;
+                const factor = cfg.complexity_factor || 1.0;
+                // FTE = (분 × 복잡도) / (8h × 22일 × 60분)
+                const fte = (minutes * factor) / (8 * 22 * 60);
+                fteByProc[pid] = (fteByProc[pid] || 0) + fte;
+            });
+
+            // 2) proc_def 정보 조회
+            let query = supabase
+                .from('proc_def')
+                .select('id, name, owner, definition')
+                .eq('tenant_id', tenantId);
+
+            if (filters?.domains?.length > 0) {
+                // tb_bpmn_model에서 domain으로 필터된 proc_def_id 목록을 먼저 조회
+                const { data: models } = await supabase
+                    .from('tb_bpmn_model')
+                    .select('proc_def_id')
+                    .eq('tenant_id', tenantId)
+                    .in('domain_id', filters.domains);
+                if (models && models.length > 0) {
+                    const ids = models.map((m: any) => m.proc_def_id);
+                    query = query.in('id', ids);
+                }
+            }
+
+            const { data: procDefs, error } = await query;
+            if (error) throw error;
+
+            // 3) owner(UUID) → 이름 변환을 위한 매핑 (조직도 데이터)
+            let orgNameMap: Record<string, string> = {};
+            try {
+                const orgData = await storage.getObject('configuration', {
+                    match: { key: 'organization', tenant_id: tenantId }
+                });
+                if (orgData && orgData.value) {
+                    const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
+                    const chart = orgValue.chart || orgValue;
+                    // 트리 순회하며 id → name 매핑 수집
+                    const collectNames = (node: any) => {
+                        if (node.id && node.data?.name) {
+                            orgNameMap[node.id] = node.data.name;
+                        }
+                        if (node.children) {
+                            node.children.forEach((child: any) => collectNames(child));
+                        }
+                    };
+                    collectNames(chart);
+                }
+            } catch (_) {}
+
+            // 4) OSS 수 계산 + 결과 생성
+            const results = (procDefs || []).map((item: any) => {
+                const fte = fteByProc[item.id] || 0;
+                let ossCount = 0;
+                try {
+                    const def = item.definition;
+                    if (def && typeof def === 'object') {
+                        if (Array.isArray(def.oss_list)) ossCount = def.oss_list.length;
+                        else if (Array.isArray(def.systems)) ossCount = def.systems.length;
+                    }
+                } catch (_) {}
+                // owner UUID → 조직도 이름 변환
+                const ownerRaw = item.owner || '';
+                const ownerName = orgNameMap[ownerRaw] || ownerRaw || '-';
+                return {
+                    id: item.id,
+                    name: item.name || 'Unnamed',
+                    total_fte: Math.round(fte * 100) / 100,
+                    owner: ownerName,
+                    oss_count: ossCount
+                };
+            });
+
+            // FTE 내림차순 정렬, Top 10
+            results.sort((a: any, b: any) => b.total_fte - a.total_fte);
+            return results.slice(0, 10).map((item: any, index: number) => ({
+                ...item,
+                rank: index + 1
+            }));
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getBottleneckTop10 error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 좀비 프로세스 (Draft/In-Review 상태, updated_at < N일)
+     * proc_def_approval_state 테이블 사용
+     */
+    async getStaleProcesses(daysSince: number = 90): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const tenantId = window.$tenantName;
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - daysSince);
+
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .select('proc_def_id, state, submitted_by, updated_at')
+                .eq('tenant_id', tenantId)
+                .in('state', ['draft', 'in_review'])
+                .lt('updated_at', cutoffDate.toISOString())
+                .order('updated_at', { ascending: true });
+
+            if (error) throw error;
+
+            // proc_def에서 이름 조회
+            const procIds = [...new Set((data || []).map((d: any) => d.proc_def_id))];
+            let procNames: Record<string, string> = {};
+            if (procIds.length > 0) {
+                const { data: procs } = await supabase
+                    .from('proc_def')
+                    .select('id, name, owner')
+                    .in('id', procIds);
+                (procs || []).forEach((p: any) => { procNames[p.id] = p.name || p.id; });
+            }
+
+            return (data || []).map((item: any) => {
+                const diffDays = Math.floor((Date.now() - new Date(item.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+                return {
+                    id: item.proc_def_id,
+                    name: procNames[item.proc_def_id] || item.proc_def_id,
+                    owner: item.submitted_by || '-',
+                    last_modified: item.updated_at,
+                    status: item.state,
+                    days_since_update: diffDays
+                };
+            });
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getStaleProcesses error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 지연 미결 건 (7일+ 검토 지연, Re-open 미처리)
+     * proc_def_approval_state 테이블 사용
+     */
+    async getActionRequiredItems(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const tenantId = window.$tenantName;
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            const items: any[] = [];
+
+            // 7일 이상 검토 지연 건
+            const { data: delayed, error: err1 } = await supabase
+                .from('proc_def_approval_state')
+                .select('proc_def_id, state, submitted_by, updated_at')
+                .eq('tenant_id', tenantId)
+                .eq('state', 'in_review')
+                .lt('updated_at', sevenDaysAgo.toISOString())
+                .order('updated_at', { ascending: true });
+
+            if (err1) throw err1;
+
+            // Re-open 미처리 건
+            const { data: reopens, error: err2 } = await supabase
+                .from('proc_def_approval_state')
+                .select('proc_def_id, state, submitted_by, updated_at')
+                .eq('tenant_id', tenantId)
+                .eq('state', 'reopen_requested')
+                .order('updated_at', { ascending: true });
+
+            // proc_def 이름 조회
+            const allIds = [...new Set([
+                ...(delayed || []).map((d: any) => d.proc_def_id),
+                ...(reopens || []).map((d: any) => d.proc_def_id)
+            ])];
+            let procMap: Record<string, any> = {};
+            if (allIds.length > 0) {
+                const { data: procs } = await supabase
+                    .from('proc_def')
+                    .select('id, name, owner')
+                    .in('id', allIds);
+                (procs || []).forEach((p: any) => { procMap[p.id] = p; });
+            }
+
+            (delayed || []).forEach((item: any) => {
+                const diffDays = Math.floor((Date.now() - new Date(item.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+                const proc = procMap[item.proc_def_id] || {};
+                items.push({
+                    id: item.proc_def_id,
+                    name: proc.name || item.proc_def_id,
+                    type: 'delayed_review',
+                    days_overdue: diffDays,
+                    assignee: proc.owner || item.submitted_by || '-'
+                });
+            });
+
+            if (!err2 && reopens) {
+                reopens.forEach((item: any) => {
+                    const diffDays = Math.floor((Date.now() - new Date(item.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+                    const proc = procMap[item.proc_def_id] || {};
+                    items.push({
+                        id: item.proc_def_id,
+                        name: proc.name || item.proc_def_id,
+                        type: 'reopen',
+                        days_overdue: diffDays,
+                        assignee: proc.owner || item.submitted_by || '-'
+                    });
+                });
+            }
+
+            return items;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getActionRequiredItems error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 도메인별 In-Review 프로세스 목록
+     * proc_def_approval_state 테이블 사용
+     */
+    async getInReviewProcesses(domainId?: string): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const tenantId = window.$tenantName;
+
+            // 1) proc_def_approval_state에서 in_review 상태 조회 (domain_id 없음)
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .select('proc_def_id, state, submitted_by, updated_at')
+                .eq('tenant_id', tenantId)
+                .eq('state', 'in_review')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+            if (!data || data.length === 0) return [];
+
+            const procIds = [...new Set(data.map((d: any) => d.proc_def_id))];
+
+            // 2) proc_def에서 이름 조회
+            let procNames: Record<string, string> = {};
+            if (procIds.length > 0) {
+                const { data: procs } = await supabase
+                    .from('proc_def')
+                    .select('id, name')
+                    .in('id', procIds);
+                (procs || []).forEach((p: any) => { procNames[p.id] = p.name || p.id; });
+            }
+
+            // 3) tb_bpmn_model에서 proc_def_id → domain_id 매핑
+            let domainMap: Record<string, string> = {};
+            if (procIds.length > 0) {
+                const { data: models } = await supabase
+                    .from('tb_bpmn_model')
+                    .select('proc_def_id, domain_id')
+                    .eq('tenant_id', tenantId)
+                    .in('proc_def_id', procIds);
+                (models || []).forEach((m: any) => {
+                    if (m.domain_id) domainMap[m.proc_def_id] = m.domain_id;
+                });
+            }
+
+            let results = data.map((item: any) => {
+                const diffDays = Math.floor((Date.now() - new Date(item.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+                return {
+                    id: item.proc_def_id,
+                    name: procNames[item.proc_def_id] || item.proc_def_id,
+                    submitter: item.submitted_by || '-',
+                    days_in_review: diffDays,
+                    domain_id: domainMap[item.proc_def_id] || ''
+                };
+            });
+
+            // domainId 필터 적용
+            if (domainId) {
+                results = results.filter(r => r.domain_id === domainId);
+            }
+
+            return results;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getInReviewProcesses error:', e);
+            return [];
+        }
+    }
+    /**
+     * 프로세스별 노드 유형 통계 (tb_bpmn_node + tb_bpmn_model 조인)
+     * Tab C: Automation Matrix, DX Rate 데이터
+     */
+    async getNodeTypeStats(domainId?: string): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const tenantId = window.$tenantName;
+
+            // tb_bpmn_model에서 모델 목록 조회
+            let modelQuery = supabase
+                .from('tb_bpmn_model')
+                .select('id, proc_def_id, name, domain_id')
+                .eq('tenant_id', tenantId);
+
+            if (domainId) {
+                modelQuery = modelQuery.eq('domain_id', domainId);
+            }
+
+            const { data: models, error: modelError } = await modelQuery;
+            if (modelError) throw modelError;
+            if (!models || models.length === 0) return [];
+
+            const modelIds = models.map((m: any) => m.id);
+
+            // tb_bpmn_node에서 모델별 task_type 집계
+            const { data: nodes, error: nodeError } = await supabase
+                .from('tb_bpmn_node')
+                .select('model_id, element_type, task_type')
+                .in('model_id', modelIds);
+
+            if (nodeError) throw nodeError;
+
+            // 모델별 집계
+            const modelMap: Record<string, any> = {};
+            models.forEach((m: any) => {
+                modelMap[m.id] = {
+                    model_id: m.id,
+                    proc_def_id: m.proc_def_id,
+                    name: m.name,
+                    domain_id: m.domain_id,
+                    total_nodes: 0,
+                    manual_task: 0,
+                    user_task: 0,
+                    service_task: 0,
+                    script_task: 0,
+                    other_task: 0,
+                };
+            });
+
+            (nodes || []).forEach((n: any) => {
+                const entry = modelMap[n.model_id];
+                if (!entry) return;
+
+                // Task 유형만 집계 (이벤트, 게이트웨이 제외)
+                if (!n.element_type?.includes('Task')) return;
+
+                entry.total_nodes++;
+                const tt = (n.task_type || '').toLowerCase();
+                if (tt === 'manual' || tt === 'bpmn:manualtask') entry.manual_task++;
+                else if (tt === 'user' || tt === 'bpmn:usertask' || n.element_type === 'bpmn:UserTask') entry.user_task++;
+                else if (tt === 'service' || tt === 'bpmn:servicetask' || n.element_type === 'bpmn:ServiceTask') entry.service_task++;
+                else if (tt === 'script' || tt === 'bpmn:scripttask' || n.element_type === 'bpmn:ScriptTask') entry.script_task++;
+                else entry.other_task++;
+            });
+
+            return Object.values(modelMap).filter((m: any) => m.total_nodes > 0);
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getNodeTypeStats error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 도메인별 FTE 집계 (activity_config + fte_snapshot 종합)
+     * Tab C: BPR Gap Analysis 데이터
+     */
+    async getDomainFteSummary(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const tenantId = window.$tenantName;
+            const storage = StorageBaseFactory.getStorage();
+
+            // 1) activity_config에서 프로세스별 FTE 집계
+            const allConfigs = await storage.list('activity_config', {
+                match: { tenant_id: tenantId }
+            });
+
+            const fteByProc: Record<string, number> = {};
+            (allConfigs || []).forEach((cfg: any) => {
+                const pid = cfg.proc_def_id;
+                if (!pid) return;
+                const minutes = cfg.standard_minutes || 0;
+                const factor = cfg.complexity_factor || 1.0;
+                fteByProc[pid] = (fteByProc[pid] || 0) + (minutes * factor) / (8 * 22 * 60);
+            });
+
+            // 2) tb_bpmn_model에서 proc_def_id → domain_id 매핑
+            const { data: models } = await supabase
+                .from('tb_bpmn_model')
+                .select('proc_def_id, domain_id')
+                .eq('tenant_id', tenantId);
+
+            const domainFte: Record<string, number> = {};
+            (models || []).forEach((m: any) => {
+                if (m.domain_id && fteByProc[m.proc_def_id]) {
+                    domainFte[m.domain_id] = (domainFte[m.domain_id] || 0) + fteByProc[m.proc_def_id];
+                }
+            });
+
+            // 3) fte_snapshot에서 목표 FTE
+            let snapshots: any[] = [];
+            try {
+                snapshots = await storage.list('fte_snapshot', {
+                    match: { tenant_id: tenantId }
+                });
+            } catch (_) {}
+
+            const targetFteByDomain: Record<string, number> = {};
+            (snapshots || []).forEach((s: any) => {
+                if (s.domain_id) {
+                    targetFteByDomain[s.domain_id] = s.workload_fte || s.available_fte || 0;
+                }
+            });
+
+            // 4) 도메인 목록 합산
+            const allDomainIds = new Set([...Object.keys(domainFte), ...Object.keys(targetFteByDomain)]);
+            return Array.from(allDomainIds).map(did => ({
+                domain_id: did,
+                current_fte: Math.round((domainFte[did] || 0) * 100) / 100,
+                target_fte: Math.round((targetFteByDomain[did] || 0) * 100) / 100,
+            }));
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getDomainFteSummary error:', e);
+            return [];
         }
     }
 }

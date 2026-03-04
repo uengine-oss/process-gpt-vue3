@@ -72,6 +72,7 @@ export default defineComponent({
     setup(props, { emit }) {
         const isOpen = ref(false);
         const selectedOwner = ref('');
+        const previousOwner = ref('');
         const saving = ref(false);
         const backend = BackendFactory.createBackend();
 
@@ -99,8 +100,10 @@ export default defineComponent({
                 const procDef = await backend.getRawDefinition(props.process.id);
                 if (procDef && procDef.owner) {
                     selectedOwner.value = procDef.owner;
+                    previousOwner.value = procDef.owner;
                 } else {
                     selectedOwner.value = '';
+                    previousOwner.value = '';
                 }
             } catch (error) {
                 console.error('Owner 로드 실패:', error);
@@ -134,6 +137,17 @@ export default defineComponent({
                     owner: selectedOwner.value
                 });
 
+                // [5.1.4] Owner change notification
+                if (selectedOwner.value !== previousOwner.value) {
+                    const app = (window as any).__vue_app__;
+                    const toast = app?.config?.globalProperties?.$toast;
+                    if (toast) {
+                        const prev = previousOwner.value || '(없음)';
+                        const next = selectedOwner.value || '(없음)';
+                        toast.info(`Owner 변경: ${prev} → ${next}`);
+                    }
+                }
+
                 close();
             } catch (error) {
                 console.error('Owner 저장 실패:', error);
@@ -145,6 +159,7 @@ export default defineComponent({
         return {
             isOpen,
             selectedOwner,
+            previousOwner,
             processName,
             saving,
             close,

@@ -282,18 +282,33 @@ function shouldUseWhiteText(hexColor) {
   return luminance < 0.4;
 }
 
+// [8.6] Default task type color map (fallback when no admin rules exist)
+// Service Task: grey, Manual Task: red-tinted, User Task: blue-tinted
+const DEFAULT_TASK_TYPE_COLORS = {
+  'bpmn:ServiceTask':  { fillColor: '#e8e8e8', strokeColor: '#9e9e9e' },   // grey
+  'bpmn:ManualTask':   { fillColor: '#fce4e4', strokeColor: '#e57373' },   // red-tinted
+  'bpmn:UserTask':     { fillColor: '#e3f2fd', strokeColor: '#64b5f6' },   // blue-tinted
+  'bpmn:ScriptTask':   { fillColor: '#f3e5f5', strokeColor: '#ba68c8' },   // purple-tinted
+  'bpmn:SendTask':     { fillColor: '#e8f5e9', strokeColor: '#81c784' },   // green-tinted
+  'bpmn:ReceiveTask':  { fillColor: '#fff3e0', strokeColor: '#ffb74d' },   // orange-tinted
+};
+
 // Get color from rules stored in BPMN XML (via window.$bpmnColorRules)
 function getColorFromRules(element) {
   try {
     const rules = window.$bpmnColorRules;
+    const elementType = element.businessObject?.$type;
+
+    // If no admin rules, apply default task type colors (PAL mode only)
     if (!rules || !Array.isArray(rules) || rules.length === 0) {
+      if (window.$pal && elementType && DEFAULT_TASK_TYPE_COLORS[elementType]) {
+        return DEFAULT_TASK_TYPE_COLORS[elementType];
+      }
       return null;
     }
 
     const defaultColor = '#fdf2d0';
 
-    // Get element type
-    const elementType = element.businessObject?.$type;
     if (!elementType) return { fillColor: defaultColor };
 
     // Get leadTime (duration) from extension elements
@@ -679,7 +694,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         } catch (e) { /* ignore */ }
       }
     }
-    if (businessId) {
+    if (businessId && window.$pal) {
       const bidLabel = svgCreate('text');
       svgAttr(bidLabel, {
         x: existingWidth / 2,
@@ -694,9 +709,9 @@ export default class CustomBpmnRenderer extends BaseRenderer {
       svgAppend(parentNode, bidLabel);
     }
 
-    // Phase 4-3: Time-Travel Visual Cues
-    const timeTravel = window.$bpmnTimeTravel;
-    if (timeTravel === 'toBe') {
+    // Phase 4-3: futureStatus Visual Cues (sunset/new/automation_planned)
+    // As-Is, To-Be 모드 무관하게 maintain 이외의 값이 설정되면 항상 표시
+    if (window.$pal) {
       let futureStatus = '';
       if (extensionElements2 && extensionElements2.values) {
         const uengineProps3 = extensionElements2.values.find(v => v.$type === 'uengine:Properties');
@@ -757,6 +772,34 @@ export default class CustomBpmnRenderer extends BaseRenderer {
         svgAppend(parentNode, robotIcon);
       }
       // 'maintain' = no visual change
+    }
+
+    // [8.7] HITL User Task → 🤖 Robot Badge Overlay
+    // User Task 중 hitlEnabled=true 인 경우 우측 하단에 로봇 뱃지 표시
+    if (is(element, 'bpmn:UserTask')) {
+      let hitlEnabled = false;
+      if (extensionElements2 && extensionElements2.values) {
+        const uenginePropsHitl = extensionElements2.values.find(v => v.$type === 'uengine:Properties');
+        if (uenginePropsHitl && uenginePropsHitl.json) {
+          try {
+            const propsHitl = JSON.parse(uenginePropsHitl.json);
+            if (propsHitl.hitlEnabled) hitlEnabled = true;
+          } catch (e) { /* ignore */ }
+        }
+      }
+      if (window.$pal && hitlEnabled) {
+        // 🤖 badge at bottom-right corner
+        const hitlBadge = svgCreate('text');
+        svgAttr(hitlBadge, {
+          x: existingWidth - 4,
+          y: existingHeight - 4,
+          'font-size': '14px',
+          'text-anchor': 'end',
+          'pointer-events': 'none'
+        });
+        hitlBadge.textContent = '🤖';
+        svgAppend(parentNode, hitlBadge);
+      }
     }
 
     // Display System Name / Menu Name below the Task
