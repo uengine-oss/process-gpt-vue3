@@ -293,6 +293,52 @@
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
+                <!-- 프로세스 섹션: 프로세스 정의 + 옆 작은 버튼 클릭 시 업로드/내보내기 드롭다운 -->
+                <v-col v-if="processSectionListItems.length > 0" class="pa-0">
+                    <v-list-item
+                        v-for="item in processSectionListItems"
+                        :key="item.title"
+                        :to="item.to"
+                        density="compact"
+                        class="leftPadding"
+                    >
+                        <template v-slot:prepend>
+                            <Icons v-if="item.icon" :icon="item.icon" :size="20" class="mr-2" />
+                        </template>
+                        <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        <template v-slot:append v-if="processSectionDropdownItems.length > 0">
+                            <div @click.stop.prevent>
+                                <v-menu location="end" :close-on-content-click="true">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            size="small"
+                                            density="comfortable"
+                                            class="mr-1 process-section-dropdown-btn"
+                                            @click.stop.prevent
+                                        >
+                                            <v-icon icon="mdi-dots-vertical" size="20" />
+                                        </v-btn>
+                                    </template>
+                                <v-list density="compact" min-width="160">
+                                    <v-list-item
+                                        v-for="dropItem in processSectionDropdownItems"
+                                        :key="dropItem.title"
+                                        @click="handleProcessSectionClick(dropItem)"
+                                    >
+                                        <template v-slot:prepend>
+                                            <Icons :icon="dropItem.icon" :size="18" class="mr-2" />
+                                        </template>
+                                        <v-list-item-title>{{ $t(dropItem.title) }}</v-list-item-title>
+                                    </v-list-item>
+                                </v-list>
+                                </v-menu>
+                            </div>
+                        </template>
+                    </v-list-item>
+                </v-col>
                 <v-col class="pa-0">
                     <ExpandableList
                         v-if="definitionList && definitionList.children"
@@ -400,6 +446,8 @@ export default {
         definitionItem: [],
         definitionList: null,
         processItem: [],
+        processSectionListItems: [],
+        processSectionDropdownItems: [],
         analyticsItem: [],
         logoPadding: '',
         instanceLists: [],
@@ -496,13 +544,7 @@ export default {
                         header: 'definitionManagement.title',
                         disable: false
                     },
-                    {
-                        title: 'processDefinition.title',
-                        icon: 'sidebarProcess',
-                        BgColor: 'primary',
-                        to: '/definitions/chat',
-                        disable: false
-                    },
+                    // 프로세스 정의, 정의 업로드/내보내기는 processSectionListItems로 아래에 아이콘 없이 표시
                     ...(isUEngineMode && !this.pal
                         ? [
                               {
@@ -543,31 +585,6 @@ export default {
                         disable: true,
                         to: '/ui-definitions/defaultform',
                         size: 24
-                    },
-                    {
-                        title: 'definitionManagement.upload',
-                        icon: 'upload',
-                        BgColor: 'primary',
-                        to: function () {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = '.zip';
-                            input.onchange = (event) => {
-                                const file = event.target.files[0];
-                                if (file) {
-                                    backend.uploadDefinition(file);
-                                }
-                            };
-                            input.click();
-                        },
-                        disable: true
-                    },
-                    {
-                        title: 'definitionManagement.release',
-                        icon: 'download',
-                        BgColor: 'primary',
-                        disable: true,
-                        to: this.openDialog
                     }
                 ];
 
@@ -614,7 +631,7 @@ export default {
                 ];
             }
 
-            // 프로세스 관리 메뉴
+            // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
             this.processItem = [
                 {
                     title: 'processArchitecture.title',
@@ -652,6 +669,15 @@ export default {
                     disable: false
                 }
             ];
+
+            // 프로세스 섹션: 프로세스 정의(메인 행) + 옆 작은 버튼으로 드롭다운
+            this.processSectionListItems = [
+                { title: 'definitionManagement.processDefinition', icon: 'flowchart', to: '/definitions/chat' }
+            ];
+            this.processSectionDropdownItems = this.mode !== 'ProcessGPT' ? [
+                { title: 'definitionManagement.upload', icon: 'upload', action: 'upload' },
+                { title: 'definitionManagement.release', icon: 'download', action: 'openDownloadDialog' }
+            ] : [];
 
             // Analytics 메뉴
             this.analyticsItem = [
@@ -773,6 +799,20 @@ export default {
         },
         openDialog() {
             this.isOpen = true;
+        },
+        handleProcessSectionClick(item) {
+            if (item.action === 'upload') {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.zip';
+                input.onchange = (event) => {
+                    const file = event.target.files[0];
+                    if (file) backend.uploadDefinition(file);
+                };
+                input.click();
+            } else if (item.action === 'openDownloadDialog') {
+                this.openDialog();
+            }
         },
         closeDownloadDefinitionList() {
             this.isOpen = false;
@@ -1036,5 +1076,11 @@ export default {
     right: 16px;
     bottom: 58px;
     z-index: 999;
+}
+
+/* 프로세스 정의 옆 점 세 개 버튼 클릭 영역 확대 */
+.process-section-dropdown-btn {
+    min-width: 36px !important;
+    min-height: 36px !important;
 }
 </style>

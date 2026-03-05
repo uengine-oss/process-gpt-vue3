@@ -643,6 +643,7 @@
     },
     "definitionManagement": {
         "title": "프로세스",
+        "processDefinition": "프로세스 정의",
         "upload": "정의 목록 업로드",
         "release": "정의 내보내기",
         "defaultForm": "기본 폼 관리",

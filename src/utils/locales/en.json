@@ -500,6 +500,7 @@
     },
     "definitionManagement": {
         "title": "Process",
+        "processDefinition": "Process Definition",
         "upload": "Upload definition list",
         "release": "Definition Export",
         "defaultForm": "Default Form Management",
