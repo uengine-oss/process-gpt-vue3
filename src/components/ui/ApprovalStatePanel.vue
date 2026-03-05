@@ -5,14 +5,17 @@
             <v-icon class="mr-2" size="20">mdi-clipboard-check-outline</v-icon>
             <span class="text-subtitle-1 font-weight-medium">{{ $t('approvalState.title') }}</span>
             <v-spacer />
-            <v-chip
-                :color="stateConfig.color"
-                variant="tonal"
-                size="small"
-            >
-                <v-icon start size="14">{{ stateConfig.icon }}</v-icon>
-                {{ stateConfig.label }}
-            </v-chip>
+            <template v-if="approvalState">
+                <v-chip
+                    :color="stateConfig.color"
+                    variant="tonal"
+                    size="small"
+                >
+                    <v-icon start size="14">{{ stateConfig.icon }}</v-icon>
+                    {{ stateConfig.label }}
+                </v-chip>
+            </template>
+            <span v-else class="text-body-2 text-medium-emphasis">{{ $t('approvalState.noRequest') }}</span>
         </v-card-title>
 
         <v-divider />

@@ -86,16 +86,21 @@
                     @close="toggleVersionDialog"
                     @save="beforeSaveDefinition"
                 ></process-definition-version-dialog>
-                <ProcessDefinitionVersionManager
-                    :process="processDefinition"
-                    :open="verMangerDialog"
-                    :type="'bpmn'"
-                    :bpmn="bpmn"
-                    :definitionId="fullPath"
-                    :isSimulate="isSimulate"
-                    @close="toggleVerMangerDialog"
-                    @changeXML="changeXML"
-                ></ProcessDefinitionVersionManager>
+                <v-dialog
+                    v-model="verMangerDialog"
+                    fullscreen
+                    persistent
+                    transition="dialog-bottom-transition"
+                    class="version-comparison-dialog"
+                >
+                    <VersionComparison
+                        v-if="verMangerDialog"
+                        :dialogMode="true"
+                        :initialProcessId="fullPath"
+                        @close="toggleVerMangerDialog(false)"
+                        @rollbackDone="onVersionRollbackDone"
+                    />
+                </v-dialog>
                 <v-dialog v-model="deleteDialog" max-width="500">
                     <v-card class="pa-0">
                         <v-row class="ma-0 pa-4 pb-0 align-center">
@@ -384,8 +389,8 @@ import xml2js from 'xml2js';
 
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
-import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
 import ProcessDefinitionChatHeader from '@/components/ProcessDefinitionChatHeader.vue';
+import VersionComparison from '@/views/process-hierarchy/VersionComparison.vue';
 import ProcessDefinitionConvertModule from '@/components/ProcessDefinitionConvertModule.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
@@ -437,8 +442,8 @@ export default {
         // BpmnModelingCanvas,
         ChatGenerator,
         ProcessDefinitionVersionDialog,
-        ProcessDefinitionVersionManager,
         ProcessDefinitionChatHeader,
+        VersionComparison,
         ProcessDefinitionConvertModule,
         FormGenerator,
         ProcessExecuteDialog,
@@ -1491,15 +1496,24 @@ export default {
             });
         },
         toggleVerMangerDialog(open) {
-            // Version Manager Dialog
+            // 버전 비교 다이얼로그 (VersionComparison)
             if (open) {
-                // 다이얼로그를 열 때는 먼저 false로 설정한 후 true로 설정하여 watch가 트리거되도록 함
                 this.verMangerDialog = false;
                 this.$nextTick(() => {
                     this.verMangerDialog = true;
                 });
             } else {
                 this.verMangerDialog = false;
+            }
+        },
+        async onVersionRollbackDone() {
+            // 되돌리기 성공 시 현재 화면 BPMN 갱신
+            if (!this.fullPath) return;
+            try {
+                const bpmn = await backend.getRawDefinition(this.fullPath, { type: 'bpmn' });
+                if (bpmn) this.loadBPMN(bpmn);
+            } catch (e) {
+                console.warn('Failed to reload BPMN after rollback:', e);
             }
         },
         async changeXML(info) {

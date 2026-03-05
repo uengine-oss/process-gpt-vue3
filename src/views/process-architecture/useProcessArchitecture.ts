@@ -201,8 +201,37 @@ export function useProcessArchitecture() {
         }
     }
 
+    // 도메인: metrics API 결과 우선, 없으면(예: uEngine 모드에서 getMetricsMap 실패/빈 응답) procMap에서 추출
     const domains = computed(() => {
-        return metricsMap.value?.domains || [];
+        const fromMetrics = metricsMap.value?.domains;
+        if (fromMetrics && Array.isArray(fromMetrics) && fromMetrics.length > 0) {
+            return fromMetrics;
+        }
+        // procMap에서 major.domain / major.domain_id로 고유 도메인 목록 추출 (uEngine 등 fallback)
+        const map = procMap.value;
+        if (!map?.mega_proc_list) return [];
+        const seen = new Set<string>();
+        const list: { id: string; name: string; color?: string }[] = [];
+        for (const mega of map.mega_proc_list) {
+            for (const major of mega.major_proc_list || []) {
+                const d = major.domain || major.domain_id;
+                if (d && typeof d === 'string' && !seen.has(d)) {
+                    seen.add(d);
+                    list.push({ id: d, name: d, color: (major as any).color });
+                }
+            }
+        }
+        // major에 domain이 하나도 없으면 mega 이름을 도메인으로 사용 (새 프로세스 시 도메인 선택 가능하도록)
+        if (list.length === 0) {
+            for (const mega of map.mega_proc_list) {
+                const name = mega.name || mega.id;
+                if (name && !seen.has(name)) {
+                    seen.add(name);
+                    list.push({ id: name, name, color: (mega as any).color });
+                }
+            }
+        }
+        return list;
     });
 
     // Compute the set of process IDs that match My Processes filter (OR logic)
@@ -554,6 +583,17 @@ export function useProcessArchitecture() {
         }
     }
 
+    /** 메트릭스 맵(도메인 등) 저장 — 도메인 추가/수정 시 사용 */
+    async function saveMetricsMap(newMetricsMap: any): Promise<void> {
+        try {
+            await backend.putMetricsMap(newMetricsMap);
+            metricsMap.value = newMetricsMap;
+        } catch (e) {
+            console.error('[useProcessArchitecture] Failed to save metrics map:', e);
+            throw e;
+        }
+    }
+
     return {
         procMap,
         metricsMap,
@@ -584,6 +624,7 @@ export function useProcessArchitecture() {
         myProcessFilter,
         loadCurrentUserOrgs,
         saveProcMap,
+        saveMetricsMap,
         advancedFilters
     };
 }

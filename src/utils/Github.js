@@ -228,16 +228,6 @@ getUserInfo() {
             resolve(result)
         })
     }
-    loadHandleBarHelper(handler){
-        try{
-            if( !handler ){
-                return;
-            }
-            (new Function(handler))();
-        }catch(e){
-            console.log(`Error] Load HandleBar Helper.js: ${e} `)
-        }
-    }
     getFolder(org, repo, path) {
         let me = this;
         return new Promise(async function (resolve, reject) {
@@ -423,127 +413,7 @@ getUserInfo() {
             })
         })
     }
-    setGitList(element, repository, gitRepoUrl) {
-        let me = this;
-        return new Promise(async function (resolve, reject) {
-            let isToppingSetting = false
-            if(element.url.includes("topping-")){
-                isToppingSetting = true
-            }
-            let toppingName = ""
-            if(isToppingSetting){
-                toppingName = repository
-            }
-            let gitTemplateContents = {};
-            let manifestsPerTemplate = {}
-            manifestsPerTemplate[gitRepoUrl] = []
-            let templateFrameWorkList = {}
-            let manifestsPerToppings = {}
-            manifestsPerToppings[gitRepoUrl] = []
-            let gitToppingList = {}
-            // let result = null;
-            
-            let result = await axios.get(element.url + '?recursive=1', { headers: me.getHeader() })
-            .then(function(res) {
-                if( res && res.data && res.data.tree.length > 0 ) {
-                    let callCnt = 0;
-                    res.data.tree.forEach(async function (ele, idx) {
-                        if(isToppingSetting){
-                            try{
-                                if (ele.type != 'tree') {
-                                    //var elePath = ele.path.replace(`${toppingName}/`, '')
-                                    var elePath = ele.path
-                                    manifestsPerToppings[gitRepoUrl].push(elePath)
     
-                                    if(!gitToppingList[gitRepoUrl]){
-                                        gitToppingList[gitRepoUrl] = {}
-                                    }
-                                    if(!gitToppingList[gitRepoUrl][elePath]){
-                                        gitToppingList[gitRepoUrl][elePath] = {}
-                                    }
-                                    gitToppingList[gitRepoUrl][elePath].requestUrl = ele.url
-    
-                                    var gitSha = await axios.get(ele.url, { headers: me.getHeader() })
-                                    if(!gitTemplateContents[elePath]) gitTemplateContents[elePath] = null
-                                    gitTemplateContents[elePath] = Base64.decode(gitSha.data.content);
-                                }
-                            }catch(e){
-                                console.log(`Error] Set ToppingLists: ${e}`)
-                            }finally {
-                                callCnt ++ ;
-                                if(res.data.tree.length == callCnt) {
-                                    Object.keys(gitTemplateContents).forEach(function (fileName) {
-                                        if(!gitToppingList[gitRepoUrl][fileName]){
-                                            gitToppingList[gitRepoUrl][fileName] = {}
-                                        }
-                                        gitToppingList[gitRepoUrl][fileName].content = gitTemplateContents[fileName]
-                                    });
-                                    console.log(`>>> Generate Code] Topping(${gitRepoUrl}) DONE`)
-                                    let result = {
-                                        gitToppingList: gitToppingList,
-                                        manifestsPerToppings: manifestsPerToppings,
-                                        gitTemplateContents: gitTemplateContents
-                                    }
-                                    resolve(result);
-                                }
-    
-                                var gitSha = await axios.get(ele.url, { headers: me.getHeader() });
-                                if(!gitTemplateContents[ele.path]) gitTemplateContents[ele.path] = null
-                                gitTemplateContents[ele.path] = Base64.decode(gitSha.data.content);
-                                if(ele.path.includes("helper.js")){
-                                    me.loadHandleBarHelper(Base64.decode(gitSha.data.content));
-                                }
-                            }
-                        } else {
-                            try {
-                                if (ele.type != 'tree') {
-                                    if(gitRepoUrl){
-                                        manifestsPerTemplate[gitRepoUrl].push('./' + ele.path)
-                                    }
-    
-                                    if(!templateFrameWorkList[gitRepoUrl]){
-                                        templateFrameWorkList[gitRepoUrl] = {}
-                                    }
-                                    if(!templateFrameWorkList[gitRepoUrl][ele.path]){
-                                        templateFrameWorkList[gitRepoUrl][ele.path] = {}
-                                    }
-                                    templateFrameWorkList[gitRepoUrl][ele.path].requestUrl = ele.url
-    
-                                    var gitSha = await axios.get(ele.url, { headers: me.getHeader() });
-                                    if(!gitTemplateContents[ele.path]) gitTemplateContents[ele.path] = null
-                                    gitTemplateContents[ele.path] = Base64.decode(gitSha.data.content);
-                                }
-                            } catch (e) {
-                                console.log(`Error] Set GitLists: ${e}`)
-                            } finally {
-                                let manifestsPerBaseTemplate = {}
-                                callCnt ++;
-                                if(res.data.tree.length == callCnt) {
-                                    manifestsPerBaseTemplate[gitRepoUrl] = manifestsPerTemplate[gitRepoUrl];
-                                    Object.keys(gitTemplateContents).forEach(function (fileName) {
-                                        if(!templateFrameWorkList[gitRepoUrl][fileName]){
-                                            templateFrameWorkList[gitRepoUrl][fileName] = {}
-                                        }
-                                        templateFrameWorkList[gitRepoUrl][fileName].content = gitTemplateContents[fileName]
-                                    });
-                                    console.log(`>>> Generate Code] Template(${gitRepoUrl}) DONE`);
-                                    let result = {
-                                        manifestsPerBaseTemplate: manifestsPerBaseTemplate,
-                                        templateFrameWorkList: templateFrameWorkList,
-                                        manifestsPerTemplate: manifestsPerTemplate,
-                                    }
-                                    resolve(result);
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    resolve();
-                }
-            })
-            .catch(e => (reject(e)))
-        })
-    }
     getCommit(org, repo, branch) {
         let me = this
         return new Promise(async function (resolve, reject) {

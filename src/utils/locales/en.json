@@ -35,13 +35,17 @@
         "reset": "Reset"
     },
     "validation": {
+        "title": "BPMN Validation Result",
+        "validationWarning": "Validation Warning",
         "warningMessage": "The following issues were found in the process definition:",
         "saveAnyway": "Save Anyway",
         "noStartEvent": "No start event found.",
         "noEndEvent": "No end event found.",
         "unconnectedElement": "Element is not connected.",
         "noIncomingConnection": "No incoming connection.",
-        "noOutgoingConnection": "No outgoing connection."
+        "noOutgoingConnection": "No outgoing connection.",
+        "noManual": "No manual (description).",
+        "callActivityNoProcess": "No process selected."
     },
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "successMsg": {
@@ -911,7 +915,9 @@
         "manualLink": "Manual Link",
         "selectElementHint": "Select a Task, Event, Gateway, etc. to edit properties",
         "taskSaveSuccess": "Task properties saved.",
-        "callActivitySaveSuccess": "Call Activity properties saved."
+        "callActivitySaveSuccess": "Call Activity properties saved.",
+        "expandAll": "Expand All",
+        "collapseAll": "Collapse All"
     },
     "versionComparison": {
         "title": "Version Comparison",
@@ -1304,6 +1310,8 @@
         "username": "Username",
         "password": "Password",
         "search": "Search User",
+        "noSearchResults": "No search results found",
+        "affiliatedTeam": "Affiliated Team",
         "inviteUser": "Invite User",
         "inviteUserMessage": "Invite your colleagues to join the company",
         "inviteUserMessage2": "*Emails will be sent to the invited users",
@@ -3172,6 +3180,8 @@
         "generatingId": "Generating ID..."
     },
     "ProcessMenu": {
+        "settings": "Settings",
+        "commonModule": "Common Module",
         "setPermission": "Set Permission",
         "setOwner": "Set Owner",
         "editProcess": "Edit Process",
@@ -3192,7 +3202,7 @@
         "saveSuccess": "Owner has been set successfully."
     },
     "elementComment": {
-        "title": "Approval Status",
+        "title": "Comments",
         "noComments": "No comments yet",
         "placeholder": "Write a comment (Ctrl+Enter to send)",
         "reply": "Reply",
@@ -3210,6 +3220,7 @@
     },
     "approvalState": {
         "title": "Approval Status",
+        "noRequest": "No approval request",
         "draft": "Draft",
         "expertReview": "Expert Review",
         "publicFeedback": "Public Feedback",
@@ -3781,5 +3792,54 @@
     "sidebar": {
         "dragHint": "Drag to move to your preferred position",
         "dontShowAgain": "Don't show again"
+    },
+    "colorRuleset": {
+        "title": "Color Ruleset",
+        "addNewRule": "Add New Rule",
+        "taskTypeRule": "Task Type Rule",
+        "leadTimeRule": "Lead Time Rule",
+        "rulesCount": "Rules ({count})",
+        "noRulesDefined": "No Rules Defined",
+        "noRulesHint": "Add a rule above to colorize tasks based on type or lead time",
+        "ruleTypeType": "Type",
+        "ruleTypeTime": "Time",
+        "applyToTaskTypes": "Apply to task types:",
+        "duplicateWarning": "Warning: {types} already defined in another rule",
+        "colors": "Colors:",
+        "fill": "Fill:",
+        "border": "Border:",
+        "noBorder": "No Border",
+        "leadTimeRange": "Lead time range:",
+        "minimum": "Minimum:",
+        "maximum": "Maximum:",
+        "days": "Days",
+        "hours": "Hours",
+        "min": "Min",
+        "leadTimeDescription": "Lead Time rule adjusts the intensity of the task's base color:",
+        "lightShortTime": "Light (short time)",
+        "darkLongTime": "Dark (long time)",
+        "cancel": "Cancel",
+        "saveAndApply": "Save & Apply",
+        "taskTypes": {
+            "userTask": "User Task",
+            "manualTask": "Manual Task",
+            "serviceTask": "Service Task",
+            "scriptTask": "Script Task",
+            "businessRuleTask": "Business Rule Task",
+            "sendTask": "Send Task",
+            "receiveTask": "Receive Task"
+        },
+        "presets": {
+            "yellowDefault": "Yellow (Default)",
+            "blue": "Blue",
+            "green": "Green",
+            "purple": "Purple",
+            "orange": "Orange",
+            "pink": "Pink",
+            "cyan": "Cyan",
+            "red": "Red",
+            "grey": "Grey",
+            "white": "White"
+        }
     }
 }

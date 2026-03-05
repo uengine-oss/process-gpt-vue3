@@ -632,6 +632,7 @@ export default {
             }
 
             // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
+            // PAL 모드에서는 프로세스 리뷰보드·내 수신함 숨김
             this.processItem = [
                 {
                     title: 'processArchitecture.title',
@@ -654,20 +655,22 @@ export default {
                     to: '/version-comparison',
                     disable: false
                 },
-                {
-                    title: 'reviewBoard.title',
-                    icon: 'submit-document',
-                    BgColor: 'primary',
-                    to: '/review-board',
-                    disable: false
-                },
-                {
-                    title: 'reviewBoard.myInbox',
-                    icon: 'submit-document',
-                    BgColor: 'primary',
-                    to: '/my-inbox',
-                    disable: false
-                }
+                ...(this.pal ? [] : [
+                    {
+                        title: 'reviewBoard.title',
+                        icon: 'submit-document',
+                        BgColor: 'primary',
+                        to: '/review-board',
+                        disable: false
+                    },
+                    {
+                        title: 'reviewBoard.myInbox',
+                        icon: 'submit-document',
+                        BgColor: 'primary',
+                        to: '/my-inbox',
+                        disable: false
+                    }
+                ])
             ];
 
             // 프로세스 섹션: 프로세스 정의(메인 행) + 옆 작은 버튼으로 드롭다운
