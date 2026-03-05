@@ -20,7 +20,7 @@
                     <template v-slot:activator="{ props }">
                         <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer;" size="small">mdi-palette</v-icon>
                     </template>
-                    <span>Color Ruleset</span>
+                    <span>{{ $t('colorRuleset.title') }}</span>
                 </v-tooltip>
             </div>
             <!-- Font size controls -->
@@ -110,7 +110,8 @@ export default {
         'addShape',
         'done',
         'changeElement',
-        'multiSelect'
+        'multiSelect',
+        'selectedElement'
     ],
     props: {
         url: {
@@ -1542,6 +1543,17 @@ export default {
                         self.$emit('multiSelect', tasks);
                     } else {
                         self.$emit('multiSelect', []);
+                    }
+                    // 엘리먼트 단일 클릭 선택 시 selectedElement 이벤트 (ElementCommentPanel 등에서 사용)
+                    if (newSelection.length === 1) {
+                        const el = newSelection[0];
+                        self.$emit('selectedElement', {
+                            id: el.id,
+                            type: el.type || '',
+                            name: el.businessObject?.name || el.id
+                        });
+                    } else {
+                        self.$emit('selectedElement', null);
                     }
                 });
 

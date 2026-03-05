@@ -4,8 +4,8 @@
         <div class="comparison-header">
             <div class="header-left">
                 <v-btn variant="text" size="small" @click="goBack">
-                    <v-icon start>mdi-arrow-left</v-icon>
-                    {{ $t('versionComparison.back') || 'Back' }}
+                    <v-icon start>{{ dialogMode ? 'mdi-close' : 'mdi-arrow-left' }}</v-icon>
+                    {{ dialogMode ? ($t('common.close') || '닫기') : ($t('versionComparison.back') || 'Back') }}
                 </v-btn>
                 <v-icon class="mx-2" size="20">mdi-compare-horizontal</v-icon>
                 <span class="text-subtitle-1 font-weight-bold">
@@ -34,36 +34,38 @@
         </div>
 
         <div class="comparison-body">
-            <!-- Left Panel: Process Tree -->
-            <div class="comparison-left-panel" :style="{ width: leftPanelWidth + 'px' }">
-                <div class="tree-header">
-                    <div class="text-subtitle-2 font-weight-medium pa-3 pb-1">
-                        {{ $t('processHierarchy.title') || 'Process Hierarchy' }}
+            <!-- Left Panel: Process Tree (다이얼로그 모드에서는 숨김) -->
+            <template v-if="!dialogMode">
+                <div class="comparison-left-panel" :style="{ width: leftPanelWidth + 'px' }">
+                    <div class="tree-header">
+                        <div class="text-subtitle-2 font-weight-medium pa-3 pb-1">
+                            {{ $t('processHierarchy.title') || 'Process Hierarchy' }}
+                        </div>
+                        <div class="text-caption text-medium-emphasis px-3 pb-2">
+                            {{ $t('versionComparison.selectProcess') || 'Select a detail process to compare' }}
+                        </div>
                     </div>
-                    <div class="text-caption text-medium-emphasis px-3 pb-2">
-                        {{ $t('versionComparison.selectProcess') || 'Select a detail process to compare' }}
+                    <div class="tree-content">
+                        <ProcessHierarchyTree
+                            :procMap="procMap"
+                            :metricsMap="metricsMap"
+                            :definitionList="definitionList"
+                            :selectedId="selectedProcessId"
+                            @select="handleSelectProcess"
+                            :hideHeader="true"
+                        />
                     </div>
-                </div>
-                <div class="tree-content">
-                    <ProcessHierarchyTree
-                        :procMap="procMap"
-                        :metricsMap="metricsMap"
-                        :definitionList="definitionList"
-                        :selectedId="selectedProcessId"
-                        @select="handleSelectProcess"
-                        :hideHeader="true"
-                    />
                 </div>
                 <div class="resize-handle" @mousedown="startResize"></div>
-            </div>
+            </template>
 
             <!-- Center Panel: Two BPMN Viewers -->
-            <div class="comparison-center-panel">
+            <div class="comparison-center-panel" :class="{ 'comparison-center-panel-full': dialogMode }">
                 <!-- 프로세스 미선택 시 통합 안내 메시지 -->
                 <div v-if="!selectedProcessId" class="empty-process-placeholder">
                     <v-icon size="48" color="grey-lighten-1">mdi-file-compare</v-icon>
                     <div class="text-body-1 text-medium-emphasis mt-3">
-                        {{ $t('versionComparison.selectProcessToCompare') || '비교할 프로세스를 왼쪽 목록에서 선택하세요' }}
+                        {{ dialogMode ? ($t('versionComparison.loadingProcess') || '프로세스 불러오는 중…') : ($t('versionComparison.selectProcessToCompare') || '비교할 프로세스를 왼쪽 목록에서 선택하세요') }}
                     </div>
                     <div class="text-caption text-medium-emphasis mt-1">
                         {{ $t('versionComparison.selectProcessHint') || '프로세스를 선택하면 버전 간 차이를 비교할 수 있습니다' }}
@@ -476,6 +478,12 @@ export default {
         ProcessHierarchyTree,
         BpmnUengineViewer,
     },
+    props: {
+        /** 다이얼로그로 열릴 때 true (닫기 버튼·emit close) */
+        dialogMode: { type: Boolean, default: false },
+        /** 다이얼로그 모드에서 초기 선택할 프로세스 id (definition path) */
+        initialProcessId: { type: String, default: '' },
+    },
     data() {
         return {
             // Tree data
@@ -532,13 +540,14 @@ export default {
     async mounted() {
         await this.loadInitialData();
 
-        // URL query에서 processId 가져오기
-        const processId = this.$route.query?.processId;
+        // 다이얼로그 모드: initialProcessId 사용 / 페이지 모드: URL query 사용
+        const processId = this.dialogMode
+            ? (this.initialProcessId || '').trim()
+            : (this.$route?.query?.processId || '');
         if (processId) {
             const def = this.definitionList.find(d => d.id === processId || d.file_name === processId);
-            if (def) {
-                this.handleSelectProcess(processId, def.name || processId);
-            }
+            const name = def ? (def.name || processId) : (processId.split('/').pop() || processId).replace(/\.bpmn$/i, '');
+            this.handleSelectProcess(processId, name);
         }
 
         window.addEventListener('mousemove', this.onResize);
@@ -550,11 +559,16 @@ export default {
     },
     methods: {
         goBack() {
-            this.$router.back();
+            if (this.dialogMode) {
+                this.$emit('close');
+            } else {
+                this.$router.back();
+            }
         },
 
         async loadInitialData() {
             try {
+                const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
                 const [procMapResult, metricsResult, defList, versionList] = await Promise.all([
                     backend.getProcessDefinitionMap(),
                     backend.getMetricsMap(),
@@ -567,9 +581,42 @@ export default {
                 this.procMap = procMapResult;
                 this.metricsMap = metricsResult;
 
-                // proc_def_version에서 각 정의의 최신 버전 추출
+                // uEngine: 트리와 id 일치시키기 위해 procMap에서 리프만 평면 목록으로 구성
+                let listForVersion = defList || [];
+                if (isUEngine && procMapResult?.mega_proc_list?.length > 0) {
+                    const flatFromMap = [];
+                    procMapResult.mega_proc_list.forEach((mega) => {
+                        (mega.major_proc_list || []).forEach((major) => {
+                            (major.sub_proc_list || []).forEach((sub) => {
+                                const sid = sub.id ?? sub.path ?? sub.name;
+                                if (sid) flatFromMap.push({ id: sid, file_name: sid, name: sub.name ?? sid });
+                            });
+                        });
+                    });
+                    if (flatFromMap.length > 0) listForVersion = flatFromMap;
+                }
+
                 const latestVersionMap = {};
-                if (versionList && versionList.length > 0) {
+                if (isUEngine && listForVersion.length > 0) {
+                    const normalizeId = (id) => (typeof id === 'string' ? id.replace(/\.bpmn$/i, '') : id);
+                    const versionResults = await Promise.all(
+                        listForVersion.map((def) => {
+                            const id = normalizeId(def.id || def.file_name);
+                            if (!id) return Promise.resolve([]);
+                            return backend.getDefinitionVersions(id, { sort: 'desc', orderBy: 'version' });
+                        })
+                    );
+                    versionResults.forEach((versions, idx) => {
+                        const rawId = listForVersion[idx]?.id ?? listForVersion[idx]?.file_name;
+                        if (!rawId || !versions?.length) return;
+                        const sorted = [...versions].sort((a, b) => {
+                            const [aM, am] = String(a.version).split('.').map(Number);
+                            const [bM, bm] = String(b.version).split('.').map(Number);
+                            return bM !== aM ? bM - aM : (bm || 0) - (am || 0);
+                        });
+                        latestVersionMap[rawId] = String(sorted[0].version);
+                    });
+                } else if (versionList && versionList.length > 0) {
                     versionList.forEach(v => {
                         const defId = v.proc_def_id;
                         if (!defId) return;
@@ -579,8 +626,7 @@ export default {
                     });
                 }
 
-                // definitionList에 version 정보 주입
-                const defs = defList || [];
+                const defs = listForVersion;
                 defs.forEach(def => {
                     const id = def.id || def.file_name;
                     if (id && latestVersionMap[id]) {
@@ -644,13 +690,17 @@ export default {
         async loadVersionA() {
             if (!this.selectedVersionA || !this.selectedProcessId) return;
 
+            const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
             try {
                 if (this.selectedVersionA === '__current__') {
-                    // 최신 저장본
                     const def = this.definitionList.find(
                         d => d.id === this.selectedProcessId || d.file_name === this.selectedProcessId
                     );
-                    this.versionAXml = def?.bpmn || '';
+                    let xml = def?.bpmn || '';
+                    if (isUEngine && !xml) {
+                        xml = await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn' }) || '';
+                    }
+                    this.versionAXml = xml;
                     this.versionAData = {
                         version: 'current',
                         timeStamp: def?.updated_at || def?.created_at || '',
@@ -658,10 +708,18 @@ export default {
                     };
                 } else {
                     const v = this.versions.find(
-                        v => String(v.version) === String(this.selectedVersionA)
+                        ver => String(ver.version) === String(this.selectedVersionA)
                     );
                     if (v) {
-                        this.versionAXml = v.snapshot || '';
+                        let xml = v.snapshot || '';
+                        if (isUEngine && !xml) {
+                            const snap = await backend.getDefinitionVersions(this.selectedProcessId, {
+                                key: 'snapshot',
+                                match: { version: v.version },
+                            });
+                            xml = (snap && snap[0] && snap[0].snapshot) ? snap[0].snapshot : '';
+                        }
+                        this.versionAXml = xml;
                         this.versionAData = v;
                     }
                 }
@@ -674,12 +732,17 @@ export default {
         async loadVersionB() {
             if (!this.selectedVersionB || !this.selectedProcessId) return;
 
+            const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
             try {
                 if (this.selectedVersionB === '__current__') {
                     const def = this.definitionList.find(
                         d => d.id === this.selectedProcessId || d.file_name === this.selectedProcessId
                     );
-                    this.versionBXml = def?.bpmn || '';
+                    let xml = def?.bpmn || '';
+                    if (isUEngine && !xml) {
+                        xml = await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn' }) || '';
+                    }
+                    this.versionBXml = xml;
                     this.versionBData = {
                         version: 'current',
                         timeStamp: def?.updated_at || def?.created_at || '',
@@ -687,10 +750,18 @@ export default {
                     };
                 } else {
                     const v = this.versions.find(
-                        v => String(v.version) === String(this.selectedVersionB)
+                        ver => String(ver.version) === String(this.selectedVersionB)
                     );
                     if (v) {
-                        this.versionBXml = v.snapshot || '';
+                        let xml = v.snapshot || '';
+                        if (isUEngine && !xml) {
+                            const snap = await backend.getDefinitionVersions(this.selectedProcessId, {
+                                key: 'snapshot',
+                                match: { version: v.version },
+                            });
+                            xml = (snap && snap[0] && snap[0].snapshot) ? snap[0].snapshot : '';
+                        }
+                        this.versionBXml = xml;
                         this.versionBData = v;
                     }
                 }
@@ -794,24 +865,23 @@ export default {
             if (!this.versionBXml || !this.selectedProcessId) return;
 
             const versionLabel = this.selectedVersionB === '__current__'
-                ? 'Current'
+                ? (this.$t('versionComparison.currentVersion') || 'Current')
                 : 'v' + this.selectedVersionB;
 
-            if (!confirm(
-                (this.$t('versionComparison.rollbackConfirm') || '{version} 버전으로 되돌리시겠습니까?')
-                    .replace('{version}', versionLabel)
-            )) return;
+            const confirmMsg = this.$t('versionComparison.rollbackConfirm', { version: versionLabel })
+                || `${versionLabel} 버전으로 되돌리시겠습니까?`;
+            if (!confirm(confirmMsg)) return;
 
             try {
                 await backend.putRawDefinition(this.versionBXml, this.selectedProcessId, {
                     name: this.selectedProcessName,
                 });
                 if (this.$toast) {
-                    this.$toast.success(
-                        (this.$t('versionComparison.rollbackSuccess') || '{version} 버전으로 되돌렸습니다.')
-                            .replace('{version}', versionLabel)
-                    );
+                    const successMsg = this.$t('versionComparison.rollbackSuccess', { version: versionLabel })
+                        || `${versionLabel} 버전으로 되돌렸습니다.`;
+                    this.$toast.success(successMsg);
                 }
+                this.$emit('rollbackDone');
             } catch (e) {
                 console.error('Rollback failed:', e);
                 if (this.$toast) {
@@ -912,6 +982,9 @@ export default {
     flex-direction: column;
     min-width: 400px;
     overflow: hidden;
+}
+.comparison-center-panel-full {
+    min-width: 0;
 }
 .version-panel {
     flex: 1;

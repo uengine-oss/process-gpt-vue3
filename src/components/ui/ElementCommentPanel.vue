@@ -13,7 +13,6 @@
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-card-title>
-
         <!-- 선택된 요소 정보 -->
         <div v-if="selectedElement && isTaskType(selectedElement.type)" class="px-4 pb-2 pt-2">
             <v-chip size="small" :color="getElementColor(selectedElement.type)" variant="tonal"

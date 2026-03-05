@@ -124,16 +124,20 @@ export default {
                             ...rest,
                             id: item.id ? item.id : item.path.split('.')[0],
                         };
-                    })
-                
-                    // item: {
-                    //     name:"test.form"
-                    //     directory:false
-                    //     path:"form/test.form"
-                    //     displayPath:"/form"
-                    //     id:"form/test"
-                    // }
-                    
+                    });
+
+                    // PAL 전용: definition-map에서 commonModule === true 인 프로세스만 표시
+                    if (me.options.commonModuleOnly && typeof window !== 'undefined' && window.$pal) {
+                        const commonIds = await me.getCommonModuleProcessIds();
+                        if (commonIds.size > 0) {
+                            lists = lists.filter(item => {
+                                const id = item.id || (item.path || '').replace(/\.(bpmn|xml)$/i, '');
+                                const pathBase = (item.path || '').replace(/\.(bpmn|xml)$/i, '');
+                                return commonIds.has(id) || commonIds.has(pathBase) || (pathBase.includes('/') && commonIds.has(pathBase.split('/').pop()));
+                            });
+                        }
+                    }
+
                     me.items = lists
                     me.loading = false
                     if(me.value){
@@ -168,7 +172,29 @@ export default {
         },
         selectItem(item){
             this.value = this.bindOptions.returnObject ? item : item[this.bindOptions.itemTitle]
-        }
+        },
+        /** definition-map에서 commonModule === true 인 서브프로세스 id 집합 반환 (PAL 전용) */
+        async getCommonModuleProcessIds() {
+            const ids = new Set();
+            try {
+                const map = await this.backend.getProcessDefinitionMap();
+                if (!map || !map.mega_proc_list) return ids;
+                for (const mega of map.mega_proc_list) {
+                    if (!mega.major_proc_list) continue;
+                    for (const major of mega.major_proc_list) {
+                        if (!major.sub_proc_list) continue;
+                        for (const sub of major.sub_proc_list) {
+                            if (sub.commonModule === true && sub.id) {
+                                ids.add(String(sub.id).trim());
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[ProcessDefinitionDisplay] getCommonModuleProcessIds failed', e);
+            }
+            return ids;
+        },
     }
 }
 </script>

@@ -242,10 +242,12 @@ export default {
 
                 // 타입 기반으로 모든 validation 오버레이 일괄 제거 (ID 추적 실패 방지)
                 try { overlays.remove({ type: 'validation-error' }); } catch (e) { /* ignore */ }
+                try { overlays.remove({ type: 'validation-warning' }); } catch (e) { /* ignore */ }
 
                 // 모든 요소에서 validation 마커 제거
                 elementRegistry.getAll().forEach(el => {
                     try { canvas.removeMarker(el.id, 'validation-error-element'); } catch (e) { /* ignore */ }
+                    try { canvas.removeMarker(el.id, 'validation-warning-element'); } catch (e) { /* ignore */ }
                 });
 
                 this.validationOverlayIds = [];
@@ -284,13 +286,21 @@ export default {
         },
 
         createOverlayHtml(errors) {
+            const isWarningOnly = errors.length > 0 && errors.every(e => e.level === 'warning');
+            const borderColor = isWarningOnly ? '#ffb74d' : '#ffcdd2';
+            const dotColor = isWarningOnly ? '#ff9800' : '#f44336';
+            const titleColor = isWarningOnly ? '#ed6c02' : '#f44336';
+            const titleText = isWarningOnly
+                ? (this.$t('validation.validationWarning') || '검증 경고')
+                : (this.$t('validation.validationError') || '검증 오류');
+
             const container = document.createElement('div');
             container.style.cssText = `
                 display: flex;
                 align-items: flex-start;
                 gap: 8px;
                 background: #fff;
-                border: 1px solid #ffcdd2;
+                border: 1px solid ${borderColor};
                 border-radius: 8px;
                 padding: 8px 12px;
                 box-shadow: 0 2px 12px rgba(0,0,0,0.12);
@@ -306,7 +316,7 @@ export default {
                 width: 12px;
                 height: 12px;
                 border-radius: 50%;
-                background: #f44336;
+                background: ${dotColor};
                 margin-top: 2px;
                 flex-shrink: 0;
             `;
@@ -315,11 +325,10 @@ export default {
             const content = document.createElement('div');
 
             const title = document.createElement('div');
-            title.style.cssText = 'font-size: 12px; font-weight: 600; color: #f44336; line-height: 1.3;';
-            title.textContent = this.$t('validation.validationError') || 'Validation Error';
+            title.style.cssText = `font-size: 12px; font-weight: 600; color: ${titleColor}; line-height: 1.3;`;
+            title.textContent = titleText;
             content.appendChild(title);
 
-            // 각 에러 메시지 표시
             errors.forEach(err => {
                 const msg = document.createElement('div');
                 msg.style.cssText = 'font-size: 11px; color: #666; line-height: 1.4;';
@@ -427,8 +436,8 @@ export default {
                         }
                     }
 
-                    // W005: 레인 담당자 없음
-                    if (type === 'bpmn:Lane') {
+                    // W005: 레인 담당자 없음 (PAL 모드에서는 BPMN 모델만 검사하므로 스킵)
+                    if (!(typeof window !== 'undefined' && window.$pal) && type === 'bpmn:Lane') {
                         const name = element.businessObject?.name || '';
                         if (!name.trim() || name === 'Lane' || name === 'Lane 1') {
                             elementErrors.push({
@@ -439,8 +448,8 @@ export default {
                         }
                     }
 
-                    // W006: 게이트웨이 분기 조건 누락
-                    if (type === 'bpmn:SequenceFlow') {
+                    // W006: 게이트웨이 분기 조건 누락 (PAL 모드에서는 BPMN 모델만 검사하므로 스킵)
+                    if (!(typeof window !== 'undefined' && window.$pal) && type === 'bpmn:SequenceFlow') {
                         const source = element.source;
                         if (source?.type === 'bpmn:ExclusiveGateway' || source?.type === 'bpmn:InclusiveGateway') {
                             const isDefault = source.businessObject?.default?.id === element.id;
@@ -457,18 +466,69 @@ export default {
                         }
                     }
 
-                    // element에 에러가 있으면 오버레이 추가
+                    // PAL 전용: 태스크에 description(매뉴얼) 없으면 경고
+                    const isPal = typeof window !== 'undefined' && window.$pal;
+                    if (isPal && type?.includes('Task')) {
+                        let description = '';
+                        const bo = element.businessObject;
+                        if (bo?.documentation?.[0]?.text) description = bo.documentation[0].text;
+                        if (!description?.trim() && bo?.extensionElements?.values) {
+                            const uengineProps = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                            if (uengineProps?.json) {
+                                try {
+                                    const parsed = JSON.parse(uengineProps.json);
+                                    description = (parsed && parsed.description) ? String(parsed.description) : '';
+                                } catch (e) { /* ignore */ }
+                            }
+                        }
+                        if (!description?.trim()) {
+                            elementErrors.push({
+                                level: 'warning',
+                                message: this.$t('validation.noManual') || '매뉴얼이 없습니다.',
+                                shortMessage: this.$t('validation.noManual') || '매뉴얼이 없습니다.',
+                            });
+                        }
+                    }
+
+                    // uEngine 모드: Call Activity에 선택된 프로세스가 없으면 에러
+                    const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
+                    if (isUEngine && (type === 'bpmn:CallActivity' || type?.includes('CallActivity'))) {
+                        let definitionId = '';
+                        const bo = element.businessObject;
+                        if (bo?.extensionElements?.values) {
+                            const uengineProps = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                            if (uengineProps?.json) {
+                                try {
+                                    const parsed = JSON.parse(uengineProps.json);
+                                    definitionId = (parsed && parsed.definitionId) ? String(parsed.definitionId).trim() : '';
+                                } catch (e) { /* ignore */ }
+                            }
+                        }
+                        if (!definitionId) {
+                            elementErrors.push({
+                                level: 'error',
+                                message: this.$t('validation.callActivityNoProcess') || '선택된 프로세스가 없습니다.',
+                                shortMessage: this.$t('validation.callActivityNoProcess') || '선택된 프로세스가 없습니다.',
+                            });
+                        }
+                    }
+
+                    // element에 에러/경고가 있으면 오버레이 추가
                     if (elementErrors.length > 0) {
-                        // 마커 추가 (빨간 테두리)
+                        const isWarningOnly = elementErrors.every(e => e.level === 'warning');
+                        const markerClass = isWarningOnly ? 'validation-warning-element' : 'validation-error-element';
+                        const overlayType = isWarningOnly ? 'validation-warning' : 'validation-error';
+
+                        // 마커 추가 (에러: 빨간 테두리, 경고: 주황 테두리)
                         try {
-                            canvas.addMarker(element.id, 'validation-error-element');
+                            canvas.addMarker(element.id, markerClass);
                             this.validationMarkerIds.push(element.id);
                         } catch (e) { /* ignore */ }
 
-                        // 오버레이 추가 (에러 메시지 말풍선)
+                        // 오버레이 추가 (에러/경고 메시지 말풍선)
                         try {
                             const overlayHtml = this.createOverlayHtml(elementErrors);
-                            const overlayId = overlays.add(element.id, 'validation-error', {
+                            const overlayId = overlays.add(element.id, overlayType, {
                                 position: {
                                     top: -12,
                                     left: (element.width || 100) + 8
@@ -588,6 +648,16 @@ export default {
 }
 .validation-error-element .djs-outline {
     stroke: #f44336 !important;
+    stroke-width: 1px !important;
+    stroke-dasharray: 4 3;
+}
+/* 검증 경고 마커 */
+.validation-warning-element .djs-visual > :nth-child(1) {
+    stroke: #ff9800 !important;
+    stroke-width: 2.5px !important;
+}
+.validation-warning-element .djs-outline {
+    stroke: #ff9800 !important;
     stroke-width: 1px !important;
     stroke-dasharray: 4 3;
 }

@@ -166,7 +166,8 @@ export default {
 
             this.value.sub_proc_list.push({
                 id: processId,
-                name: newProcess.name
+                name: newProcess.name,
+                ...(newProcess.commonModule !== undefined && { commonModule: !!newProcess.commonModule })
             });
 
             // Navigate to process editor if this is a newly created process
