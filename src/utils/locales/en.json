@@ -3180,6 +3180,8 @@
         "generatingId": "Generating ID..."
     },
     "ProcessMenu": {
+        "settings": "Settings",
+        "commonModule": "Common Module",
         "setPermission": "Set Permission",
         "setOwner": "Set Owner",
         "editProcess": "Edit Process",

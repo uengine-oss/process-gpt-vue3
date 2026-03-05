@@ -1149,6 +1149,10 @@ export default {
 
         // Subscribe to lock table changes for force checkout notifications
         this.subscribeLockChanges();
+
+        // PAL 전용: 서브프로세스 설정(공통 모듈) 저장 시 정의체계도 저장
+        this._onSaveProcessDefinitionMap = () => this.saveProcess();
+        this.EventBus.on('saveProcessDefinitionMap', this._onSaveProcessDefinitionMap);
     },
     beforeUnmount() {
         // Unsubscribe from lock table changes
@@ -1156,8 +1160,10 @@ export default {
             this.lockSubscription.unsubscribe();
             this.lockSubscription = null;
         }
+        if (this._onSaveProcessDefinitionMap) {
+            this.EventBus.off('saveProcessDefinitionMap', this._onSaveProcessDefinitionMap);
+        }
     },
-    beforeUnmount() {},
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
             this.pendingRoute = { to, from, next };
