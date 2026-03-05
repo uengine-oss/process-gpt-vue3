@@ -78,7 +78,7 @@
         "@vueup/vue-quill": "^1.2.0",
         "@vueuse/core": "^8.9.4",
         "aos": "^2.3.4",
-        "apexcharts": "3.40.0",
+        "apexcharts": "5.10.1",
         "apexcharts-clevision": "^3.28.5",
         "apextree": "^1.2.0",
         "axios": "^1.6.5",
