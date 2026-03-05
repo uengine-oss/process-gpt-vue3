@@ -120,7 +120,7 @@ rules:
     metadata:
       guide: "Javascript_시큐어코딩_가이드(2023)"
       section: "보안기능 > 부적절한 인증서 유효성 검증"
-    pattern: rejectUnauthorized: false
+    pattern: "rejectUnauthorized: false"
 
   - id: kisa.js.supplychain.no-download-without-integrity
     message: "[KISA JS Guide] 무결성 검사 없는 코드 다운로드 위험(import from URL)"
