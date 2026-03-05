@@ -439,26 +439,25 @@ class UEngineBackend implements Backend {
         return response.data;
     }
     // @ts-ignore
-    async getRawDefinition(defPath: string, options?: any) {
-        if (options.type == 'deleted') return null;
-        let path = `/definition/raw/${defPath}.${options.type}`;
-        if (options.version) {
-            path = path + `/version/${options.version}`;
+    async getRawDefinition(defPath: string, options) {
+        if (!defPath) return null;
+        if (options?.type === 'deleted') return null;
+
+        const type = options?.type ?? 'bpmn';
+        let requestPath = String(defPath).replace(/\.bpmn$/i, '');
+        if (type === 'bpmn' && !requestPath.includes('definitions/')) {
+            requestPath = requestPath ? `definitions/${requestPath}` : 'definitions';
         }
-        const response = await axiosInstance.get(path, options);
-        return response.data;
+        let path = `/definition/raw/${requestPath}.${type}`;
+        if (options?.version) path = path + `/version/${options.version}`;
 
         const response = await axiosInstance.get(path, options ?? {});
         const data = response?.data;
         if (data == null) return null;
 
-        // const response = await axiosInstance.get(path, options ?? {});
-        // let data = response?.data;
-        // if (data == null) return null;
-
-        // if (type === 'bpmn' && typeof data === 'object' && 'bpmn' in data) return data.bpmn;
-        // if (type === 'form' && typeof data === 'object' && 'html' in data) return data.html;
-        // return data;
+        if (type === 'bpmn' && typeof data === 'object' && 'bpmn' in data) return data.bpmn;
+        if (type === 'form' && typeof data === 'object' && 'html' in data) return data.html;
+        return data;
     }
 
     // Process Service Impl API
@@ -2113,13 +2112,16 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    // async getData(path: string, options: any): Promise<any> {
-    //     console.warn("getData is not implemented - only use Process-GPT Mode");
-    //     return null;
-    // }
-
     // Task Execution Properties API (분석용) - UEngine 모드에서는 미지원
-    async saveTaskExecutionProperties(params: { procDefId: string; procInstId: string }): Promise<any> {
+    async saveTaskExecutionProperties(params: {
+        procDefId: string;
+        procInstId: string;
+        activityId: string;
+        activityName?: string;
+        todoId?: string;
+        properties: any;
+        executorEmail?: string;
+    }): Promise<any> {
         console.warn('saveTaskExecutionProperties is not implemented - only use Process-GPT Mode');
         return null;
     }

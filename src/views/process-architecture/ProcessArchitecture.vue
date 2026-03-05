@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="10" class="process-architecture rounded-xl" style="overflow: auto; height: 100%;">
+    <v-card elevation="0" class="process-architecture" style="overflow: auto; height: 100%">
         <!-- Header -->
         <div class="pa-6 pb-0">
             <div class="d-flex align-center justify-space-between mb-1">
@@ -179,52 +179,6 @@
                         {{ advancedFilterCount }}
                     </v-chip>
                 </v-btn>
-
-                <!-- Filter Preset Menu -->
-                <v-menu location="bottom start">
-                    <template #activator="{ props: menuProps }">
-                        <v-btn
-                            v-bind="menuProps"
-                            variant="outlined"
-                            size="small"
-                            prepend-icon="mdi-content-save-outline"
-                            append-icon="mdi-chevron-down"
-                        >
-                            {{ $t('processArchitecture.filterPreset.button') }}
-                        </v-btn>
-                    </template>
-                    <v-card min-width="240" class="pa-1">
-                        <v-list v-if="filterPresets.length > 0" density="compact" class="py-0">
-                            <v-list-item
-                                v-for="preset in filterPresets"
-                                :key="preset.id"
-                                :title="preset.name"
-                                :subtitle="new Date(preset.createdAt).toLocaleDateString()"
-                                @click="loadFilterPreset(preset.id)"
-                            >
-                                <template #append>
-                                    <v-btn
-                                        icon="mdi-delete-outline"
-                                        size="x-small"
-                                        variant="text"
-                                        color="grey"
-                                        @click.stop="deleteFilterPreset(preset.id)"
-                                    />
-                                </template>
-                            </v-list-item>
-                        </v-list>
-                        <div v-else class="px-3 py-3 text-center text-caption text-grey">
-                            {{ $t('processArchitecture.filterPreset.empty') }}
-                        </div>
-                        <v-divider class="my-1" />
-                        <v-list-item
-                            prepend-icon="mdi-plus"
-                            :title="$t('processArchitecture.filterPreset.saveCurrent')"
-                            density="compact"
-                            @click="onSaveFilterPreset"
-                        />
-                    </v-card>
-                </v-menu>
 
                 <!-- My Processes Filter (inline chips) -->
                 <div class="d-flex align-center ga-1">
@@ -525,12 +479,9 @@ const {
     loadCurrentUserOrgs,
     showToBe,
     saveProcMap,
-    advancedFilters,
-    filterPresets,
-    saveFilterPreset,
-    deleteFilterPreset,
     saveMetricsMap,
-});
+    advancedFilters
+} = useProcessArchitecture();
 
 const isAdmin = computed(() => {
     const role = localStorage.getItem('role');
@@ -750,13 +701,6 @@ function resetAllFilters() {
     myProcessFilter.value.myCreation = false;
     myProcessFilter.value.myOrganization = false;
     resetAdvancedFilters();
-}
-
-function onSaveFilterPreset() {
-    const name = window.prompt(t('processArchitecture.filterPreset.namePrompt'));
-    if (name && name.trim()) {
-        saveFilterPreset(name.trim());
-    }
 }
 
 // Sync chip group index with selectedDomain
@@ -1145,23 +1089,6 @@ function onProcessCreated(newProc: { id: string; name: string }) {
 
 .domain-chips :deep(.v-chip) {
     font-weight: 500;
-}
-
-.color-option {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.color-option:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-}
-.color-option.color-selected {
-    border-color: #333;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
 }
 
 .stats-bar {
