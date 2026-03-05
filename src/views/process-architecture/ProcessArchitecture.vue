@@ -858,11 +858,9 @@ async function runExport(format: ExportFormat) {
 
     try {
         if (format === 'excel') {
-            // NOTE: requires 'xlsx' package: npm install xlsx
-            // Dynamic import - falls back gracefully if not installed
-            const XLSX = await import('xlsx').catch(() => null);
-            if (!XLSX) {
-                alert('xlsx 패키지가 설치되어 있지 않습니다. npm install xlsx 를 실행해주세요.');
+            const ExcelJS = await import('exceljs').catch(() => null);
+            if (!ExcelJS) {
+                alert('exceljs 패키지가 설치되어 있지 않습니다. npm install exceljs 를 실행해주세요.');
                 return;
             }
             const rows = flattenProcMap(map);
@@ -871,10 +869,15 @@ async function runExport(format: ExportFormat) {
                 headers,
                 ...rows.map(r => [r.pid, r.domain, r.mega, r.major, r.sub, r.status, r.version, r.owner, r.fte, r.oss])
             ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Processes');
-            XLSX.writeFile(wb, `process-architecture-${ts}.xlsx`);
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Processes');
+            worksheet.addRows(wsData);
+            worksheet.columns = [12, 18, 24, 24, 24, 14, 12, 18, 10, 20].map((width) => ({ width }));
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            downloadBlob(blob, `process-architecture-${ts}.xlsx`);
 
         } else if (format === 'json') {
             const json = JSON.stringify(map, null, 2);

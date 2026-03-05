@@ -976,7 +976,7 @@ export default {
                     action: () => {
                         this.openMarketplaceDialog = true;
                     }
-                }
+                },
                 // {
                 //     show: this.componentName === 'DefinitionMapList' && this.isAdmin,
                 //     icon: 'file-tree',
