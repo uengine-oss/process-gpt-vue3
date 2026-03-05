@@ -1054,7 +1054,9 @@
         "manualLink": "매뉴얼 링크",
         "selectElementHint": "Task, Event, Gateway 등의 요소를 선택하면 속성을 편집할 수 있습니다",
         "taskSaveSuccess": "Task 속성이 저장되었습니다.",
-        "callActivitySaveSuccess": "Call Activity 속성이 저장되었습니다."
+        "callActivitySaveSuccess": "Call Activity 속성이 저장되었습니다.",
+        "expandAll": "전체열기",
+        "collapseAll": "전체닫기"
     },
     "versionComparison": {
         "title": "버전 비교",

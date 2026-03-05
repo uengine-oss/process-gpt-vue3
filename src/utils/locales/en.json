@@ -911,7 +911,9 @@
         "manualLink": "Manual Link",
         "selectElementHint": "Select a Task, Event, Gateway, etc. to edit properties",
         "taskSaveSuccess": "Task properties saved.",
-        "callActivitySaveSuccess": "Call Activity properties saved."
+        "callActivitySaveSuccess": "Call Activity properties saved.",
+        "expandAll": "Expand All",
+        "collapseAll": "Collapse All"
     },
     "versionComparison": {
         "title": "Version Comparison",
