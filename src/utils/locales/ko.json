@@ -3406,7 +3406,7 @@
         "saveSuccess": "담당자가 설정되었습니다."
     },
     "elementComment": {
-        "title": "승인 상태",
+        "title": "댓글",
         "noComments": "댓글이 없습니다",
         "placeholder": "댓글을 입력하세요 (Ctrl+Enter로 전송)",
         "reply": "답글",
@@ -3424,6 +3424,7 @@
     },
     "approvalState": {
         "title": "승인 상태",
+        "noRequest": "승인 요청이 없습니다",
         "draft": "작성중",
         "expertReview": "전문가 검토",
         "publicFeedback": "전사 공람",
@@ -4001,5 +4002,54 @@
     "sidebar": {
         "dragHint": "드래그하여 원하는 위치로 이동할 수 있습니다",
         "dontShowAgain": "다시 표시하지 않음"
+    },
+    "colorRuleset": {
+        "title": "색상 규칙",
+        "addNewRule": "새 규칙 추가",
+        "taskTypeRule": "작업 유형 규칙",
+        "leadTimeRule": "리드타임 규칙",
+        "rulesCount": "규칙 ({count}개)",
+        "noRulesDefined": "정의된 규칙 없음",
+        "noRulesHint": "위에서 규칙을 추가하면 작업 유형 또는 리드타임에 따라 작업에 색상을 적용할 수 있습니다",
+        "ruleTypeType": "유형",
+        "ruleTypeTime": "시간",
+        "applyToTaskTypes": "적용할 작업 유형:",
+        "duplicateWarning": "다른 규칙에서 이미 정의된 항목: {types}",
+        "colors": "색상:",
+        "fill": "채우기:",
+        "border": "테두리:",
+        "noBorder": "테두리 없음",
+        "leadTimeRange": "리드타임 범위:",
+        "minimum": "최소:",
+        "maximum": "최대:",
+        "days": "일",
+        "hours": "시간",
+        "min": "분",
+        "leadTimeDescription": "리드타임 규칙은 작업의 기본 색상 농도를 조절합니다:",
+        "lightShortTime": "밝음 (짧은 시간)",
+        "darkLongTime": "어두움 (긴 시간)",
+        "cancel": "취소",
+        "saveAndApply": "저장 및 적용",
+        "taskTypes": {
+            "userTask": "사용자 작업",
+            "manualTask": "수동 작업",
+            "serviceTask": "서비스 작업",
+            "scriptTask": "스크립트 작업",
+            "businessRuleTask": "비즈니스 규칙 작업",
+            "sendTask": "보내기 작업",
+            "receiveTask": "받기 작업"
+        },
+        "presets": {
+            "yellowDefault": "노랑 (기본)",
+            "blue": "파랑",
+            "green": "초록",
+            "purple": "보라",
+            "orange": "주황",
+            "pink": "분홍",
+            "cyan": "청록",
+            "red": "빨강",
+            "grey": "회색",
+            "white": "흰색"
+        }
     }
 }

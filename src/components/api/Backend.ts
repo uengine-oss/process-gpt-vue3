@@ -195,6 +195,21 @@ export interface Backend {
         goal?: string | null;
         persona?: string | null;
     }): Promise<any>;
+
+    // 프로세스 정의 요소별 댓글 API (ElementCommentPanel)
+    getElementComments(procDefId: string, elementId?: string): Promise<any[]>;
+    getElementCommentCounts(procDefId: string): Promise<Record<string, { total: number; unresolved: number }>>;
+    addElementComment(comment: {
+        procDefId: string;
+        elementId: string;
+        elementType?: string;
+        elementName?: string;
+        content: string;
+        parentCommentId?: string;
+    }): Promise<any>;
+    updateElementComment(commentId: string, content: string): Promise<any>;
+    deleteElementComment(commentId: string): Promise<void>;
+    resolveElementComment(commentId: string, resolved?: boolean, resolveActionText?: string): Promise<any>;
 }
 
 // export type { Backend }

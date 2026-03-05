@@ -53,6 +53,7 @@
                             @changeElement="changeElement"
                             @update:isAIGenerated="updateIsAIGenerated"
                             @multiSelect="onMultiSelect"
+                            @selectedElement="onSelectedElement"
                             :onLoadStart="onBpmnLoadStart"
                             :onLoadEnd="onBpmnLoadEnd"
                             @openProcessVariables="openProcessVariables"
@@ -525,7 +526,11 @@ export default {
             return window.innerWidth <= 768;
         },
         totalCommentCount() {
-            return Object.values(this.commentCounts).reduce((sum, item) => sum + (item.unresolved || 0), 0);
+            if(!this.commentCounts) {
+                return 0;
+            } else {
+                return Object.values(this.commentCounts).reduce((sum, item) => sum + (item.unresolved || 0), 0);
+            }
         },
     },
     watch: {
@@ -678,13 +683,22 @@ export default {
         toggleCommentPanel() {
             this.showCommentPanel = !this.showCommentPanel;
             if (this.showCommentPanel && this.element) {
-                // Task 타입인 경우에만 선택된 요소로 설정
-                const elementType = this.element.$type || '';
+                // Task 타입인 경우에만 선택된 요소로 설정 (elementRegistry 사용 시 타입/이름이 댓글 패널과 일치)
+                let elementType = this.element.$type || '';
+                let name = this.element.businessObject?.name || this.element.name || this.element.id;
+                if (this.$refs.bpmnVue?.bpmnViewer) {
+                    const elementRegistry = this.$refs.bpmnVue.bpmnViewer.get('elementRegistry');
+                    const el = elementRegistry.get(this.element.id);
+                    if (el) {
+                        elementType = el.type || elementType;
+                        name = el.businessObject?.name || el.id;
+                    }
+                }
                 if (this.isTaskType(elementType)) {
                     this.selectedElementForComment = {
                         id: this.element.id,
                         type: elementType,
-                        name: this.element.businessObject?.name || this.element.name || this.element.id
+                        name: name
                     };
                 } else {
                     this.selectedElementForComment = null;
@@ -727,6 +741,10 @@ export default {
             } else {
                 this.multiSelectedElements = [];
             }
+        },
+        // BpmnUengine에서 엘리먼트 단일 클릭 선택 시 → ElementCommentPanel의 selected 상태 반영
+        onSelectedElement(payload) {
+            this.selectedElementForComment = payload;
         },
         onApplyBatch({ elements, changes }) {
             if (!this.$refs.bpmnVue || !this.$refs.bpmnVue.bpmnViewer) return;
@@ -1259,6 +1277,30 @@ export default {
                 businessObject.businessObject = this.element;
                 this.$refs.bpmnVue.extendUEngineProperties(businessObject);
                 this.panel = true;
+
+                // 댓글 패널이 열려 있으면 선택 요소와 동기화 (태스크 선택 시 댓글 UI 표시)
+                // elementRegistry의 diagram 요소를 사용하면 type/name이 댓글 패널과 일치함
+                if (this.showCommentPanel) {
+                    let elementType = (this.element.$type || '').toString();
+                    let name = this.element.businessObject?.name || this.element.name || this.element.id;
+                    if (this.$refs.bpmnVue?.bpmnViewer) {
+                        const elementRegistry = this.$refs.bpmnVue.bpmnViewer.get('elementRegistry');
+                        const el = elementRegistry.get(id);
+                        if (el) {
+                            elementType = (el.type || elementType).toString();
+                            name = el.businessObject?.name || el.id;
+                        }
+                    }
+                    if (this.isTaskType(elementType)) {
+                        this.selectedElementForComment = {
+                            id: this.element.id,
+                            type: elementType,
+                            name: name
+                        };
+                    } else {
+                        this.selectedElementForComment = null;
+                    }
+                }
             }
         },
         closePanel() {

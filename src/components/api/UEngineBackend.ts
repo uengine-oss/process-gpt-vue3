@@ -308,22 +308,60 @@ class UEngineBackend implements Backend {
     }
 
     async getDefinitionVersions(defId: string, options: any) {
-        if (options.key) {
-            if (options.key.includes('version')) {
-                const response = await axiosInstance.get(`/versions/${defId}.${options.type}`, options);
-                console.log(response);
-                return response.data?._embedded?.definitions;
-            } else if (options.key == 'snapshot') {
-                options.version = options?.match?.version;
-                const response = await this.getRawDefinition(`definitions/${defId}`, options);
-                return [{ snapshot: response }];
-            }
-        } else {
-            const response = await axiosInstance.get(`/versions/${defId}.${options.type}`, options);
-            console.log(response);
-            return response.data?._embedded?.definitions;
+        const type = options?.type ?? 'bpmn';
+        // defId에 이미 .bpmn/.dmn이 붙어 있으면 제거 (ProcessHierarchy 등에서 selectedProcessId 그대로 넘길 수 있음)
+        const normalizedId = typeof defId === 'string'
+            ? defId.replace(/\.(bpmn|dmn)$/i, '').trim()
+            : defId;
+        const path = `/versions/${normalizedId}.${type}`;
+
+        if (options?.key === 'snapshot') {
+            options.version = options?.match?.version;
+            const response = await this.getRawDefinition(`definitions/${normalizedId}`, options);
+            return [{ snapshot: response }];
+        }
+
+        try {
+            const response = await axiosInstance.get(path, options);
+            const raw = response.data?._embedded?.definitions;
+            const list = Array.isArray(raw) ? raw : [];
+            // ProcessHierarchy 버전 표시: 각 항목에 .version(문자열) 필드 보장, name/path/_links 유지
+            return list.map((item: any) => {
+                if (!item) return { version: '0.0' };
+                const version =
+                    item.version != null && item.version !== ''
+                        ? String(item.version)
+                        : (item.name && typeof item.name === 'string'
+                            ? item.name.replace(/\.(bpmn|dmn)$/i, '')
+                            : item?.id ?? '0.0');
+                return {
+                    ...item,
+                    version,
+                    name: item.name,
+                    path: item.path,
+                    _links: item._links,
+                };
+            });
+        } catch (e) {
+            return [];
         }
     }
+
+    /** uEngine에는 승인 워크플로가 없으므로 항상 null (ProcessHierarchy 호출 호환) */
+    async getActiveApprovalState(_procDefId: string): Promise<any> {
+        return null;
+    }
+
+    /** uEngine에는 검토 요청 기능이 없으므로 no-op (ProcessHierarchy 호출 호환) */
+    async submitForReview(
+        _procDefId: string,
+        _comment?: string,
+        _version?: string,
+        _reviewers?: { userIds?: string[]; groupIds?: string[] }
+    ): Promise<any> {
+        return undefined;
+    }
+
     async getVersion(version: string) {
         const response = await axiosInstance.get(`/version/${version}`);
         return response.data;
@@ -2043,11 +2081,6 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async getData(path: string, options: any): Promise<any> {
-        console.warn("getData is not implemented - only use Process-GPT Mode");
-        return null;
-    }
-
     // Task Execution Properties API (분석용) - UEngine 모드에서는 미지원
     async saveTaskExecutionProperties(params: {
         procDefId: string;
@@ -2070,6 +2103,92 @@ class UEngineBackend implements Backend {
     async getTaskExecutionProperties(options?: any): Promise<any[]> {
         console.warn("getTaskExecutionProperties is not implemented - only use Process-GPT Mode");
         return [];
+    }
+
+    // =====================================================
+    // 노드 단위 댓글 API (프로세스 정의 요소별 코멘트)
+    // =====================================================
+
+    /**
+     * 프로세스 정의의 특정 요소에 대한 댓글 목록 조회
+     */
+    async getElementComments(procDefId: string, elementId?: string): Promise<any[]> {
+        try {
+            const params: Record<string, string> = { procDefId };
+            if (elementId) params.elementId = elementId;
+            const response = await axiosInstance.get('/definition/element-comments', { params });
+            return Array.isArray(response?.data) ? response.data : [];
+        } catch (e) {
+            console.error('[UEngineBackend] getElementComments error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 프로세스 정의의 모든 요소에 대한 댓글 개수 조회
+     */
+    async getElementCommentCounts(procDefId: string): Promise<Record<string, { total: number; unresolved: number }>> {
+        try {
+            const response = await axiosInstance.get('/definition/element-comment-counts', {
+                params: { procDefId }
+            });
+            const data = response?.data;
+            if (!data || typeof data !== 'object') return {};
+            return data as Record<string, { total: number; unresolved: number }>;
+        } catch (e) {
+            console.error('[UEngineBackend] getElementCommentCounts error:', e);
+            return {};
+        }
+    }
+
+    /**
+     * 댓글 추가
+     */
+    async addElementComment(comment: {
+        procDefId: string;
+        elementId: string;
+        elementType?: string;
+        elementName?: string;
+        content: string;
+        parentCommentId?: string;
+    }): Promise<any> {
+        const response = await axiosInstance.post('/definition/element-comments', {
+            proc_def_id: comment.procDefId,
+            element_id: comment.elementId,
+            element_type: comment.elementType ?? null,
+            element_name: comment.elementName ?? null,
+            content: comment.content,
+            parent_comment_id: comment.parentCommentId ?? null
+        });
+        return response?.data;
+    }
+
+    /**
+     * 댓글 수정
+     */
+    async updateElementComment(commentId: string, content: string): Promise<any> {
+        const response = await axiosInstance.patch(`/definition/element-comments/${encodeURIComponent(commentId)}`, {
+            content
+        });
+        return response?.data;
+    }
+
+    /**
+     * 댓글 삭제
+     */
+    async deleteElementComment(commentId: string): Promise<void> {
+        await axiosInstance.delete(`/definition/element-comments/${encodeURIComponent(commentId)}`);
+    }
+
+    /**
+     * 댓글 해결/미해결 처리
+     */
+    async resolveElementComment(commentId: string, resolved: boolean = true, resolveActionText?: string): Promise<any> {
+        const response = await axiosInstance.patch(
+            `/definition/element-comments/${encodeURIComponent(commentId)}/resolve`,
+            { resolved, resolve_action_text: resolveActionText }
+        );
+        return response?.data;
     }
 
     async setupAgentKnowledge(params: any): Promise<any> {

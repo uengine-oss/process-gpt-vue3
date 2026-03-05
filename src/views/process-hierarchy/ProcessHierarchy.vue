@@ -270,9 +270,45 @@ export default {
                 this.procMap = procMapResult;
                 this.metricsMap = metricsResult;
 
+                const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
+                // uEngine: 트리와 id 일치시키기 위해 procMap에서 리프( sub_proc_list )만 평면 목록으로 구성
+                let listForVersion = defList || [];
+                if (isUEngine && procMapResult?.mega_proc_list?.length > 0) {
+                    const flatFromMap = [];
+                    procMapResult.mega_proc_list.forEach((mega) => {
+                        (mega.major_proc_list || []).forEach((major) => {
+                            (major.sub_proc_list || []).forEach((sub) => {
+                                const sid = sub.id ?? sub.path ?? sub.name;
+                                if (sid) flatFromMap.push({ id: sid, file_name: sid, name: sub.name ?? sid });
+                            });
+                        });
+                    });
+                    if (flatFromMap.length > 0) listForVersion = flatFromMap;
+                }
+
                 // 각 정의의 최신 버전 매핑
                 const latestVersionMap = {};
-                if (versionList && versionList.length > 0) {
+                if (isUEngine && listForVersion.length > 0) {
+                    // uEngine: 백엔드 버전 API로 정의별 최신 버전 조회 (getDefinitionVersions)
+                    const normalizeId = (id) => (typeof id === 'string' ? id.replace(/\.bpmn$/i, '') : id);
+                    const versionResults = await Promise.all(
+                        listForVersion.map((def) => {
+                            const id = normalizeId(def.id || def.file_name);
+                            if (!id) return Promise.resolve([]);
+                            return backend.getDefinitionVersions(id, { sort: 'desc', orderBy: 'version' });
+                        })
+                    );
+                    versionResults.forEach((versions, idx) => {
+                        const rawId = listForVersion[idx]?.id ?? listForVersion[idx]?.file_name;
+                        if (!rawId || !versions?.length) return;
+                        const sorted = [...versions].sort((a, b) => {
+                            const [aM, am] = String(a.version).split('.').map(Number);
+                            const [bM, bm] = String(b.version).split('.').map(Number);
+                            return bM !== aM ? bM - aM : (bm || 0) - (am || 0);
+                        });
+                        latestVersionMap[rawId] = String(sorted[0].version);
+                    });
+                } else if (versionList && versionList.length > 0) {
                     versionList.forEach(v => {
                         const defId = v.proc_def_id;
                         if (defId && !latestVersionMap[defId]) {
@@ -291,7 +327,7 @@ export default {
                     });
                 }
 
-                const defs = defList || [];
+                const defs = listForVersion;
                 defs.forEach(def => {
                     const id = def.id || def.file_name;
                     if (id && latestVersionMap[id]) {
