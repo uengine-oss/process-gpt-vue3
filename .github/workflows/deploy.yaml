@@ -33,6 +33,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      attestations: write
 
     steps:
       - name: Checkout code
@@ -94,15 +95,33 @@ jobs:
           sha256sum process-gpt-dist-${{ github.sha }}.tar.gz > SHA256SUMS
           cat SHA256SUMS
 
-      # Optional cryptographic signature for hash manifest.
-      # Requires: GPG_PRIVATE_KEY, GPG_PASSPHRASE secrets.
+      # ── 빌드 아티팩트 코드서명 (cosign sign-blob, keyless OIDC) ──
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign build artifact with cosign
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          cosign sign-blob --yes \
+            --output-signature process-gpt-dist-${{ github.sha }}.tar.gz.sig \
+            --output-certificate process-gpt-dist-${{ github.sha }}.tar.gz.cert \
+            process-gpt-dist-${{ github.sha }}.tar.gz
+
+      # ── SLSA Build Provenance 증명 (GitHub Attestation) ──
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: process-gpt-dist-${{ github.sha }}.tar.gz
+
+      # Optional GPG signature (if GPG key configured).
       - name: Optional GPG sign SHA256SUMS
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           if [ -z "${GPG_PRIVATE_KEY}" ]; then
-            echo "GPG_PRIVATE_KEY is not set. Skip signing."
+            echo "GPG_PRIVATE_KEY is not set. Skip GPG signing."
             exit 0
           fi
           echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
@@ -115,6 +134,8 @@ jobs:
           name: process-gpt-dist-${{ github.sha }}
           path: |
             process-gpt-dist-${{ github.sha }}.tar.gz
+            process-gpt-dist-${{ github.sha }}.tar.gz.sig
+            process-gpt-dist-${{ github.sha }}.tar.gz.cert
             SHA256SUMS
             SHA256SUMS.asc
           if-no-files-found: error
