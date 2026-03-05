@@ -165,6 +165,7 @@ declare global {
         $themeColor: any; // 테마 색상을 위한 전역 변수 추가
         $globalIsMobile: boolean; // 모바일 체크를 위한 전역 변수 추가
         $app_?: any;
+        $user?: any;
     }
 }
 
