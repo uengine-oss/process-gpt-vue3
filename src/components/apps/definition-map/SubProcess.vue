@@ -1,69 +1,60 @@
 <template>
     <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3">
-        <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
-            <v-row class="ma-0 pa-0 align-center">
-                <ProcessTooltip
-                    :processInfo="processTooltipInfo"
-                    :loading="loadingTooltip"
-                    :disabled="!showTooltip"
-                    location="right"
-                    @mouseenter.native="loadProcessInfo"
-                >
-                    <template #default="tooltipProps">
-                        <div v-bind="tooltipProps"
-                            @click="handleClick"
-                            @dblclick.stop="handleDoubleClick"
-                            @mouseenter="loadProcessInfo"
-                            class="ma-0 pa-0 d-flex align-center"
-                            style="flex: 1; min-width: 0; gap: 4px;"
-                        >
-                            <div>{{ value.name }}</div>
-
-                            <!-- New 뱃지 -->
-                            <v-chip v-if="isNew(value.id) && !enableEdit"
-                                color="primary"
-                                variant="outlined"
-                                size="x-small"
-                            >New</v-chip>
-                        </div>
-                    </template>
-                </ProcessTooltip>
-
-                <!-- 진척률/상태 뱃지 - 항상 표시 -->
+        <div v-if="!processDialogStatus || processType === 'add'">
+            <ProcessTooltip
+                :processInfo="processTooltipInfo"
+                :loading="loadingTooltip"
+                :disabled="!showTooltip"
+                location="right"
+                @mouseenter.native="loadProcessInfo"
+            >
+                <template #default="tooltipProps">
+                    <h6 v-bind="tooltipProps"
+                        @click="handleClick"
+                        @dblclick.stop="handleDoubleClick"
+                        @mouseenter="loadProcessInfo"
+                        class="text-subtitle-2 font-weight-semibold ma-0 pa-0"
+                    >{{ value.name }}</h6>
+                </template>
+            </ProcessTooltip>
+            <div class="d-flex align-center mt-1" style="gap: 4px;">
                 <ProgressBadge
                     v-if="showStatusBadge && processStatus"
                     type="status"
                     :status="processStatus"
                     size="x-small"
                     :showIcon="true"
-                    class="ml-1"
                 />
-                <div class="ml-auto add-sub-process" style="flex-shrink: 0;">
-                    <v-btn
-                        v-if="isExecutionByProject"
-                        variant="elevated"
-                        color="primary"
-                        size="x-small"
-                        @click="clickPlayBtn()"
-                        class="rounded-pill"
-                    >
-                        {{ $t('SubProcess.execute') }}
-                    </v-btn>
-                    <ProcessMenu
-                        :size="16"
-                        :type="type"
-                        :process="value"
-                        :enableEdit="enableEdit"
-                        @delete="deleteProcess"
-                        @editProcessdialog="editProcessdialog"
-                        @modeling="editProcessModel"
-                        @setPermission="openPermissionDialog(value)"
-                        @duplicate="duplicateProcess"
-                        @setOwner="openOwnerDialog"
-                    />
-                </div>
-            </v-row>
-        </h6>
+                <v-chip v-if="isNew(value.id) && !enableEdit"
+                    color="primary"
+                    variant="outlined"
+                    size="x-small"
+                >New</v-chip>
+                <v-spacer />
+                <v-btn
+                    v-if="isExecutionByProject"
+                    variant="elevated"
+                    color="primary"
+                    size="x-small"
+                    @click="clickPlayBtn()"
+                    class="rounded-pill"
+                >
+                    {{ $t('SubProcess.execute') }}
+                </v-btn>
+                <ProcessMenu
+                    :size="16"
+                    :type="type"
+                    :process="value"
+                    :enableEdit="enableEdit"
+                    @delete="deleteProcess"
+                    @editProcessdialog="editProcessdialog"
+                    @modeling="editProcessModel"
+                    @setPermission="openPermissionDialog(value)"
+                    @duplicate="duplicateProcess"
+                    @setOwner="openOwnerDialog"
+                />
+            </div>
+        </div>
         <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'update'"
             :enableEdit="enableEdit"
             :process="value"

@@ -54,7 +54,7 @@
                         </v-icon>
                     </div>
 
-                    <div v-if="!workAssistantAgentMode" class="chat-split-container" :class="{ 'chat-split-active': showAgentMessagePanel }">
+                    <div v-if="!workAssistantAgentMode" ref="chatSplitContainer" class="chat-split-container" :class="{ 'chat-split-active': showAgentMessagePanel }">
                     <perfect-scrollbar
                         :class="['h-100 chat-view-box', { 'chat-room-mode': chatRoomMode }, showAgentMessagePanel ? 'chat-view-box-split-left' : '']"
                         ref="scrollContainer"
@@ -199,11 +199,11 @@
                                     <div v-else-if="message && message.__agentInviteRecommendation">
                                         <div class="message-bubble-wrap message-bubble-wrap--other">
                                             <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
-                                                <div class="pa-3">
+                                                <div class="pa-3 pb-2">
                                                     <div class="text-body-2 font-weight-bold mb-1">적절한 담당자를 초대해볼까요?</div>
                                                     <div
                                                         v-if="(message.__agentInviteRecommendation.reason || '').toString().trim()"
-                                                        class="text-caption text-medium-emphasis mb-3"
+                                                        class="text-caption text-medium-emphasis mb-2"
                                                     >
                                                         {{ message.__agentInviteRecommendation.reason }}
                                                     </div>
@@ -211,30 +211,31 @@
                                                     <div
                                                         v-for="agent in (message.__agentInviteRecommendation.recommendedAgents || [])"
                                                         :key="agent.id"
-                                                        class="d-flex align-center justify-space-between mb-2"
-                                                        style="gap: 12px;"
+                                                        class="d-flex align-center justify-space-between mb-2 pa-2 rounded-lg"
+                                                        style="gap: 10px; background: rgba(0,0,0,0.03);"
                                                     >
-                                                        <div class="d-flex align-center" style="gap: 10px; min-width: 0;">
-                                                            <v-avatar size="26" color="grey-lighten-3">
+                                                        <div class="d-flex align-center" style="gap: 10px; min-width: 0; flex: 1; overflow: hidden;">
+                                                            <v-avatar size="30" color="grey-lighten-3" style="flex-shrink: 0;">
                                                                 <v-img :src="agent.profile || '/images/chat-icon.png'" cover />
                                                             </v-avatar>
-                                                            <div style="min-width: 0;">
-                                                                <div class="text-body-2 font-weight-medium">
+                                                            <div style="min-width: 0; flex: 1;">
+                                                                <div class="text-body-2 font-weight-medium" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                                                     {{ agent.username || agent.id }}
                                                                 </div>
                                                                 <div
                                                                     class="text-caption text-medium-emphasis"
-                                                                    style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                                    style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
                                                                 >
                                                                     {{ agent.role || agent.description || agent.goal || '' }}
                                                                 </div>
                                                             </div>
                                                         </div>
-
                                                         <v-btn
                                                             size="small"
-                                                            variant="tonal"
                                                             color="primary"
+                                                            rounded
+                                                            variant="flat"
+                                                            style="flex-shrink: 0;"
                                                             :disabled="isRecommendationInvited(message, agent.id)"
                                                             @click="inviteAgentFromRecommendation(message, agent)"
                                                         >
@@ -1248,9 +1249,15 @@
                             </v-col>
                         </div>
                     </perfect-scrollbar>
+                    <div
+                        v-if="showAgentMessagePanel"
+                        class="chat-split-resize-handle"
+                        @mousedown="startAgentPanelResize"
+                    ></div>
                     <AgentMessagePanel
                         v-if="showAgentMessagePanel"
                         class="chat-view-box-split-right"
+                        :style="{ width: agentPanelWidth + 'px' }"
                         :messages="agentFilteredMessages"
                         :agentInfo="agentInfo"
                         :userInfo="userInfo"
@@ -2066,6 +2073,9 @@ export default {
             //preview-message
             previewMessage: null,
             
+            agentPanelWidth: 380,
+            isResizingAgentPanel: false,
+
             // 채팅창 높이 관련 변수
             windowWidth: window.innerWidth,
 
@@ -2131,8 +2141,8 @@ export default {
         });
     },
     beforeUnmount() {
-        // 컴포넌트 제거 시 이벤트 리스너 제거
         window.removeEventListener('resize', this.handleResize);
+        this.stopAgentPanelResize();
         try {
             if (this._highlightTimer) clearTimeout(this._highlightTimer);
         } catch (e) {}
@@ -2244,6 +2254,15 @@ export default {
             if(list.length > 0 && list[list.length - 1].email == myEmail) {
                 this.setRenderTime();
             }
+            const seenRecommendationKeys = new Set();
+            list = list.filter(m => {
+                if (!m || !m.__agentInviteRecommendation) return true;
+                const agents = m.__agentInviteRecommendation.recommendedAgents || [];
+                const key = agents.map(a => a.id).sort().join(',');
+                if (!key || seenRecommendationKeys.has(key)) return false;
+                seenRecommendationKeys.add(key);
+                return true;
+            });
             return list;
         },
         isMultiHumanChatRoom() {
@@ -2350,6 +2369,30 @@ export default {
         }
     },
     methods: {
+        startAgentPanelResize(e) {
+            e.preventDefault();
+            this.isResizingAgentPanel = true;
+            document.addEventListener('mousemove', this.onAgentPanelResize);
+            document.addEventListener('mouseup', this.stopAgentPanelResize);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        },
+        onAgentPanelResize(e) {
+            if (!this.isResizingAgentPanel) return;
+            const container = this.$refs.chatSplitContainer;
+            if (!container) return;
+            const containerRect = container.getBoundingClientRect();
+            const newWidth = containerRect.right - e.clientX;
+            const maxWidth = containerRect.width * 0.8;
+            this.agentPanelWidth = Math.max(280, Math.min(newWidth, maxWidth));
+        },
+        stopAgentPanelResize() {
+            this.isResizingAgentPanel = false;
+            document.removeEventListener('mousemove', this.onAgentPanelResize);
+            document.removeEventListener('mouseup', this.stopAgentPanelResize);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        },
         isAgentRelatedMessage(message) {
             if (!message) return false;
             return !!(
@@ -4577,9 +4620,20 @@ pre {
   border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 .chat-view-box-split-right {
-  width: 380px;
-  min-width: 320px;
-  max-width: 420px;
+  min-width: 280px;
   flex-shrink: 0;
+}
+.chat-split-resize-handle {
+  width: 4px;
+  cursor: col-resize;
+  background-color: transparent;
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+  position: relative;
+  z-index: 10;
+}
+.chat-split-resize-handle:hover,
+.chat-split-resize-handle:active {
+  background-color: rgba(var(--v-theme-primary), 0.3);
 }
 </style>
