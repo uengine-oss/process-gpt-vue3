@@ -2,18 +2,29 @@
     <v-row class="justify-center ma-0 pa-0">
         <!--Account Settings tabs-->
         <v-col cols="12" md="12" class="pa-0">
-            <v-card elevation="10" class="is-work-height" style="overflow: auto">
+            <v-card elevation="10" class="is-work-height">
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
-                    <v-row class="ma-0 pa-0 align-center account-settings-header-row">
-                        <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default" show-arrows>
+                    <v-row class="ma-0 pa-0 align-center">
+                        <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
-                                <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
-                                <v-tab v-if="superAdmin && !pal" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
-                                <v-tab v-if="!pal" value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
-                                <v-tab v-if="!pal" value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
-                                <v-tab v-if="!pal" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab>
+                                <v-tab value="ManageAccess">
+                                    <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }}
+                                </v-tab>
+                                <v-tab v-if="superAdmin && !pal" value="Drive">
+                                    <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }}
+                                </v-tab>
+                                <v-tab v-if="!pal" value="MCP-Servers">
+                                    <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }}
+                                </v-tab>
+                                <v-tab v-if="!pal" value="MCP-Environments">
+                                    <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon>
+                                    {{ $t('accountTab.environments') }}
+                                </v-tab>
+                                <v-tab v-if="!pal" value="Skills">
+                                    <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }}
+                                </v-tab>
                                 <v-tab v-if="!pal" value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
@@ -31,7 +42,9 @@
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                         </v-tabs>
-                        <div v-if="!pal" @click="goToTenantManage"
+                        <div
+                            v-if="!pal"
+                            @click="goToTenantManage"
                             class="settings-tenant-manage-btn v-tab-style text-none"
                             style="letter-spacing: 0"
                         >
@@ -40,16 +53,21 @@
                         <v-spacer></v-spacer>
 
                         <!-- 언어 선택 -->
-                        <v-chip 
-                            variant="outlined"
-                            class="language-chip-select-wrapper"
-                            style="margin-right: 16px;"
-                            color="gray"
+                        <v-chip variant="outlined" class="language-chip-select-wrapper" style="margin-right: 16px" color="gray">
                             <v-select
+                                v-model="selectedLanguage"
+                                :items="languageOptions"
+                                item-title="displayLabel"
                                 item-value="value"
                                 @update:model-value="changeLanguage"
                                 variant="plain"
+                                density="compact"
                                 hide-details
+                            >
+                                <template v-slot:selection="{ item }">
+                                    <span style="font-size: 18px; margin-right: 6px">{{ item.raw.flag }}</span>
+                                    <span>{{ item.raw.label }}</span>
+                                </template>
                             </v-select>
                         </v-chip>
                     </v-row>
@@ -150,13 +168,12 @@
                             </v-btn>
                         </template>
 
-                        <v-btn
-                            v-if="!pal"
-                            variant="text"
-                            size="small"
-                            @click="goToTenantManage"
-                        >
-                            <Icons :icon="'office'"  :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
+                        <v-btn v-if="!pal" variant="text" color="default" size="small" @click="goToTenantManage">
+                            <Icons :icon="'office'" :size="16" class="mr-2" />{{ $t('accountTab.tenantManage') }}
+                        </v-btn>
+                    </div>
+                    <!-- 모바일 언어 선택 -->
+                    <div class="d-flex justify-end mb-2">
                         <v-chip variant="outlined" class="language-chip-select-wrapper" size="small" color="gray">
                             <v-select
                                 v-model="selectedLanguage"
@@ -180,73 +197,53 @@
                 <v-divider></v-divider>
                 <v-card-text class="pa-0">
                     <v-window v-model="tab">
-                        <!-- Account: 계정 설정 탭 (accountTab.accountSetting) -->
                         <v-window-item value="Account">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <AccountTab />
                             </div>
                         </v-window-item>
-
-                        <!-- ManageAccess: 사용자 관리 탭 (accountTab.manageAccess) -->
                         <v-window-item value="ManageAccess">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <ManageAccessTab :editable="superAdmin" />
                             </div>
                         </v-window-item>
-
-                        <!-- Drive: 구글 드라이브 설정 탭 (accountTab.drive) -->
-                        <v-window-item v-if="!isUEngineMode" value="Drive">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                        <v-window-item value="Drive">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <DriveTab />
                             </div>
                         </v-window-item>
-
-                        <!-- ConnectionInfo: 데이터소스 탭 (accountTab.dataSource) -->
-                        <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                        <v-window-item value="ConnectionInfo">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <ConnectionInfoTab />
                             </div>
                         </v-window-item>
-
-                        <!-- MCP-Servers: MCP 서버 탭 (accountTab.mcpServers) -->
-                        <v-window-item v-if="!isUEngineMode" value="MCP-Servers">
+                        <v-window-item value="MCP-Servers">
                             <div>
                                 <MCPServerTab />
                             </div>
                         </v-window-item>
-
-                        <!-- MCP-Environments: 환경변수 탭 (accountTab.environments) -->
-                        <v-window-item v-if="!isUEngineMode" value="MCP-Environments">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                        <v-window-item value="MCP-Environments">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
-                        <!-- Skills: 스킬 탭 (accountTab.skills) -->
-                        <!-- <v-window-item v-if="!isUEngineMode" value="Skills">
-                            <div 
-                                style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
-                            >
+                        <v-window-item value="Skills">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <SkillsTab />
                             </div>
-                        </v-window-item> -->
-
-                        <!-- task 설정 탭 -->
-                        <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                        </v-window-item>
+                        <v-window-item value="TaskCatalog">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <TaskCatalogAdmin />
                             </div>
                         </v-window-item>
                         <v-window-item value="OrgChartGroup">
-                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : ''">
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <OrgChartGroupTab />
                             </div>
                         </v-window-item>
                         <v-window-item value="AdminConsole">
-                            <div
-                                style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
-                            >
+                            <div style="overflow: auto" :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'">
                                 <AdminConsole />
                             </div>
                         </v-window-item>
@@ -312,7 +309,7 @@ export default {
                 { value: 'ManageAccess', label: 'Manage Access' },
                 { value: 'Drive', label: 'Drive' },
                 { value: 'MCP', label: 'MCP Servers' },
-                // { value: 'Skills', label: 'Skills' },
+                { value: 'Skills', label: 'Skills' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
             ],
             admin: localStorage.getItem('isAdmin') === 'true',
@@ -325,16 +322,8 @@ export default {
     },
     mounted() {
         // this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
-        // 초기 탭이 비어있거나(uEngine 모드에서 숨긴 탭으로 들어온 경우 포함) 안전하게 Account로 보정
-        this.ensureVisibleTab();
     },
     computed: {
-        isUEngineMode() {
-            return window.$mode === 'uEngine';
-        },
-        gs() {
-            return window.$gs;
-        },
         isMobile() {
             return window.innerWidth <= 768;
         },
@@ -343,19 +332,6 @@ export default {
         }
     },
     methods: {
-        ensureVisibleTab() {
-            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog']);
-            const hiddenInGs = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog', 'OrgChartGroup']);
-            if (!this.tab) {
-                this.tab = 'Account';
-                return;
-            }
-            if (this.gs && hiddenInGs.has(this.tab)) {
-                this.tab = 'Account';
-            } else if (this.isUEngineMode && hiddenInUEngine.has(this.tab)) {
-                this.tab = 'Account';
-            }
-        },
         goToTenantManage() {
             // ===== 로컬 테스트용 코드 시작 =====
             // 로컬호스트에서 테넌트 관리 페이지 테스트를 위한 코드
@@ -433,19 +409,5 @@ export default {
     height: 2px;
     background-color: transparent;
     transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.account-settings-header-row {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-}
-
-.settings-tenant-manage-btn {
-    white-space: nowrap;
-    flex: 0 0 auto;
-}
-
-.language-chip-select-wrapper {
-    flex: 0 0 auto;
 }
 </style>
