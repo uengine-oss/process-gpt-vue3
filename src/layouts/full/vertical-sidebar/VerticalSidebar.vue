@@ -364,6 +364,7 @@
                                     <v-icon size="20">mdi-file-document-multiple-outline</v-icon>
                                 </template>
                             </v-list-item>
+                        </template>
                         <div>
                             <div class="font-weight-bold text-body-2">{{ $t('definitionManagement.title') || '프로세스 정의 관리' }}</div>
                             <div class="text-caption" style="opacity:0.85;">BPMN 프로세스 정의를 생성하고 편집합니다.</div>
@@ -427,6 +428,7 @@
         <div class="pa-4 px-4 bg-containerBg">
             <ExtraBox />
         </div>
+    </v-navigation-drawer>
 
     <v-dialog v-model="isOpen" max-width="400" class="delete-input-details">
         <v-card class="pa-4 pt-2">
@@ -1135,6 +1137,7 @@ export default {
 }
 .rail-icon-item:hover {
     background-color: rgba(var(--v-theme-primary), 0.08);
+}
 .bpmn-sidebar-icon {
     font-size: 20px;
     line-height: 1;

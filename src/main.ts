@@ -168,11 +168,11 @@ declare global {
     }
 }
 
-Object.defineProperty(window, '$pal', {
-    value: false,
-    writable: false,
-    configurable: false
-});
+// Object.defineProperty(window, '$pal', {
+//     value: false,
+//     writable: false,
+//     configurable: false
+// });
 
 Object.defineProperty(window, '$gs', {
     value: (window._env_?.VITE_GS_MODE === 'true' || import.meta.env.VITE_GS_MODE === 'true'),
