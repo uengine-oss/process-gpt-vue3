@@ -35,13 +35,17 @@
         "reset": "Reset"
     },
     "validation": {
+        "title": "BPMN Validation Result",
+        "validationWarning": "Validation Warning",
         "warningMessage": "The following issues were found in the process definition:",
         "saveAnyway": "Save Anyway",
         "noStartEvent": "No start event found.",
         "noEndEvent": "No end event found.",
         "unconnectedElement": "Element is not connected.",
         "noIncomingConnection": "No incoming connection.",
-        "noOutgoingConnection": "No outgoing connection."
+        "noOutgoingConnection": "No outgoing connection.",
+        "noManual": "No manual (description).",
+        "callActivityNoProcess": "No process selected."
     },
     "changePath": "You have unsaved changes. Are you sure you want to leave?",
     "successMsg": {
