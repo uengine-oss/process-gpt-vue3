@@ -15,7 +15,11 @@ module.exports = {
   rules: {
     "comma-dangle": "off",
     "@typescript-eslint/comma-dangle": "off",
-    "prettier/prettier": ["error", { endOfLine: "off" }],
-    "javascript.validate.enable": false,
+    "prettier/prettier": ["error", { endOfLine: "auto" }],
+    "javascript.validate.enable": "off",
+    "no-eval": "error",
+    "no-new-func": "error",
+    "no-implied-eval": "error",
+    "vue/no-v-html": "warn",
   },
 };

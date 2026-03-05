@@ -1,0 +1,12 @@
+rules:
+  - id: node.security.child-process-exec
+    message: "Review child_process execution. Untrusted input can lead to command injection."
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+    pattern-either:
+      - pattern: require("child_process").exec(...)
+      - pattern: require('child_process').exec(...)
+      - pattern: require("child_process").execSync(...)
+      - pattern: require('child_process').execSync(...)
