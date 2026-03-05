@@ -7,21 +7,21 @@
 
 <script>
 export default {
-    props:{
-        pattern:{
+    props: {
+        pattern: {
             type: String,
             default: ''
         }
     },
-    watch:{
-        "pattern":{
-            handler(newVal){
-                this.$emit('update', newVal)
+    watch: {
+        pattern: {
+            handler(newVal) {
+                this.$emit('update', newVal);
             }
         }
-    },  
-    computed:{
-        explanation(){
+    },
+    computed: {
+        explanation() {
             return `
                 <h1> 패턴 작성법 </h1>
                 JSP 태그을 이용한 패턴 사용으로 인스턴스명의 작성이 가능합니다.
@@ -41,9 +41,8 @@ export default {
                 <h3> 3. 프로세스명 으로 설정 </h3>
                 <b> 예시: uEngine_<%=definition.id%></b><br>
                 결과: uEngine_TroubleCenter
-            `
+            `;
         }
-    },
-}
+    }
+};
 </script>
-

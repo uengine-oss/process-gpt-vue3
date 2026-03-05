@@ -1,16 +1,15 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class FormScanGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
         this.contexts = null;
         this.model = 'gpt-4o';
-        
+
         this.previousMessagesFormat = [
-          {
-            role: 'system',
-            content: `
+            {
+                role: 'system',
+                content: `
         # Role
         You are a form field analyzer. Your job is to examine given HTML form structures and identify fields that **semantically** require data from external sources (e.g., select list, key-value pairs).
         
@@ -59,8 +58,7 @@ export default class FormScanGenerator extends AIGenerator {
         ## 🔐 Critical Rule
         DO NOT invent or return items, descriptions, values, or API suggestions. Only return existing fieldName(s) from the input.
             `
-          }
+            }
         ];
-          
     }
 }

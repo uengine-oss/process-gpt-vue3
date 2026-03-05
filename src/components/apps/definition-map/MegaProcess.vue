@@ -1,9 +1,13 @@
 <template>
     <div class="w-100 mega-hover">
-        <v-card class="align-center pa-3 mb-3 cp-mega" elevation="10" style="border-radius: 10px !important; background-color: rgba(var(--v-theme-primary), 0.2);">
+        <v-card
+            class="align-center pa-3 mb-3 cp-mega"
+            elevation="10"
+            style="border-radius: 10px !important; background-color: rgba(var(--v-theme-primary), 0.2)"
+        >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-h6 font-weight-semibold">
                 <v-row class="ma-0 pa-0 align-center">
-                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1" style="min-width: 0;">
+                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1" style="min-width: 0">
                         <div class="text-truncate cursor-pointer" @click="goProcess(value.name, 'mega')">{{ value.name }}</div>
                     </v-col>
                     <v-col cols="auto" class="ma-0 pa-0">
@@ -22,7 +26,8 @@
                     </v-col>
                 </v-row>
             </h6>
-            <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'update'"
+            <ProcessDialog
+                v-else-if="processDialogStatus && enableEdit && processType === 'update'"
                 :enableEdit="enableEdit"
                 :process="value"
                 :processDialogStatus="processDialogStatus"
@@ -32,8 +37,9 @@
                 @closeProcessDialog="closeProcessDialog"
             />
         </v-card>
-        
-        <draggable v-if="enableEdit"
+
+        <draggable
+            v-if="enableEdit"
             class="dragArea list-group"
             :list="value.major_proc_list"
             :animation="200"
@@ -42,17 +48,38 @@
         >
             <transition-group>
                 <div v-for="item in filteredMajorProcList" :key="item.id" class="cursor-pointer">
-                    <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :selectedDomain="selectedDomain" :domains="domains" :filteredProcDefIds="filteredProcDefIds"/>
+                    <MajorProcess
+                        :value="item"
+                        :parent="value"
+                        :enableEdit="enableEdit"
+                        @clickProcess="clickProcess"
+                        :isExecutionByProject="isExecutionByProject"
+                        @clickPlayBtn="clickPlayBtn"
+                        :selectedDomain="selectedDomain"
+                        :domains="domains"
+                        :filteredProcDefIds="filteredProcDefIds"
+                    />
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
             <div v-for="item in filteredMajorProcList" :key="item.id">
-                <MajorProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :selectedDomain="selectedDomain" :domains="domains" :filteredProcDefIds="filteredProcDefIds"/>
+                <MajorProcess
+                    :value="item"
+                    :parent="value"
+                    :enableEdit="enableEdit"
+                    @clickProcess="clickProcess"
+                    :isExecutionByProject="isExecutionByProject"
+                    @clickPlayBtn="clickPlayBtn"
+                    :selectedDomain="selectedDomain"
+                    :domains="domains"
+                    :filteredProcDefIds="filteredProcDefIds"
+                />
             </div>
         </div>
         <!-- Add Major Process Dialog: 특정 도메인 탭에서만 표시 -->
-        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
+        <ProcessDialog
+            v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -62,7 +89,7 @@
             :defaultDomain="selectedDomain"
             @add="addProcess"
             @closeProcessDialog="closeProcessDialog"
-            style="margin-top:20px !important;"
+            style="margin-top: 20px !important"
         />
     </div>
 </template>
@@ -71,13 +98,13 @@
 import ProcessMenu from './ProcessMenu.vue';
 import MajorProcess from './MajorProcess.vue';
 import ProcessDialog from './ProcessDialog.vue';
-import BaseProcess from './BaseProcess.vue'
+import BaseProcess from './BaseProcess.vue';
 
 export default {
     components: {
         ProcessMenu,
         MajorProcess,
-        ProcessDialog,
+        ProcessDialog
     },
     mixins: [BaseProcess],
     props: {
@@ -87,11 +114,11 @@ export default {
         isExecutionByProject: Boolean,
         domains: Array,
         selectedDomain: [String, Number],
-        filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
+        filteredProcDefIds: Array // null = no filter, [] = filter active but no matches
     },
     data: () => ({
         type: 'mega',
-        hover: false,
+        hover: false
     }),
     computed: {
         isPalUengine() {
@@ -113,7 +140,7 @@ export default {
             // '미분류' 탭 선택 시: 도메인이 비어있거나 '미분류'인 프로세스 표시
             const isUncategorizedTab = uncategorizedNames.includes(this.selectedDomain);
 
-            return this.value.major_proc_list.filter(major => {
+            return this.value.major_proc_list.filter((major) => {
                 if (isUncategorizedTab) {
                     // 도메인이 없거나 빈 문자열이거나 '미분류'인 경우
                     return !major.domain || major.domain.trim() === '' || uncategorizedNames.includes(major.domain);
@@ -135,31 +162,29 @@ export default {
     beforeUnmount() {
         window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
-    methods:{
+    methods: {
         addProcess(newProcess) {
             // 같은 레벨에 동일한 이름이 있는지 검증
-            const isDuplicate = this.value.major_proc_list.some(
-                item => item.name.toLowerCase() === newProcess.name.toLowerCase()
-            );
+            const isDuplicate = this.value.major_proc_list.some((item) => item.name.toLowerCase() === newProcess.name.toLowerCase());
             if (isDuplicate) {
                 this.$toast.error(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
                 return;
             }
 
             // ID를 MegaProcess ID + 이름으로 생성하여 고유성 보장
-            const baseName = newProcess.name.toLowerCase().replace(/[/.]/g, "_").replace(/\s+/g, "_");
+            const baseName = newProcess.name.toLowerCase().replace(/[/.]/g, '_').replace(/\s+/g, '_');
             const id = `${this.value.id}_${baseName}`;
             const process = {
                 id: id,
                 name: newProcess.name,
                 domain: newProcess.domain,
-                sub_proc_list: [],
-            }
+                sub_proc_list: []
+            };
             this.value.major_proc_list.push(process);
         },
         deleteProcess() {
-            this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
-            
+            this.parent.mega_proc_list = this.parent.mega_proc_list.filter((item) => item.id != this.value.id);
+
             // 성공 메시지 표시
             if (window.$app_) {
                 window.$app_.snackbarMessage = this.$t('successMsg.delete');
@@ -171,22 +196,22 @@ export default {
         clickProcess(id) {
             this.$emit('clickProcess', id);
         },
-        clickPlayBtn(value){
-            this.$emit('clickPlayBtn', value)
+        clickPlayBtn(value) {
+            this.$emit('clickPlayBtn', value);
         },
         editProcess(process) {
-            const index = this.value.major_proc_list.findIndex(item => item.id === process.id);
+            const index = this.value.major_proc_list.findIndex((item) => item.id === process.id);
             if (index > -1) {
                 this.value.major_proc_list[index].name = process.name;
                 this.value.major_proc_list[index].domain = process.domain;
             }
-        },
-    },
-}
+        }
+    }
+};
 </script>
 
 <style>
 .mega-proc-btn button {
-    color:black;
+    color: black;
 }
 </style>

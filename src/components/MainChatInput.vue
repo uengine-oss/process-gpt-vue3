@@ -40,7 +40,7 @@ export default {
         handleRecordingModeChange(isRecording) {
             this.recordingMode = isRecording;
             this.$emit('recording-mode-change', isRecording);
-        },
+        }
     }
 };
 </script>

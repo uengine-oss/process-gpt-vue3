@@ -2,7 +2,7 @@
     <div class="form-file-field">
         <v-file-input
             v-if="!localReadonly && !localDisabled"
-            :label="(localAlias && localAlias.length > 0) ? localAlias : localName"
+            :label="localAlias && localAlias.length > 0 ? localAlias : localName"
             v-model="selectedFiles"
             :variant="localReadonly ? 'filled' : 'outlined'"
             :hide-details="hideDetails"
@@ -10,8 +10,10 @@
             @change="handleFileChange"
         ></v-file-input>
         <div v-if="selectedFiles && selectedFiles.length > 0 && imgBaseUrl && imgBaseUrl.includes('data:image/')">
-            <p style="margin-top: -10px; margin-bottom: 10px;">* 해상도가 낮거나 이미지가 너무 작은 경우 GPT 모델이 인식하지 못할 수 있습니다.</p>
-            <img :src="imgBaseUrl" alt="Selected Image" style="width: 350px; max-height: auto;" />
+            <p style="margin-top: -10px; margin-bottom: 10px">
+                * 해상도가 낮거나 이미지가 너무 작은 경우 GPT 모델이 인식하지 못할 수 있습니다.
+            </p>
+            <img :src="imgBaseUrl" alt="Selected Image" style="width: 350px; max-height: auto" />
         </div>
         <div v-if="localReadonly || localDisabled">
             <div v-for="file in selectedFiles" :key="file.name">
@@ -25,12 +27,12 @@
 </template>
 
 <script>
-import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import { commonSettingInfos } from './CommonSettingInfos.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     props: {
-        // UI 관련 설정 props 시작 
+        // UI 관련 설정 props 시작
         hideDetails: {
             type: Boolean,
             default: false
@@ -58,18 +60,18 @@ export default {
 
     data() {
         return {
-            localName: "",
-            localAlias: "",
+            localName: '',
+            localAlias: '',
             localDisabled: false,
             localReadonly: false,
             selectedFiles: [],
             imgBaseUrl: null,
 
             settingInfos: [
-                commonSettingInfos["localName"],
-                commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"],
-                commonSettingInfos["localReadonly"]
+                commonSettingInfos['localName'],
+                commonSettingInfos['localAlias'],
+                commonSettingInfos['localDisabled'],
+                commonSettingInfos['localReadonly']
             ],
 
             backend: null
@@ -79,30 +81,30 @@ export default {
     watch: {
         selectedFiles(val) {
             if (!this.selectedFiles || this.selectedFiles.length <= 0) {
-                this.$emit('update:modelValue', { path: null, name: null })
-                return
+                this.$emit('update:modelValue', { path: null, name: null });
+                return;
             }
-            
+
             if (Array.isArray(this.selectedFiles) && this.selectedFiles.length > 0) {
-                this.selectedFiles.forEach(file => {
+                this.selectedFiles.forEach((file) => {
                     if (file instanceof File) {
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             // this.$emit('update:modelValue', e.target.result)
-                            this.imgBaseUrl = e.target.result
-                        }
-                        reader.readAsDataURL(file)
+                            this.imgBaseUrl = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
                     }
-                })
+                });
             }
         }
     },
 
     created() {
-        this.localName = this.name ?? "name"
-        this.localAlias = this.alias ?? ""
-        this.localDisabled = this.disabled === "true"
-        this.localReadonly = this.readonly === "true"
+        this.localName = this.name ?? 'name';
+        this.localAlias = this.alias ?? '';
+        this.localDisabled = this.disabled === 'true';
+        this.localReadonly = this.readonly === 'true';
 
         // this.$emit('update:modelValue', "")
         this.backend = BackendFactory.createBackend();
@@ -123,7 +125,7 @@ export default {
                 //     this.$emit('update:modelValue', "");
                 //     return;
                 // }
-                
+
                 console.log('[FileField] 파일 다운로드 시도:', this.modelValue.path);
                 const response = await this.backend.downloadFile(this.modelValue.path);
                 if (response && response.error) {
@@ -154,21 +156,25 @@ export default {
                 }
             } catch (error) {
                 console.error('[FileField] 파일 다운로드 에러 발생:', error);
-                this.selectedFiles = [{
-                    originalFileName: this.modelValue,
-                    path: this.modelValue,
-                    name: this.modelValue,
-                    fullPath: this.modelValue
-                }]
+                this.selectedFiles = [
+                    {
+                        originalFileName: this.modelValue,
+                        path: this.modelValue,
+                        name: this.modelValue,
+                        fullPath: this.modelValue
+                    }
+                ];
             }
         } else {
-            this.selectedFiles = [{
-                path: null,
-                name: null
-            }]
+            this.selectedFiles = [
+                {
+                    path: null,
+                    name: null
+                }
+            ];
         }
     },
-    
+
     beforeUnmount() {
         // EventBus 이벤트 리스너 해제
         if (this.EventBus) {
@@ -180,68 +186,72 @@ export default {
     methods: {
         handleGeneratedFiles(data) {
             console.log('[FileField] EventBus로부터 파일 수신:', data);
-            
+
             if (!data || !data.files || data.files.length === 0) {
                 console.warn('[FileField] 수신된 파일이 없습니다.');
                 return;
             }
-            
+
             // File 객체들을 selectedFiles에 추가
-            const newFiles = data.files.map(file => {
+            const newFiles = data.files.map((file) => {
                 // File 객체에 추가 속성 설정
                 file.originalFileName = file.name;
                 file.path = file.url;
-                
+
                 return file;
             });
-            
+
             // 기존 파일이 비어있거나 초기값인 경우 교체
-            if (!this.selectedFiles || 
-                this.selectedFiles.length === 0 || 
-                (this.selectedFiles.length === 1 && !this.selectedFiles[0].name)) {
+            if (
+                !this.selectedFiles ||
+                this.selectedFiles.length === 0 ||
+                (this.selectedFiles.length === 1 && !this.selectedFiles[0].name)
+            ) {
                 this.selectedFiles = newFiles;
                 console.log(`[FileField] ${newFiles.length}개 파일이 추가되었습니다.`, this.selectedFiles);
             } else {
                 // 중복 체크 후 추가
                 const filesToAdd = [];
                 let duplicateCount = 0;
-                
-                newFiles.forEach(newFile => {
-                    const isDuplicate = this.selectedFiles.some(existingFile => {
+
+                newFiles.forEach((newFile) => {
+                    const isDuplicate = this.selectedFiles.some((existingFile) => {
                         // 파일명, 크기, 타입을 모두 비교
-                        return existingFile.name === newFile.name &&
-                               existingFile.size === newFile.size &&
-                               existingFile.type === newFile.type;
+                        return (
+                            existingFile.name === newFile.name && existingFile.size === newFile.size && existingFile.type === newFile.type
+                        );
                     });
-                    
+
                     if (isDuplicate) {
                         duplicateCount++;
                         console.log(`[FileField] 중복 파일 제외: ${newFile.name} (${newFile.size} bytes, ${newFile.type})`);
                     } else {
-                        filesToAdd.push(newFile); 
+                        filesToAdd.push(newFile);
                     }
                 });
-                
+
                 if (filesToAdd.length > 0) {
                     this.selectedFiles = [...this.selectedFiles, ...filesToAdd];
-                    console.log(`[FileField] ${filesToAdd.length}개 파일이 추가되었습니다. (${duplicateCount}개 중복 제외)`, this.selectedFiles);
+                    console.log(
+                        `[FileField] ${filesToAdd.length}개 파일이 추가되었습니다. (${duplicateCount}개 중복 제외)`,
+                        this.selectedFiles
+                    );
                 } else {
                     console.log(`[FileField] 모든 파일이 중복되어 추가되지 않았습니다. (${duplicateCount}개 중복)`);
                 }
             }
-            
+
             // ✅ 첫 번째 파일을 modelValue로 업데이트 - 브라우저 유즈 파일인 경우 원본 URL 사용
             if (this.selectedFiles && this.selectedFiles.length > 0 && this.selectedFiles[0].name) {
                 const firstFile = this.selectedFiles[0];
-                const filePath = firstFile.isBrowserUseFile && firstFile.originalUrl 
-                    ? firstFile.originalUrl 
-                    : (firstFile.path || firstFile.name);
-                
+                const filePath =
+                    firstFile.isBrowserUseFile && firstFile.originalUrl ? firstFile.originalUrl : firstFile.path || firstFile.name;
+
                 console.log(`[FileField] ✅ modelValue 업데이트: path=${filePath}, name=${firstFile.originalFileName || firstFile.name}`);
-                
-                this.$emit('update:modelValue', { 
-                    path: filePath, 
-                    name: firstFile.originalFileName || firstFile.name 
+
+                this.$emit('update:modelValue', {
+                    path: filePath,
+                    name: firstFile.originalFileName || firstFile.name
                 });
             }
         },
@@ -278,7 +288,7 @@ export default {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
+
             // 메모리 정리
             URL.revokeObjectURL(url);
         }

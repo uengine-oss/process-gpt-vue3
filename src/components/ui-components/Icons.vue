@@ -1,13 +1,15 @@
 <template>
-    <div v-html="svgContent" :icon="`'${icon}'`" 
-        :style="{ 
-            width: computedWidth + 'px', 
+    <div
+        v-html="svgContent"
+        :icon="`'${icon}'`"
+        :style="{
+            width: computedWidth + 'px',
             height: computedHeight + 'px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
-        }">
-    </div>
+        }"
+    ></div>
 </template>
 
 <script>
@@ -90,14 +92,16 @@ export default {
             const data = encoder.encode(content);
             const hashBuffer = await crypto.subtle.digest('SHA-256', data);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
             return hashHex;
         },
         shouldAddFill(svg) {
-            return !svg.match(/fill="currentColor"/) && 
-                !svg.match(/stroke="currentColor"/) && 
-                !svg.match(/stroke="none"/) && 
-                !svg.match(/fill="none"/);
+            return (
+                !svg.match(/fill="currentColor"/) &&
+                !svg.match(/stroke="currentColor"/) &&
+                !svg.match(/stroke="none"/) &&
+                !svg.match(/fill="none"/)
+            );
         },
         updateSvgContent(svg) {
             if (this.color) {
@@ -113,9 +117,9 @@ export default {
 
             // 루트 SVG 요소에 width와 height 속성 설정
             svg = svg.replace(/<svg/, `<svg width="${this.computedWidth}" height="${this.computedHeight}"`);
-            
+
             this.svgContent = svg;
-        },
+        }
     }
 };
 </script>

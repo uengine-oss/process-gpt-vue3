@@ -3,7 +3,7 @@
         <!-- Task Definition (Service Task, Send Task) -->
         <div v-if="showTaskDefinition" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Task Definition</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-row class="ma-0 pa-0">
                     <v-col cols="8" class="pa-0 pr-2">
                         <v-text-field
@@ -33,7 +33,7 @@
         <!-- Form Definition (User Task) -->
         <div v-if="showFormDefinition" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Form Definition</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-text-field
                     v-model="copyUengineProperties.zeebe.formDefinition.formId"
                     label="Form ID"
@@ -57,10 +57,10 @@
         <!-- Assignment Definition (User Task) -->
         <div v-if="showAssignmentDefinition" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Assignment</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-text-field
                     :model-value="stripEqual(copyUengineProperties.zeebe.assignmentDefinition.assignee)"
-                    @update:model-value="(v) => copyUengineProperties.zeebe.assignmentDefinition.assignee = addEqual(v)"
+                    @update:model-value="(v) => (copyUengineProperties.zeebe.assignmentDefinition.assignee = addEqual(v))"
                     label="Assignee"
                     variant="outlined"
                     density="compact"
@@ -71,7 +71,7 @@
                 />
                 <v-text-field
                     :model-value="stripEqual(copyUengineProperties.zeebe.assignmentDefinition.candidateGroups)"
-                    @update:model-value="(v) => copyUengineProperties.zeebe.assignmentDefinition.candidateGroups = addEqual(v)"
+                    @update:model-value="(v) => (copyUengineProperties.zeebe.assignmentDefinition.candidateGroups = addEqual(v))"
                     label="Candidate Groups"
                     variant="outlined"
                     density="compact"
@@ -82,7 +82,7 @@
                 />
                 <v-text-field
                     :model-value="stripEqual(copyUengineProperties.zeebe.assignmentDefinition.candidateUsers)"
-                    @update:model-value="(v) => copyUengineProperties.zeebe.assignmentDefinition.candidateUsers = addEqual(v)"
+                    @update:model-value="(v) => (copyUengineProperties.zeebe.assignmentDefinition.candidateUsers = addEqual(v))"
                     label="Candidate Users"
                     variant="outlined"
                     density="compact"
@@ -96,7 +96,7 @@
         <!-- Called Decision (Business Rule Task) -->
         <div v-if="showCalledDecision" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Called Decision (DMN)</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-text-field
                     v-model="copyUengineProperties.zeebe.calledDecision.decisionId"
                     label="Decision ID"
@@ -120,7 +120,7 @@
         <!-- Called Element (Call Activity) -->
         <div v-if="showCalledElement" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Called Element</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-text-field
                     v-model="copyUengineProperties.zeebe.calledElement.processId"
                     label="Process ID"
@@ -143,10 +143,10 @@
         <!-- Script (Script Task) -->
         <div v-if="showScript" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Script (FEEL)</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <v-textarea
                     :model-value="stripEqual(copyUengineProperties.zeebe.script.expression)"
-                    @update:model-value="(v) => copyUengineProperties.zeebe.script.expression = addEqual(v)"
+                    @update:model-value="(v) => (copyUengineProperties.zeebe.script.expression = addEqual(v))"
                     label="Expression"
                     variant="outlined"
                     density="compact"
@@ -170,7 +170,7 @@
         <!-- IO Mapping -->
         <div v-if="showIoMapping" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Input/Output Mapping</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <!-- Input Parameters -->
                 <div class="mb-3">
                     <div class="text-caption mb-2">Input Parameters</div>
@@ -179,7 +179,7 @@
                             <v-col cols="5" class="pa-0 pr-1">
                                 <v-text-field
                                     :model-value="stripEqual(input.source)"
-                                    @update:model-value="(v) => input.source = addEqual(v)"
+                                    @update:model-value="(v) => (input.source = addEqual(v))"
                                     label="Source"
                                     variant="outlined"
                                     density="compact"
@@ -199,7 +199,14 @@
                                 />
                             </v-col>
                             <v-col cols="2" class="pa-0 d-flex justify-end">
-                                <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeInput(index)" :disabled="isViewMode" />
+                                <v-btn
+                                    variant="text"
+                                    density="comfortable"
+                                    size="x-small"
+                                    icon="mdi-delete"
+                                    @click="removeInput(index)"
+                                    :disabled="isViewMode"
+                                />
                             </v-col>
                         </v-row>
                     </div>
@@ -219,7 +226,7 @@
                             <v-col cols="5" class="pa-0 pr-1">
                                 <v-text-field
                                     :model-value="stripEqual(output.source)"
-                                    @update:model-value="(v) => output.source = addEqual(v)"
+                                    @update:model-value="(v) => (output.source = addEqual(v))"
                                     label="Source"
                                     variant="outlined"
                                     density="compact"
@@ -239,7 +246,14 @@
                                 />
                             </v-col>
                             <v-col cols="2" class="pa-0 d-flex justify-end">
-                                <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeOutput(index)" :disabled="isViewMode" />
+                                <v-btn
+                                    variant="text"
+                                    density="comfortable"
+                                    size="x-small"
+                                    icon="mdi-delete"
+                                    @click="removeOutput(index)"
+                                    :disabled="isViewMode"
+                                />
                             </v-col>
                         </v-row>
                     </div>
@@ -254,7 +268,7 @@
         <!-- Task Headers -->
         <div v-if="showTaskHeaders" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Task Headers</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <div v-for="(header, index) in copyUengineProperties.zeebe.taskHeaders" :key="'header-' + index" class="mb-2">
                     <v-row class="ma-0 pa-0 align-center">
                         <v-col cols="5" class="pa-0 pr-1">
@@ -278,7 +292,14 @@
                             />
                         </v-col>
                         <v-col cols="2" class="pa-0 d-flex justify-end">
-                            <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeHeader(index)" :disabled="isViewMode" />
+                            <v-btn
+                                variant="text"
+                                density="comfortable"
+                                size="x-small"
+                                icon="mdi-delete"
+                                @click="removeHeader(index)"
+                                :disabled="isViewMode"
+                            />
                         </v-col>
                     </v-row>
                 </div>
@@ -292,8 +313,12 @@
         <!-- Execution Listeners -->
         <div v-if="showExecutionListeners" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Execution Listeners</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
-                <div v-for="(listener, index) in copyUengineProperties.zeebe.executionListeners" :key="'execListener-' + index" class="mb-3 pa-2 border rounded">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
+                <div
+                    v-for="(listener, index) in copyUengineProperties.zeebe.executionListeners"
+                    :key="'execListener-' + index"
+                    class="mb-3 pa-2 border rounded"
+                >
                     <v-row class="ma-0 pa-0">
                         <v-col cols="4" class="pa-0 pr-1">
                             <v-select
@@ -328,7 +353,14 @@
                             />
                         </v-col>
                         <v-col cols="1" class="pa-0 d-flex justify-end align-center">
-                            <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeExecutionListener(index)" :disabled="isViewMode" />
+                            <v-btn
+                                variant="text"
+                                density="comfortable"
+                                size="x-small"
+                                icon="mdi-delete"
+                                @click="removeExecutionListener(index)"
+                                :disabled="isViewMode"
+                            />
                         </v-col>
                     </v-row>
                 </div>
@@ -342,8 +374,12 @@
         <!-- Task Listeners (User Task) -->
         <div v-if="showTaskListeners" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Task Listeners</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
-                <div v-for="(listener, index) in copyUengineProperties.zeebe.taskListeners" :key="'taskListener-' + index" class="mb-3 pa-2 border rounded">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
+                <div
+                    v-for="(listener, index) in copyUengineProperties.zeebe.taskListeners"
+                    :key="'taskListener-' + index"
+                    class="mb-3 pa-2 border rounded"
+                >
                     <v-row class="ma-0 pa-0">
                         <v-col cols="4" class="pa-0 pr-1">
                             <v-select
@@ -378,7 +414,14 @@
                             />
                         </v-col>
                         <v-col cols="1" class="pa-0 d-flex justify-end align-center">
-                            <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeTaskListener(index)" :disabled="isViewMode" />
+                            <v-btn
+                                variant="text"
+                                density="comfortable"
+                                size="x-small"
+                                icon="mdi-delete"
+                                @click="removeTaskListener(index)"
+                                :disabled="isViewMode"
+                            />
                         </v-col>
                     </v-row>
                 </div>
@@ -392,7 +435,7 @@
         <!-- Zeebe Properties -->
         <div v-if="showZeebeProperties" class="mb-4 mt-4">
             <div class="text-subtitle-2 mb-2">Zeebe Properties</div>
-            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important;">
+            <v-card variant="outlined" class="pa-3" style="border-radius: 8px !important">
                 <div v-for="(prop, index) in copyUengineProperties.zeebe.properties" :key="'prop-' + index" class="mb-2">
                     <v-row class="ma-0 pa-0 align-center">
                         <v-col cols="5" class="pa-0 pr-1">
@@ -416,7 +459,14 @@
                             />
                         </v-col>
                         <v-col cols="2" class="pa-0 d-flex justify-end">
-                            <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeProperty(index)" :disabled="isViewMode" />
+                            <v-btn
+                                variant="text"
+                                density="comfortable"
+                                size="x-small"
+                                icon="mdi-delete"
+                                @click="removeProperty(index)"
+                                :disabled="isViewMode"
+                            />
                         </v-col>
                     </v-row>
                 </div>
@@ -450,7 +500,18 @@ export default {
     data() {
         return {
             copyUengineProperties: {},
-            taskListenerEventTypes: ['creating', 'created', 'assigning', 'assigned', 'completing', 'completed', 'updating', 'updated', 'canceling', 'canceled']
+            taskListenerEventTypes: [
+                'creating',
+                'created',
+                'assigning',
+                'assigned',
+                'completing',
+                'completed',
+                'updating',
+                'updated',
+                'canceling',
+                'canceled'
+            ]
         };
     },
     created() {
@@ -488,35 +549,37 @@ export default {
             return this.elementType.includes('CallActivity');
         },
         showTaskDefinition() {
-            return this.isServiceTask || this.isSendTask ||
-                   (this.copyUengineProperties.zeebe?.taskDefinition?.type);
+            return this.isServiceTask || this.isSendTask || this.copyUengineProperties.zeebe?.taskDefinition?.type;
         },
         showFormDefinition() {
-            return this.isUserTask ||
-                   (this.copyUengineProperties.zeebe?.formDefinition?.formId ||
-                    this.copyUengineProperties.zeebe?.formDefinition?.formKey);
+            return (
+                this.isUserTask ||
+                this.copyUengineProperties.zeebe?.formDefinition?.formId ||
+                this.copyUengineProperties.zeebe?.formDefinition?.formKey
+            );
         },
         showAssignmentDefinition() {
-            return this.isUserTask ||
-                   (this.copyUengineProperties.zeebe?.assignmentDefinition?.assignee ||
-                    this.copyUengineProperties.zeebe?.assignmentDefinition?.candidateGroups ||
-                    this.copyUengineProperties.zeebe?.assignmentDefinition?.candidateUsers);
+            return (
+                this.isUserTask ||
+                this.copyUengineProperties.zeebe?.assignmentDefinition?.assignee ||
+                this.copyUengineProperties.zeebe?.assignmentDefinition?.candidateGroups ||
+                this.copyUengineProperties.zeebe?.assignmentDefinition?.candidateUsers
+            );
         },
         showCalledDecision() {
-            return this.isBusinessRuleTask ||
-                   (this.copyUengineProperties.zeebe?.calledDecision?.decisionId);
+            return this.isBusinessRuleTask || this.copyUengineProperties.zeebe?.calledDecision?.decisionId;
         },
         showCalledElement() {
-            return this.isCallActivity ||
-                   (this.copyUengineProperties.zeebe?.calledElement?.processId);
+            return this.isCallActivity || this.copyUengineProperties.zeebe?.calledElement?.processId;
         },
         showScript() {
-            return this.isScriptTask ||
-                   (this.copyUengineProperties.zeebe?.script?.expression);
+            return this.isScriptTask || this.copyUengineProperties.zeebe?.script?.expression;
         },
         showIoMapping() {
-            return (this.copyUengineProperties.zeebe?.ioMapping?.inputs?.length > 0 ||
-                    this.copyUengineProperties.zeebe?.ioMapping?.outputs?.length > 0);
+            return (
+                this.copyUengineProperties.zeebe?.ioMapping?.inputs?.length > 0 ||
+                this.copyUengineProperties.zeebe?.ioMapping?.outputs?.length > 0
+            );
         },
         showTaskHeaders() {
             return this.copyUengineProperties.zeebe?.taskHeaders?.length > 0;

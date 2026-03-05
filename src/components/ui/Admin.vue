@@ -2,199 +2,170 @@
     <div>
         <v-card elevation="4" class="admin-card pa-0 mx-auto">
             <v-card-title class="pa-0 pt-4 pl-4">{{ $t('admin.instanceList') }}</v-card-title>
-            
+
             <div class="pa-4">
-            <div class="filter-container">
-                <div class="filter-item">
-                    <v-text-field
-                        v-model="filters.name"
-                        :label="$t('admin.name')"
-                        variant="outlined"
-                        density="comfortable"
-                        prepend-inner-icon="mdi-magnify"
-                        class="rounded-lg"
-                        hide-details
-                    ></v-text-field>
-                </div>
-                
-                <div class="filter-item">
-                    <v-text-field
-                        v-model="filters.initEp"
-                        :label="$t('admin.initiator')"
-                        variant="outlined"
-                        density="comfortable"
-                        prepend-inner-icon="mdi-magnify"
-                        class="rounded-lg"
-                        hide-details
-                    ></v-text-field>
-                </div>
-                
-                <div class="filter-item">
-                    <v-select
-                        v-model="filters.subProcess"
-                        :items="subProcessOptions"
-                        :label="$t('admin.subProcess')"
-                        variant="outlined"
-                        density="comfortable"
-                        class="rounded-lg"
-                        hide-details
-                        clearable
-                    ></v-select>
-                </div>
-                
-                <div class="filter-item">
-                    <v-select
-                        v-model="filters.status"
-                        :items="statusOptions"
-                        :label="$t('admin.status')"
-                        variant="outlined"
-                        density="comfortable"
-                        class="rounded-lg"
-                        hide-details
-                        clearable
-                    ></v-select>
-                </div>
-                
-                <div class="filter-date-item">
-                    <v-text-field
-                        @click="toggleStartDateMenu"
-                        v-model="formattedStartDate"
-                        :label="$t('admin.startedDate')"
-                        readonly
-                        variant="outlined"
-                        density="comfortable"
-                        class="rounded-lg"
-                        prepend-inner-icon="mdi-calendar"
-                        clearable
-                        @click:clear="filters.startedDate = null"
-                        hide-details
-                    ></v-text-field>
-                    
-                    <v-menu
-                        v-model="startDateMenu"
-                        :close-on-content-click="false"
-                        transition="scale-transition"
-                        offset-y
-                    >
-                        <template v-slot:activator="{ props }">
-                            <div v-bind="props"></div>
-                        </template>
-                        <v-date-picker
-                            v-model="filters.startedDate"
-                            @update:model-value="startDateMenu = false"
-                        ></v-date-picker>
-                    </v-menu>
-                </div>
-                
-                <div class="filter-date-item">
-                    <v-text-field
-                        @click="toggleFinishedDateMenu"
-                        v-model="formattedFinishedDate"
-                        :label="$t('admin.finishedDate')"
-                        readonly
-                        variant="outlined"
-                        density="comfortable"
-                        class="rounded-lg"
-                        prepend-inner-icon="mdi-calendar"
-                        clearable
-                        @click:clear="filters.finishedDate = null"
-                        hide-details
-                    ></v-text-field>
-                    
-                    <v-menu
-                        v-model="finishedDateMenu"
-                        :close-on-content-click="false"
-                        transition="scale-transition"
-                        offset-y
-                    >
-                        <template v-slot:activator="{ props }">
-                            <div v-bind="props"></div>
-                        </template>
-                        <v-date-picker
-                            v-model="filters.finishedDate"
-                            @update:model-value="finishedDateMenu = false"
-                        ></v-date-picker>
-                    </v-menu>
-                </div>
-                
-                <div class="filter-button-item">
-                    <v-btn
-                        @click="getFilteredInstanceList(0)"
-                        color="primary"
-                        rounded
-                        prepend-icon="mdi-magnify"
-                        variant="elevated"
-                    >
-                        {{ $t('admin.search') }}
-                    </v-btn>
-                </div>
-            </div>
-            
-            <div class="table-wrapper">
-                <v-data-table-server
-                    v-model:search="search"
-                    :items="instanceList"
-                    :headers="headers"
-                    :items-per-page="itemsPerPage"
-                    :items-per-page-options="[10, 20, 30, 40, 50, -1]"
-                    :itemsPerPageText="$t('admin.itemsPerPageText')"
-                    :items-length="totalElements"
-                    :no-data-text="$t('admin.noSearch')"
-                    @update:page="handlePageUpdate"
-                    @update:items-per-page="updateItemsPerPage"
-                    class="admin-table"
-                >
-                    <template #[`item.name`]="{ item }">
-                        <div>{{ item.instName }}</div>
-                    </template>
-                    <template #[`item.status`]="{ item }">
-                        <div>
-                            <v-chip v-if="item.status == 'Completed'" color="success">
-                                {{ item.status }}
-                            </v-chip>
-                            <v-chip v-if="item.status == 'Running'" color="primary">
-                                {{ item.status }}
-                            </v-chip>
-                            <v-chip v-if="item.status == 'Pending' || item.status == 'Stopped'">
-                                {{ item.status }}
-                            </v-chip>
-                            <v-chip v-if="item.status == 'Failed'" color="error">
-                                {{ item.status }}
-                            </v-chip>
-                        </div>
-                    </template>
-                    <template #[`item.actions`]="{ item }">
-                        <v-tooltip :text="$t('admin.viewDetails')">
+                <div class="filter-container">
+                    <div class="filter-item">
+                        <v-text-field
+                            v-model="filters.name"
+                            :label="$t('admin.name')"
+                            variant="outlined"
+                            density="comfortable"
+                            prepend-inner-icon="mdi-magnify"
+                            class="rounded-lg"
+                            hide-details
+                        ></v-text-field>
+                    </div>
+
+                    <div class="filter-item">
+                        <v-text-field
+                            v-model="filters.initEp"
+                            :label="$t('admin.initiator')"
+                            variant="outlined"
+                            density="comfortable"
+                            prepend-inner-icon="mdi-magnify"
+                            class="rounded-lg"
+                            hide-details
+                        ></v-text-field>
+                    </div>
+
+                    <div class="filter-item">
+                        <v-select
+                            v-model="filters.subProcess"
+                            :items="subProcessOptions"
+                            :label="$t('admin.subProcess')"
+                            variant="outlined"
+                            density="comfortable"
+                            class="rounded-lg"
+                            hide-details
+                            clearable
+                        ></v-select>
+                    </div>
+
+                    <div class="filter-item">
+                        <v-select
+                            v-model="filters.status"
+                            :items="statusOptions"
+                            :label="$t('admin.status')"
+                            variant="outlined"
+                            density="comfortable"
+                            class="rounded-lg"
+                            hide-details
+                            clearable
+                        ></v-select>
+                    </div>
+
+                    <div class="filter-date-item">
+                        <v-text-field
+                            @click="toggleStartDateMenu"
+                            v-model="formattedStartDate"
+                            :label="$t('admin.startedDate')"
+                            readonly
+                            variant="outlined"
+                            density="comfortable"
+                            class="rounded-lg"
+                            prepend-inner-icon="mdi-calendar"
+                            clearable
+                            @click:clear="filters.startedDate = null"
+                            hide-details
+                        ></v-text-field>
+
+                        <v-menu v-model="startDateMenu" :close-on-content-click="false" transition="scale-transition" offset-y>
                             <template v-slot:activator="{ props }">
-                                <v-btn
-                                    @click="viewDetail(item)"
-                                    v-bind="props"
-                                    icon
-                                    variant="text"
-                                    color="primary"
-                                    size="small"
-                                >
-                                    <v-icon>mdi-eye</v-icon>
-                                </v-btn>
+                                <div v-bind="props"></div>
                             </template>
-                        </v-tooltip>
-                    </template>
-                    <template #[`item.initEp`]="{ item }">
-                        <div>{{ item.initEp }}</div>
-                    </template>
-                    <template #[`item.subProcess`]="{ item }">
-                        <v-icon v-if="item.subProcess" color="success">mdi-checkbox-marked-circle</v-icon>
-                        <v-icon v-else color="grey">mdi-cancel</v-icon>
-                    </template>
-                    <template #[`item.startedDate`]="{ item }">
-                        <div>{{ formatDate(item.startedDate) }}</div>
-                    </template>
-                    <template #[`item.finishedDate`]="{ item }">
-                        <div>{{ formatDate(item.finishedDate) }}</div>
-                    </template>
-                </v-data-table-server>
+                            <v-date-picker v-model="filters.startedDate" @update:model-value="startDateMenu = false"></v-date-picker>
+                        </v-menu>
+                    </div>
+
+                    <div class="filter-date-item">
+                        <v-text-field
+                            @click="toggleFinishedDateMenu"
+                            v-model="formattedFinishedDate"
+                            :label="$t('admin.finishedDate')"
+                            readonly
+                            variant="outlined"
+                            density="comfortable"
+                            class="rounded-lg"
+                            prepend-inner-icon="mdi-calendar"
+                            clearable
+                            @click:clear="filters.finishedDate = null"
+                            hide-details
+                        ></v-text-field>
+
+                        <v-menu v-model="finishedDateMenu" :close-on-content-click="false" transition="scale-transition" offset-y>
+                            <template v-slot:activator="{ props }">
+                                <div v-bind="props"></div>
+                            </template>
+                            <v-date-picker v-model="filters.finishedDate" @update:model-value="finishedDateMenu = false"></v-date-picker>
+                        </v-menu>
+                    </div>
+
+                    <div class="filter-button-item">
+                        <v-btn @click="getFilteredInstanceList(0)" color="primary" rounded prepend-icon="mdi-magnify" variant="elevated">
+                            {{ $t('admin.search') }}
+                        </v-btn>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <v-data-table-server
+                        v-model:search="search"
+                        :items="instanceList"
+                        :headers="headers"
+                        :items-per-page="itemsPerPage"
+                        :items-per-page-options="[10, 20, 30, 40, 50, -1]"
+                        :itemsPerPageText="$t('admin.itemsPerPageText')"
+                        :items-length="totalElements"
+                        :no-data-text="$t('admin.noSearch')"
+                        @update:page="handlePageUpdate"
+                        @update:items-per-page="updateItemsPerPage"
+                        class="admin-table"
+                    >
+                        <template #[`item.name`]="{ item }">
+                            <div>{{ item.instName }}</div>
+                        </template>
+                        <template #[`item.status`]="{ item }">
+                            <div>
+                                <v-chip v-if="item.status == 'Completed'" color="success">
+                                    {{ item.status }}
+                                </v-chip>
+                                <v-chip v-if="item.status == 'Running'" color="primary">
+                                    {{ item.status }}
+                                </v-chip>
+                                <v-chip v-if="item.status == 'Pending' || item.status == 'Stopped'">
+                                    {{ item.status }}
+                                </v-chip>
+                                <v-chip v-if="item.status == 'Failed'" color="error">
+                                    {{ item.status }}
+                                </v-chip>
+                            </div>
+                        </template>
+                        <template #[`item.actions`]="{ item }">
+                            <v-tooltip :text="$t('admin.viewDetails')">
+                                <template v-slot:activator="{ props }">
+                                    <v-btn @click="viewDetail(item)" v-bind="props" icon variant="text" color="primary" size="small">
+                                        <v-icon>mdi-eye</v-icon>
+                                    </v-btn>
+                                </template>
+                            </v-tooltip>
+                        </template>
+                        <template #[`item.initEp`]="{ item }">
+                            <div>{{ item.initEp }}</div>
+                        </template>
+                        <template #[`item.subProcess`]="{ item }">
+                            <v-icon v-if="item.subProcess" color="success">mdi-checkbox-marked-circle</v-icon>
+                            <v-icon v-else color="grey">mdi-cancel</v-icon>
+                        </template>
+                        <template #[`item.startedDate`]="{ item }">
+                            <div>{{ formatDate(item.startedDate) }}</div>
+                        </template>
+                        <template #[`item.finishedDate`]="{ item }">
+                            <div>{{ formatDate(item.finishedDate) }}</div>
+                        </template>
+                    </v-data-table-server>
+                </div>
             </div>
-        </div>
         </v-card>
     </div>
 </template>
@@ -216,7 +187,7 @@ export default {
         headers: [],
         itemsPerPage: 10,
         currentPage: 0,
-        totalElements: 0,  // totalElements 초기값 설정
+        totalElements: 0, // totalElements 초기값 설정
         filters: {
             instName: null,
             status: null,
@@ -224,7 +195,7 @@ export default {
             finishedDate: null,
             initEp: null,
             subProcess: null,
-            date: null,
+            date: null
         },
         startDateMenu: false,
         finishedDateMenu: false,
@@ -249,21 +220,21 @@ export default {
             { key: 'initEp', align: 'start', title: this.$t('admin.initiator') },
             { key: 'subProcess', align: 'center', title: this.$t('admin.subProcess') },
             { key: 'actions', align: 'start', title: this.$t('admin.actions') }
-        ]
+        ];
     },
     computed: {
         formattedStartDate() {
             if (!this.filters.startedDate) return '';
             const date = new Date(this.filters.startedDate);
             date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); // 로컬 타임존 보정
-            return date.toISOString().split('T')[0];  // YYYY-MM-DD 형식
+            return date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
         },
         formattedFinishedDate() {
             if (!this.filters.finishedDate) return '';
             const date = new Date(this.filters.finishedDate);
             date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); // 로컬 타임존 보정
-            return date.toISOString().split('T')[0];  // YYYY-MM-DD 형식
-        },
+            return date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+        }
     },
     methods: {
         clearStatus() {
@@ -289,7 +260,7 @@ export default {
             this.filters.finishedDate = null;
         },
         formatDate(date) {
-            if (!date) return 'N/A';  // 날짜가 없을 경우 'N/A' 표시
+            if (!date) return 'N/A'; // 날짜가 없을 경우 'N/A' 표시
             const options = { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric' };
             return new Date(date).toLocaleString('ko-KR', options);
         },
@@ -319,7 +290,7 @@ export default {
                     me.currentPage = response.currentPage; // 현재 페이지 설정
                 }
             });
-        },
+        }
     }
 };
 </script>
@@ -376,7 +347,7 @@ export default {
         grid-template-columns: repeat(3, 1fr);
         gap: 16px;
     }
-    
+
     .filter-button-item {
         grid-column: 3;
         justify-content: flex-end;
@@ -387,13 +358,13 @@ export default {
     .admin-card {
         padding: 12px !important;
     }
-    
+
     .filter-container {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
     }
-    
+
     .filter-button-item {
         grid-column: 2;
         justify-content: flex-end;
@@ -404,7 +375,7 @@ export default {
     .filter-container {
         grid-template-columns: 1fr;
     }
-    
+
     .filter-button-item {
         grid-column: 1;
         justify-content: flex-end;

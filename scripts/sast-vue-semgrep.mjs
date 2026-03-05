@@ -79,6 +79,8 @@ function runSemgrep() {
     "scan",
     "--config",
     "./semgrep-rules",
+    "--metrics",
+    "off",
     "--exclude",
     "node_modules",
     "--exclude",

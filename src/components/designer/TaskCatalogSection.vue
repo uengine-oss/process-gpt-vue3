@@ -1,5 +1,5 @@
 <template>
-    <div class="task-catalog-panel" :class="{ 'collapsed': isCollapsed }">
+    <div class="task-catalog-panel" :class="{ collapsed: isCollapsed }">
         <!-- Header -->
         <v-tooltip v-if="isCollapsed" location="right">
             <template #activator="{ props }">
@@ -15,13 +15,7 @@
             <div class="header-left">
                 <v-icon size="18" color="primary">mdi-folder-star</v-icon>
                 <span class="header-title">Task Catalog</span>
-                <v-chip
-                    v-if="filteredItems.length > 0"
-                    size="x-small"
-                    color="primary"
-                    variant="tonal"
-                    class="count-badge"
-                >
+                <v-chip v-if="filteredItems.length > 0" size="x-small" color="primary" variant="tonal" class="count-badge">
                     {{ filteredItems.length }}
                 </v-chip>
             </div>
@@ -35,7 +29,7 @@
             <div class="search-row">
                 <div
                     class="d-flex align-center border border-borderColor header-search rounded-pill px-5 search-input"
-                    style="max-width: 246px; min-width: 160px;"
+                    style="max-width: 246px; min-width: 160px"
                 >
                     <Icons :icon="'magnifer-linear'" :size="20" />
                     <v-text-field
@@ -57,13 +51,7 @@
                     class="filter-toggle"
                 >
                     <v-icon size="18">mdi-filter-variant</v-icon>
-                    <v-badge
-                        v-if="activeFilterCount > 0"
-                        :content="activeFilterCount"
-                        color="primary"
-                        floating
-                        dot
-                    />
+                    <v-badge v-if="activeFilterCount > 0" :content="activeFilterCount" color="primary" floating dot />
                 </v-btn>
             </div>
 
@@ -92,14 +80,7 @@
                             class="filter-field"
                         />
                     </div>
-                    <v-btn
-                        v-if="activeFilterCount > 0"
-                        variant="text"
-                        size="x-small"
-                        color="grey"
-                        @click="clearFilters"
-                        class="clear-btn"
-                    >
+                    <v-btn v-if="activeFilterCount > 0" variant="text" size="x-small" color="grey" @click="clearFilters" class="clear-btn">
                         필터 초기화
                     </v-btn>
                 </div>
@@ -175,7 +156,7 @@ export default defineComponent({
         const catalogItems = computed(() => store.catalogItems);
 
         const systemOptions = computed(() => {
-            return systems.value.map(s => ({ title: s.name, value: s.name }));
+            return systems.value.map((s) => ({ title: s.name, value: s.name }));
         });
 
         const levelOptions = computed(() => {
@@ -199,19 +180,20 @@ export default defineComponent({
 
             if (searchQuery.value) {
                 const query = searchQuery.value.toLowerCase();
-                items = items.filter(item =>
-                    (item.display_name || '').toLowerCase().includes(query) ||
-                    (item.name || '').toLowerCase().includes(query) ||
-                    (item.description || '').toLowerCase().includes(query)
+                items = items.filter(
+                    (item) =>
+                        (item.display_name || '').toLowerCase().includes(query) ||
+                        (item.name || '').toLowerCase().includes(query) ||
+                        (item.description || '').toLowerCase().includes(query)
                 );
             }
 
             if (selectedSystem.value) {
-                items = items.filter(item => item.system_name === selectedSystem.value);
+                items = items.filter((item) => item.system_name === selectedSystem.value);
             }
 
             if (selectedLevel.value) {
-                items = items.filter(item => item.level === selectedLevel.value);
+                items = items.filter((item) => item.level === selectedLevel.value);
             }
 
             return items;
@@ -251,10 +233,13 @@ export default defineComponent({
         };
 
         const onDragStart = (event, item) => {
-            event.dataTransfer.setData('application/json', JSON.stringify({
-                type: 'task-catalog',
-                item: item
-            }));
+            event.dataTransfer.setData(
+                'application/json',
+                JSON.stringify({
+                    type: 'task-catalog',
+                    item: item
+                })
+            );
             event.dataTransfer.effectAllowed = 'copy';
             event.target.classList.add('dragging');
         };
@@ -347,12 +332,12 @@ export default defineComponent({
 .count-badge {
     font-size: 10px;
     height: 18px;
-    background: rgba(255,255,255,0.25) !important;
+    background: rgba(255, 255, 255, 0.25) !important;
     color: white !important;
 }
 
 .collapse-icon {
-    color: rgba(255,255,255,0.8) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
     transition: transform 0.3s ease;
 }
 
@@ -446,7 +431,7 @@ export default defineComponent({
     border-radius: 8px;
     cursor: grab;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .catalog-card:hover {

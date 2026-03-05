@@ -5,14 +5,15 @@
                 <BpmnUengine
                     ref="bpmnVue"
                     :instanceId="instance.instId"
-                    :key= "updatedDefKey"
+                    :key="updatedDefKey"
                     :bpmn="bpmn"
                     :options="options"
                     :taskStatus="taskStatus"
                     style="height: 100%"
                 ></BpmnUengine>
             </div>
-            <span v-else class="no-bpmn-found-text">BPMN 정보 불러오는 중
+            <span v-else class="no-bpmn-found-text"
+                >BPMN 정보 불러오는 중
                 <span class="loading-dots">
                     <span>.</span>
                     <span>.</span>
@@ -24,7 +25,6 @@
 </template>
 
 <script>
-
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 
 import customBpmnModule from '@/components/customBpmn';
@@ -38,7 +38,7 @@ export default {
         BpmnUengine
     },
     props: {
-        instance: Object,
+        instance: Object
     },
     data: () => ({
         bpmn: null,
@@ -47,7 +47,7 @@ export default {
         taskStatus: null,
         options: {
             additionalModules: [customBpmnModule]
-        },
+        }
     }),
     created() {
         this.init();
@@ -60,7 +60,7 @@ export default {
         let me = this;
         me.$try({
             action: async () => {
-                if(me.$route.params && me.$route.params.instId) {
+                if (me.$route.params && me.$route.params.instId) {
                     await me.initStatus();
                 }
             }
@@ -76,10 +76,10 @@ export default {
         },
         mode() {
             return window.$mode;
-        },
+        }
     },
     watch: {
-        '$route': {
+        $route: {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.instId !== oldVal.params.instId) {
@@ -94,7 +94,7 @@ export default {
                     await this.init();
                 }
             }
-        },
+        }
     },
     methods: {
         init() {
@@ -103,7 +103,7 @@ export default {
                 context: me,
                 action: async () => {
                     if (me.instance && me.instance.defId) {
-                        if(me.mode == 'ProcessGPT') {
+                        if (me.mode == 'ProcessGPT') {
                             me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.version });
                         } else {
                             me.bpmn = await backend.getRawDefinition(me.instance.defId, { type: 'bpmn', version: this.instance.defVer });

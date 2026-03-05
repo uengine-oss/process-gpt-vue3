@@ -1,5 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
 exports.NOT_CONNECTED_ERROR_MESSAGE = exports.AceBaseRequestError = void 0;
 class AceBaseRequestError extends Error {
     constructor(request, response, code, message = 'unknown error') {

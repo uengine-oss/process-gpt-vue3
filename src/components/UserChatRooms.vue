@@ -25,20 +25,9 @@
                 </v-tab>
             </v-tabs>
             <div>
-                <v-menu
-                    v-model="chatRoomSettingsMenu"
-                    location="bottom end"
-                    :close-on-content-click="true"
-                >
+                <v-menu v-model="chatRoomSettingsMenu" location="bottom end" :close-on-content-click="true">
                     <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            icon
-                            variant="text"
-                            size="small"
-                            class="settings-btn"
-                            :disabled="!tabs || tabs.length === 0"
-                        >
+                        <v-btn v-bind="props" icon variant="text" size="small" class="settings-btn" :disabled="!tabs || tabs.length === 0">
                             <v-icon>mdi-cog-outline</v-icon>
                         </v-btn>
                     </template>
@@ -77,14 +66,7 @@
                 </v-menu>
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            icon
-                            variant="text"
-                            size="small"
-                            class="add-tab-btn"
-                            @click="addNewRoom()"
-                        >
+                        <v-btn v-bind="props" icon variant="text" size="small" class="add-tab-btn" @click="addNewRoom()">
                             <v-icon>mdi-plus</v-icon>
                         </v-btn>
                     </template>
@@ -125,9 +107,7 @@
                 <v-row class="ma-0 pa-0">
                     <v-card-title class="pa-0">참가자 관리</v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="participantsDialog = false" icon variant="text" density="comfortable"
-                        style="margin-top:-8px;"
-                    >
+                    <v-btn @click="participantsDialog = false" icon variant="text" density="comfortable" style="margin-top: -8px">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-row>
@@ -138,42 +118,35 @@
                         chips
                         closable-chips
                         item-title="username"
-                        :item-value="item => item"
+                        :item-value="(item) => item"
                         multiple
                         label="참가자 선택"
                         small-chips
                         :loading="isLoadingUsers"
                     >
                         <template v-slot:chip="{ props, item }">
-                            <v-chip
-                                v-bind="props"
-                                :text="item.raw.username ? item.raw.username : item.raw.email"
-                            />
+                            <v-chip v-bind="props" :text="item.raw.username ? item.raw.username : item.raw.email" />
                         </template>
                         <template v-slot:item="{ props, item }">
                             <v-list-item
                                 v-bind="props"
                                 :title="item.raw.username ? item.raw.username : item.raw.email"
-                                :subtitle="item.raw.email || ('ID: ' + item.raw.id)"
+                                :subtitle="item.raw.email || 'ID: ' + item.raw.id"
                             />
                         </template>
                     </v-autocomplete>
-                    <div class="text-caption text-grey mt-2">
-                        - 내 계정은 항상 참가자로 유지됩니다.
-                    </div>
+                    <div class="text-caption text-grey mt-2">- 내 계정은 항상 참가자로 유지됩니다.</div>
                 </v-card-text>
                 <v-row class="ma-0 pa-0">
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" rounded @click="saveParticipants" variant="flat">
-                        저장
-                    </v-btn>
+                    <v-btn color="primary" rounded @click="saveParticipants" variant="flat"> 저장 </v-btn>
                 </v-row>
             </v-card>
         </v-dialog>
 
         <!-- 채팅방 설정: 이름 변경 -->
         <v-dialog v-model="chatRoomRenameDialog" max-width="520" persistent>
-            <v-card class="pa-2" style="border-radius: 16px;">
+            <v-card class="pa-2" style="border-radius: 16px">
                 <v-card-title class="d-flex align-center pa-3 pb-1">
                     <div class="text-subtitle-1 font-weight-bold">
                         {{ $t('chatListing.chatRoomName') || '채팅방 이름' }}
@@ -192,9 +165,7 @@
                         hide-details
                         autofocus
                     />
-                    <div class="text-caption text-medium-emphasis mt-2">
-                        - 최대 50자까지 저장됩니다.
-                    </div>
+                    <div class="text-caption text-medium-emphasis mt-2">- 최대 50자까지 저장됩니다.</div>
                 </v-card-text>
                 <v-card-actions class="pa-3 pt-0">
                     <v-spacer></v-spacer>
@@ -208,7 +179,7 @@
 
         <!-- 채팅방 설정: 삭제 확인 -->
         <v-dialog v-model="chatRoomDeleteDialog" max-width="520" persistent>
-            <v-card class="pa-2" style="border-radius: 16px;">
+            <v-card class="pa-2" style="border-radius: 16px">
                 <v-card-title class="d-flex align-center pa-3 pb-1">
                     <div class="text-subtitle-1 font-weight-bold">
                         {{ $t('chatListing.deleteChatRoom') || '채팅방 삭제' }}
@@ -220,9 +191,7 @@
                 </v-card-title>
                 <v-card-text class="pa-3 pt-2">
                     "{{ getCurrentChatRoomName() }}" {{ $t('chatListing.confirmDeleteChatRoom') || '채팅방을 삭제하시겠습니까?' }}
-                    <div class="text-caption text-medium-emphasis mt-2">
-                        - 삭제하면 복구할 수 없습니다.
-                    </div>
+                    <div class="text-caption text-medium-emphasis mt-2">- 삭제하면 복구할 수 없습니다.</div>
                 </v-card-text>
                 <v-card-actions class="pa-3 pt-0">
                     <v-spacer></v-spacer>
@@ -331,7 +300,7 @@ export default {
         },
         getCurrentTab() {
             const idx = this.currentTabIndex ?? 0;
-            return (Array.isArray(this.tabs) && this.tabs[idx]) ? this.tabs[idx] : null;
+            return Array.isArray(this.tabs) && this.tabs[idx] ? this.tabs[idx] : null;
         },
         getCurrentChatRoomName() {
             const tab = this.getCurrentTab();
@@ -346,7 +315,9 @@ export default {
         async confirmChatRoomRename() {
             const tab = this.getCurrentTab();
             const roomId = tab?.roomId || null;
-            const nextName = String(this.chatRoomRenameDraft || '').trim().substring(0, 50);
+            const nextName = String(this.chatRoomRenameDraft || '')
+                .trim()
+                .substring(0, 50);
             if (!nextName || !tab) {
                 this.chatRoomRenameDialog = false;
                 return;
@@ -399,7 +370,7 @@ export default {
             const nextName = trimmed.substring(0, 50);
 
             // 탭 타이틀 업데이트
-            const tabIdx = roomId ? this.tabs.findIndex(t => t.roomId === roomId) : this.currentTabIndex;
+            const tabIdx = roomId ? this.tabs.findIndex((t) => t.roomId === roomId) : this.currentTabIndex;
             const tab = tabIdx !== -1 ? this.tabs[tabIdx] : null;
             if (tab) {
                 tab.title = this.truncateText(nextName);
@@ -412,7 +383,7 @@ export default {
 
             // 실제 방이면 DB 저장
             if (roomId) {
-                const room = this.chatRooms.find(r => r.id === roomId);
+                const room = this.chatRooms.find((r) => r.id === roomId);
                 if (room) {
                     room.name = nextName;
                     await this.putObject('chat_rooms', room);
@@ -429,9 +400,12 @@ export default {
             this.chatsWatchRef = null;
 
             if (!roomId) return;
-            this.chatsWatchRef = await backend.watchChats((payload) => {
-                this.handleRealtimeMessage(payload);
-            }, { filter: `id=eq.${roomId}` });
+            this.chatsWatchRef = await backend.watchChats(
+                (payload) => {
+                    this.handleRealtimeMessage(payload);
+                },
+                { filter: `id=eq.${roomId}` }
+            );
         },
         handleRealtimeMessage(payload) {
             try {
@@ -439,7 +413,7 @@ export default {
                 if (payload.eventType === 'DELETE') {
                     const oldUuid = payload.old?.uuid;
                     if (!oldUuid) return;
-                    const idx = this.messages.findIndex(m => m.uuid === oldUuid);
+                    const idx = this.messages.findIndex((m) => m.uuid === oldUuid);
                     if (idx !== -1) this.messages.splice(idx, 1);
                     return;
                 }
@@ -451,7 +425,7 @@ export default {
                 const uuid = payload.new.uuid || incoming.uuid;
                 if (!uuid) return;
 
-                const exists = this.messages.findIndex(m => m.uuid === uuid);
+                const exists = this.messages.findIndex((m) => m.uuid === uuid);
                 if (exists !== -1) {
                     this.messages[exists] = incoming;
                     return;
@@ -464,9 +438,9 @@ export default {
             }
         },
         uuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = (Math.random() * 16) | 0;
+                const v = c === 'x' ? r : (r & 0x3) | 0x8;
                 return v.toString(16);
             });
         },
@@ -529,10 +503,7 @@ export default {
         },
 
         defaultParticipants() {
-            return [
-                this.normalizeParticipant(this.targetUser),
-                this.normalizeParticipant(this.userInfo)
-            ];
+            return [this.normalizeParticipant(this.targetUser), this.normalizeParticipant(this.userInfo)];
         },
 
         async loadChatRooms() {
@@ -544,8 +515,8 @@ export default {
                 const filtered = (rooms || []).filter((room) => {
                     const participants = Array.isArray(room.participants) ? room.participants : [];
                     if (participants.length < 2) return false;
-                    const hasMe = participants.some(p => this.participantMatches(p, me));
-                    const hasTarget = participants.some(p => this.participantMatches(p, target));
+                    const hasMe = participants.some((p) => this.participantMatches(p, me));
+                    const hasTarget = participants.some((p) => this.participantMatches(p, target));
                     return hasMe && hasTarget;
                 });
 
@@ -594,7 +565,7 @@ export default {
 
         async openRoomById(roomId) {
             if (!roomId) return;
-            const idx = this.tabs.findIndex(t => t.roomId === roomId);
+            const idx = this.tabs.findIndex((t) => t.roomId === roomId);
             if (idx !== -1) {
                 this.currentTabIndex = idx;
                 await this.selectRoomById(roomId);
@@ -602,7 +573,7 @@ export default {
             }
             // 탭에 없으면 새로 로드
             await this.loadChatRooms();
-            const idx2 = this.tabs.findIndex(t => t.roomId === roomId);
+            const idx2 = this.tabs.findIndex((t) => t.roomId === roomId);
             if (idx2 !== -1) {
                 this.currentTabIndex = idx2;
                 await this.selectRoomById(roomId);
@@ -611,7 +582,7 @@ export default {
 
         async selectRoomById(roomId) {
             this.currentRoomId = roomId;
-            const room = this.chatRooms.find(r => r.id === roomId) || null;
+            const room = this.chatRooms.find((r) => r.id === roomId) || null;
             if (room) {
                 this.currentChatRoom = room;
             } else {
@@ -642,11 +613,11 @@ export default {
             const parts = tab?.participants || this.defaultParticipants();
             // 내 계정은 항상 포함되도록
             const withMe = [...parts];
-            const hasMe = withMe.some(p => this.participantMatches(p, this.userInfo));
+            const hasMe = withMe.some((p) => this.participantMatches(p, this.userInfo));
             if (!hasMe) withMe.push(this.normalizeParticipant(this.userInfo));
-            this.participantsDraft = withMe.map(p => {
+            this.participantsDraft = withMe.map((p) => {
                 // autocomplete items와 shape 맞추기
-                const u = this.userList.find(x => this.participantMatches(x, p));
+                const u = this.userList.find((x) => this.participantMatches(x, p));
                 return u || p;
             });
             this.participantsDialog = true;
@@ -657,14 +628,14 @@ export default {
             if (!tab) return;
 
             const normalized = (this.participantsDraft || []).map(this.normalizeParticipant);
-            const ensureMe = normalized.some(p => this.participantMatches(p, this.userInfo))
+            const ensureMe = normalized.some((p) => this.participantMatches(p, this.userInfo))
                 ? normalized
                 : [...normalized, this.normalizeParticipant(this.userInfo)];
 
             tab.participants = ensureMe;
 
             if (tab.roomId) {
-                const room = this.chatRooms.find(r => r.id === tab.roomId);
+                const room = this.chatRooms.find((r) => r.id === tab.roomId);
                 if (room) {
                     room.participants = ensureMe;
                     await this.putObject('chat_rooms', room);
@@ -681,9 +652,8 @@ export default {
 
             const roomId = this.uuid();
             const now = Date.now();
-            const participants = Array.isArray(tab.participants) && tab.participants.length >= 2
-                ? tab.participants
-                : this.defaultParticipants();
+            const participants =
+                Array.isArray(tab.participants) && tab.participants.length >= 2 ? tab.participants : this.defaultParticipants();
 
             const room = {
                 id: roomId,
@@ -750,7 +720,7 @@ export default {
                 const preview =
                     (text || '').substring(0, 50) ||
                     (hasFile ? fileName.substring(0, 50) : '') ||
-                    (hasImages ? `이미지 ${((payload?.images || []).length || 0)}장` : '');
+                    (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
                 room.message = { msg: (preview || '').substring(0, 50), type: 'text', createdAt: nowIso };
                 await this.putObject('chat_rooms', room);
                 // 탭 타이틀 최신화(이름이 바뀐 경우)
@@ -788,17 +758,16 @@ export default {
                 try {
                     await backend.delete(`db://chats/${deletingRoomId}`, { key: 'id' });
                     await backend.delete(`db://chat_rooms/${deletingRoomId}`, { key: 'id' });
-                    this.chatRooms = this.chatRooms.filter(r => r.id !== deletingRoomId);
+                    this.chatRooms = this.chatRooms.filter((r) => r.id !== deletingRoomId);
                     this.EventBus.emit('chat-rooms-updated');
                 } catch (e) {
                     // ignore
                 }
             }
-        }
-        ,
+        },
         async deleteRoom(roomId) {
             if (!roomId) return;
-            const idx = this.tabs.findIndex(t => t.roomId === roomId);
+            const idx = this.tabs.findIndex((t) => t.roomId === roomId);
             // 헤더의 삭제 버튼은 "현재 방 삭제"이므로, 탭이 1개여도 삭제가 가능해야 함
             try {
                 await backend.delete(`db://chats/${roomId}`, { key: 'id' });
@@ -807,7 +776,7 @@ export default {
                 // ignore
             }
 
-            this.chatRooms = this.chatRooms.filter(r => r.id !== roomId);
+            this.chatRooms = this.chatRooms.filter((r) => r.id !== roomId);
 
             if (idx !== -1) {
                 if (this.tabs.length === 1) {

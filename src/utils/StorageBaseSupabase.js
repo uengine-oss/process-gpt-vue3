@@ -15,7 +15,6 @@ export default class StorageBaseSupabase {
         try {
             // const supabase = window.$supabase;
             // if (!supabase || typeof supabase.rpc !== 'function') return;
-
             // await supabase.rpc('record_auth_audit', {
             //     p_action: action,
             //     p_email: email ?? null,
@@ -34,7 +33,7 @@ export default class StorageBaseSupabase {
         try {
             // 먼저 현재 세션 상태를 확인
             const { data: currentSession, error: sessionError } = await window.$supabase.auth.getSession();
-            
+
             // 세션이 유효한 경우
             if (!sessionError && currentSession.session && currentSession.session.user) {
                 this.writeUserData(currentSession);
@@ -42,27 +41,33 @@ export default class StorageBaseSupabase {
             }
 
             // 세션이 없거나 만료된 경우, 저장된 토큰으로 복구 시도
-            let accessToken = "";
-            let refreshToken = "";
-            
+            let accessToken = '';
+            let refreshToken = '';
+
             // Check if we're in webview mode
             if (window.AndroidBridge) {
                 try {
                     const sessionTokenStr = window.AndroidBridge.getSessionToken();
                     if (sessionTokenStr) {
                         const sessionTokens = JSON.parse(sessionTokenStr);
-                        accessToken = sessionTokens.access_token || "";
-                        refreshToken = sessionTokens.refresh_token || "";
+                        accessToken = sessionTokens.access_token || '';
+                        refreshToken = sessionTokens.refresh_token || '';
                     }
                 } catch (e) {
                     console.error('Error parsing session tokens:', e);
-                    accessToken = "";
-                    refreshToken = "";
+                    accessToken = '';
+                    refreshToken = '';
                 }
             } else {
                 if (document.cookie && document.cookie.includes('; ')) {
-                    accessToken = document.cookie.split('; ').find(row => row.startsWith('access_token'))?.split('=')[1];
-                    refreshToken = document.cookie.split('; ').find(row => row.startsWith('refresh_token'))?.split('=')[1];
+                    accessToken = document.cookie
+                        .split('; ')
+                        .find((row) => row.startsWith('access_token'))
+                        ?.split('=')[1];
+                    refreshToken = document.cookie
+                        .split('; ')
+                        .find((row) => row.startsWith('refresh_token'))
+                        ?.split('=')[1];
                 }
             }
 
@@ -85,9 +90,9 @@ export default class StorageBaseSupabase {
                 }
             } else {
                 // 저장된 토큰이 없는 경우 refresh 시도
-                await this.refreshSession();                
+                await this.refreshSession();
             }
-            
+
             // 최종 세션 상태 확인
             const { data: finalSession, error: finalError } = await window.$supabase.auth.getSession();
             if (finalError || !finalSession.session) {
@@ -98,7 +103,7 @@ export default class StorageBaseSupabase {
                 this.writeUserData(finalSession);
                 return true;
             }
-            
+
             return false;
         } catch (error) {
             console.error('Error checking Supabase connection:', error);
@@ -112,26 +117,27 @@ export default class StorageBaseSupabase {
 
             if (refreshError) {
                 console.error('Error refreshing session:', refreshError);
-                
+
                 // refresh_token_already_used 오류인 경우 특별 처리
                 if (refreshError.message && refreshError.message.includes('refresh_token_already_used')) {
                     console.log('Refresh token already used, clearing session and redirecting to login');
                     await this.clearSession();
                     return;
                 }
-                
+
                 // 기타 refresh 오류인 경우 세션 클리어
                 await this.clearSession();
             } else if (refreshData && refreshData.session) {
                 // Refresh 성공한 경우 새 토큰 저장
                 // Check if we're in webview mode
                 if (window.AndroidBridge) {
-                    console.log("refreshSession - webview mode");
-                    window.AndroidBridge.saveSessionToken(
+                    console.log('refreshSession - webview mode');
+                    window.AndroidBridge.saveSessionToken(refreshData.session.access_token, refreshData.session.refresh_token);
+                    console.log(
+                        'refreshSession - webview mode - saveSessionToken',
                         refreshData.session.access_token,
                         refreshData.session.refresh_token
                     );
-                    console.log("refreshSession - webview mode - saveSessionToken", refreshData.session.access_token, refreshData.session.refresh_token);
                 } else {
                     const baseDomain = getBaseDomain();
                     if (baseDomain.includes('process-gpt')) {
@@ -154,7 +160,7 @@ export default class StorageBaseSupabase {
     async clearSession() {
         try {
             const cookieOptionsBase = `path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-            
+
             // Check if we're in webview mode
             if (window.AndroidBridge) {
                 window.AndroidBridge.clearSession();
@@ -192,7 +198,7 @@ export default class StorageBaseSupabase {
 
     async signIn(userInfo) {
         try {
-            const filter = { match: { email: userInfo.email } }
+            const filter = { match: { email: userInfo.email } };
             if (window.$tenantName) {
                 filter.match.tenant_id = window.$tenantName;
             }
@@ -206,7 +212,7 @@ export default class StorageBaseSupabase {
                 if (!result.error) {
                     // 로그인 성공
                     return result.data;
-                } else if (result.error && result.error.message.includes("Email not confirmed")){
+                } else if (result.error && result.error.message.includes('Email not confirmed')) {
                     await this.recordAuthAudit({
                         action: 'login',
                         email: userInfo.email,
@@ -333,7 +339,7 @@ export default class StorageBaseSupabase {
                 });
 
                 if (!result.error) {
-                    result.data["isNewUser"] = true;
+                    result.data['isNewUser'] = true;
                     return result.data;
                 } else {
                     result.errorMsg = result.error.message;
@@ -367,7 +373,7 @@ export default class StorageBaseSupabase {
             window.localStorage.removeItem('isAdmin');
             window.localStorage.removeItem('execution');
             window.localStorage.removeItem('role');
-            
+
             // Check if we're in webview mode
             if (window.AndroidBridge) {
                 window.AndroidBridge.clearSession();
@@ -396,17 +402,14 @@ export default class StorageBaseSupabase {
                     throw new StorageBaseError('error in getUserInfo', userData.error, arguments);
                 } else if (userData.data.user) {
                     const uid = userData.data.user.id;
-                    const filter = { id: uid }   
+                    const filter = { id: uid };
                     if (window.$tenantName) {
                         filter.tenant_id = window.$tenantName;
                     }
-                    
+
                     // 테넌트가 없는 경우 여러 결과가 나올 수 있으므로 항상 limit(1) 사용
-                    var { data, error } = await window.$supabase.from('users')
-                        .select()
-                        .match(filter)
-                        .limit(1);
-                    
+                    var { data, error } = await window.$supabase.from('users').select().match(filter).limit(1);
+
                     if (!error && data && data.length > 0) {
                         const userData = data[0];
                         return {
@@ -416,7 +419,7 @@ export default class StorageBaseSupabase {
                             uid: userData.id,
                             role: userData.role,
                             tenant_id: userData.tenant_id
-                        }
+                        };
                     } else if (error) {
                         throw new StorageBaseError('error in getUserInfo', error, arguments);
                     }
@@ -428,9 +431,9 @@ export default class StorageBaseSupabase {
                 if (path === '/' || path.startsWith('/auth/')) {
                     return null;
                 }
-                
+
                 await window.$app_.try({
-                    action: () => Promise.reject(new Error()),
+                    action: () => Promise.reject(new Error())
                     // errorMsg: window.$i18n.global.t('StorageBaseSupabase.loginRequired')
                 });
                 window.location.href = '/auth/login';
@@ -462,7 +465,7 @@ export default class StorageBaseSupabase {
             const options = {
                 redirectTo: isLocal
                     ? new URL('/auth/reset-password', window.location.origin).toString()
-                    : getMainDomainUrl('/auth/reset-password'),
+                    : getMainDomainUrl('/auth/reset-password')
             };
 
             const result = await window.$supabase.auth.resetPasswordForEmail(email, options);
@@ -475,18 +478,14 @@ export default class StorageBaseSupabase {
     async getString(path, options) {
         try {
             let obj = this.formatDataPath(path, options);
-            const column = options.column ? options.column : "*";
+            const column = options.column ? options.column : '*';
             if (options && options.match) {
-                const { data, error } = await window.$supabase
-                    .from(obj.table)
-                    .select(column)
-                    .match(options.match)
-                    .maybeSingle()
+                const { data, error } = await window.$supabase.from(obj.table).select(column).match(options.match).maybeSingle();
 
                 if (error) {
                     return error;
                 } else if (data) {
-                    if (column != "*") {
+                    if (column != '*') {
                         return data[column];
                     } else {
                         return data;
@@ -497,27 +496,24 @@ export default class StorageBaseSupabase {
                     .from(obj.table)
                     .select(column)
                     .eq(obj.searchKey, obj.searchVal)
-                    .maybeSingle()
+                    .maybeSingle();
 
                 if (error) {
                     return error;
                 } else if (data) {
-                    if (column != "*") {
+                    if (column != '*') {
                         return data[column];
                     } else {
                         return data;
                     }
                 }
             } else {
-                const { data, error } = await window.$supabase
-                    .from(obj.table)
-                    .select(column)
-                    .maybeSingle()
+                const { data, error } = await window.$supabase.from(obj.table).select(column).maybeSingle();
 
                 if (error) {
                     return error;
                 } else if (data) {
-                    if (column != "*") {
+                    if (column != '*') {
                         return data[column];
                     } else {
                         return data;
@@ -527,9 +523,9 @@ export default class StorageBaseSupabase {
         } catch (error) {
             if (error.code === 'PGRST116' || error.code === '42703') {
                 console.log(error.message);
-                return "";
+                return '';
             }
-            throw new StorageBaseError('error in getString', error, arguments)
+            throw new StorageBaseError('error in getString', error, arguments);
         }
     }
 
@@ -537,11 +533,7 @@ export default class StorageBaseSupabase {
         try {
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
-                const { data, error } = await window.$supabase
-                    .from(obj.table)
-                    .select()
-                    .match(options.match)
-                    .maybeSingle()
+                const { data, error } = await window.$supabase.from(obj.table).select().match(options.match).maybeSingle();
 
                 if (error) {
                     return error;
@@ -549,11 +541,7 @@ export default class StorageBaseSupabase {
                     return data;
                 }
             } else if (obj.searchVal) {
-                const { data, error } = await window.$supabase
-                    .from(obj.table)
-                    .select()
-                    .eq(obj.searchKey, obj.searchVal)
-                    .maybeSingle()
+                const { data, error } = await window.$supabase.from(obj.table).select().eq(obj.searchKey, obj.searchVal).maybeSingle();
 
                 if (error) {
                     return error;
@@ -561,10 +549,7 @@ export default class StorageBaseSupabase {
                     return data;
                 }
             } else {
-                const { data, error } = await window.$supabase
-                    .from(obj.table)
-                    .select()
-                    .maybeSingle()
+                const { data, error } = await window.$supabase.from(obj.table).select().maybeSingle();
 
                 if (error) {
                     return error;
@@ -577,7 +562,7 @@ export default class StorageBaseSupabase {
                 console.log(error.message);
                 return {};
             } else {
-                throw new StorageBaseError('error in getObject', error.message)
+                throw new StorageBaseError('error in getObject', error.message);
             }
         }
     }
@@ -629,9 +614,9 @@ export default class StorageBaseSupabase {
                 result = await window.$supabase.from(obj.table).upsert(value);
             }
 
-            const { error, status, statusText } = result
+            const { error, status, statusText } = result;
             if (status != 200 && error) {
-                throw new StorageBaseError('error in putObject:' + status + " " + statusText + " " + error.message, error, arguments);
+                throw new StorageBaseError('error in putObject:' + status + ' ' + statusText + ' ' + error.message, error, arguments);
             }
             return result;
         } catch (error) {
@@ -699,19 +684,16 @@ export default class StorageBaseSupabase {
         try {
             let obj = this.formatDataPath(path, options);
             if (options && options.match) {
-                const { error, status, statusText } = await window.$supabase
-                    .from(obj.table)
-                    .delete()
-                    .match(options.match);
+                const { error, status, statusText } = await window.$supabase.from(obj.table).delete().match(options.match);
 
                 if (error && status != 200) {
-                    throw new StorageBaseError('error in delete ' + status + " " + statusText, error, arguments);
+                    throw new StorageBaseError('error in delete ' + status + ' ' + statusText, error, arguments);
                 }
             } else if (obj.searchVal) {
                 const { error, status, statusText } = await window.$supabase.from(obj.table).delete().eq(obj.searchKey, obj.searchVal);
 
                 if (error && status != 200) {
-                    throw new StorageBaseError('error in delete ' + status + " " + statusText, error, arguments);
+                    throw new StorageBaseError('error in delete ' + status + ' ' + statusText, error, arguments);
                 }
             }
 
@@ -720,12 +702,12 @@ export default class StorageBaseSupabase {
             throw new StorageBaseError('error in delete', error, arguments);
         }
     }
-    
-    async _watch_off(ref) {   
+
+    async _watch_off(ref) {
         return await ref.unsubscribe();
     }
 
-    async _watch(options, callback) {         
+    async _watch(options, callback) {
         /*
             options: {
                 channel: 'custom-channel', // 채널명
@@ -739,8 +721,8 @@ export default class StorageBaseSupabase {
         // 채널 설정
         const channelName = options.channel || 'custom-channel';
         ref = ref.channel(channelName);
-       
-        // 이벤트 타입 지정 
+
+        // 이벤트 타입 지정
         const eventType = options.type || 'postgres_changes';
         /* 
             'postgres_changes': Postgres 테이블의 INSERT, UPDATE, DELETE 등 데이터 변경 감지
@@ -754,7 +736,7 @@ export default class StorageBaseSupabase {
             eventOptions = {
                 event: options.event || '*', // INSERT, UPDATE, DELETE, *
                 schema: options.schema || 'public',
-                table: options.table,     
+                table: options.table,
                 filter: options.filter
             };
         } else if (eventType === 'broadcast') {
@@ -766,14 +748,10 @@ export default class StorageBaseSupabase {
                 event: options.event || 'sync'
             };
         }
-       
-        ref = ref.on(
-            eventType,
-            eventOptions,
-            (payload) => {
-                callback(payload);
-            }
-        );
+
+        ref = ref.on(eventType, eventOptions, (payload) => {
+            callback(payload);
+        });
         await ref.subscribe();
 
         return ref;
@@ -785,20 +763,20 @@ export default class StorageBaseSupabase {
             let watchOptions = {
                 event: '*',
                 schema: 'public',
-                table: obj.table,
-            }
+                table: obj.table
+            };
 
             // 기존 chats 테이블 필터링 로직
             if (obj.table === 'chats' && path.startsWith('db://chats/')) {
                 obj.chatRoomIds = path.split('/')[3];
                 watchOptions.filter = obj.chatRoomIds ? `` : null;
             }
-            
+
             // 새로운 필터 옵션 지원
             if (options.filter) {
                 watchOptions.filter = options.filter;
             }
-            
+
             const subscription = await window.$supabase
                 .channel(channel)
                 .on('postgres_changes', watchOptions, (payload) => {
@@ -843,19 +821,17 @@ export default class StorageBaseSupabase {
     async unwatch(path) {
         try {
             let obj = this.formatDataPath(path);
-            const subscription = window.$supabase
-                .channel('room1')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: obj.table
-                    },
-                    (payload) => {
-                        console.log('Change received!', payload);
-                    }
-                );
+            const subscription = window.$supabase.channel('room1').on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: obj.table
+                },
+                (payload) => {
+                    console.log('Change received!', payload);
+                }
+            );
 
             await subscription.unsubscribe();
 
@@ -882,9 +858,9 @@ export default class StorageBaseSupabase {
             if (!options) options = {};
             const orderByField = options.orderBy || 'id';
             const isAscending = !options.sort || !options.sort.includes('desc');
-            let query = window.$supabase
+            let query = window.$supabase;
 
-            if(path) {
+            if (path) {
                 query = query.from(path);
             } else {
                 query = query.from();
@@ -960,18 +936,18 @@ export default class StorageBaseSupabase {
                 query = query.contains(options.matchArray.column, options.matchArray.values);
             }
 
-            if(options.not) {
+            if (options.not) {
                 query = query.not(options.not.key, options.not.operator, options.not.value);
             }
-            if(options.maybeSingle) {
-                query = query.maybeSingle()
+            if (options.maybeSingle) {
+                query = query.maybeSingle();
             }
             // size 처리
             if (options.size) {
                 query = query.limit(options.size);
             }
 
-            if(options.range) {
+            if (options.range) {
                 query = query.range(options.range.from, options.range.to);
             }
 
@@ -989,30 +965,27 @@ export default class StorageBaseSupabase {
     async callProcedure(procedure, params) {
         try {
             const { data, error } = await window.$supabase.rpc(procedure, params);
-    
+
             if (error) {
                 console.error('Error calling function:', error);
                 return null;
             }
-    
+
             return data;
         } catch (error) {
             console.error('Error in callProcedure:', error);
             return error;
         }
     }
-    
+
     async writeUserData(value, userInfo) {
         try {
             if (value.session) {
                 window.localStorage.setItem('accessToken', value.session.access_token);
-                
+
                 // Check if we're in webview mode
                 if (window.AndroidBridge) {
-                    window.AndroidBridge.saveSessionToken(
-                        value.session.access_token,
-                        value.session.refresh_token
-                    );
+                    window.AndroidBridge.saveSessionToken(value.session.access_token, value.session.refresh_token);
                 } else {
                     const baseDomain = getBaseDomain();
                     if (baseDomain.includes('process-gpt')) {
@@ -1035,16 +1008,8 @@ export default class StorageBaseSupabase {
                 // 메인 도메인($tenantName 없음)에서는 동일 id로 여러 테넌트 행이 있어 maybeSingle()이 실패하므로, 한 행만 조회
                 const isMainDomain = !window.$tenantName;
                 const { data: rawData, error } = isMainDomain
-                    ? await window.$supabase
-                        .from('users')
-                        .select('*')
-                        .match(filter)
-                        .limit(1)
-                    : await window.$supabase
-                        .from('users')
-                        .select('*')
-                        .match(filter)
-                        .maybeSingle();
+                    ? await window.$supabase.from('users').select('*').match(filter).limit(1)
+                    : await window.$supabase.from('users').select('*').match(filter).maybeSingle();
                 const data = isMainDomain ? (Array.isArray(rawData) && rawData.length > 0 ? rawData[0] : null) : rawData;
 
                 if (data && !error) {
@@ -1059,7 +1024,7 @@ export default class StorageBaseSupabase {
 
                     // FCM 토큰 처리 - user_devices 테이블 사용
                     let fcm_token;
-                    
+
                     // Check if we're in webview mode
                     if (window.AndroidBridge) {
                         // Get FCM token from Android bridge
@@ -1070,43 +1035,37 @@ export default class StorageBaseSupabase {
                             fcm_token = null;
                         }
                     }
-                    
+
                     const userEmail = data.email || '';
-                    
+
                     // user_devices 테이블에서 해당 유저 정보 확인
-                    if(userEmail) {
+                    if (userEmail) {
                         const { data: deviceData, error: deviceError } = await window.$supabase
-                        .from('user_devices')
-                        .select('*')
-                        .eq('user_email', userEmail)
-                        .maybeSingle();
-                        
+                            .from('user_devices')
+                            .select('*')
+                            .eq('user_email', userEmail)
+                            .maybeSingle();
+
                         if (deviceError && deviceError.code !== 'PGRST116') {
                             console.error('user_devices 테이블 조회 오류:', deviceError);
                         } else if (!deviceData) {
                             // 해당 유저 정보가 없으면 새로 생성 (device_token은 null로 설정)
-                            await window.$supabase
-                                .from('user_devices')
-                                .insert({
-                                    user_email: userEmail,
-                                    device_token: null
-                                });
+                            await window.$supabase.from('user_devices').insert({
+                                user_email: userEmail,
+                                device_token: null
+                            });
                             console.log('user_devices 테이블에 새 유저 정보 생성:', userEmail);
                         }
-                        
+
                         // FCM 토큰이 있고, 기존 토큰과 다르면 업데이트
                         if (fcm_token && (!deviceData?.device_token || deviceData.device_token !== fcm_token)) {
-                            await window.$supabase
-                                .from('user_devices')
-                                .update({ device_token: fcm_token })
-                                .eq('user_email', userEmail);
+                            await window.$supabase.from('user_devices').update({ device_token: fcm_token }).eq('user_email', userEmail);
                             console.log('user_devices 테이블에 FCM 토큰 업데이트:', fcm_token);
                         }
                     }
-                    
 
-                    if(data && data.is_admin) {
-                        const event = new CustomEvent('localStorageChange', { detail: { key: "isAdmin", value: data.is_admin } });
+                    if (data && data.is_admin) {
+                        const event = new CustomEvent('localStorageChange', { detail: { key: 'isAdmin', value: data.is_admin } });
                         window.dispatchEvent(event);
                     }
                 } else if (!data) {
@@ -1198,9 +1157,7 @@ export default class StorageBaseSupabase {
     async search(keyword) {
         let results = [];
         if (window.$jms || window.$pal) {
-            results = await Promise.all([
-                this.searchProcDef(keyword)
-            ]);
+            results = await Promise.all([this.searchProcDef(keyword)]);
         } else {
             results = await Promise.all([
                 this.searchProcInst(keyword),
@@ -1209,7 +1166,7 @@ export default class StorageBaseSupabase {
                 this.searchChat(keyword)
             ]);
         }
-        results = results.filter(item => item !== null);
+        results = results.filter((item) => item !== null);
         return results;
     }
 
@@ -1255,7 +1212,8 @@ export default class StorageBaseSupabase {
 
     async searchProcDef(keyword) {
         try {
-            const { data, error } = await window.$supabase.from('proc_def')
+            const { data, error } = await window.$supabase
+                .from('proc_def')
                 .select()
                 .eq('isdeleted', false)
                 .or(`id.ilike.%${keyword}%,name.ilike.%${keyword}%,bpmn.ilike.%${keyword}%`);
@@ -1267,7 +1225,7 @@ export default class StorageBaseSupabase {
                     if (!item.id) return null;
                     const matchingColumns = [];
                     const lowerKeyword = keyword.toLowerCase();
-                    
+
                     if (item.id && item.id.toLowerCase().includes(lowerKeyword)) {
                         matchingColumns.push(item.id);
                     }
@@ -1277,14 +1235,14 @@ export default class StorageBaseSupabase {
                     if (item.bpmn && item.bpmn.toLowerCase().includes(lowerKeyword)) {
                         matchingColumns.push(item.bpmn);
                     }
-                    
+
                     return {
                         title: item.name,
                         href: `/definitions/${item.id}`,
                         matches: matchingColumns
                     };
                 });
-                list = list.filter(item => item !== null);
+                list = list.filter((item) => item !== null);
                 if (list.length > 0) {
                     return {
                         type: 'definition',
@@ -1301,9 +1259,7 @@ export default class StorageBaseSupabase {
 
     async searchFormDef(keyword) {
         try {
-            const { data, error } = await window.$supabase.from('form_def')
-                .select()
-                .ilike('id', `%${keyword}%`);
+            const { data, error } = await window.$supabase.from('form_def').select().ilike('id', `%${keyword}%`);
 
             if (error) throw new StorageBaseError('error in searchFormDef', error, arguments);
 
@@ -1319,7 +1275,7 @@ export default class StorageBaseSupabase {
                         matches: matchingColumns
                     };
                 });
-                list = list.filter(item => item !== null);
+                list = list.filter((item) => item !== null);
                 if (list.length > 0) {
                     return {
                         type: 'form',
@@ -1337,23 +1293,21 @@ export default class StorageBaseSupabase {
     async searchChatRoom(keyword) {
         try {
             const email = window.localStorage.getItem('email');
-            const { data, error } = await window.$supabase.from('chat_rooms')
-                .select()
-                .or(`name.ilike.%${keyword}%`)
+            const { data, error } = await window.$supabase.from('chat_rooms').select().or(`name.ilike.%${keyword}%`);
 
             if (error) throw new StorageBaseError('error in searchChat', error, arguments);
 
-            const filteredData = data.filter(item => item.participants.some(participant => participant.email === email));
+            const filteredData = data.filter((item) => item.participants.some((participant) => participant.email === email));
             if (filteredData && filteredData.length > 0) {
                 let list = filteredData.map((item) => {
-                    const matchingColumns = [item.participants.map(user => user.username).join(', ')]
+                    const matchingColumns = [item.participants.map((user) => user.username).join(', ')];
                     return {
                         title: item.name,
                         href: `/chats?id=${item.id}`,
                         matches: matchingColumns
                     };
                 });
-                list = list.filter(item => item !== null);
+                list = list.filter((item) => item !== null);
                 if (list.length > 0) {
                     return {
                         type: 'chat-room',
@@ -1375,7 +1329,7 @@ export default class StorageBaseSupabase {
             if (data && data.length > 0) {
                 let list = data.map((item) => {
                     const email = window.localStorage.getItem('email');
-                    if (item.participants && item.participants.some(participant => participant.email === email)) {
+                    if (item.participants && item.participants.some((participant) => participant.email === email)) {
                         const matchingColumns = [`${item.messages.name}: ${item.messages.content}`];
                         return {
                             title: item.name,
@@ -1383,10 +1337,10 @@ export default class StorageBaseSupabase {
                             matches: matchingColumns
                         };
                     } else {
-                        return null
+                        return null;
                     }
                 });
-                list = list.filter(item => item !== null);
+                list = list.filter((item) => item !== null);
                 if (list.length > 0) {
                     return {
                         type: 'chat',
@@ -1410,7 +1364,6 @@ export default class StorageBaseSupabase {
             }
 
             return data;
-
         } catch (error) {
             throw new StorageBaseError('error in uploadImage', error, arguments);
         }
@@ -1425,7 +1378,6 @@ export default class StorageBaseSupabase {
             }
 
             return data.publicUrl;
-
         } catch (error) {
             throw new StorageBaseError('error in getImageUrl', error, arguments);
         }
@@ -1435,16 +1387,14 @@ export default class StorageBaseSupabase {
         try {
             const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
             const storageFileName = `uploads/${Date.now()}_${sanitizedFileName}`;
-            
-            const { data, error } = await window.$supabase.storage
-                .from('files')
-                .upload(storageFileName, file, {
-                    cacheControl: '3600',
-                    upsert: false,
-                    metadata: {
-                        original_filename: fileName
-                    }
-                });
+
+            const { data, error } = await window.$supabase.storage.from('files').upload(storageFileName, file, {
+                cacheControl: '3600',
+                upsert: false,
+                metadata: {
+                    original_filename: fileName
+                }
+            });
 
             if (error) {
                 return error;
@@ -1480,9 +1430,7 @@ export default class StorageBaseSupabase {
 
     async downloadFile(path) {
         try {
-            const { data: urlData, error: urlError } = await window.$supabase.storage
-                .from('files')
-                .getPublicUrl(path);
+            const { data: urlData, error: urlError } = await window.$supabase.storage.from('files').getPublicUrl(path);
 
             if (urlError) {
                 console.log(urlError);
@@ -1491,7 +1439,7 @@ export default class StorageBaseSupabase {
 
             const response = await fetch(urlData.publicUrl);
             const blob = await response.blob();
-            
+
             const originalFileName = path.split('/').pop().split('_').slice(1).join('_');
             const file = new File([blob], originalFileName, { type: blob.type });
 
@@ -1508,6 +1456,4 @@ export default class StorageBaseSupabase {
             throw new StorageBaseError('error in downloadFile', error, arguments);
         }
     }
-
-
 }

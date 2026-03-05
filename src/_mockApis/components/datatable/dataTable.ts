@@ -1,5 +1,4 @@
-
-import type { Datatables,SelectedRowDatatable } from '@/types/components/datatables/index';
+import type { Datatables, SelectedRowDatatable } from '@/types/components/datatables/index';
 const BasicDatatables: Datatables[] = [
     {
         name: 'Sunil Joshi',
@@ -13,8 +12,7 @@ const BasicDatatables: Datatables[] = [
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
-
+        budget: '$24.5k'
     },
     {
         name: 'Christopher Jamil',
@@ -42,8 +40,7 @@ const BasicDatatables: Datatables[] = [
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
-
+        budget: '$24.5k'
     },
     {
         name: 'Julian Josephs',
@@ -64,17 +61,15 @@ const BasicDatatables: Datatables[] = [
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
-
+        budget: '$24.5k'
     },
     {
         name: 'Glenna Reichert',
         post: 'Web DEveloper',
         project: 'Monster Admin',
         status: 'Pending',
-        budget: '$30.5k',
-    },
-    
+        budget: '$30.5k'
+    }
 ];
 
 const SelectedRow: SelectedRowDatatable[] = [
@@ -84,7 +79,7 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'Elite Admin',
         status: 'Active',
         budget: '$3.9',
-        selectable: false,
+        selectable: false
     },
     {
         name: 'Andrew McDownland',
@@ -92,7 +87,7 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'Real Homes WP Theme',
         status: 'Pending',
         budget: '$24.5k',
-        selectable: true,
+        selectable: true
     },
     {
         name: 'Christopher Jamil',
@@ -100,7 +95,7 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'MedicalPro WP Theme',
         status: 'Completed',
         budget: '$12.8k',
-        selectable: true,
+        selectable: true
     },
     {
         name: 'Nirav Joshi',
@@ -108,7 +103,7 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'Hosting Press HTML',
         status: 'Active',
         budget: '$2.4k',
-        selectable: false,
+        selectable: false
     },
     {
         name: 'Micheal Doe',
@@ -116,7 +111,7 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'Helping Hands WP Theme',
         status: 'Cancel',
         budget: '$9.3k',
-        selectable: false,
+        selectable: false
     },
     {
         name: 'Jan Petrovic',
@@ -124,7 +119,7 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'Real Homes WP Theme',
         status: 'Pending',
         budget: '$24.5k',
-        selectable: true,
+        selectable: true
     },
     {
         name: 'Daniel Kristeen',
@@ -132,7 +127,7 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'MedicalPro WP Theme',
         status: 'Completed',
         budget: '$12.8k',
-        selectable: false,
+        selectable: false
     },
     {
         name: 'Julian Josephs',
@@ -148,7 +143,7 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'Real Homes WP Theme',
         status: 'Pending',
         budget: '$24.5k',
-        selectable: false,
+        selectable: false
     },
     {
         name: 'Glenna Reichert',
@@ -156,9 +151,8 @@ const SelectedRow: SelectedRowDatatable[] = [
         project: 'Monster Admin',
         status: 'Pending',
         budget: '$30.5k',
-        selectable: true,
-    },
-    
+        selectable: true
+    }
 ];
 
 const UppercaseFilter: Datatables[] = [
@@ -167,74 +161,71 @@ const UppercaseFilter: Datatables[] = [
         post: 'Web Designer',
         project: 'Elite Admin',
         status: 'Active',
-        budget: '$3.9',
-    
+        budget: '$3.9'
     },
     {
         name: 'Andrew McDownland',
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
+        budget: '$24.5k'
     },
     {
         name: 'Christopher Jamil',
         post: 'Project Manager',
         project: 'MedicalPro WP Theme',
         status: 'Completed',
-        budget: '$12.8k',
+        budget: '$12.8k'
     },
     {
         name: 'Nirav Joshi',
         post: 'Frontend Engineer',
         project: 'Hosting Press HTML',
         status: 'Active',
-        budget: '$2.4k',
+        budget: '$2.4k'
     },
     {
         name: 'MICHEL DOE',
         post: 'Content Writer',
         project: 'Helping Hands WP Theme',
         status: 'Cancel',
-        budget: '$9.3k',
+        budget: '$9.3k'
     },
     {
         name: 'JAN PETROVICK',
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
+        budget: '$24.5k'
     },
     {
         name: 'Daniel Kristeen',
         post: 'Project Manager',
         project: 'MedicalPro WP Theme',
         status: 'Completed',
-        budget: '$12.8k',
+        budget: '$12.8k'
     },
     {
         name: 'Julian Josephs',
         post: 'Web Designer',
         project: 'Elite Admin',
         status: 'Active',
-        budget: '$3.9',
+        budget: '$3.9'
     },
     {
         name: 'Leanne Graham',
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
+        budget: '$24.5k'
     },
     {
         name: 'Glenna Reichert',
         post: 'Web DEveloper',
         project: 'Monster Admin',
         status: 'Pending',
-        budget: '$30.5k',
-    },
-    
-    
+        budget: '$30.5k'
+    }
 ];
 
 const GroupTable: Datatables[] = [
@@ -243,73 +234,71 @@ const GroupTable: Datatables[] = [
         post: 'Web Designer',
         project: 'Elite Admin',
         status: 'Active',
-        budget: '$3.9',
-    
+        budget: '$3.9'
     },
     {
         name: 'Andrew McDownland',
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
+        budget: '$24.5k'
     },
     {
         name: 'Christopher Jamil',
         post: 'Project Manager',
         project: 'MedicalPro WP Theme',
         status: 'Completed',
-        budget: '$12.8k',
+        budget: '$12.8k'
     },
     {
         name: 'Nirav Joshi',
         post: 'Frontend Engineer',
         project: 'Hosting Press HTML',
         status: 'Active',
-        budget: '$2.4k',
+        budget: '$2.4k'
     },
     {
         name: 'MICHEL DOE',
         post: 'Content Writer',
         project: 'Helping Hands WP Theme',
         status: 'Cancel',
-        budget: '$9.3k',
+        budget: '$9.3k'
     },
     {
         name: 'JAN PETROVICK',
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
+        budget: '$24.5k'
     },
     {
         name: 'Daniel Kristeen',
         post: 'Project Manager',
         project: 'MedicalPro WP Theme',
         status: 'Completed',
-        budget: '$12.8k',
+        budget: '$12.8k'
     },
     {
         name: 'Julian Josephs',
         post: 'Web Designer',
         project: 'Elite Admin',
         status: 'Active',
-        budget: '$3.9',
+        budget: '$3.9'
     },
     {
         name: 'Leanne Graham',
         post: 'Project Manager',
         project: 'Real Homes WP Theme',
         status: 'Pending',
-        budget: '$24.5k',
+        budget: '$24.5k'
     },
     {
         name: 'Glenna Reichert',
         post: 'Web DEveloper',
         project: 'Monster Admin',
         status: 'Pending',
-        budget: '$30.5k',
-    },
-    
+        budget: '$30.5k'
+    }
 ];
 
-export {BasicDatatables,SelectedRow,UppercaseFilter,GroupTable};
+export { BasicDatatables, SelectedRow, UppercaseFilter, GroupTable };

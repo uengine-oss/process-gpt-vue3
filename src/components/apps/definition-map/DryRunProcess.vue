@@ -6,33 +6,26 @@
             </div>
             <v-spacer v-if="!isMobile"></v-spacer>
             <div v-if="isMobile" class="d-flex align-center mt-2 ml-auto">
-                <v-btn
-                    @click="closeDialog"
-                    rounded
-                    density="compact"
-                    style="background-color: #808080; color: white;"
-                >
-                    닫기
-                </v-btn>
+                <v-btn @click="closeDialog" rounded density="compact" style="background-color: #808080; color: white"> 닫기 </v-btn>
             </div>
             <div v-else>
-                <v-btn
-                    @click="closeDialog"
-                    class="ml-auto"
-                    variant="text"
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="closeDialog" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </div>
         </v-row>
         <v-card-text class="dry-run-process-card-text">
             <div v-if="dryRunWorkItem">
-                <WorkItem :definitionId="definitionId" :is-simulate="isSimulate" :isDryRun="true" :dryRunWorkItem="dryRunWorkItem" @close="closeDialog"></WorkItem>
+                <WorkItem
+                    :definitionId="definitionId"
+                    :is-simulate="isSimulate"
+                    :isDryRun="true"
+                    :dryRunWorkItem="dryRunWorkItem"
+                    @close="closeDialog"
+                ></WorkItem>
             </div>
             <div v-else-if="dryRunWorkItem == undefined">
-                <v-row class="ma-0 pa-0 dry-run-process-skeleton" style="height: 100%;">
+                <v-row class="ma-0 pa-0 dry-run-process-skeleton" style="height: 100%">
                     <v-col cols="4" class="pa-4">
                         <v-skeleton-loader type="card"></v-skeleton-loader>
                     </v-col>
@@ -73,7 +66,7 @@ export default {
     created() {
         let me = this;
         me.backend = BackendFactory.createBackend();
-        me.userName = localStorage.getItem("userName");
+        me.userName = localStorage.getItem('userName');
         me.roleMappings.push({
             name: me.userName,
             endpoints: [],
@@ -91,23 +84,23 @@ export default {
         checkIfMobile() {
             this.isMobile = window.innerWidth <= 768;
         },
-        dryRun(){
+        dryRun() {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    console.log(me.isSimulate)
+                    console.log(me.isSimulate);
                     const command = {
                         processDefinitionId: me.definitionId,
                         roleMappings: me.roleMappings
-                    }
+                    };
                     me.dryRunWorkItem = await me.backend.dryRun(me.isSimulate, command);
-                },
+                }
             });
         },
         closeDialog() {
             this.$emit('close');
-        },
+        }
     }
 };
 </script>

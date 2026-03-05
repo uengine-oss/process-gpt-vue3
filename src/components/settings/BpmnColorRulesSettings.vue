@@ -14,21 +14,14 @@
             <div class="mb-4">
                 <v-label class="mb-2">{{ $t('colorRules.defaultColor') }}</v-label>
                 <div class="d-flex align-center gap-2">
-                    <div
-                        class="color-preview"
-                        :style="{ backgroundColor: colorRulesStore.defaultColor }"
-                    />
+                    <div class="color-preview" :style="{ backgroundColor: colorRulesStore.defaultColor }" />
                     <v-menu :close-on-content-click="false">
                         <template v-slot:activator="{ props }">
                             <v-btn v-bind="props" size="small" variant="outlined">
                                 {{ colorRulesStore.defaultColor }}
                             </v-btn>
                         </template>
-                        <v-color-picker
-                            v-model="tempDefaultColor"
-                            mode="hexa"
-                            @update:model-value="updateDefaultColor"
-                        />
+                        <v-color-picker v-model="tempDefaultColor" mode="hexa" @update:model-value="updateDefaultColor" />
                     </v-menu>
                 </div>
             </div>
@@ -39,11 +32,7 @@
             <div class="d-flex align-center mb-3">
                 <v-label>{{ $t('colorRules.rulesList') }}</v-label>
                 <v-spacer />
-                <v-btn
-                    color="primary"
-                    size="small"
-                    @click="openAddDialog"
-                >
+                <v-btn color="primary" size="small" @click="openAddDialog">
                     <v-icon left>mdi-plus</v-icon>
                     {{ $t('colorRules.addRule') }}
                 </v-btn>
@@ -51,33 +40,19 @@
 
             <!-- Rules List -->
             <v-list v-if="colorRulesStore.sortedRules.length > 0" density="compact">
-                <draggable
-                    v-model="draggableRules"
-                    item-key="id"
-                    handle=".drag-handle"
-                    @end="onDragEnd"
-                >
+                <draggable v-model="draggableRules" item-key="id" handle=".drag-handle" @end="onDragEnd">
                     <template #item="{ element }">
                         <v-list-item class="rule-item mb-2">
                             <template v-slot:prepend>
-                                <v-icon class="drag-handle mr-2" style="cursor: grab;">
-                                    mdi-drag
-                                </v-icon>
-                                <div
-                                    class="color-preview mr-3"
-                                    :style="{ backgroundColor: element.fillColor }"
-                                />
+                                <v-icon class="drag-handle mr-2" style="cursor: grab"> mdi-drag </v-icon>
+                                <div class="color-preview mr-3" :style="{ backgroundColor: element.fillColor }" />
                             </template>
 
                             <v-list-item-title>
                                 {{ element.name }}
                             </v-list-item-title>
                             <v-list-item-subtitle>
-                                <v-chip
-                                    size="x-small"
-                                    :color="element.type === 'taskType' ? 'blue' : 'orange'"
-                                    class="mr-1"
-                                >
+                                <v-chip size="x-small" :color="element.type === 'taskType' ? 'blue' : 'orange'" class="mr-1">
                                     {{ element.type === 'taskType' ? $t('colorRules.taskType') : $t('colorRules.leadTime') }}
                                 </v-chip>
                                 <span v-if="element.type === 'taskType'">
@@ -96,21 +71,10 @@
                                     color="primary"
                                     @update:model-value="toggleRule(element)"
                                 />
-                                <v-btn
-                                    icon
-                                    variant="text"
-                                    size="small"
-                                    @click="editRule(element)"
-                                >
+                                <v-btn icon variant="text" size="small" @click="editRule(element)">
                                     <v-icon>mdi-pencil</v-icon>
                                 </v-btn>
-                                <v-btn
-                                    icon
-                                    variant="text"
-                                    size="small"
-                                    color="error"
-                                    @click="deleteRule(element.id)"
-                                >
+                                <v-btn icon variant="text" size="small" color="error" @click="deleteRule(element.id)">
                                     <v-icon>mdi-delete</v-icon>
                                 </v-btn>
                             </template>
@@ -125,12 +89,7 @@
         </v-card-text>
 
         <!-- Add/Edit Dialog -->
-        <ColorRuleDialog
-            v-model="showDialog"
-            :rule="editingRule"
-            :is-edit="isEditMode"
-            @save="saveRule"
-        />
+        <ColorRuleDialog v-model="showDialog" :rule="editingRule" :is-edit="isEditMode" @save="saveRule" />
     </v-card>
 </template>
 

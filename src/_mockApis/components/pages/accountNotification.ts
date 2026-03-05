@@ -34,4 +34,4 @@ const notificationTb: notificationTabType[] = [
     }
 ];
 
-export {notificationTb};
+export { notificationTb };

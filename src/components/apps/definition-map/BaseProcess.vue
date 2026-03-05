@@ -1,6 +1,5 @@
 <template>
-    <div>
-    </div>
+    <div></div>
 </template>
 
 <script>
@@ -8,10 +7,8 @@ import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
-    components: {
-    },
-    props: {
-    },
+    components: {},
+    props: {},
     data: () => ({
         processDialogStatus: false,
         processType: '',
@@ -19,7 +16,7 @@ export default {
         hover: false,
         permissionProcess: null,
         permissionProcessMap: null,
-        editable: false,
+        editable: false
     }),
     created() {
         // 다른 곳에서 프로세스 다이얼로그가 열리면 자신의 다이얼로그 닫기
@@ -36,7 +33,7 @@ export default {
         if (role == 'superAdmin') {
             this.editable = true;
         } else {
-            if(this.process) {
+            if (this.process) {
                 const uid = localStorage.getItem('uid');
                 const permission = await backend.getUserPermissions({ proc_def_id: this.process.id, user_id: uid });
                 if (permission) {
@@ -60,8 +57,8 @@ export default {
         },
         editProcess(process) {
             this.value.id = process.id;
-            this.value.label = process.label
-            this.value.name = process.name
+            this.value.label = process.label;
+            this.value.name = process.name;
         },
         editProcessdialog(processType) {
             // 다른 모든 다이얼로그 닫기
@@ -85,7 +82,7 @@ export default {
             if (!path && !type) {
                 this.$router.push(`/definition-map`);
             } else {
-                this.$router.push(`/definition-map/${type}/${path}`)
+                this.$router.push(`/definition-map/${type}/${path}`);
             }
 
             // const id = this.value.id.replace(/ /g, '_')
@@ -113,10 +110,10 @@ export default {
             const options = {
                 proc_def_id: id,
                 user_id: uid
-            }
+            };
             const permissions = await backend.getUserPermissions(options);
             return permissions;
         }
-    },
-}
+    }
+};
 </script>

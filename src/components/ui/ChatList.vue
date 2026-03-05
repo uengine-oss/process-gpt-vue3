@@ -1,24 +1,14 @@
 <template>
     <!-- 대화 목록 -->
     <div class="d-flex align-center mt-3 ml-2">
-        <div style="font-size:14px;" class="text-medium-emphasis cp-menu">
+        <div style="font-size: 14px" class="text-medium-emphasis cp-menu">
             {{ $t('VerticalSidebar.chatList') || '채팅' }}
         </div>
         <div class="sidebar-title-icon" @click.stop="toggleSearch">
-            <Icons
-                :icon="searchOpen ? 'close' : 'search'"
-                :size="14"
-                :color="'#808080'"
-                style="width: 14px; height: 14px;"
-            />
+            <Icons :icon="searchOpen ? 'close' : 'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
         </div>
         <div class="sidebar-title-icon" @click.stop="openCreateDialog">
-            <Icons
-                :icon="'plus'"
-                :size="14"
-                :color="'#808080'"
-                style="width: 14px; height: 14px;"
-            />
+            <Icons :icon="'plus'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
         </div>
     </div>
 
@@ -31,7 +21,7 @@
                 hide-details
                 clearable
                 prepend-inner-icon="mdi-magnify"
-                style="margin-bottom: 10px;"
+                style="margin-bottom: 10px"
                 :placeholder="$t('chatListing.search') || '검색'"
                 ref="searchInput"
             />
@@ -43,15 +33,13 @@
             <span class="ml-2">{{ $t('VerticalSidebar.chatLoading') || '불러오는 중...' }}</span>
         </div>
         <div v-else-if="filteredChatRooms.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
-            {{ (searchText && searchText.trim()) ? ($t('VerticalSidebar.chatEmpty') || '검색 결과가 없습니다.') : ($t('VerticalSidebar.chatEmpty') || '대화가 없습니다.') }}
+            {{
+                searchText && searchText.trim()
+                    ? $t('VerticalSidebar.chatEmpty') || '검색 결과가 없습니다.'
+                    : $t('VerticalSidebar.chatEmpty') || '대화가 없습니다.'
+            }}
         </div>
-        <ExpandableList
-            v-else
-            :items="filteredChatRooms"
-            :limit="5"
-            :incremental="true"
-            :step="10"
-        >
+        <ExpandableList v-else :items="filteredChatRooms" :limit="5" :incremental="true" :step="10">
             <template #items="{ displayedItems }">
                 <v-list density="compact" class="pa-0">
                     <v-list-item
@@ -80,11 +68,7 @@
                                             :key="(p && (p.id || p.email)) || idx"
                                             class="avatar-grid__cell"
                                         >
-                                            <img
-                                                :src="getParticipantProfile(p)"
-                                                :alt="getParticipantAlt(p)"
-                                                class="avatar-img"
-                                            />
+                                            <img :src="getParticipantProfile(p)" :alt="getParticipantAlt(p)" class="avatar-img" />
                                         </div>
                                     </div>
                                 </template>
@@ -118,16 +102,12 @@
                     {{ $t('chatListing.create') || '새 채팅방' }}
                 </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn @click="createDialog = false" icon variant="text" density="comfortable" style="margin-top:-8px;">
+                <v-btn @click="createDialog = false" icon variant="text" density="comfortable" style="margin-top: -8px">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
             <v-card-text class="ma-0 pa-0 pb-2 pt-4">
-                <v-text-field
-                    v-model="createObj.name"
-                    :label="$t('chatListing.chatRoomName') || '채팅방 이름'"
-                    density="compact"
-                />
+                <v-text-field v-model="createObj.name" :label="$t('chatListing.chatRoomName') || '채팅방 이름'" density="compact" />
                 <v-autocomplete
                     v-model="createObj.participants"
                     :items="userList"
@@ -135,33 +115,62 @@
                     closable-chips
                     color="blue-grey-lighten-2"
                     item-title="username"
-                    :item-value="item => item"
+                    :item-value="(item) => item"
                     multiple
                     :label="$t('chatListing.selectParticipants') || '참여자 선택'"
                     small-chips
                     :loading="isLoadingUsers"
                 >
                     <template v-slot:chip="{ props, item }">
-                        <v-chip v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
-                        <v-chip v-else-if="item.raw.id == 'system_id'" v-bind="props" prepend-avatar="/images/chat-icon.png" text="System"></v-chip>
-                        <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.username ? item.raw.username:item.raw.email"></v-chip>
+                        <v-chip
+                            v-if="item.raw.profile"
+                            v-bind="props"
+                            :prepend-avatar="item.raw.profile"
+                            :text="item.raw.username ? item.raw.username : item.raw.email"
+                        ></v-chip>
+                        <v-chip
+                            v-else-if="item.raw.id == 'system_id'"
+                            v-bind="props"
+                            prepend-avatar="/images/chat-icon.png"
+                            text="System"
+                        ></v-chip>
+                        <v-chip
+                            v-else
+                            v-bind="props"
+                            prepend-icon="mdi-account-circle"
+                            :text="item.raw.username ? item.raw.username : item.raw.email"
+                        ></v-chip>
                     </template>
 
                     <template v-slot:item="{ props, item }">
-                        <v-list-item v-if="item.raw.profile" v-bind="props" :prepend-avatar="item.raw.profile" :title="item.raw.username ? item.raw.username:item.raw.email"
-                            :subtitle="item.raw.email"></v-list-item>
-                        <v-list-item v-else-if="item.raw.id == 'system_id'" v-bind="props" prepend-avatar="/images/chat-icon.png" title="System"></v-list-item>
-                        <v-list-item v-else v-bind="props" :title="item.raw.username ? item.raw.username:item.raw.email"
-                            :subtitle="item.raw.email">
+                        <v-list-item
+                            v-if="item.raw.profile"
+                            v-bind="props"
+                            :prepend-avatar="item.raw.profile"
+                            :title="item.raw.username ? item.raw.username : item.raw.email"
+                            :subtitle="item.raw.email"
+                        ></v-list-item>
+                        <v-list-item
+                            v-else-if="item.raw.id == 'system_id'"
+                            v-bind="props"
+                            prepend-avatar="/images/chat-icon.png"
+                            title="System"
+                        ></v-list-item>
+                        <v-list-item
+                            v-else
+                            v-bind="props"
+                            :title="item.raw.username ? item.raw.username : item.raw.email"
+                            :subtitle="item.raw.email"
+                        >
                             <template v-slot:prepend>
-                                <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
+                                <v-icon style="position: relative; margin-right: 10px; margin-left: -3px" size="48"
+                                    >mdi-account-circle</v-icon
+                                >
                             </template>
                         </v-list-item>
                     </template>
                 </v-autocomplete>
-                <div class="text-caption text-grey mt-2">
-                    - 내 계정은 자동으로 포함됩니다.
-                </div>
+                <div class="text-caption text-grey mt-2">- 내 계정은 자동으로 포함됩니다.</div>
             </v-card-text>
             <v-row class="ma-0 pa-0">
                 <v-spacer></v-spacer>
@@ -207,7 +216,7 @@ export default {
         _onChatRoomsUpdated: null,
         _onChatRoomSelected: null,
         _onChatRoomUnselected: null,
-        chatsWatchRef: null,
+        chatsWatchRef: null
     }),
     async created() {
         try {
@@ -298,9 +307,9 @@ export default {
             }
         },
         uuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = (Math.random() * 16) | 0;
+                const v = c === 'x' ? r : (r & 0x3) | 0x8;
                 return v.toString(16);
             });
         },
@@ -337,10 +346,7 @@ export default {
                 });
 
                 // Process GPT Agent 최상단 고정
-                const merged = [
-                    processGptAgent,
-                    ...withoutMe.filter(u => (u?.id || u?.uid) !== processGptAgent.id)
-                ];
+                const merged = [processGptAgent, ...withoutMe.filter((u) => (u?.id || u?.uid) !== processGptAgent.id)];
                 this.userList = merged;
             } catch (e) {
                 this.userList = [processGptAgent];
@@ -350,7 +356,9 @@ export default {
         },
         async openCreateDialog() {
             if (!this.userInfo) {
-                try { this.userInfo = await backend.getUserInfo(); } catch (e) {}
+                try {
+                    this.userInfo = await backend.getUserInfo();
+                } catch (e) {}
             }
             if (!this.userList || this.userList.length === 0) {
                 await this.loadUserList();
@@ -365,9 +373,8 @@ export default {
                 }
                 const me = this.normalizeParticipant(this.userInfo);
                 const selected = (this.createObj?.participants || []).map(this.normalizeParticipant).filter(Boolean);
-                const participants = me && !selected.some(p => this.participantMatches(p, me))
-                    ? [...selected, me].filter(Boolean)
-                    : selected;
+                const participants =
+                    me && !selected.some((p) => this.participantMatches(p, me)) ? [...selected, me].filter(Boolean) : selected;
 
                 if (!participants || participants.length < 2) return;
 
@@ -504,18 +511,22 @@ export default {
                     me.isExistUnReadMessage = false;
                     await backend.putObject('db://chat_rooms', room);
                 }
-                window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                    detail: { type: 'chat', value: false, id: room.id }
-                }));
+                window.dispatchEvent(
+                    new CustomEvent('update-notification-badge', {
+                        detail: { type: 'chat', value: false, id: room.id }
+                    })
+                );
             } catch (e) {}
         },
         async markRoomReadById(roomId) {
             if (!roomId) return;
             const idx = this.chatRooms.findIndex((r) => r.id === roomId);
             if (idx === -1) {
-                window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                    detail: { type: 'chat', value: false, id: roomId }
-                }));
+                window.dispatchEvent(
+                    new CustomEvent('update-notification-badge', {
+                        detail: { type: 'chat', value: false, id: roomId }
+                    })
+                );
                 return;
             }
             await this.markRoomRead(this.chatRooms[idx]);
@@ -527,13 +538,16 @@ export default {
                     await this.chatsWatchRef.unsubscribe();
                 }
                 this.chatsWatchRef = null;
-                const roomIds = (this.chatRooms || []).map(r => r?.id).filter(Boolean);
+                const roomIds = (this.chatRooms || []).map((r) => r?.id).filter(Boolean);
                 if (roomIds.length === 0) return;
-                this.chatsWatchRef = await backend.watchChats((payload) => {
-                    this.handleChatsRealtime(payload);
-                }, {
-                    filter: `id=in.(${roomIds.join(',')})`
-                });
+                this.chatsWatchRef = await backend.watchChats(
+                    (payload) => {
+                        this.handleChatsRealtime(payload);
+                    },
+                    {
+                        filter: `id=in.(${roomIds.join(',')})`
+                    }
+                );
             } catch (e) {}
         },
         async handleChatsRealtime(payload) {
@@ -543,21 +557,25 @@ export default {
                 const roomId = payload.new.id;
                 const msg = payload.new.messages || null;
                 if (!roomId || !msg) return;
-                const idx = this.chatRooms.findIndex(r => r.id === roomId);
+                const idx = this.chatRooms.findIndex((r) => r.id === roomId);
                 if (idx === -1) return;
                 const room = this.chatRooms[idx];
                 room.message = room.message || {};
                 room.message.msg = msg.messageForUser ? msg.messageForUser : msg.content;
                 room.message.createdAt = msg.timeStamp;
 
-                const isMine = (msg.email && this.userInfo?.email) ? (msg.email === this.userInfo.email) : false;
+                const isMine = msg.email && this.userInfo?.email ? msg.email === this.userInfo.email : false;
                 if (!isMine && roomId !== this.currentChatRoomId) {
                     const me = this.getMyParticipant(room);
                     if (me) me.isExistUnReadMessage = true;
-                    try { await backend.putObject('db://chat_rooms', room); } catch (e) {}
-                    window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                        detail: { type: 'chat', value: true, id: roomId }
-                    }));
+                    try {
+                        await backend.putObject('db://chat_rooms', room);
+                    } catch (e) {}
+                    window.dispatchEvent(
+                        new CustomEvent('update-notification-badge', {
+                            detail: { type: 'chat', value: true, id: roomId }
+                        })
+                    );
                 }
 
                 this.chatRooms.sort((a, b) => {
@@ -606,10 +624,12 @@ export default {
             try {
                 await this.markRoomRead(room);
                 // 에이전트 화면에서 넘어올 때 남아있는 hash(#chat) 제거
-                try { if (window.location.hash) window.location.hash = ''; } catch (e) {}
+                try {
+                    if (window.location.hash) window.location.hash = '';
+                } catch (e) {}
                 await this.$router.push({ path: '/chat', query: { roomId: room.id }, hash: '' });
             } catch (e) {
-                console.log(e)
+                console.log(e);
             }
         },
         truncateMessage(msg) {
@@ -634,7 +654,7 @@ export default {
                 return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
             }
             return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-        },
+        }
     }
 };
 </script>

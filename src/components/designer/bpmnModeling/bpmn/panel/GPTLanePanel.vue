@@ -2,14 +2,11 @@
     <div>
         <div class="included pa-4 pt-0" style="margin-bottom: 22px">
             <v-row class="ma-0 pa-0 align-center">
-                <div>{{$t('LanePanel.selectRoleType')}}</div>
+                <div>{{ $t('LanePanel.selectRoleType') }}</div>
 
-                <DetailComponent
-                    :title="$t('LanePanel.radioDescriptionTitle')"
-                    :details="radioDescription"
-                />
+                <DetailComponent :title="$t('LanePanel.radioDescriptionTitle')" :details="radioDescription" />
             </v-row>
-            <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
+            <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
                 <v-radio-group v-model="type" row style="margin-top: 0px !important">
                     <v-radio
                         v-for="option in roleOptions"
@@ -93,7 +90,7 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         processDefinition: Object,
-        element: Object,
+        element: Object
     },
     created() {
         // console.log(this.element)
@@ -110,7 +107,6 @@ export default {
         //         console.log('Role not found');
         //     }
         // }
-
     },
     data() {
         return {
@@ -138,7 +134,7 @@ export default {
             role: null,
             roleOptions: [
                 { value: 'None', label: 'LanePanel.none' },
-                { value: 'Organization', label: 'LanePanel.organization' },
+                { value: 'Organization', label: 'LanePanel.organization' }
             ],
             radioDescription: [
                 {
@@ -147,10 +143,10 @@ export default {
             ],
 
             isDirectUser: false,
-             // Organization/Group selection
+            // Organization/Group selection
             selectedOrganization: null,
             organizationOptions: [],
-            loadingOrganizations: false,
+            loadingOrganizations: false
         };
     },
     async mounted() {
@@ -182,36 +178,38 @@ export default {
     },
     computed: {
         isProcessGPT() {
-            return window.$mode == 'ProcessGPT'
+            return window.$mode == 'ProcessGPT';
         }
     },
     watch: {
         type(after, before) {
             this.isDirectUser = false;
             if (after == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
-                if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
+                if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
-                if(!this.copyUengineProperties.roleResolutionContext.scope) this.copyUengineProperties.roleResolutionContext.scope = ''
+                if (!this.copyUengineProperties.roleResolutionContext.scope) this.copyUengineProperties.roleResolutionContext.scope = '';
             } else if (after == 'org.uengine.kernel.DirectRoleResolutionContext') {
                 this.isDirectUser = true;
-                if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
+                if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.DirectRoleResolutionContext';
-                if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = ''
+                if (!this.copyUengineProperties.roleResolutionContext.endpoint)
+                    this.copyUengineProperties.roleResolutionContext.endpoint = '';
             } else if (after == 'None') {
                 if (this.copyUengineProperties.roleResolutionContext) {
                     delete this.copyUengineProperties.roleResolutionContext;
                 }
             } else if (after == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
-                if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
+                if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
-                if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = 'external_customer'
+                if (!this.copyUengineProperties.roleResolutionContext.endpoint)
+                    this.copyUengineProperties.roleResolutionContext.endpoint = 'external_customer';
             } else if (after == 'Organization') {
-                if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
+                if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};
                 this.copyUengineProperties.roleResolutionContext._type = 'Organization';
                 // Restore selected organization if exists
                 if (this.copyUengineProperties.roleResolutionContext.organizationId) {
                     const savedOrg = this.organizationOptions.find(
-                        opt => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId
+                        (opt) => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId
                     );
                     if (savedOrg) {
                         this.selectedOrganization = savedOrg;
@@ -231,7 +229,7 @@ export default {
                     delete this.copyUengineProperties.roleResolutionContext.organizationType;
                 }
             }
-        },
+        }
     },
     methods: {
         initialize() {
@@ -239,20 +237,22 @@ export default {
                 this.type = 'None';
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
                 this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
-                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint
+                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint;
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 this.type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
-                this.scope = this.copyUengineProperties.roleResolutionContext.scope
-            } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
+                this.scope = this.copyUengineProperties.roleResolutionContext.scope;
+            } else if (
+                this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext'
+            ) {
                 this.type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
-                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint
+                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint;
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'Organization') {
                 this.type = 'Organization';
                 // Restore selected organization after options are loaded
                 if (this.copyUengineProperties.roleResolutionContext.organizationId) {
                     this.$nextTick(() => {
                         const savedOrg = this.organizationOptions.find(
-                            opt => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId
+                            (opt) => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId
                         );
                         if (savedOrg) {
                             this.selectedOrganization = savedOrg;
@@ -291,7 +291,7 @@ export default {
                     const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
                     const chart = orgValue.chart || orgValue;
                     const teams = this.extractTeamsFromOrgChart(chart);
-                    teams.forEach(team => {
+                    teams.forEach((team) => {
                         options.push({
                             id: team.id,
                             name: team.name,
@@ -307,7 +307,7 @@ export default {
                     .eq('tenant_id', tenantId);
 
                 if (!groupsError && groupsData) {
-                    groupsData.forEach(group => {
+                    groupsData.forEach((group) => {
                         options.push({
                             id: group.id,
                             name: group.name,
@@ -320,9 +320,7 @@ export default {
 
                 // Restore selection after loading
                 if (this.type === 'Organization' && this.copyUengineProperties.roleResolutionContext?.organizationId) {
-                    const savedOrg = options.find(
-                        opt => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId
-                    );
+                    const savedOrg = options.find((opt) => opt.id === this.copyUengineProperties.roleResolutionContext.organizationId);
                     if (savedOrg) {
                         this.selectedOrganization = savedOrg;
                     }
@@ -336,7 +334,7 @@ export default {
             // 변경사항 emit
             this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

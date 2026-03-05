@@ -31,7 +31,6 @@ import product5 from '@/assets/images/products/product-8.png';
 import product6 from '@/assets/images/products/product-9.png';
 import { EditIcon, PlusIcon, TrashIcon } from 'vue-tabler-icons';
 
-
 const ProductTableData: ProductTable[] = [
     {
         img: product1,
@@ -41,7 +40,7 @@ const ProductTableData: ProductTable[] = [
         process: 45,
         processcolor: 'warning',
         statuscolor: 'indigo',
-        statustext: 'Confirmed',
+        statustext: 'Confirmed'
     },
     {
         img: product2,
@@ -51,7 +50,7 @@ const ProductTableData: ProductTable[] = [
         process: 100,
         processcolor: 'success',
         statuscolor: 'success',
-        statustext: 'Confirmed',
+        statustext: 'Confirmed'
     },
     {
         img: product3,
@@ -61,7 +60,7 @@ const ProductTableData: ProductTable[] = [
         process: 100,
         processcolor: 'error',
         statuscolor: 'error',
-        statustext: 'Cancelled',
+        statustext: 'Cancelled'
     },
     {
         img: product5,
@@ -71,7 +70,7 @@ const ProductTableData: ProductTable[] = [
         process: 45,
         processcolor: 'warning',
         statuscolor: 'indigo',
-        statustext: 'Confirmed',
+        statustext: 'Confirmed'
     },
     {
         img: product4,
@@ -81,10 +80,9 @@ const ProductTableData: ProductTable[] = [
         process: 100,
         processcolor: 'success',
         statuscolor: 'success',
-        statustext: 'Confirmed',
-    },
-
-]
+        statustext: 'Confirmed'
+    }
+];
 
 /*Table Action*/
 const tableActionData: tableAction[] = [
@@ -100,9 +98,7 @@ const tableActionData: tableAction[] = [
         icon: TrashIcon,
         listtitle: 'Delete'
     }
-]
-
-
+];
 
 const LatestReviewData: LatestReview[] = [
     {
@@ -112,7 +108,7 @@ const LatestReviewData: LatestReview[] = [
         customername: 'Arlene McCoy',
         customeremail: 'macoy@arlene.com',
         review: 3.5,
-        reviewtext:'This theme is great. Clean and easy to understand. Perfect for those who don t havetime to',
+        reviewtext: 'This theme is great. Clean and easy to understand. Perfect for those who don t havetime to',
         statuscolor: 'success',
         statustext: 'Confirmed',
         time: 'Nov 8'
@@ -123,8 +119,8 @@ const LatestReviewData: LatestReview[] = [
         profile: profile2,
         customername: 'Jerome Bell',
         customeremail: 'belljerome@yahoo.com',
-        review:4,
-        reviewtext:'It is a Mac, after all. Once you have gone Mac,there s no going back. My first Maclastedover nine years',
+        review: 4,
+        reviewtext: 'It is a Mac, after all. Once you have gone Mac,there s no going back. My first Maclastedover nine years',
         statuscolor: 'warning',
         statustext: 'Pending',
         time: 'Nov 8'
@@ -135,8 +131,8 @@ const LatestReviewData: LatestReview[] = [
         profile: profile3,
         customername: 'Jacob Jones',
         customeremail: 'jones009@hotmail.com',
-        review:3.5,
-        reviewtext:' The best experience we could hope for.Customer service team is amazing and thequality of their products',
+        review: 3.5,
+        reviewtext: ' The best experience we could hope for.Customer service team is amazing and thequality of their products',
         statuscolor: 'warning',
         statustext: 'Pending',
         time: 'Nov 8'
@@ -147,8 +143,8 @@ const LatestReviewData: LatestReview[] = [
         profile: profile4,
         customername: 'Annette Black',
         customeremail: 'blackanne@yahoo.com',
-        review:3.5,
-        reviewtext:' The controller is quite comfy for me. Despiteits increased size, the controller still fits well',
+        review: 3.5,
+        reviewtext: ' The controller is quite comfy for me. Despiteits increased size, the controller still fits well',
         statuscolor: 'success',
         statustext: 'Confirmed',
         time: 'Nov 8'
@@ -159,14 +155,12 @@ const LatestReviewData: LatestReview[] = [
         profile: profile5,
         customername: 'Albert Flores',
         customeremail: 'albertflo9@gmail.com',
-        review:3.5,
-        reviewtext:'This theme is great. Perfect for those whodon want have time to start everything from',
+        review: 3.5,
+        reviewtext: 'This theme is great. Perfect for those whodon want have time to start everything from',
         statuscolor: 'warning',
         statustext: 'Pending',
         time: 'Nov 8'
     }
-]
+];
 
-
-
-export { profileImages, ProductTableData, tableActionData, LatestReviewData }
+export { profileImages, ProductTableData, tableActionData, LatestReviewData };

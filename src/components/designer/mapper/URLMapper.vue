@@ -8,7 +8,6 @@ export default {
         // initActivityData(){
         //     alert("''a");
         // },
-        
     }
 };
 </script>

@@ -13,14 +13,14 @@ const BLUE_THEME: ThemeTypes = {
         success: '#4bd08b',
         warning: '#f8c076',
         error: '#fb977d',
-        indigo:'#8763da',
+        indigo: '#8763da',
         lightprimary: '#e5f3fb',
-        lightinfo:'#e1f5fa',
+        lightinfo: '#e1f5fa',
         lightsecondary: '#e7ecf0',
         lightsuccess: '#dffff3',
         lighterror: '#ffede9',
         lightwarning: '#fff6ea',
-        lightindigo:'#f1ebff',
+        lightindigo: '#f1ebff',
         textPrimary: '#2A3547',
         textSecondary: '#2A3547',
         borderColor: '#e5eaef',
@@ -31,10 +31,9 @@ const BLUE_THEME: ThemeTypes = {
         surface: '#fff',
         grey100: '#707a82',
         grey200: '#111c2d',
-        darkbg:'#2a3447',
-        bglight:'#f5f8fb',
-        bgdark:'#111c2d'
-       
+        darkbg: '#2a3447',
+        bglight: '#f5f8fb',
+        bgdark: '#111c2d'
     }
 };
 
@@ -51,14 +50,14 @@ const AQUA_THEME: ThemeTypes = {
         success: '#4bd08b',
         warning: '#f8c076',
         error: '#fb977d',
-        indigo:'#8763da',
+        indigo: '#8763da',
         lightprimary: '#e5f3fb',
-        lightinfo:'#e1f5fa',
+        lightinfo: '#e1f5fa',
         lightsecondary: '#e7ecf0',
         lightsuccess: '#dffff3',
         lighterror: '#ffede9',
         lightwarning: '#fff6ea',
-        lightindigo:'#f1ebff',
+        lightindigo: '#f1ebff',
         textPrimary: '#2A3547',
         textSecondary: '#2A3547',
         borderColor: '#e5eaef',
@@ -69,9 +68,9 @@ const AQUA_THEME: ThemeTypes = {
         surface: '#fff',
         grey100: '#707a82',
         grey200: '#111c2d',
-        darkbg:'#2a3447',
-        bglight:'#f5f8fb',
-        bgdark:'#111c2d'
+        darkbg: '#2a3447',
+        bglight: '#f5f8fb',
+        bgdark: '#111c2d'
     }
 };
 
@@ -88,14 +87,14 @@ const PURPLE_THEME: ThemeTypes = {
         success: '#4bd08b',
         warning: '#f8c076',
         error: '#fb977d',
-        indigo:'#8763da',
+        indigo: '#8763da',
         lightprimary: '#e5f3fb',
-        lightinfo:'#e1f5fa',
+        lightinfo: '#e1f5fa',
         lightsecondary: '#e7ecf0',
         lightsuccess: '#dffff3',
         lighterror: '#ffede9',
         lightwarning: '#fff6ea',
-        lightindigo:'#f1ebff',
+        lightindigo: '#f1ebff',
         textPrimary: '#2A3547',
         textSecondary: '#2A3547',
         borderColor: '#e5eaef',
@@ -106,9 +105,9 @@ const PURPLE_THEME: ThemeTypes = {
         surface: '#fff',
         grey100: '#707a82',
         grey200: '#111c2d',
-        darkbg:'#2a3447',
-        bglight:'#f5f8fb',
-        bgdark:'#111c2d'
+        darkbg: '#2a3447',
+        bglight: '#f5f8fb',
+        bgdark: '#111c2d'
     }
 };
 
@@ -125,14 +124,14 @@ const GREEN_THEME: ThemeTypes = {
         success: '#4bd08b',
         warning: '#f8c076',
         error: '#fb977d',
-        indigo:'#8763da',
+        indigo: '#8763da',
         lightprimary: '#e5f3fb',
-        lightinfo:'#e1f5fa',
+        lightinfo: '#e1f5fa',
         lightsecondary: '#e7ecf0',
         lightsuccess: '#dffff3',
         lighterror: '#ffede9',
         lightwarning: '#fff6ea',
-        lightindigo:'#f1ebff',
+        lightindigo: '#f1ebff',
         textPrimary: '#2A3547',
         textSecondary: '#2A3547',
         borderColor: '#e5eaef',
@@ -143,9 +142,9 @@ const GREEN_THEME: ThemeTypes = {
         surface: '#fff',
         grey100: '#707a82',
         grey200: '#111c2d',
-        darkbg:'#2a3447',
-        bglight:'#f5f8fb',
-        bgdark:'#111c2d'
+        darkbg: '#2a3447',
+        bglight: '#f5f8fb',
+        bgdark: '#111c2d'
     }
 };
 
@@ -162,14 +161,14 @@ const CYAN_THEME: ThemeTypes = {
         success: '#4bd08b',
         warning: '#f8c076',
         error: '#fb977d',
-        indigo:'#8763da',
+        indigo: '#8763da',
         lightprimary: '#e5f3fb',
-        lightinfo:'#e1f5fa',
+        lightinfo: '#e1f5fa',
         lightsecondary: '#e7ecf0',
         lightsuccess: '#dffff3',
         lighterror: '#ffede9',
         lightwarning: '#fff6ea',
-        lightindigo:'#f1ebff',
+        lightindigo: '#f1ebff',
         textPrimary: '#2A3547',
         textSecondary: '#2A3547',
         borderColor: '#e5eaef',
@@ -180,9 +179,9 @@ const CYAN_THEME: ThemeTypes = {
         surface: '#fff',
         grey100: '#707a82',
         grey200: '#111c2d',
-        darkbg:'#2a3447',
-        bglight:'#f5f8fb',
-        bgdark:'#111c2d'
+        darkbg: '#2a3447',
+        bglight: '#f5f8fb',
+        bgdark: '#111c2d'
     }
 };
 
@@ -199,14 +198,14 @@ const ORANGE_THEME: ThemeTypes = {
         success: '#4bd08b',
         warning: '#f8c076',
         error: '#fb977d',
-        indigo:'#8763da',
+        indigo: '#8763da',
         lightprimary: '#e5f3fb',
-        lightinfo:'#e1f5fa',
+        lightinfo: '#e1f5fa',
         lightsecondary: '#e7ecf0',
         lightsuccess: '#dffff3',
         lighterror: '#ffede9',
         lightwarning: '#fff6ea',
-        lightindigo:'#f1ebff',
+        lightindigo: '#f1ebff',
         textPrimary: '#2A3547',
         textSecondary: '#2A3547',
         borderColor: '#e5eaef',
@@ -217,9 +216,9 @@ const ORANGE_THEME: ThemeTypes = {
         surface: '#fff',
         grey100: '#707a82',
         grey200: '#111c2d',
-        darkbg:'#2a3447',
-        bglight:'#f5f8fb',
-        bgdark:'#111c2d'
+        darkbg: '#2a3447',
+        bglight: '#f5f8fb',
+        bgdark: '#111c2d'
     }
 };
 

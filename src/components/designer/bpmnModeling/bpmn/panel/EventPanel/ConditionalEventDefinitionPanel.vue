@@ -1,8 +1,6 @@
 <template>
     <div>
-        <ConditionField :value="copyUengineProperties.condition"
-            @update:value="updateCondition"
-        />
+        <ConditionField :value="copyUengineProperties.condition" @update:value="updateCondition" />
     </div>
 </template>
 <script>
@@ -14,7 +12,7 @@ import ConditionField from '../ConditionField.vue';
 export default {
     name: 'conditional-event-definition-panel',
     components: {
-        ConditionField,
+        ConditionField
     },
     props: {
         element: Object,
@@ -46,47 +44,48 @@ export default {
             editParam: false,
             paramKey: '',
             paramValue: '',
-            eventType: null,
+            eventType: null
         };
     },
     async mounted() {
-        let me = this
+        let me = this;
 
         const store = useBpmnStore();
         me.bpmnModeler = store.getModeler;
-        
+
         if (!me.copyUengineProperties.condition || me.copyUengineProperties.condition.length == 0) {
             if (me.mode == 'ProcessGPT') {
                 me.copyUengineProperties.condition = '';
             } else {
-                me.copyUengineProperties.condition = [{
-                    _type: "org.uengine.kernel.Evaluate",
-                    conditionsVt: [],
-                    expression: {
-                        key: '',
-                        value: '',
-                        comparator: '',
-                    },
-                }];
+                me.copyUengineProperties.condition = [
+                    {
+                        _type: 'org.uengine.kernel.Evaluate',
+                        conditionsVt: [],
+                        expression: {
+                            key: '',
+                            value: '',
+                            comparator: ''
+                        }
+                    }
+                ];
             }
         }
     },
-    computed: {
-    },
+    computed: {},
     watch: {},
     methods: {
         updateCondition(condition) {
             this.copyUengineProperties.condition = condition;
-            this.$emit('update:uengineProperties', this.copyUengineProperties)
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         updatePriority(priority) {
-            if(priority && priority.length > 0) {
+            if (priority && priority.length > 0) {
                 this.copyUengineProperties.priority = priority;
-                this.$emit('update:uengineProperties', this.copyUengineProperties)
-            }else {
+                this.$emit('update:uengineProperties', this.copyUengineProperties);
+            } else {
                 delete this.copyUengineProperties.priority;
             }
-        },
+        }
     }
 };
 </script>

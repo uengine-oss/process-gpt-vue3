@@ -1,6 +1,6 @@
 <template>
     <v-card style="width: 100%; height: 100%">
-        <div class="d-flex align-center justify-space-between pa-3 pb-0" style="min-height: 52px;">
+        <div class="d-flex align-center justify-space-between pa-3 pb-0" style="min-height: 52px">
             <v-card-title class="pa-0">{{ $t('TestProcess.title') }}</v-card-title>
             <v-btn icon variant="text" size="small" @click="$emit('close')" aria-label="닫기">
                 <v-icon>mdi-close</v-icon>
@@ -18,8 +18,8 @@
                                     : 'height: calc(100vh - 240px); color: black; overflow: auto'
                             "
                         >
-                            <div class="pa-0" style="height: 100%;" :key="updatedDefKey">
-                                <div v-if="bpmn" style="border-bottom: 1px solid #E0E0E0;">
+                            <div class="pa-0" style="height: 100%" :key="updatedDefKey">
+                                <div v-if="bpmn" style="border-bottom: 1px solid #e0e0e0">
                                     {{ $t('TestProcess.mainInstanceId') }}{{ instanceId }}
                                     <BpmnUengine
                                         ref="bpmnVue"
@@ -32,18 +32,15 @@
                                         :instance-id="instanceId"
                                         v-on:openDefinition="(ele) => openSubProcess(ele)"
                                         v-on:navigateToTask="onNavigateToTask"
-                                        style="height: 45vh;"
+                                        style="height: 45vh"
                                     ></BpmnUengine>
                                 </div>
                                 <div v-if="subBpmn">
-                                    <div v-for="(sub, key) in subBpmn"
-                                         :key="key"
-                                         style="border-bottom: 1px solid #E0E0E0;"
-                                    >
+                                    <div v-for="(sub, key) in subBpmn" :key="key" style="border-bottom: 1px solid #e0e0e0">
                                         {{ $t('TestProcess.subInstanceId') }}{{ key }}
                                         <BpmnUengine
                                             ref="bpmnVue"
-                                            :key= "subBpmnKey"
+                                            :key="subBpmnKey"
                                             :bpmn="sub"
                                             :options="options"
                                             :isViewMode="true"
@@ -59,7 +56,7 @@
                             </div>
                         </div>
                     </v-alert>
-                    <v-row v-else class="ma-0 pa-0 test-process-skeleton" style="height: 100%;">
+                    <v-row v-else class="ma-0 pa-0 test-process-skeleton" style="height: 100%">
                         <v-col cols="12" class="pa-4">
                             <v-skeleton-loader type="card"></v-skeleton-loader>
                         </v-col>
@@ -74,7 +71,14 @@
                         <div class="d-flex align-center gap-1">
                             <v-tooltip :text="$t('TestProcess.newInstance') || '새 인스턴스'">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" size="small" color="primary" variant="tonal" class="rounded-pill" @click="startNewInstance">
+                                    <v-btn
+                                        v-bind="props"
+                                        size="small"
+                                        color="primary"
+                                        variant="tonal"
+                                        class="rounded-pill"
+                                        @click="startNewInstance"
+                                    >
                                         <v-icon start size="18">mdi-plus-circle-outline</v-icon>
                                         {{ $t('TestProcess.newInstance') || '새 인스턴스' }}
                                     </v-btn>
@@ -89,160 +93,228 @@
                             </v-tooltip>
                         </div>
                     </div>
-                    <div class="d-flex gap-3" style="max-height: calc(-270px + 100vh); min-height: 0;">
+                    <div class="d-flex gap-3" style="max-height: calc(-270px + 100vh); min-height: 0">
                         <!-- 작업 목록 + 프로세스 기록 -->
-                        <div
-                            class="flex-grow-1 min-width-0"
-                            style="color: black; overflow-y: auto;"
-                        >
-                        <div v-if="eventList">
-                            <div v-for="event in eventList" :key="event">
-                                <v-btn
-                                    @click="
-                                        $try({
-                                            context: this,
-                                            action: () => fireMessage(event.tracingTag),
-                                            successMsg: `${event.name} ${this.$t('TestProcess.success')}`
-                                        })
-                                    "
-                                    v-if="event.name"
-                                    >{{ event.name }}</v-btn
-                                >
-                            </div>
-                        </div>
-                        <div v-if="taskList" class="d-flex flex-column gap-3">
-                            <v-card
-                                v-for="task in taskList"
-                                variant="outlined"
-                                class="test-process-task-card rounded-xl pa-4"
-                                :key="task.taskId"
-                                elevation="0"
-                            >
-                                <div class="d-flex align-center gap-2 mb-3">
-                                    <v-avatar size="36" color="primary" variant="tonal" class="flex-shrink-0">
-                                        <v-icon size="20">mdi-clipboard-check-outline</v-icon>
-                                    </v-avatar>
-                                    <div class="min-width-0 flex-grow-1">
-                                        <div class="text-subtitle-1 font-weight-medium text-truncate">{{ task.title }}</div>
-                                        <div class="text-caption text-medium-emphasis">{{ $t('TestProcess.taskID') }}{{ task.taskId }} · {{ $t('TestProcess.instanceID') }}{{ task.instId }}</div>
-                                    </div>
+                        <div class="flex-grow-1 min-width-0" style="color: black; overflow-y: auto">
+                            <div v-if="eventList">
+                                <div v-for="event in eventList" :key="event">
+                                    <v-btn
+                                        @click="
+                                            $try({
+                                                context: this,
+                                                action: () => fireMessage(event.tracingTag),
+                                                successMsg: `${event.name} ${this.$t('TestProcess.success')}`
+                                            })
+                                        "
+                                        v-if="event.name"
+                                        >{{ event.name }}</v-btn
+                                    >
                                 </div>
-                                <div class="mb-3">
-                                    <div class="d-flex align-center flex-wrap gap-3">
-                                        <v-btn
-                                            size="small"
-                                            variant="tonal"
-                                            density="compact"
-                                            height="28"
-                                            class="text-capitalize"
-                                            @click="toggleExpandedTaskForVariables(task.taskId)"
-                                        >
-                                            <v-icon start size="18">mdi-tune-variant</v-icon>
-                                            {{ $t('TestProcess.initialVariables') || '초기 프로세스 변수 설정' }}
-                                            <v-icon end size="18">{{ expandedTaskIdForVariables === task.taskId ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-                                        </v-btn>
-                                        <v-tooltip :text="$t('TestProcess.saveUnitTest') || '태스크별 초기 변수 세트 저장'">
-                                            <template v-slot:activator="{ props }">
-                                                <v-btn v-bind="props" size="small" variant="tonal" density="compact" height="28" class="rounded-pill" @click="saveUnitTestFile">
-                                                    <v-icon start size="18">mdi-content-save-outline</v-icon>
-                                                    {{ $t('TestProcess.saveUnitTest') || '변수 세트 저장' }}
-                                                </v-btn>
-                                            </template>
-                                        </v-tooltip>
+                            </div>
+                            <div v-if="taskList" class="d-flex flex-column gap-3">
+                                <v-card
+                                    v-for="task in taskList"
+                                    variant="outlined"
+                                    class="test-process-task-card rounded-xl pa-4"
+                                    :key="task.taskId"
+                                    elevation="0"
+                                >
+                                    <div class="d-flex align-center gap-2 mb-3">
+                                        <v-avatar size="36" color="primary" variant="tonal" class="flex-shrink-0">
+                                            <v-icon size="20">mdi-clipboard-check-outline</v-icon>
+                                        </v-avatar>
+                                        <div class="min-width-0 flex-grow-1">
+                                            <div class="text-subtitle-1 font-weight-medium text-truncate">{{ task.title }}</div>
+                                            <div class="text-caption text-medium-emphasis">
+                                                {{ $t('TestProcess.taskID') }}{{ task.taskId }} · {{ $t('TestProcess.instanceID')
+                                                }}{{ task.instId }}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <v-expand-transition>
-                                        <div v-show="expandedTaskIdForVariables === task.taskId" class="mt-3 pl-1">
-                                            <div class="text-caption text-medium-emphasis mb-2">{{ $t('TestProcess.initialVariablesHint') || '해당 단계 도달 시 가정한 초기값 (여러 시나리오 저장 가능)' }}</div>
-                                            <div v-for="set in getInitialVariableSetsForTask(task.taskId)" :key="set.id" class="pa-3 mb-2 rounded-lg border">
-                                                <v-text-field
-                                                    v-model="set.name"
-                                                    :label="$t('TestProcess.setName') || '세트 이름'"
-                                                    density="compact"
-                                                    hide-details
-                                                    class="mb-2"
-                                                />
-                                                <template v-for="def in processVariableDefinitions" :key="def.name">
+                                    <div class="mb-3">
+                                        <div class="d-flex align-center flex-wrap gap-3">
+                                            <v-btn
+                                                size="small"
+                                                variant="tonal"
+                                                density="compact"
+                                                height="28"
+                                                class="text-capitalize"
+                                                @click="toggleExpandedTaskForVariables(task.taskId)"
+                                            >
+                                                <v-icon start size="18">mdi-tune-variant</v-icon>
+                                                {{ $t('TestProcess.initialVariables') || '초기 프로세스 변수 설정' }}
+                                                <v-icon end size="18">{{
+                                                    expandedTaskIdForVariables === task.taskId ? 'mdi-chevron-up' : 'mdi-chevron-down'
+                                                }}</v-icon>
+                                            </v-btn>
+                                            <v-tooltip :text="$t('TestProcess.saveUnitTest') || '태스크별 초기 변수 세트 저장'">
+                                                <template v-slot:activator="{ props }">
+                                                    <v-btn
+                                                        v-bind="props"
+                                                        size="small"
+                                                        variant="tonal"
+                                                        density="compact"
+                                                        height="28"
+                                                        class="rounded-pill"
+                                                        @click="saveUnitTestFile"
+                                                    >
+                                                        <v-icon start size="18">mdi-content-save-outline</v-icon>
+                                                        {{ $t('TestProcess.saveUnitTest') || '변수 세트 저장' }}
+                                                    </v-btn>
+                                                </template>
+                                            </v-tooltip>
+                                        </div>
+                                        <v-expand-transition>
+                                            <div v-show="expandedTaskIdForVariables === task.taskId" class="mt-3 pl-1">
+                                                <div class="text-caption text-medium-emphasis mb-2">
+                                                    {{
+                                                        $t('TestProcess.initialVariablesHint') ||
+                                                        '해당 단계 도달 시 가정한 초기값 (여러 시나리오 저장 가능)'
+                                                    }}
+                                                </div>
+                                                <div
+                                                    v-for="set in getInitialVariableSetsForTask(task.taskId)"
+                                                    :key="set.id"
+                                                    class="pa-3 mb-2 rounded-lg border"
+                                                >
                                                     <v-text-field
-                                                        v-model="set.values[def.name]"
-                                                        :label="def.name"
-                                                        :placeholder="def.defaultValue != null ? String(def.defaultValue) : ''"
+                                                        v-model="set.name"
+                                                        :label="$t('TestProcess.setName') || '세트 이름'"
                                                         density="compact"
                                                         hide-details
-                                                        class="mb-1"
+                                                        class="mb-2"
                                                     />
-                                                </template>
-                                                <div class="d-flex mt-2 align-center gap-2">
-                                                    <v-btn size="small" color="primary" variant="flat" class="rounded-pill" @click="applyInitialVariableSet(task, set)">
-                                                        {{ $t('TestVariable.start') || '적용' }}
-                                                    </v-btn>
-                                                    <v-btn size="small" variant="text" color="error" @click="removeInitialVariableSet(task.taskId, set.id)">
-                                                        {{ $t('TestVariable.delete') || '삭제' }}
-                                                    </v-btn>
+                                                    <template v-for="def in processVariableDefinitions" :key="def.name">
+                                                        <v-text-field
+                                                            v-model="set.values[def.name]"
+                                                            :label="def.name"
+                                                            :placeholder="def.defaultValue != null ? String(def.defaultValue) : ''"
+                                                            density="compact"
+                                                            hide-details
+                                                            class="mb-1"
+                                                        />
+                                                    </template>
+                                                    <div class="d-flex mt-2 align-center gap-2">
+                                                        <v-btn
+                                                            size="small"
+                                                            color="primary"
+                                                            variant="flat"
+                                                            class="rounded-pill"
+                                                            @click="applyInitialVariableSet(task, set)"
+                                                        >
+                                                            {{ $t('TestVariable.start') || '적용' }}
+                                                        </v-btn>
+                                                        <v-btn
+                                                            size="small"
+                                                            variant="text"
+                                                            color="error"
+                                                            @click="removeInitialVariableSet(task.taskId, set.id)"
+                                                        >
+                                                            {{ $t('TestVariable.delete') || '삭제' }}
+                                                        </v-btn>
+                                                    </div>
                                                 </div>
+                                                <v-btn
+                                                    size="small"
+                                                    variant="outlined"
+                                                    class="rounded-pill"
+                                                    @click="addInitialVariableSet(task.taskId)"
+                                                >
+                                                    {{ $t('TestProcess.addSet') || '세트 추가' }}
+                                                </v-btn>
                                             </div>
-                                            <v-btn size="small" variant="outlined" class="rounded-pill" @click="addInitialVariableSet(task.taskId)">
-                                                {{ $t('TestProcess.addSet') || '세트 추가' }}
-                                            </v-btn>
-                                        </div>
-                                    </v-expand-transition>
+                                        </v-expand-transition>
+                                    </div>
+                                    <test-variables
+                                        style="height: 100%"
+                                        :definition-id="definitionId"
+                                        :task="task.trcTag"
+                                        :task-id="task.taskId"
+                                        @executeTest="(e) => executeTestProcess(e, task)"
+                                        @type="(e) => (tool = e)"
+                                        @work-item="(e) => addWorkItem(e, task.taskId)"
+                                    ></test-variables>
+                                </v-card>
+
+                                <div class="text-subtitle-1 font-weight-medium mt-4 mb-2 d-flex align-center gap-1">
+                                    <v-icon size="20">mdi-history</v-icon>
+                                    {{ $t('TestProcess.processRecord') }}
                                 </div>
-                                <test-variables
-                                    style="height: 100%"
-                                    :definition-id="definitionId"
-                                    :task="task.trcTag"
-                                    :task-id="task.taskId"
-                                    @executeTest="(e) => executeTestProcess(e, task)"
-                                    @type="(e) => (tool = e)"
-                                    @work-item="(e) => addWorkItem(e, task.taskId)"
-                                ></test-variables>
-                            </v-card>
-                            
-                            <div class="text-subtitle-1 font-weight-medium mt-4 mb-2 d-flex align-center gap-1">
-                                <v-icon size="20">mdi-history</v-icon>
-                                {{ $t('TestProcess.processRecord') }}
+                                <v-card class="rounded-xl pa-4" variant="outlined" elevation="0">
+                                    <v-table class="test-process-record-table">
+                                        <tbody>
+                                            <tr v-for="key in Object.keys(recordedProcess)" :key="key">
+                                                <td class="pa-0" style="width: calc(100% - 65px)">
+                                                    <div
+                                                        style="
+                                                            display: flex;
+                                                            overflow-x: auto;
+                                                            white-space: nowrap;
+                                                            flex-direction: row;
+                                                            flex-wrap: wrap;
+                                                        "
+                                                    >
+                                                        <test-record-card
+                                                            class="mr-2"
+                                                            :testRecord="item"
+                                                            :isLast="index === JSON.parse(recordedProcess[key]).length - 1"
+                                                            v-for="(item, index) in JSON.parse(recordedProcess[key])"
+                                                            :key="item"
+                                                            @card-click="handleCardClick"
+                                                        />
+                                                    </div>
+                                                    <v-divider class="pb-2" />
+                                                </td>
+                                                <td class="align-right" style="width: 65px; padding: 0px; text-align: right">
+                                                    <v-tooltip :text="$t('TestVariable.start')">
+                                                        <template v-slot:activator="{ props }">
+                                                            <v-btn
+                                                                density="compact"
+                                                                icon
+                                                                flat
+                                                                @click="executeRecordProcess(recordedProcess[key])"
+                                                                v-bind="props"
+                                                                style="margin-right: 5px"
+                                                            >
+                                                                <Icons
+                                                                    :icon="'play-outline'"
+                                                                    :size="17"
+                                                                    stroke-width="1.5"
+                                                                    :color="'rgb(var(--v-theme-primary))'"
+                                                                />
+                                                            </v-btn>
+                                                        </template>
+                                                    </v-tooltip>
+                                                    <v-tooltip :text="$t('TestVariable.delete')">
+                                                        <template v-slot:activator="{ props }">
+                                                            <v-btn
+                                                                density="compact"
+                                                                icon
+                                                                flat
+                                                                @click="deleteRecordProcess(key)"
+                                                                v-bind="props"
+                                                            >
+                                                                <TrashIcon stroke-width="1.5" size="20" class="text-error" />
+                                                            </v-btn>
+                                                        </template>
+                                                    </v-tooltip>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </v-table>
+                                </v-card>
                             </div>
-                            <v-card class="rounded-xl pa-4" variant="outlined" elevation="0">
-                                <v-table class="test-process-record-table">
-                                    <tbody>
-                                        <tr v-for="key in Object.keys(recordedProcess)" :key="key">
-                                            <td class="pa-0" style="width: calc(100% - 65px); ">
-                                                <div style="display: flex; overflow-x: auto; white-space: nowrap; flex-direction: row; flex-wrap: wrap;">
-                                                    <test-record-card class="mr-2" :testRecord="item" :isLast="(index === JSON.parse(recordedProcess[key]).length - 1)" v-for="(item, index) in JSON.parse(recordedProcess[key])" :key="item" @card-click="handleCardClick" />
-                                                </div>
-                                                <v-divider class="pb-2"/>
-                                            </td>
-                                            <td class="align-right" style="width: 65px; padding: 0px; text-align: right;">
-                                                <v-tooltip :text="$t('TestVariable.start')">
-                                                    <template v-slot:activator="{ props }">
-                                                        <v-btn density="compact" icon flat @click="executeRecordProcess(recordedProcess[key])" v-bind="props" style="margin-right:5px;">
-                                                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" :color="'rgb(var(--v-theme-primary))'" />
-                                                        </v-btn>
-                                                    </template>
-                                                </v-tooltip>
-                                                <v-tooltip :text="$t('TestVariable.delete')">
-                                                    <template v-slot:activator="{ props }">
-                                                        <v-btn density="compact" icon flat @click="deleteRecordProcess(key)" v-bind="props">
-                                                            <TrashIcon stroke-width="1.5" size="20" class="text-error" />
-                                                        </v-btn>
-                                                    </template>
-                                                </v-tooltip>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </v-table>
-                            </v-card>
-                        </div>
-                        <v-row v-else class="ma-0 pa-0 test-process-work-list-skeleton" style="height: 100%;">
-                            <v-col cols="12" class="pa-0">
-                                <v-skeleton-loader type="card"></v-skeleton-loader>
-                            </v-col>
-                        </v-row>
+                            <v-row v-else class="ma-0 pa-0 test-process-work-list-skeleton" style="height: 100%">
+                                <v-col cols="12" class="pa-0">
+                                    <v-skeleton-loader type="card"></v-skeleton-loader>
+                                </v-col>
+                            </v-row>
                         </div>
                         <!-- 실행 결과 -->
                         <div
                             v-if="lastExecuteResult"
                             class="test-process-result-panel flex-shrink-0 rounded-xl overflow-hidden"
-                            style="width: 50%; min-width: 280px; max-height: 100%; overflow-y: auto;"
+                            style="width: 50%; min-width: 280px; max-height: 100%; overflow-y: auto"
                         >
                             <v-card class="test-process-result-card h-100 rounded-xl" elevation="1" variant="tonal" color="primary">
                                 <v-card-title class="d-flex align-center py-2 px-3 text-subtitle-1">
@@ -258,42 +330,84 @@
                                     <div class="d-flex flex-wrap gap-3 mb-2">
                                         <div class="d-flex align-center gap-1">
                                             <v-icon size="16" class="text-medium-emphasis">mdi-identifier</v-icon>
-                                            <span class="text-caption text-medium-emphasis">{{ ($t('TestProcess.instanceID') || '인스턴스 ID').replace(/:?\s*$/, '') }}</span>
+                                            <span class="text-caption text-medium-emphasis">{{
+                                                ($t('TestProcess.instanceID') || '인스턴스 ID').replace(/:?\s*$/, '')
+                                            }}</span>
                                             <span class="text-body-2 font-weight-medium">{{ lastExecuteResult.instanceId }}</span>
                                         </div>
                                         <div class="d-flex align-center gap-1">
                                             <v-icon size="16" class="text-medium-emphasis">mdi-state-machine</v-icon>
-                                            <span class="text-caption text-medium-emphasis">{{ ($t('TestProcess.processStatus') || '프로세스 상태').replace(/:?\s*$/, '') }}</span>
-                                            <v-chip :color="lastExecuteResult.processStatus === 'Running' ? 'primary' : 'default'" size="x-small" variant="flat" class="font-weight-medium">{{ lastExecuteResult.processStatus }}</v-chip>
+                                            <span class="text-caption text-medium-emphasis">{{
+                                                ($t('TestProcess.processStatus') || '프로세스 상태').replace(/:?\s*$/, '')
+                                            }}</span>
+                                            <v-chip
+                                                :color="lastExecuteResult.processStatus === 'Running' ? 'primary' : 'default'"
+                                                size="x-small"
+                                                variant="flat"
+                                                class="font-weight-medium"
+                                                >{{ lastExecuteResult.processStatus }}</v-chip
+                                            >
                                         </div>
                                     </div>
-                                    <div v-if="lastExecuteResult.currentActivityNames || lastExecuteResult.currentActivityIds" class="d-flex flex-wrap gap-3 mb-3">
+                                    <div
+                                        v-if="lastExecuteResult.currentActivityNames || lastExecuteResult.currentActivityIds"
+                                        class="d-flex flex-wrap gap-3 mb-3"
+                                    >
                                         <div v-if="lastExecuteResult.currentActivityNames" class="d-flex align-center gap-1">
                                             <v-icon size="16" class="text-medium-emphasis">mdi-cursor-default-click</v-icon>
-                                            <span class="text-caption text-medium-emphasis">{{ ($t('TestProcess.currentActivityNames') || '진행 결과 액티비티').replace(/:?\s*$/, '') }}</span>
+                                            <span class="text-caption text-medium-emphasis">{{
+                                                ($t('TestProcess.currentActivityNames') || '진행 결과 액티비티').replace(/:?\s*$/, '')
+                                            }}</span>
                                             <span class="text-body-2">{{ lastExecuteResult.currentActivityNames }}</span>
                                         </div>
-                                        <div v-if="lastExecuteResult.currentActivityIds" class="text-caption text-medium-emphasis">{{ lastExecuteResult.currentActivityIds }}</div>
+                                        <div v-if="lastExecuteResult.currentActivityIds" class="text-caption text-medium-emphasis">
+                                            {{ lastExecuteResult.currentActivityIds }}
+                                        </div>
                                     </div>
-                                    <template v-if="lastExecuteResult.changedProcessVariables && Object.keys(lastExecuteResult.changedProcessVariables).length">
+                                    <template
+                                        v-if="
+                                            lastExecuteResult.changedProcessVariables &&
+                                            Object.keys(lastExecuteResult.changedProcessVariables).length
+                                        "
+                                    >
                                         <div class="text-caption text-medium-emphasis mb-2 d-flex align-center gap-1">
                                             <v-icon size="14">mdi-variable</v-icon>
                                             {{ $t('TestProcess.changedProcessVariables') || '변경된 프로세스 변수' }}
                                         </div>
-                                        <div class="rounded-lg overflow-hidden" style="background: rgba(var(--v-theme-surface), 0.6);">
+                                        <div class="rounded-lg overflow-hidden" style="background: rgba(var(--v-theme-surface), 0.6)">
                                             <v-table density="compact" class="text-body-2">
                                                 <thead>
                                                     <tr>
-                                                        <th class="text-left text-medium-emphasis text-caption py-2 pl-3" style="width: 30%;">{{ $t('TestProcess.varName') || '변수명' }}</th>
-                                                        <th class="text-left text-medium-emphasis text-caption py-2 pl-2" style="width: 35%;">{{ $t('TestProcess.beforeValue') || '이전 값' }}</th>
-                                                        <th class="text-left text-medium-emphasis text-caption py-2 pl-2">{{ $t('TestProcess.afterValue') || '변경 값' }}</th>
+                                                        <th
+                                                            class="text-left text-medium-emphasis text-caption py-2 pl-3"
+                                                            style="width: 30%"
+                                                        >
+                                                            {{ $t('TestProcess.varName') || '변수명' }}
+                                                        </th>
+                                                        <th
+                                                            class="text-left text-medium-emphasis text-caption py-2 pl-2"
+                                                            style="width: 35%"
+                                                        >
+                                                            {{ $t('TestProcess.beforeValue') || '이전 값' }}
+                                                        </th>
+                                                        <th class="text-left text-medium-emphasis text-caption py-2 pl-2">
+                                                            {{ $t('TestProcess.afterValue') || '변경 값' }}
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <tr v-for="(val, key) in lastExecuteResult.changedProcessVariables" :key="key" class="test-process-var-row">
+                                                    <tr
+                                                        v-for="(val, key) in lastExecuteResult.changedProcessVariables"
+                                                        :key="key"
+                                                        class="test-process-var-row"
+                                                    >
                                                         <td class="text-medium-emphasis py-2 pl-3">{{ key }}</td>
-                                                        <td class="py-2 pl-2">{{ isBeforeAfterFormat(val) ? formatVarValue(val.before) : '—' }}</td>
-                                                        <td class="py-2 pr-3">{{ isBeforeAfterFormat(val) ? formatVarValue(val.after) : formatVarValue(val) }}</td>
+                                                        <td class="py-2 pl-2">
+                                                            {{ isBeforeAfterFormat(val) ? formatVarValue(val.before) : '—' }}
+                                                        </td>
+                                                        <td class="py-2 pr-3">
+                                                            {{ isBeforeAfterFormat(val) ? formatVarValue(val.after) : formatVarValue(val) }}
+                                                        </td>
                                                     </tr>
                                                 </tbody>
                                             </v-table>
@@ -314,8 +428,10 @@
                     <v-form ref="form">
                         <v-simple-table>
                             <tbody>
-                                <tr v-for="(value, key) in testRecord.workItem" :key="key" style="font-size: 12px;">
-                                    <td><strong>{{ key }}</strong></td>
+                                <tr v-for="(value, key) in testRecord.workItem" :key="key" style="font-size: 12px">
+                                    <td>
+                                        <strong>{{ key }}</strong>
+                                    </td>
                                     <td>&nbsp;</td>
                                     <td>{{ value }}</td>
                                 </tr>
@@ -365,7 +481,7 @@ export default {
         tool: null,
         subBpmn: null,
         subBpmnKey: 0,
-        subTaskStatus : {},
+        subTaskStatus: {},
         subCurrentActivities: null,
         taskStatus: null,
         bpmnKey: 0,
@@ -394,7 +510,7 @@ export default {
     },
     watch: {
         executeDialog(newVal) {
-            if(!newVal) {
+            if (!newVal) {
                 clearInterval(this.intervalId);
             }
         }
@@ -416,7 +532,10 @@ export default {
                     const vars = [];
                     const uengineNs = doc.documentElement.lookupNamespaceURI('uengine') || 'http://uengine';
                     for (let i = 0; i < processes.length; i++) {
-                        const ext = processes[i].getElementsByTagNameNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'extensionElements')[0];
+                        const ext = processes[i].getElementsByTagNameNS(
+                            'http://www.omg.org/spec/BPMN/20100524/MODEL',
+                            'extensionElements'
+                        )[0];
                         if (!ext) continue;
                         const props = ext.getElementsByTagNameNS(uengineNs, 'properties')[0] || ext.getElementsByTagName('properties')[0];
                         if (!props) continue;
@@ -481,7 +600,9 @@ export default {
             if (!this.initialVariableSetsByTask[taskId]) this.initialVariableSetsByTask[taskId] = [];
             const defs = this.processVariableDefinitions || [];
             const values = {};
-            defs.forEach((d) => { values[d.name] = d.defaultValue != null ? d.defaultValue : ''; });
+            defs.forEach((d) => {
+                values[d.name] = d.defaultValue != null ? d.defaultValue : '';
+            });
             this.initialVariableSetsByTask[taskId].push({
                 id: Date.now().toString(36) + Math.random().toString(36).slice(2),
                 name: '',
@@ -536,7 +657,11 @@ export default {
                     for (const [trcTag, sets] of Object.entries(data)) {
                         if (!Array.isArray(sets)) continue;
                         const taskId = trcToTask[trcTag];
-                        if (taskId) next[taskId] = sets.map((s) => ({ ...s, id: s.id || Date.now().toString(36) + Math.random().toString(36).slice(2) }));
+                        if (taskId)
+                            next[taskId] = sets.map((s) => ({
+                                ...s,
+                                id: s.id || Date.now().toString(36) + Math.random().toString(36).slice(2)
+                            }));
                     }
                     me.initialVariableSetsByTask = next;
                 },
@@ -575,11 +700,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    await me.backend.advanceToActivity(
-                        String(payload.instanceId),
-                        payload.tracingTag,
-                        { maxAttempts: 30 }
-                    );
+                    await me.backend.advanceToActivity(String(payload.instanceId), payload.tracingTag, { maxAttempts: 30 });
                     const taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
                     me.taskList = taskInfo;
                     me.setTaskInfo();
@@ -594,7 +715,10 @@ export default {
         },
         getWorklistSignature(taskList) {
             if (!taskList || !Array.isArray(taskList)) return '';
-            return taskList.map(t => t.taskId).sort().join(',');
+            return taskList
+                .map((t) => t.taskId)
+                .sort()
+                .join(',');
         },
         async refreshProcessIfChanged() {
             const me = this;
@@ -628,7 +752,7 @@ export default {
                 let tasks = await me.backend.getActivitiesStatus(item.worklist.instId);
                 if (!me.subCurrentActivities) me.subCurrentActivities = {};
                 Object.keys(tasks).forEach(function (task) {
-                    if(!me.subCurrentActivities[item.worklist.instId]) me.subCurrentActivities[item.worklist.instId] = []
+                    if (!me.subCurrentActivities[item.worklist.instId]) me.subCurrentActivities[item.worklist.instId] = [];
                     // me.workItem = await me.backend.getWorkItem(task.taskId);
                     me.subCurrentActivities[item.worklist.instId].push(task);
                 });
@@ -639,7 +763,6 @@ export default {
                 await me.setStatus();
                 me.updatedDefKey++;
 
-                
                 // me.subCurrentActivities ?  : me.subCurrentActivities
             }
         },
@@ -680,16 +803,14 @@ export default {
                     //     trcTag: task.trcTag,
                     //     workItem: value
                     // });
-                    
+
                     me.taskList = taskInfo;
                     me.setTaskInfo();
-                    
+
                     await me.setStatus();
-                    
                 },
                 successMsg: this.$t('successMsg.workCompleted')
             });
-            
         },
         async executeRecordProcess(process) {
             let me = this;
@@ -715,11 +836,11 @@ export default {
                 if (item.workItem.parameterValues) value = item.workItem;
                 else value = { parameterValues: item.workItem };
 
-                if(taskId) {
+                if (taskId) {
                     await me.backend.putWorkItemComplete(taskId, value, me.isSimulate);
                 } else {
                     while (!taskId) {
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // 1초 대기
+                        await new Promise((resolve) => setTimeout(resolve, 1000)); // 1초 대기
                         taskInfo = await me.backend.findCurrentWorkItemByInstId(me.instanceId);
                         me.taskList = taskInfo;
                         for (let task of me.taskList) {
@@ -774,7 +895,7 @@ export default {
         },
         setStatus() {
             let me = this;
-            if(me.subBpmn) {
+            if (me.subBpmn) {
                 Object.keys(me.subBpmn).forEach(async function (instId) {
                     me.subTaskStatus[instId] = await me.backend.getActivitiesStatus(instId);
                     me.bpmnKey++;

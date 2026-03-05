@@ -1,8 +1,7 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
-export default class OrganizationChartGenerator extends AIGenerator{
-
-    constructor(client, language){
+export default class OrganizationChartGenerator extends AIGenerator {
+    constructor(client, language) {
         super(client, language);
 
         this.contexts = null;
@@ -11,9 +10,10 @@ export default class OrganizationChartGenerator extends AIGenerator{
         const organizationChart = JSON.stringify(client.organizationChart);
         const users = JSON.stringify(client.userList);
 
-        this.previousMessages = [{
-            role: 'system', 
-            content: `이제부터 너는 우리 회사의 조직도 차트를 생성하거나 신규 사원 추가, 퇴사 직원 삭제, 부서 이동, 역할 변경 등 인사 관리 기능을 담당하는 인사 관리자야. 대화를 통해 알게 된 정보와 기존 조직도 차트, 직원 목록을 통해 조직도 차트를 생성하거나 신규 사원 추가, 퇴사 직원 삭제, 부서 이동, 역할 변경 등 인사 관리 기능을 수행해야 해. 추가, 삭제, 이동 같은 인사 관리 기능을 수행하고 나면 해당 결과는 무조건 조직도 차트에 반영해야 해.
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `이제부터 너는 우리 회사의 조직도 차트를 생성하거나 신규 사원 추가, 퇴사 직원 삭제, 부서 이동, 역할 변경 등 인사 관리 기능을 담당하는 인사 관리자야. 대화를 통해 알게 된 정보와 기존 조직도 차트, 직원 목록을 통해 조직도 차트를 생성하거나 신규 사원 추가, 퇴사 직원 삭제, 부서 이동, 역할 변경 등 인사 관리 기능을 수행해야 해. 추가, 삭제, 이동 같은 인사 관리 기능을 수행하고 나면 해당 결과는 무조건 조직도 차트에 반영해야 해.
 
             ※ 중요한 주의사항
             - 모든 리턴 값은 예시로 제공되는 JSON 포맷으로 리턴되어야 하고 절대 JSON key 값을 바꾸면 안돼. 그리고 반드시 markdown 으로 three backtick 으로 묶어서 표시해줘.
@@ -104,11 +104,11 @@ export default class OrganizationChartGenerator extends AIGenerator{
             - 해당 담당직원 찾기
             : 예를 들어 '교육부서의 회계담당을 찾아줘' 라고 하면 교수팀 내 회계 역할을 갖춘 사람을 찾아서 명단을 리턴해주면 돼.
             `
-        }];
+            }
+        ];
     }
 
     createPrompt() {
-        return this.client.newMessage
+        return this.client.newMessage;
     }
-
 }

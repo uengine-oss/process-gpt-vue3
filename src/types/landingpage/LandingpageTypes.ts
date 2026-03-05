@@ -1,5 +1,5 @@
 type ProductsSliderTypes = {
-    type:boolean,
+    type: boolean;
     img: string;
     name: string;
     link: string;
@@ -16,7 +16,7 @@ type ListFeatureTypes = {
     icon: any;
     title: string;
     subtitle: string;
-    bgcolor:string;
+    bgcolor: string;
 };
 
 type DemosMegaMenuTypes = {

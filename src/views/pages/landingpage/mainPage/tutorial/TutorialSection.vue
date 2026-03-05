@@ -4,7 +4,13 @@
             <div class="tutorial-header">
                 <button @click="closeTutorial" class="close-btn">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path
+                            d="M18 6L6 18M6 6l12 12"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
                     </svg>
                 </button>
             </div>
@@ -12,7 +18,7 @@
                 <h2>Process GPT 튜토리얼</h2>
                 <p>Process GPT 사용법을 단계별로 배워보세요</p>
             </div>
-            
+
             <div class="tutorial-grid">
                 <div class="tutorial-card" v-for="(step, index) in tutorialSteps" :key="index">
                     <div class="tutorial-number">{{ index + 1 }}</div>
@@ -25,7 +31,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="tutorial-actions">
                 <button @click="startTutorial" class="btn-primary">튜토리얼 시작하기</button>
                 <button @click="goToDemo" class="btn-secondary">데모 보기</button>
@@ -56,7 +62,7 @@ export default {
                     image: '@/assets/images/detailImage/demo3.png'
                 }
             ]
-        }
+        };
     },
     methods: {
         startTutorial() {
@@ -74,7 +80,7 @@ export default {
             this.$emit('close-tutorial');
         }
     }
-}
+};
 </script>
 
 <style scoped>
@@ -253,26 +259,26 @@ export default {
     .tutorial-section {
         padding: 60px 0;
     }
-    
+
     .section-title h2 {
         font-size: 2.2rem;
     }
-    
+
     .tutorial-grid {
         grid-template-columns: 1fr;
         gap: 30px;
         margin-bottom: 40px;
     }
-    
+
     .tutorial-card {
         padding: 20px;
     }
-    
+
     .tutorial-actions {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .btn-primary,
     .btn-secondary {
         width: 100%;
@@ -284,7 +290,7 @@ export default {
     .tutorial-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .tutorial-card {
         margin: 0 10px;
     }

@@ -13,26 +13,16 @@
 
             <v-divider />
 
-            <v-card-text class="pa-4" style="max-height: 550px; overflow-y: auto;">
+            <v-card-text class="pa-4" style="max-height: 550px; overflow-y: auto">
                 <!-- Quick Add Section -->
                 <div class="add-rule-section mb-4">
                     <div class="text-subtitle-2 mb-2 text-grey-darken-1">{{ $t('colorRuleset.addNewRule') }}</div>
                     <div class="d-flex gap-2">
-                        <v-btn
-                            variant="outlined"
-                            color="blue"
-                            @click="addRule('taskType')"
-                            class="flex-grow-1"
-                        >
+                        <v-btn variant="outlined" color="blue" @click="addRule('taskType')" class="flex-grow-1">
                             <v-icon start>mdi-shape</v-icon>
                             {{ $t('colorRuleset.taskTypeRule') }}
                         </v-btn>
-                        <v-btn
-                            variant="outlined"
-                            color="green"
-                            @click="addRule('leadTime')"
-                            class="flex-grow-1"
-                        >
+                        <v-btn variant="outlined" color="green" @click="addRule('leadTime')" class="flex-grow-1">
                             <v-icon start>mdi-clock-outline</v-icon>
                             {{ $t('colorRuleset.leadTimeRule') }}
                         </v-btn>
@@ -76,10 +66,7 @@
                                 }"
                             />
                             <!-- Intensity Preview for leadTime -->
-                            <div
-                                v-else
-                                class="intensity-preview-box mr-3"
-                            />
+                            <div v-else class="intensity-preview-box mr-3" />
 
                             <!-- Rule Name -->
                             <v-text-field
@@ -92,12 +79,7 @@
                             />
 
                             <!-- Rule Type Badge -->
-                            <v-chip
-                                size="small"
-                                :color="rule.type === 'taskType' ? 'blue' : 'green'"
-                                variant="flat"
-                                class="mx-2"
-                            >
+                            <v-chip size="small" :color="rule.type === 'taskType' ? 'blue' : 'green'" variant="flat" class="mx-2">
                                 <v-icon start size="small">
                                     {{ rule.type === 'taskType' ? 'mdi-shape' : 'mdi-clock-outline' }}
                                 </v-icon>
@@ -105,20 +87,8 @@
                             </v-chip>
 
                             <!-- Toggle & Delete -->
-                            <v-switch
-                                v-model="rule.enabled"
-                                hide-details
-                                density="compact"
-                                color="primary"
-                                class="mr-1"
-                            />
-                            <v-btn
-                                icon
-                                variant="text"
-                                size="small"
-                                color="error"
-                                @click="removeRule(index)"
-                            >
+                            <v-switch v-model="rule.enabled" hide-details density="compact" color="primary" class="mr-1" />
+                            <v-btn icon variant="text" size="small" color="error" @click="removeRule(index)">
                                 <v-icon size="small">mdi-delete-outline</v-icon>
                             </v-btn>
                         </div>
@@ -141,16 +111,15 @@
                                         class="mb-2"
                                     >
                                         <span class="text-caption">
-                                            {{ $t('colorRuleset.duplicateWarning', { types: getDuplicateTaskTypes(rule, index).join(', ') }) }}
+                                            {{
+                                                $t('colorRuleset.duplicateWarning', {
+                                                    types: getDuplicateTaskTypes(rule, index).join(', ')
+                                                })
+                                            }}
                                         </span>
                                     </v-alert>
 
-                                    <v-chip-group
-                                        v-model="rule.taskTypes"
-                                        multiple
-                                        column
-                                        selected-class="bg-blue-lighten-4"
-                                    >
+                                    <v-chip-group v-model="rule.taskTypes" multiple column selected-class="bg-blue-lighten-4">
                                         <v-chip
                                             v-for="taskType in taskTypeOptions"
                                             :key="taskType.value"
@@ -161,12 +130,9 @@
                                             :class="{ 'duplicate-warning': isTaskTypeDuplicate(taskType.value, index) }"
                                         >
                                             {{ $t(taskType.labelKey) }}
-                                            <v-icon
-                                                v-if="isTaskTypeDuplicate(taskType.value, index)"
-                                                end
-                                                size="x-small"
-                                                color="warning"
-                                            >mdi-alert</v-icon>
+                                            <v-icon v-if="isTaskTypeDuplicate(taskType.value, index)" end size="x-small" color="warning"
+                                                >mdi-alert</v-icon
+                                            >
                                         </v-chip>
                                     </v-chip-group>
 
@@ -180,7 +146,7 @@
                                                 v-for="preset in presetColors"
                                                 :key="preset.value"
                                                 class="preset-color"
-                                                :class="{ 'selected': normalizeColor(rule.fillColor) === preset.value }"
+                                                :class="{ selected: normalizeColor(rule.fillColor) === preset.value }"
                                                 :style="{ backgroundColor: preset.value }"
                                                 :title="$t(preset.nameKey)"
                                                 @click="rule.fillColor = preset.value"
@@ -201,11 +167,7 @@
                                                             <v-icon size="x-small" color="grey-darken-2">mdi-eyedropper</v-icon>
                                                         </div>
                                                     </template>
-                                                    <v-color-picker
-                                                        v-model="rule.fillColor"
-                                                        mode="hexa"
-                                                        show-swatches
-                                                    />
+                                                    <v-color-picker v-model="rule.fillColor" mode="hexa" show-swatches />
                                                 </v-menu>
                                             </div>
 
@@ -236,11 +198,7 @@
                                                                 {{ $t('colorRuleset.noBorder') }}
                                                             </v-btn>
                                                         </v-card-text>
-                                                        <v-color-picker
-                                                            v-model="rule.strokeColor"
-                                                            mode="hexa"
-                                                            show-swatches
-                                                        />
+                                                        <v-color-picker v-model="rule.strokeColor" mode="hexa" show-swatches />
                                                     </v-card>
                                                 </v-menu>
                                             </div>
@@ -264,7 +222,7 @@
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                             />
                                             <v-text-field
@@ -275,7 +233,7 @@
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                                 :max="23"
                                             />
@@ -287,7 +245,7 @@
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                                 :max="59"
                                             />
@@ -307,7 +265,7 @@
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                             />
                                             <v-text-field
@@ -318,7 +276,7 @@
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                                 :max="23"
                                             />
@@ -330,7 +288,7 @@
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                                 :max="59"
                                             />
@@ -340,12 +298,7 @@
 
                                     <!-- Intensity-based Color Description -->
                                     <div class="intensity-section">
-                                        <v-alert
-                                            type="info"
-                                            variant="tonal"
-                                            density="compact"
-                                            class="mb-3"
-                                        >
+                                        <v-alert type="info" variant="tonal" density="compact" class="mb-3">
                                             <div class="text-caption">
                                                 {{ $t('colorRuleset.leadTimeDescription') }}
                                             </div>
@@ -370,9 +323,7 @@
             <v-divider />
 
             <v-card-actions class="pa-4">
-                <v-btn variant="text" color="grey" @click="closeDialog">
-                    Cancel
-                </v-btn>
+                <v-btn variant="text" color="grey" @click="closeDialog"> Cancel </v-btn>
                 <v-spacer />
                 <v-btn color="primary" variant="flat" @click="saveRules">
                     <v-icon start>mdi-check</v-icon>
@@ -420,7 +371,7 @@ export default {
                 { nameKey: 'colorRuleset.presets.red', value: '#ffebee' },
                 { nameKey: 'colorRuleset.presets.grey', value: '#f5f5f5' },
                 { nameKey: 'colorRuleset.presets.white', value: '#ffffff' }
-            ],
+            ]
         };
     },
     computed: {
@@ -467,7 +418,7 @@ export default {
                 newRule.strokeColor = '';
             } else if (type === 'leadTime') {
                 newRule.minDuration = 0;
-                newRule.maxDuration = 480;  // Default 8 hours (480 minutes)
+                newRule.maxDuration = 480; // Default 8 hours (480 minutes)
             }
 
             this.rules.push(newRule);
@@ -506,7 +457,7 @@ export default {
                 newMinutes = Math.min(59, Math.max(0, numValue));
             }
 
-            rule[field] = (newDays * 24 * 60) + (newHours * 60) + newMinutes;
+            rule[field] = newDays * 24 * 60 + newHours * 60 + newMinutes;
         },
         // Format duration for display
         formatDuration(totalMinutes) {
@@ -534,9 +485,9 @@ export default {
         getDuplicateTaskTypes(rule, currentRuleIndex) {
             if (!rule.taskTypes) return [];
             return rule.taskTypes
-                .filter(tt => this.isTaskTypeDuplicate(tt, currentRuleIndex))
-                .map(tt => {
-                    const option = this.taskTypeOptions.find(o => o.value === tt);
+                .filter((tt) => this.isTaskTypeDuplicate(tt, currentRuleIndex))
+                .map((tt) => {
+                    const option = this.taskTypeOptions.find((o) => o.value === tt);
                     return option ? this.$t(option.labelKey) : tt;
                 });
         },
@@ -598,7 +549,7 @@ export default {
 }
 
 .rule-card:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .rule-card.rule-disabled {
@@ -618,7 +569,6 @@ export default {
     border: 2px solid;
     flex-shrink: 0;
 }
-
 
 .rule-name-input {
     font-weight: 500;
@@ -645,7 +595,7 @@ export default {
 
 .preset-color:hover {
     transform: scale(1.15);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .preset-color.selected {
@@ -666,7 +616,7 @@ export default {
 }
 
 .color-picker-btn:hover {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .condition-section {
@@ -705,11 +655,8 @@ export default {
 .intensity-preview-bar {
     height: 16px;
     border-radius: 4px;
-    background: linear-gradient(to right,
-        rgba(200, 200, 200, 0.3),
-        rgba(50, 50, 50, 0.8)
-    );
-    border: 1px solid rgba(0,0,0,0.1);
+    background: linear-gradient(to right, rgba(200, 200, 200, 0.3), rgba(50, 50, 50, 0.8));
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .intensity-section {

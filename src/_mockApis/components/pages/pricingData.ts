@@ -1,5 +1,5 @@
 /*import tabler icons*/
-import { CheckIcon, XIcon, } from 'vue-tabler-icons';
+import { CheckIcon, XIcon } from 'vue-tabler-icons';
 import type { pricingType } from '@/types/components/pages/pricingData';
 /*-- Pricing Page --*/
 import img1 from '@/assets/images/backgrounds/silver-pot.svg';
@@ -19,31 +19,31 @@ const pricing: pricingType[] = [
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: '3 Members',
-                status:false,
+                status: false
             },
             {
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: 'Single Device',
-                status:false,
+                status: false
             },
             {
                 icon: XIcon,
                 iconcolor: 'inputBorder',
                 listtitle: '50GB Storage',
-                status:true,
+                status: true
             },
             {
                 icon: XIcon,
                 iconcolor: 'inputBorder',
                 listtitle: 'Monthly Backups',
-                status:true,
+                status: true
             },
             {
                 icon: XIcon,
                 iconcolor: 'inputBorder',
                 listtitle: 'Permissions & workflows',
-                status:true,
+                status: true
             }
         ]
     },
@@ -60,31 +60,31 @@ const pricing: pricingType[] = [
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: '5 Members',
-                status:false,
+                status: false
             },
             {
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: 'Multiple Device',
-                status:false,
+                status: false
             },
             {
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: '80GB Storage',
-                status:false,
+                status: false
             },
             {
                 icon: XIcon,
                 iconcolor: 'inputBorder',
                 listtitle: 'Monthly Backups',
-                status:true,
+                status: true
             },
             {
                 icon: XIcon,
                 iconcolor: 'inputBorder',
                 listtitle: 'Permissions & workflows',
-                status:true,
+                status: true
             }
         ]
     },
@@ -101,34 +101,33 @@ const pricing: pricingType[] = [
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: '5 Members',
-                status:false,
+                status: false
             },
             {
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: 'Single Device',
-                status:false,
+                status: false
             },
             {
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: '120GB Storage',
-                status:false,
+                status: false
             },
             {
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: 'Monthly Backups',
-                status:false,
+                status: false
             },
             {
                 icon: CheckIcon,
                 iconcolor: 'primary',
                 listtitle: 'Permissions & workflows',
-                status:false,
+                status: false
             }
         ]
     }
-
 ];
-export { pricing};
+export { pricing };

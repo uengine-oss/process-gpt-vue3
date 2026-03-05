@@ -37,8 +37,7 @@ class DesktopPlayer {
         this.silenceCheckInterval = setInterval(() => {
             if (!this.analyser) return;
             this.analyser.getByteFrequencyData(this.dataArray);
-            const volume =
-                Array.from(this.dataArray).reduce((a, b) => a + b, 0) / this.dataArray.length;
+            const volume = Array.from(this.dataArray).reduce((a, b) => a + b, 0) / this.dataArray.length;
             if (volume > 3) {
                 this.lastAudioTime = Date.now();
             } else if (this.lastAudioTime > 0 && Date.now() - this.lastAudioTime > 2000) {
@@ -93,7 +92,7 @@ class DesktopRecorder {
     async start(stream) {
         if (this.audioContext) await this.audioContext.close();
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
-            sampleRate: 24000,
+            sampleRate: 24000
         });
         await this.audioContext.audioWorklet.addModule('/static/audio-processor-worklet.js');
         this.mediaStream = stream;
@@ -124,33 +123,33 @@ export default {
     props: {
         active: {
             type: Boolean,
-            default: false,
+            default: false
         },
         chatRoomId: {
             type: String,
-            default: '',
+            default: ''
         },
         agentInfo: {
             type: Object,
-            default: null,
+            default: null
         },
         conversationHistory: {
             type: Array,
-            default: () => [],
-        },
+            default: () => []
+        }
     },
     emits: [
-        'user-transcript',      // 사용자가 말한 텍스트 (완성)
-        'ai-transcript-delta',  // AI 응답 텍스트 스트리밍 청크
-        'ai-transcript-done',   // AI 응답 텍스트 완성
-        'started',              // 연결 및 마이크 시작됨
-        'stopped',              // 연결 종료됨
-        'speaking-start',       // 사용자 발화 시작
-        'speaking-stop',        // 사용자 발화 종료
-        'ai-audio-start',       // AI 오디오 재생 시작
-        'ai-audio-stop',        // AI 오디오 재생 종료
-        'ai-interrupted',       // 사용자 발화로 AI 응답 인터럽트됨
-        'error',                // 에러 발생
+        'user-transcript', // 사용자가 말한 텍스트 (완성)
+        'ai-transcript-delta', // AI 응답 텍스트 스트리밍 청크
+        'ai-transcript-done', // AI 응답 텍스트 완성
+        'started', // 연결 및 마이크 시작됨
+        'stopped', // 연결 종료됨
+        'speaking-start', // 사용자 발화 시작
+        'speaking-stop', // 사용자 발화 종료
+        'ai-audio-start', // AI 오디오 재생 시작
+        'ai-audio-stop', // AI 오디오 재생 종료
+        'ai-interrupted', // 사용자 발화로 AI 응답 인터럽트됨
+        'error' // 에러 발생
     ],
     data() {
         return {
@@ -159,17 +158,17 @@ export default {
             audioPlayer: null,
             buffer: new Uint8Array(),
             isConnected: false,
-            _didStart: false,     // start() 끝까지 성공했는지 여부
-            isAiPlaying: false,   // AI 오디오 재생 중이면 마이크 전송 차단
-            hasAudioData: false,  // 이번 응답에 오디오 델타가 있었는지
-            currentAiTranscript: '',
+            _didStart: false, // start() 끝까지 성공했는지 여부
+            isAiPlaying: false, // AI 오디오 재생 중이면 마이크 전송 차단
+            hasAudioData: false, // 이번 응답에 오디오 델타가 있었는지
+            currentAiTranscript: ''
         };
     },
     watch: {
         active(val) {
             if (val) this.start();
             else this.stop();
-        },
+        }
     },
     beforeUnmount() {
         this.stop();
@@ -191,7 +190,7 @@ export default {
                             chat_room_id: this.chatRoomId,
                             tenant_id: window.$tenantName || '',
                             agent_info: this.agentInfo || null,
-                            conversation_history: this.conversationHistory || [],
+                            conversation_history: this.conversationHistory || []
                         })
                     );
                     this.isConnected = true;
@@ -201,7 +200,9 @@ export default {
                     try {
                         const data = JSON.parse(event.data);
                         this.handleServerEvent(data);
-                    } catch (e) { /* ignore parse errors */ }
+                    } catch (e) {
+                        /* ignore parse errors */
+                    }
                 };
 
                 this.ws.onclose = () => {
@@ -232,8 +233,8 @@ export default {
                     audio: {
                         echoCancellation: true,
                         noiseSuppression: true,
-                        autoGainControl: true,
-                    },
+                        autoGainControl: true
+                    }
                 });
                 this.audioRecorder = new DesktopRecorder((rawData) => {
                     this.handleMicData(rawData);
@@ -271,9 +272,7 @@ export default {
                 const chars = String.fromCharCode(...toSend);
                 const base64 = btoa(chars);
                 if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-                    this.ws.send(
-                        JSON.stringify({ type: 'input_audio_buffer.append', audio: base64 })
-                    );
+                    this.ws.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: base64 }));
                 }
             }
         },
@@ -288,11 +287,10 @@ export default {
                     this._interruptAiPlayback();
                 }
                 this.$emit('speaking-start');
-
             } else if (t === 'input_audio_buffer.speech_stopped') {
                 this.$emit('speaking-stop');
 
-            // ── AI 오디오 재생 ───────────────────────
+                // ── AI 오디오 재생 ───────────────────────
             } else if (t === 'response.audio.delta') {
                 this.hasAudioData = true;
                 if (!this.isAiPlaying) {
@@ -303,10 +301,8 @@ export default {
                 const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
                 const pcmData = new Int16Array(bytes.buffer);
                 this.audioPlayer?.play(pcmData);
-
             } else if (t === 'response.audio.done') {
                 // 스트리밍 완료 — 실제 재생 완료는 침묵 감지로 처리
-
             } else if (t === 'response.done') {
                 if (!this.hasAudioData) {
                     // 오디오 없는 텍스트 전용 응답
@@ -314,17 +310,15 @@ export default {
                     this.$emit('ai-audio-stop');
                 }
 
-            // ── 텍스트 트랜스크립트 ──────────────────
+                // ── 텍스트 트랜스크립트 ──────────────────
             } else if (t === 'response.audio_transcript.delta') {
                 const delta = data.delta || '';
                 this.currentAiTranscript += delta;
                 this.$emit('ai-transcript-delta', delta);
-
             } else if (t === 'response.audio_transcript.done') {
                 const finalText = data.transcript || this.currentAiTranscript;
                 this.$emit('ai-transcript-done', finalText);
                 this.currentAiTranscript = '';
-
             } else if (t === 'conversation.item.input_audio_transcription.completed') {
                 const transcript = (data.transcript || '').trim();
                 if (transcript) {
@@ -360,7 +354,9 @@ export default {
 
         stop() {
             if (this.ws) {
-                try { this.ws.close(); } catch (e) {}
+                try {
+                    this.ws.close();
+                } catch (e) {}
                 this.ws = null;
             }
             if (this.audioPlayer) {
@@ -377,7 +373,7 @@ export default {
             this.isAiPlaying = false;
             this.hasAudioData = false;
             this.currentAiTranscript = '';
-        },
-    },
+        }
+    }
 };
 </script>

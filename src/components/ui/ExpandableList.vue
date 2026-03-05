@@ -2,30 +2,16 @@
     <div class="expandable-list">
         <!-- 기본 아이템들 표시 -->
         <slot name="items" :displayedItems="displayedItems"></slot>
-        
+
         <!-- 더보기/접기 버튼 -->
         <div v-if="showMoreVisible || showLessVisible" class="mt-2">
-            <v-card
-                v-if="showMoreVisible"
-                @click="showMore"
-                class="text-center cursor-pointer pa-2"
-                elevation="10"
-                rounded="10"
-            >
+            <v-card v-if="showMoreVisible" @click="showMore" class="text-center cursor-pointer pa-2" elevation="10" rounded="10">
                 <v-card-text class="pa-0">
-                    <span class="text-caption text-primary">
-                        {{ $t('VerticalSidebar.showMore') }} ({{ remainingCount }})
-                    </span>
+                    <span class="text-caption text-primary"> {{ $t('VerticalSidebar.showMore') }} ({{ remainingCount }}) </span>
                     <v-icon size="small" class="ml-1" color="primary">mdi-chevron-down</v-icon>
                 </v-card-text>
             </v-card>
-            <v-card
-                v-if="showLessVisible"
-                @click="showLess"
-                class="text-center cursor-pointer pa-2"
-                elevation="10"
-                rounded="10"
-            >
+            <v-card v-if="showLessVisible" @click="showLess" class="text-center cursor-pointer pa-2" elevation="10" rounded="10">
                 <v-card-text class="pa-0">
                     <span class="text-caption text-primary">
                         {{ $t('VerticalSidebar.showLess') }}
@@ -64,7 +50,7 @@ export default {
         return {
             showAll: false,
             visibleCount: this.limit
-        }
+        };
     },
     computed: {
         isExpanded() {
@@ -148,7 +134,7 @@ export default {
             this.$emit('collapsed');
         }
     }
-}
+};
 </script>
 
 <style scoped>

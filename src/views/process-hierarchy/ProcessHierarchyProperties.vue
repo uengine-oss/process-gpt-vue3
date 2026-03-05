@@ -8,13 +8,7 @@
                     <v-icon size="16">mdi-close</v-icon>
                 </v-btn>
             </div>
-            <v-tabs
-                v-model="activeTab"
-                density="compact"
-                class="properties-tabs"
-                color="primary"
-                height="36"
-            >
+            <v-tabs v-model="activeTab" density="compact" class="properties-tabs" color="primary" height="36">
                 <v-tab value="process" size="small">
                     <v-icon size="14" start>mdi-cog-outline</v-icon>
                     {{ $t('processHierarchy.processTab') }}
@@ -36,7 +30,9 @@
                         <!-- Basic -->
                         <div class="section-group">
                             <div class="section-title" @click="toggle('proc-basic')">
-                                <v-icon size="14" class="mr-1">{{ isOpen('proc-basic') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                <v-icon size="14" class="mr-1">{{
+                                    isOpen('proc-basic') ? 'mdi-chevron-down' : 'mdi-chevron-right'
+                                }}</v-icon>
                                 {{ $t('processHierarchy.basic') }}
                             </div>
                             <div v-show="isOpen('proc-basic')" class="section-body">
@@ -47,28 +43,43 @@
                                     <v-text-field
                                         v-if="field.property_type === 'string'"
                                         v-model="processForm[field.property_key]"
-                                        density="compact" variant="outlined" hide-details class="mb-3"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        class="mb-3"
                                         :placeholder="field.placeholder"
                                     />
                                     <!-- TextArea -->
                                     <v-textarea
                                         v-else-if="field.property_type === 'textarea'"
                                         v-model="processForm[field.property_key]"
-                                        density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        rows="3"
+                                        auto-grow
+                                        class="mb-3"
                                         :placeholder="field.placeholder"
                                     />
                                     <!-- Number -->
                                     <v-text-field
                                         v-else-if="field.property_type === 'number'"
                                         v-model.number="processForm[field.property_key]"
-                                        density="compact" variant="outlined" hide-details type="number" class="mb-3"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        type="number"
+                                        class="mb-3"
                                         :placeholder="field.placeholder"
                                     />
                                     <!-- URL -->
                                     <v-text-field
                                         v-else-if="field.property_type === 'url'"
                                         v-model="processForm[field.property_key]"
-                                        density="compact" variant="outlined" hide-details class="mb-3"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        class="mb-3"
                                         :placeholder="field.placeholder || 'https://...'"
                                     >
                                         <template v-slot:prepend-inner>
@@ -77,22 +88,29 @@
                                         <template v-slot:append-inner>
                                             <v-icon
                                                 v-if="processForm[field.property_key]"
-                                                size="16" style="cursor:pointer"
+                                                size="16"
+                                                style="cursor: pointer"
                                                 @click="openLink(processForm[field.property_key])"
-                                            >mdi-open-in-new</v-icon>
+                                                >mdi-open-in-new</v-icon
+                                            >
                                         </template>
                                     </v-text-field>
                                     <!-- Formula (read-only display) -->
                                     <div v-else-if="field.property_type === 'formula'" class="formula-display mb-3">
                                         <span class="text-caption text-medium-emphasis">{{ field.config?.expression || '' }}</span>
-                                        <span class="text-subtitle-2 font-weight-bold ml-2">{{ processForm[field.property_key] || '-' }}</span>
+                                        <span class="text-subtitle-2 font-weight-bold ml-2">{{
+                                            processForm[field.property_key] || '-'
+                                        }}</span>
                                     </div>
                                     <!-- DB-Select -->
                                     <v-select
                                         v-else-if="field.property_type === 'db-select'"
                                         v-model="processForm[field.property_key]"
                                         :items="dbSelectItems[field.property_key] || []"
-                                        density="compact" variant="outlined" hide-details class="mb-3"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        class="mb-3"
                                         :placeholder="field.placeholder"
                                         clearable
                                     />
@@ -101,23 +119,46 @@
                                         v-else-if="field.property_type === 'select'"
                                         v-model="processForm[field.property_key]"
                                         :items="field.options || []"
-                                        item-title="label" item-value="value"
-                                        density="compact" variant="outlined" hide-details class="mb-3"
+                                        item-title="label"
+                                        item-value="value"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        class="mb-3"
                                         clearable
                                     />
                                     <!-- Boolean -->
                                     <v-switch
                                         v-else-if="field.property_type === 'boolean'"
                                         v-model="processForm[field.property_key]"
-                                        density="compact" color="primary" hide-details class="mb-3"
+                                        density="compact"
+                                        color="primary"
+                                        hide-details
+                                        class="mb-3"
                                     />
                                 </template>
                                 <!-- Fallback if no schema fields -->
                                 <template v-if="processFields.length === 0">
                                     <label class="field-label">{{ $t('processHierarchy.titleField') }}</label>
-                                    <v-text-field v-model="processForm.title" density="compact" variant="outlined" hide-details class="mb-3" :placeholder="$t('processHierarchy.processNamePlaceholder')" />
+                                    <v-text-field
+                                        v-model="processForm.title"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        class="mb-3"
+                                        :placeholder="$t('processHierarchy.processNamePlaceholder')"
+                                    />
                                     <label class="field-label">{{ $t('processHierarchy.description') }}</label>
-                                    <v-textarea v-model="processForm.description" density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3" :placeholder="$t('processHierarchy.describeProcessPlaceholder')" />
+                                    <v-textarea
+                                        v-model="processForm.description"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        rows="3"
+                                        auto-grow
+                                        class="mb-3"
+                                        :placeholder="$t('processHierarchy.describeProcessPlaceholder')"
+                                    />
                                 </template>
                             </div>
                         </div>
@@ -135,7 +176,13 @@
                             <div v-show="isOpen('proc-fte')" class="section-body">
                                 <!-- Input Mode Toggle -->
                                 <label class="field-label">{{ $t('processHierarchy.inputMode') }}</label>
-                                <v-btn-toggle v-model="processForm.fte.inputMode" mandatory density="compact" class="mb-3 fte-mode-toggle" color="primary">
+                                <v-btn-toggle
+                                    v-model="processForm.fte.inputMode"
+                                    mandatory
+                                    density="compact"
+                                    class="mb-3 fte-mode-toggle"
+                                    color="primary"
+                                >
                                     <v-btn value="direct" size="small">{{ $t('processHierarchy.directPercent') }}</v-btn>
                                     <v-btn value="time" size="small">{{ $t('processHierarchy.timeFreqPeople') }}</v-btn>
                                 </v-btn-toggle>
@@ -145,8 +192,13 @@
                                     <label class="field-label">FTE (%)</label>
                                     <v-text-field
                                         v-model.number="processForm.fte.directPercent"
-                                        density="compact" variant="outlined" hide-details type="number"
-                                        min="0" max="100" suffix="%"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        suffix="%"
                                     />
                                 </template>
 
@@ -158,26 +210,41 @@
                                             <v-select
                                                 v-model="processForm.fte.freqCycle"
                                                 :items="freqCycleOptions"
-                                                density="compact" variant="outlined" hide-details
+                                                density="compact"
+                                                variant="outlined"
+                                                hide-details
                                             />
                                         </v-col>
                                         <v-col cols="6">
                                             <label class="field-label">{{ $t('processHierarchy.freqCount') }}</label>
                                             <v-text-field
                                                 v-model.number="processForm.fte.freqCount"
-                                                density="compact" variant="outlined" hide-details type="number" min="0"
+                                                density="compact"
+                                                variant="outlined"
+                                                hide-details
+                                                type="number"
+                                                min="0"
                                             />
                                         </v-col>
                                     </v-row>
                                     <label class="field-label mt-3">{{ $t('processHierarchy.timePerTaskHours') }}</label>
                                     <v-text-field
                                         v-model.number="processForm.fte.timePerTask"
-                                        density="compact" variant="outlined" hide-details type="number" min="0" step="0.1"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
                                     />
                                     <label class="field-label mt-3">{{ $t('processHierarchy.headcount') }}</label>
                                     <v-text-field
                                         v-model.number="processForm.fte.headcount"
-                                        density="compact" variant="outlined" hide-details type="number" min="1"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        type="number"
+                                        min="1"
                                     />
                                 </template>
 
@@ -192,11 +259,11 @@
                                     </div>
                                     <div class="fte-result-value">{{ processFteValue }} FTE</div>
                                     <div v-if="processForm.fte.inputMode === 'time'" class="fte-formula">
-                                        = {{ processForm.fte.timePerTask || 0 }}h
-                                        &times; {{ processForm.fte.freqCount || 0 }}/{{ freqCycleLabel }}
-                                        &times; {{ processForm.fte.headcount || 1 }}p
-                                        &divide; {{ annualWorkingHours }}h
-                                        = {{ processFteValue }} FTE
+                                        = {{ processForm.fte.timePerTask || 0 }}h &times; {{ processForm.fte.freqCount || 0 }}/{{
+                                            freqCycleLabel
+                                        }}
+                                        &times; {{ processForm.fte.headcount || 1 }}p &divide; {{ annualWorkingHours }}h =
+                                        {{ processFteValue }} FTE
                                     </div>
                                 </div>
                             </div>
@@ -205,9 +272,16 @@
                         <!-- System Mapping (PAL 모드에서 숨김) -->
                         <div v-if="!isPalMode" class="section-group">
                             <div class="section-title" @click="toggle('proc-system')">
-                                <v-icon size="14" class="mr-1">{{ isOpen('proc-system') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                <v-icon size="14" class="mr-1">{{
+                                    isOpen('proc-system') ? 'mdi-chevron-down' : 'mdi-chevron-right'
+                                }}</v-icon>
                                 {{ $t('processHierarchy.systemMapping') }}
-                                <v-chip v-if="processForm.systems && processForm.systems.length" size="x-small" variant="tonal" class="ml-auto">
+                                <v-chip
+                                    v-if="processForm.systems && processForm.systems.length"
+                                    size="x-small"
+                                    variant="tonal"
+                                    class="ml-auto"
+                                >
                                     {{ processForm.systems.length }}
                                 </v-chip>
                             </div>
@@ -215,8 +289,13 @@
                                 <v-combobox
                                     v-model="processForm.systems"
                                     :label="$t('processHierarchy.systems')"
-                                    density="compact" variant="outlined" hide-details
-                                    multiple chips closable-chips :delimiters="[',']"
+                                    density="compact"
+                                    variant="outlined"
+                                    hide-details
+                                    multiple
+                                    chips
+                                    closable-chips
+                                    :delimiters="[',']"
                                 />
                             </div>
                         </div>
@@ -272,14 +351,7 @@
                                 :uengineProperties="palUengineProperties"
                                 @update:uengineProperties="onPalUenginePropertiesUpdate"
                             />
-                            <v-btn
-                                v-if="!isViewMode"
-                                color="primary"
-                                block
-                                variant="flat"
-                                class="mt-4 save-btn"
-                                @click="savePalTask"
-                            >
+                            <v-btn v-if="!isViewMode" color="primary" block variant="flat" class="mt-4 save-btn" @click="savePalTask">
                                 <v-icon start size="16">mdi-content-save</v-icon>
                                 {{ $t('processHierarchy.save') }}
                             </v-btn>
@@ -289,40 +361,54 @@
                             <!-- Basic -->
                             <div class="section-group">
                                 <div class="section-title" @click="toggle('task-basic')">
-                                    <v-icon size="14" class="mr-1">{{ isOpen('task-basic') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                    <v-icon size="14" class="mr-1">{{
+                                        isOpen('task-basic') ? 'mdi-chevron-down' : 'mdi-chevron-right'
+                                    }}</v-icon>
                                     {{ $t('processHierarchy.basic') }}
                                 </div>
                                 <div v-show="isOpen('task-basic')" class="section-body">
                                     <label class="field-label">Title</label>
-                                    <v-text-field
-                                        v-model="taskForm.name"
-                                        density="compact" variant="outlined" hide-details class="mb-3"
-                                    />
+                                    <v-text-field v-model="taskForm.name" density="compact" variant="outlined" hide-details class="mb-3" />
                                     <!-- Schema fields for Task -->
                                     <template v-for="field in taskFields" :key="field.id">
                                         <label class="field-label">{{ field.property_label || field.property_key }}</label>
                                         <v-text-field
                                             v-if="field.property_type === 'string'"
                                             v-model="taskForm.schemaProps[field.property_key]"
-                                            density="compact" variant="outlined" hide-details class="mb-3"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            class="mb-3"
                                             :placeholder="field.placeholder"
                                         />
                                         <v-textarea
                                             v-else-if="field.property_type === 'textarea'"
                                             v-model="taskForm.schemaProps[field.property_key]"
-                                            density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            rows="3"
+                                            auto-grow
+                                            class="mb-3"
                                             :placeholder="field.placeholder"
                                         />
                                         <v-text-field
                                             v-else-if="field.property_type === 'number'"
                                             v-model.number="taskForm.schemaProps[field.property_key]"
-                                            density="compact" variant="outlined" hide-details type="number" class="mb-3"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            type="number"
+                                            class="mb-3"
                                             :placeholder="field.placeholder"
                                         />
                                         <v-text-field
                                             v-else-if="field.property_type === 'url'"
                                             v-model="taskForm.schemaProps[field.property_key]"
-                                            density="compact" variant="outlined" hide-details class="mb-3"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            class="mb-3"
                                             :placeholder="field.placeholder || 'https://...'"
                                         >
                                             <template v-slot:prepend-inner>
@@ -333,29 +419,58 @@
                                             v-else-if="field.property_type === 'db-select'"
                                             v-model="taskForm.schemaProps[field.property_key]"
                                             :items="dbSelectItems[field.property_key] || []"
-                                            density="compact" variant="outlined" hide-details class="mb-3"
-                                            :placeholder="field.placeholder" clearable
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            class="mb-3"
+                                            :placeholder="field.placeholder"
+                                            clearable
                                         />
                                         <v-select
                                             v-else-if="field.property_type === 'select'"
                                             v-model="taskForm.schemaProps[field.property_key]"
                                             :items="field.options || []"
-                                            item-title="label" item-value="value"
-                                            density="compact" variant="outlined" hide-details class="mb-3" clearable
+                                            item-title="label"
+                                            item-value="value"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            class="mb-3"
+                                            clearable
                                         />
                                         <v-switch
                                             v-else-if="field.property_type === 'boolean'"
                                             v-model="taskForm.schemaProps[field.property_key]"
-                                            density="compact" color="primary" hide-details class="mb-3"
+                                            density="compact"
+                                            color="primary"
+                                            hide-details
+                                            class="mb-3"
                                         />
                                     </template>
                                     <!-- Fallback if no schema -->
                                     <template v-if="taskFields.length === 0">
                                         <label class="field-label">{{ $t('processHierarchy.description') }}</label>
-                                        <v-textarea v-model="taskForm.description" density="compact" variant="outlined" hide-details rows="3" auto-grow class="mb-3" :placeholder="$t('processHierarchy.describeTaskPlaceholder')" />
+                                        <v-textarea
+                                            v-model="taskForm.description"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            rows="3"
+                                            auto-grow
+                                            class="mb-3"
+                                            :placeholder="$t('processHierarchy.describeTaskPlaceholder')"
+                                        />
                                         <label class="field-label">{{ $t('processHierarchy.manualLink') }}</label>
-                                        <v-text-field v-model="taskForm.manualLink" density="compact" variant="outlined" hide-details placeholder="https://...">
-                                            <template v-slot:prepend-inner><v-icon size="14" color="grey">mdi-link-variant</v-icon></template>
+                                        <v-text-field
+                                            v-model="taskForm.manualLink"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            placeholder="https://..."
+                                        >
+                                            <template v-slot:prepend-inner
+                                                ><v-icon size="14" color="grey">mdi-link-variant</v-icon></template
+                                            >
                                         </v-text-field>
                                     </template>
                                 </div>
@@ -364,7 +479,9 @@
                             <!-- FTE Calculator (Task, PAL 모드에서 숨김) -->
                             <div v-if="!isPalMode" class="section-group">
                                 <div class="section-title" @click="toggle('task-fte')">
-                                    <v-icon size="14" class="mr-1">{{ isOpen('task-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                    <v-icon size="14" class="mr-1">{{
+                                        isOpen('task-fte') ? 'mdi-chevron-down' : 'mdi-chevron-right'
+                                    }}</v-icon>
                                     {{ $t('processHierarchy.fteCalculator') }}
                                     <v-icon size="14" class="ml-1" color="grey">mdi-information-outline</v-icon>
                                     <v-chip v-if="taskFteValue" size="x-small" variant="tonal" color="primary" class="ml-auto">
@@ -373,29 +490,72 @@
                                 </div>
                                 <div v-show="isOpen('task-fte')" class="section-body">
                                     <label class="field-label">{{ $t('processHierarchy.inputMode') }}</label>
-                                    <v-btn-toggle v-model="taskForm.fte.inputMode" mandatory density="compact" class="mb-3 fte-mode-toggle" color="primary">
+                                    <v-btn-toggle
+                                        v-model="taskForm.fte.inputMode"
+                                        mandatory
+                                        density="compact"
+                                        class="mb-3 fte-mode-toggle"
+                                        color="primary"
+                                    >
                                         <v-btn value="direct" size="small">{{ $t('processHierarchy.directPercent') }}</v-btn>
                                         <v-btn value="time" size="small">{{ $t('processHierarchy.timeFreqPeople') }}</v-btn>
                                     </v-btn-toggle>
                                     <template v-if="taskForm.fte.inputMode === 'direct'">
                                         <label class="field-label">FTE (%)</label>
-                                        <v-text-field v-model.number="taskForm.fte.directPercent" density="compact" variant="outlined" hide-details type="number" min="0" max="100" suffix="%" />
+                                        <v-text-field
+                                            v-model.number="taskForm.fte.directPercent"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            suffix="%"
+                                        />
                                     </template>
                                     <template v-else>
                                         <v-row dense>
                                             <v-col cols="6">
                                                 <label class="field-label">{{ $t('processHierarchy.freqCycle') }}</label>
-                                                <v-select v-model="taskForm.fte.freqCycle" :items="freqCycleOptions" density="compact" variant="outlined" hide-details />
+                                                <v-select
+                                                    v-model="taskForm.fte.freqCycle"
+                                                    :items="freqCycleOptions"
+                                                    density="compact"
+                                                    variant="outlined"
+                                                    hide-details
+                                                />
                                             </v-col>
                                             <v-col cols="6">
                                                 <label class="field-label">{{ $t('processHierarchy.freqCount') }}</label>
-                                                <v-text-field v-model.number="taskForm.fte.freqCount" density="compact" variant="outlined" hide-details type="number" min="0" />
+                                                <v-text-field
+                                                    v-model.number="taskForm.fte.freqCount"
+                                                    density="compact"
+                                                    variant="outlined"
+                                                    hide-details
+                                                    type="number"
+                                                    min="0"
+                                                />
                                             </v-col>
                                         </v-row>
                                         <label class="field-label mt-3">{{ $t('processHierarchy.timePerTaskHours') }}</label>
-                                        <v-text-field v-model.number="taskForm.fte.timePerTask" density="compact" variant="outlined" hide-details type="number" min="0" step="0.1" />
+                                        <v-text-field
+                                            v-model.number="taskForm.fte.timePerTask"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                        />
                                         <label class="field-label mt-3">{{ $t('processHierarchy.headcount') }}</label>
-                                        <v-text-field v-model.number="taskForm.fte.headcount" density="compact" variant="outlined" hide-details type="number" min="1" />
+                                        <v-text-field
+                                            v-model.number="taskForm.fte.headcount"
+                                            density="compact"
+                                            variant="outlined"
+                                            hide-details
+                                            type="number"
+                                            min="1"
+                                        />
                                     </template>
                                     <div v-if="taskFteValue" class="fte-result-card mt-3">
                                         <div class="d-flex align-center justify-space-between">
@@ -407,11 +567,11 @@
                                         </div>
                                         <div class="fte-result-value">{{ taskFteValue }} FTE</div>
                                         <div v-if="taskForm.fte.inputMode === 'time'" class="fte-formula">
-                                            = {{ taskForm.fte.timePerTask || 0 }}h
-                                            &times; {{ taskForm.fte.freqCount || 0 }}/{{ freqCycleLabel }}
-                                            &times; {{ taskForm.fte.headcount || 1 }}p
-                                            &divide; {{ annualWorkingHours }}h
-                                            = {{ taskFteValue }} FTE
+                                            = {{ taskForm.fte.timePerTask || 0 }}h &times; {{ taskForm.fte.freqCount || 0 }}/{{
+                                                freqCycleLabel
+                                            }}
+                                            &times; {{ taskForm.fte.headcount || 1 }}p &divide; {{ annualWorkingHours }}h =
+                                            {{ taskFteValue }} FTE
                                         </div>
                                     </div>
                                 </div>
@@ -420,15 +580,22 @@
                             <!-- System Mapping (Task, PAL 모드에서 숨김) -->
                             <div v-if="!isPalMode" class="section-group">
                                 <div class="section-title" @click="toggle('task-system')">
-                                    <v-icon size="14" class="mr-1">{{ isOpen('task-system') ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
+                                    <v-icon size="14" class="mr-1">{{
+                                        isOpen('task-system') ? 'mdi-chevron-down' : 'mdi-chevron-right'
+                                    }}</v-icon>
                                     {{ $t('processHierarchy.systemMapping') }}
                                 </div>
                                 <div v-show="isOpen('task-system')" class="section-body">
                                     <v-combobox
                                         v-model="taskForm.systems"
                                         :label="$t('processHierarchy.systems')"
-                                        density="compact" variant="outlined" hide-details
-                                        multiple chips closable-chips :delimiters="[',']"
+                                        density="compact"
+                                        variant="outlined"
+                                        hide-details
+                                        multiple
+                                        chips
+                                        closable-chips
+                                        :delimiters="[',']"
                                     />
                                 </div>
                             </div>
@@ -473,7 +640,7 @@ function defaultFte() {
         freqCycle: 'Yearly',
         freqCount: 12,
         timePerTask: 0,
-        headcount: 1,
+        headcount: 1
     };
 }
 
@@ -488,9 +655,15 @@ function calcFte(fte) {
     const head = fte.headcount || 1;
     let annualFreq = count;
     switch (fte.freqCycle) {
-        case 'Monthly': annualFreq = count * 12; break;
-        case 'Weekly': annualFreq = count * 52; break;
-        case 'Daily': annualFreq = count * 260; break;
+        case 'Monthly':
+            annualFreq = count * 12;
+            break;
+        case 'Weekly':
+            annualFreq = count * 52;
+            break;
+        case 'Daily':
+            annualFreq = count * 260;
+            break;
     }
     const val = (time * annualFreq * head) / ANNUAL_WORKING_HOURS;
     return val > 0 ? val.toFixed(3) : '';
@@ -506,7 +679,7 @@ export default {
         roles: { type: Array, default: () => [] },
         processVariables: { type: Array, default: () => [] },
         definitionPath: { type: String, default: '' },
-        definition: { type: Object, default: null },
+        definition: { type: Object, default: null }
     },
     emits: ['save', 'close'],
     data() {
@@ -517,7 +690,7 @@ export default {
                 title: '',
                 description: '',
                 systems: [],
-                fte: defaultFte(),
+                fte: defaultFte()
             },
             taskForm: {
                 name: '',
@@ -525,12 +698,12 @@ export default {
                 manualLink: '',
                 systems: [],
                 fte: defaultFte(),
-                schemaProps: {},
+                schemaProps: {}
             },
             dbSelectItems: {},
             freqCycleOptions: ['Yearly', 'Monthly', 'Weekly', 'Daily'],
             palUengineProperties: {},
-            palCallActivityProperties: {},
+            palCallActivityProperties: {}
         };
     },
     computed: {
@@ -573,7 +746,7 @@ export default {
         },
         annualWorkingHours() {
             return ANNUAL_WORKING_HOURS;
-        },
+        }
     },
     watch: {
         processDefinition: {
@@ -586,14 +759,14 @@ export default {
                         this.processForm.fte = { ...defaultFte(), ...val.fte };
                     }
                     // Load schema-based process props
-                    this.processFields.forEach(f => {
+                    this.processFields.forEach((f) => {
                         if (val[f.property_key] !== undefined) {
                             this.processForm[f.property_key] = val[f.property_key];
                         }
                     });
                 }
             },
-            immediate: true,
+            immediate: true
         },
         element(val) {
             if (val) {
@@ -606,7 +779,7 @@ export default {
                     this.loadTaskProperties(val);
                 }
             }
-        },
+        }
     },
     async mounted() {
         // Load property schemas
@@ -634,7 +807,9 @@ export default {
 
             let uengineProps = {};
             if (bo?.extensionElements?.values?.[0]?.json) {
-                try { uengineProps = JSON.parse(bo.extensionElements.values[0].json); } catch {}
+                try {
+                    uengineProps = JSON.parse(bo.extensionElements.values[0].json);
+                } catch {}
             }
 
             this.taskForm.description = uengineProps.description || '';
@@ -644,7 +819,7 @@ export default {
 
             // Load schema-based task props
             const schemaProps = {};
-            this.taskFields.forEach(f => {
+            this.taskFields.forEach((f) => {
                 schemaProps[f.property_key] = uengineProps[f.property_key] ?? f.default_value ?? null;
             });
             this.taskForm.schemaProps = schemaProps;
@@ -655,10 +830,10 @@ export default {
                 name: this.processForm.title,
                 description: this.processForm.description,
                 systems: [...(this.processForm.systems || [])],
-                fte: { ...this.processForm.fte },
+                fte: { ...this.processForm.fte }
             };
             // Include schema-based props
-            this.processFields.forEach(f => {
+            this.processFields.forEach((f) => {
                 if (this.processForm[f.property_key] !== undefined) {
                     data[f.property_key] = this.processForm[f.property_key];
                 }
@@ -683,7 +858,9 @@ export default {
             let existingProps = {};
             const bo = this.element.businessObject;
             if (bo?.extensionElements?.values?.[0]?.json) {
-                try { existingProps = JSON.parse(bo.extensionElements.values[0].json); } catch {}
+                try {
+                    existingProps = JSON.parse(bo.extensionElements.values[0].json);
+                } catch {}
             }
 
             const uengineProps = {
@@ -692,7 +869,7 @@ export default {
                 manualLink: this.taskForm.manualLink,
                 systems: [...(this.taskForm.systems || [])],
                 fte: { ...this.taskForm.fte },
-                ...this.taskForm.schemaProps,
+                ...this.taskForm.schemaProps
             };
 
             const json = JSON.stringify(uengineProps);
@@ -700,15 +877,15 @@ export default {
             // Preserve non-uengine extension elements (e.g. zeebe)
             let otherExtValues = [];
             if (bo.extensionElements?.values) {
-                otherExtValues = bo.extensionElements.values.filter(v => v.$type !== 'uengine:Properties');
+                otherExtValues = bo.extensionElements.values.filter((v) => v.$type !== 'uengine:Properties');
             }
 
             // customProperties → variables
             let variables = [];
             if (uengineProps.customProperties && Array.isArray(uengineProps.customProperties)) {
                 variables = uengineProps.customProperties
-                    .filter(p => p.key && p.key.trim())
-                    .map(p => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
+                    .filter((p) => p.key && p.key.trim())
+                    .map((p) => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
             }
 
             const uengineEl = bpmnFactory.create('uengine:Properties', { json, variables });
@@ -718,7 +895,7 @@ export default {
 
             modeling.updateProperties(shapeElement, {
                 name: this.taskForm.name,
-                extensionElements: newExtElements,
+                extensionElements: newExtElements
             });
 
             if (this.$toast) {
@@ -756,17 +933,17 @@ export default {
             const json = JSON.stringify(this.palCallActivityProperties || {});
             let otherExtValues = [];
             if (bo.extensionElements?.values) {
-                otherExtValues = bo.extensionElements.values.filter(v => v.$type !== 'uengine:Properties');
+                otherExtValues = bo.extensionElements.values.filter((v) => v.$type !== 'uengine:Properties');
             }
             let variables = [];
             if (this.palCallActivityProperties?.customProperties && Array.isArray(this.palCallActivityProperties.customProperties)) {
                 variables = this.palCallActivityProperties.customProperties
-                    .filter(p => p.key && p.key.trim())
-                    .map(p => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
+                    .filter((p) => p.key && p.key.trim())
+                    .map((p) => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
             }
             const uengineEl = bpmnFactory.create('uengine:Properties', { json, variables });
             const newExtElements = bpmnFactory.create('bpmn:ExtensionElements', {
-                values: [...otherExtValues, uengineEl],
+                values: [...otherExtValues, uengineEl]
             });
             modeling.updateProperties(shapeElement, { extensionElements: newExtElements });
 
@@ -809,17 +986,17 @@ export default {
             const json = JSON.stringify(this.palUengineProperties || {});
             let otherExtValues = [];
             if (bo.extensionElements?.values) {
-                otherExtValues = bo.extensionElements.values.filter(v => v.$type !== 'uengine:Properties');
+                otherExtValues = bo.extensionElements.values.filter((v) => v.$type !== 'uengine:Properties');
             }
             let variables = [];
             if (this.palUengineProperties?.customProperties && Array.isArray(this.palUengineProperties.customProperties)) {
                 variables = this.palUengineProperties.customProperties
-                    .filter(p => p.key && p.key.trim())
-                    .map(p => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
+                    .filter((p) => p.key && p.key.trim())
+                    .map((p) => bpmnFactory.create('uengine:Variable', { key: p.key, value: p.value, json: '{}' }));
             }
             const uengineEl = bpmnFactory.create('uengine:Properties', { json, variables });
             const newExtElements = bpmnFactory.create('bpmn:ExtensionElements', {
-                values: [...otherExtValues, uengineEl],
+                values: [...otherExtValues, uengineEl]
             });
             modeling.updateProperties(shapeElement, { extensionElements: newExtElements });
 
@@ -832,8 +1009,8 @@ export default {
                 await this.$refs.palPanel.beforeSave();
             }
             this.$nextTick(() => this.writePalTaskToElement());
-        },
-    },
+        }
+    }
 };
 </script>
 
@@ -851,7 +1028,9 @@ export default {
     background: #fafafa;
 }
 
-.properties-tabs { min-height: 36px; }
+.properties-tabs {
+    min-height: 36px;
+}
 .properties-tabs :deep(.v-tab) {
     font-size: 12px;
     text-transform: none;
@@ -892,7 +1071,9 @@ export default {
     user-select: none;
     transition: background-color 0.15s;
 }
-.section-title:hover { background: #f0f0f0; }
+.section-title:hover {
+    background: #f0f0f0;
+}
 .section-body {
     padding: 12px;
     border-top: 1px solid #e8e8e8;

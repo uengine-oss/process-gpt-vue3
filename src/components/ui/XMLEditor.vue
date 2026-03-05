@@ -8,8 +8,7 @@
 export default {
     name: 'XMLEditor',
     data() {
-        return {
-        }
+        return {};
     },
     props: {
         xml: {
@@ -22,7 +21,7 @@ export default {
             this.$emit('changeBpmn', this.xml);
         }
     }
-}
+};
 </script>
 
 <style scoped>

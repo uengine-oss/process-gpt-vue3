@@ -396,7 +396,7 @@ export default {
                     container,
                     elements,
                     style,
-                    wheelSensitivity: 3,
+                    wheelSensitivity: 3
                     // Layout runs right after init below
                 });
 
@@ -571,4 +571,3 @@ export default {
     word-break: break-word;
 }
 </style>
-

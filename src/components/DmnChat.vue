@@ -1,5 +1,5 @@
 <template>
-    <div style="background-color: rgba(255, 255, 255, 0); width: 100%;">
+    <div style="background-color: rgba(255, 255, 255, 0); width: 100%">
         <!-- 좌우 분할 레이아웃 (/dmn/ 경로) -->
         <AppBaseCard v-if="isStandaloneMode">
             <template v-slot:leftpart>
@@ -37,25 +37,12 @@
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName || 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
-                                    <v-btn 
-                                        icon
-                                        size="small"
-                                        variant="text"
-                                        @click="openSaveDialog"
-                                        :class="{ 'icon-heartbit': isChanged }"
-                                    >
+                                    <v-btn icon size="small" variant="text" @click="openSaveDialog" :class="{ 'icon-heartbit': isChanged }">
                                         <v-icon size="small">mdi-content-save</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
                                     </v-btn>
-                                    
-                                    <v-btn 
-                                        v-if="isLoadedDmn"
-                                        icon
-                                        size="small"
-                                        variant="text"
-                                        color="error"
-                                        @click="openDeleteDialog"
-                                    >
+
+                                    <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
                                     </v-btn>
@@ -99,25 +86,12 @@
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName || 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
-                                    <v-btn 
-                                        icon
-                                        size="small"
-                                        variant="text"
-                                        @click="openSaveDialog"
-                                        :class="{ 'icon-heartbit': isChanged }"
-                                    >
+                                    <v-btn icon size="small" variant="text" @click="openSaveDialog" :class="{ 'icon-heartbit': isChanged }">
                                         <v-icon size="small">mdi-content-save</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
                                     </v-btn>
-                                    
-                                    <v-btn 
-                                        v-if="isLoadedDmn"
-                                        icon
-                                        size="small"
-                                        variant="text"
-                                        color="error"
-                                        @click="openDeleteDialog"
-                                    >
+
+                                    <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
                                     </v-btn>
@@ -166,31 +140,18 @@
                                 <h6 class="text-subtitle-1 font-weight-semibold">{{ dmnName ? dmnName : 'New DMN Decision' }}</h6>
                                 <v-spacer></v-spacer>
                                 <div class="d-flex align-center ga-1">
-                                    <v-btn 
-                                        icon
-                                        size="small"
-                                        variant="text"
-                                        @click="openSaveDialog"
-                                        :class="{ 'icon-heartbit': isChanged }"
-                                    >
+                                    <v-btn icon size="small" variant="text" @click="openSaveDialog" :class="{ 'icon-heartbit': isChanged }">
                                         <v-icon size="small">mdi-content-save</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.save') }}</v-tooltip>
                                     </v-btn>
-                                    
-                                    <v-btn 
-                                        v-if="isLoadedDmn"
-                                        icon
-                                        size="small"
-                                        variant="text"
-                                        color="error"
-                                        @click="openDeleteDialog"
-                                    >
+
+                                    <v-btn v-if="isLoadedDmn" icon size="small" variant="text" color="error" @click="openDeleteDialog">
                                         <v-icon size="small">mdi-delete</v-icon>
                                         <v-tooltip activator="parent">{{ $t('dmn.deleteDmn') }}</v-tooltip>
                                     </v-btn>
                                 </div>
                             </div>
-                            
+
                             <!-- DMN Modeler -->
                             <div class="dmn-modeler-wrapper">
                                 <DmnModeler
@@ -210,13 +171,13 @@
                         </div>
                     </div>
                 </template>
-                
+
                 <template #custom-input-tools>
                     <v-select
                         v-model="isInferenceMode"
                         :items="[
-                            { title:  $t('dmn.creation'), value: false },
-                            { title:  $t('dmn.inference'), value: true }
+                            { title: $t('dmn.creation'), value: false },
+                            { title: $t('dmn.inference'), value: true }
                         ]"
                         item-title="title"
                         item-value="value"
@@ -264,22 +225,13 @@
                         {{ $t('dmn.deleteDmnMessage') }}
                     </v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="isOpenDeleteDialog = false"
-                        class="ml-auto" 
-                        variant="text" 
-                        density="compact"
-                        icon
-                    >
+                    <v-btn @click="isOpenDeleteDialog = false" class="ml-auto" variant="text" density="compact" icon>
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-row>
                 <v-row class="ma-0 pa-4">
                     <v-spacer></v-spacer>
-                    <v-btn @click="deleteDmn"
-                        color="error"
-                        rounded 
-                        variant="flat" 
-                    >
+                    <v-btn @click="deleteDmn" color="error" rounded variant="flat">
                         {{ $t('dmn.delete') }}
                     </v-btn>
                 </v-row>
@@ -320,7 +272,7 @@ export default {
             dmnName: '',
             dmnRenderKey: 0,
             prevDmnOutput: '',
-            
+
             isOpenSaveDialog: false,
             isOpenDeleteDialog: false,
             isShowDmnModeler: false,
@@ -328,12 +280,12 @@ export default {
             isChanged: false,
             isAIUpdated: false,
             isInferenceMode: false, // 추론 모드 플래그
-            
+
             viewMode: 'edit',
             loadDmnId: '',
             dmnIdToSave: '',
             dmnNameToSave: '',
-            
+
             dmnDefinition: null,
             isRoutedWithUnsaved: false,
 
@@ -347,7 +299,7 @@ export default {
             preferredLanguage: 'Korean'
         });
         await this.init();
-        
+
         // dmnId prop이 있으면 초기 로딩
         if (this.dmnId) {
             await this.loadData();
@@ -355,7 +307,7 @@ export default {
         // 라우트 기반 모드 (/dmn/ 경로)
         else if (this.$route.params.pathMatch) {
             await this.loadData();
-        } 
+        }
         // 새 DMN 생성 모드
         else {
             this.isShowDmnModeler = true;
@@ -366,15 +318,14 @@ export default {
             handler(newVal, oldVal) {
                 // 초기 로딩 시 (oldVal === undefined)는 created에서 처리하므로 스킵
                 if (oldVal === undefined || oldVal === null) return;
-                
+
                 // 값이 실제로 변경되었을 때만 처리
                 if (newVal !== oldVal) {
                     if (newVal) {
                         if (this.$refs.dmnModeler) {
                             if (this.isAIUpdated || this.isChanged) {
                                 const answer = window.confirm(this.$t('changePath'));
-                                if (answer)
-                                    this.loadData();
+                                if (answer) this.loadData();
                             } else {
                                 this.loadData();
                             }
@@ -407,8 +358,7 @@ export default {
                     if (this.$refs.dmnModeler) {
                         if (this.isAIUpdated || this.isChanged) {
                             const answer = window.confirm(this.$t('changePath'));
-                            if (answer)
-                                this.loadData();
+                            if (answer) this.loadData();
                             else {
                                 this.isRoutedWithUnsaved = true;
                                 this.$router.push(oldVal.path);
@@ -444,28 +394,28 @@ export default {
             this.dmnNameToSave = this.dmnName || '';
             this.isOpenSaveDialog = true;
         },
-        
+
         openDeleteDialog() {
             this.isOpenDeleteDialog = true;
         },
-        
+
         async beforeSaveDmn() {
             const me = this;
             me.$try({
                 context: me,
                 action: async () => {
                     const xml = await me.$refs.dmnModeler.saveDMN();
-                    
+
                     await me.saveDmn({
                         id: me.dmnIdToSave,
                         name: me.dmnNameToSave,
                         xml: xml
                     });
-                    
+
                     me.isAIUpdated = false;
                     me.isChanged = false;
                     me.isOpenSaveDialog = false;
-                    
+
                     if (me.$route.path === '/dmn/chat') {
                         await me.$router.push(`/dmn/${me.dmnIdToSave}`);
                     }
@@ -473,38 +423,38 @@ export default {
                 successMsg: this.$t('successMsg.save')
             });
         },
-        
+
         async saveDmn({ id, name, xml }) {
-            const putObj = { 
+            const putObj = {
                 type: 'dmn',
                 name: name
-            }
+            };
             if (this.owner !== '') putObj.owner = this.owner;
             await this.backend.putRawDefinition(xml, id, putObj);
-            
+
             this.dmnName = name;
             this.loadDmnId = id;
             this.isLoadedDmn = true;
 
             this.EventBus.emit('dmn-saved', { id: id, name: name, owner: this.owner || null });
         },
-        
+
         async loadData() {
             if (this.dmnId && this.dmnId !== 'chat') {
                 this.loadDmnId = this.dmnId;
             } else {
                 this.loadDmnId = this.$route.params.pathMatch ? this.$route.params.pathMatch.join('/') : 'chat';
             }
-            
+
             // null 체크 추가
             if (this.loadDmnId && this.loadDmnId.startsWith('/')) {
                 this.loadDmnId = this.loadDmnId.substring(1);
             }
-            
-            this.isLoadedDmn = (this.loadDmnId && this.loadDmnId !== 'chat');
+
+            this.isLoadedDmn = this.loadDmnId && this.loadDmnId !== 'chat';
             this.isAIUpdated = false;
             this.messages = [];
-            
+
             if (this.isLoadedDmn) {
                 try {
                     const dmnData = await this.backend.getRawDefinition(this.loadDmnId);
@@ -539,11 +489,11 @@ export default {
                 this.messages = [];
             }
 
-            if (this.ownerInfo && this.ownerInfo.id) {   
-                this.owner = this.ownerInfo.id
+            if (this.ownerInfo && this.ownerInfo.id) {
+                this.owner = this.ownerInfo.id;
             }
         },
-        
+
         beforeSendMessage(newMessage) {
             const me = this;
             me.$try({
@@ -553,28 +503,30 @@ export default {
                     if (me.$refs.dmnModeler) {
                         me.prevDmnOutput = await me.$refs.dmnModeler.saveDMN();
                     }
-                    
+
                     newMessage.mentionedUsers = null;
-                    
+
                     // 모드에 따라 다른 처리
                     if (me.isInferenceMode) {
                         // 추론 모드: DMN XML을 컨텍스트로 제공
                         me.generator.isInferenceMode = true;
-                        
+
                         if (me.prevDmnOutput) {
-                            me.generator.dmnXmlList = [{
-                                id: me.loadDmnId || 'current_dmn',
-                                name: me.dmnName || 'Current DMN',
-                                xml: me.prevDmnOutput
-                            }];
+                            me.generator.dmnXmlList = [
+                                {
+                                    id: me.loadDmnId || 'current_dmn',
+                                    name: me.dmnName || 'Current DMN',
+                                    xml: me.prevDmnOutput
+                                }
+                            ];
                         }
-                        
+
                         me.generator.sendInferenceMessage(newMessage);
                     } else {
                         // 생성 모드: DMN 생성/수정
                         me.generator.isInferenceMode = false;
                         me.generator.dmnXmlList = [];
-                        
+
                         if (me.prevDmnOutput) {
                             me.generator.sendMessageWithPrevDmnOutput(newMessage);
                         } else {
@@ -586,7 +538,7 @@ export default {
                 }
             });
         },
-        
+
         afterModelCreated(response) {
             try {
                 const messageWriting = this.messages[this.messages.length - 1];
@@ -602,15 +554,15 @@ export default {
                 return;
             }
         },
-        
+
         afterGenerationFinished(response) {
             this.processResponse(response);
         },
-        
+
         processResponse(response) {
             try {
                 const messageWriting = this.messages[this.messages.length - 1];
-                
+
                 // 추론 모드: 마크다운 응답을 그대로 표시
                 if (this.isInferenceMode) {
                     if (messageWriting) {
@@ -619,7 +571,7 @@ export default {
                     }
                     return;
                 }
-                
+
                 // 생성 모드: JSON 파싱 및 DMN 업데이트
                 let parsed;
                 if (typeof response === 'object' && response.dmnXml) {
@@ -644,7 +596,7 @@ export default {
                 try {
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(this.dmnXml, 'text/xml');
-                    
+
                     // XML 파싱 에러 체크
                     const parserError = xmlDoc.querySelector('parsererror');
                     if (parserError) {
@@ -654,7 +606,7 @@ export default {
                         }
                         return;
                     }
-                    
+
                     // 새 DMN 생성 시 - ID가 없으면 UUID 생성
                     if (!this.loadDmnId || this.loadDmnId === 'chat') {
                         this.loadDmnId = this.uuid();
@@ -666,19 +618,17 @@ export default {
                 } catch (xmlError) {
                     console.error('[DMN] XML 처리 중 오류:', xmlError);
                 }
-                
+
                 this.dmnRenderKey++;
                 this.isAIUpdated = true;
                 this.isChanged = true;
-                
+
                 // 메시지 내용 업데이트
                 messageWriting.content = parsed.description;
-                
+
                 // 수정 내역이 있으면 표시
                 if (parsed.modifications && parsed.modifications.length > 0) {
-                    const modDesc = parsed.modifications
-                        .map(m => `- ${m.description}`)
-                        .join('\n');
+                    const modDesc = parsed.modifications.map((m) => `- ${m.description}`).join('\n');
                     messageWriting.content += '\n\n수정 내역:\n' + modDesc;
                 }
             } catch (error) {
@@ -689,29 +639,29 @@ export default {
                 }
             }
         },
-                
+
         afterModelStopped(response) {
             console.log('DMN 생성 중단:', response);
         },
-        
+
         onDmnDefinitionLoaded(definition) {
             this.dmnDefinition = definition;
-            
+
             // Store에 DMN 정의 저장
             const dmnStore = useDmnStore();
             dmnStore.setDecisionDefinition(definition);
         },
-        
+
         onDmnError(error) {
             console.error('DMN Error:', error);
         },
-        
+
         onDmnShown(warnings) {
             if (warnings && warnings.length > 0) {
                 console.warn('DMN Warnings:', warnings);
             }
         },
-        
+
         async deleteDmn() {
             const me = this;
             await this.backend.deleteDefinition(me.loadDmnId, { type: 'dmn' });
@@ -733,10 +683,10 @@ export default {
             });
         }
     },
-    
+
     async beforeRouteLeave(to, from, next) {
-        if (!(this.$refs.dmnModeler)) return next();
-        
+        if (!this.$refs.dmnModeler) return next();
+
         if (this.isAIUpdated || this.isChanged) {
             const answer = window.confirm(this.$t('changePath'));
             if (answer) {
@@ -808,4 +758,3 @@ export default {
     }
 }
 </style>
-

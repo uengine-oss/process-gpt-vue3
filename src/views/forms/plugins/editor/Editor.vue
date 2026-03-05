@@ -53,12 +53,10 @@ const editor = useEditor({
       </blockquote>
       `
 });
-
-
 </script>
 
 <template>
-  <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs"></BaseBreadcrumb>
+    <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs"></BaseBreadcrumb>
     <UiParentCard title="Editor">
         <div v-if="editor">
             <EditorMenubar :editor="editor" />

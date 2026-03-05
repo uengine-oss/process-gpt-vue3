@@ -21,9 +21,9 @@ class AudioPlaybackWorklet extends AudioWorkletProcessor {
         if (this.buffer.length > channel.length) {
             const toProcess = this.buffer.slice(0, channel.length);
             this.buffer = this.buffer.slice(channel.length);
-            channel.set(toProcess.map(v => v / 32768));
+            channel.set(toProcess.map((v) => v / 32768));
         } else {
-            channel.set(this.buffer.map(v => v / 32768));
+            channel.set(this.buffer.map((v) => v / 32768));
             this.buffer = [];
         }
 
@@ -31,4 +31,4 @@ class AudioPlaybackWorklet extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor("audio-playback-worklet", AudioPlaybackWorklet);
+registerProcessor('audio-playback-worklet', AudioPlaybackWorklet);

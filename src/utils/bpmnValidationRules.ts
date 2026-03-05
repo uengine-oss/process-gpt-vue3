@@ -30,7 +30,7 @@ export interface ValidationRule {
 export interface ValidationContext {
     elements: any[];
     elementRegistry: any;
-    connections: Map<string, { incoming: string[], outgoing: string[] }>;
+    connections: Map<string, { incoming: string[]; outgoing: string[] }>;
 }
 
 /**
@@ -44,7 +44,7 @@ export const validationRules: ValidationRule[] = [
         messageKey: 'validation.noStartEvent',
         check: (element, context) => {
             // 전체 프로세스에 시작 이벤트가 있는지 확인
-            const hasStartEvent = context.elements.some(el => el.type === 'bpmn:StartEvent');
+            const hasStartEvent = context.elements.some((el) => el.type === 'bpmn:StartEvent');
             // 이 규칙은 프로세스 레벨에서 한 번만 체크
             return element.type === 'bpmn:Process' && !hasStartEvent;
         }
@@ -54,7 +54,7 @@ export const validationRules: ValidationRule[] = [
         level: ERROR_LEVEL.ERROR,
         messageKey: 'validation.noEndEvent',
         check: (element, context) => {
-            const hasEndEvent = context.elements.some(el => el.type === 'bpmn:EndEvent');
+            const hasEndEvent = context.elements.some((el) => el.type === 'bpmn:EndEvent');
             return element.type === 'bpmn:Process' && !hasEndEvent;
         }
     },
@@ -157,9 +157,12 @@ export const validationRules: ValidationRule[] = [
 /**
  * XML을 파싱하여 요소 목록 추출
  */
-export function parseXMLForValidation(xml: string): { elements: any[], connections: Map<string, { incoming: string[], outgoing: string[] }> } {
+export function parseXMLForValidation(xml: string): {
+    elements: any[];
+    connections: Map<string, { incoming: string[]; outgoing: string[] }>;
+} {
     const elements: any[] = [];
-    const connections = new Map<string, { incoming: string[], outgoing: string[] }>();
+    const connections = new Map<string, { incoming: string[]; outgoing: string[] }>();
 
     try {
         const parser = new DOMParser();
@@ -167,7 +170,7 @@ export function parseXMLForValidation(xml: string): { elements: any[], connectio
 
         // 모든 BPMN 요소 추출
         const bpmnElements = doc.querySelectorAll('*');
-        bpmnElements.forEach(el => {
+        bpmnElements.forEach((el) => {
             const id = el.getAttribute('id');
             const name = el.getAttribute('name');
             const tagName = el.tagName;
@@ -188,7 +191,7 @@ export function parseXMLForValidation(xml: string): { elements: any[], connectio
 
         // 시퀀스 플로우 연결 정보 추출
         const flows = doc.querySelectorAll('sequenceFlow, bpmn\\:sequenceFlow');
-        flows.forEach(flow => {
+        flows.forEach((flow) => {
             const sourceRef = flow.getAttribute('sourceRef');
             const targetRef = flow.getAttribute('targetRef');
 
@@ -202,7 +205,6 @@ export function parseXMLForValidation(xml: string): { elements: any[], connectio
                 connections.set(targetRef, targetConn);
             }
         });
-
     } catch (error) {
         console.warn('XML 파싱 실패:', error);
     }
@@ -224,10 +226,10 @@ export function runValidation(xml: string, i18nFunc?: (key: string) => string): 
     };
 
     // 각 요소에 대해 모든 규칙 검사
-    elements.forEach(element => {
+    elements.forEach((element) => {
         const violations: ValidationItem[] = [];
 
-        validationRules.forEach(rule => {
+        validationRules.forEach((rule) => {
             if (rule.check(element, context)) {
                 violations.push({
                     message: i18nFunc ? i18nFunc(rule.messageKey) : rule.messageKey,

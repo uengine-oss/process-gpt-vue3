@@ -31,7 +31,6 @@ const store = useEcomStore();
 const getCart = computed(() => {
     return store.cart;
 });
-
 </script>
 
 <template>
@@ -42,9 +41,8 @@ const getCart = computed(() => {
                     <div class="hidden-md-and-down mt-2 pr-4">
                         <Logo />
                     </div>
-                    <v-btn class="hidden-lg-and-up" icon variant="text" @click.stop="customizer.SET_SIDEBAR_DRAWER"
-                        size="small">
-                        <Icons :icon="'list-bold-duotone'"/>
+                    <v-btn class="hidden-lg-and-up" icon variant="text" @click.stop="customizer.SET_SIDEBAR_DRAWER" size="small">
+                        <Icons :icon="'list-bold-duotone'" />
                     </v-btn>
 
                     <v-spacer class="hidden-sm-and-down" />
@@ -70,9 +68,9 @@ const getCart = computed(() => {
                     </div>
 
                     <!-----Mobile header------>
-                    <v-menu :close-on-content-click="false" class="mobile_popup ">
+                    <v-menu :close-on-content-click="false" class="mobile_popup">
                         <template v-slot:activator="{ props }">
-                            <v-btn icon class=" hidden-md-and-up" flat v-bind="props" size="small">
+                            <v-btn icon class="hidden-md-and-up" flat v-bind="props" size="small">
                                 <DotsIcon stroke-width="2" size="24" class="text-primary" />
                             </v-btn>
                         </template>
@@ -88,8 +86,6 @@ const getCart = computed(() => {
                     </v-menu>
                 </div>
             </v-app-bar>
-
-
         </div>
     </div>
 </template>

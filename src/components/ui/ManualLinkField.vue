@@ -11,13 +11,7 @@
                 :disabled="disabled"
                 @keyup.enter="addLink"
             />
-            <v-btn
-                size="small"
-                color="primary"
-                variant="tonal"
-                :disabled="disabled || !newUrl.trim()"
-                @click="addLink"
-            >
+            <v-btn size="small" color="primary" variant="tonal" :disabled="disabled || !newUrl.trim()" @click="addLink">
                 {{ $t('manualLink.addUrl') }}
             </v-btn>
         </div>

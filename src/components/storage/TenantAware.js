@@ -1,4 +1,3 @@
-
 export default class TenantAware {
     constructor(client) {
         this.client = client;
@@ -9,8 +8,8 @@ export default class TenantAware {
         const url = new URL(urlStr);
 
         let tenantId = url.hostname;
-        if(tenantId.includes(".")){
-            tenantId = tenantId.substring(tenantId.indexOf(".")+1)
+        if (tenantId.includes('.')) {
+            tenantId = tenantId.substring(tenantId.indexOf('.') + 1);
         }
 
         return tenantId;
@@ -19,15 +18,15 @@ export default class TenantAware {
     getProtocol() {
         return window.location.protocol;
     }
-    
+
     getBucketByTenantId() {
         const urlStr = window.location;
         const url = new URL(urlStr);
         let bucket = null;
 
         let tenantId = url.hostname;
-        if(tenantId.includes(".")){
-            tenantId = tenantId.substring(tenantId.indexOf(".")+1);
+        if (tenantId.includes('.')) {
+            tenantId = tenantId.substring(tenantId.indexOf('.') + 1);
         }
 
         bucket = tenantId.split('.')[0];

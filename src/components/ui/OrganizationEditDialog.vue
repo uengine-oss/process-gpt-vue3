@@ -3,12 +3,7 @@
         <v-row class="ma-0 pa-4">
             <v-card-title class="text-h6 pa-0">{{ dialogTitle }}</v-card-title>
             <v-spacer></v-spacer>
-            <v-btn @click="closeDialog"
-                class="ml-auto"
-                variant="text"
-                density="compact"
-                icon
-            >
+            <v-btn @click="closeDialog" class="ml-auto" variant="text" density="compact" icon>
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-row>
@@ -16,14 +11,14 @@
         <v-card-text class="ma-0 pa-4 pb-0 pt-1 organization-edit-dialog-contents">
             <!-- edit user -->
             <div v-if="dialogType == 'edit-user'">
-                <v-text-field 
-                    v-model="editNode.data.name" 
+                <v-text-field
+                    v-model="editNode.data.name"
                     :label="$t('organizationChartDefinition.userName')"
                     readonly
                     class="mb-2"
                 ></v-text-field>
-                <v-text-field 
-                    v-model="editNode.data.email" 
+                <v-text-field
+                    v-model="editNode.data.email"
                     :label="$t('organizationChartDefinition.userEmail')"
                     readonly
                     class="mb-2"
@@ -55,12 +50,7 @@
         </v-card-text>
         <v-card-actions class="ma-0 pa-4 pt-2">
             <v-spacer></v-spacer>
-            <v-btn @click="update"
-                :disabled="!isValid"
-                color="primary"
-                variant="flat" 
-                rounded
-            >{{ buttonText }}</v-btn>
+            <v-btn @click="update" :disabled="!isValid" color="primary" variant="flat" rounded>{{ buttonText }}</v-btn>
         </v-card-actions>
     </v-card>
 </template>
@@ -75,42 +65,40 @@ export default {
     props: {
         dialogType: {
             type: String,
-            default: '',
+            default: ''
         },
         editNode: {
             type: Object,
-            default: {},
-        },
+            default: {}
+        }
     },
     data: () => ({
-        editRoles: [],
+        editRoles: []
     }),
     computed: {
         nameRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.nameRequired'),
-            ];
+            return [(value) => !!value || this.$t('organizationChartDefinition.nameRequired')];
         },
         isValid() {
             if (this.dialogType === 'edit-agent') {
                 const name = this.editNode.data?.name || this.editNode.name || '';
                 const alias = this.editNode.data?.alias || '';
-                
+
                 // nameRules 검증: 모든 rule이 true를 반환해야 함
-                const nameValid = this.nameRules.every(rule => {
+                const nameValid = this.nameRules.every((rule) => {
                     const result = rule(name);
                     return result === true;
                 });
-                
+
                 // aliasRules 검증: pgagent 타입일 때만 체크
                 let aliasValid = true;
                 if (this.editNode.data?.type === 'pgagent') {
-                    aliasValid = this.aliasRules.every(rule => {
+                    aliasValid = this.aliasRules.every((rule) => {
                         const result = rule(alias);
                         return result === true;
                     });
                 }
-                
+
                 return nameValid && aliasValid;
             } else if (this.dialogType === 'edit-user') {
                 // edit-user는 role 선택만 하므로 항상 true
@@ -122,48 +110,45 @@ export default {
         },
         dialogTitle() {
             if (this.dialogType == 'edit-user') {
-                return this.$t('organizationChartDefinition.teamMember') + ' ' + this.$t('organizationChartDefinition.edit')
+                return this.$t('organizationChartDefinition.teamMember') + ' ' + this.$t('organizationChartDefinition.edit');
             } else if (this.dialogType == 'edit-agent') {
-                return this.$t('organizationChartDefinition.agent') + ' ' + this.$t('organizationChartDefinition.edit')
+                return this.$t('organizationChartDefinition.agent') + ' ' + this.$t('organizationChartDefinition.edit');
             } else if (this.dialogType == 'delete') {
-                return this.$t('organizationChartDefinition.agent') + ' ' + this.$t('organizationChartDefinition.delete')
+                return this.$t('organizationChartDefinition.agent') + ' ' + this.$t('organizationChartDefinition.delete');
             }
         },
         buttonText() {
             if (this.dialogType.includes('edit')) {
-                return this.$t('organizationChartDefinition.edit')
+                return this.$t('organizationChartDefinition.edit');
             } else if (this.dialogType == 'delete') {
-                return this.$t('organizationChartDefinition.delete')
+                return this.$t('organizationChartDefinition.delete');
             }
         },
         roles() {
-            let roles = []
+            let roles = [];
             if (this.editNode.data.role) {
                 if (this.editNode.data.role.includes(',')) {
-                    roles = this.editNode.data.role.split(',')
+                    roles = this.editNode.data.role.split(',');
                 } else {
-                    roles = [this.editNode.data.role]
+                    roles = [this.editNode.data.role];
                 }
             }
-            this.editRoles = roles
-            return roles
+            this.editRoles = roles;
+            return roles;
         },
         aliasRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.aliasRequired')
-            ];
+            return [(value) => !!value || this.$t('organizationChartDefinition.aliasRequired')];
         }
     },
     watch: {
         editRoles(newVal) {
-            this.editNode.data.role = newVal.join(',')
+            this.editNode.data.role = newVal.join(',');
         }
     },
-    mounted() {
-    },
+    mounted() {},
     methods: {
         closeDialog() {
-            this.$emit('closeDialog')
+            this.$emit('closeDialog');
         },
         update() {
             if (this.dialogType.includes('edit')) {
@@ -172,10 +157,10 @@ export default {
                     this.editNode.name = this.editNode.data.name;
                 }
             } else if (this.dialogType == 'delete') {
-                this.$emit('deleteAgent', this.editNode)
+                this.$emit('deleteAgent', this.editNode);
             }
-            this.$emit('updateNode', this.dialogType, this.editNode)
-        },
+            this.$emit('updateNode', this.dialogType, this.editNode);
+        }
     }
-}
+};
 </script>

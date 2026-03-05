@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue';
 const rating7 = ref(3.5);
 </script>
 <template>
-    <div >
+    <div>
         <v-rating
             class="d-block mb-4"
             v-model="rating7"
@@ -11,7 +11,8 @@ const rating7 = ref(3.5);
             empty-icon="mdi-heart-outline"
             full-icon="mdi-heart"
             half-icon="mdi-heart-half"
-            half-increments density="compact"
+            half-increments
+            density="compact"
             hover
         ></v-rating>
         <v-rating
@@ -21,7 +22,8 @@ const rating7 = ref(3.5);
             empty-icon="mdi-circle-outline"
             full-icon="mdi-circle"
             half-icon="mdi-circle-half"
-            half-increments density="compact"
+            half-increments
+            density="compact"
             hover
         ></v-rating>
     </div>

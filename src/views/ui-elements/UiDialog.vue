@@ -29,7 +29,6 @@ const breadcrumbs = ref([
         href: '#'
     }
 ]);
-
 </script>
 
 <template>
@@ -37,7 +36,7 @@ const breadcrumbs = ref([
     <v-row>
         <v-col cols="12">
             <UiParentCard title="Dialog">
-               <v-row>
+                <v-row>
                     <v-col cols="12" sm="12" lg="4">
                         <UiChildCard title="Simple">
                             <DialogsActivator />
@@ -63,7 +62,7 @@ const breadcrumbs = ref([
                             <DialogsFullscreen />
                         </UiChildCard>
                     </v-col>
-                   
+
                     <v-col cols="12" sm="12" lg="4" class="d-flex align-items-stretch">
                         <UiChildCard title="Persistent">
                             <DialogsPersistent />
@@ -74,7 +73,7 @@ const breadcrumbs = ref([
                             <DialogsScrollable />
                         </UiChildCard>
                     </v-col>
-                    
+
                     <v-col cols="12" sm="12" lg="4" class="d-flex align-items-stretch">
                         <UiChildCard title="Nested Dialog">
                             <DialogsNested />

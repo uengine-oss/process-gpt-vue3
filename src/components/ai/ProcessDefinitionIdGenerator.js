@@ -1,7 +1,6 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class ProcessDefinitionIdGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
         this.model = 'gpt-4o';
@@ -14,7 +13,11 @@ export default class ProcessDefinitionIdGenerator extends AIGenerator {
         const regenerateIdOnly = this.client.regenerateIdOnly || false;
 
         let systemPrompt = `당신은 프로세스 정의 ${regenerateIdOnly ? 'ID' : '이름과 ID'}를 생성하는 전문가입니다.
-${regenerateIdOnly ? '주어진 프로세스 이름을 기반으로 적절한 ID만 생성해주세요.' : 'BPMN 모델의 정보를 분석하여 적절한 프로세스 이름과 ID를 생성해주세요.'}
+${
+    regenerateIdOnly
+        ? '주어진 프로세스 이름을 기반으로 적절한 ID만 생성해주세요.'
+        : 'BPMN 모델의 정보를 분석하여 적절한 프로세스 이름과 ID를 생성해주세요.'
+}
 
 ## 생성 규칙:`;
 
@@ -66,7 +69,7 @@ ${processName}
             systemPrompt += `
 ## 중요: 이전에 추천했던 이름들
 아래 이름들은 이미 추천했으므로, 이들과 **완전히 다른** 새로운 이름을 생성해주세요:
-${previousNameSuggestions.map(name => '- ' + name).join('\n')}
+${previousNameSuggestions.map((name) => '- ' + name).join('\n')}
 
 `;
         }
@@ -75,7 +78,7 @@ ${previousNameSuggestions.map(name => '- ' + name).join('\n')}
             systemPrompt += `
 ## 중요: 이전에 추천했던 ID들
 아래 ID들은 이미 추천했으므로, 이들과 **완전히 다른** 새로운 ID를 생성해주세요:
-${previousSuggestions.map(id => '- ' + id).join('\n')}
+${previousSuggestions.map((id) => '- ' + id).join('\n')}
 
 `;
         }
@@ -97,5 +100,4 @@ id: 추천_id`;
 
         return systemPrompt;
     }
-
 }

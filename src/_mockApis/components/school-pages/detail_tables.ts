@@ -1,4 +1,4 @@
-import type { ProgressReport ,TeacherSkill,StudentProgressReport} from '@/types/components/school-pages/detail_tables';
+import type { ProgressReport, TeacherSkill, StudentProgressReport } from '@/types/components/school-pages/detail_tables';
 const ProgressReportData: ProgressReport[] = [
     {
         code: 'M103',
@@ -7,7 +7,7 @@ const ProgressReportData: ProgressReport[] = [
         grad: 'A',
         remarks: 'Pass',
         statuscolor: 'success',
-        remarkcolor: 'success',
+        remarkcolor: 'success'
     },
     {
         code: 'S221',
@@ -16,7 +16,7 @@ const ProgressReportData: ProgressReport[] = [
         grad: 'B',
         remarks: 'Pass',
         statuscolor: 'warning',
-        remarkcolor: 'success',
+        remarkcolor: 'success'
     },
     {
         code: 'E452',
@@ -25,7 +25,7 @@ const ProgressReportData: ProgressReport[] = [
         grad: 'C',
         remarks: 'Pass',
         statuscolor: 'error',
-        remarkcolor:'success',
+        remarkcolor: 'success'
     },
     {
         code: 'B541',
@@ -34,7 +34,7 @@ const ProgressReportData: ProgressReport[] = [
         grad: 'E',
         remarks: 'Fail',
         statuscolor: 'primary',
-        remarkcolor:'error',
+        remarkcolor: 'error'
     }
 ];
 
@@ -44,33 +44,30 @@ const TeacherSkillData: TeacherSkill[] = [
         sub: 'Mathematics',
         marks: '90%',
         grad: 'A',
-        statuscolor: 'success',
+        statuscolor: 'success'
     },
     {
         code: 'S221',
         sub: 'Science',
         marks: '70%',
         grad: 'B',
-        statuscolor: 'warning',
+        statuscolor: 'warning'
     },
     {
         code: 'E452',
         sub: 'English',
         marks: '50%',
         grad: 'C',
-        statuscolor: 'error',
-
+        statuscolor: 'error'
     },
     {
         code: 'B541',
         sub: 'Biology',
         marks: '25%',
         grad: 'E',
-        statuscolor: 'primary',
+        statuscolor: 'primary'
     }
 ];
-
-
 
 const StudentProgressReportData: StudentProgressReport[] = [
     {
@@ -80,7 +77,7 @@ const StudentProgressReportData: StudentProgressReport[] = [
         grad: 'A',
         remarks: 'Pass',
         statuscolor: 'success',
-        remarkcolor: 'success',
+        remarkcolor: 'success'
     },
     {
         code: 'S221',
@@ -89,7 +86,7 @@ const StudentProgressReportData: StudentProgressReport[] = [
         grad: 'B',
         remarks: 'Pass',
         statuscolor: 'warning',
-        remarkcolor: 'success',
+        remarkcolor: 'success'
     },
     {
         code: 'E452',
@@ -98,7 +95,7 @@ const StudentProgressReportData: StudentProgressReport[] = [
         grad: 'C',
         remarks: 'Pass',
         statuscolor: 'error',
-        remarkcolor:'success',
+        remarkcolor: 'success'
     },
     {
         code: 'B541',
@@ -107,7 +104,7 @@ const StudentProgressReportData: StudentProgressReport[] = [
         grad: 'E',
         remarks: 'Fail',
         statuscolor: 'primary',
-        remarkcolor:'error',
+        remarkcolor: 'error'
     }
 ];
-export { ProgressReportData,TeacherSkillData,StudentProgressReportData};
+export { ProgressReportData, TeacherSkillData, StudentProgressReportData };

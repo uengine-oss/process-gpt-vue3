@@ -28,7 +28,6 @@ const breadcrumbs = ref([
         href: '#'
     }
 ]);
-
 </script>
 
 <template>
@@ -47,31 +46,31 @@ const breadcrumbs = ref([
                     <!-- Image Avatar -->
                     <v-col cols="12" lg="4">
                         <UiChildCard title="Image Avatars">
-                            <ImageAvatar/>
+                            <ImageAvatar />
                         </UiChildCard>
                     </v-col>
                     <!-- Letter Avatar -->
                     <v-col cols="12" lg="4">
                         <UiChildCard title="Letter Avatars">
-                            <LetterAvatar/>
+                            <LetterAvatar />
                         </UiChildCard>
                     </v-col>
                     <!-- Icon Avatar -->
                     <v-col cols="12" lg="4">
                         <UiChildCard title="Icon Avatars">
-                            <IconAvatar/>
+                            <IconAvatar />
                         </UiChildCard>
                     </v-col>
                     <!-- Variant Avatar -->
                     <v-col cols="12" lg="4">
                         <UiChildCard title="Variant" class="pb-10">
-                            <VariantAvatar/>
+                            <VariantAvatar />
                         </UiChildCard>
                     </v-col>
                     <!-- Size Avatar -->
                     <v-col cols="12" lg="8">
                         <UiChildCard title="Sizes">
-                            <SizeAvatar/>
+                            <SizeAvatar />
                         </UiChildCard>
                     </v-col>
                 </v-row>

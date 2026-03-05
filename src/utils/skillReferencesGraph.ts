@@ -31,9 +31,7 @@ export type SkillReferenceGraphEdgeData = {
     count: number;
 };
 
-export type CytoscapeElement =
-    | { data: SkillReferenceGraphNodeData }
-    | { data: SkillReferenceGraphEdgeData };
+export type CytoscapeElement = { data: SkillReferenceGraphNodeData } | { data: SkillReferenceGraphEdgeData };
 
 export type BuildSkillReferenceGraphInput = {
     skillName: string;
@@ -50,10 +48,7 @@ export type BuildSkillReferenceGraphOutput = {
 };
 
 /** Updates isCurrentSkill on elements for the given current skill (for tenant cache reuse) */
-export function updateGraphCurrentSkill(
-    elements: CytoscapeElement[],
-    currentSkillName: string
-): CytoscapeElement[] {
+export function updateGraphCurrentSkill(elements: CytoscapeElement[], currentSkillName: string): CytoscapeElement[] {
     return elements.map((el) => {
         if (el?.data?.type !== 'file') return el;
         let isCurrent = true;
@@ -126,16 +121,11 @@ function isMarkdownPath(path: string): boolean {
     return p.endsWith('.md') || p.endsWith('.markdown');
 }
 
-function tryResolveMissingExtension(
-    normalizedTarget: string,
-    knownPaths: Set<string>
-): string | null {
+function tryResolveMissingExtension(normalizedTarget: string, knownPaths: Set<string>): string | null {
     if (!normalizedTarget) return null;
     if (knownPaths.has(normalizedTarget)) return normalizedTarget;
     if (/\.[a-z0-9]+$/i.test(normalizedTarget)) return null;
-    const candidates = [`${normalizedTarget}.md`, `${normalizedTarget}.markdown`].filter((c) =>
-        knownPaths.has(c)
-    );
+    const candidates = [`${normalizedTarget}.md`, `${normalizedTarget}.markdown`].filter((c) => knownPaths.has(c));
     if (candidates.length === 1) return candidates[0];
     return null;
 }
@@ -163,7 +153,10 @@ function extractMdLinkTargets(text: string): string[] {
     while ((m = wikiRe.exec(s))) {
         const inside = String(m[1] || '').trim();
         if (!inside) continue;
-        const parts = inside.split('|').map((p) => p.trim()).filter(Boolean);
+        const parts = inside
+            .split('|')
+            .map((p) => p.trim())
+            .filter(Boolean);
         const target = parts.length === 1 ? parts[0] : parts[parts.length - 1];
         if (target) out.push(target);
     }
@@ -212,9 +205,7 @@ function parseQualPath(qualifiedPath: string): { skillName: string; path: string
     return { skillName: q.slice(0, idx), path: q.slice(idx + 1) };
 }
 
-export function buildSkillReferenceGraph(
-    input: BuildSkillReferenceGraphInput
-): BuildSkillReferenceGraphOutput {
+export function buildSkillReferenceGraph(input: BuildSkillReferenceGraphInput): BuildSkillReferenceGraphOutput {
     const includeNonMarkdownNodes = input.includeNonMarkdownNodes !== false;
     const tenantMode = Array.isArray(input.allSkillsData) && input.allSkillsData.length > 0;
     const currentSkillName = input.skillName;
@@ -228,9 +219,7 @@ export function buildSkillReferenceGraph(
 
     if (tenantMode) {
         // 선택된 스킬(current skill) 데이터만 로드 (외부 스킬 참조 감지 안 함)
-        const currentSkillData = input.allSkillsData!.find(
-            (sd) => String(sd?.skillName || '').trim() === currentSkillName
-        );
+        const currentSkillData = input.allSkillsData!.find((sd) => String(sd?.skillName || '').trim() === currentSkillName);
         if (currentSkillData) {
             const skillName = String(currentSkillData.skillName || '').trim();
             const metas = Array.isArray(currentSkillData.filesMeta) ? currentSkillData.filesMeta : [];
@@ -294,11 +283,7 @@ export function buildSkillReferenceGraph(
         }
     }
 
-    const resolveTarget = (
-        rawTarget: string,
-        srcQualPath: string,
-        srcDir: string
-    ): string | null => {
+    const resolveTarget = (rawTarget: string, srcQualPath: string, srcDir: string): string | null => {
         const normalized = normalizePath(rawTarget);
         if (!normalized) return null;
         if (tenantMode) {
@@ -321,16 +306,19 @@ export function buildSkillReferenceGraph(
     for (const [rawPath, content] of iterateContents) {
         const srcPath = tenantMode ? rawPath : normalizePath(rawPath);
         if (!srcPath) continue;
-        if (!isMarkdownPath(tenantMode ? (parseQualPath(srcPath)?.path ?? srcPath) : srcPath)) continue;
+        if (!isMarkdownPath(tenantMode ? parseQualPath(srcPath)?.path ?? srcPath : srcPath)) continue;
         const srcId = fileIdByPath[srcPath] || `file:${srcPath}`;
 
         if (!nodeDataById.has(srcId)) {
             fileIdByPath[srcPath] = srcId;
             const parsed = tenantMode ? parseQualPath(srcPath) : null;
             const skillName = parsed?.skillName ?? currentSkillName;
-            const label = tenantMode && parsed
-                ? (skillName === currentSkillName ? basename(parsed.path) || parsed.path : `${skillName}: ${basename(parsed.path) || parsed.path}`)
-                : basename(srcPath) || srcPath;
+            const label =
+                tenantMode && parsed
+                    ? skillName === currentSkillName
+                        ? basename(parsed.path) || parsed.path
+                        : `${skillName}: ${basename(parsed.path) || parsed.path}`
+                    : basename(srcPath) || srcPath;
             nodeDataById.set(srcId, {
                 id: srcId,
                 type: 'file',
@@ -381,9 +369,7 @@ export function buildSkillReferenceGraph(
                 continue;
             }
 
-            const targetPath = tenantMode
-                ? resolveTarget(t, srcPath, srcQualDir)
-                : resolveTarget(t, srcPath, srcDir);
+            const targetPath = tenantMode ? resolveTarget(t, srcPath, srcQualDir) : resolveTarget(t, srcPath, srcDir);
             if (!targetPath) continue;
 
             const tgtId = fileIdByPath[targetPath] || `file:${targetPath}`;
@@ -391,9 +377,12 @@ export function buildSkillReferenceGraph(
             if (!nodeDataById.has(tgtId)) {
                 const parsed = tenantMode ? parseQualPath(targetPath) : null;
                 const tgtSkill = parsed?.skillName ?? currentSkillName;
-                const tgtLabel = tenantMode && parsed
-                    ? (tgtSkill === currentSkillName ? basename(parsed.path) || parsed.path : `${tgtSkill}: ${basename(parsed.path) || parsed.path}`)
-                    : basename(targetPath) || targetPath;
+                const tgtLabel =
+                    tenantMode && parsed
+                        ? tgtSkill === currentSkillName
+                            ? basename(parsed.path) || parsed.path
+                            : `${tgtSkill}: ${basename(parsed.path) || parsed.path}`
+                        : basename(targetPath) || targetPath;
                 nodeDataById.set(tgtId, {
                     id: tgtId,
                     type: 'file',
@@ -429,9 +418,7 @@ export function buildSkillReferenceGraph(
         if (data.type !== 'file') continue;
         const path = data.path ?? '';
         const skillName = data.skillName ?? currentSkillName;
-        const isTopLevelSkillMd = tenantMode
-            ? path === `${skillName}/SKILL.md`
-            : path === 'SKILL.md';
+        const isTopLevelSkillMd = tenantMode ? path === `${skillName}/SKILL.md` : path === 'SKILL.md';
         if (isTopLevelSkillMd) skillRootIdBySkill.set(skillName, id);
         if (!fileIdsBySkill.has(skillName)) fileIdsBySkill.set(skillName, []);
         fileIdsBySkill.get(skillName)!.push(id);

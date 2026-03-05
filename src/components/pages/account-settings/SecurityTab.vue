@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import { DeviceLaptopIcon, DeviceMobileIcon, DotsVerticalIcon } from 'vue-tabler-icons';
 </script>
 <template>
-    <v-card elevation="10" >
+    <v-card elevation="10">
         <v-row class="ma-sm-n2 ma-n1">
             <v-col cols="12" md="8">
                 <v-card elevation="10">
@@ -92,7 +92,7 @@ import { DeviceLaptopIcon, DeviceMobileIcon, DotsVerticalIcon } from 'vue-tabler
             </v-col>
         </v-row>
         <div class="d-flex justify-end mt-5 pb-3">
-            <v-btn size="large" color="primary" rounded="pill" class="mr-4" >Save</v-btn>
+            <v-btn size="large" color="primary" rounded="pill" class="mr-4">Save</v-btn>
             <v-btn size="large" class="bg-lighterror text-error" rounded="pill">Cancel</v-btn>
         </div>
     </v-card>

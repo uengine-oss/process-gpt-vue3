@@ -2,21 +2,24 @@ import { AceBaseRequestError } from './error.js';
 /**
  * @returns returns a promise that resolves with an object containing data and an optionally returned context
  */
-export default async function request(method, url, options = { accessToken: null, data: null, dataReceivedCallback: null, dataRequestCallback: null, context: null }) {
+export default async function request(
+    method,
+    url,
+    options = { accessToken: null, data: null, dataReceivedCallback: null, dataRequestCallback: null, context: null }
+) {
     let postData = options.data;
     if (typeof postData === 'undefined' || postData === null) {
         postData = '';
-    }
-    else if (typeof postData === 'object') {
+    } else if (typeof postData === 'object') {
         postData = JSON.stringify(postData);
     }
     const headers = {
-        'AceBase-Context': JSON.stringify(options.context || null),
+        'AceBase-Context': JSON.stringify(options.context || null)
     };
     const init = {
         method,
         headers,
-        body: undefined,
+        body: undefined
     };
     if (typeof options.dataRequestCallback === 'function') {
         // Stream data to the server instead of posting all from memory at once
@@ -33,19 +36,17 @@ export default async function request(method, url, options = { accessToken: null
                     const chunk = await options.dataRequestCallback?.(chunkSize);
                     if (canceled || [null, ''].includes(chunk)) {
                         controller.close();
-                    }
-                    else {
+                    } else {
                         controller.enqueue(chunk);
                     }
                 },
                 // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unused-vars
-                async start(controller) { },
+                async start(controller) {},
                 cancel() {
                     canceled = true;
-                },
+                }
             });
-        }
-        else {
+        } else {
             // Streaming not supported
             postData = '';
             const chunkSize = 1024 * 512; // Use large chunk size, we have to store everything in memory anyway.
@@ -55,8 +56,7 @@ export default async function request(method, url, options = { accessToken: null
             }
             init.body = postData;
         }
-    }
-    else if (postData.length > 0) {
+    } else if (postData.length > 0) {
         headers['Content-Type'] = 'application/json';
         init.body = postData;
     }
@@ -64,7 +64,7 @@ export default async function request(method, url, options = { accessToken: null
         headers['Authorization'] = `Bearer ${options.accessToken}`;
     }
     const request = { url, method, headers, body: undefined };
-    const res = await fetch(request.url, init).catch(err => {
+    const res = await fetch(request.url, init).catch((err) => {
         // console.error(err);
         throw new AceBaseRequestError(request, null, 'fetch_failed', err.message);
     });
@@ -81,15 +81,13 @@ export default async function request(method, url, options = { accessToken: null
                         return resolve();
                     }
                     readNext();
-                }
-                catch (err) {
+                } catch (err) {
                     reader?.cancel('error');
                     reject(err);
                 }
             })();
         });
-    }
-    else {
+    } else {
         data = await res.text();
     }
     const isJSON = data[0] === '{' || data[0] === '['; // || (res.headers['content-type'] || '').startsWith('application/json')
@@ -98,24 +96,23 @@ export default async function request(method, url, options = { accessToken: null
         let context;
         if (contextHeader && contextHeader[0] === '{') {
             context = JSON.parse(contextHeader);
-        }
-        else {
+        } else {
             context = {};
         }
         if (isJSON) {
             data = JSON.parse(data);
         }
         return { context, data };
-    }
-    else {
+    } else {
         request.body = postData;
         const response = {
             statusCode: res.status,
             statusMessage: res.statusText,
             headers: res.headers,
-            body: data,
+            body: data
         };
-        let code = res.status, message = res.statusText;
+        let code = res.status,
+            message = res.statusText;
         if (isJSON) {
             const err = JSON.parse(data);
             if (err.code) {
@@ -125,7 +122,7 @@ export default async function request(method, url, options = { accessToken: null
                 message = err.message;
             }
         }
-        throw (new AceBaseRequestError(request, response, code, message));
+        throw new AceBaseRequestError(request, response, code, message);
     }
 }
 //# sourceMappingURL=browser.js.map

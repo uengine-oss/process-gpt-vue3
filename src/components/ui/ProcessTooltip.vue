@@ -1,11 +1,5 @@
 <template>
-    <v-tooltip
-        :location="location"
-        :max-width="maxWidth"
-        :open-delay="openDelay"
-        :close-delay="closeDelay"
-        :disabled="disabled"
-    >
+    <v-tooltip :location="location" :max-width="maxWidth" :open-delay="openDelay" :close-delay="closeDelay" :disabled="disabled">
         <template #activator="{ props }">
             <slot v-bind="props"></slot>
         </template>
@@ -32,25 +26,19 @@
                     <!-- 상태 -->
                     <div v-if="showStatus" class="d-flex align-center mb-1">
                         <v-icon size="14" class="mr-2" color="grey-lighten-1">mdi-flag</v-icon>
-                        <span class="text-caption">
-                            {{ $t('processTooltip.status') }}: {{ statusText }}
-                        </span>
+                        <span class="text-caption"> {{ $t('processTooltip.status') }}: {{ statusText }} </span>
                     </div>
 
                     <!-- 최종 수정일 -->
                     <div v-if="showUpdatedAt && processInfo.updatedAt" class="d-flex align-center mb-1">
                         <v-icon size="14" class="mr-2" color="grey-lighten-1">mdi-calendar</v-icon>
-                        <span class="text-caption">
-                            {{ $t('processTooltip.lastModified') }}: {{ formatDate(processInfo.updatedAt) }}
-                        </span>
+                        <span class="text-caption"> {{ $t('processTooltip.lastModified') }}: {{ formatDate(processInfo.updatedAt) }} </span>
                     </div>
 
                     <!-- Task 수 -->
                     <div v-if="showTaskCount" class="d-flex align-center mb-1">
                         <v-icon size="14" class="mr-2" color="grey-lighten-1">mdi-format-list-bulleted</v-icon>
-                        <span class="text-caption">
-                            {{ $t('processTooltip.taskCount') }}: {{ processInfo.taskCount || 0 }}
-                        </span>
+                        <span class="text-caption"> {{ $t('processTooltip.taskCount') }}: {{ processInfo.taskCount || 0 }} </span>
                     </div>
 
                     <!-- 설명 -->

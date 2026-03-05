@@ -1,10 +1,4 @@
-import {
-    ArchiveIcon,
-    Book2Icon,
-    BorderAllIcon,
-    CircleIcon, FileDescriptionIcon, HomeIcon,BrandAirtableIcon
-
-} from 'vue-tabler-icons';
+import { ArchiveIcon, Book2Icon, BorderAllIcon, CircleIcon, FileDescriptionIcon, HomeIcon, BrandAirtableIcon } from 'vue-tabler-icons';
 
 export interface menu {
     header?: string;
@@ -26,7 +20,6 @@ export interface menu {
 }
 
 const horizontalItems: menu[] = [
-
     // {
     //     title: "Dashboard",
     //     icon: AtomIcon,
@@ -41,9 +34,9 @@ const horizontalItems: menu[] = [
         to: '#',
         children: [
             {
-                title: "Dashboard",
-                to: "/dashboard",
-            },
+                title: 'Dashboard',
+                to: '/dashboard'
+            }
         ]
     },
 
@@ -126,7 +119,7 @@ const horizontalItems: menu[] = [
                         title: 'Profile Two',
                         icon: CircleIcon,
                         to: '/apps/user/profiletwo'
-                    },
+                    }
                 ]
             },
             {
@@ -143,7 +136,7 @@ const horizontalItems: menu[] = [
                 title: 'Kanban',
                 icon: CircleIcon,
                 to: '/apps/kanban'
-            },
+            }
         ]
     },
 
@@ -444,8 +437,7 @@ const horizontalItems: menu[] = [
                 title: 'Attendance',
                 icon: CircleIcon,
                 to: '/school-pages/attendance'
-              },
-
+            }
         ]
     },
     {
@@ -578,7 +570,7 @@ const horizontalItems: menu[] = [
                 title: 'Editable Table',
                 icon: CircleIcon,
                 to: '/tables/editable'
-            },
+            }
         ]
     },
     {
@@ -626,7 +618,7 @@ const horizontalItems: menu[] = [
                 title: 'Table Slots',
                 icon: CircleIcon,
                 to: '/tables/datatables/slots'
-            },
+            }
         ]
     }
 ];

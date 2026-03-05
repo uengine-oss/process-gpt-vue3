@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { HeartIcon, PhoneIcon, UserIcon } from "vue-tabler-icons";
+import { ref } from 'vue';
+import { HeartIcon, PhoneIcon, UserIcon } from 'vue-tabler-icons';
 const tab6 = ref(null);
 </script>
 <template>
@@ -9,17 +9,11 @@ const tab6 = ref(null);
         <v-tab value="222222" color="warning"> <HeartIcon stroke-width="1.5" width="20" class="v-icon--start" /> Item Two </v-tab>
         <v-tab value="444444" color="primary"> <UserIcon stroke-width="1.5" width="20" class="v-icon--start" /> Item Three </v-tab>
     </v-tabs>
-    <v-card-text  class="bg-lightsecondary mt-4 rounded-md">
+    <v-card-text class="bg-lightsecondary mt-4 rounded-md">
         <v-window v-model="tab6">
-            <v-window-item value="111111">
-                item one
-            </v-window-item>
-            <v-window-item value="222222">
-                item two
-            </v-window-item>
-            <v-window-item value="444444">
-                item three
-            </v-window-item>
+            <v-window-item value="111111"> item one </v-window-item>
+            <v-window-item value="222222"> item two </v-window-item>
+            <v-window-item value="444444"> item three </v-window-item>
         </v-window>
     </v-card-text>
 </template>

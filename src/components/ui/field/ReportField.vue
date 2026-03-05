@@ -3,43 +3,41 @@
         <!-- <slide-component :key="localModelValue" style="width: 100%; height: 250px;" :content="localModelValue" :isEditMode="false" class="presentation-slide" /> -->
         <v-card class="rounded-lg mb-2" variant="outlined" hover @click="editMarkdown">
             <!-- y축 기준 중앙정렬을 위해 align-center 클래스 추가 -->
-            <v-row class="ma-0 pa-4" style="overflow: hidden;"
-                :style="isReportExpanded ? 'max-height: 100%;' : 'max-height: 120px;'"
-            >
+            <v-row class="ma-0 pa-4" style="overflow: hidden" :style="isReportExpanded ? 'max-height: 100%;' : 'max-height: 120px;'">
                 <div>
-                    <div class="font-weight-medium" style="font-size: 16px;">{{ localAlias ? localAlias : localName }} <span v-if="!localReadonly" class="mdi mdi-pencil"></span></div>
+                    <div class="font-weight-medium" style="font-size: 16px">
+                        {{ localAlias ? localAlias : localName }} <span v-if="!localReadonly" class="mdi mdi-pencil"></span>
+                    </div>
                     <div class="font-weight-medium">Report</div>
                 </div>
                 <v-spacer></v-spacer>
                 <!-- SummaryButton 컴포넌트로 대체 -->
                 <div v-if="localModelValue.length > 0 && !showDialog">
                     <SummaryButton @expanded="handleReportExpanded">
-                        <MarkdownEditor
-                            v-model="localModelValue"
-                            :readOnly="true"
-                            :isPreview="true"
-                            :isOverflow="true"
-                        />
+                        <MarkdownEditor v-model="localModelValue" :readOnly="true" :isPreview="true" :isOverflow="true" />
                     </SummaryButton>
                 </div>
-                <div v-else-if="localModelValue.length == 0" :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`">
+                <div
+                    v-else-if="localModelValue.length == 0"
+                    :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`"
+                >
                     <Icons :icon="'report'" color="white" />
                 </div>
-                <div v-else
+                <div
+                    v-else
                     @click.stop="previewMenu = !previewMenu"
-                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px; margin-right: 8px; cursor: pointer;"
+                    style="border-radius: 8px; border: 1px solid #e0e0e0; width: 30px; height: 30px; margin-right: 8px; cursor: pointer"
                     class="d-flex align-center justify-center"
                 >
-                    <v-icon :icon="previewMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'" :style="`color: ${hexToRgba(themeColor, 0.8)}`" size="20"></v-icon>
+                    <v-icon
+                        :icon="previewMenu ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                        :style="`color: ${hexToRgba(themeColor, 0.8)}`"
+                        size="20"
+                    ></v-icon>
                 </div>
             </v-row>
         </v-card>
-        <v-dialog 
-            v-model="showDialog" 
-            persistent 
-            max-width="1600px" 
-            transition="dialog-transition"
-        >
+        <v-dialog v-model="showDialog" persistent max-width="1600px" transition="dialog-transition">
             <v-card class="pa-4">
                 <div class="d-flex pb-4">
                     <v-card-title class="pa-0">{{ $i18n.global.t('ReportField.title') }}</v-card-title>
@@ -47,7 +45,7 @@
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
-                <v-card-text class="pa-0 editor" style="height: 80vh; padding: 0 !important; overflow: auto;">
+                <v-card-text class="pa-0 editor" style="height: 80vh; padding: 0 !important; overflow: auto">
                     <markdown-editor
                         ref="markdownEditor"
                         v-model="localModelValue"
@@ -58,12 +56,9 @@
                 </v-card-text>
                 <v-row v-if="!localReadonly" class="ma-0 pa-4 pr-0 pb-0">
                     <v-spacer></v-spacer>
-                    <v-btn @click="saveMarkdown"
-                        :color="themeColor"
-                        variant="elevated" 
-                        class="rounded-pill"
-                        density="compact"
-                    >{{ $i18n.global.t('ReportField.save') }}</v-btn>
+                    <v-btn @click="saveMarkdown" :color="themeColor" variant="elevated" class="rounded-pill" density="compact">{{
+                        $i18n.global.t('ReportField.save')
+                    }}</v-btn>
                 </v-row>
             </v-card>
         </v-dialog>
@@ -71,18 +66,18 @@
 </template>
 
 <script>
-import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import { commonSettingInfos } from './CommonSettingInfos.vue';
 import SlideComponent from '@/views/markdown/SlideComponent.vue';
 import SlideEditor from '@/views/markdown/SlideEditor.vue';
 import MarkdownEditor from '@/views/markdown/MarkdownEditor.vue';
-import Icons from "@/components/ui-components/Icons.vue";
-import SummaryButton from "@/components/ui/SummaryButton.vue";
-import ThemeColorMixin from "./ThemeColorMixin.js";
+import Icons from '@/components/ui-components/Icons.vue';
+import SummaryButton from '@/components/ui/SummaryButton.vue';
+import ThemeColorMixin from './ThemeColorMixin.js';
 import SlidePresentation from '@/views/markdown/SlidePresentation.vue';
 import { i18n } from '@/main';
 
 export default {
-    name: "ContentEditorField",
+    name: 'ContentEditorField',
     components: {
         SlideComponent,
         SlideEditor,
@@ -94,8 +89,8 @@ export default {
     mixins: [ThemeColorMixin],
     computed: {
         defaultContent() {
-            if(this.$t) {
-                return this.$t("ContentEditorField.defaultContent")
+            if (this.$t) {
+                return this.$t('ContentEditorField.defaultContent');
             }
             return `# 당신의 프레젠테이션에 오신 것을 환영합니다 
 
@@ -158,13 +153,12 @@ $e^{i\\pi} + 1 = 0$
 
 ## PDF로 내보내기
 
-이 프레젠테이션을 PDF 파일로 내보낼 수 있습니다!`        
-
+이 프레젠테이션을 PDF 파일로 내보낼 수 있습니다!`;
         }
     },
-    
+
     props: {
-        // UI 관련 설정 props 시작 
+        // UI 관련 설정 props 시작
         hideDetails: {
             type: Boolean,
             default: false
@@ -186,21 +180,21 @@ $e^{i\\pi} + 1 = 0$
 
     data() {
         return {
-            localModelValue: "",
-            localName: "",
-            localAlias: "",
+            localModelValue: '',
+            localName: '',
+            localAlias: '',
             localDisabled: false,
             localReadonly: false,
             showDialog: false,
-            editorValue: "",
+            editorValue: '',
             previewMenu: false,
             isReportExpanded: false,
 
             settingInfos: [
-                commonSettingInfos["localName"],
-                commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"],
-                commonSettingInfos["localReadonly"]
+                commonSettingInfos['localName'],
+                commonSettingInfos['localAlias'],
+                commonSettingInfos['localDisabled'],
+                commonSettingInfos['localReadonly']
             ]
         };
     },
@@ -208,7 +202,7 @@ $e^{i\\pi} + 1 = 0$
     watch: {
         modelValue: {
             handler() {
-                this.localModelValue  = ((this.modelValue && this.modelValue.length > 0) ? this.modelValue : "")
+                this.localModelValue = this.modelValue && this.modelValue.length > 0 ? this.modelValue : '';
             },
             deep: true,
             immediate: true
@@ -216,21 +210,21 @@ $e^{i\\pi} + 1 = 0$
 
         localModelValue: {
             handler() {
-                this.$emit('update:modelValue', this.localModelValue)
+                this.$emit('update:modelValue', this.localModelValue);
             },
             deep: true,
             immediate: true
-        },
+        }
     },
 
     created() {
-        this.localModelValue = this.modelValue ?? ""
-        
-        this.localName = this.name ?? "name"
-        this.localAlias = this.alias ?? ""
-        this.localDisabled = this.disabled === "true"
-        this.localReadonly = this.readonly === "true"
-        
+        this.localModelValue = this.modelValue ?? '';
+
+        this.localName = this.name ?? 'name';
+        this.localAlias = this.alias ?? '';
+        this.localDisabled = this.disabled === 'true';
+        this.localReadonly = this.readonly === 'true';
+
         // 전역 속성으로 i18n 추가
         this.$i18n = i18n;
     },
@@ -246,7 +240,7 @@ $e^{i\\pi} + 1 = 0$
         async saveMarkdownContent(markdownContent) {
             this.localModelValue = markdownContent;
             this.editorValue = this.localModelValue;
-            
+
             // EventBus를 통해 상위 컴포넌트에 저장 요청
             this.$nextTick(() => {
                 if (this.EventBus) {
@@ -256,7 +250,7 @@ $e^{i\\pi} + 1 = 0$
                     });
                 }
             });
-            
+
             this.showDialog = false;
         },
         editMarkdown() {
@@ -267,14 +261,14 @@ $e^{i\\pi} + 1 = 0$
             this.showDialog = false;
         },
         onDialogReady() {
-            console.log("onDialogReady")
+            console.log('onDialogReady');
             this.$refs.slideEditor.init();
         },
         handleReportExpanded(isExpanded) {
             this.isReportExpanded = isExpanded;
         }
     }
-}
+};
 </script>
 
 <style lang="scss">
@@ -283,14 +277,14 @@ $e^{i\\pi} + 1 = 0$
 }
 
 .editor {
-  flex: 1;
-  padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: monospace;
-  resize: none;
-  line-height: 1.5;
-  font-size: 14px;
+    flex: 1;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    resize: none;
+    line-height: 1.5;
+    font-size: 14px;
 }
 
 /* 확장된 콘텐츠 스타일 */
@@ -299,7 +293,7 @@ $e^{i\\pi} + 1 = 0$
     height: 100%;
     background: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
 }
 

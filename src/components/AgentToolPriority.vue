@@ -3,13 +3,7 @@
         <v-row class="ma-0 pa-4">
             <v-card-title class="text-h6 pa-0">{{ $t('agentField.resourcePriority') }}</v-card-title>
             <v-spacer></v-spacer>
-            <v-btn
-                @click="close"
-                class="ml-auto"
-                variant="text"
-                density="compact"
-                icon
-            >
+            <v-btn @click="close" class="ml-auto" variant="text" density="compact" icon>
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-row>
@@ -28,20 +22,13 @@
                     rounded="lg"
                 >
                     <div class="d-flex align-center pa-3">
-                        <span class="text-body-2 text-medium-emphasis mr-3" style="min-width: 20px;">{{ index + 1 }}</span>
+                        <span class="text-body-2 text-medium-emphasis mr-3" style="min-width: 20px">{{ index + 1 }}</span>
                         <div class="d-flex flex-column flex-grow-1 min-width-0">
                             <span class="text-body-2">{{ getLineLabel(item) }}</span>
                             <span class="text-caption text-disabled mt-0">{{ getDisplayDescription(item) }}</span>
                         </div>
                         <div class="d-flex ml-2">
-                            <v-btn
-                                icon
-                                variant="text"
-                                size="x-small"
-                                density="compact"
-                                :disabled="index === 0"
-                                @click="moveUp(index)"
-                            >
+                            <v-btn icon variant="text" size="x-small" density="compact" :disabled="index === 0" @click="moveUp(index)">
                                 <v-icon size="small">mdi-chevron-up</v-icon>
                                 <v-tooltip activator="parent" location="top">{{ $t('agentField.moveUp') }}</v-tooltip>
                             </v-btn>
@@ -64,12 +51,7 @@
 
         <v-card-actions class="ma-0 pa-4 pt-2">
             <v-spacer></v-spacer>
-            <v-btn
-                @click="save"
-                color="primary"
-                variant="flat"
-                rounded
-            >{{ $t('organizationChartDefinition.save') }}</v-btn>
+            <v-btn @click="save" color="primary" variant="flat" rounded>{{ $t('organizationChartDefinition.save') }}</v-btn>
         </v-card-actions>
     </v-card>
 </template>

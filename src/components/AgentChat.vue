@@ -2,8 +2,8 @@
     <v-card elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart="{ closeDrawer }">
-                <AgentChatInfo 
-                    :agentInfo="agentInfo" 
+                <AgentChatInfo
+                    :agentInfo="agentInfo"
                     :activeTab="activeTab"
                     :selectedDmnId="selectedDmnId"
                     :dmnList="dmnList"
@@ -18,17 +18,12 @@
                 />
             </template>
             <template v-slot:rightpart>
-                <component 
-                    :is="currentTabComponent" 
-                    :key="id + ':' + activeTab"
-                    v-bind="currentTabProps"
-                    v-on="currentTabEvents"
-                />
+                <component :is="currentTabComponent" :key="id + ':' + activeTab" v-bind="currentTabProps" v-on="currentTabEvents" />
             </template>
 
             <template v-slot:mobileLeftContent="{ closeDrawer }">
-                <AgentChatInfo 
-                    :agentInfo="agentInfo" 
+                <AgentChatInfo
+                    :agentInfo="agentInfo"
                     :activeTab="activeTab"
                     :selectedDmnId="selectedDmnId"
                     :isMobile="true"
@@ -50,18 +45,18 @@
 <script>
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
-import AgentChatInfo from "@/components/AgentChatInfo.vue";
+import AgentChatInfo from '@/components/AgentChatInfo.vue';
 
 // Agent Chat 탭 컴포넌트
-import ChatRoomPage from "@/views/chat/ChatRoomPage.vue";
-import AgentChatLearning from "@/components/AgentChatLearning.vue";
-import AgentChatQuestion from "@/components/AgentChatQuestion.vue";
-import AgentChatActions from "@/components/AgentChatActions.vue";
-import AgentKnowledgeManagement from "@/components/AgentKnowledgeManagement.vue";
-import BusinessRuleLearning from "@/components/BusinessRuleLearning.vue";
-import AgentSkillEdit from "@/components/AgentSkillEdit.vue";
-import AgentSkillHistory from "@/components/AgentSkillHistory.vue";
-import AgentDmnHistory from "@/components/AgentDmnHistory.vue";
+import ChatRoomPage from '@/views/chat/ChatRoomPage.vue';
+import AgentChatLearning from '@/components/AgentChatLearning.vue';
+import AgentChatQuestion from '@/components/AgentChatQuestion.vue';
+import AgentChatActions from '@/components/AgentChatActions.vue';
+import AgentKnowledgeManagement from '@/components/AgentKnowledgeManagement.vue';
+import BusinessRuleLearning from '@/components/BusinessRuleLearning.vue';
+import AgentSkillEdit from '@/components/AgentSkillEdit.vue';
+import AgentSkillHistory from '@/components/AgentSkillHistory.vue';
+import AgentDmnHistory from '@/components/AgentDmnHistory.vue';
 
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 
@@ -82,7 +77,7 @@ export default {
         BusinessRuleLearning,
         AgentSkillEdit,
         AgentSkillHistory,
-        AgentDmnHistory,
+        AgentDmnHistory
     },
     data: () => ({
         defaultSetting: useDefaultSetting(),
@@ -98,7 +93,7 @@ export default {
             endpoint: '',
             description: '',
             model: '',
-            is_default: false,
+            is_default: false
         },
         activeTab: 'chat',
 
@@ -115,10 +110,10 @@ export default {
         // dmn
         dmnList: [],
         selectedDmnId: null,
-        
+
         // backend
         backend: null,
-        
+
         // 중복 호출 방지 플래그
         isInitializing: false,
 
@@ -130,7 +125,7 @@ export default {
         idJustChanged: false,
 
         // proc_def 리얼타임 구독 (에이전트별 DMN 목록 갱신용)
-        dmnRealtimeChannel: null,
+        dmnRealtimeChannel: null
     }),
     computed: {
         id() {
@@ -150,7 +145,7 @@ export default {
         }
     },
     watch: {
-        "$route": {
+        $route: {
             async handler(newRoute, oldRoute) {
                 const isAgentChat = (r) => r?.path?.startsWith?.('/agent-chat/');
 
@@ -161,15 +156,17 @@ export default {
                 }
 
                 // 이하: newRoute는 반드시 /agent-chat/:id
-                const idChanged = isAgentChat(oldRoute) && (oldRoute.params?.id !== newRoute.params?.id);
+                const idChanged = isAgentChat(oldRoute) && oldRoute.params?.id !== newRoute.params?.id;
 
                 if (idChanged) {
                     // 에이전트 채팅 내부에서 id만 변경: 쿼리/해시 없이 path만 유지
                     this.selectedDmnId = null;
                     this.idJustChanged = true;
-                    await this.$router.replace({
-                        path: `/agent-chat/${newRoute.params.id}`
-                    }).catch(() => {});
+                    await this.$router
+                        .replace({
+                            path: `/agent-chat/${newRoute.params.id}`
+                        })
+                        .catch(() => {});
                 }
 
                 if (idChanged) {
@@ -427,10 +424,10 @@ export default {
         /** 트리에서 targetId 노드 제거 후 반환 (재귀) */
         removeNodeFromTree(children, targetId) {
             if (!children) return children;
-            if (children.some(item => item.id === targetId)) {
-                return children.filter(item => item.id !== targetId);
+            if (children.some((item) => item.id === targetId)) {
+                return children.filter((item) => item.id !== targetId);
             }
-            return children.map(item => ({
+            return children.map((item) => ({
                 ...item,
                 children: item.children ? this.removeNodeFromTree(item.children, targetId) : item.children
             }));
@@ -457,7 +454,7 @@ export default {
             try {
                 // 믹스인의 updateAgent 메서드 호출하여 DB 업데이트
                 await this.updateAgent(updatedData, 'edit-agent');
-                
+
                 // 로컬 agentInfo 업데이트 (실시간 반영)
                 this.agentInfo = {
                     ...this.agentInfo,
@@ -466,7 +463,6 @@ export default {
                     username: updatedData.username || updatedData.name,
                     profile: updatedData.profile || updatedData.img
                 };
-                
             } catch (error) {
                 console.error('에이전트 수정 실패:', error);
             }
@@ -477,7 +473,7 @@ export default {
             this.isKnowledgeLoading = true;
             const options = {
                 agent_id: this.id
-            }
+            };
             this.knowledges = await this.backend.getVecsDocuments(options);
             this.isKnowledgeLoading = false;
         },
@@ -493,15 +489,15 @@ export default {
                 this.dmnList = [];
                 return;
             }
-            
+
             const options = {
                 match: {
                     owner: this.agentInfo.id,
-                    type: "dmn"
+                    type: 'dmn'
                 }
             };
-            
-            const result = await this.backend.listDefinition("dmn", options);
+
+            const result = await this.backend.listDefinition('dmn', options);
             // 결과가 배열인 경우에만 업데이트
             if (Array.isArray(result)) {
                 this.dmnList = result;
@@ -544,7 +540,7 @@ export default {
             } else {
                 return false;
             }
-        },
+        }
     }
-}
+};
 </script>

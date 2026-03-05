@@ -22,8 +22,8 @@
 </template>
 
 <script>
-import ChatModule from "@/components/ChatModule.vue";
-import Chat from "@/components/ui/Chat.vue";
+import ChatModule from '@/components/ChatModule.vue';
+import Chat from '@/components/ui/Chat.vue';
 import FormInterviewChatGenerator from '@/components/ai/FormInterviewChatGenerator.js';
 
 export default {
@@ -65,7 +65,7 @@ export default {
             profile: '/images/chat-icon.png',
             username: 'Form Interview Assistant',
             goal: '폼 입력을 도와주는 AI 어시스턴트입니다.',
-            agent_type: 'form-assistant',
+            agent_type: 'form-assistant'
         }
     }),
     computed: {
@@ -80,9 +80,9 @@ export default {
                 if (this.generator) {
                     this.generator.previousMessages = [
                         {
-                            role: "system",
-                            content: this.generator.buildSystemInstructions(),
-                        },
+                            role: 'system',
+                            content: this.generator.buildSystemInstructions()
+                        }
                     ];
                 }
             },
@@ -99,14 +99,14 @@ export default {
             if (this.useLock) {
                 this.userInfo = await this.backend.getUserInfo();
             }
-            
+
             // FormInterviewChatGenerator 초기화
             this.generator = new FormInterviewChatGenerator(this, {
                 isStream: true,
                 preferredLanguage: 'Korean'
             });
         },
-        
+
         setupFormInterviewContext() {
             // 간단한 인사말 설정
             const contextMessage = {
@@ -114,14 +114,13 @@ export default {
                 content: '폼 정보 입력을 위한 인터뷰를 시작하시겠습니까?',
                 timeStamp: Date.now()
             };
-            
+
             if (!this.messages || this.messages.length === 0) {
                 this.messages = [contextMessage];
             } else {
                 this.messages.unshift(contextMessage);
             }
         },
-
 
         async beforeSendMessage(message) {
             await this.sendMessage(message);
@@ -130,7 +129,7 @@ export default {
         async sendMessage(message) {
             if (message.text !== '' || (message.images && message.images.length > 0) || message.image !== null) {
                 const chatObj = this.createMessageObj(message);
-                
+
                 if (!this.messages) {
                     this.messages = [];
                 }

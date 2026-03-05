@@ -1,8 +1,3 @@
-
-
-
-
-
 <template>
     <div>
         <geometry-element
@@ -11,14 +6,14 @@
             resizable
             connectable
             deletable
-            :id.sync="value.tracingTag"
-            :x.sync="value.elementView.x"
-            :y.sync="value.elementView.y"
-            :width.sync="value.elementView.width"
-            :height.sync="value.elementView.height"
-            :_style.sync="style"
-            :parentId.sync="value.elementView.parent"
-            :label.sync="namePanel"
+            v-model:id="value.tracingTag"
+            v-model:x="value.elementView.x"
+            v-model:y="value.elementView.y"
+            v-model:width="value.elementView.width"
+            v-model:height="value.elementView.height"
+            v-model:_style="style"
+            v-model:parentId="value.elementView.parent"
+            v-model:label="namePanel"
             :customMoveActionExist="canvas.isCustomMoveExist"
             v-on:customMoveAction="delayedMove"
             v-on:moveShape="onMoveShape"

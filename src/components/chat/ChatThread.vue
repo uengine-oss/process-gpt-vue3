@@ -44,18 +44,16 @@
 
                             <div v-if="msg.images && msg.images.length > 0" class="attached-images mt-2">
                                 <div v-for="(image, imgIdx) in msg.images" :key="imgIdx" class="attached-image-item">
-                                    <img
-                                        :src="image.url || image"
-                                        class="attached-image"
-                                        @click="emitPreviewImage(image.url || image)"
-                                    />
+                                    <img :src="image.url || image" class="attached-image" @click="emitPreviewImage(image.url || image)" />
                                     <v-btn
                                         icon
                                         size="x-small"
                                         variant="tonal"
                                         class="attached-image-download"
                                         :disabled="!getAttachmentUrl(image)"
-                                        @click.stop="downloadAttachment(getAttachmentUrl(image), getAttachmentName(image, `image-${imgIdx + 1}`))"
+                                        @click.stop="
+                                            downloadAttachment(getAttachmentUrl(image), getAttachmentName(image, `image-${imgIdx + 1}`))
+                                        "
                                     >
                                         <v-icon size="14">mdi-download</v-icon>
                                     </v-btn>
@@ -85,7 +83,9 @@
                                         size="x-small"
                                         variant="tonal"
                                         :disabled="!getAttachmentUrl(msg.pdfFile)"
-                                        @click.stop="downloadAttachment(getAttachmentUrl(msg.pdfFile), getAttachmentName(msg.pdfFile, 'attachment'))"
+                                        @click.stop="
+                                            downloadAttachment(getAttachmentUrl(msg.pdfFile), getAttachmentName(msg.pdfFile, 'attachment'))
+                                        "
                                     >
                                         <v-icon size="14">mdi-download</v-icon>
                                     </v-btn>
@@ -163,7 +163,7 @@
                             <span class="progress-percent">{{ pdf2bpmnProgress.progress }}%</span>
                             <v-progress-circular
                                 v-if="pdf2bpmnProgress.status === 'processing'"
-                                style="margin-left: 3px; margin-bottom: 3px;"
+                                style="margin-left: 3px; margin-bottom: 3px"
                                 indeterminate
                                 size="12"
                                 width="2"
@@ -255,13 +255,7 @@ export default {
         getAttachmentUrl(fileOrUrl) {
             if (!fileOrUrl) return '';
             if (typeof fileOrUrl === 'string') return fileOrUrl;
-            return (
-                fileOrUrl.url ||
-                fileOrUrl.fileUrl ||
-                fileOrUrl.publicUrl ||
-                fileOrUrl.signedUrl ||
-                ''
-            );
+            return fileOrUrl.url || fileOrUrl.fileUrl || fileOrUrl.publicUrl || fileOrUrl.signedUrl || '';
         },
         getAttachmentName(fileObj, fallbackBaseName = 'download') {
             if (!fileObj) return fallbackBaseName;
@@ -336,8 +330,14 @@ export default {
                 }
             });
             formatted = formatted.replace(/```(\w*)\s*([\s\S]*?)\s*```/g, '<pre class="code-block">$2</pre>');
-            formatted = formatted.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" class="message-link">$1</a>');
-            formatted = formatted.replace(/(?<!href=")(https?:\/\/[^\s<)\]"]+)/g, '<a href="$1" target="_blank" class="message-link">$1</a>');
+            formatted = formatted.replace(
+                /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+                '<a href="$2" target="_blank" class="message-link">$1</a>'
+            );
+            formatted = formatted.replace(
+                /(?<!href=")(https?:\/\/[^\s<)\]"]+)/g,
+                '<a href="$1" target="_blank" class="message-link">$1</a>'
+            );
             formatted = formatted.replace(/\n/g, '<br>');
             return formatted;
         },
@@ -617,7 +617,7 @@ export default {
 
 /* PDF2BPMN */
 .pdf2bpmn-progress-card {
-    border: 1px solid rgba(0,0,0,0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 12px;
     padding: 12px;
     background: #fff;
@@ -628,7 +628,7 @@ export default {
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: rgba(0,0,0,0.6);
+    color: rgba(0, 0, 0, 0.6);
 }
 
 .progress-message {
@@ -640,8 +640,7 @@ export default {
 }
 
 .generated-bpmns-scroll {
-    border-top: 1px dashed rgba(0,0,0,0.12);
+    border-top: 1px dashed rgba(0, 0, 0, 0.12);
     padding-top: 10px;
 }
 </style>
-

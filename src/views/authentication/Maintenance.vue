@@ -5,6 +5,6 @@
             <h1 class="text-h1">Opps!!!</h1>
             <h4 class="text-h4 my-8">Website is Under Construction. Check back later!</h4>
             <v-btn rounded="pill" color="primary" class="mb-4" to="/">Go Back to Home</v-btn>
-        </div>    
+        </div>
     </div>
 </template>

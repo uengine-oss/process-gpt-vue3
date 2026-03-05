@@ -1,7 +1,6 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class MarkdownGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
 
@@ -21,8 +20,7 @@ export default class MarkdownGenerator extends AIGenerator {
       - 불필요한 반복이나 형식 오류 없이 명확하고 간결하게 작성하십시오.
       - 출력은 반드시 마크다운 문서 본문만 포함하고, 그 외의 설명이나 해설은 절대 포함하지 마십시오.
       `.trim();
-      }
-      
+    }
 
     createPrompt() {
         const selectedAIMode = this.client.selectedAIMode;
@@ -46,7 +44,7 @@ export default class MarkdownGenerator extends AIGenerator {
                 break;
             case 'create':
                 modePrompt = this.createContentPrompt();
-                    break;
+                break;
             case 'replace':
                 modePrompt = '다음 문장을 같은 의미로 더 자연스럽고 간결하게 바꾸십시오.';
                 break;
@@ -154,5 +152,4 @@ export default class MarkdownGenerator extends AIGenerator {
 
         return systemPrompt;
     }
-
 }

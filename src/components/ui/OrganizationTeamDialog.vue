@@ -3,12 +3,7 @@
         <v-row class="ma-0 pa-4">
             <v-card-title class="text-h6 pa-0">{{ dialogTitle }}</v-card-title>
             <v-spacer></v-spacer>
-            <v-btn @click="closeDialog"
-                class="ml-auto"
-                variant="text"
-                density="compact"
-                icon
-            >
+            <v-btn @click="closeDialog" class="ml-auto" variant="text" density="compact" icon>
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-row>
@@ -16,8 +11,8 @@
         <v-card-text class="pa-4 pb-0">
             <!-- add team -->
             <div v-if="dialogType == 'add'">
-                <v-text-field 
-                    v-model="newTeam.name" 
+                <v-text-field
+                    v-model="newTeam.name"
                     :label="$t('organizationChartDefinition.teamName')"
                     :rules="nameRules"
                     class="mb-2"
@@ -31,9 +26,9 @@
                         <v-img :src="editNode.data.img"></v-img>
                     </v-avatar>
                 </div>
-                
-                <v-text-field 
-                    v-model="editNode.data.name" 
+
+                <v-text-field
+                    v-model="editNode.data.name"
                     :label="$t('organizationChartDefinition.teamName')"
                     :rules="nameRules"
                     class="mb-2"
@@ -48,13 +43,14 @@
 
         <v-card-actions class="ma-0 pa-4">
             <v-spacer></v-spacer>
-            <v-btn 
+            <v-btn
                 @click="update"
                 :disabled="!isValid"
-                :color="(buttonText === 'Delete' || buttonText === '삭제') ? 'error' : 'primary'"
-                rounded 
-                variant="flat" 
-            >{{ buttonText }}</v-btn>
+                :color="buttonText === 'Delete' || buttonText === '삭제' ? 'error' : 'primary'"
+                rounded
+                variant="flat"
+                >{{ buttonText }}</v-btn
+            >
         </v-card-actions>
     </v-card>
 </template>
@@ -64,50 +60,48 @@ export default {
     props: {
         dialogType: {
             type: String,
-            default: '',
+            default: ''
         },
         editNode: {
             type: Object,
-            default: {},
-        },
+            default: {}
+        }
     },
     data: () => ({
         newTeam: {
             id: '',
             name: '',
             isTeam: true,
-            img: '/images/chat-icon.png',
-        },
+            img: '/images/chat-icon.png'
+        }
     }),
     computed: {
         nameRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.nameRequired'),
-            ];
+            return [(value) => !!value || this.$t('organizationChartDefinition.nameRequired')];
         },
         isValid() {
             if (this.dialogType == 'add') {
-                return this.nameRules.every(rule => rule(this.newTeam.name) === true);
+                return this.nameRules.every((rule) => rule(this.newTeam.name) === true);
             } else {
-                return true
+                return true;
             }
         },
         dialogTitle() {
             if (this.dialogType == 'add') {
-                return this.$t('organizationChartDefinition.addTeam')
+                return this.$t('organizationChartDefinition.addTeam');
             } else if (this.dialogType == 'edit') {
-                return this.$t('organizationChartDefinition.team') + ' ' + this.$t('organizationChartDefinition.edit')
+                return this.$t('organizationChartDefinition.team') + ' ' + this.$t('organizationChartDefinition.edit');
             } else if (this.dialogType == 'delete') {
-                return this.$t('organizationChartDefinition.team') + ' ' + this.$t('organizationChartDefinition.delete')
+                return this.$t('organizationChartDefinition.team') + ' ' + this.$t('organizationChartDefinition.delete');
             }
         },
         buttonText() {
             if (this.dialogType == 'add') {
-                return this.$t('organizationChartDefinition.add')
+                return this.$t('organizationChartDefinition.add');
             } else if (this.dialogType == 'edit') {
-                return this.$t('organizationChartDefinition.edit')
+                return this.$t('organizationChartDefinition.edit');
             } else if (this.dialogType == 'delete') {
-                return this.$t('organizationChartDefinition.delete')
+                return this.$t('organizationChartDefinition.delete');
             }
         }
     },
@@ -117,23 +111,23 @@ export default {
                 id: crypto.randomUUID(),
                 name: '',
                 isTeam: true,
-                img: '/images/chat-icon.png',
-            }
+                img: '/images/chat-icon.png'
+            };
         }
     },
     methods: {
         closeDialog() {
-            this.$emit('closeDialog')
+            this.$emit('closeDialog');
         },
         update() {
             if (this.dialogType === 'edit') {
-                this.$emit('updateTeam', this.dialogType, this.editNode, this.editNode.data)
+                this.$emit('updateTeam', this.dialogType, this.editNode, this.editNode.data);
             } else {
-                this.$emit('updateTeam', this.dialogType, this.editNode, this.newTeam)
+                this.$emit('updateTeam', this.dialogType, this.editNode, this.newTeam);
             }
-        },
+        }
     }
-}
+};
 </script>
 
 <style scoped>

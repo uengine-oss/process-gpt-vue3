@@ -1,5 +1,5 @@
 <script>
-import ChatModule from "@/components/ChatModule.vue";
+import ChatModule from '@/components/ChatModule.vue';
 
 export default {
     mixins: [ChatModule],
@@ -8,7 +8,7 @@ export default {
             chatRoomId: '',
             generator: null,
             chatSubscription: null
-        }
+        };
     },
     computed: {
         id() {
@@ -36,46 +36,51 @@ export default {
         this.isAgentChat = true;
     },
     async mounted() {
-        this.chatSubscription = await this.backend.watchData('chats', this.chatRoomId, (data) => {
-            if (data && data.new && (data.eventType === "INSERT" || data.eventType === "UPDATE")) {
-                const message = data.new;
-                this.messages.push(message);
+        this.chatSubscription = await this.backend.watchData(
+            'chats',
+            this.chatRoomId,
+            (data) => {
+                if (data && data.new && (data.eventType === 'INSERT' || data.eventType === 'UPDATE')) {
+                    const message = data.new;
+                    this.messages.push(message);
+                }
+            },
+            {
+                filter: `id=eq.${this.chatRoomId}`
             }
-        }, {
-            filter: `id=eq.${this.chatRoomId}`
-        });
+        );
     },
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.chatSubscription) {
             this.chatSubscription.unsubscribe();
         }
     },
     methods: {
         async putMessage(message) {
-            let uuid = this.uuid()
+            let uuid = this.uuid();
             if (message.uuid) {
-                uuid = message.uuid
+                uuid = message.uuid;
             }
             const chatRoomId = this.id ? `${this.id}-${this.type}` : '';
             let messageObj = {
-                "messages": message,
-                "id": chatRoomId,
-                "uuid": uuid
-            }
-            
+                messages: message,
+                id: chatRoomId,
+                uuid: uuid
+            };
+
             this.putObject(`chats/${uuid}`, messageObj);
         },
-        
+
         /**
          * 메시지 전송 전처리
          */
         beforeSendMessage(newMessage) {
             if (newMessage && (newMessage.text != '' || (newMessage.images && newMessage.images.length > 0) || newMessage.image != null)) {
-                this.putMessage(this.createMessageObj(newMessage))
+                this.putMessage(this.createMessageObj(newMessage));
                 this.sendMessage(newMessage);
             }
         },
-        
+
         /**
          * AI 응답 생성 중 호출 (스트리밍)
          * 하위 컴포넌트에서 오버라이드 가능
@@ -83,15 +88,13 @@ export default {
         afterModelCreated(response) {
             // console.log(response)
         },
-        
+
         /**
          * AI 응답 중단 시 호출
          */
         afterModelStopped(response) {
             // console.log(response)
-        },
-        
+        }
     }
-}
+};
 </script>
-

@@ -13,8 +13,8 @@
                     <tr>
                         <th>{{ $t('taskCatalog.taskType') }}</th>
                         <th>{{ $t('taskCatalog.label') }}</th>
-                        <th style="width: 100px;">{{ $t('taskCatalog.enabled') }}</th>
-                        <th style="width: 120px;">{{ $t('taskCatalog.status') }}</th>
+                        <th style="width: 100px">{{ $t('taskCatalog.enabled') }}</th>
+                        <th style="width: 120px">{{ $t('taskCatalog.status') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -68,11 +68,11 @@
             <div v-else class="d-flex flex-column ga-3">
                 <v-card v-for="item in paletteTaskTypes" :key="item.id" variant="outlined" class="pa-4">
                     <div class="d-flex justify-space-between align-center">
-                        <div class="d-flex align-center" style="min-width: 0;">
+                        <div class="d-flex align-center" style="min-width: 0">
                             <div class="task-type-icon" :style="{ backgroundColor: getTaskTypeColor(item.task_type) }">
                                 <v-icon v-if="item.icon" size="16" color="white">{{ item.icon }}</v-icon>
                             </div>
-                            <div class="ml-3" style="min-width: 0;">
+                            <div class="ml-3" style="min-width: 0">
                                 <div class="text-subtitle-2 font-weight-bold text-truncate">{{ getLabel(item) }}</div>
                                 <div class="text-caption text-grey text-truncate">{{ item.task_type }}</div>
                             </div>

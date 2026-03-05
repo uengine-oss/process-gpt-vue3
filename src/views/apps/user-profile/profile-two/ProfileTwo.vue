@@ -7,7 +7,6 @@ import IntroCard from '@/components/apps/user-profile/IntroCard.vue';
 import PhotosCard from '@/components/apps/user-profile/PhotosCard.vue';
 import PostListing from '@/components/apps/user-profile/PostListing.vue';
 import AddPost from '@/components/apps/user-profile/posts/AddPost.vue';
-
 </script>
 
 <template>

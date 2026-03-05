@@ -29,11 +29,7 @@ interface TeamInfo {
  * @param parentTeam - 현재까지 추적된 부모 팀
  * @returns 찾은 팀 정보 또는 null
  */
-function findUserTeamInTree(
-    node: OrganizationNode,
-    userId: string,
-    parentTeam: TeamInfo | null = null
-): TeamInfo | null {
+function findUserTeamInTree(node: OrganizationNode, userId: string, parentTeam: TeamInfo | null = null): TeamInfo | null {
     if (!node) return null;
 
     // 현재 노드가 찾는 사용자인 경우
@@ -43,9 +39,7 @@ function findUserTeamInTree(
 
     // 현재 노드가 팀인지 확인
     const isTeam = node.data && node.data.isTeam;
-    const currentTeam: TeamInfo | null = isTeam
-        ? { teamId: node.id, teamName: node.data?.name || node.id }
-        : parentTeam;
+    const currentTeam: TeamInfo | null = isTeam ? { teamId: node.id, teamName: node.data?.name || node.id } : parentTeam;
 
     // 자식 노드들 탐색
     if (node.children && node.children.length > 0) {
@@ -84,9 +78,7 @@ export async function getCurrentUserTeamName(): Promise<string | null> {
         }
 
         // 3. 조직도 차트 추출 (value가 문자열일 수 있음)
-        const orgValue = typeof orgData.value === 'string'
-            ? JSON.parse(orgData.value)
-            : orgData.value;
+        const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
 
         const organizationChart = orgValue.chart || orgValue;
 
@@ -130,9 +122,7 @@ export async function getCurrentUserTeamInfo(): Promise<TeamInfo | null> {
             return null;
         }
 
-        const orgValue = typeof orgData.value === 'string'
-            ? JSON.parse(orgData.value)
-            : orgData.value;
+        const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
 
         const organizationChart = orgValue.chart || orgValue;
 
@@ -154,11 +144,7 @@ export async function getCurrentUserTeamInfo(): Promise<TeamInfo | null> {
  * @param path - 현재까지의 경로 (팀 ID들)
  * @returns 사용자가 속한 모든 조직 ID 또는 null
  */
-function findUserOrganizationsInTree(
-    node: OrganizationNode,
-    userId: string,
-    path: string[] = []
-): string[] | null {
+function findUserOrganizationsInTree(node: OrganizationNode, userId: string, path: string[] = []): string[] | null {
     if (!node) return null;
 
     // 현재 노드가 팀인 경우 경로에 추가
@@ -208,9 +194,7 @@ export async function getCurrentUserOrganizations(): Promise<string[]> {
         }
 
         // 3. 조직도 차트 추출
-        const orgValue = typeof orgData.value === 'string'
-            ? JSON.parse(orgData.value)
-            : orgData.value;
+        const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
 
         const organizationChart = orgValue.chart || orgValue;
 

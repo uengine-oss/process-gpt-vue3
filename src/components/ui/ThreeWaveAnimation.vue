@@ -1,6 +1,5 @@
 <template>
-    <div class="three-wave-container three-glow-container" ref="threeContainer">
-    </div>
+    <div class="three-wave-container three-glow-container" ref="threeContainer"></div>
 </template>
 
 <script>
@@ -54,8 +53,7 @@ export default {
             mesh: null,
             clock: null,
             animationId: null,
-            isDestroyed: false,
-
+            isDestroyed: false
         };
     },
     mounted() {
@@ -70,17 +68,17 @@ export default {
         // 필요시 추가적인 반응형 처리를 위해 유지
     },
     methods: {
-
-
         initThreeJS() {
             try {
                 const container = this.$refs.threeContainer;
-                
+
                 // Renderer 설정 (Vue 반응형 시스템에서 제외)
-                this.renderer = markRaw(new THREE.WebGLRenderer({ 
-                    antialias: true,
-                    alpha: true
-                }));
+                this.renderer = markRaw(
+                    new THREE.WebGLRenderer({
+                        antialias: true,
+                        alpha: true
+                    })
+                );
                 this.renderer.setClearColor(0x000000, 0);
                 this.renderer.setSize(this.size, this.size);
                 this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -90,12 +88,14 @@ export default {
                 this.scene = markRaw(new THREE.Scene());
 
                 // Camera 설정 (Vue 반응형 시스템에서 제외)
-                this.camera = markRaw(new THREE.PerspectiveCamera(
-                    45,
-                    1, // 정사각형이므로 aspect ratio 1
-                    0.1,
-                    1000
-                ));
+                this.camera = markRaw(
+                    new THREE.PerspectiveCamera(
+                        45,
+                        1, // 정사각형이므로 aspect ratio 1
+                        0.1,
+                        1000
+                    )
+                );
                 this.camera.position.set(0, 0, 8);
 
                 // Clock 초기화 (Vue 반응형 시스템에서 제외)
@@ -228,19 +228,20 @@ export default {
                 `;
 
                 // 셰이더 Material 생성 (Vue 반응형 시스템에서 제외)
-                this.material = markRaw(new THREE.ShaderMaterial({
-                    wireframe: true,
-                    transparent: true,
-                    uniforms: this.uniforms,
-                    vertexShader: vertexShader,
-                    fragmentShader: fragmentShader
-                }));
+                this.material = markRaw(
+                    new THREE.ShaderMaterial({
+                        wireframe: true,
+                        transparent: true,
+                        uniforms: this.uniforms,
+                        vertexShader: vertexShader,
+                        fragmentShader: fragmentShader
+                    })
+                );
 
                 // IcosahedronGeometry 사용 (Vue 반응형 시스템에서 제외)
                 this.geometry = markRaw(new THREE.IcosahedronGeometry(2, 8));
                 this.mesh = markRaw(new THREE.Mesh(this.geometry, this.material));
                 this.scene.add(this.mesh);
-                
             } catch (error) {
                 console.error('Three.js 초기화 오류:', error);
             }
@@ -248,13 +249,13 @@ export default {
 
         animate() {
             if (this.isDestroyed) return;
-            
+
             this.animationId = requestAnimationFrame(this.animate);
-            
+
             if (this.uniforms && this.clock) {
                 // 시간 업데이트
                 this.uniforms.u_time.value = this.clock.getElapsedTime();
-                
+
                 // PaintWaveAnimation과 동일한 로직 적용
                 if (this.isActive) {
                     // 로딩 상태: 빠른 애니메이션
@@ -272,36 +273,31 @@ export default {
                     this.uniforms.u_frequency.value = Math.sin(this.uniforms.u_time.value) * 8 + 12;
                 }
             }
-            
+
             if (this.renderer && this.scene && this.camera) {
                 this.renderer.render(this.scene, this.camera);
             }
         },
 
-
-
-
-
         cleanup() {
             this.isDestroyed = true;
-            
+
             if (this.animationId) {
                 cancelAnimationFrame(this.animationId);
             }
-            
+
             // Three.js 리소스 정리
             if (this.geometry) {
                 this.geometry.dispose();
             }
-            
+
             if (this.material) {
                 this.material.dispose();
             }
-            
+
             if (this.renderer) {
                 this.renderer.dispose();
             }
-
         }
     }
 };
@@ -315,7 +311,15 @@ export default {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(var(--v-theme-primary), 0.7) 0%, rgba(var(--v-theme-primary), 0.5) 20%, rgba(var(--v-theme-primary), 0.3) 40%, rgba(var(--v-theme-primary), 0.15) 60%, rgba(var(--v-theme-primary), 0.08) 80%, transparent 100%);
+    background: radial-gradient(
+        circle,
+        rgba(var(--v-theme-primary), 0.7) 0%,
+        rgba(var(--v-theme-primary), 0.5) 20%,
+        rgba(var(--v-theme-primary), 0.3) 40%,
+        rgba(var(--v-theme-primary), 0.15) 60%,
+        rgba(var(--v-theme-primary), 0.08) 80%,
+        transparent 100%
+    );
     position: relative;
 }
 
@@ -324,4 +328,4 @@ export default {
     position: relative;
     z-index: 2;
 }
-</style> 
+</style>

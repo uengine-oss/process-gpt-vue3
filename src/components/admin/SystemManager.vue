@@ -23,7 +23,7 @@
                     <tr>
                         <th>{{ $t('taskCatalog.systemName') }}</th>
                         <th>{{ $t('taskCatalog.description') }}</th>
-                        <th style="width: 100px;">{{ $t('taskCatalog.actions') }}</th>
+                        <th style="width: 100px">{{ $t('taskCatalog.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -103,35 +103,20 @@
                         <v-text-field
                             v-model="formData.name"
                             :label="$t('taskCatalog.systemName')"
-                            :rules="[v => !!v || $t('taskCatalog.required')]"
+                            :rules="[(v) => !!v || $t('taskCatalog.required')]"
                             variant="outlined"
                             required
                         />
 
-                        <v-textarea
-                            v-model="formData.description"
-                            :label="$t('taskCatalog.description')"
-                            variant="outlined"
-                            rows="3"
-                        />
+                        <v-textarea v-model="formData.description" :label="$t('taskCatalog.description')" variant="outlined" rows="3" />
                     </v-form>
                 </v-card-text>
 
                 <v-card-actions class="d-flex justify-end align-center pa-4">
-                    <v-btn
-                        variant="text"
-                        @click="dialogOpen = false"
-                    >
+                    <v-btn variant="text" @click="dialogOpen = false">
                         {{ $t('taskCatalog.cancel') }}
                     </v-btn>
-                    <v-btn
-                        color="primary"
-                        rounded
-                        variant="flat"
-                        :loading="loading"
-                        :disabled="!formValid"
-                        @click="saveSystem"
-                    >
+                    <v-btn color="primary" rounded variant="flat" :loading="loading" :disabled="!formValid" @click="saveSystem">
                         {{ $t('taskCatalog.save') }}
                     </v-btn>
                 </v-card-actions>
@@ -155,13 +140,7 @@
                 </v-card-text>
 
                 <v-card-actions class="d-flex justify-end align-center pa-4">
-                    <v-btn
-                        color="error"
-                        rounded
-                        variant="flat"
-                        :loading="loading"
-                        @click="deleteSystem"
-                    >
+                    <v-btn color="error" rounded variant="flat" :loading="loading" @click="deleteSystem">
                         {{ $t('taskCatalog.delete') }}
                     </v-btn>
                 </v-card-actions>
@@ -262,5 +241,4 @@ export default defineComponent({
 });
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

@@ -1,13 +1,7 @@
 <template>
     <div>
         <!-- [BLOCK:dialog.container.v1] -->
-        <v-dialog
-            v-model="isOpen"
-            :fullscreen="isMobile"
-            :max-width="isMobile ? '100%' : '400'"
-            persistent
-            transition="dialog-transition"
-        >
+        <v-dialog v-model="isOpen" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '400'" persistent transition="dialog-transition">
             <v-card>
                 <!-- [BLOCK:dialog.header.v1] -->
                 <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
@@ -36,12 +30,20 @@
                                 <template v-slot:label>
                                     <span v-if="!isGeneratingName">{{ $t('ProcessDefinitionVersionDialog.name') }}</span>
                                     <span v-else class="thinking-wave-text">
-                                        <span v-for="(char, index) in $t('ProcessDefinitionVersionDialog.generatingName')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
+                                        <span
+                                            v-for="(char, index) in $t('ProcessDefinitionVersionDialog.generatingName')"
+                                            :key="index"
+                                            :style="{ animationDelay: `${index * 0.1}s` }"
+                                            class="thinking-char"
+                                        >
                                             {{ char === ' ' ? '\u00A0' : char }}
                                         </span>
                                     </span>
                                 </template>
-                                <template v-if="information.name && !isGeneratingName && isNew && mode === 'ProcessGPT'" v-slot:append-inner>
+                                <template
+                                    v-if="information.name && !isGeneratingName && isNew && mode === 'ProcessGPT'"
+                                    v-slot:append-inner
+                                >
                                     <v-tooltip location="top">
                                         <template v-slot:activator="{ props }">
                                             <v-btn
@@ -59,21 +61,24 @@
                                     </v-tooltip>
                                 </template>
                             </v-text-field>
-                            <v-text-field
-                                v-model="information.proc_def_id"
-                                :rules="idRules"
-                                required
-                                class="pb-2"
-                            >
+                            <v-text-field v-model="information.proc_def_id" :rules="idRules" required class="pb-2">
                                 <template v-slot:label>
                                     <span v-if="!isGeneratingId">{{ $t('ProcessDefinitionVersionDialog.id') }}</span>
                                     <span v-else class="thinking-wave-text">
-                                        <span v-for="(char, index) in $t('ProcessDefinitionVersionDialog.generatingId')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
+                                        <span
+                                            v-for="(char, index) in $t('ProcessDefinitionVersionDialog.generatingId')"
+                                            :key="index"
+                                            :style="{ animationDelay: `${index * 0.1}s` }"
+                                            class="thinking-char"
+                                        >
                                             {{ char === ' ' ? '\u00A0' : char }}
                                         </span>
                                     </span>
                                 </template>
-                                <template v-if="information.proc_def_id && !isGeneratingId && isNew && mode === 'ProcessGPT'" v-slot:append-inner>
+                                <template
+                                    v-if="information.proc_def_id && !isGeneratingId && isNew && mode === 'ProcessGPT'"
+                                    v-slot:append-inner
+                                >
                                     <v-tooltip location="top">
                                         <template v-slot:activator="{ props }">
                                             <v-btn
@@ -103,11 +108,25 @@
                         <v-select
                             v-model="information.version_tag"
                             :items="[
-                                {title: $t('ProcessDefinitionVersionDialog.minor') + ' (' + $t('ProcessDefinitionVersionDialog.minorDesc') + ')', value: 'minor'},
-                                {title: $t('ProcessDefinitionVersionDialog.major') + ' (' + $t('ProcessDefinitionVersionDialog.majorDesc') + ')', value: 'major'}
+                                {
+                                    title:
+                                        $t('ProcessDefinitionVersionDialog.minor') +
+                                        ' (' +
+                                        $t('ProcessDefinitionVersionDialog.minorDesc') +
+                                        ')',
+                                    value: 'minor'
+                                },
+                                {
+                                    title:
+                                        $t('ProcessDefinitionVersionDialog.major') +
+                                        ' (' +
+                                        $t('ProcessDefinitionVersionDialog.majorDesc') +
+                                        ')',
+                                    value: 'major'
+                                }
                             ]"
                             :label="$t('ProcessDefinitionVersionDialog.versionTag')"
-                            :rules="[v => !!v || $t('ProcessDefinitionVersionDialog.versionTagRequired')]"
+                            :rules="[(v) => !!v || $t('ProcessDefinitionVersionDialog.versionTagRequired')]"
                             variant="outlined"
                             density="compact"
                             class="mb-2"
@@ -120,17 +139,15 @@
                             </template>
                         </v-select>
                         <div class="position-relative">
-                            <v-textarea class="process-definition-version-dialog-textarea"
+                            <v-textarea
+                                class="process-definition-version-dialog-textarea"
                                 v-model="information.message"
                                 :label="$t('ProcessDefinitionVersionDialog.message')"
                                 hide-details
                                 auto-grows
                             ></v-textarea>
-                            <div v-if="isDiffGenerating"
-                                class="text-caption text-grey-darken-1 mt-1 d-flex align-center">
-                                <v-progress-circular indeterminate size="14" width="2" color="primary"
-                                    class="mr-1"
-                                ></v-progress-circular>
+                            <div v-if="isDiffGenerating" class="text-caption text-grey-darken-1 mt-1 d-flex align-center">
+                                <v-progress-circular indeterminate size="14" width="2" color="primary" class="mr-1"></v-progress-circular>
                                 <span>{{ $t('ProcessDefinitionVersionDialog.generatingDiff') || '변경 내역을 분석 중입니다...' }}</span>
                             </div>
                         </div>
@@ -172,13 +189,7 @@
                 <!-- [BLOCK:dialog.footer.actions.v1] [BLOCK:button.primary.v1] -->
                 <v-card-actions class="d-flex justify-space-between align-center pa-4">
                     <v-spacer />
-                    <v-btn
-                        color="primary"
-                        rounded
-                        variant="flat"
-                        :disabled="!validate()"
-                        @click="save()"
-                    >
+                    <v-btn color="primary" rounded variant="flat" :disabled="!validate()" @click="save()">
                         {{ $t('ProcessDefinitionVersionDialog.save') }}
                     </v-btn>
                 </v-card-actions>
@@ -208,7 +219,7 @@ export default {
         processName: String,
         useOptimize: Boolean,
         // 현재 모델러에서 편집 중인 최신 BPMN XML (ProcessGPT 모드에서만 사용)
-        currentBpmn: String,
+        currentBpmn: String
     },
     data: () => ({
         isMajor: false, // legacy flag, 현재는 사용 안 함
@@ -225,7 +236,7 @@ export default {
             timeStamp: null,
             message: null,
             releaseName: null,
-            owner: null  // 담당자
+            owner: null // 담당자
         },
         isOpen: false, // inner var
         isMobile: window.innerWidth <= 768,
@@ -245,21 +256,18 @@ export default {
         // 마이너 / 메이저 타입 선택 가능 (minor가 상단)
         versionTagItems: ['minor', 'major'],
         versionHelpDetails: [
-            { title: "ProcessDefinitionVersionDialog.helpIntro" },
-            { title: "ProcessDefinitionVersionDialog.helpVersionToggle" },
-            { title: "ProcessDefinitionVersionDialog.helpOptimize" }
+            { title: 'ProcessDefinitionVersionDialog.helpIntro' },
+            { title: 'ProcessDefinitionVersionDialog.helpVersionToggle' },
+            { title: 'ProcessDefinitionVersionDialog.helpOptimize' }
         ],
         // 버전 변경 설명(AI Diff) 생성 중 여부
-        isDiffGenerating: false,
+        isDiffGenerating: false
     }),
     computed: {
         idRules() {
             const isUEngine = this.mode === 'uEngine';
             if (isUEngine) {
-                return [
-                    (v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'),
-                    () => true
-                ];
+                return [(v) => !!v || this.$t('ProcessDefinitionVersionDialog.idRequired'), () => true];
             }
             const pattern = /^[a-z0-9_-]+$/;
             return [
@@ -270,9 +278,7 @@ export default {
         newVersion() {
             let baseVersion = this.information.version || '0.0';
             let major = Math.floor(parseFloat(baseVersion)) || 0;
-            let minor = baseVersion.toString().includes('.')
-                ? Number(baseVersion.toString().split('.')[1]) || 0
-                : 0;
+            let minor = baseVersion.toString().includes('.') ? Number(baseVersion.toString().split('.')[1]) || 0 : 0;
 
             if (this.information.version_tag === 'major') {
                 major += 1;
@@ -300,23 +306,21 @@ export default {
         // PAL 모드에서는 최적화(helpOptimize) 항목을 숨기기 위한 헬프 목록
         displayVersionHelpDetails() {
             if (this.isPal) {
-                return this.versionHelpDetails.filter(
-                    (item) => item.title !== 'ProcessDefinitionVersionDialog.helpOptimize'
-                );
+                return this.versionHelpDetails.filter((item) => item.title !== 'ProcessDefinitionVersionDialog.helpOptimize');
             }
             return this.versionHelpDetails;
-        },
+        }
     },
     watch: {
         useOptimize: {
             handler(newVal) {
                 this.checkOptimize = newVal;
-            },
+            }
         },
         checkOptimize: {
             handler(newVal) {
                 this.$emit('update:useOptimize', newVal);
-            },
+            }
         },
         // Name 필드 감시: 사용자가 프로세스 이름 입력 시 2초 후 AI가 자동으로 ID 추천
         'information.name': {
@@ -325,12 +329,12 @@ export default {
                 if (this.isGeneratingName || this.isGeneratingId) {
                     return;
                 }
-                
+
                 // 이전 타이머 취소 (연속 타이핑 시 마지막 입력 2초 후에만 실행)
                 if (this.nameInputTimeout) {
                     clearTimeout(this.nameInputTimeout);
                 }
-                
+
                 // 새 프로세스이고 ID가 비어있을 때만 자동 생성
                 if (newVal && newVal.trim() && this.isNew && this.mode === 'ProcessGPT' && !this.information.proc_def_id) {
                     this.isGeneratingId = true;
@@ -340,7 +344,7 @@ export default {
                 } else {
                     this.isGeneratingId = false;
                 }
-            },
+            }
         },
         // ID 필드 감시: 사용자가 직접 입력한 ID의 중복 여부를 체크
         'information.proc_def_id': {
@@ -349,7 +353,7 @@ export default {
                 if (this.idCheckTimeout) {
                     clearTimeout(this.idCheckTimeout);
                 }
-                
+
                 if (newVal && newVal.trim() && this.isNew) {
                     this.idCheckTimeout = setTimeout(async () => {
                         try {
@@ -372,7 +376,7 @@ export default {
                     this.isDuplicateId = false;
                     this.overwriteConfirm = false;
                 }
-            },
+            }
         },
         open: {
             async handler(newVal) {
@@ -385,12 +389,12 @@ export default {
                 } else {
                     // 다이얼로그 닫을 때 ID 생성 관련 상태 초기화
                     this.isOpen = false;
-                    this.previousSuggestions = [];  // 이전 추천 ID 목록 초기화
-                    this.previousNameSuggestions = [];  // 이전 추천 이름 목록 초기화
-                    this.isDuplicateId = false;     // 중복 상태 초기화
-                    this.overwriteConfirm = false;  // 덮어쓰기 확인 초기화
+                    this.previousSuggestions = []; // 이전 추천 ID 목록 초기화
+                    this.previousNameSuggestions = []; // 이전 추천 이름 목록 초기화
+                    this.isDuplicateId = false; // 중복 상태 초기화
+                    this.overwriteConfirm = false; // 덮어쓰기 확인 초기화
                 }
-            },
+            }
         },
         $route: function (newVal) {
             if (newVal) {
@@ -400,7 +404,9 @@ export default {
     },
     mounted() {
         this.checkOptimize = this.useOptimize;
-        this._onResize = () => { this.isMobile = window.innerWidth <= 768; };
+        this._onResize = () => {
+            this.isMobile = window.innerWidth <= 768;
+        };
         window.addEventListener('resize', this._onResize);
     },
     beforeUnmount() {
@@ -420,11 +426,11 @@ export default {
             me.regenerateIdOnly = false; // 이름+ID 모두 생성
             me.isGeneratingName = true;
             me.isGeneratingId = true;
-            
+
             try {
                 me.idGenerator = new ProcessDefinitionIdGenerator(me, {
                     isStream: true,
-                    preferredLanguage: "Korean"
+                    preferredLanguage: 'Korean'
                 });
                 await me.idGenerator.generate();
             } catch (error) {
@@ -446,12 +452,12 @@ export default {
             }
             me.regenerateIdOnly = true; // ID만 생성
             me.isGeneratingId = true;
-            
+
             try {
                 me.bpmnProcessInfo = me.information.name; // 현재 입력된 이름을 AI 프롬프트로 전달
                 me.idGenerator = new ProcessDefinitionIdGenerator(me, {
                     isStream: true,
-                    preferredLanguage: "Korean"
+                    preferredLanguage: 'Korean'
                 });
                 await me.idGenerator.generate();
             } catch (error) {
@@ -473,7 +479,7 @@ export default {
                 const lines = response.trim().split('\n');
                 let name = '';
                 let id = '';
-                
+
                 for (const line of lines) {
                     const trimmedLine = line.trim();
                     if (trimmedLine.startsWith('name:')) {
@@ -482,28 +488,28 @@ export default {
                         id = trimmedLine.split(':')[1]?.trim() || '';
                     }
                 }
-                
+
                 if (!id) {
                     me.isGeneratingName = false;
                     me.isGeneratingId = false;
                     return;
                 }
-                
+
                 // 이름 설정: ID만 재생성할 때는 이름 변경 안 함
                 if (name && !me.regenerateIdOnly) {
                     me.information.name = name;
                     me.previousNameSuggestions.push(name); // 이전 이름 목록에 추가
                 }
-                
+
                 // 1단계: 이전 추천 목록에 이미 있는 ID인지 확인
                 if (me.previousSuggestions.includes(id)) {
                     me.isGeneratingName = false;
                     me.isGeneratingId = false;
                     return;
                 }
-                
-                me.previousSuggestions.push(id);  // 새로운 ID는 목록에 추가
-                
+
+                me.previousSuggestions.push(id); // 새로운 ID는 목록에 추가
+
                 try {
                     // 2단계: DB에 동일한 ID가 있는지 확인
                     const exists = await backend.getRawDefinition(id);
@@ -514,11 +520,11 @@ export default {
                         // 3단계: DB 중복 발견 → 6자리 UUID 추가하여 고유 ID 생성
                         let uniqueId = null;
                         let attempts = 0;
-                        
+
                         while (!uniqueId && attempts < 5) {
                             const shortUuid = Math.random().toString(36).substring(2, 8);
                             const candidateId = `${id}_${shortUuid}`;
-                            
+
                             try {
                                 const uuidExists = await backend.getRawDefinition(candidateId);
                                 if (!uuidExists) {
@@ -537,10 +543,9 @@ export default {
                     // DB 조회 에러 시 원본 ID 사용
                     me.information.proc_def_id = id;
                 }
-                
+
                 me.isGeneratingName = false;
                 me.isGeneratingId = false;
-                
             } catch (error) {
                 console.error('응답 파싱 중 오류 발생:', error);
                 me.isGeneratingName = false;
@@ -574,7 +579,7 @@ export default {
                         if (versionInfo.length > 0) {
                             me.information = versionInfo[0];
                             me.information.name = me.processName ? me.processName : definitionInfo.name;
-                            me.information.owner = definitionInfo.owner || '';  // 기존 담당자 로드
+                            me.information.owner = definitionInfo.owner || ''; // 기존 담당자 로드
                             me.information.message = '';
                         } else {
                             me.information = {
@@ -587,7 +592,7 @@ export default {
                                 timeStamp: null,
                                 message: null,
                                 version_tag: 'minor',
-                                owner: definitionInfo.owner || ''  // 기존 담당자 로드
+                                owner: definitionInfo.owner || '' // 기존 담당자 로드
                             };
                         }
                         if (me.mode === 'ProcessGPT') {
@@ -605,9 +610,9 @@ export default {
                             }
                         }
                     } else {
-                        if(!me.$route.params.pathMatch) return;
+                        if (!me.$route.params.pathMatch) return;
                         let defId = me.$route.params.pathMatch.join('/');
-                        if(me.process && me.process.processDefinitionId) {
+                        if (me.process && me.process.processDefinitionId) {
                             defId = me.process.processDefinitionId;
                         }
                         let versionInfo = await backend.getDefinitionVersions(defId, {
@@ -616,7 +621,7 @@ export default {
                             orderBy: 'timeStamp',
                             size: 1
                         });
-                        if(versionInfo) {
+                        if (versionInfo) {
                             const compareVersionParts = (va, vb) => {
                                 const aParts = String(va ?? '')
                                     .split('.')
@@ -637,13 +642,13 @@ export default {
                             // "0.10" > "0.9" 처럼 점(.) 기준 숫자 비교로 정렬
                             versionInfo.sort((a, b) => compareVersionParts(b.version, a.version));
                             const highestVersion = versionInfo.length > 0 ? versionInfo[0].version : null;
-                            me.information.version = highestVersion
+                            me.information.version = highestVersion;
                         } else {
-                            me.information.version = "0.0"
+                            me.information.version = '0.0';
                         }
-                        
-                        me.information.proc_def_id = defId
-                        me.information.name = defId
+
+                        me.information.proc_def_id = defId;
+                        me.information.name = defId;
                     }
                 } else {
                     // BPMN을 불러오지 못한 경우: DB에 없으므로 새 프로세스
@@ -668,9 +673,9 @@ export default {
                         if (modeler) {
                             const elementRegistry = modeler.get('elementRegistry');
                             const allElements = elementRegistry.getAll();
-                            
+
                             // participant와 task들의 name 수집
-                            allElements.forEach(element => {
+                            allElements.forEach((element) => {
                                 if (element.businessObject) {
                                     const bo = element.businessObject;
                                     // Participant name 수집 (프로세스 전체 제목)
@@ -678,10 +683,13 @@ export default {
                                         participantName = bo.name;
                                     }
                                     // Task name 수집 (개별 활동)
-                                    if ((bo.$type === 'bpmn:UserTask' || 
-                                         bo.$type === 'bpmn:ManualTask' ||
-                                         bo.$type === 'bpmn:ServiceTask' ||
-                                         bo.$type === 'bpmn:Task') && bo.name) {
+                                    if (
+                                        (bo.$type === 'bpmn:UserTask' ||
+                                            bo.$type === 'bpmn:ManualTask' ||
+                                            bo.$type === 'bpmn:ServiceTask' ||
+                                            bo.$type === 'bpmn:Task') &&
+                                        bo.name
+                                    ) {
                                         activityNames.push(bo.name);
                                     }
                                 }
@@ -690,7 +698,7 @@ export default {
                     } catch (e) {
                         // BPMN name 추출 실패 무시
                     }
-                    
+
                     me.information = {
                         arcv_id: '',
                         version: 0.0,
@@ -702,7 +710,7 @@ export default {
                         message: '',
                         version_tag: 'minor'
                     };
-                    
+
                     // participant와 activity name들을 AI에게 보내서 프로세스 이름 생성
                     // 주의: 새 프로세스이고, 헤더에서 받은 이름이 없을 때만 실행 (AI 모델링 생성 시에는 이미 이름이 있음)
                     if ((participantName || activityNames.length > 0) && me.isNew && me.mode === 'ProcessGPT' && !me.processName) {
@@ -715,16 +723,16 @@ export default {
                             nameComponents.push(`활동: ${activityNames.join(', ')}`);
                         }
                         me.bpmnProcessInfo = nameComponents.join(' | '); // AI 프롬프트에 사용
-                        
+
                         me.regenerateIdOnly = false; // 이름+ID 모두 생성
                         me.isGeneratingName = true; // 이름 생성 시작
                         me.isGeneratingId = true; // ID 생성 시작
-                        
+
                         setTimeout(async () => {
                             try {
                                 me.idGenerator = new ProcessDefinitionIdGenerator(me, {
                                     isStream: true,
-                                    preferredLanguage: "Korean"
+                                    preferredLanguage: 'Korean'
                                 });
                                 await me.idGenerator.generate();
                             } catch (error) {
@@ -816,7 +824,7 @@ export default {
                         message: me.information.message,
                         release: me.isRelease,
                         releaseName: me.information.releaseName,
-                        owner: me.information.owner  // 담당자
+                        owner: me.information.owner // 담당자
                     });
                 }
             });
@@ -826,7 +834,7 @@ export default {
         },
         validate() {
             // idRules 검증
-            if(this.isPal) {
+            if (this.isPal) {
                 return true;
             }
             if (this.information.proc_def_id) {
@@ -841,7 +849,7 @@ export default {
             }
             if (this.information.name) {
                 if (this.information.name.length < 1) {
-                    return false; 
+                    return false;
                 }
             } else {
                 return false;
@@ -851,7 +859,7 @@ export default {
             if (this.isDuplicateId && !this.overwriteConfirm) {
                 return false;
             }
-            
+
             return true;
         }
     }

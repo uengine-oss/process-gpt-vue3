@@ -22,7 +22,10 @@ export declare class AceBaseClientAuth {
      * @param password The password
      * @returns returns a promise that resolves with the signed in user and access token
      */
-    signIn(username: string, password: string): Promise<{
+    signIn(
+        username: string,
+        password: string
+    ): Promise<{
         user: AceBaseUser;
         accessToken: string;
     }>;
@@ -32,7 +35,10 @@ export declare class AceBaseClientAuth {
      * @param password The password
      * @returns returns a promise that resolves with the signed in user and access token
      */
-    signInWithEmail(email: string, password: string): Promise<{
+    signInWithEmail(
+        email: string,
+        password: string
+    ): Promise<{
         user: AceBaseUser;
         accessToken: string;
     }>;
@@ -72,8 +78,11 @@ export declare class AceBaseClientAuth {
     /**
      * Refreshes an expiring access token with the refresh token returned from finishAuthProviderSignIn
      */
-    refreshAuthProviderToken(providerName: string, refreshToken: string): Promise<{
-        provider: import("./api-web").IAceBaseAuthProviderTokens;
+    refreshAuthProviderToken(
+        providerName: string,
+        refreshToken: string
+    ): Promise<{
+        provider: import('./api-web').IAceBaseAuthProviderTokens;
     }>;
     /**
      * Signs in with an external auth provider by redirecting the user to the provider's login page.
@@ -90,24 +99,31 @@ export declare class AceBaseClientAuth {
      * @param options options object, or boolean specifying whether to signout everywhere
      * @returnsreturns a promise that resolves when user was signed out successfully
      */
-    signOut(options?: boolean | {
-        /**
-         * whether to sign out all clients, or only this one
-         */
-        everywhere?: boolean;
-        /**
-         * if cache database is used: whether to clear cached data
-         * (recommended, currently not enabled by default, might change in next major version)
-         */
-        clearCache?: boolean;
-    }): Promise<void>;
+    signOut(
+        options?:
+            | boolean
+            | {
+                  /**
+                   * whether to sign out all clients, or only this one
+                   */
+                  everywhere?: boolean;
+                  /**
+                   * if cache database is used: whether to clear cached data
+                   * (recommended, currently not enabled by default, might change in next major version)
+                   */
+                  clearCache?: boolean;
+              }
+    ): Promise<void>;
     /**
      * Changes the password of the currently signed into account
      * @param oldPassword
      * @param newPassword
      * @returns returns a promise that resolves with a new access token
      */
-    changePassword(oldPassword: string, newPassword: string): Promise<{
+    changePassword(
+        oldPassword: string,
+        newPassword: string
+    ): Promise<{
         accessToken: string;
     }>;
     /**
@@ -158,82 +174,101 @@ export declare class AceBaseClientAuth {
          * Selection of user settings to update
          */
         settings?: Record<string, boolean | string | number>;
-    }): Promise<{
-        user: null;
-    } | {
-        user: AceBaseUser;
-    }>;
+    }): Promise<
+        | {
+              user: null;
+          }
+        | {
+              user: AceBaseUser;
+          }
+    >;
     /**
      * Changes the username of the currrently signed into account
      * @returns returns a promise that resolves with the updated user details
      */
-    changeUsername(newUsername: string): Promise<{
-        user: null;
-    } | {
-        user: AceBaseUser;
-    }>;
+    changeUsername(newUsername: string): Promise<
+        | {
+              user: null;
+          }
+        | {
+              user: AceBaseUser;
+          }
+    >;
     /**
      * Changes the display name of the currrently signed into account
      * @param newName
      * @returns returns a promise that resolves with the updated user details
      */
-    changeDisplayName(newName: string): Promise<{
-        user: null;
-    } | {
-        user: AceBaseUser;
-    }>;
+    changeDisplayName(newName: string): Promise<
+        | {
+              user: null;
+          }
+        | {
+              user: AceBaseUser;
+          }
+    >;
     /**
      * Changes the email address of the currrently signed in user
      * @param newEmail
      * @returns returns a promise that resolves with the updated user details
      */
-    changeEmail(newEmail: string): Promise<{
-        user: null;
-    } | {
-        user: AceBaseUser;
-    }>;
+    changeEmail(newEmail: string): Promise<
+        | {
+              user: null;
+          }
+        | {
+              user: AceBaseUser;
+          }
+    >;
     /**
      * Changes the user's profile picture
      * @returns returns a promise that resolves with the updated user details
      */
-    changePicture(newPicture: {
-        url: string;
-        width: number;
-        height: number;
-    }): Promise<{
-        user: null;
-    } | {
-        user: AceBaseUser;
-    }>;
+    changePicture(newPicture: { url: string; width: number; height: number }): Promise<
+        | {
+              user: null;
+          }
+        | {
+              user: AceBaseUser;
+          }
+    >;
     /**
      * Updates settings of the currrently signed in user. Passed settings will be merged with the user's current settings
      * @param settings the settings to update
      * @returns returns a promise that resolves with the updated user details
      */
-    updateUserSettings(settings: Record<string, string | number | boolean>): Promise<{
-        user: null;
-    } | {
-        user: AceBaseUser;
-    }>;
+    updateUserSettings(settings: Record<string, string | number | boolean>): Promise<
+        | {
+              user: null;
+          }
+        | {
+              user: AceBaseUser;
+          }
+    >;
     /**
      * Creates a new user account with the given details. If successful, you will automatically be
      * signed into the account. Note: the request will fail if the server has disabled this option
      * @returns returns a promise that resolves with the signed in user and access token
      */
-    signUp(details: ({
-        username: string;
-        email?: string;
-    } | {
-        username?: string;
-        email: string;
-    }) & {
-        password: string;
-        displayName: string;
-        /**
-         * optional settings
-         */
-        settings?: Record<string, string | number | boolean>;
-    }): Promise<{
+    signUp(
+        details: (
+            | {
+                  username: string;
+                  email?: string;
+              }
+            | {
+                  username?: string;
+                  email: string;
+              }
+        ) & {
+            password: string;
+            displayName: string;
+            /**
+             * optional settings
+             */
+            settings?: Record<string, string | number | boolean>;
+        }
+    ): Promise<{
         user: AceBaseUser;
         accessToken?: string;
     }>;

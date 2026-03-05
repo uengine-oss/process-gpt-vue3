@@ -157,14 +157,15 @@ export class AceBaseClientAuth {
      * @param options options object, or boolean specifying whether to signout everywhere
      * @returnsreturns a promise that resolves when user was signed out successfully
      */
-    async signOut(options = {
-        everywhere: false,
-        clearCache: false,
-    }) {
+    async signOut(
+        options = {
+            everywhere: false,
+            clearCache: false
+        }
+    ) {
         if (!this.client.isReady) {
             await this.client.ready();
-        }
-        else if (!this.user) {
+        } else if (!this.user) {
             throw { code: 'not_signed_in', message: 'Not signed in!' };
         }
         if (this.client.connected) {
@@ -314,8 +315,7 @@ export class AceBaseClientAuth {
         const result = await this.client.api.signUp(details, !isAdmin);
         if (isAdmin) {
             return { user: result.user };
-        }
-        else {
+        } else {
             // Sign into new account
             this.accessToken = result.accessToken;
             this.user = new AceBaseUser(result.user);

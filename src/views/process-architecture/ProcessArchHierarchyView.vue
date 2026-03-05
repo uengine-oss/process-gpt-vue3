@@ -41,11 +41,7 @@
 
         <!-- All Domains View -->
         <div v-else-if="isAllDomainsMode" class="all-domains-container">
-            <div
-                v-for="domain in visibleDomains"
-                :key="domain.id"
-                class="domain-section mb-6"
-            >
+            <div v-for="domain in visibleDomains" :key="domain.id" class="domain-section mb-6">
                 <div class="hierarchy-diagram-wrapper">
                     <div class="hierarchy-diagram">
                         <div class="tree-node-wrapper">
@@ -57,11 +53,7 @@
                             >
                                 <div class="node-name">{{ domain.name }}</div>
                                 <div class="node-sub">Domain</div>
-                                <v-icon
-                                    v-if="getMegasForDomain(domain).length > 0"
-                                    class="node-toggle-icon"
-                                    size="16"
-                                >
+                                <v-icon v-if="getMegasForDomain(domain).length > 0" class="node-toggle-icon" size="16">
                                     {{ collapsed.has(`domain-${domain.id}`) ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
                                 </v-icon>
                             </div>
@@ -71,11 +63,7 @@
                                     v-if="getMegasForDomain(domain).length > 0 && !collapsed.has(`domain-${domain.id}`)"
                                     class="tree-children"
                                 >
-                                    <div
-                                        v-for="mega in getMegasForDomain(domain)"
-                                        :key="mega.id"
-                                        class="tree-node-wrapper"
-                                    >
+                                    <div v-for="mega in getMegasForDomain(domain)" :key="mega.id" class="tree-node-wrapper">
                                         <div
                                             class="tree-node mega-node"
                                             :class="{ 'node-collapsible': getMajorsInDomain(mega, domain).length > 0 }"
@@ -83,18 +71,17 @@
                                         >
                                             <div class="node-name">{{ mega.name }}</div>
                                             <div class="node-sub">Mega</div>
-                                            <v-icon
-                                                v-if="getMajorsInDomain(mega, domain).length > 0"
-                                                class="node-toggle-icon"
-                                                size="14"
-                                            >
+                                            <v-icon v-if="getMajorsInDomain(mega, domain).length > 0" class="node-toggle-icon" size="14">
                                                 {{ collapsed.has(`mega-${domain.id}-${mega.id}`) ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
                                             </v-icon>
                                         </div>
 
                                         <transition name="fold">
                                             <div
-                                                v-if="getMajorsInDomain(mega, domain).length > 0 && !collapsed.has(`mega-${domain.id}-${mega.id}`)"
+                                                v-if="
+                                                    getMajorsInDomain(mega, domain).length > 0 &&
+                                                    !collapsed.has(`mega-${domain.id}-${mega.id}`)
+                                                "
                                                 class="tree-children"
                                             >
                                                 <div
@@ -120,11 +107,14 @@
 
                                                     <transition name="fold">
                                                         <div
-                                                            v-if="(major.sub_proc_list || []).length > 0 && !collapsed.has(`major-${major.id}`)"
+                                                            v-if="
+                                                                (major.sub_proc_list || []).length > 0 &&
+                                                                !collapsed.has(`major-${major.id}`)
+                                                            "
                                                             class="tree-children"
                                                         >
                                                             <div
-                                                                v-for="sub in (major.sub_proc_list || [])"
+                                                                v-for="sub in major.sub_proc_list || []"
                                                                 :key="sub.id"
                                                                 class="tree-node-wrapper"
                                                             >
@@ -154,7 +144,10 @@
                                                                             :status="processStatuses.get(sub.id).status"
                                                                             size="x-small"
                                                                         />
-                                                                        <span v-if="processStatuses.get(sub.id)?.version" class="text-caption">
+                                                                        <span
+                                                                            v-if="processStatuses.get(sub.id)?.version"
+                                                                            class="text-caption"
+                                                                        >
                                                                             v{{ processStatuses.get(sub.id).version }}
                                                                         </span>
                                                                     </div>
@@ -186,25 +179,14 @@
                     >
                         <div class="node-name">{{ activeDomainData?.name }}</div>
                         <div class="node-sub">Domain</div>
-                        <v-icon
-                            v-if="megaProcessesForSingleDomain.length > 0"
-                            class="node-toggle-icon"
-                            size="16"
-                        >
+                        <v-icon v-if="megaProcessesForSingleDomain.length > 0" class="node-toggle-icon" size="16">
                             {{ collapsed.has('domain') ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
                         </v-icon>
                     </div>
 
                     <transition name="fold">
-                        <div
-                            v-if="megaProcessesForSingleDomain.length > 0 && !collapsed.has('domain')"
-                            class="tree-children"
-                        >
-                            <div
-                                v-for="mega in megaProcessesForSingleDomain"
-                                :key="mega.id"
-                                class="tree-node-wrapper"
-                            >
+                        <div v-if="megaProcessesForSingleDomain.length > 0 && !collapsed.has('domain')" class="tree-children">
+                            <div v-for="mega in megaProcessesForSingleDomain" :key="mega.id" class="tree-node-wrapper">
                                 <div
                                     class="tree-node mega-node"
                                     :class="{ 'node-collapsible': getMajorsInDomain(mega, activeDomainData).length > 0 }"
@@ -212,11 +194,7 @@
                                 >
                                     <div class="node-name">{{ mega.name }}</div>
                                     <div class="node-sub">Mega</div>
-                                    <v-icon
-                                        v-if="getMajorsInDomain(mega, activeDomainData).length > 0"
-                                        class="node-toggle-icon"
-                                        size="14"
-                                    >
+                                    <v-icon v-if="getMajorsInDomain(mega, activeDomainData).length > 0" class="node-toggle-icon" size="14">
                                         {{ collapsed.has(`mega-${mega.id}`) ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
                                     </v-icon>
                                 </div>
@@ -238,11 +216,7 @@
                                             >
                                                 <div class="node-name">{{ major.name }}</div>
                                                 <div class="node-sub">{{ (major.sub_proc_list || []).length }} sub</div>
-                                                <v-icon
-                                                    v-if="(major.sub_proc_list || []).length > 0"
-                                                    class="node-toggle-icon"
-                                                    size="14"
-                                                >
+                                                <v-icon v-if="(major.sub_proc_list || []).length > 0" class="node-toggle-icon" size="14">
                                                     {{ collapsed.has(`major-${major.id}`) ? 'mdi-chevron-down' : 'mdi-chevron-up' }}
                                                 </v-icon>
                                             </div>
@@ -252,11 +226,7 @@
                                                     v-if="(major.sub_proc_list || []).length > 0 && !collapsed.has(`major-${major.id}`)"
                                                     class="tree-children"
                                                 >
-                                                    <div
-                                                        v-for="sub in (major.sub_proc_list || [])"
-                                                        :key="sub.id"
-                                                        class="tree-node-wrapper"
-                                                    >
+                                                    <div v-for="sub in major.sub_proc_list || []" :key="sub.id" class="tree-node-wrapper">
                                                         <div
                                                             class="tree-node sub-node cursor-pointer"
                                                             @click.stop="$emit('navigate', sub.id, sub.name)"
@@ -305,7 +275,7 @@
                 <div class="legend-box sub-node-color"></div>
                 <span class="text-caption">Sub Process</span>
             </div>
-            <v-divider vertical class="mx-2" style="height: 16px;" />
+            <v-divider vertical class="mx-2" style="height: 16px" />
             <div class="d-flex align-center ga-1">
                 <v-icon size="14" color="grey">mdi-chevron-down</v-icon>
                 <span class="text-caption text-grey">{{ $t('processArchitecture.hierarchy.clickToToggle') }}</span>
@@ -337,14 +307,17 @@ const collapsed = ref(new Set<string>());
 const isAllDomainsMode = computed(() => activeDomainIndex.value === undefined || activeDomainIndex.value === null);
 
 // If parent selectedDomain changes, sync
-watch(() => props.selectedDomain, (val) => {
-    if (val) {
-        const idx = props.domains.findIndex((d: any) => d.name === val);
-        if (idx >= 0) activeDomainIndex.value = idx;
-    } else {
-        activeDomainIndex.value = undefined;
+watch(
+    () => props.selectedDomain,
+    (val) => {
+        if (val) {
+            const idx = props.domains.findIndex((d: any) => d.name === val);
+            if (idx >= 0) activeDomainIndex.value = idx;
+        } else {
+            activeDomainIndex.value = undefined;
+        }
     }
-});
+);
 
 // Reset collapsed state when domain changes
 watch(activeDomainIndex, () => {
@@ -572,17 +545,17 @@ function collapseAll() {
 }
 
 .domain-node {
-    background: #00695C;
+    background: #00695c;
     color: white;
 }
 
 .mega-node {
-    background: #E65100;
+    background: #e65100;
     color: white;
 }
 
 .major-node {
-    background: #2E7D32;
+    background: #2e7d32;
     color: white;
 }
 
@@ -594,7 +567,7 @@ function collapseAll() {
 
 .sub-node:hover {
     background: #e3f2fd;
-    border-color: #1976D2;
+    border-color: #1976d2;
 }
 
 .sub-node .fav-btn {
@@ -639,15 +612,15 @@ function collapseAll() {
 }
 
 .domain-node-color {
-    background: #00695C;
+    background: #00695c;
 }
 
 .mega-node-color {
-    background: #E65100;
+    background: #e65100;
 }
 
 .major-node-color {
-    background: #2E7D32;
+    background: #2e7d32;
 }
 
 .sub-node-color {

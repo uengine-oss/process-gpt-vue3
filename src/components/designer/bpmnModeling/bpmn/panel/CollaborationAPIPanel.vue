@@ -128,7 +128,7 @@ export default {
         // addParameter() {
         //     this.uengineProperties.parameters.push({ key: this.paramKey, value: this.paramValue });
         // },
-        
+
         addCheckpoint() {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },

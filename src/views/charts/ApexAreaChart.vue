@@ -20,7 +20,7 @@ const breadcrumbs = ref([
         disabled: true,
         href: '#'
     }
-])
+]);
 const chartOptions = computed(() => {
     return {
         chart: {
@@ -35,7 +35,7 @@ const chartOptions = computed(() => {
                 show: false
             }
         },
-        colors: [getPrimary.value,getSecondary.value],
+        colors: [getPrimary.value, getSecondary.value],
         dataLabels: {
             enabled: false
         },
@@ -52,7 +52,7 @@ const chartOptions = computed(() => {
                 '2018-09-19T03:30:00',
                 '2018-09-19T04:30:00',
                 '2018-09-19T05:30:00',
-                '2018-09-19T06:30:00',
+                '2018-09-19T06:30:00'
             ]
         },
         yaxis: {
@@ -70,7 +70,7 @@ const chartOptions = computed(() => {
             show: false
         },
         tooltip: {
-            theme: 'dark',
+            theme: 'dark'
         }
     };
 });

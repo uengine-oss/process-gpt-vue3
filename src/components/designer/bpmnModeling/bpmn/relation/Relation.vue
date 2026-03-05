@@ -5,11 +5,11 @@
             connectable
             deletable
             :id="relation.sourceRef + '-' + relation.targetRef"
-            :vertices.sync="vertices"
-            :from.sync="relation.sourceRef"
-            :to.sync="relation.targetRef"
-            :_style.sync="style"
-            :label.sync="relation.name"
+            v-model:vertices="vertices"
+            v-model:from="relation.sourceRef"
+            v-model:to="relation.targetRef"
+            v-model:_style="style"
+            v-model:label="relation.name"
             :customMoveActionExist="canvas.isCustomMoveExist"
             v-on:customRelationMoveAction="delayedRelationMove"
             v-on:dblclick="showProperty"
@@ -26,7 +26,7 @@
             v-on:addedToGroup="onAddedToGroup"
         ></edge-element>
 
-        <bpmn-relation-panel v-if="drawer" :item.sync="relation" :otherwise.sync="otherwise" @close="closePanel"></bpmn-relation-panel>
+        <bpmn-relation-panel v-if="drawer" v-model:item="relation" v-model:otherwise="otherwise" @close="closePanel"></bpmn-relation-panel>
     </div>
 </template>
 

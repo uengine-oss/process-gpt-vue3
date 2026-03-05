@@ -130,7 +130,7 @@ function hashXml(xml: string): string {
     const normalized = xml.replace(/\s+/g, ' ').trim();
     for (let i = 0; i < normalized.length; i++) {
         const char = normalized.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash;
     }
     return Math.abs(hash).toString(16).padStart(8, '0');
@@ -139,19 +139,39 @@ function hashXml(xml: string): string {
 // BPMN Element 타입 분류
 function getElementCategory(type: string): 'node' | 'link' | 'lane' | 'other' {
     const nodeTypes = [
-        'bpmn:Task', 'bpmn:UserTask', 'bpmn:ServiceTask', 'bpmn:ScriptTask',
-        'bpmn:ManualTask', 'bpmn:BusinessRuleTask', 'bpmn:SendTask', 'bpmn:ReceiveTask',
-        'bpmn:StartEvent', 'bpmn:EndEvent', 'bpmn:IntermediateThrowEvent', 'bpmn:IntermediateCatchEvent',
+        'bpmn:Task',
+        'bpmn:UserTask',
+        'bpmn:ServiceTask',
+        'bpmn:ScriptTask',
+        'bpmn:ManualTask',
+        'bpmn:BusinessRuleTask',
+        'bpmn:SendTask',
+        'bpmn:ReceiveTask',
+        'bpmn:StartEvent',
+        'bpmn:EndEvent',
+        'bpmn:IntermediateThrowEvent',
+        'bpmn:IntermediateCatchEvent',
         'bpmn:BoundaryEvent',
-        'bpmn:ExclusiveGateway', 'bpmn:ParallelGateway', 'bpmn:InclusiveGateway',
-        'bpmn:EventBasedGateway', 'bpmn:ComplexGateway',
-        'bpmn:SubProcess', 'bpmn:CallActivity', 'bpmn:Transaction',
-        'bpmn:DataObjectReference', 'bpmn:DataStoreReference',
-        'bpmn:TextAnnotation', 'bpmn:Group'
+        'bpmn:ExclusiveGateway',
+        'bpmn:ParallelGateway',
+        'bpmn:InclusiveGateway',
+        'bpmn:EventBasedGateway',
+        'bpmn:ComplexGateway',
+        'bpmn:SubProcess',
+        'bpmn:CallActivity',
+        'bpmn:Transaction',
+        'bpmn:DataObjectReference',
+        'bpmn:DataStoreReference',
+        'bpmn:TextAnnotation',
+        'bpmn:Group'
     ];
 
     const linkTypes = [
-        'bpmn:SequenceFlow', 'bpmn:MessageFlow', 'bpmn:Association', 'bpmn:DataInputAssociation', 'bpmn:DataOutputAssociation'
+        'bpmn:SequenceFlow',
+        'bpmn:MessageFlow',
+        'bpmn:Association',
+        'bpmn:DataInputAssociation',
+        'bpmn:DataOutputAssociation'
     ];
 
     const laneTypes = ['bpmn:Participant', 'bpmn:Lane'];
@@ -388,10 +408,10 @@ export async function parseBpmnXml(xml: string, modelId: string): Promise<Parsed
     }
 
     // Lane 매핑 적용
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
         const laneElementId = laneNodeMap.get(node.element_id);
         if (laneElementId) {
-            const lane = lanes.find(l => l.element_id === laneElementId);
+            const lane = lanes.find((l) => l.element_id === laneElementId);
             if (lane && lane.id) {
                 node.lane_id = lane.id;
             }
@@ -471,11 +491,7 @@ export class BpmnModelService {
         // 5. Lane 저장 (먼저 저장하여 ID 확보)
         const laneIdMap = new Map<string, string>();
         for (const lane of parsed.lanes) {
-            const { data: savedLane, error } = await this.supabase
-                .from('tb_bpmn_lane')
-                .insert(lane)
-                .select()
-                .single();
+            const { data: savedLane, error } = await this.supabase.from('tb_bpmn_lane').insert(lane).select().single();
 
             if (error) {
                 console.error('Lane 저장 실패:', error);
@@ -488,12 +504,9 @@ export class BpmnModelService {
         const nodeIdMap = new Map<string, string>();
         for (const node of parsed.nodes) {
             // Lane ID 매핑
-            const laneElementId = Array.from(laneIdMap.keys()).find(key => {
-                const originalLane = parsed.lanes.find(l => l.element_id === key);
-                return originalLane && parsed.nodes.some(n =>
-                    n.element_id === node.element_id &&
-                    n.lane_id === originalLane.element_id
-                );
+            const laneElementId = Array.from(laneIdMap.keys()).find((key) => {
+                const originalLane = parsed.lanes.find((l) => l.element_id === key);
+                return originalLane && parsed.nodes.some((n) => n.element_id === node.element_id && n.lane_id === originalLane.element_id);
             });
 
             const nodeToSave = {
@@ -501,11 +514,7 @@ export class BpmnModelService {
                 lane_id: laneElementId ? laneIdMap.get(laneElementId) : null
             };
 
-            const { data: savedNode, error } = await this.supabase
-                .from('tb_bpmn_node')
-                .insert(nodeToSave)
-                .select()
-                .single();
+            const { data: savedNode, error } = await this.supabase.from('tb_bpmn_node').insert(nodeToSave).select().single();
 
             if (error) {
                 console.error('Node 저장 실패:', error);
@@ -522,9 +531,7 @@ export class BpmnModelService {
                 target_node_id: nodeIdMap.get(link.target_element_id) || null
             };
 
-            const { error } = await this.supabase
-                .from('tb_bpmn_link')
-                .insert(linkToSave);
+            const { error } = await this.supabase.from('tb_bpmn_link').insert(linkToSave);
 
             if (error) {
                 console.error('Link 저장 실패:', error);
@@ -556,11 +563,7 @@ export class BpmnModelService {
      * REQ-03: 모델 상세 조회
      */
     async getModel(modelId: string): Promise<BpmnModel | null> {
-        const { data, error } = await this.supabase
-            .from('tb_bpmn_model')
-            .select('*')
-            .eq('id', modelId)
-            .single();
+        const { data, error } = await this.supabase.from('tb_bpmn_model').select('*').eq('id', modelId).single();
 
         if (error) return null;
         return data;
@@ -608,8 +611,7 @@ export class BpmnModelService {
             query = query.ilike('name', `%${params.search}%`);
         }
 
-        query = query.order('updated_at', { ascending: false })
-            .range(offset, offset + limit - 1);
+        query = query.order('updated_at', { ascending: false }).range(offset, offset + limit - 1);
 
         const { data, error, count } = await query;
 
@@ -621,10 +623,7 @@ export class BpmnModelService {
      * 모델의 노드 목록 조회
      */
     async getModelNodes(modelId: string, elementType?: string): Promise<BpmnNode[]> {
-        let query = this.supabase
-            .from('tb_bpmn_node')
-            .select('*')
-            .eq('model_id', modelId);
+        let query = this.supabase.from('tb_bpmn_node').select('*').eq('model_id', modelId);
 
         if (elementType) {
             query = query.eq('element_type', elementType);
@@ -639,10 +638,7 @@ export class BpmnModelService {
      * 모델의 링크 목록 조회
      */
     async getModelLinks(modelId: string): Promise<BpmnLink[]> {
-        const { data, error } = await this.supabase
-            .from('tb_bpmn_link')
-            .select('*')
-            .eq('model_id', modelId);
+        const { data, error } = await this.supabase.from('tb_bpmn_link').select('*').eq('model_id', modelId);
 
         if (error) throw new Error(`링크 조회 실패: ${error.message}`);
         return data || [];
@@ -652,10 +648,7 @@ export class BpmnModelService {
      * 모델의 레인 목록 조회
      */
     async getModelLanes(modelId: string): Promise<BpmnLane[]> {
-        const { data, error } = await this.supabase
-            .from('tb_bpmn_lane')
-            .select('*')
-            .eq('model_id', modelId);
+        const { data, error } = await this.supabase.from('tb_bpmn_lane').select('*').eq('model_id', modelId);
 
         if (error) throw new Error(`레인 조회 실패: ${error.message}`);
         return data || [];
@@ -674,10 +667,7 @@ export class BpmnModelService {
      * 모델 삭제 (soft delete)
      */
     async deleteModel(modelId: string): Promise<void> {
-        const { error } = await this.supabase
-            .from('tb_bpmn_model')
-            .update({ deleted_at: new Date().toISOString() })
-            .eq('id', modelId);
+        const { error } = await this.supabase.from('tb_bpmn_model').update({ deleted_at: new Date().toISOString() }).eq('id', modelId);
 
         if (error) throw new Error(`모델 삭제 실패: ${error.message}`);
     }

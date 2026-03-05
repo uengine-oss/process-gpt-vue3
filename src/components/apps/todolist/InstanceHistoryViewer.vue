@@ -8,9 +8,7 @@
                 ref="progress"
                 class="instance-history-viewer__content"
             />
-            <v-alert v-else type="info" variant="tonal" density="compact" class="ma-4">
-                인스턴스 정보가 없습니다.
-            </v-alert>
+            <v-alert v-else type="info" variant="tonal" density="compact" class="ma-4"> 인스턴스 정보가 없습니다. </v-alert>
         </div>
     </v-card>
 </template>
@@ -24,19 +22,19 @@ const backend = BackendFactory.createBackend();
 export default {
     name: 'InstanceHistoryViewer',
     components: {
-        InstanceProgress,
+        InstanceProgress
     },
     props: {
         // 외부에서 InstanceCard처럼 instance를 직접 전달하는 경우
         instance: {
             type: Object,
             required: false,
-            default: null,
-        },
+            default: null
+        }
     },
     data: () => ({
         loadedInstance: null,
-        isLoading: false,
+        isLoading: false
     }),
     computed: {
         routeInstId() {
@@ -46,7 +44,7 @@ export default {
         },
         resolvedInstance() {
             return this.instance || this.loadedInstance;
-        },
+        }
     },
     watch: {
         instance: {
@@ -56,16 +54,16 @@ export default {
                 // prop으로 instance가 오면 별도 로드 불필요
                 if (newVal) return;
                 await this.loadInstanceByRoute();
-            },
+            }
         },
-        '$route': {
+        $route: {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal?.params?.instId !== oldVal?.params?.instId) {
                     await this.loadInstanceByRoute();
                 }
-            },
-        },
+            }
+        }
     },
     async mounted() {
         await this.loadInstanceByRoute();
@@ -86,10 +84,10 @@ export default {
                 },
                 finalAction: () => {
                     me.isLoading = false;
-                },
+                }
             });
-        },
-    },
+        }
+    }
 };
 </script>
 

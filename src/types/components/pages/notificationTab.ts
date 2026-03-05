@@ -1,4 +1,4 @@
-import type { TablerIconComponent } from "vue-tabler-icons";
+import type { TablerIconComponent } from 'vue-tabler-icons';
 type notificationTabType = {
     title: string;
     subtitle: string;

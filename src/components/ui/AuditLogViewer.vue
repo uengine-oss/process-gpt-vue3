@@ -55,27 +55,17 @@
                 </v-row>
 
                 <!-- Data Table -->
-                <v-data-table
-                    :headers="headers"
-                    :items="filteredItems"
-                    :items-per-page="20"
-                    density="compact"
-                    class="elevation-1"
-                >
+                <v-data-table :headers="headers" :items="filteredItems" :items-per-page="20" density="compact" class="elevation-1">
                     <template v-slot:item.created_at="{ item }">
                         {{ formatDateTime(item.created_at) }}
                     </template>
                     <template v-slot:item.action="{ item }">
-                        <v-chip
-                            size="small"
-                            :color="getActionColor(item.action)"
-                            variant="tonal"
-                        >
+                        <v-chip size="small" :color="getActionColor(item.action)" variant="tonal">
                             {{ item.action }}
                         </v-chip>
                     </template>
                     <template v-slot:item.comment="{ item }">
-                        <span class="text-body-2 text-truncate" style="max-width: 300px; display: inline-block;">
+                        <span class="text-body-2 text-truncate" style="max-width: 300px; display: inline-block">
                             {{ item.comment || '—' }}
                         </span>
                     </template>
@@ -127,16 +117,16 @@ export default defineComponent({
             { title: t('auditLog.columnAction'), key: 'action', width: '160px' },
             { title: t('auditLog.columnActor'), key: 'actor_name', width: '140px' },
             { title: t('auditLog.columnComment'), key: 'comment' },
-            { title: t('auditLog.columnVersion'), key: 'version_label', width: '100px' },
+            { title: t('auditLog.columnVersion'), key: 'version_label', width: '100px' }
         ]);
 
         const availableActions = computed(() => {
-            const actions = new Set(items.value.map(i => i.action));
+            const actions = new Set(items.value.map((i) => i.action));
             return Array.from(actions).sort();
         });
 
         const filteredItems = computed(() => {
-            return items.value.filter(item => {
+            return items.value.filter((item) => {
                 if (filterActions.value.length > 0 && !filterActions.value.includes(item.action)) return false;
                 if (filterActor.value && !(item.actor_name || '').toLowerCase().includes(filterActor.value.toLowerCase())) return false;
                 if (filterDate.value) {
@@ -171,7 +161,7 @@ export default defineComponent({
                 request_reopen: 'orange',
                 approve_reopen: 'success',
                 reject_reopen: 'error',
-                reset_approvals: 'warning',
+                reset_approvals: 'warning'
             };
             return colors[action] || 'grey';
         };
@@ -191,7 +181,7 @@ export default defineComponent({
         };
 
         const exportCsv = () => {
-            const rows = filteredItems.value.map(item => [
+            const rows = filteredItems.value.map((item) => [
                 item.created_at || '',
                 item.action || '',
                 item.actor_name || '',
@@ -199,7 +189,7 @@ export default defineComponent({
                 item.version_label || ''
             ]);
             const header = ['Date', 'Action', 'Actor', 'Comment', 'Version'];
-            const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+            const csv = [header, ...rows].map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
             const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -209,14 +199,26 @@ export default defineComponent({
             URL.revokeObjectURL(url);
         };
 
-        watch(() => props.modelValue, (val) => {
-            if (val) loadData();
-        });
+        watch(
+            () => props.modelValue,
+            (val) => {
+                if (val) loadData();
+            }
+        );
 
         return {
-            dialogVisible, items, filterActions, filterActor, filterDate,
-            headers, availableActions, filteredItems,
-            getActionColor, formatDateTime, close, exportCsv,
+            dialogVisible,
+            items,
+            filterActions,
+            filterActor,
+            filterDate,
+            headers,
+            availableActions,
+            filteredItems,
+            getActionColor,
+            formatDateTime,
+            close,
+            exportCsv
         };
     }
 });

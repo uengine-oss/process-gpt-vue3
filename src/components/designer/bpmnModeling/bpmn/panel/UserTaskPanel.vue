@@ -5,20 +5,16 @@
             :details="radioSelectDescription"
             :detailUrl="'https://www.youtube.com/watch?v=E-tjj20-xxI&t'"
         />
-      
+
         <v-radio-group v-model="selectedActivity" inline class="delete-input-details">
             <v-radio :label="$t('UserTaskPanel.default')" value="HumanActivity"></v-radio>
             <v-radio :label="$t('UserTaskPanel.form')" value="FormActivity"></v-radio>
             <v-radio v-if="useEvent" :label="$t('UserTaskPanel.external')" value="URLActivity"></v-radio>
         </v-radio-group>
-        
-        <div v-if="copyUengineProperties.assignType === 'default'" class="mt-2">
-            <DetailComponent
-                :title="$t('UserTaskPanel.defaultInfo')"
-            />
-        </div>
 
-       
+        <div v-if="copyUengineProperties.assignType === 'default'" class="mt-2">
+            <DetailComponent :title="$t('UserTaskPanel.defaultInfo')" />
+        </div>
 
         <div v-if="copyUengineProperties.assignType === 'expression'" class="mt-2">
             <DetailComponent :title="$t('UserTaskPanel.expressionInfo')" />
@@ -32,8 +28,6 @@
             ></v-text-field>
         </div>
 
-
-      
         <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
             <EventSynchronizationForm
                 v-if="useEvent"
@@ -46,9 +40,7 @@
             <div v-else>
                 <DefaultArguments v-model="copyUengineProperties"></DefaultArguments>
                 <Instruction v-model="activity.instruction"></Instruction>
-                <Checkpoints v-model="activity.checkpoints"
-                    class="user-task-panel-check-points" 
-                ></Checkpoints>
+                <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'FormActivity'">
@@ -60,25 +52,27 @@
                                 <v-label class="font-weight-medium" for="hcpm">{{ $t('UserTaskPanel.inputForm') }}</v-label>
                             </v-col>
                             <v-col cols="auto" class="pa-0">
-                                <v-btn 
+                                <v-btn
                                     v-if="inParameters.length === 0"
-                                    color="primary" 
+                                    color="primary"
                                     @click="addFormParameter"
                                     prepend-icon="mdi-plus"
                                     size="small"
                                 >
-                                    {{ $t('UserTaskPanel.addFormParameter')}}
+                                    {{ $t('UserTaskPanel.addFormParameter') }}
                                 </v-btn>
                             </v-col>
                         </v-row>
                         <div v-if="inParameters.length > 0">
-                            <div v-for="(parameter, index) in inParameters" :key="'input-'+index" class="mb-2">
+                            <div v-for="(parameter, index) in inParameters" :key="'input-' + index" class="mb-2">
                                 <v-row class="ma-0 pa-0">
                                     <v-col class="pa-0 pr-2">
                                         <v-autocomplete
                                             v-model="parameter.variable.name"
-                                            :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
-                                            :label="$t('UserTaskPanel.form')" 
+                                            :items="
+                                                definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)
+                                            "
+                                            :label="$t('UserTaskPanel.form')"
                                             color="primary"
                                             variant="outlined"
                                             hide-details
@@ -88,8 +82,12 @@
                                         </v-autocomplete>
                                     </v-col>
                                     <v-col cols="1" class="pa-0 d-flex align-center">
-                                        <v-icon small @click="removeFormParameter(parameter)" :disabled="inParameters.length <= 1">mdi-delete</v-icon>
-                                        <v-icon v-if="index === inParameters.length - 1" small class="ml-1" @click="addFormParameter">mdi-plus</v-icon>
+                                        <v-icon small @click="removeFormParameter(parameter)" :disabled="inParameters.length <= 1"
+                                            >mdi-delete</v-icon
+                                        >
+                                        <v-icon v-if="index === inParameters.length - 1" small class="ml-1" @click="addFormParameter"
+                                            >mdi-plus</v-icon
+                                        >
                                     </v-col>
                                 </v-row>
                             </div>
@@ -101,7 +99,7 @@
                             </v-col>
                         </v-row>
                         <v-autocomplete
-                            :label="$t('UserTaskPanel.form')" 
+                            :label="$t('UserTaskPanel.form')"
                             v-model="selectedForm"
                             :items="definition.processVariables.filter((item) => item.type === 'Form').map((item) => item.name)"
                             color="primary"
@@ -123,9 +121,7 @@
             ></EventSynchronizationForm>
             <div v-else>
                 <Instruction v-model="activity.instruction"></Instruction>
-                <Checkpoints v-model="activity.checkpoints"
-                    class="user-task-panel-check-points"
-                ></Checkpoints>
+                <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points"></Checkpoints>
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'URLActivity' && useEvent">
@@ -149,13 +145,8 @@
 
     <!-- Lead Time -->
     <div class="mt-4">
-        <LeadTimeInput
-            v-model="copyUengineProperties.leadTime"
-            :label="$t('leadTime.title') || 'Lead Time'"
-            :disabled="isViewMode"
-        />
+        <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
     </div>
-
 
     <!-- Schema-based Properties -->
     <div class="mt-4">
@@ -177,7 +168,10 @@
             <v-btn
                 v-for="color in presetColors"
                 :key="color.value"
-                :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }"
+                :style="{
+                    backgroundColor: color.value,
+                    border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                }"
                 size="small"
                 icon
                 :disabled="isViewMode"
@@ -189,29 +183,15 @@
 
         <!-- Custom Color Picker -->
         <v-row class="ma-0 pa-0 align-center">
-            <v-menu
-                v-model="showColorPicker"
-                :close-on-content-click="false"
-                location="bottom"
-            >
+            <v-menu v-model="showColorPicker" :close-on-content-click="false" location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn
-                        v-bind="props"
-                        :disabled="isViewMode"
-                        variant="outlined"
-                        size="small"
-                        class="mr-2"
-                    >
+                    <v-btn v-bind="props" :disabled="isViewMode" variant="outlined" size="small" class="mr-2">
                         <v-icon start size="small">mdi-palette</v-icon>
                         {{ $t('BpmnPropertyPanel.customColor') || '사용자 정의 색상' }}
                     </v-btn>
                 </template>
                 <v-card min-width="300">
-                    <v-color-picker
-                        v-model="customColor"
-                        mode="hexa"
-                        hide-inputs
-                    ></v-color-picker>
+                    <v-color-picker v-model="customColor" mode="hexa" hide-inputs></v-color-picker>
                     <v-card-actions>
                         <v-btn size="small" @click="showColorPicker = false">{{ $t('common.cancel') || '취소' }}</v-btn>
                         <v-btn size="small" color="primary" @click="applyCustomColor">{{ $t('common.confirm') || '적용' }}</v-btn>
@@ -235,13 +215,18 @@
         <!-- Current Color Preview -->
         <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
             <div
-                :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }"
+                :style="{
+                    backgroundColor: copyUengineProperties.taskColor,
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc'
+                }"
                 class="mr-2"
             ></div>
             <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
         </div>
     </div>
-
 
     <v-dialog
         v-model="isOpenFieldMapper"
@@ -369,7 +354,7 @@ export default {
             radioSelectDescription: [
                 {
                     title: 'UserTaskPanel.radioSelectDescriptionSubTitle1'
-                },
+                }
             ],
             candidateRoles: [], // Keycloak 그룹 목록 (역할/그룹 선택용)
             candidateGroups: [], // 선택 가능한 그룹 목록 (candidateRoles와 동일)
@@ -393,8 +378,8 @@ export default {
     },
     created() {
         this.backend = BackendFactory.createBackend();
-        if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0){
-            const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
+        if (this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
+            const activity = this.processDefinition.activities.find((activity) => activity.id === this.element.id);
             if (activity) {
                 this.activity = activity;
             } else {
@@ -413,22 +398,22 @@ export default {
     },
     computed: {
         useEvent() {
-            if (window.$mode == "ProcessGPT") {
+            if (window.$mode == 'ProcessGPT') {
                 return false;
             } else {
                 return true;
             }
         },
         inParameters() {
-            if(!this.copyUengineProperties) return [];
-            if(!this.copyUengineProperties.parameters) return [];
-            if(this.copyUengineProperties.parameters.length === 0) return [];
+            if (!this.copyUengineProperties) return [];
+            if (!this.copyUengineProperties.parameters) return [];
+            if (this.copyUengineProperties.parameters.length === 0) return [];
             return this.copyUengineProperties.parameters.filter((item) => item.direction === 'IN' || item.direction === 'IN-OUT');
         },
         outParameters() {
-            if(!this.copyUengineProperties) return [];
-            if(!this.copyUengineProperties.parameters) return [];
-            if(this.copyUengineProperties.parameters.length === 0) return [];
+            if (!this.copyUengineProperties) return [];
+            if (!this.copyUengineProperties.parameters) return [];
+            if (this.copyUengineProperties.parameters.length === 0) return [];
             return this.copyUengineProperties.parameters.filter((item) => item.direction === 'OUT');
         }
         // inputData() {
@@ -463,7 +448,7 @@ export default {
                 // const formItem = this.definition.processVariables.find(item => item.type === 'Form' && item.defaultValue.name === formName && item.defaultValue.alias === formAlias);
                 let formVariable = me.copyDefinition.processVariables.find((item) => item.name === newVal);
                 let variableForHtmlFormContext = formVariable ? { name: formVariable.name } : {};
-                const existingOutParam = me.copyUengineProperties.parameters.find(param => param.direction === 'OUT');
+                const existingOutParam = me.copyUengineProperties.parameters.find((param) => param.direction === 'OUT');
                 if (existingOutParam) {
                     // 기존 OUT 파라미터가 있으면 업데이트
                     existingOutParam.variable = variableForHtmlFormContext;
@@ -471,7 +456,7 @@ export default {
                     // 없으면 새로 추가
                     me.copyUengineProperties.parameters.push({
                         direction: 'OUT',
-                        variable: variableForHtmlFormContext,
+                        variable: variableForHtmlFormContext
                     });
                 }
                 // me.copyUengineProperties.variableForHtmlFormContext = variableForHtmlFormContext;
@@ -488,13 +473,13 @@ export default {
             }
         },
         parameters: function (newVal, oldVal) {
-            this.nodes["arguments"] = {
-                text: "arguments",
+            this.nodes['arguments'] = {
+                text: 'arguments',
                 children: [],
                 parent: null
             };
-            console.log(newVal)
-            
+            console.log(newVal);
+
             me.replaceFromExpandableNode = function (nodeKey) {
                 if (nodeKey.indexOf(`arguments.`) != -1) {
                     return nodeKey.replace(`arguments.`, `[arguments].`);
@@ -514,7 +499,7 @@ export default {
         activity: {
             deep: true,
             handler(newVal, oldVal) {
-                if (!this.useEvent && (newVal.checkpoints || newVal.instruction) ) {
+                if (!this.useEvent && (newVal.checkpoints || newVal.instruction)) {
                     this.EventBus.emit('process-definition-updated', this.processDefinition);
                 }
             }
@@ -544,25 +529,28 @@ export default {
             if (me.selectedActivity == 'FormActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
 
-                if(!me.copyUengineProperties.parameters) {
-                    me.copyUengineProperties.parameters = [{
-                        direction: 'OUT',
-                        variable: {'name': ''}
-                    }];
+                if (!me.copyUengineProperties.parameters) {
+                    me.copyUengineProperties.parameters = [
+                        {
+                            direction: 'OUT',
+                            variable: { name: '' }
+                        }
+                    ];
                 }
                 // if (!me.copyUengineProperties.variableForHtmlFormContext) {
                 //     me.copyUengineProperties.variableForHtmlFormContext = {};
                 // }
                 // me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
                 me.selectedForm = null;
-                let outputForm = me.outParameters.find(p => p.direction === 'OUT');
-                if(outputForm){
+                let outputForm = me.outParameters.find((p) => p.direction === 'OUT');
+                if (outputForm) {
                     me.selectedForm = outputForm.variable ? outputForm.variable.name : null;
                 }
 
                 if (me.useEvent) {
                     if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                    if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                    if (!me.copyUengineProperties.eventSynchronization.eventType)
+                        me.copyUengineProperties.eventSynchronization.eventType = '';
                     if (!me.copyUengineProperties.eventSynchronization.attributes)
                         me.copyUengineProperties.eventSynchronization.attributes = [];
                     if (!me.copyUengineProperties.eventSynchronization.mappingContext)
@@ -577,13 +565,18 @@ export default {
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
                 if (me.useEvent) {
                     me.normalizeEventSynchronizations();
-                    me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization?.mappingContext ?? { mappingElements: [] }, null, 2);
+                    me.formMapperJson = JSON.stringify(
+                        me.copyUengineProperties.eventSynchronization?.mappingContext ?? { mappingElements: [] },
+                        null,
+                        2
+                    );
                 }
             } else {
                 me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';
                 if (me.useEvent) {
                     if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                    if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                    if (!me.copyUengineProperties.eventSynchronization.eventType)
+                        me.copyUengineProperties.eventSynchronization.eventType = '';
                     if (!me.copyUengineProperties.eventSynchronization.attributes)
                         me.copyUengineProperties.eventSynchronization.attributes = [];
                     if (!me.copyUengineProperties.eventSynchronization.mappingContext)
@@ -591,8 +584,8 @@ export default {
                 }
             }
 
-            if(window.$mode == "uEngine"){
-                if(!me.copyUengineProperties.assignType){
+            if (window.$mode == 'uEngine') {
+                if (!me.copyUengineProperties.assignType) {
                     me.copyUengineProperties.assignType = 'claim';
                 }
             }
@@ -613,11 +606,16 @@ export default {
             if (!Array.isArray(list) || list.length === 0) {
                 var single = p.eventSynchronization;
                 if (single && typeof single === 'object') {
-                    list = [{
-                        eventType: single.eventType ?? '',
-                        attributes: Array.isArray(single.attributes) ? single.attributes : [],
-                        mappingContext: single.mappingContext && typeof single.mappingContext === 'object' ? single.mappingContext : { mappingElements: [] }
-                    }];
+                    list = [
+                        {
+                            eventType: single.eventType ?? '',
+                            attributes: Array.isArray(single.attributes) ? single.attributes : [],
+                            mappingContext:
+                                single.mappingContext && typeof single.mappingContext === 'object'
+                                    ? single.mappingContext
+                                    : { mappingElements: [] }
+                        }
+                    ];
                 } else {
                     list = [{ eventType: '', attributes: [], mappingContext: { mappingElements: [] } }];
                 }
@@ -631,7 +629,7 @@ export default {
             p.eventSynchronization = list[0];
         },
         updateParameters(mappingContext) {
-            console.log(mappingContext)
+            console.log(mappingContext);
             this.copyUengineProperties.eventSynchronization.mappingContext = mappingContext;
         },
         updateProperties() {
@@ -655,7 +653,8 @@ export default {
             } else {
                 me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';
                 if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext) me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
             }
             me.isLoading = false;
         },
@@ -665,15 +664,17 @@ export default {
                 var p = me.copyUengineProperties;
                 if (me.selectedActivity == 'FormActivity') {
                     const { parameters, eventSynchronization, _type } = p;
-                    const outParameter = parameters.find(param => param.direction === 'OUT');
+                    const outParameter = parameters.find((param) => param.direction === 'OUT');
                     if (outParameter) {
-                        parameters.filter(param => param.direction.includes('IN')).forEach(param => {
-                            if (param.variable.name === outParameter.variable.name) {
-                                param.direction = 'IN-OUT';
-                            } else {
-                                param.direction = 'IN';
-                            }
-                        });
+                        parameters
+                            .filter((param) => param.direction.includes('IN'))
+                            .forEach((param) => {
+                                if (param.variable.name === outParameter.variable.name) {
+                                    param.direction = 'IN-OUT';
+                                } else {
+                                    param.direction = 'IN';
+                                }
+                            });
                     }
                     me.copyUengineProperties = { parameters, eventSynchronization, _type };
                 } else if (me.selectedActivity == 'URLActivity') {
@@ -721,31 +722,28 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        addFormParameter(){
-            if(!this.copyUengineProperties) this.copyUengineProperties = {}
-            if(!this.copyUengineProperties.parameters) this.copyUengineProperties.parameters = []
+        addFormParameter() {
+            if (!this.copyUengineProperties) this.copyUengineProperties = {};
+            if (!this.copyUengineProperties.parameters) this.copyUengineProperties.parameters = [];
             this.copyUengineProperties.parameters.push({
                 direction: 'IN',
-                variable: {'name': ''},
+                variable: { name: '' }
             });
         },
-        removeFormParameter(parameter){
-            const index = this.copyUengineProperties.parameters.findIndex(param => param === parameter);
+        removeFormParameter(parameter) {
+            const index = this.copyUengineProperties.parameters.findIndex((param) => param === parameter);
             if (index > -1) {
                 this.copyUengineProperties.parameters.splice(index, 1);
             }
         },
         iconForDirection: function (direction) {
-            if (direction == "IN")
-                return "mdi-arrow-left";
-            else if (direction == "OUT" || direction == "OUT ")
-                return "mdi-arrow-right";
-            else
-                return "mdi-arrow-left-right";
+            if (direction == 'IN') return 'mdi-arrow-left';
+            else if (direction == 'OUT' || direction == 'OUT ') return 'mdi-arrow-right';
+            else return 'mdi-arrow-left-right';
         },
         directionChanged: function (parameterContext) {
-            if (parameterContext.direction == "OUT ") {
-                parameterContext.direction = "OUT";
+            if (parameterContext.direction == 'OUT ') {
+                parameterContext.direction = 'OUT';
             } else {
                 parameterContext.transformerMapping = null;
             }
@@ -785,7 +783,7 @@ export default {
             if (this.useEvent) {
                 urlData['inputNames'] = this.copyUengineProperties.eventSynchronization.mappingContext.map((p) => p.key);
             } else {
-                urlData["inputNames"] = this.copyUengineProperties.parameters.map(p => p.argument.text)
+                urlData['inputNames'] = this.copyUengineProperties.parameters.map((p) => p.argument.text);
             }
 
             if (urlData['inputNames'].length > 0)
@@ -826,10 +824,10 @@ export default {
             };
         },
         async loadCandidateRoles() {
-            try { 
+            try {
                 this.candidateRoles = await getGroups();
                 // candidateGroups도 동일하게 설정 (UI에서 사용)
-                this.candidateGroups = this.candidateRoles.map(group => ({
+                this.candidateGroups = this.candidateRoles.map((group) => ({
                     title: group,
                     value: group
                 }));
@@ -848,12 +846,12 @@ export default {
                 } else {
                     // 기본적으로 Keycloak에서 전체 사용자 목록 가져오기
                     const userList = await getAllUsers({ max: 100 });
-                    this.candidateUsers = userList.map(user => ({
+                    this.candidateUsers = userList.map((user) => ({
                         title: user.username || user.email || user.id,
                         value: user.email || user.username || user.id
                     }));
                 }
-                console.log(this.candidateUsers)
+                console.log(this.candidateUsers);
             } catch (error) {
                 console.error('Failed to load candidate users:', error);
                 this.candidateUsers = [];
@@ -864,7 +862,7 @@ export default {
                 // Keycloak에서 그룹에 속한 사용자 목록 가져오기
                 const users = await getUsersByGroups(groupNames);
                 // SelectBox 형식으로 변환
-                this.candidateUsers = users.map(user => ({
+                this.candidateUsers = users.map((user) => ({
                     title: user.username || user.email || user.id,
                     value: user.email || user.username || user.id
                 }));
@@ -873,7 +871,7 @@ export default {
                 console.error('Failed to load users from groups:', error);
                 // 에러 발생 시 Keycloak에서 전체 사용자 목록으로 fallback
                 const userList = await getAllUsers({ max: 100 });
-                this.candidateUsers = userList.map(user => ({
+                this.candidateUsers = userList.map((user) => ({
                     title: user.username || user.email || user.id,
                     value: user.email || user.username || user.id
                 }));

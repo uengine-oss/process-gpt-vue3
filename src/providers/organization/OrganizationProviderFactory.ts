@@ -3,11 +3,7 @@
  * 조직 정보 제공자 팩토리 - Provider 타입에 따라 적절한 구현체 반환
  */
 
-import type {
-    IOrganizationProvider,
-    OrganizationProviderType,
-    OrganizationProviderConfig
-} from './OrganizationProvider';
+import type { IOrganizationProvider, OrganizationProviderType, OrganizationProviderConfig } from './OrganizationProvider';
 import { InternalOrganizationProvider } from './InternalOrganizationProvider';
 
 // 싱글톤 인스턴스 캐시

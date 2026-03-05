@@ -1,18 +1,17 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class ConditionExampleGenenrator extends AIGenerator {
-
     constructor(client, options) {
         super(client, options);
 
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
         this.options = options;
 
         let activities = [];
         let gateways = [];
         let events = [];
         let sequences = [];
-        if(this.options.processDefinition) {
+        if (this.options.processDefinition) {
             activities = this.options.processDefinition.activities;
             gateways = this.options.processDefinition.gateways;
             events = this.options.processDefinition.events;
@@ -21,7 +20,7 @@ export default class ConditionExampleGenenrator extends AIGenerator {
 
         this.previousMessages = [
             {
-                role: "system",
+                role: 'system',
                 content: `You are a process flow analysis expert.  
 Goal: From the CURRENT CONDITION (natural language), produce minimal When Then (WT) examples that cover all essential decision boundaries with the fewest possible cases.
 
@@ -98,7 +97,7 @@ OUTPUT FORMAT:
 \`\`\`
 
 Return JSON only.`
-            },
+            }
         ];
 
         // console.log(this.previousMessages[0].content);

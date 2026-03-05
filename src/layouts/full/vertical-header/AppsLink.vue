@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {appsLink} from '@/_mockApis/headerData';
+import { appsLink } from '@/_mockApis/headerData';
 </script>
 <template>
     <!-- ---------------------------------------------- -->

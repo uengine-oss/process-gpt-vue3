@@ -46,20 +46,20 @@ export function normalizeXML(xml: string, ignorePositions = false): string {
         if (ignorePositions) {
             const positionAttrs = ['x', 'y', 'width', 'height'];
             const allElements = doc.querySelectorAll('*');
-            allElements.forEach(el => {
-                positionAttrs.forEach(attr => {
+            allElements.forEach((el) => {
+                positionAttrs.forEach((attr) => {
                     el.removeAttribute(attr);
                 });
             });
 
             // waypoint 요소 제거
             const waypoints = doc.querySelectorAll('di\\:waypoint, waypoint');
-            waypoints.forEach(wp => wp.remove());
+            waypoints.forEach((wp) => wp.remove());
 
             // Bounds 요소의 위치 속성 제거
             const bounds = doc.querySelectorAll('dc\\:Bounds, Bounds');
-            bounds.forEach(b => {
-                positionAttrs.forEach(attr => {
+            bounds.forEach((b) => {
+                positionAttrs.forEach((attr) => {
                     b.removeAttribute(attr);
                 });
             });
@@ -70,10 +70,7 @@ export function normalizeXML(xml: string, ignorePositions = false): string {
         let normalized = serializer.serializeToString(doc);
 
         // 공백 정규화
-        normalized = normalized
-            .replace(/>\s+</g, '><')
-            .replace(/\s+/g, ' ')
-            .trim();
+        normalized = normalized.replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
 
         return normalized;
     } catch (error) {
@@ -96,11 +93,7 @@ export function hashXML(xml: string, ignorePositions = false): string {
  * @param newXml 새 XML
  * @param ignorePositions 위치 변경만 있는 경우 무시할지 여부
  */
-export function hasSubstantialChanges(
-    oldXml: string,
-    newXml: string,
-    ignorePositions = false
-): boolean {
+export function hasSubstantialChanges(oldXml: string, newXml: string, ignorePositions = false): boolean {
     if (!oldXml && !newXml) return false;
     if (!oldXml || !newXml) return true;
 
@@ -121,7 +114,7 @@ export function getElementCounts(xml: string): Record<string, number> {
         const doc = parser.parseFromString(xml, 'text/xml');
 
         const elements = doc.querySelectorAll('*');
-        elements.forEach(el => {
+        elements.forEach((el) => {
             const tagName = el.tagName;
             counts[tagName] = (counts[tagName] || 0) + 1;
         });

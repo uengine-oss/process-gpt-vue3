@@ -23,7 +23,7 @@ const { mdAndUp } = useDisplay();
         <div class="horizontalMenu bg-containerBg position-relative full-layout">
             <div :class="customizer.boxed ? 'maxWidth ' : 'px-6'">
                 <div class="bg-surface horizontal-head">
-                    <ul class="gap-1 horizontal-navbar  mx-lg-0 mx-3">
+                    <ul class="gap-1 horizontal-navbar mx-lg-0 mx-3">
                         <!---Menu Loop -->
                         <li v-for="(item, i) in sidebarMenu" :key="i" class="navItem">
                             <!---If Has Child -->

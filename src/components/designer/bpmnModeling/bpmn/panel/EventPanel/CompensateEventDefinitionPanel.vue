@@ -1,20 +1,20 @@
 <template>
-<v-row class="ma-0 pa-0">
-    <v-col cols="12" class="pa-0">
-        <v-autocomplete
-            :label="$t('CompensateEventDefinitionPanel.selectTask')"
-            :items="formattedTaskList"
-            theme="light"
-            density="comfortable"
-            variant="outlined"
-            item-props
-            :item-value="item"
-            :item-title="(item) => item.name"
-            return-object
-            v-model="copyUengineProperties.compensateTask"
-        ></v-autocomplete>
-    </v-col>
-</v-row>
+    <v-row class="ma-0 pa-0">
+        <v-col cols="12" class="pa-0">
+            <v-autocomplete
+                :label="$t('CompensateEventDefinitionPanel.selectTask')"
+                :items="formattedTaskList"
+                theme="light"
+                density="comfortable"
+                variant="outlined"
+                item-props
+                :item-value="item"
+                :item-title="(item) => item.name"
+                return-object
+                v-model="copyUengineProperties.compensateTask"
+            ></v-autocomplete>
+        </v-col>
+    </v-row>
 </template>
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
@@ -64,7 +64,7 @@ export default {
 
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        
+
         let def = this.bpmnModeler.getDefinitions();
         this.processElement = def.rootElements.filter((element) => element.$type === 'bpmn:Process');
         this.initActivityData();
@@ -143,7 +143,7 @@ export default {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
-        async initActivityData () {
+        async initActivityData() {
             var me = this;
             me.activities = [];
             if (me.processElement) {

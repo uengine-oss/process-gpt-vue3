@@ -15,8 +15,11 @@
         </v-card-title>
         <!-- 선택된 요소 정보 -->
         <div v-if="selectedElement && isTaskType(selectedElement.type)" class="px-4 pb-2 pt-2">
-            <v-chip size="small" :color="getElementColor(selectedElement.type)" variant="tonal"
-                style="cursor: pointer;"
+            <v-chip
+                size="small"
+                :color="getElementColor(selectedElement.type)"
+                variant="tonal"
+                style="cursor: pointer"
                 @click="$emit('focusElement', selectedElement.id)"
             >
                 <v-icon start size="14">{{ getElementIcon(selectedElement.type) }}</v-icon>
@@ -46,11 +49,7 @@
             </div>
 
             <div v-else class="comment-list pa-2">
-                <div
-                    v-for="comment in rootComments"
-                    :key="comment.id"
-                    class="comment-item mb-2"
-                >
+                <div v-for="comment in rootComments" :key="comment.id" class="comment-item mb-2">
                     <CommentThread
                         :comment="comment"
                         :replies="getReplies(comment.id)"
@@ -125,12 +124,12 @@ export default defineComponent({
 
         // 루트 댓글 (부모가 없는 댓글)
         const rootComments = computed(() => {
-            return comments.value.filter(c => !c.parent_comment_id);
+            return comments.value.filter((c) => !c.parent_comment_id);
         });
 
         // 특정 댓글의 답글 목록
         const getReplies = (parentId: string) => {
-            return comments.value.filter(c => c.parent_comment_id === parentId);
+            return comments.value.filter((c) => c.parent_comment_id === parentId);
         };
 
         // 댓글 목록 로드
@@ -139,10 +138,7 @@ export default defineComponent({
 
             loading.value = true;
             try {
-                comments.value = await backend.getElementComments(
-                    props.procDefId,
-                    props.selectedElement.id
-                );
+                comments.value = await backend.getElementComments(props.procDefId, props.selectedElement.id);
             } catch (e) {
                 console.error('댓글 로드 실패:', e);
             } finally {
@@ -268,13 +264,17 @@ export default defineComponent({
         });
 
         // 선택된 요소가 변경되면 댓글 로드
-        watch(() => props.selectedElement, () => {
-            if (props.selectedElement) {
-                loadComments();
-            } else {
-                comments.value = [];
-            }
-        }, { immediate: true });
+        watch(
+            () => props.selectedElement,
+            () => {
+                if (props.selectedElement) {
+                    loadComments();
+                } else {
+                    comments.value = [];
+                }
+            },
+            { immediate: true }
+        );
 
         return {
             comments,

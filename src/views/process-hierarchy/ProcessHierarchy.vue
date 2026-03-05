@@ -48,13 +48,7 @@
         </div>
 
         <!-- Toggle Properties Button -->
-        <v-btn
-            v-if="!showProperties && selectedProcessId"
-            icon
-            size="small"
-            class="toggle-properties-btn"
-            @click="showProperties = true"
-        >
+        <v-btn v-if="!showProperties && selectedProcessId" icon size="small" class="toggle-properties-btn" @click="showProperties = true">
             <v-icon>mdi-chevron-left</v-icon>
         </v-btn>
 
@@ -79,7 +73,12 @@
                     {{ $t('approval.inProgressTitle') || '승인 진행 중' }}
                 </v-card-title>
                 <v-card-text class="px-4 pb-2">
-                    <p class="mb-3">{{ $t('approval.inProgressMessage') || '현재 이 프로세스에 대해 승인이 진행 중입니다. 저장하면 기존 승인이 취소되고 새로 검토 요청됩니다.' }}</p>
+                    <p class="mb-3">
+                        {{
+                            $t('approval.inProgressMessage') ||
+                            '현재 이 프로세스에 대해 승인이 진행 중입니다. 저장하면 기존 승인이 취소되고 새로 검토 요청됩니다.'
+                        }}
+                    </p>
                     <v-alert v-if="activeApprovalState" type="info" variant="tonal" density="compact">
                         <div class="text-body-2">
                             <strong>{{ $t('approval.currentState') || '현재 상태' }}:</strong> {{ activeApprovalState.state }}
@@ -94,7 +93,13 @@
                 </v-card-text>
                 <v-card-actions class="pa-4 pt-2">
                     <v-spacer />
-                    <v-btn variant="text" @click="approvalWarningDialog = false; activeApprovalState = null;">
+                    <v-btn
+                        variant="text"
+                        @click="
+                            approvalWarningDialog = false;
+                            activeApprovalState = null;
+                        "
+                    >
                         {{ $t('common.cancel') || '취소' }}
                     </v-btn>
                     <v-btn color="warning" variant="flat" @click="proceedAfterApprovalWarning">
@@ -116,7 +121,7 @@
                     </v-btn>
                 </v-card-title>
                 <v-card-text class="px-4 pb-2">
-                    <div class="d-flex align-center mb-4 pa-3 rounded-lg" style="background: #f5f7fa;">
+                    <div class="d-flex align-center mb-4 pa-3 rounded-lg" style="background: #f5f7fa">
                         <v-icon size="18" class="mr-2" color="grey-darken-1">mdi-tag-outline</v-icon>
                         <span class="text-body-2 text-medium-emphasis">{{ $t('processHierarchy.currentVersionLabel') }}:</span>
                         <v-chip size="small" color="primary" variant="flat" class="ml-2">v{{ saveVersion }}</v-chip>
@@ -172,7 +177,7 @@ export default {
         ProcessHierarchyTree,
         ProcessHierarchyDesigner,
         ProcessHierarchyProperties,
-        ProcessDefinitionVersionDialog,
+        ProcessDefinitionVersionDialog
     },
     data() {
         return {
@@ -206,7 +211,7 @@ export default {
             resizing: null,
             resizeStartX: 0,
             resizeStartWidth: 0,
-            selectionListenerCleanup: null,
+            selectionListenerCleanup: null
         };
     },
     async mounted() {
@@ -237,7 +242,7 @@ export default {
             const major = parseInt(parts[0]) || 0;
             const minor = (parseInt(parts[1]) || 0) + 1;
             return `${major}.${minor}`;
-        },
+        }
     },
     methods: {
         async loadInitialData() {
@@ -250,8 +255,8 @@ export default {
                     backend.listDefinition('', { match: { tenant_id: window.$tenantName } }),
                     storage.list('proc_def_version', {
                         sort: 'desc',
-                        orderBy: 'timeStamp',
-                    }),
+                        orderBy: 'timeStamp'
+                    })
                 ];
                 // proc_def_approval_state 일괄 조회
                 if (supabase) {
@@ -261,7 +266,7 @@ export default {
                             .select('proc_def_id, state, created_at, updated_at')
                             .eq('tenant_id', window.$tenantName)
                             .order('created_at', { ascending: false })
-                            .then(res => res.data || [])
+                            .then((res) => res.data || [])
                     );
                 }
 
@@ -308,7 +313,7 @@ export default {
                         latestVersionMap[rawId] = String(sorted[0].version);
                     });
                 } else if (versionList && versionList.length > 0) {
-                    versionList.forEach(v => {
+                    versionList.forEach((v) => {
                         const defId = v.proc_def_id;
                         if (defId && !latestVersionMap[defId]) {
                             latestVersionMap[defId] = v.version;
@@ -319,7 +324,7 @@ export default {
                 // 각 정의의 최신 승인 상태 매핑
                 const approvalMap = {};
                 if (approvalStates && approvalStates.length > 0) {
-                    approvalStates.forEach(row => {
+                    approvalStates.forEach((row) => {
                         if (row.proc_def_id && !approvalMap[row.proc_def_id]) {
                             approvalMap[row.proc_def_id] = row.state;
                         }
@@ -327,15 +332,13 @@ export default {
                 }
 
                 const defs = listForVersion;
-                defs.forEach(def => {
+                defs.forEach((def) => {
                     const id = def.id || def.file_name;
                     if (id && latestVersionMap[id]) {
                         def.version = latestVersionMap[id];
                     }
                     // WIP flag from definition JSONB
-                    const defObj = typeof def.definition === 'string'
-                        ? JSON.parse(def.definition || '{}')
-                        : (def.definition || {});
+                    const defObj = typeof def.definition === 'string' ? JSON.parse(def.definition || '{}') : def.definition || {};
                     if (defObj.wip) {
                         def.approval_state = 'wip';
                     }
@@ -374,7 +377,7 @@ export default {
             this.bpmnXml = '';
             try {
                 // definitionList에서 해당 프로세스 찾기
-                let def = this.definitionList.find(d => d.id === id || d.file_name === id);
+                let def = this.definitionList.find((d) => d.id === id || d.file_name === id);
 
                 // uEngine 모드: definitionList에 없으면 getRawDefinition으로 직접 로드 (트리 id는 map 기준이라 listDefinition 결과와 불일치할 수 있음)
                 if (typeof window !== 'undefined' && window.$mode === 'uEngine') {
@@ -384,7 +387,7 @@ export default {
                             id,
                             file_name: id,
                             bpmn: rawBpmn,
-                            definition: {},
+                            definition: {}
                         };
                     }
                 }
@@ -508,7 +511,7 @@ export default {
                 // 최신 버전 조회
                 const versions = await backend.getDefinitionVersions(this.selectedProcessId, {
                     sort: 'desc',
-                    orderBy: 'version',
+                    orderBy: 'version'
                 });
                 if (versions && versions.length > 0) {
                     const sorted = versions.sort((a, b) => {
@@ -598,19 +601,19 @@ export default {
                 this.bpmnXml = xml;
 
                 // 새 minor 버전으로 저장 (거버넌스: 저장 시마다 마이너 버전 자동 기록)
-                await (backend).putRawDefinition(xml, this.selectedProcessId, {
+                await backend.putRawDefinition(xml, this.selectedProcessId, {
                     name: this.selectedProcessName,
                     definition: this.processDefinition?.definition || null,
                     version: version,
                     version_tag: null,
                     arcv_id: `${this.selectedProcessId}_${version}`,
-                    message: this.saveVersionMessage || null,
+                    message: this.saveVersionMessage || null
                 });
 
                 // 검토 요청 (버전 정보 포함)
                 if (this.submitReviewAfterSave) {
                     try {
-                        await (backend).submitForReview(this.selectedProcessId, this.saveVersionMessage || undefined, version);
+                        await backend.submitForReview(this.selectedProcessId, this.saveVersionMessage || undefined, version);
                     } catch (reviewErr) {
                         console.warn('submitForReview failed (may already be in review):', reviewErr);
                     }
@@ -619,9 +622,7 @@ export default {
                 this.saveVersionDialog = false;
 
                 if (this.$toast) {
-                    const msg = this.submitReviewAfterSave
-                        ? this.$t('processHierarchy.savedAndSubmitted')
-                        : this.$t('successMsg.save');
+                    const msg = this.submitReviewAfterSave ? this.$t('processHierarchy.savedAndSubmitted') : this.$t('successMsg.save');
                     this.$toast.success(msg);
                 }
 
@@ -648,13 +649,11 @@ export default {
                     currentBpmn = xml;
                 }
 
-                const newName = (this.selectedProcessName || this.$t('processHierarchy.defaultProcessName')) + ' ' + this.$t('processHierarchy.copySuffix');
-                const result = await (backend).duplicateLocalProcess(
-                    this.selectedProcessId,
-                    newName,
-                    currentBpmn,
-                    this.processDefinition
-                );
+                const newName =
+                    (this.selectedProcessName || this.$t('processHierarchy.defaultProcessName')) +
+                    ' ' +
+                    this.$t('processHierarchy.copySuffix');
+                const result = await backend.duplicateLocalProcess(this.selectedProcessId, newName, currentBpmn, this.processDefinition);
 
                 if (result && result.success) {
                     if (this.$toast) {
@@ -674,7 +673,7 @@ export default {
             // Version Comparison 페이지로 이동
             this.$router.push({
                 path: '/version-comparison',
-                query: { processId: this.selectedProcessId },
+                query: { processId: this.selectedProcessId }
             });
         },
 
@@ -700,9 +699,7 @@ export default {
             if (!supabase) return;
 
             // 현재 정의 찾기
-            const def = this.definitionList.find(
-                d => (d.file_name || d.id) === this.selectedProcessId
-            );
+            const def = this.definitionList.find((d) => (d.file_name || d.id) === this.selectedProcessId);
             if (!def) return;
 
             const isCurrentlyWip = def.approval_state === 'wip' || def.status === 'wip';
@@ -710,15 +707,10 @@ export default {
 
             try {
                 // WIP is a work-in-progress flag stored in proc_def.definition JSONB
-                const currentDef = typeof def.definition === 'string'
-                    ? JSON.parse(def.definition || '{}')
-                    : (def.definition || {});
+                const currentDef = typeof def.definition === 'string' ? JSON.parse(def.definition || '{}') : def.definition || {};
                 currentDef.wip = newWipFlag;
 
-                const { error } = await supabase
-                    .from('proc_def')
-                    .update({ definition: currentDef })
-                    .eq('id', this.selectedProcessId);
+                const { error } = await supabase.from('proc_def').update({ definition: currentDef }).eq('id', this.selectedProcessId);
 
                 if (error) throw error;
 
@@ -732,9 +724,7 @@ export default {
                 }
 
                 if (this.$toast) {
-                    const msg = newWipFlag
-                        ? this.$t('processHierarchy.wipEnabled')
-                        : this.$t('processHierarchy.wipDisabled');
+                    const msg = newWipFlag ? this.$t('processHierarchy.wipEnabled') : this.$t('processHierarchy.wipDisabled');
                     this.$toast.success(msg);
                 }
             } catch (e) {
@@ -770,8 +760,8 @@ export default {
         },
         stopResize() {
             this.resizing = null;
-        },
-    },
+        }
+    }
 };
 </script>
 

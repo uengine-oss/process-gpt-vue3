@@ -30,10 +30,7 @@
 
             <!-- Mega Process Level -->
             <div v-for="mega in filteredTreeNodes" :key="mega.id" class="tree-mega">
-                <div
-                    class="tree-node tree-node-mega"
-                    @click="toggleExpand(mega.id)"
-                >
+                <div class="tree-node tree-node-mega" @click="toggleExpand(mega.id)">
                     <v-icon size="16" class="mr-1">
                         {{ isExpanded(mega.id) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
                     </v-icon>
@@ -72,10 +69,7 @@
                 <!-- Domain Level -->
                 <div v-if="isExpanded(mega.id)">
                     <div v-for="domain in mega.children" :key="domain.id" class="tree-domain">
-                        <div
-                            class="tree-node tree-node-domain"
-                            @click="toggleExpand(domain.id)"
-                        >
+                        <div class="tree-node tree-node-domain" @click="toggleExpand(domain.id)">
                             <v-icon size="16" class="mr-1">
                                 {{ isExpanded(domain.id) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
                             </v-icon>
@@ -114,10 +108,7 @@
                         <!-- Major Process Level -->
                         <div v-if="isExpanded(domain.id)">
                             <div v-for="major in domain.children" :key="major.id" class="tree-major">
-                                <div
-                                    class="tree-node tree-node-major"
-                                    @click="toggleExpand(major.id)"
-                                >
+                                <div class="tree-node tree-node-major" @click="toggleExpand(major.id)">
                                     <v-icon size="16" class="mr-1">
                                         {{ isExpanded(major.id) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
                                     </v-icon>
@@ -170,14 +161,11 @@
                                                 variant="tonal"
                                                 color="primary"
                                                 class="version-chip"
-                                            >v{{ getSubVersion(sub.id) }}</v-chip>
-                                            <v-chip
-                                                v-else
-                                                size="x-small"
-                                                variant="tonal"
-                                                color="grey"
-                                                class="version-chip"
-                                            >{{ $t('processHierarchy.noVersion') || 'new' }}</v-chip>
+                                                >v{{ getSubVersion(sub.id) }}</v-chip
+                                            >
+                                            <v-chip v-else size="x-small" variant="tonal" color="grey" class="version-chip">{{
+                                                $t('processHierarchy.noVersion') || 'new'
+                                            }}</v-chip>
                                         </div>
                                     </div>
                                 </div>
@@ -198,20 +186,20 @@ export default {
         metricsMap: { type: Object, default: null },
         definitionList: { type: Array, default: () => [] },
         selectedId: { type: String, default: '' },
-        hideHeader: { type: Boolean, default: false },
+        hideHeader: { type: Boolean, default: false }
     },
     emits: ['select'],
     data() {
         return {
             searchText: '',
-            expandedNodes: new Set(),
+            expandedNodes: new Set()
         };
     },
     computed: {
         domainMap() {
             const map = {};
             if (this.metricsMap?.domains) {
-                this.metricsMap.domains.forEach(d => {
+                this.metricsMap.domains.forEach((d) => {
                     map[d.id] = d;
                 });
             }
@@ -220,7 +208,7 @@ export default {
         processDomainMap() {
             const map = {};
             if (this.metricsMap?.processes) {
-                this.metricsMap.processes.forEach(p => {
+                this.metricsMap.processes.forEach((p) => {
                     map[p.id] = p.domain_id;
                 });
             }
@@ -229,11 +217,11 @@ export default {
         definitionStatusMap() {
             const map = {};
             if (this.definitionList) {
-                this.definitionList.forEach(def => {
+                this.definitionList.forEach((def) => {
                     const id = def.file_name || def.id;
                     map[id] = {
                         status: def.approval_state || def.status || 'draft',
-                        version: def.version || def.version_tag || '',
+                        version: def.version || def.version_tag || ''
                     };
                 });
             }
@@ -249,7 +237,7 @@ export default {
                     id: `mega_${mega.id}`,
                     name: mega.name,
                     children: [],
-                    subCount: 0,
+                    subCount: 0
                 };
 
                 // Group major processes by domain
@@ -265,21 +253,21 @@ export default {
                                 name: domainInfo?.name || domainId,
                                 color: domainInfo?.color || '',
                                 children: [],
-                                subCount: 0,
+                                subCount: 0
                             };
                         }
 
                         const majorNode = {
                             id: `major_${major.id}`,
                             name: major.name,
-                            children: [],
+                            children: []
                         };
 
                         if (major.sub_proc_list) {
                             for (const sub of major.sub_proc_list) {
                                 majorNode.children.push({
                                     id: sub.id,
-                                    name: sub.name,
+                                    name: sub.name
                                 });
                             }
                         }
@@ -303,7 +291,7 @@ export default {
             if (!this.searchText) return this.treeNodes;
             const query = this.searchText.toLowerCase();
             return this.filterNodes(this.treeNodes, query);
-        },
+        }
     },
     methods: {
         filterNodes(nodes, query) {
@@ -319,7 +307,7 @@ export default {
                 if (nameMatch || filteredChildren.length > 0) {
                     result.push({
                         ...node,
-                        children: filteredChildren.length > 0 ? filteredChildren : node.children,
+                        children: filteredChildren.length > 0 ? filteredChildren : node.children
                     });
                     // Auto-expand matched nodes
                     if (filteredChildren.length > 0) {
@@ -360,7 +348,7 @@ export default {
         /** 해당 노드 및 하위 전체 닫기 */
         collapseAllUnder(node) {
             const toRemove = new Set(this.collectExpandableIds([node]));
-            this.expandedNodes = new Set([...this.expandedNodes].filter(id => !toRemove.has(id)));
+            this.expandedNodes = new Set([...this.expandedNodes].filter((id) => !toRemove.has(id)));
         },
 
         isExpanded(nodeId) {
@@ -377,8 +365,8 @@ export default {
 
         getSubVersion(subId) {
             return this.definitionStatusMap[subId]?.version || '';
-        },
-    },
+        }
+    }
 };
 </script>
 

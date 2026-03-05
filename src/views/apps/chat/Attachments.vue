@@ -33,15 +33,14 @@ export default {
         }
     },
     data() {
-        return {
-        }
+        return {};
     },
     methods: {
         downloadAttachment(file_path) {
             window.open(file_path, '_blank');
         }
     }
-}
+};
 </script>
 
 <style scoped>

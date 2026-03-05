@@ -1,8 +1,8 @@
 export { fakeBackend };
 
 function fakeBackend() {
-    let users = [{ id: 1, username: 'info@wrappixel.com', password: 'admin123', firstName: 'Wrappixel', lastName: '.com' }];
-    let realFetch = window.fetch;
+    const users = [{ id: 1, username: 'info@wrappixel.com', password: 'admin123', firstName: 'Wrappixel', lastName: '.com' }];
+    const realFetch = window.fetch;
     window.fetch = function (url: any, opts: any) {
         return new Promise((resolve: any, reject) => {
             // wrap in timeout to simulate server api call

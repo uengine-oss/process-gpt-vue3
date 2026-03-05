@@ -9,17 +9,13 @@
         </div>
         <v-divider />
         <perfect-scrollbar class="agent-message-panel-scroll" ref="agentScrollContainer">
-            <div
-                v-for="(message, index) in messages"
-                :key="message.uuid || index"
-                class="py-1 px-3 agent-message-row"
-            >
+            <div v-for="(message, index) in messages" :key="message.uuid || index" class="py-1 px-3 agent-message-row">
                 <!-- 라우팅(에이전트 선정) 로딩 -->
                 <div v-if="message && message.__routingLoading">
                     <div class="message-bubble-wrap message-bubble-wrap--other">
                         <v-sheet class="other-message rounded-md pa-0 agent-panel-bubble">
                             <div class="pa-2">
-                                <pre class="text-body-1 routing-loading-text">{{ (message.content || '...') }}</pre>
+                                <pre class="text-body-1 routing-loading-text">{{ message.content || '...' }}</pre>
                             </div>
                         </v-sheet>
                     </div>
@@ -34,28 +30,31 @@
                                 <div
                                     v-if="(message.__agentInviteRecommendation.reason || '').toString().trim()"
                                     class="text-caption text-medium-emphasis mb-3"
-                                    style="word-break: break-word; overflow-wrap: break-word;"
+                                    style="word-break: break-word; overflow-wrap: break-word"
                                 >
                                     {{ message.__agentInviteRecommendation.reason }}
                                 </div>
 
                                 <div
-                                    v-for="agent in (message.__agentInviteRecommendation.recommendedAgents || [])"
+                                    v-for="agent in message.__agentInviteRecommendation.recommendedAgents || []"
                                     :key="agent.id"
                                     class="d-flex align-center justify-space-between mb-2"
-                                    style="gap: 12px;"
+                                    style="gap: 12px"
                                 >
-                                    <div class="d-flex align-center" style="gap: 10px; min-width: 0; flex: 1; overflow: hidden;">
-                                        <v-avatar size="26" color="grey-lighten-3" style="flex-shrink: 0;">
+                                    <div class="d-flex align-center" style="gap: 10px; min-width: 0; flex: 1; overflow: hidden">
+                                        <v-avatar size="26" color="grey-lighten-3" style="flex-shrink: 0">
                                             <v-img :src="agent.profile || '/images/chat-icon.png'" cover />
                                         </v-avatar>
-                                        <div style="min-width: 0; flex: 1;">
-                                            <div class="text-body-2 font-weight-medium" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        <div style="min-width: 0; flex: 1">
+                                            <div
+                                                class="text-body-2 font-weight-medium"
+                                                style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+                                            >
                                                 {{ agent.username || agent.id }}
                                             </div>
                                             <div
                                                 class="text-caption text-medium-emphasis"
-                                                style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
                                             >
                                                 {{ agent.role || agent.description || agent.goal || '' }}
                                             </div>
@@ -66,7 +65,7 @@
                                         size="small"
                                         variant="tonal"
                                         color="primary"
-                                        style="flex-shrink: 0;"
+                                        style="flex-shrink: 0"
                                         :disabled="isRecommendationInvited(message, agent.id)"
                                         @click="inviteAgentFromRecommendation(message, agent)"
                                     >
@@ -94,34 +93,29 @@
                 <!-- assistant/agent role 메시지 -->
                 <div v-else>
                     <div v-if="!message.disableMsg || message.isLoading">
-                        <v-row
-                            v-if="shouldDisplayAgentUserInfo(message, index)"
-                            class="ma-0 pa-0"
-                        >
+                        <v-row v-if="shouldDisplayAgentUserInfo(message, index)" class="ma-0 pa-0">
                             <v-row class="ma-0 pa-0 d-flex align-center mb-2">
-                                <v-avatar size="28" style="margin-right:8px;">
+                                <v-avatar size="28" style="margin-right: 8px">
                                     <v-img
                                         :src="getAgentProfile(message)"
-                                        :alt="(message.name || message.userName || message.username || message.email || 'Agent')"
+                                        :alt="message.name || message.userName || message.username || message.email || 'Agent'"
                                         height="28"
                                         width="28"
                                     />
                                 </v-avatar>
                                 <div class="user-name">
-                                    {{ message.role == 'system' ? 'System' : (message.name || message.userName || message.username || message.email) }}
+                                    {{
+                                        message.role == 'system'
+                                            ? 'System'
+                                            : message.name || message.userName || message.username || message.email
+                                    }}
                                 </div>
                             </v-row>
                         </v-row>
 
                         <div class="w-100 pb-3">
-                            <div
-                                v-if="shouldRenderAgentMessageBubble(message)"
-                                class="message-bubble-wrap message-bubble-wrap--other"
-                            >
-                                <div
-                                    v-if="message.isLoading"
-                                    class="chat-room-loading-indicator"
-                                >
+                            <div v-if="shouldRenderAgentMessageBubble(message)" class="message-bubble-wrap message-bubble-wrap--other">
+                                <div v-if="message.isLoading" class="chat-room-loading-indicator">
                                     <template v-if="getRunningToolCall(message)">
                                         <div class="chat-room-tool-calls">
                                             <div class="chat-room-tool-call-item">
@@ -146,7 +140,7 @@
                                                     class="rounded-md"
                                                     alt="pro"
                                                     width="250"
-                                                    style="cursor: pointer;"
+                                                    style="cursor: pointer"
                                                     @click="$emit('preview-image', message.image)"
                                                 />
                                             </v-sheet>
@@ -157,7 +151,7 @@
                                                         class="rounded-md"
                                                         alt="pro"
                                                         width="250"
-                                                        style="cursor: pointer;"
+                                                        style="cursor: pointer"
                                                         @click="$emit('preview-image', image.url || image)"
                                                     />
                                                 </v-sheet>
@@ -168,7 +162,11 @@
                                         <pre v-else-if="message.content" class="text-body-1" v-html="linkify(message.content)"></pre>
 
                                         <div
-                                            v-if="message.pdf2bpmnResult && message.pdf2bpmnResult.generatedBpmns && message.pdf2bpmnResult.generatedBpmns.length > 0"
+                                            v-if="
+                                                message.pdf2bpmnResult &&
+                                                message.pdf2bpmnResult.generatedBpmns &&
+                                                message.pdf2bpmnResult.generatedBpmns.length > 0
+                                            "
                                             class="pdf2bpmn-result-container mt-3"
                                         >
                                             <div class="d-flex align-center mb-2">
@@ -177,7 +175,7 @@
                                                     생성된 BPMN 프로세스 ({{ message.pdf2bpmnResult.generatedBpmns.length }}개)
                                                 </span>
                                             </div>
-                                            <div class="d-flex flex-column" style="gap: 8px;">
+                                            <div class="d-flex flex-column" style="gap: 8px">
                                                 <v-card
                                                     v-for="(bpmn, bIdx) in message.pdf2bpmnResult.generatedBpmns"
                                                     :key="bIdx"
@@ -191,9 +189,7 @@
                                                             <div class="text-body-2 font-weight-bold">
                                                                 {{ bpmn.process_name || 'Unnamed Process' }}
                                                             </div>
-                                                            <div class="text-caption text-medium-emphasis">
-                                                                ID: {{ bpmn.process_id }}
-                                                            </div>
+                                                            <div class="text-caption text-medium-emphasis">ID: {{ bpmn.process_id }}</div>
                                                         </div>
                                                         <v-icon size="16" color="grey">mdi-eye</v-icon>
                                                     </div>
@@ -203,7 +199,7 @@
                                     </div>
                                     <v-progress-linear
                                         v-if="index === messages.length - 1 && isAgentLoading"
-                                        style="margin-top: -4px; border-radius: 0 0 10px 10px; width: 99%;"
+                                        style="margin-top: -4px; border-radius: 0 0 10px 10px; width: 99%"
                                         indeterminate
                                         class="my-progress-linear"
                                     />
@@ -248,15 +244,11 @@ export default {
             default: () => []
         }
     },
-    emits: [
-        'invite-agent',
-        'preview-image',
-        'preview-bpmn'
-    ],
+    emits: ['invite-agent', 'preview-image', 'preview-bpmn'],
     computed: {
         isAgentLoading() {
             if (!this.messages || this.messages.length === 0) return false;
-            return this.messages.some(m => m && m.isLoading);
+            return this.messages.some((m) => m && m.isLoading);
         }
     },
     watch: {
@@ -311,9 +303,7 @@ export default {
             }
             if (!this.userList) return '/images/defaultUser.png';
             const list = Array.isArray(this.userList) ? this.userList : [];
-            const user = message.email
-                ? list.find(u => u.email === message.email)
-                : null;
+            const user = message.email ? list.find((u) => u.email === message.email) : null;
             const profile = user && user.profile ? user.profile : null;
             return profile ? (profile.includes('defaultUser.png') ? '/images/defaultUser.png' : profile) : '/images/defaultUser.png';
         },
@@ -325,9 +315,11 @@ export default {
             if ((message.name || message.userName) !== (prevMessage.name || prevMessage.userName)) return true;
             const currentTime = new Date(message.timeStamp);
             const prevTime = new Date(prevMessage.timeStamp);
-            if (currentTime.getMinutes() !== prevTime.getMinutes() ||
+            if (
+                currentTime.getMinutes() !== prevTime.getMinutes() ||
                 currentTime.getHours() !== prevTime.getHours() ||
-                currentTime.getDate() !== prevTime.getDate()) {
+                currentTime.getDate() !== prevTime.getDate()
+            ) {
                 return true;
             }
             return false;
@@ -344,12 +336,12 @@ export default {
             }
         },
         getLoadingLabel(message) {
-            return (message?.content || '생각 중...');
+            return message?.content || '생각 중...';
         },
         getRunningToolCall(message) {
             try {
                 const tools = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
-                return tools.find(t => t?.status === 'running') || null;
+                return tools.find((t) => t?.status === 'running') || null;
             } catch (e) {
                 return null;
             }
@@ -372,7 +364,7 @@ export default {
                 get_instance_list: '인스턴스 목록 조회',
                 get_todolist: '할일 목록 조회',
                 get_organization: '조직도 조회',
-                start_process_consulting: '프로세스 컨설팅 시작',
+                start_process_consulting: '프로세스 컨설팅 시작'
             };
             return toolNameMap[key] || key;
         },

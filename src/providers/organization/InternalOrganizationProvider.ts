@@ -3,12 +3,7 @@
  * 내부 조직도(org_chart) 기반 구현
  */
 
-import type {
-    IOrganizationProvider,
-    OrganizationMember,
-    OrganizationDepartment,
-    SearchOptions
-} from './OrganizationProvider';
+import type { IOrganizationProvider, OrganizationMember, OrganizationDepartment, SearchOptions } from './OrganizationProvider';
 import BackendFactory from '@/components/api/BackendFactory';
 
 // 내부 조직도 노드 구조
@@ -42,9 +37,7 @@ export class InternalOrganizationProvider implements IOrganizationProvider {
             });
 
             if (orgData && orgData.value) {
-                const orgValue = typeof orgData.value === 'string'
-                    ? JSON.parse(orgData.value)
-                    : orgData.value;
+                const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;
 
                 this.orgChart = orgValue.chart || orgValue;
             }
@@ -74,13 +67,13 @@ export class InternalOrganizationProvider implements IOrganizationProvider {
 
         if (includeMembers && node.children) {
             dept.members = node.children
-                .filter(child => !child.data?.isTeam)
-                .map(child => this.nodeToMember(child))
+                .filter((child) => !child.data?.isTeam)
+                .map((child) => this.nodeToMember(child))
                 .filter((m): m is OrganizationMember => m !== null);
 
             dept.children = node.children
-                .filter(child => child.data?.isTeam)
-                .map(child => this.nodeToDepartment(child, includeMembers))
+                .filter((child) => child.data?.isTeam)
+                .map((child) => this.nodeToDepartment(child, includeMembers))
                 .filter((d): d is OrganizationDepartment => d !== null);
         }
 
@@ -206,10 +199,7 @@ export class InternalOrganizationProvider implements IOrganizationProvider {
 
         if (options?.query) {
             const query = options.query.toLowerCase();
-            members = members.filter(m =>
-                m.name.toLowerCase().includes(query) ||
-                m.email?.toLowerCase().includes(query)
-            );
+            members = members.filter((m) => m.name.toLowerCase().includes(query) || m.email?.toLowerCase().includes(query));
         }
 
         if (options?.limit) {

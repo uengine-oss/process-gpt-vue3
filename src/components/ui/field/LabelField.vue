@@ -1,14 +1,10 @@
 <template>
     <div class="form-label-field">
-        <label class="form-label"
-            :hide-details="hideDetails"
-            :density="density"
-        >{{localLabel}}</label>
+        <label class="form-label" :hide-details="hideDetails" :density="density">{{ localLabel }}</label>
     </div>
 </template>
 
 <script>
-
 export default {
     props: {
         vueRenderUUID: String,
@@ -19,25 +15,23 @@ export default {
 
     data() {
         return {
-            localLabel: "",
+            localLabel: '',
 
             settingInfos: [
                 {
-                    dataToUse: "localLabel",
-                    htmlAttribute: "label",
-                    settingLabel: "Label",
-                    settingType: "text"
+                    dataToUse: 'localLabel',
+                    htmlAttribute: 'label',
+                    settingLabel: 'Label',
+                    settingType: 'text'
                 }
             ]
         };
     },
 
     created() {
-        this.localLabel = this.label ?? "label"
+        this.localLabel = this.label ?? 'label';
     }
 };
 </script>
 
-<style lang="scss">
-
-</style>
+<style lang="scss"></style>

@@ -1,12 +1,12 @@
-import AIGenerator from "@/components/ai/AIGenerator";
+import AIGenerator from '@/components/ai/AIGenerator';
 export default class FormHtmlCodeGenerator extends AIGenerator {
-    constructor(client, options){
+    constructor(client, options) {
         super(client, options);
 
         this.messagesToSendFormat = [
-          {
-            role: 'system', 
-            content: `\
+            {
+                role: 'system',
+                content: `\
 You are a professional web developer specializing in form creation and HTML semantics. You excel at analyzing visual form designs and converting them into clean, accessible, and functional HTML code.
 
 Your strengths include:
@@ -19,11 +19,11 @@ Your strengths include:
 
 Analyze form images thoroughly before coding to understand the complete structure. Pay attention to element relationships, groupings, and validation requirements. Your HTML output should be clean, well-formatted, and follow modern web standards.
 `
-          },
-        
-          {
-            role: 'user',
-            content: `\
+            },
+
+            {
+                role: 'user',
+                content: `\
 # Form HTML Generation Requirements
 
 ## Core Requirements
@@ -64,72 +64,74 @@ Return only the HTML code, starting with <form> and ending with </form>.
 
 This is the entire guideline.
 When you're ready, please output 'Approved.' Then I will begin user input.`
-          },
+            },
 
-          {
-            role: 'assistant',
-            content: `\
+            {
+                role: 'assistant',
+                content: `\
 Approved.`
-          }
-        ]
+            }
+        ];
     }
 
     static async getHtmlCodeFromImage(imageUrl, options) {
-      if(!imageUrl) throw new Error("imageUrl is required")
+        if (!imageUrl) throw new Error('imageUrl is required');
 
-      return new Promise((resolve, reject) => {
-        const generator = new FormHtmlCodeGenerator({
-          input: {
-            imageUrl: imageUrl
-          },
-          onGenerationFinished: (model) => {
-            console.log("[*][FormHtmlCodeGenerator] 폼 생성 완료", {model: model})
-            resolve(model)
-          },
-          onError: (error) => {
-            reject(error)
-          }
-        }, options)
+        return new Promise((resolve, reject) => {
+            const generator = new FormHtmlCodeGenerator(
+                {
+                    input: {
+                        imageUrl: imageUrl
+                    },
+                    onGenerationFinished: (model) => {
+                        console.log('[*][FormHtmlCodeGenerator] 폼 생성 완료', { model: model });
+                        resolve(model);
+                    },
+                    onError: (error) => {
+                        reject(error);
+                    }
+                },
+                options
+            );
 
-        generator.generate()
-      })
+            generator.generate();
+        });
     }
-
 
     createMessages() {
-      this.vendor = 'openai'
-      this.model = 'chatgpt-4o-latest'
-      this.modelConfig = {
-        temperature: 1,
-        top_p: 0.9,
-        frequency_penalty: 0,
-        presence_penalty: 0
-      }
+        this.vendor = 'openai';
+        this.model = 'chatgpt-4o-latest';
+        this.modelConfig = {
+            temperature: 1,
+            top_p: 0.9,
+            frequency_penalty: 0,
+            presence_penalty: 0
+        };
 
-      this.messagesToSend = structuredClone(this.messagesToSendFormat)
-      this.messagesToSend.push({
-        role: 'user',
-        content: [
-          {
-            "type": "image_url",
-            "image_url": {
-              "url": this.client.input.imageUrl
-            }
-          },
-          {
-            "type": "text",
-            "text": `\
+        this.messagesToSend = structuredClone(this.messagesToSendFormat);
+        this.messagesToSend.push({
+            role: 'user',
+            content: [
+                {
+                    type: 'image_url',
+                    image_url: {
+                        url: this.client.input.imageUrl
+                    }
+                },
+                {
+                    type: 'text',
+                    text: `\
 # Note  
 Please write values such as name and label of the form being created in ${this.preferredLanguage}. However, make sure all id attributes are written in English only.`
-          }
-        ]
-      })
-  
-      console.log("[*][FormHtmlCodeGenerator] 전달되는 시스템상 AI 메시지", {messagesToSend: this.messagesToSend})
-      return this.messagesToSend
+                }
+            ]
+        });
+
+        console.log('[*][FormHtmlCodeGenerator] 전달되는 시스템상 AI 메시지', { messagesToSend: this.messagesToSend });
+        return this.messagesToSend;
     }
 
-    createPrompt(){
-       return this.client.newMessage
+    createPrompt() {
+        return this.client.newMessage;
     }
 }

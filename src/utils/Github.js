@@ -1,664 +1,706 @@
-import Git from './Git'
-import axios from 'axios'
+import Git from './Git';
+import axios from 'axios';
 class Github extends Git {
     gitRepoUrl(org, repo, tag) {
-        return `https://github.com/${org}/${repo}${tag}`
+        return `https://github.com/${org}/${repo}${tag}`;
     }
 
     getType() {
-        return "GitHub"
+        return 'GitHub';
     }
 
     getCloneCommand(org, repo, tag) {
-        return `git clone https://github.com/${org}/${repo}.git`
+        return `git clone https://github.com/${org}/${repo}.git`;
     }
     getGitpodUrl(org, repo, releaseTagPath) {
-        return `https://gitpod.io/#https://github.com/${org}/${repo}${releaseTagPath}`
+        return `https://gitpod.io/#https://github.com/${org}/${repo}${releaseTagPath}`;
     }
     getHeader() {
         return {
             Authorization: 'token ' + localStorage.getItem('gitToken'),
             Accept: 'application/vnd.github+json'
-        }
+        };
     }
-getUserInfo() {
-        let me = this
+    getUserInfo() {
+        let me = this;
         return new Promise(async function (resolve, reject) {
-            let patchMainResult = await axios.get(`https://api.github.com/user`, { headers: me.getHeader() })
-            .then((res) => {
-                resolve(res.data)
-            })
-            .catch((e) => {
-                reject(e)
-            })
-        })
+            let patchMainResult = await axios
+                .get(`https://api.github.com/user`, { headers: me.getHeader() })
+                .then((res) => {
+                    resolve(res.data);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     getBranch(org, repo, forkedTag) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
-            await axios.get(`https://api.github.com/repos/${org}/${repo}/branches/branch-${forkedTag}`, { headers: me.getHeader() })
-            .then(function (res) {
-                if(res){
-                    resolve(true);
-                }
-            }).catch(function (error) {
-                reject(error)
-            })
-        })
-        
+            await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/branches/branch-${forkedTag}`, { headers: me.getHeader() })
+                .then(function (res) {
+                    if (res) {
+                        resolve(true);
+                    }
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        });
     }
     getRef(org, repo, branch) {
         let me = this;
         return new Promise(async function (resolve, reject) {
-            await axios.get(`https://api.github.com/repos/${org}/${repo}/git/refs/heads/${branch}`, { headers: me.getHeader() })
-            .then(function (res) {
-                resolve(res)
-            })
-            .catch(error => {
-                reject(error)
-            })
-        })
+            await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/git/refs/heads/${branch}`, { headers: me.getHeader() })
+                .then(function (res) {
+                    resolve(res);
+                })
+                .catch((error) => {
+                    reject(error);
+                });
+        });
     }
     getTags(org, repo, forkedTag) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
-            const result = await axios.get(`https://api.github.com/repos/${org}/${repo}/tags`, { headers: me.getHeader() })
-            .then(function (res) {
-                resolve(res)
-            })
-            .catch(function (error) {
-                reject(error)
-            })
-            
-        })
+            const result = await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/tags`, { headers: me.getHeader() })
+                .then(function (res) {
+                    resolve(res);
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        });
     }
     createBranch(org, repo, templateBranchData) {
-        let me = this
-        return new Promise(async function(resolve, reject) {
-            const result = await axios.post(`https://api.github.com/repos/${org}/${repo}/git/refs`, templateBranchData, { headers: me.getHeader() })
-            .then(function (res) {
-                resolve(res)
-            })
-            .catch(function (error) {
-                reject(error)
-            })
-        })
+        let me = this;
+        return new Promise(async function (resolve, reject) {
+            const result = await axios
+                .post(`https://api.github.com/repos/${org}/${repo}/git/refs`, templateBranchData, { headers: me.getHeader() })
+                .then(function (res) {
+                    resolve(res);
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        });
     }
     getReleasedTag(org, repo, tag) {
-        let me = this
-        return new Promise(async function(resolve, reject) {
-            await axios.get(`https://api.github.com/repos/${org}/${repo}/releases/tags/${tag}`, { headers: me.getHeader() })
-            .then(function (res) {
-                resolve(res)
-            })
-            .catch(function (error) {
-                reject(error)
-            })
-        })
+        let me = this;
+        return new Promise(async function (resolve, reject) {
+            await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/releases/tags/${tag}`, { headers: me.getHeader() })
+                .then(function (res) {
+                    resolve(res);
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        });
     }
     createTree() {
-        let me = this
-        return new Promise(function (resolve, reject) {
-
-        })
+        let me = this;
+        return new Promise(function (resolve, reject) {});
     }
     getMainRepo(org, repo) {
-        let me = this
-        return new Promise(async function (resolve,reject) {
-            let result = await axios.get(`https://api.github.com/repos/${org}/${repo}/git/trees/main`, { headers: me.getHeader() })
-            .then(function (res) {
-                resolve(res)
-            })
-            .catch(function (error) {
-                reject(error)
-            })
-            
-        })
+        let me = this;
+        return new Promise(async function (resolve, reject) {
+            let result = await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/git/trees/main`, { headers: me.getHeader() })
+                .then(function (res) {
+                    resolve(res);
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        });
     }
-    
+
     createRepo(org, repo, userName) {
         let me = this;
         let createRepoUrl;
         let options = {
             name: repo,
             auto_init: true
-        }
-        if(org == userName){
-            createRepoUrl = `https://api.github.com/user/repos`
+        };
+        if (org == userName) {
+            createRepoUrl = `https://api.github.com/user/repos`;
         } else {
-            createRepoUrl = `https://api.github.com/orgs/${org}/repos`
+            createRepoUrl = `https://api.github.com/orgs/${org}/repos`;
         }
         return new Promise(async function (resolve, reject) {
-            let result = await axios.post(createRepoUrl, options, { headers: me.getHeader() })
-            .then(function (res) {
-                resolve(res)
-            })
-            .catch((e)=>{
-                reject(e)
-            })
-            
-        })
+            let result = await axios
+                .post(createRepoUrl, options, { headers: me.getHeader() })
+                .then(function (res) {
+                    resolve(res);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     getTemplateBranch(org, repo, branch) {
         let me = this;
 
         return new Promise(async function (resolve, reject) {
-            let result = await axios.get(`https://api.github.com/repos/${org}/${repo}/git/trees/${branch}`, { headers: me.getHeader() })
-            .then(function (res) {
-                resolve(res)
-            })
-            .catch((e)=>{
-                reject(e)
-            })
-        })
+            let result = await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/git/trees/${branch}`, { headers: me.getHeader() })
+                .then(function (res) {
+                    resolve(res);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     getRepo(org, repo) {
         let me = this;
-        return new Promise(async function(resolve, reject) {
-            let result = await axios.get(`https://api.github.com/repos/${org}/${repo}`, { headers: me.getHeader() })
-            .then(function (res) {
-                resolve(res)
-            })
-            .catch((e)=> {
-                reject(e)
-            })
-        })
+        return new Promise(async function (resolve, reject) {
+            let result = await axios
+                .get(`https://api.github.com/repos/${org}/${repo}`, { headers: me.getHeader() })
+                .then(function (res) {
+                    resolve(res);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     getOrgList() {
         var me = this;
         return new Promise(async function (resolve, reject) {
-            const result = await axios.get(`https://api.github.com/user/orgs`, { headers: me.getHeader() })
-            .then(async (res) => {
-                let result = {
-                    gitlabGroupIdList : [],
-                    gitOrganizations: []
-                }
-                let gitOrganizations = []
-                if(res && res.data.length > 0){
-                    await Promise.all(res.data.map(function (orgInfo) {
-                        result.gitOrganizations.push(orgInfo.name)
-                    }))
-                    resolve(gitOrganizations)
-                }
-            })
-            .catch((e) => {
-                reject(e)
-            })
-        })
-    }
-    recursiveTree(element) {
-        let me = this
-        return new Promise(async function (resolve, reject) {
-            let result = [];
-            if(element.type == 'blob') {
-                result.concat(element)
-                resolve(element)
-            } else if (element.type == 'tree') {
-                let gitData = await axios.get(element.url, {headers: me.getHeader()})
-                .then((res) => {
-                    res.data.tree.map((elem) => {
-                        elem.path = element.path + "/" + elem.path;
-                        if(elem.type == 'blob') {
-                            result.concat(elem)
-                            resolve(elem)
-                        } else if (elem.type == 'tree') {
-                            let recursive = me.recursiveTree(elem);
-                            result.concat(recursive)
-                            resolve(result)
-                        }
-                    })
+            const result = await axios
+                .get(`https://api.github.com/user/orgs`, { headers: me.getHeader() })
+                .then(async (res) => {
+                    let result = {
+                        gitlabGroupIdList: [],
+                        gitOrganizations: []
+                    };
+                    let gitOrganizations = [];
+                    if (res && res.data.length > 0) {
+                        await Promise.all(
+                            res.data.map(function (orgInfo) {
+                                result.gitOrganizations.push(orgInfo.name);
+                            })
+                        );
+                        resolve(gitOrganizations);
+                    }
                 })
                 .catch((e) => {
-                    reject(e)
-                })
+                    reject(e);
+                });
+        });
+    }
+    recursiveTree(element) {
+        let me = this;
+        return new Promise(async function (resolve, reject) {
+            let result = [];
+            if (element.type == 'blob') {
+                result.concat(element);
+                resolve(element);
+            } else if (element.type == 'tree') {
+                let gitData = await axios
+                    .get(element.url, { headers: me.getHeader() })
+                    .then((res) => {
+                        res.data.tree.map((elem) => {
+                            elem.path = element.path + '/' + elem.path;
+                            if (elem.type == 'blob') {
+                                result.concat(elem);
+                                resolve(elem);
+                            } else if (elem.type == 'tree') {
+                                let recursive = me.recursiveTree(elem);
+                                result.concat(recursive);
+                                resolve(result);
+                            }
+                        });
+                    })
+                    .catch((e) => {
+                        reject(e);
+                    });
             }
-        })
+        });
     }
     getTemplateURL(repo) {
         let me = this;
         return new Promise((resolve, reject) => {
-            let result = "https://github.com/msa-ez/" + repo
-            resolve(result)
-        })
+            let result = 'https://github.com/msa-ez/' + repo;
+            resolve(result);
+        });
     }
     getToppingURL(repo) {
         let me = this;
         return new Promise((resolve, reject) => {
-            let result = "https://github.com/msa-ez/topping-" + repo
-            resolve(result)
-        })
+            let result = 'https://github.com/msa-ez/topping-' + repo;
+            resolve(result);
+        });
     }
     getFolder(org, repo, path) {
         let me = this;
         return new Promise(async function (resolve, reject) {
-            let results = []
+            let results = [];
             try {
-                let url = `https://api.github.com/repos/${org}/${repo}/contents/${path}`
-                let file = await axios.get(url, { headers: me.getHeader() })
-                    .then(res => {
-                        resolve(res)
+                let url = `https://api.github.com/repos/${org}/${repo}/contents/${path}`;
+                let file = await axios
+                    .get(url, { headers: me.getHeader() })
+                    .then((res) => {
+                        resolve(res);
                     })
-                    .catch(e => reject(e))
-            } catch(e) {
-                reject(e)
+                    .catch((e) => reject(e));
+            } catch (e) {
+                reject(e);
             }
-        })
+        });
     }
     getFile(org, repo, filePath) {
         let me = this;
         return new Promise(async function (resolve, reject) {
-            let results = []
+            let results = [];
             try {
-                let url = `https://api.github.com/repos/${org}/${repo}/contents/${filePath}`
-                let file = await axios.get(url, { headers: me.getHeader() })
-                .then(res => {
-                    let result = {
-                        data: decodeURIComponent(escape(atob(res.data.content))),
-                        url: url
-                    }
-                    resolve(result)
-                })
-                .catch(e => reject(e))
-            } catch(e) {
-                reject(e)
+                let url = `https://api.github.com/repos/${org}/${repo}/contents/${filePath}`;
+                let file = await axios
+                    .get(url, { headers: me.getHeader() })
+                    .then((res) => {
+                        let result = {
+                            data: decodeURIComponent(escape(atob(res.data.content))),
+                            url: url
+                        };
+                        resolve(result);
+                    })
+                    .catch((e) => reject(e));
+            } catch (e) {
+                reject(e);
             }
-        })
+        });
     }
     getFiles(options) {
         let me = this;
         return new Promise(async function (resolve, reject) {
-            let results = []
+            let results = [];
             try {
                 options.tree.map(async (ele) => {
-                    let data = await me.recursiveTree(ele)
-                    .then((result) => {
-                        results.concat(result)
-                    })
-                    .catch((e) => {
-                        reject(e)
-                    })
-                })
-                resolve(results)
-            } catch(e) {
-                reject(e)
+                    let data = await me
+                        .recursiveTree(ele)
+                        .then((result) => {
+                            results.concat(result);
+                        })
+                        .catch((e) => {
+                            reject(e);
+                        });
+                });
+                resolve(results);
+            } catch (e) {
+                reject(e);
             }
-            
-        })
+        });
     }
     pushFile(org, repo, data) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
-            let result = await axios.post(`https://api.github.com/repos/${org}/${repo}/git/blobs`, data, { headers: me.getHeader() })
-            .then((res) => {
-                resolve(res)
-            })
-            .catch((error) => {
-                reject(error)
-            })
-        })
+            let result = await axios
+                .post(`https://api.github.com/repos/${org}/${repo}/git/blobs`, data, { headers: me.getHeader() })
+                .then((res) => {
+                    resolve(res);
+                })
+                .catch((error) => {
+                    reject(error);
+                });
+        });
     }
     setPushList(options) {
-        var me = this
-        return new Promise(async function(resolve, reject) {
+        var me = this;
+        return new Promise(async function (resolve, reject) {
             try {
-                let removeTree = []
-                var isChanged = false
-                let pushTree = []                
-                if(options.gitTree.length > 0){
+                let removeTree = [];
+                var isChanged = false;
+                let pushTree = [];
+                if (options.gitTree.length > 0) {
                     options.gitTree.forEach(function (elData) {
-                        if(!options.generateCodeLists.find(element => element.fullPath == elData.path)) {
-                            isChanged = true
+                        if (!options.generateCodeLists.find((element) => element.fullPath == elData.path)) {
+                            isChanged = true;
                             let pushData = {
                                 path: elData.path,
-                                mode:"100644",
-                                type:"blob",
+                                mode: '100644',
+                                type: 'blob',
                                 sha: null
-                            }
-                            removeTree.push(pushData)
+                            };
+                            removeTree.push(pushData);
                         }
-                    })
+                    });
                 }
 
                 // var pushTreeCnt = 0
-                var allCnt = 0
-                var exceptCnt = 0
+                var allCnt = 0;
+                var exceptCnt = 0;
                 options.generateCodeLists.map(async function (elData) {
-                    if(options.gitTree.length == 1 || !options.gitTree.find(element => element.path == elData.fullPath) || ((options.changedCodeLists && options.changedCodeLists.find(element => element.replace("for-model/","") == elData.fullPath)) || options.pushType != "Push")) {
-                        var pushValid = false
-                        if(options.isOne){
-                            if(options.onlyOneBcId == elData.bcId && !elData.templatePath.includes('for-model/')){
-                                elData.fullPath = elData.fullPath.replace(elData.boundedContext + '/',"")
-                                pushValid = true
+                    if (
+                        options.gitTree.length == 1 ||
+                        !options.gitTree.find((element) => element.path == elData.fullPath) ||
+                        (options.changedCodeLists &&
+                            options.changedCodeLists.find((element) => element.replace('for-model/', '') == elData.fullPath)) ||
+                        options.pushType != 'Push'
+                    ) {
+                        var pushValid = false;
+                        if (options.isOne) {
+                            if (options.onlyOneBcId == elData.bcId && !elData.templatePath.includes('for-model/')) {
+                                elData.fullPath = elData.fullPath.replace(elData.boundedContext + '/', '');
+                                pushValid = true;
                             } else {
                                 exceptCnt++;
                             }
                         } else {
-                            pushValid = true
+                            pushValid = true;
                         }
-                        if(pushValid){
-                            isChanged = true
-                            var code
-                            if(elData.code){
-                                code = elData.code
+                        if (pushValid) {
+                            isChanged = true;
+                            var code;
+                            if (elData.code) {
+                                code = elData.code;
                             }
 
-                            if(!code){
-                                code = 'undefined'
+                            if (!code) {
+                                code = 'undefined';
                             }
 
-                            if(elData.fullPath.includes("Test.java") && options.testFile && !elData.fullPath.includes(options.testFile.name)){
-                                code = ""
-                            } 
-                            
+                            if (
+                                elData.fullPath.includes('Test.java') &&
+                                options.testFile &&
+                                !elData.fullPath.includes(options.testFile.name)
+                            ) {
+                                code = '';
+                            }
+
                             let data = {
                                 content: code,
-                                encoding: 'utf-8',
+                                encoding: 'utf-8'
                             };
-                            
-                            let blobs = await me.pushFile(options.org, options.repo, data)
-                            .then(function (blob){ 
-                                allCnt++;
-                                let pushData = {
-                                    path: elData.fullPath,
-                                    mode:"100644",
-                                    type:"blob",
-                                    sha: blob.data.sha
-                                }
-                                pushTree.push(pushData)
-                            })
-                            .catch((error) => {
-                                reject(error)
-                            })
 
+                            let blobs = await me
+                                .pushFile(options.org, options.repo, data)
+                                .then(function (blob) {
+                                    allCnt++;
+                                    let pushData = {
+                                        path: elData.fullPath,
+                                        mode: '100644',
+                                        type: 'blob',
+                                        sha: blob.data.sha
+                                    };
+                                    pushTree.push(pushData);
+                                })
+                                .catch((error) => {
+                                    reject(error);
+                                });
                         }
                     }
-                    if(!isChanged) {
-                        resolve(false)
+                    if (!isChanged) {
+                        resolve(false);
                     }
-                    if(options.generateCodeLists.length == allCnt + exceptCnt) {
-                        let result = pushTree.concat(removeTree)
-                        resolve(result)
+                    if (options.generateCodeLists.length == allCnt + exceptCnt) {
+                        let result = pushTree.concat(removeTree);
+                        resolve(result);
                     }
-                })
-            } catch(error) {
-                reject(error)
+                });
+            } catch (error) {
+                reject(error);
             }
-        })
+        });
     }
     getTree(org, repo, sha) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
-            let tree = await axios.get(`https://api.github.com/repos/` + org + '/' + repo + `/git/trees/` + sha, { headers: me.getHeader() })
-            .then((res) => {
-                resolve(res.data)
-            })
-            .catch((e) => {
-                reject(e)
-            })
-        })
+            let tree = await axios
+                .get(`https://api.github.com/repos/` + org + '/' + repo + `/git/trees/` + sha, { headers: me.getHeader() })
+                .then((res) => {
+                    resolve(res.data);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     postTree(org, repo, treeList, treesha) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
             let postTreeData = {
                 tree: treeList,
                 base_tree: treesha
-            }
-            let tree = await axios.post(`https://api.github.com/repos/${org}/${repo}/git/trees`, postTreeData, { headers: me.getHeader() })
-            .then((res) => {
-                resolve(res)
-            })
-            .catch((e) => {
-                reject(e)
-            })
-        })
+            };
+            let tree = await axios
+                .post(`https://api.github.com/repos/${org}/${repo}/git/trees`, postTreeData, { headers: me.getHeader() })
+                .then((res) => {
+                    resolve(res);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
-    
+
     getCommit(org, repo, branch) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
-            let commitRes = await axios.get(`https://api.github.com/repos/${org}/${repo}/commits/${branch}`, { headers: me.getHeader() })
-            .then((res) => {
-                resolve(res.data.sha)
-            })
-            .catch(e => {
-                reject(e)
-            })
-        })
+            let commitRes = await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/commits/${branch}`, { headers: me.getHeader() })
+                .then((res) => {
+                    resolve(res.data.sha);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     postCommit(org, repo, options) {
         var me = this;
         return new Promise(async function (resolve, reject) {
-            let postCommitResult = await axios.post(`https://api.github.com/repos/${org}/${repo}/git/commits`, options, { headers: me.getHeader() })
-            .then((res) => {
-                resolve(res)
-            })
-            .catch((e) => {
-                reject(e)
-            })
-        })
+            let postCommitResult = await axios
+                .post(`https://api.github.com/repos/${org}/${repo}/git/commits`, options, { headers: me.getHeader() })
+                .then((res) => {
+                    resolve(res);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     commit(org, repo, branch, treeList, init, commitMessage) {
         let me = this;
-        return new Promise(async function (resolve, reject) { 
+        return new Promise(async function (resolve, reject) {
             let treesha = null;
             let parentsCommitSha = null;
-            let getRepo = await me.getMainRepo(org, repo)
-            .then(async (res) => {
-                treesha = res.data.sha;
-                let postTreeResult = await me.postTree(org, repo, treeList, treesha)
-                .then(async (result) => {
-                    treesha = result.data.sha
-                    let commits = await me.getCommit(org, repo, branch)
-                    .then(async function (commit) {
-                        parentsCommitSha = commit
-                        let postCommitData = {}
-                        let commitMsg = commitMessage ? commitMessage : "commit"
-                        if(init) {
-                            postCommitData = {
-                                tree: result.data.sha,
-                                message: commitMsg
-                            }
-                        } else {
-                            postCommitData = {
-                                tree: result.data.sha,
-                                message: commitMsg,
-                                parents: [
-                                    parentsCommitSha
-                                ]
-                            }
-                        }
-                        let commitResult = await me.postCommit(org, repo, postCommitData)
-                        .then(function (commitResults) {
-                            resolve(commitResults)
+            let getRepo = await me
+                .getMainRepo(org, repo)
+                .then(async (res) => {
+                    treesha = res.data.sha;
+                    let postTreeResult = await me
+                        .postTree(org, repo, treeList, treesha)
+                        .then(async (result) => {
+                            treesha = result.data.sha;
+                            let commits = await me
+                                .getCommit(org, repo, branch)
+                                .then(async function (commit) {
+                                    parentsCommitSha = commit;
+                                    let postCommitData = {};
+                                    let commitMsg = commitMessage ? commitMessage : 'commit';
+                                    if (init) {
+                                        postCommitData = {
+                                            tree: result.data.sha,
+                                            message: commitMsg
+                                        };
+                                    } else {
+                                        postCommitData = {
+                                            tree: result.data.sha,
+                                            message: commitMsg,
+                                            parents: [parentsCommitSha]
+                                        };
+                                    }
+                                    let commitResult = await me
+                                        .postCommit(org, repo, postCommitData)
+                                        .then(function (commitResults) {
+                                            resolve(commitResults);
+                                        })
+                                        .catch((commitError) => {
+                                            reject(commitError);
+                                        });
+                                })
+                                .catch((e) => reject(e));
                         })
-                        .catch((commitError) => {
-                            reject(commitError)
-                        })
-                    })
-                    .catch(e => reject(e))
+                        .catch((err) => {
+                            reject(err);
+                        });
                 })
-                .catch((err) => {
-                    reject(err)
-                })
-            })
-            .catch((e) => {
-                reject(e)
-            })
-        })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     getUrl(org, repo) {
-        return `https://github.com/${org}/${repo}`
+        return `https://github.com/${org}/${repo}`;
     }
     push(options) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
             let patchData = {
                 sha: options.commitData.data.sha,
                 force: true
-            }
+            };
             let branch;
             // if(options.init) {
             //     branch = "main"
             // } else {
             //     branch = "template"
             // }
-            let patch = await me.patch(options.org, options.repo, options.branch, patchData)
-            .then(async (res) => {
-                let templateBranch = await me.getRef(options.org, options.repo, "template")
-                .then(() => {
-                    resolve(res)
-                })
-                .catch(async error => {
-                    if (error.response.status === 404) {
-                        let templateBranchData = {
-                            ref: "refs/heads/template",
-                            sha: res.data.object.sha
-                        }
-                        let createBranch = await me.createBranch(options.org, options.repo, templateBranchData)
-                        .then((result) => {
-                            resolve(result)
+            let patch = await me
+                .patch(options.org, options.repo, options.branch, patchData)
+                .then(async (res) => {
+                    let templateBranch = await me
+                        .getRef(options.org, options.repo, 'template')
+                        .then(() => {
+                            resolve(res);
                         })
-                        .catch(e => reject(e))
-                    }
+                        .catch(async (error) => {
+                            if (error.response.status === 404) {
+                                let templateBranchData = {
+                                    ref: 'refs/heads/template',
+                                    sha: res.data.object.sha
+                                };
+                                let createBranch = await me
+                                    .createBranch(options.org, options.repo, templateBranchData)
+                                    .then((result) => {
+                                        resolve(result);
+                                    })
+                                    .catch((e) => reject(e));
+                            }
+                        });
                 })
-            })
-            .catch((e)=> {
-                reject(e)
-            })
-        })
-        
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     createRelease(obj) {
         let me = this;
-        return new Promise(async function (resolve,reject) {
+        return new Promise(async function (resolve, reject) {
             // var obj ={
             //     owner: me.scmOrg,
             //     repo: me.scmRepo,
             //     tag_name: me.scmTag,
             //     body: storageCondition && storageCondition.comment ? storageCondition.comment : '',
             // }
-            await axios.post(`https://api.github.com/repos/${obj.owner}/${obj.repo}/releases`, obj, { headers: me.getHeader() }).then(function(){
-                resolve()
-            })
-            .catch(function (error) {
-                if(error.response.status === 401){
-                    me.alertReLogin()
-                }
-                alert(error)
-            })
-        })
-        
+            await axios
+                .post(`https://api.github.com/repos/${obj.owner}/${obj.repo}/releases`, obj, { headers: me.getHeader() })
+                .then(function () {
+                    resolve();
+                })
+                .catch(function (error) {
+                    if (error.response.status === 401) {
+                        me.alertReLogin();
+                    }
+                    alert(error);
+                });
+        });
     }
     patch(org, repo, branch, options) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
             // console.log(branch)
-            let patchMainResult = await axios.patch(`https://api.github.com/repos/${org}/${repo}/git/refs/heads/${branch}`, options, { headers: me.getHeader() })
-            .then((res) => {
-                resolve(res)
-            })
-            .catch((e) => {
-                reject(e)
-            })
-        })
+            let patchMainResult = await axios
+                .patch(`https://api.github.com/repos/${org}/${repo}/git/refs/heads/${branch}`, options, { headers: me.getHeader() })
+                .then((res) => {
+                    resolve(res);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     // setPushTemplateList() {
 
     // }
     getActionId(org, repo) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
-            let run_id
-            await axios.get(`https://api.github.com/repos/${org}/${repo}/actions/runs?status='queued'`, { headers: me.getHeader() })
-            .then(async (res) => {
-                if(res.data.workflow_runs.length == 0){
-                    await axios.get(`https://api.github.com/repos/${org}/${repo}/actions/runs?status='in_progress'`, { headers: me.getHeader() })
-                    .then((res) => {
-                        if(res.data.workflow_runs.length > 0){
-                            run_id = res.data.workflow_runs[0].id
-                        } else {
-                            setTimeout(async () => {
-                                let obj = await me.getActionId(org, repo)
-                                resolve(obj)
-                            }, 1000)
-                        }
-                    }).catch(e => {
-                        reject(e)
-                    })
-                } else {
-                    run_id = res.data.workflow_runs[0].id
-                }
-                if(run_id){
-                    await axios.get(`https://api.github.com/repos/${org}/${repo}/actions/runs/${run_id}/jobs`, { headers: me.getHeader() })
-                    .then(async (res) => {
-                        let obj = {
-                            run_id: run_id,
-                            job_id: res.data.jobs[0].id
-                        }
-                        resolve(obj)
-                    }).catch(e => {
-                        reject(e)
-                    })
-                }
-            }).catch(e => {
-                reject(e)
-            })
-        })
+            let run_id;
+            await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/actions/runs?status='queued'`, { headers: me.getHeader() })
+                .then(async (res) => {
+                    if (res.data.workflow_runs.length == 0) {
+                        await axios
+                            .get(`https://api.github.com/repos/${org}/${repo}/actions/runs?status='in_progress'`, {
+                                headers: me.getHeader()
+                            })
+                            .then((res) => {
+                                if (res.data.workflow_runs.length > 0) {
+                                    run_id = res.data.workflow_runs[0].id;
+                                } else {
+                                    setTimeout(async () => {
+                                        let obj = await me.getActionId(org, repo);
+                                        resolve(obj);
+                                    }, 1000);
+                                }
+                            })
+                            .catch((e) => {
+                                reject(e);
+                            });
+                    } else {
+                        run_id = res.data.workflow_runs[0].id;
+                    }
+                    if (run_id) {
+                        await axios
+                            .get(`https://api.github.com/repos/${org}/${repo}/actions/runs/${run_id}/jobs`, { headers: me.getHeader() })
+                            .then(async (res) => {
+                                let obj = {
+                                    run_id: run_id,
+                                    job_id: res.data.jobs[0].id
+                                };
+                                resolve(obj);
+                            })
+                            .catch((e) => {
+                                reject(e);
+                            });
+                    }
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
-    
+
     getActionLogs(org, repo, id) {
-        let me = this
+        let me = this;
         return new Promise(async function (resolve, reject) {
-            await axios.get(`https://api.github.com/repos/${org}/${repo}/actions/runs/${id.run_id}`, { headers: me.getHeader() })
-            .then(async (run) => {
-                if(run.data.status == "completed"){
-                    let logInfo
-                    let log
-                    await axios.get(`https://api.github.com/repos/${org}/${repo}/actions/jobs/${id.job_id}/logs`, { headers: me.getHeader() })
-                    .then((logs) => {
-                        if(run.data.conclusion == "success"){
-                            logInfo = {
-                                state: 'success',
-                                log: null
-                            }
-                        } else {
-                            logInfo = {
-                                state: 'fail',
-                                log: null
-                            }
-                        }
-                        
-                        if(logs.data.includes("[INFO] Results:")){
-                            log = logs.data.split("[INFO] Results:")
-                        } else if(logs.data.includes("[INFO] BUILD FAILURE")){
-                            log = logs.data.split("[INFO] BUILD FAILURE")
-                        } else if(logs.data.includes("COMPILATION ERROR :")) {
-                            log = logs.data.split("COMPILATION ERROR :")
-                        }
-    
-                        if(log[1]){
-                            logInfo.log = log[1]
-                        } else {
-                            logInfo.log = log[0]
-                        }
-    
-                        resolve(logInfo)
-    
-                    }).catch(e => {
-                        reject(e)
-                    })
-                } else {
-                    setTimeout(async () => {
-                        let logs = await me.getActionLogs(org, repo, id)
-                        resolve(logs)
-                    }, 1000)
-                }
-            })
-            .catch(e => {
-                reject(e)
-            })
-        })
+            await axios
+                .get(`https://api.github.com/repos/${org}/${repo}/actions/runs/${id.run_id}`, { headers: me.getHeader() })
+                .then(async (run) => {
+                    if (run.data.status == 'completed') {
+                        let logInfo;
+                        let log;
+                        await axios
+                            .get(`https://api.github.com/repos/${org}/${repo}/actions/jobs/${id.job_id}/logs`, { headers: me.getHeader() })
+                            .then((logs) => {
+                                if (run.data.conclusion == 'success') {
+                                    logInfo = {
+                                        state: 'success',
+                                        log: null
+                                    };
+                                } else {
+                                    logInfo = {
+                                        state: 'fail',
+                                        log: null
+                                    };
+                                }
+
+                                if (logs.data.includes('[INFO] Results:')) {
+                                    log = logs.data.split('[INFO] Results:');
+                                } else if (logs.data.includes('[INFO] BUILD FAILURE')) {
+                                    log = logs.data.split('[INFO] BUILD FAILURE');
+                                } else if (logs.data.includes('COMPILATION ERROR :')) {
+                                    log = logs.data.split('COMPILATION ERROR :');
+                                }
+
+                                if (log[1]) {
+                                    logInfo.log = log[1];
+                                } else {
+                                    logInfo.log = log[0];
+                                }
+
+                                resolve(logInfo);
+                            })
+                            .catch((e) => {
+                                reject(e);
+                            });
+                    } else {
+                        setTimeout(async () => {
+                            let logs = await me.getActionLogs(org, repo, id);
+                            resolve(logs);
+                        }, 1000);
+                    }
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
     // startCommit() {
     //     return new Promise(async function (resolve, reject) {
@@ -686,7 +728,7 @@ getUserInfo() {
     //         }).catch(e => {
     //             reject(e)
     //         })
-    //         // 2. 
+    //         // 2.
     //     })
     //     .catch((error) => {
     //         if (error.response) {
@@ -780,4 +822,4 @@ getUserInfo() {
     // }
 }
 
-export default Github
+export default Github;

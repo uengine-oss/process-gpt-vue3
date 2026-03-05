@@ -38,7 +38,9 @@ function xmlEscape(value: string) {
 
 function toSnakeId(value: string, fallback: string) {
     // NOTE: DMN element id 용. 실행 변수명과는 분리한다.
-    const raw = String(value ?? '').trim().toLowerCase();
+    const raw = String(value ?? '')
+        .trim()
+        .toLowerCase();
     const s = raw
         .replace(/[^a-z0-9가-힣]+/g, '_')
         .replace(/_+/g, '_')
@@ -66,7 +68,9 @@ function isNumberLike(v: string) {
 }
 
 function feelStringLiteral(v: string) {
-    const escaped = String(v ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const escaped = String(v ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"');
     return `"${escaped}"`;
 }
 
@@ -88,7 +92,8 @@ function normalizeInputMode(mode: any) {
         m === 'dayTimeDuration' ||
         m === 'yearMonthDuration' ||
         m === 'any'
-    ) return m;
+    )
+        return m;
     return 'number';
 }
 
@@ -118,7 +123,9 @@ function inputModeToTypeRef(mode: any) {
 
 function normalizeBooleanLike(v: any) {
     if (typeof v === 'boolean') return v;
-    const s = String(v ?? '').trim().toLowerCase();
+    const s = String(v ?? '')
+        .trim()
+        .toLowerCase();
     if (s === 'true' || s === 'yes' || s === 'y' || s === '1') return true;
     if (s === 'false' || s === 'no' || s === 'n' || s === '0') return false;
     return null;
@@ -241,13 +248,16 @@ export function businessRuleToDmnXml(rule: BusinessRuleModel) {
     const defId = toSnakeId(ruleId || ruleName, 'business_rule');
 
     // 입력 항목(열) 구성: 신규 모델 우선, 없으면 레거시 conditions 기반으로 유도
-    const inputs: BusinessRuleInputDef[] = Array.isArray(rule?.inputs) && rule.inputs.length > 0
-        ? rule.inputs
-        : (Array.isArray(rule?.conditions) ? rule.conditions.map((c) => ({
-              item: String(c?.item ?? '').trim(),
-              inputMode: isNumberLike(String(c?.value ?? '').trim()) ? 'number' : 'enum',
-              options: []
-          })) : []);
+    const inputs: BusinessRuleInputDef[] =
+        Array.isArray(rule?.inputs) && rule.inputs.length > 0
+            ? rule.inputs
+            : Array.isArray(rule?.conditions)
+            ? rule.conditions.map((c) => ({
+                  item: String(c?.item ?? '').trim(),
+                  inputMode: isNumberLike(String(c?.value ?? '').trim()) ? 'number' : 'enum',
+                  options: []
+              }))
+            : [];
 
     const normalizedInputs = inputs.map((i, idx) => ({
         item: String(i?.item ?? '').trim() || String(i?.key ?? '').trim() || `input_${idx + 1}`,
@@ -257,20 +267,25 @@ export function businessRuleToDmnXml(rule: BusinessRuleModel) {
     }));
 
     // 규칙(행) 구성: 신규 모델 우선, 없으면 레거시 단일 조건/결과로 유도
-    const rows: BusinessRuleRuleRow[] = Array.isArray(rule?.rules) && rule.rules.length > 0
-        ? rule.rules
-        : [{
-              conditions: Array.isArray(rule?.conditions) ? rule.conditions : [],
-              result: rule?.result ?? { outcome: 'approve', note: '' }
-          }];
+    const rows: BusinessRuleRuleRow[] =
+        Array.isArray(rule?.rules) && rule.rules.length > 0
+            ? rule.rules
+            : [
+                  {
+                      conditions: Array.isArray(rule?.conditions) ? rule.conditions : [],
+                      result: rule?.result ?? { outcome: 'approve', note: '' }
+                  }
+              ];
 
     const normalizedRows = rows.map((r) => ({
-        conditions: Array.isArray(r?.conditions) ? r.conditions.map((c) => ({
-            // UI는 key를 사용(내부 식별자). 레거시/호환을 위해 item도 허용한다.
-            item: String(c?.key ?? c?.item ?? '').trim(),
-            operator: String(c?.operator ?? '').trim(),
-            value: c?.value
-        })) : [],
+        conditions: Array.isArray(r?.conditions)
+            ? r.conditions.map((c) => ({
+                  // UI는 key를 사용(내부 식별자). 레거시/호환을 위해 item도 허용한다.
+                  item: String(c?.key ?? c?.item ?? '').trim(),
+                  operator: String(c?.operator ?? '').trim(),
+                  value: c?.value
+              }))
+            : [],
         result: {
             outcome: normalizeOutcome(r?.result?.outcome),
             note: String(r?.result?.note ?? '').trim()
@@ -328,13 +343,17 @@ export function businessRuleToDmnXml(rule: BusinessRuleModel) {
                 .join('\n');
 
             const outcomeLiteral = feelStringLiteral(row.result.outcome);
-            const outputEntriesXml = `        <outputEntry id="rule_${rIdx + 1}_output_entry_1"><text>${xmlEscape(outcomeLiteral)}</text></outputEntry>`;
+            const outputEntriesXml = `        <outputEntry id="rule_${rIdx + 1}_output_entry_1"><text>${xmlEscape(
+                outcomeLiteral
+            )}</text></outputEntry>`;
 
             // 주석은 FEEL이 아닌 plain text로 저장한다.
             const noteText = String(row.result.note ?? '').trim();
             // enabled 상태를 주석에 포함 (복원 시 사용)
             const enabledNote = isEnabled ? noteText : `[DISABLED] ${noteText}`;
-            const annotationEntryXml = `        <annotationEntry id="rule_${rIdx + 1}_annotation_entry_1"><text>${xmlEscape(enabledNote)}</text></annotationEntry>`;
+            const annotationEntryXml = `        <annotationEntry id="rule_${rIdx + 1}_annotation_entry_1"><text>${xmlEscape(
+                enabledNote
+            )}</text></annotationEntry>`;
 
             return `      <rule id="rule_${rIdx + 1}">
 ${inputEntriesXml ? inputEntriesXml + '\n' : ''}${outputEntriesXml}
@@ -401,22 +420,32 @@ export function dmnXmlToBusinessRule(xmlString: string) {
             // UI에서 item은 "식별자"로 쓰이므로 expression text를 우선 사용
             const item = exprText || label || `input_${idx + 1}`;
             const mode =
-                typeRef === 'number' ? 'number' :
-                typeRef === 'boolean' ? 'boolean' :
-                typeRef === 'date' ? 'date' :
-                typeRef === 'time' ? 'time' :
-                typeRef === 'dateTime' ? 'dateTime' :
-                typeRef === 'dayTimeDuration' ? 'dayTimeDuration' :
-                typeRef === 'yearMonthDuration' ? 'yearMonthDuration' :
-                typeRef === 'Any' ? 'any' :
-                'enum';
+                typeRef === 'number'
+                    ? 'number'
+                    : typeRef === 'boolean'
+                    ? 'boolean'
+                    : typeRef === 'date'
+                    ? 'date'
+                    : typeRef === 'time'
+                    ? 'time'
+                    : typeRef === 'dateTime'
+                    ? 'dateTime'
+                    : typeRef === 'dayTimeDuration'
+                    ? 'dayTimeDuration'
+                    : typeRef === 'yearMonthDuration'
+                    ? 'yearMonthDuration'
+                    : typeRef === 'Any'
+                    ? 'any'
+                    : 'enum';
             return { item, label: label || item, inputMode: mode, options: [] };
         });
 
         const ruleNodes = allByLocalName(decisionTable, 'rule');
         const annotationHeaders = allByLocalName(decisionTable, 'annotation');
         const noteAnnotationIdx = annotationHeaders.findIndex((a) => {
-            const name = String(a.getAttribute('name') || '').trim().toLowerCase();
+            const name = String(a.getAttribute('name') || '')
+                .trim()
+                .toLowerCase();
             return name === 'note' || name.includes('note');
         });
 
@@ -442,20 +471,21 @@ export function dmnXmlToBusinessRule(xmlString: string) {
             // - note는 "annotations"가 정식 저장 위치다.
             // - 기존(outputEntry 2번째)에 들어있던 note는 더 이상 사용하지 않는다.
             let note = '';
-            const noteFromAnnotation = noteAnnotationIdx >= 0
-                ? (firstByLocalName(annotationEntries[noteAnnotationIdx], 'text')?.textContent || '')
-                : (firstByLocalName(annotationEntries[0], 'text')?.textContent || '');
+            const noteFromAnnotation =
+                noteAnnotationIdx >= 0
+                    ? firstByLocalName(annotationEntries[noteAnnotationIdx], 'text')?.textContent || ''
+                    : firstByLocalName(annotationEntries[0], 'text')?.textContent || '';
             if (String(noteFromAnnotation || '').trim()) {
                 note = String(noteFromAnnotation || '');
             }
-            
+
             // enabled 상태 복원: 주석에 [DISABLED]가 포함되어 있으면 false
             const enabled = !String(note || '').includes('[DISABLED]');
             // [DISABLED] 접두사 제거
             if (!enabled && note.startsWith('[DISABLED]')) {
                 note = note.replace(/^\[DISABLED\]\s*/, '');
             }
-            
+
             return { conditions, result: { outcome, note }, enabled };
         });
 
@@ -468,4 +498,3 @@ export function dmnXmlToBusinessRule(xmlString: string) {
         return null;
     }
 }
-

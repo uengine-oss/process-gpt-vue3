@@ -12,17 +12,15 @@ const props = defineProps({ item: Object, level: Number });
 
         <!---Title  -->
         <span class="" v-if="level > 0">
-            <div class="z-index-1 "><span class="sublink-dot mr-4"></span> {{ $t(item.title) }}</div>
+            <div class="z-index-1"><span class="sublink-dot mr-4"></span> {{ $t(item.title) }}</div>
         </span>
         <span v-else>
             <span class="icon-box">
                 <i class="navIcon">
-                    <Icons :icon="item.icon" :level="level"
-                    :class="'position-relative z-index-2 texthover-' + item.BgColor" />
+                    <Icons :icon="item.icon" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />
                 </i>
-                <span class="z-index-1  ml-3">{{ $t(item.title) }}</span>
+                <span class="z-index-1 ml-3">{{ $t(item.title) }}</span>
             </span>
-           
         </span>
 
         <!---If Caption-->
@@ -40,4 +38,5 @@ const props = defineProps({ item: Object, level: Number });
             <NavItem :item="subitem" :level="level + 1" v-else></NavItem>
         </li>
     </ul>
-    <!---End Item Sub Header --></template>
+    <!---End Item Sub Header -->
+</template>

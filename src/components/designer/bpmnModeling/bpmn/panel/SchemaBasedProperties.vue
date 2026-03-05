@@ -19,17 +19,13 @@
                 <!-- Rows in Section -->
                 <template v-for="(row, rowIndex) in section" :key="rowIndex">
                     <v-row class="property-row">
-                        <v-col
-                            v-for="schema in row"
-                            :key="schema.id"
-                            :cols="schema.col_span || 12"
-                        >
+                        <v-col v-for="schema in row" :key="schema.id" :cols="schema.col_span || 12">
                             <!-- String type -->
                             <v-text-field
                                 v-if="schema.property_type === 'string'"
                                 v-model="localValues[schema.property_key]"
                                 :label="getLabel(schema)"
-                                :rules="schema.is_mandatory ? [v => !!v || $t('taskCatalog.required')] : []"
+                                :rules="schema.is_mandatory ? [(v) => !!v || $t('taskCatalog.required')] : []"
                                 :readonly="readonly"
                                 :disabled="readonly"
                                 density="compact"
@@ -42,7 +38,11 @@
                                 v-else-if="schema.property_type === 'number'"
                                 v-model.number="localValues[schema.property_key]"
                                 :label="getLabel(schema)"
-                                :rules="schema.is_mandatory ? [v => v !== null && v !== undefined && v !== '' || $t('taskCatalog.required')] : []"
+                                :rules="
+                                    schema.is_mandatory
+                                        ? [(v) => (v !== null && v !== undefined && v !== '') || $t('taskCatalog.required')]
+                                        : []
+                                "
                                 :readonly="readonly"
                                 :disabled="readonly"
                                 type="number"
@@ -70,7 +70,7 @@
                                 v-model="localValues[schema.property_key]"
                                 :label="getLabel(schema)"
                                 :items="schema.options || []"
-                                :rules="schema.is_mandatory ? [v => !!v || $t('taskCatalog.required')] : []"
+                                :rules="schema.is_mandatory ? [(v) => !!v || $t('taskCatalog.required')] : []"
                                 :readonly="readonly"
                                 :disabled="readonly"
                                 item-title="label"
@@ -86,7 +86,7 @@
                                 v-else-if="schema.property_type === 'textarea'"
                                 v-model="localValues[schema.property_key]"
                                 :label="getLabel(schema)"
-                                :rules="schema.is_mandatory ? [v => !!v || $t('taskCatalog.required')] : []"
+                                :rules="schema.is_mandatory ? [(v) => !!v || $t('taskCatalog.required')] : []"
                                 :readonly="readonly"
                                 :disabled="readonly"
                                 rows="2"
@@ -133,9 +133,7 @@ export default defineComponent({
         });
 
         const sortedSchemas = computed(() => {
-            return [...schemas.value].sort((a, b) =>
-                (a.display_order || 0) - (b.display_order || 0)
-            );
+            return [...schemas.value].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         });
 
         // Group schemas by section and row for layout rendering
@@ -145,7 +143,7 @@ export default defineComponent({
 
             // Group by section
             const sections = {};
-            schemaList.forEach(schema => {
+            schemaList.forEach((schema) => {
                 const section = schema.section_name || '__default__';
                 if (!sections[section]) {
                     sections[section] = {};
@@ -159,16 +157,18 @@ export default defineComponent({
 
             // Sort rows within each section and convert to array
             const result = {};
-            Object.keys(sections).sort((a, b) => {
-                if (a === '__default__') return -1;
-                if (b === '__default__') return 1;
-                return a.localeCompare(b);
-            }).forEach(sectionName => {
-                const rows = sections[sectionName];
-                result[sectionName] = Object.keys(rows)
-                    .sort((a, b) => parseInt(a) - parseInt(b))
-                    .map(rowIdx => rows[rowIdx].sort((a, b) => (a.display_order || 0) - (b.display_order || 0)));
-            });
+            Object.keys(sections)
+                .sort((a, b) => {
+                    if (a === '__default__') return -1;
+                    if (b === '__default__') return 1;
+                    return a.localeCompare(b);
+                })
+                .forEach((sectionName) => {
+                    const rows = sections[sectionName];
+                    result[sectionName] = Object.keys(rows)
+                        .sort((a, b) => parseInt(a) - parseInt(b))
+                        .map((rowIdx) => rows[rowIdx].sort((a, b) => (a.display_order || 0) - (b.display_order || 0)));
+                });
 
             return result;
         });
@@ -195,7 +195,7 @@ export default defineComponent({
             const values = { ...props.modelValue };
 
             // Set default values for schemas that don't have values yet
-            schemas.value.forEach(schema => {
+            schemas.value.forEach((schema) => {
                 if (values[schema.property_key] === undefined) {
                     if (schema.default_value !== undefined && schema.default_value !== '') {
                         // Convert default value to appropriate type
@@ -222,19 +222,27 @@ export default defineComponent({
         };
 
         // Watch for taskType changes
-        watch(() => props.taskType, async (newType) => {
-            if (newType) {
-                await loadSchemas();
-                initializeValues();
-            }
-        }, { immediate: true });
+        watch(
+            () => props.taskType,
+            async (newType) => {
+                if (newType) {
+                    await loadSchemas();
+                    initializeValues();
+                }
+            },
+            { immediate: true }
+        );
 
         // Watch for external modelValue changes
-        watch(() => props.modelValue, (newValue) => {
-            if (newValue) {
-                localValues.value = { ...newValue };
-            }
-        }, { deep: true });
+        watch(
+            () => props.modelValue,
+            (newValue) => {
+                if (newValue) {
+                    localValues.value = { ...newValue };
+                }
+            },
+            { deep: true }
+        );
 
         // Watch for schemas changes (after loading)
         watch(schemas, () => {

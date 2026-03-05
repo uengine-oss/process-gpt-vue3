@@ -1,18 +1,18 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class CompanyQueryGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
 
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
         this.simplifiedProcesses = null;
         this.detailedData = null;
         this.queryType = 'general';
-        
-        this.previousMessages = [{
-            role: 'system', 
-            content: `너는 회사 내 정보를 조회하는 AI 어시스턴트야.
+
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `너는 회사 내 정보를 조회하는 AI 어시스턴트야.
 사용자의 질문에 정확하고 친절하게 답변해야 해.
 
 ## 제공된 기본 정보:
@@ -64,16 +64,14 @@ export default class CompanyQueryGenerator extends AIGenerator {
 
 반드시 JSON 형식으로만 답변하고, 추가 설명은 하지 마.
 `
-        }];
+            }
+        ];
     }
 
     setSimplifiedProcesses(processes) {
         this.simplifiedProcesses = processes;
         const processListStr = JSON.stringify(processes);
-        this.previousMessages[0].content = this.previousMessages[0].content.replace(
-            `{{ 간소화된 프로세스 목록 }}`, 
-            processListStr
-        );
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 간소화된 프로세스 목록 }}`, processListStr);
     }
 
     setUserInfo(userInfo) {
@@ -88,17 +86,17 @@ export default class CompanyQueryGenerator extends AIGenerator {
 
     setToday() {
         const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} (${['일', '월', '화', '수', '목', '금', '토'][today.getDay()]}요일)`;
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(
+            2,
+            '0'
+        )} (${['일', '월', '화', '수', '목', '금', '토'][today.getDay()]}요일)`;
         this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 오늘 날짜 }}`, todayStr);
     }
 
     setDetailedData(data) {
         this.detailedData = data;
         const dataStr = JSON.stringify(data);
-        this.previousMessages[0].content = this.previousMessages[0].content.replace(
-            `{{ 상세 정보 }}`, 
-            dataStr || '없음'
-        );
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 상세 정보 }}`, dataStr || '없음');
     }
 
     setQueryType(type) {
@@ -112,6 +110,4 @@ export default class CompanyQueryGenerator extends AIGenerator {
         }
         return this.client.newMessage;
     }
-
 }
-

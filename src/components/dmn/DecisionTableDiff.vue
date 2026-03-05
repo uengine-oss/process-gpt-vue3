@@ -6,8 +6,18 @@
                 <div class="text-caption text-medium-emphasis">정책</div>
                 <v-chip v-if="prevTable" size="x-small" variant="tonal">{{ prevTable.hitPolicy || 'UNIQUE' }}</v-chip>
                 <span v-if="prevTable && currTable" class="text-caption text-medium-emphasis">→</span>
-                <v-chip v-if="currTable" size="x-small" variant="tonal"
-                        :color="(!prevTable && currTable) ? 'success' : (prevTable && currTable && prevTable.hitPolicy !== currTable.hitPolicy) ? 'warning' : undefined">
+                <v-chip
+                    v-if="currTable"
+                    size="x-small"
+                    variant="tonal"
+                    :color="
+                        !prevTable && currTable
+                            ? 'success'
+                            : prevTable && currTable && prevTable.hitPolicy !== currTable.hitPolicy
+                            ? 'warning'
+                            : undefined
+                    "
+                >
                     {{ currTable.hitPolicy || 'UNIQUE' }}
                 </v-chip>
             </div>
@@ -19,24 +29,39 @@
                 <!-- 수정(전/후 비교) -->
                 <template v-if="prevTable && currTable">
                     <v-col cols="6" class="px-2 py-0">
-                        <div v-if="prevTable && (prevTable.rules?.length || prevTable.inputs?.length || prevTable.outputs?.length)" class="dmn-table-container">
+                        <div
+                            v-if="prevTable && (prevTable.rules?.length || prevTable.inputs?.length || prevTable.outputs?.length)"
+                            class="dmn-table-container"
+                        >
                             <v-table density="compact" class="dmn-decision-table">
                                 <thead>
                                     <tr>
                                         <th v-for="(input, idx) in prevTable.inputs" :key="'prev-input-' + idx" class="dmn-input-header">
                                             {{ input.label || input.expression || `조건${idx + 1}` }}
                                         </th>
-                                        <th v-for="(output, idx) in prevTable.outputs" :key="'prev-output-' + idx" class="dmn-output-header">
+                                        <th
+                                            v-for="(output, idx) in prevTable.outputs"
+                                            :key="'prev-output-' + idx"
+                                            class="dmn-output-header"
+                                        >
                                             {{ output.label || output.name || `결과${idx + 1}` }}
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="(rule, ruleIdx) in prevTable.rules" :key="'prev-rule-' + ruleIdx" class="dmn-rule-row">
-                                        <td v-for="(input, inputIdx) in prevTable.inputs" :key="'prev-cell-' + ruleIdx + '-' + inputIdx" class="dmn-input-cell">
+                                        <td
+                                            v-for="(input, inputIdx) in prevTable.inputs"
+                                            :key="'prev-cell-' + ruleIdx + '-' + inputIdx"
+                                            class="dmn-input-cell"
+                                        >
                                             {{ getRuleInputValue(rule, inputIdx) }}
                                         </td>
-                                        <td v-for="(output, outputIdx) in prevTable.outputs" :key="'prev-out-cell-' + ruleIdx + '-' + outputIdx" class="dmn-output-cell">
+                                        <td
+                                            v-for="(output, outputIdx) in prevTable.outputs"
+                                            :key="'prev-out-cell-' + ruleIdx + '-' + outputIdx"
+                                            class="dmn-output-cell"
+                                        >
                                             {{ getRuleOutputValue(rule, outputIdx) }}
                                         </td>
                                     </tr>
@@ -47,39 +72,58 @@
                     </v-col>
 
                     <v-col cols="6" class="px-2 py-0">
-                        <div v-if="currTable && (currTable.rules?.length || currTable.inputs?.length || currTable.outputs?.length)" class="dmn-table-container">
+                        <div
+                            v-if="currTable && (currTable.rules?.length || currTable.inputs?.length || currTable.outputs?.length)"
+                            class="dmn-table-container"
+                        >
                             <v-table density="compact" class="dmn-decision-table">
                                 <thead>
                                     <tr>
-                                        <th v-for="(input, idx) in currTable.inputs"
+                                        <th
+                                            v-for="(input, idx) in currTable.inputs"
                                             :key="'curr-input-' + idx"
                                             class="dmn-input-header"
-                                            :class="{ 'dmn-added': isColumnAdded('input', idx), 'dmn-modified': isColumnModified('input', idx) }">
+                                            :class="{
+                                                'dmn-added': isColumnAdded('input', idx),
+                                                'dmn-modified': isColumnModified('input', idx)
+                                            }"
+                                        >
                                             {{ input.label || input.expression || `조건${idx + 1}` }}
                                         </th>
-                                        <th v-for="(output, idx) in currTable.outputs"
+                                        <th
+                                            v-for="(output, idx) in currTable.outputs"
                                             :key="'curr-output-' + idx"
                                             class="dmn-output-header"
-                                            :class="{ 'dmn-added': isColumnAdded('output', idx), 'dmn-modified': isColumnModified('output', idx) }">
+                                            :class="{
+                                                'dmn-added': isColumnAdded('output', idx),
+                                                'dmn-modified': isColumnModified('output', idx)
+                                            }"
+                                        >
                                             {{ output.label || output.name || `결과${idx + 1}` }}
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(rule, ruleIdx) in currTable.rules"
+                                    <tr
+                                        v-for="(rule, ruleIdx) in currTable.rules"
                                         :key="'curr-rule-' + (rule.id || ruleIdx)"
                                         class="dmn-rule-row"
-                                        :class="getRuleRowClass(rule, ruleIdx)">
-                                        <td v-for="(input, inputIdx) in currTable.inputs"
+                                        :class="getRuleRowClass(rule, ruleIdx)"
+                                    >
+                                        <td
+                                            v-for="(input, inputIdx) in currTable.inputs"
                                             :key="'curr-cell-' + ruleIdx + '-' + inputIdx"
                                             class="dmn-input-cell"
-                                            :class="getRuleCellClass(rule, ruleIdx, inputIdx, 'input')">
+                                            :class="getRuleCellClass(rule, ruleIdx, inputIdx, 'input')"
+                                        >
                                             {{ getRuleInputValue(rule, inputIdx) }}
                                         </td>
-                                        <td v-for="(output, outputIdx) in currTable.outputs"
+                                        <td
+                                            v-for="(output, outputIdx) in currTable.outputs"
                                             :key="'curr-out-cell-' + ruleIdx + '-' + outputIdx"
                                             class="dmn-output-cell"
-                                            :class="getRuleCellClass(rule, ruleIdx, outputIdx, 'output')">
+                                            :class="getRuleCellClass(rule, ruleIdx, outputIdx, 'output')"
+                                        >
                                             {{ getRuleOutputValue(rule, outputIdx) }}
                                         </td>
                                     </tr>
@@ -93,24 +137,47 @@
                 <!-- 추가/삭제(한쪽만 표시) -->
                 <template v-else>
                     <v-col cols="12" class="px-2 py-0">
-                        <div v-if="singleTable && (singleTable.rules?.length || singleTable.inputs?.length || singleTable.outputs?.length)" class="dmn-table-container">
+                        <div
+                            v-if="singleTable && (singleTable.rules?.length || singleTable.inputs?.length || singleTable.outputs?.length)"
+                            class="dmn-table-container"
+                        >
                             <v-table density="compact" class="dmn-decision-table">
                                 <thead>
                                     <tr>
-                                        <th v-for="(input, idx) in singleTable.inputs" :key="'single-input-' + idx" class="dmn-input-header">
+                                        <th
+                                            v-for="(input, idx) in singleTable.inputs"
+                                            :key="'single-input-' + idx"
+                                            class="dmn-input-header"
+                                        >
                                             {{ input.label || input.expression || `조건${idx + 1}` }}
                                         </th>
-                                        <th v-for="(output, idx) in singleTable.outputs" :key="'single-output-' + idx" class="dmn-output-header">
+                                        <th
+                                            v-for="(output, idx) in singleTable.outputs"
+                                            :key="'single-output-' + idx"
+                                            class="dmn-output-header"
+                                        >
                                             {{ output.label || output.name || `결과${idx + 1}` }}
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(rule, ruleIdx) in singleTable.rules" :key="'single-rule-' + (rule.id || ruleIdx)" class="dmn-rule-row">
-                                        <td v-for="(input, inputIdx) in singleTable.inputs" :key="'single-cell-' + ruleIdx + '-' + inputIdx" class="dmn-input-cell">
+                                    <tr
+                                        v-for="(rule, ruleIdx) in singleTable.rules"
+                                        :key="'single-rule-' + (rule.id || ruleIdx)"
+                                        class="dmn-rule-row"
+                                    >
+                                        <td
+                                            v-for="(input, inputIdx) in singleTable.inputs"
+                                            :key="'single-cell-' + ruleIdx + '-' + inputIdx"
+                                            class="dmn-input-cell"
+                                        >
                                             {{ getRuleInputValue(rule, inputIdx) }}
                                         </td>
-                                        <td v-for="(output, outputIdx) in singleTable.outputs" :key="'single-out-cell-' + ruleIdx + '-' + outputIdx" class="dmn-output-cell">
+                                        <td
+                                            v-for="(output, outputIdx) in singleTable.outputs"
+                                            :key="'single-out-cell-' + ruleIdx + '-' + outputIdx"
+                                            class="dmn-output-cell"
+                                        >
                                             {{ getRuleOutputValue(rule, outputIdx) }}
                                         </td>
                                     </tr>
@@ -163,19 +230,19 @@ export default {
             return value || '-';
         },
         isColumnAdded(type, idx) {
-            const prevArr = type === 'input' ? (this.prevTable?.inputs || []) : (this.prevTable?.outputs || []);
-            const currArr = type === 'input' ? (this.currTable?.inputs || []) : (this.currTable?.outputs || []);
+            const prevArr = type === 'input' ? this.prevTable?.inputs || [] : this.prevTable?.outputs || [];
+            const currArr = type === 'input' ? this.currTable?.inputs || [] : this.currTable?.outputs || [];
             if (!this.prevTable) return currArr[idx] != null;
             return idx >= prevArr.length;
         },
         isColumnModified(type, idx) {
-            const prevArr = type === 'input' ? (this.prevTable?.inputs || []) : (this.prevTable?.outputs || []);
-            const currArr = type === 'input' ? (this.currTable?.inputs || []) : (this.currTable?.outputs || []);
+            const prevArr = type === 'input' ? this.prevTable?.inputs || [] : this.prevTable?.outputs || [];
+            const currArr = type === 'input' ? this.currTable?.inputs || [] : this.currTable?.outputs || [];
             const p = prevArr[idx];
             const c = currArr[idx];
             if (!p || !c) return false;
-            if (type === 'input') return (p.label !== c.label) || (p.expression !== c.expression) || (p.typeRef !== c.typeRef);
-            return (p.label !== c.label) || (p.name !== c.name) || (p.typeRef !== c.typeRef);
+            if (type === 'input') return p.label !== c.label || p.expression !== c.expression || p.typeRef !== c.typeRef;
+            return p.label !== c.label || p.name !== c.name || p.typeRef !== c.typeRef;
         },
         findPrevRuleForCurrent(currRule, currIdx) {
             const id = currRule?.id;
@@ -325,5 +392,3 @@ export default {
     opacity: 0.8;
 }
 </style>
-
-

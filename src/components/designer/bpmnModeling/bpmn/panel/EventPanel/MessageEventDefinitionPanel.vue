@@ -2,7 +2,6 @@
     <div>
         <div style="height: 100%" v-if="element.$type === 'bpmn:IntermediateThrowEvent'">
             <div class="mb-2 mt-4">
-                
                 <v-row class="ma-0 pa-0 align-center">
                     <v-col cols="3" class="pa-0 pr-2">
                         <v-autocomplete
@@ -22,10 +21,9 @@
                         :details="methodTypeDescription"
                         :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
                         :iconSize="24"
-                        style="margin-left: 4px; margin-right: 0px;"
+                        style="margin-left: 4px; margin-right: 0px"
                     />
                 </v-row>
-                
             </div>
             <div style="height: 70%">
                 <v-row class="ma-0 pa-0" style="height: 100%">
@@ -51,8 +49,9 @@
                         variant="outlined"
                     ></v-autocomplete>
                     <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
-                    <DetailComponent class="ml-1 mt-5"
-                        style="padding-bottom:20px;"
+                    <DetailComponent
+                        class="ml-1 mt-5"
+                        style="padding-bottom: 20px"
                         :title="$t('SendTaskPanel.returnTitle')"
                         :iconSize="24"
                     />
@@ -62,27 +61,42 @@
         <div v-else-if="this.element.$type === 'bpmn:IntermediateCatchEvent' || this.element.$type === 'bpmn:StartEvent'">
             <div>
                 <v-row class="ma-0 pa-0 align-center">
-                    <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.correlationKey')" v-model="copyUengineProperties.correlationKey"></v-text-field>
-                    <DetailComponent class="ml-2 mt-4"
+                    <v-text-field
+                        class="mt-4"
+                        :label="$t('MessageEventDefinitionPanel.correlationKey')"
+                        v-model="copyUengineProperties.correlationKey"
+                    ></v-text-field>
+                    <DetailComponent
+                        class="ml-2 mt-4"
                         :title="$t('MessageEventDefinitionPanel.correlationKeyTitle')"
                         :details="correlationKeyDescription"
                         :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
                         :iconSize="24"
-                    />  
+                    />
                 </v-row>
-                
+
                 <v-row class="ma-0 pa-0 align-center">
-                    <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.servicePath')" v-model="copyUengineProperties.servicePath"></v-text-field>
-                    <DetailComponent class="ml-2 mt-4"
+                    <v-text-field
+                        class="mt-4"
+                        :label="$t('MessageEventDefinitionPanel.servicePath')"
+                        v-model="copyUengineProperties.servicePath"
+                    ></v-text-field>
+                    <DetailComponent
+                        class="ml-2 mt-4"
                         :title="$t('MessageEventDefinitionPanel.servicePathTitle')"
                         :details="servicePathDescription"
                         :iconSize="24"
                     />
                 </v-row>
-                
+
                 <v-row class="ma-0 pa-0 align-center">
-                    <v-text-field class="mt-4" :label="$t('MessageEventDefinitionPanel.operationRef')" v-model="copyUengineProperties.operationRef"></v-text-field>
-                    <DetailComponent class="ml-2 mt-4"
+                    <v-text-field
+                        class="mt-4"
+                        :label="$t('MessageEventDefinitionPanel.operationRef')"
+                        v-model="copyUengineProperties.operationRef"
+                    ></v-text-field>
+                    <DetailComponent
+                        class="ml-2 mt-4"
                         :title="$t('MessageEventDefinitionPanel.operationReferenceTitle')"
                         :details="operationReferenceDescription"
                         :iconSize="24"
@@ -146,22 +160,22 @@ export default {
             apiServiceURL: '',
             methodTypeDescription: [
                 {
-                    title: 'MessageEventDefinitionPanel.methodTypeDescriptionSubTitle1',
-                },
+                    title: 'MessageEventDefinitionPanel.methodTypeDescriptionSubTitle1'
+                }
             ],
             correlationKeyDescription: [
                 {
-                    title: 'MessageEventDefinitionPanel.correlationKeySubTitle',
+                    title: 'MessageEventDefinitionPanel.correlationKeySubTitle'
                 }
             ],
             servicePathDescription: [
                 {
-                    title: 'MessageEventDefinitionPanel.servicePathSubTitle',
+                    title: 'MessageEventDefinitionPanel.servicePathSubTitle'
                 }
             ],
             operationReferenceDescription: [
                 {
-                    title: 'MessageEventDefinitionPanel.operationReferenceSubTitle',
+                    title: 'MessageEventDefinitionPanel.operationReferenceSubTitle'
                 }
             ]
         };

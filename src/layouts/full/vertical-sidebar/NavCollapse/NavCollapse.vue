@@ -1,18 +1,9 @@
 <template>
     <div class="mb-1" :key="bindKey">
-        <DropDown v-if="!item.directory"
-            :item="item"
-            :level="level + 1"
-        ></DropDown>
+        <DropDown v-if="!item.directory" :item="item" :level="level + 1"></DropDown>
         <v-list-group v-else no-action v-model="isOpen">
             <template v-slot:activator="{ props }">
-                <v-list-item 
-                    v-bind="props" 
-                    :value="item.title" 
-                    :ripple="false" 
-                    :class="'bg-hover-' + item.BgColor" 
-                    :color="item.BgColor"
-                >
+                <v-list-item v-bind="props" :value="item.title" :ripple="false" :class="'bg-hover-' + item.BgColor" :color="item.BgColor">
                     <!---Icon  -->
                     <template v-slot:prepend>
                         <div :class="'navbox  bg-hover-' + item.BgColor" :color="item.BgColor">
@@ -20,31 +11,22 @@
                                 <Icons :icon="'outline-folder'" />
                             </span>
                             <span class="icon-box" v-else>
-                                <Icons
-                                    :icon="item.icon"
-                                    :level="level"
-                                    :class="'position-relative z-index-2 texthover-' + item.BgColor"
-                                />
+                                <Icons :icon="item.icon" :level="level" :class="'position-relative z-index-2 texthover-' + item.BgColor" />
                             </span>
                         </div>
                     </template>
                     <!---Title  -->
                     <v-tooltip :text="item.title">
                         <template v-slot:activator="{ props }">
-                            <v-list-item-title
-                                class="text-medium-emphasis cp-menu mt-0 ml-2"
-                                v-bind="props"
-                            >{{ item.title }}
+                            <v-list-item-title class="text-medium-emphasis cp-menu mt-0 ml-2" v-bind="props"
+                                >{{ item.title }}
                             </v-list-item-title>
                         </template>
                     </v-tooltip>
                     <!---If Caption-->
                     <v-tooltip v-if="item.subCaption" :text="item.subCaption">
                         <template v-slot:activator="{ props }">
-                            <v-list-item-subtitle
-                                class="text-caption mt-n1 hide-menu"
-                                v-bind="props"
-                            >
+                            <v-list-item-subtitle class="text-caption mt-n1 hide-menu" v-bind="props">
                                 {{ item.subCaption }}
                             </v-list-item-subtitle>
                         </template>
@@ -55,16 +37,15 @@
                 <!-- 정의목록 폴더 내부 내용 보여주는곳 -->
                 <template v-for="(subitem, i) in item.children" :key="i">
                     <template v-if="item.children">
-                        <NavCollapse :item="subitem" v-if="subitem.directory" style="margin-left:20px;" :level="level + 1"/>
+                        <NavCollapse :item="subitem" v-if="subitem.directory" style="margin-left: 20px" :level="level + 1" />
                         <NavCollapse :item="subitem" v-else-if="subitem.children" :level="level + 1" />
-                        <DropDown :item="subitem" style="margin-left:20px;" :level="level + 1" v-else></DropDown>
+                        <DropDown :item="subitem" style="margin-left: 20px" :level="level + 1" v-else></DropDown>
                     </template>
                 </template>
             </div>
         </v-list-group>
     </div>
 </template>
-
 
 <script>
 import BackendFactory from '@/components/api/BackendFactory';
@@ -78,12 +59,12 @@ export default {
     props: {
         item: Object,
         level: Number,
-        type: String,
+        type: String
     },
     data() {
         return {
             bindKey: 0,
-            isOpen: false,
+            isOpen: false
         };
     },
     mounted() {
@@ -97,9 +78,9 @@ export default {
     methods: {
         updateItem() {
             this.$emit('update:item', this.item);
-        },
+        }
     }
-}
+};
 
 // const getChild = async (subitem, i) => {
 //     let res = await backend.listDefinition(subitem.title);

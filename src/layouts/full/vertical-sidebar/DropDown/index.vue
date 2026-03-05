@@ -62,27 +62,18 @@ function isItemActive(item) {
         >
             <!-- 정의관리 아이콘 보여지던곳 -->
             <template v-slot:prepend>
-                <div :color="item.BgColor"
-                    class="mr-2"
-                >
+                <div :color="item.BgColor" class="mr-2">
                     <span
                         v-if="item.type && item.type.includes('rule')"
                         class="bpmn-icon-business-rule bpmn-sidebar-icon"
                         aria-hidden="true"
                     />
-                    <Icons
-                        v-else
-                        :icon="getIcon(item)"
-                        :color="getIconColor(item)"
-                    />
+                    <Icons v-else :icon="getIcon(item)" :color="getIconColor(item)" />
                 </div>
             </template>
             <v-tooltip bottom :text="useI18n ? $t(item.title) : item.title">
                 <template v-slot:activator="{ props }">
-                    <v-list-item-title
-                        class="ml-0 text-body-1"
-                        v-bind="props"
-                    >
+                    <v-list-item-title class="ml-0 text-body-1" v-bind="props">
                         {{ useI18n ? $t(item.title) : item.title }}
                     </v-list-item-title>
                 </template>
@@ -91,12 +82,12 @@ function isItemActive(item) {
             <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
                 {{ item.subCaption }}
             </v-list-item-subtitle>
-            
+
             <!---If any chip or label-->
             <template v-slot:append v-if="item.chip">
                 <v-chip
                     :color="item.chipColor"
-                    :class="'sidebarchip hide-menu bg-'+item.chipBgColor"
+                    :class="'sidebarchip hide-menu bg-' + item.chipBgColor"
                     :size="item.chipIcon ? 'small' : 'small'"
                     :variant="item.chipVariant"
                     :prepend-icon="item.chipIcon"
@@ -112,7 +103,7 @@ function isItemActive(item) {
 .bpmn-sidebar-icon {
     font-size: 20px;
     line-height: 1;
-    color: #BA68C8;
+    color: #ba68c8;
 }
 .bpmn-sidebar-icon:before {
     margin-left: 0 !important;

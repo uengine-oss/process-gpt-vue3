@@ -1,13 +1,24 @@
 <template>
     <div>
         <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
-            <div v-if="mode == 'uEngine'" class="d-flex w-100"  >
-                <component :is="'work-history-' + mode" :instance="instance" :messages="messages" :isComplete="isComplete"
-                    @clickMessage="navigateToWorkItemByTaskId" @updated="$emit('updated')" />
+            <div v-if="mode == 'uEngine'" class="d-flex w-100">
+                <component
+                    :is="'work-history-' + mode"
+                    :instance="instance"
+                    :messages="messages"
+                    :isComplete="isComplete"
+                    @clickMessage="navigateToWorkItemByTaskId"
+                    @updated="$emit('updated')"
+                />
             </div>
-            <div v-else-if="messages.length > 0" class="d-flex w-100" >
-                <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
-                    @clickMessage="navigateToWorkItemByTaskId" @updated="$emit('updated')" />
+            <div v-else-if="messages.length > 0" class="d-flex w-100">
+                <component
+                    :is="'work-history-' + mode"
+                    :messages="messages"
+                    :isComplete="isComplete"
+                    @clickMessage="navigateToWorkItemByTaskId"
+                    @updated="$emit('updated')"
+                />
             </div>
         </perfect-scrollbar>
     </div>
@@ -25,14 +36,14 @@ export default {
     mixins: [ScrollBottomHandle],
     components: {
         'work-history-uEngine': WorkItemChat,
-        'work-history-ProcessGPT': ProcessInstanceTable,
+        'work-history-ProcessGPT': ProcessInstanceTable
     },
     props: {
-        instance: Object,
+        instance: Object
     },
     data: () => ({
         workListByInstId: null,
-        updatedKey: 0,
+        updatedKey: 0
     }),
     created() {
         this.init();
@@ -59,19 +70,19 @@ export default {
                 timeStamp: workItem.startDate
             }));
         },
-        isComplete(){
-            return this.instance.status == "COMPLETED"
-        },
+        isComplete() {
+            return this.instance.status == 'COMPLETED';
+        }
     },
     watch: {
-        '$route': {
+        $route: {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.instId !== oldVal.params.instId) {
                     await this.init();
                 }
             }
-        },
+        }
     },
     methods: {
         init() {
@@ -98,7 +109,7 @@ export default {
                     me.updatedKey++;
                 });
             });
-        },
+        }
     }
 };
 </script>

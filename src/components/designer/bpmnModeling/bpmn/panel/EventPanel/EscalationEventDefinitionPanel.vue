@@ -1,11 +1,12 @@
 <template>
     <div>
-        <v-text-field 
-            v-model="expression" 
-            :label="$t('EscalationEventDefinitionPanel.expression')" 
-            :disabled="isViewMode" 
-            ref="cursor" 
-            class="bpmn-property-panel-name mb-3">
+        <v-text-field
+            v-model="expression"
+            :label="$t('EscalationEventDefinitionPanel.expression')"
+            :disabled="isViewMode"
+            ref="cursor"
+            class="bpmn-property-panel-name mb-3"
+        >
         </v-text-field>
     </div>
 </template>
@@ -22,8 +23,7 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean
     },
-    created() {
-    },
+    created() {},
     data() {
         return {
             expression: ''
@@ -38,7 +38,7 @@ export default {
     computed: {
         panelName() {
             return _.kebabCase(this.eventType.split(':')[1]) + '-panel';
-        },
+        }
     },
     watch: {
         expression(value) {
@@ -46,7 +46,6 @@ export default {
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         }
     },
-    methods: {
-    }
+    methods: {}
 };
 </script>

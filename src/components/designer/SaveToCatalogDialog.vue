@@ -40,17 +40,12 @@
                         :label="$t('taskCatalog.system') || 'System (OSS)'"
                         item-title="name"
                         item-value="name"
-                        :rules="[v => !!v || 'Required']"
+                        :rules="[(v) => !!v || 'Required']"
                         required
                         class="mb-2"
                     >
                         <template v-slot:append>
-                            <v-btn
-                                icon
-                                size="x-small"
-                                variant="text"
-                                @click="showNewSystemDialog = true"
-                            >
+                            <v-btn icon size="x-small" variant="text" @click="showNewSystemDialog = true">
                                 <v-icon>mdi-plus</v-icon>
                             </v-btn>
                         </template>
@@ -79,12 +74,7 @@
                             <v-expansion-panel-text class="fte-panel-content">
                                 <!-- 가이드 버튼 & 설명 -->
                                 <div class="d-flex align-center mb-4">
-                                    <v-btn
-                                        variant="tonal"
-                                        size="small"
-                                        color="info"
-                                        @click="showFteGuide = true"
-                                    >
+                                    <v-btn variant="tonal" size="small" color="info" @click="showFteGuide = true">
                                         <v-icon start size="16">mdi-help-circle-outline</v-icon>
                                         {{ $t('fteInput.guide') || 'FTE 입력 가이드' }}
                                     </v-btn>
@@ -97,11 +87,7 @@
                                 <v-card variant="outlined" class="mb-4 pa-3">
                                     <v-row dense>
                                         <v-col cols="4">
-                                            <v-menu
-                                                v-model="showPeriodPicker"
-                                                :close-on-content-click="false"
-                                                location="bottom start"
-                                            >
+                                            <v-menu v-model="showPeriodPicker" :close-on-content-click="false" location="bottom start">
                                                 <template v-slot:activator="{ props }">
                                                     <v-text-field
                                                         v-bind="props"
@@ -173,7 +159,7 @@
                                             density="compact"
                                             variant="outlined"
                                             hide-details
-                                            style="max-width: 200px;"
+                                            style="max-width: 200px"
                                             @update:model-value="calculateFte"
                                         >
                                             <template v-slot:append-inner>
@@ -182,7 +168,9 @@
                                         </v-text-field>
                                         <v-icon class="mx-3" color="grey">mdi-arrow-right</v-icon>
                                         <div class="fte-result-box">
-                                            <span class="text-h6 font-weight-bold text-primary">{{ formData.fte?.toFixed(3) || '0.000' }}</span>
+                                            <span class="text-h6 font-weight-bold text-primary">{{
+                                                formData.fte?.toFixed(3) || '0.000'
+                                            }}</span>
                                             <span class="text-caption ml-1">FTE</span>
                                         </div>
                                     </div>
@@ -211,7 +199,14 @@
                                             <div class="fte-number-input">
                                                 <label class="fte-input-label">{{ $t('fteInput.repeatCount') || '주기 내 반복' }}</label>
                                                 <div class="fte-stepper">
-                                                    <button type="button" class="fte-stepper-btn" @click="fteData.repeatCount = Math.max(1, fteData.repeatCount - 1); calculateFte()">
+                                                    <button
+                                                        type="button"
+                                                        class="fte-stepper-btn"
+                                                        @click="
+                                                            fteData.repeatCount = Math.max(1, fteData.repeatCount - 1);
+                                                            calculateFte();
+                                                        "
+                                                    >
                                                         <v-icon size="18">mdi-minus</v-icon>
                                                     </button>
                                                     <input
@@ -221,7 +216,14 @@
                                                         class="fte-stepper-input"
                                                         @input="calculateFte"
                                                     />
-                                                    <button type="button" class="fte-stepper-btn" @click="fteData.repeatCount++; calculateFte()">
+                                                    <button
+                                                        type="button"
+                                                        class="fte-stepper-btn"
+                                                        @click="
+                                                            fteData.repeatCount++;
+                                                            calculateFte();
+                                                        "
+                                                    >
                                                         <v-icon size="18">mdi-plus</v-icon>
                                                     </button>
                                                 </div>
@@ -231,7 +233,14 @@
                                             <div class="fte-number-input">
                                                 <label class="fte-input-label">{{ $t('fteInput.hoursPerTime') }}</label>
                                                 <div class="fte-stepper">
-                                                    <button type="button" class="fte-stepper-btn" @click="fteData.hoursPerTime = Math.max(0, parseFloat(fteData.hoursPerTime) - 0.5); calculateFte()">
+                                                    <button
+                                                        type="button"
+                                                        class="fte-stepper-btn"
+                                                        @click="
+                                                            fteData.hoursPerTime = Math.max(0, parseFloat(fteData.hoursPerTime) - 0.5);
+                                                            calculateFte();
+                                                        "
+                                                    >
                                                         <v-icon size="18">mdi-minus</v-icon>
                                                     </button>
                                                     <input
@@ -242,7 +251,14 @@
                                                         class="fte-stepper-input"
                                                         @input="calculateFte"
                                                     />
-                                                    <button type="button" class="fte-stepper-btn" @click="fteData.hoursPerTime = parseFloat(fteData.hoursPerTime) + 0.5; calculateFte()">
+                                                    <button
+                                                        type="button"
+                                                        class="fte-stepper-btn"
+                                                        @click="
+                                                            fteData.hoursPerTime = parseFloat(fteData.hoursPerTime) + 0.5;
+                                                            calculateFte();
+                                                        "
+                                                    >
                                                         <v-icon size="18">mdi-plus</v-icon>
                                                     </button>
                                                 </div>
@@ -252,7 +268,14 @@
                                             <div class="fte-number-input">
                                                 <label class="fte-input-label">{{ $t('fteInput.peopleCount') || '동시 인원' }}</label>
                                                 <div class="fte-stepper">
-                                                    <button type="button" class="fte-stepper-btn" @click="fteData.peopleCount = Math.max(0, parseFloat(fteData.peopleCount) - 0.5); calculateFte()">
+                                                    <button
+                                                        type="button"
+                                                        class="fte-stepper-btn"
+                                                        @click="
+                                                            fteData.peopleCount = Math.max(0, parseFloat(fteData.peopleCount) - 0.5);
+                                                            calculateFte();
+                                                        "
+                                                    >
                                                         <v-icon size="18">mdi-minus</v-icon>
                                                     </button>
                                                     <input
@@ -263,7 +286,14 @@
                                                         class="fte-stepper-input"
                                                         @input="calculateFte"
                                                     />
-                                                    <button type="button" class="fte-stepper-btn" @click="fteData.peopleCount = parseFloat(fteData.peopleCount) + 0.5; calculateFte()">
+                                                    <button
+                                                        type="button"
+                                                        class="fte-stepper-btn"
+                                                        @click="
+                                                            fteData.peopleCount = parseFloat(fteData.peopleCount) + 0.5;
+                                                            calculateFte();
+                                                        "
+                                                    >
                                                         <v-icon size="18">mdi-plus</v-icon>
                                                     </button>
                                                 </div>
@@ -285,7 +315,9 @@
                                             <span class="text-grey mx-2">=</span>
                                         </div>
                                         <div class="fte-result-box">
-                                            <span class="text-h5 font-weight-bold text-primary">{{ formData.fte?.toFixed(3) || '0.000' }}</span>
+                                            <span class="text-h5 font-weight-bold text-primary">{{
+                                                formData.fte?.toFixed(3) || '0.000'
+                                            }}</span>
                                             <span class="text-body-2 ml-1">FTE</span>
                                         </div>
                                     </div>
@@ -312,12 +344,7 @@
                 <v-btn variant="text" @click="close">
                     {{ $t('taskCatalog.cancel') || 'Cancel' }}
                 </v-btn>
-                <v-btn
-                    color="primary"
-                    :loading="saving"
-                    :disabled="!formValid || !formData.name"
-                    @click="save"
-                >
+                <v-btn color="primary" :loading="saving" :disabled="!formValid || !formData.name" @click="save">
                     {{ $t('taskCatalog.save') || 'Save' }}
                 </v-btn>
             </v-card-actions>
@@ -328,16 +355,8 @@
             <v-card>
                 <v-card-title>{{ $t('taskCatalog.addSystem') || 'Add System' }}</v-card-title>
                 <v-card-text>
-                    <v-text-field
-                        v-model="newSystemName"
-                        :label="$t('taskCatalog.systemName') || 'System Name'"
-                        autofocus
-                    />
-                    <v-textarea
-                        v-model="newSystemDescription"
-                        :label="$t('taskCatalog.description') || 'Description'"
-                        rows="2"
-                    />
+                    <v-text-field v-model="newSystemName" :label="$t('taskCatalog.systemName') || 'System Name'" autofocus />
+                    <v-textarea v-model="newSystemDescription" :label="$t('taskCatalog.description') || 'Description'" rows="2" />
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
@@ -361,7 +380,7 @@ export default defineComponent({
     name: 'SaveToCatalogDialog',
     props: {
         modelValue: Boolean,
-        element: Object  // BPMN element to save
+        element: Object // BPMN element to save
     },
     emits: ['update:modelValue', 'saved'],
     setup(props, { emit }) {
@@ -429,10 +448,14 @@ export default defineComponent({
         // 주체 ID placeholder
         const subjectIdPlaceholder = computed(() => {
             switch (fteData.value.subjectType) {
-                case 'person': return 'user: 사번/ID, team: 팀코드, domain: 도메인ID (미입력시 기본값)';
-                case 'team': return '팀코드';
-                case 'domain': return '도메인ID';
-                default: return '';
+                case 'person':
+                    return 'user: 사번/ID, team: 팀코드, domain: 도메인ID (미입력시 기본값)';
+                case 'team':
+                    return '팀코드';
+                case 'domain':
+                    return '도메인ID';
+                default:
+                    return '';
             }
         });
 
@@ -448,11 +471,16 @@ export default defineComponent({
         const annualRepeatCount = computed(() => {
             const count = fteData.value.repeatCount || 0;
             switch (fteData.value.repeatCycle) {
-                case 'daily': return count * 365;
-                case 'weekly': return count * 52;
-                case 'monthly': return count * 12;
-                case 'yearly': return count;
-                default: return count * 12;
+                case 'daily':
+                    return count * 365;
+                case 'weekly':
+                    return count * 52;
+                case 'monthly':
+                    return count * 12;
+                case 'yearly':
+                    return count;
+                default:
+                    return count * 12;
             }
         });
 
@@ -491,86 +519,86 @@ export default defineComponent({
         // Check if task with same name and system already exists
         const existingItem = computed(() => {
             if (!formData.value.name || !formData.value.system_name) return null;
-            return store.catalogItems.find(item =>
-                item.name === formData.value.name &&
-                item.system_name === formData.value.system_name
-            );
+            return store.catalogItems.find((item) => item.name === formData.value.name && item.system_name === formData.value.system_name);
         });
 
         // Initialize form data from BPMN element
-        watch(() => props.modelValue, async (open) => {
-            if (open && props.element) {
-                // Load systems if not loaded
-                if (!store.systemsLoaded) {
-                    await store.loadSystems();
-                }
-                if (!store.catalogLoaded) {
-                    await store.loadCatalog();
-                }
+        watch(
+            () => props.modelValue,
+            async (open) => {
+                if (open && props.element) {
+                    // Load systems if not loaded
+                    if (!store.systemsLoaded) {
+                        await store.loadSystems();
+                    }
+                    if (!store.catalogLoaded) {
+                        await store.loadCatalog();
+                    }
 
-                // element might be a shape (has businessObject) or the businessObject itself
-                const bo = props.element.businessObject || props.element;
-                // Use $type for BPMN elements (not type)
-                const elementType = props.element.$type || props.element.type || bo?.$type || 'bpmn:ManualTask';
+                    // element might be a shape (has businessObject) or the businessObject itself
+                    const bo = props.element.businessObject || props.element;
+                    // Use $type for BPMN elements (not type)
+                    const elementType = props.element.$type || props.element.type || bo?.$type || 'bpmn:ManualTask';
 
-                console.log('SaveToCatalog - Element:', props.element);
-                console.log('SaveToCatalog - BusinessObject:', bo);
-                console.log('SaveToCatalog - ElementType:', elementType);
-                console.log('SaveToCatalog - BO Name:', bo?.name);
-                console.log('SaveToCatalog - BO ExtensionElements:', bo?.extensionElements);
+                    console.log('SaveToCatalog - Element:', props.element);
+                    console.log('SaveToCatalog - BusinessObject:', bo);
+                    console.log('SaveToCatalog - ElementType:', elementType);
+                    console.log('SaveToCatalog - BO Name:', bo?.name);
+                    console.log('SaveToCatalog - BO ExtensionElements:', bo?.extensionElements);
 
-                // Extract properties from extension elements
-                taskProperties.value = {};
-                let existingSystemName = '';
-                let existingLevel = null;
-                let existingFte = null;
+                    // Extract properties from extension elements
+                    taskProperties.value = {};
+                    let existingSystemName = '';
+                    let existingLevel = null;
+                    let existingFte = null;
 
-                if (bo?.extensionElements?.values) {
-                    const uengineProps = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
-                    if (uengineProps?.json) {
-                        try {
-                            const parsedProps = JSON.parse(uengineProps.json);
-                            console.log('SaveToCatalog - ParsedProps:', parsedProps);
-                            // Store ALL task properties for saving
-                            taskProperties.value = { ...parsedProps };
-                            // Extract catalog-specific fields
-                            existingSystemName = parsedProps._systemName || '';
-                            existingLevel = parsedProps.level || null;
-                            existingFte = parsedProps.fte || null;
-                        } catch (e) {
-                            console.error('Failed to parse extension properties:', e);
+                    if (bo?.extensionElements?.values) {
+                        const uengineProps = bo.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
+                        if (uengineProps?.json) {
+                            try {
+                                const parsedProps = JSON.parse(uengineProps.json);
+                                console.log('SaveToCatalog - ParsedProps:', parsedProps);
+                                // Store ALL task properties for saving
+                                taskProperties.value = { ...parsedProps };
+                                // Extract catalog-specific fields
+                                existingSystemName = parsedProps._systemName || '';
+                                existingLevel = parsedProps.level || null;
+                                existingFte = parsedProps.fte || null;
+                            } catch (e) {
+                                console.error('Failed to parse extension properties:', e);
+                            }
                         }
                     }
+
+                    // Set form data - name comes from element and is readonly
+                    formData.value = {
+                        name: bo?.name || '',
+                        system_name: existingSystemName,
+                        level: existingLevel,
+                        fte: existingFte,
+                        task_type: elementType
+                    };
+
+                    // Initialize FTE data
+                    initPeriod();
+                    fteData.value = {
+                        period: fteData.value.period,
+                        subjectType: 'person',
+                        subjectId: '',
+                        inputMode: 'calculation',
+                        directPercent: existingFte ? existingFte * 100 : 0,
+                        repeatCycle: 'monthly',
+                        repeatCount: 1,
+                        hoursPerTime: 0,
+                        peopleCount: 1,
+                        memo: ''
+                    };
+
+                    console.log('SaveToCatalog - FormData:', formData.value);
+                    console.log('SaveToCatalog - TaskProperties:', taskProperties.value);
                 }
-
-                // Set form data - name comes from element and is readonly
-                formData.value = {
-                    name: bo?.name || '',
-                    system_name: existingSystemName,
-                    level: existingLevel,
-                    fte: existingFte,
-                    task_type: elementType
-                };
-
-                // Initialize FTE data
-                initPeriod();
-                fteData.value = {
-                    period: fteData.value.period,
-                    subjectType: 'person',
-                    subjectId: '',
-                    inputMode: 'calculation',
-                    directPercent: existingFte ? existingFte * 100 : 0,
-                    repeatCycle: 'monthly',
-                    repeatCount: 1,
-                    hoursPerTime: 0,
-                    peopleCount: 1,
-                    memo: ''
-                };
-
-                console.log('SaveToCatalog - FormData:', formData.value);
-                console.log('SaveToCatalog - TaskProperties:', taskProperties.value);
             }
-        });
+        );
 
         const close = () => {
             dialogOpen.value = false;
@@ -579,7 +607,7 @@ export default defineComponent({
         const save = async () => {
             saving.value = true;
             try {
-                const system = systems.value.find(s => s.name === formData.value.system_name);
+                const system = systems.value.find((s) => s.name === formData.value.system_name);
 
                 // Merge all task properties with form data
                 // This preserves ALL settings from the original task
@@ -593,7 +621,7 @@ export default defineComponent({
                 delete allProperties._catalogId;
 
                 const catalogItem = {
-                    id: existingItem.value?.id,  // Update if exists
+                    id: existingItem.value?.id, // Update if exists
                     name: formData.value.name,
                     system_name: formData.value.system_name,
                     system_id: system?.id,

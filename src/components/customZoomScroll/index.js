@@ -1,6 +1,6 @@
-import CustomZoomScroll  from './customZoomScroll';
+import CustomZoomScroll from './customZoomScroll';
 
 export default {
-  __init__: [ 'zoomScroll'],
-  zoomScroll: [ 'type', CustomZoomScroll ]
+    __init__: ['zoomScroll'],
+    zoomScroll: ['type', CustomZoomScroll]
 };

@@ -183,9 +183,9 @@ export default {
             startOnLoad: false,
             theme: 'default',
             securityLevel: 'loose',
-            fontFamily: 'Arial',
+            fontFamily: 'Arial'
         });
-        
+
         this.initEditor();
         if (this.modelValue) {
             const html = marked(this.modelValue);
@@ -197,7 +197,7 @@ export default {
             // 에디터에 반영
             this.editor.commands.setContent(slice.content, false); // false = history에 쌓지 않음
         }
-        
+
         // 미리보기 모드에서 Mermaid 렌더링
         this.$nextTick(() => {
             this.renderMermaidDiagrams();
@@ -209,19 +209,21 @@ export default {
     computed: {
         htmlContent() {
             if (!this.modelValue) return '';
-            
+
             // marked 옵션 설정으로 테이블과 이미지 지원 강화
             marked.setOptions({
                 breaks: true,
-                gfm: true, // GitHub Flavored Markdown 활성화 (테이블 지원)
+                gfm: true // GitHub Flavored Markdown 활성화 (테이블 지원)
             });
-            
+
             let html = marked(this.modelValue);
-            
+
             // Mermaid 코드 블록을 div로 변환
-            html = html.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, 
-                '<div class="mermaid-container"><div class="mermaid">$1</div></div>');
-            
+            html = html.replace(
+                /<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g,
+                '<div class="mermaid-container"><div class="mermaid">$1</div></div>'
+            );
+
             return html;
         }
     },
@@ -268,7 +270,7 @@ export default {
                     Highlight,
                     Link,
                     Table.configure({
-                        resizable: true,
+                        resizable: true
                     }),
                     TableRow,
                     TableHeader,
@@ -276,8 +278,8 @@ export default {
                     Image.configure({
                         inline: true,
                         HTMLAttributes: {
-                            class: 'markdown-image',
-                        },
+                            class: 'markdown-image'
+                        }
                     }),
                     Markdown
                 ],
@@ -339,11 +341,10 @@ export default {
                 replacement: function (content, node) {
                     let borderCells = '';
                     const alignMap = { left: ':--', right: '--:', center: ':-:' };
-                    
+
                     if (node.parentNode.nodeName === 'THEAD') {
                         for (const childNode of node.childNodes) {
-                            const align = childNode.getAttribute ? 
-                                (childNode.getAttribute('align') || 'left') : 'left';
+                            const align = childNode.getAttribute ? childNode.getAttribute('align') || 'left' : 'left';
                             borderCells += '| ' + (alignMap[align] || ':--') + ' ';
                         }
                         borderCells += '|\n';
@@ -547,19 +548,19 @@ export default {
         },
         async renderMermaidDiagrams() {
             console.log('Mermaid 다이어그램 렌더링 시작');
-            
+
             // 미리보기 모드에서만 실행
             if (!this.readOnly && !this.isPreview) return;
-            
+
             const mermaidElements = document.querySelectorAll('.mermaid');
-            
+
             for (let i = 0; i < mermaidElements.length; i++) {
                 const element = mermaidElements[i];
                 if (element.hasAttribute('data-processed')) continue;
-                
+
                 try {
                     const graphDefinition = element.textContent?.trim();
-                    
+
                     // 빈 텍스트나 너무 짧은 텍스트는 건너뛰기
                     if (!graphDefinition || graphDefinition.length < 5) {
                         console.warn('Mermaid: 빈 다이어그램 건너뛰기');
@@ -567,16 +568,19 @@ export default {
                         element.setAttribute('data-processed', 'true');
                         continue;
                     }
-                    
+
                     // 기본 다이어그램 타입이 있는지 확인
-                    const hasValidType = /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|gitgraph|mindmap)/i.test(graphDefinition);
+                    const hasValidType =
+                        /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|journey|gantt|pie|gitgraph|mindmap)/i.test(
+                            graphDefinition
+                        );
                     if (!hasValidType) {
                         console.warn('Mermaid: 알 수 없는 다이어그램 타입');
                         element.innerHTML = `<pre><code>${graphDefinition}</code></pre>`;
                         element.setAttribute('data-processed', 'true');
                         continue;
                     }
-                    
+
                     const { svg } = await mermaid.render(`mermaid-${Date.now()}-${i}`, graphDefinition);
                     element.innerHTML = svg;
                     element.setAttribute('data-processed', 'true');
@@ -759,7 +763,7 @@ export default {
 
 ::v-deep(.ProseMirror table .selectedCell:after) {
     background: rgba(200, 200, 255, 0.4);
-    content: "";
+    content: '';
     left: 0;
     right: 0;
     top: 0;

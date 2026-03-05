@@ -14,13 +14,7 @@
             <v-skeleton-loader v-if="isLoadingEligibility" type="paragraph, paragraph"></v-skeleton-loader>
 
             <template v-else>
-                <v-alert
-                    v-if="eligibility && eligibility.enabled === false"
-                    density="compact"
-                    type="warning"
-                    variant="tonal"
-                    class="mb-4"
-                >
+                <v-alert v-if="eligibility && eligibility.enabled === false" density="compact" type="warning" variant="tonal" class="mb-4">
                     <div class="text-body-2">
                         {{ eligibility.reason || $t('TaskReturn.notAllowed') }}
                     </div>
@@ -33,14 +27,7 @@
 
                     <div class="task-return-candidates">
                         <v-row class="ma-0 pa-0" dense>
-                            <v-col
-                                v-for="c in candidates"
-                                :key="c.key"
-                                cols="12"
-                                sm="6"
-                                md="6"
-                                class="pa-1"
-                            >
+                            <v-col v-for="c in candidates" :key="c.key" cols="12" sm="6" md="6" class="pa-1">
                                 <v-card
                                     class="task-return-tile"
                                     :class="{
@@ -60,11 +47,7 @@
                                                     {{ candidateSubtitle(c.raw) }}
                                                 </div>
                                             </div>
-                                            <v-icon
-                                                v-if="c.key === selectedCandidateKey"
-                                                color="primary"
-                                                class="ml-2"
-                                            >
+                                            <v-icon v-if="c.key === selectedCandidateKey" color="primary" class="ml-2">
                                                 mdi-check-circle
                                             </v-icon>
                                         </div>
@@ -182,14 +165,7 @@ export default {
             this.selectedCandidateKey = key;
         },
         candidateTitle(raw) {
-            return (
-                raw?.activityName ||
-                raw?.activity_name ||
-                raw?.name ||
-                raw?.tracingTag ||
-                raw?.trcTag ||
-                '(이름 없음)'
-            );
+            return raw?.activityName || raw?.activity_name || raw?.name || raw?.tracingTag || raw?.trcTag || '(이름 없음)';
         },
         candidateSubtitle(raw) {
             const endpoint = raw?.endpoint || raw?.userId || raw?.user_id || raw?.email || '';
@@ -218,11 +194,7 @@ export default {
                     me.selectedCandidateKey = candidates[0].key;
                 }
             } catch (err) {
-                const status =
-                    err?.response?.status ||
-                    err?.status ||
-                    err?.code ||
-                    null;
+                const status = err?.response?.status || err?.status || err?.code || null;
 
                 // 404 포함: 사용자에게 "불러올 수 없습니다" 표시
                 me.eligibility = {
@@ -316,4 +288,3 @@ export default {
     animation: taskReturnPulse 650ms ease;
 }
 </style>
-

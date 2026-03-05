@@ -7,8 +7,9 @@
 
         <div class="d-flex align-center flex-wrap ga-3 mb-4">
             <!-- [BLOCK:field.search.v1] -->
-            <div class="d-flex align-center border border-borderColor header-search rounded-pill px-5"
-                style="max-width: 246px; min-width: 160px;"
+            <div
+                class="d-flex align-center border border-borderColor header-search rounded-pill px-5"
+                style="max-width: 246px; min-width: 160px"
             >
                 <Icons :icon="'magnifer-linear'" :size="20" />
                 <v-text-field
@@ -33,7 +34,7 @@
                 density="compact"
                 hide-details
                 class="flex-grow-0"
-                style="min-width: 180px;"
+                style="min-width: 180px"
             />
             <!-- [BLOCK:field.select.v1] -->
             <v-select
@@ -47,7 +48,7 @@
                 density="compact"
                 hide-details
                 class="flex-grow-0"
-                style="min-width: 180px;"
+                style="min-width: 180px"
             />
             <v-spacer />
             <!-- [BLOCK:button.primary.v1] -->
@@ -58,18 +59,8 @@
         </div>
 
         <v-row class="ma-0 pa-0">
-            <v-col class="pa-0"
-                v-for="item in filteredItems"
-                :key="item.id"
-                cols="12"
-                md="4"
-                lg="3"
-            >
-                <div
-                    class="task-card"
-                    draggable="true"
-                    @dragstart="onDragStart($event, item)"
-                >
+            <v-col class="pa-0" v-for="item in filteredItems" :key="item.id" cols="12" md="4" lg="3">
+                <div class="task-card" draggable="true" @dragstart="onDragStart($event, item)">
                     <div class="task-card-header">
                         <div class="task-icon" :style="{ backgroundColor: getTaskTypeColor(item.task_type) }">
                             <v-icon size="18" color="white">
@@ -105,11 +96,7 @@
         <div v-if="filteredItems.length === 0" class="text-center pa-8 text-medium-emphasis">{{ $t('taskCatalog.noCatalogItems') }}</div>
 
         <!-- Add/Edit Dialog -->
-        <TaskCatalogDialog
-            v-model="dialogOpen"
-            :item="editingItem"
-            @saved="onItemSaved"
-        />
+        <TaskCatalogDialog v-model="dialogOpen" :item="editingItem" @saved="onItemSaved" />
 
         <!-- Delete Confirmation Dialog -->
         <v-dialog v-model="deleteDialogOpen" max-width="400" persistent>
@@ -183,7 +170,7 @@ export default defineComponent({
         const deletingItem = ref(null);
 
         const availableTaskTypes = computed(() => {
-            return AVAILABLE_TASK_TYPES.map(t => ({
+            return AVAILABLE_TASK_TYPES.map((t) => ({
                 ...t,
                 label: locale.value === 'ko' ? t.labelKo : t.label
             }));
@@ -194,19 +181,20 @@ export default defineComponent({
 
             if (searchQuery.value) {
                 const query = searchQuery.value.toLowerCase();
-                items = items.filter(item =>
-                    (item.display_name && item.display_name.toLowerCase().includes(query)) ||
-                    (item.name && item.name.toLowerCase().includes(query)) ||
-                    (item.description && item.description.toLowerCase().includes(query))
+                items = items.filter(
+                    (item) =>
+                        (item.display_name && item.display_name.toLowerCase().includes(query)) ||
+                        (item.name && item.name.toLowerCase().includes(query)) ||
+                        (item.description && item.description.toLowerCase().includes(query))
                 );
             }
 
             if (filterTaskType.value) {
-                items = items.filter(item => item.task_type === filterTaskType.value);
+                items = items.filter((item) => item.task_type === filterTaskType.value);
             }
 
             if (filterSystem.value) {
-                items = items.filter(item => item.system_name === filterSystem.value);
+                items = items.filter((item) => item.system_name === filterSystem.value);
             }
 
             return items;
@@ -240,7 +228,7 @@ export default defineComponent({
         };
 
         const getTaskTypeLabel = (taskType) => {
-            const type = AVAILABLE_TASK_TYPES.find(t => t.value === taskType);
+            const type = AVAILABLE_TASK_TYPES.find((t) => t.value === taskType);
             if (type) {
                 return locale.value === 'ko' ? type.labelKo : type.label;
             }
@@ -272,10 +260,13 @@ export default defineComponent({
         };
 
         const onDragStart = (event, item) => {
-            event.dataTransfer.setData('application/json', JSON.stringify({
-                type: 'task-catalog',
-                item: item
-            }));
+            event.dataTransfer.setData(
+                'application/json',
+                JSON.stringify({
+                    type: 'task-catalog',
+                    item: item
+                })
+            );
             event.dataTransfer.effectAllowed = 'copy';
         };
 

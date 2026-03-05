@@ -6,8 +6,13 @@
             <v-row class="ml-0 pa-0">
                 <v-col cols="3">
                     <div>
-                        <v-select label="Callee Roles" name="input" id="input" v-model="roleBinding.argument"
-                            :items="calleeDefinitionRoles">
+                        <v-select
+                            label="Callee Roles"
+                            name="input"
+                            id="input"
+                            v-model="roleBinding.argument"
+                            :items="calleeDefinitionRoles"
+                        >
                             <!-- <v-option v-for="role in calleeDefinition.roles" :key="role.name" :value="role.name">
                                 {{ role.name }}
                             </v-option> -->
@@ -18,8 +23,13 @@
 
                 <v-col cols="3">
                     <div>
-                        <v-select v-model="roleBinding.direction" style="min-width: 20px;" :items="connectDirections"
-                            item-props :label="$t('BpmnParameterContexts.direction')">
+                        <v-select
+                            v-model="roleBinding.direction"
+                            style="min-width: 20px"
+                            :items="connectDirections"
+                            item-props
+                            :label="$t('BpmnParameterContexts.direction')"
+                        >
                             <template v-slot:selection="{ item }">
                                 <v-icon>{{ iconForDirection(item.value) }}</v-icon>
                             </template>
@@ -34,8 +44,14 @@
                 <v-col cols="3">
                     <div>
                         <v-text-field v-if="isSub" v-model="roleBinding.role.name"></v-text-field>
-                        <v-select v-else label="Caller Roles" v-model="roleBinding.role.name" :items="definitionRoles"
-                            item-title="name" item-value="name">
+                        <v-select
+                            v-else
+                            label="Caller Roles"
+                            v-model="roleBinding.role.name"
+                            :items="definitionRoles"
+                            item-title="name"
+                            item-value="name"
+                        >
                             <!-- <md-option v-for="role in definition.roles" :key="role.name" :value="role.name">
                                 {{ role.name }}
                             </md-option> -->
@@ -54,9 +70,9 @@
             </v-row>
         </div>
 
-        <v-btn text color="primary" variant="flat" rounded style="margin: 0 0 20px 8px;" v-on:click="add">
+        <v-btn text color="primary" variant="flat" rounded style="margin: 0 0 20px 8px" v-on:click="add">
             <v-row class="pa-0 ma-0 align-center">
-                <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
+                <v-icon class="mr-2" style="padding-top: 3px">mdi-plus</v-icon>
                 <div>{{ $t('BpmnRoleParameterContexts.addMapping') }}</div>
             </v-row>
         </v-btn>
@@ -65,9 +81,8 @@
 </template>
 
 <script>
-
 export default {
-    name: "bpmn-role-parameter-contexts",
+    name: 'bpmn-role-parameter-contexts',
     props: {
         isSub: {
             type: Boolean,
@@ -93,16 +108,12 @@ export default {
         //     deep: true
         // },
     },
-    created: function () {
-    },
+    created: function () {},
     methods: {
         iconForDirection: function (direction) {
-            if (direction == "IN")
-                return "mdi-arrow-left";
-            else if (direction == "OUT" || direction == "OUT ")
-                return "mdi-arrow-right";
-            else
-                return "mdi-arrow-left-right";
+            if (direction == 'IN') return 'mdi-arrow-left';
+            else if (direction == 'OUT' || direction == 'OUT ') return 'mdi-arrow-right';
+            else return 'mdi-arrow-left-right';
         },
         add: function () {
             this.copyRoleBindings.push({
@@ -110,14 +121,13 @@ export default {
                 role: {
                     name: ''
                 },
-                argument: ''  //TODO: object path differ from ParameterContext
-            })
+                argument: '' //TODO: object path differ from ParameterContext
+            });
         },
         remove: function (parameterContext) {
             //TODO: find and remove
             this.copyRoleBindings.splice(this.copyRoleBindings.indexOf(parameterContext), 1);
         }
     }
-}
-
+};
 </script>

@@ -1,11 +1,6 @@
 <template>
     <div>
-        <ExpandableList 
-            :items="projectLists" 
-            :limit="10"
-            @expanded="onProjectsExpanded"
-            @collapsed="onProjectsCollapsed"
-        >
+        <ExpandableList :items="projectLists" :limit="10" @expanded="onProjectsExpanded" @collapsed="onProjectsCollapsed">
             <template #items="{ displayedItems }">
                 <template v-for="item in displayedItems" :key="item.title">
                     <NavItem class="leftPadding pl-2" :item="item" :use-i18n="false" />
@@ -29,7 +24,7 @@ export default {
     },
     data: () => ({
         projectLists: [],
-        watchRef: null,
+        watchRef: null
     }),
     async created() {
         await this.init();
@@ -38,9 +33,8 @@ export default {
         this.EventBus.on('project-updated', async () => {
             await this.init();
         });
-        
 
-        this.watchRef = await backend.watchProjectList((callback => {
+        this.watchRef = await backend.watchProjectList((callback) => {
             // console.log('callback', callback);
             this.loadProjectList();
             // const projectId = callback.id
@@ -69,14 +63,14 @@ export default {
             //     // 삭제
             //     this.projectLists.splice(index, 1);
             // }
-        }));
+        });
     },
     methods: {
         async init() {
             await this.loadProjectList();
         },
         async loadProjectList() {
-            let result = await backend.getProjectListByStatus(["NEW", "RUNNING"]);
+            let result = await backend.getProjectListByStatus(['NEW', 'RUNNING']);
             if (!result) result = [];
             const processedProjects = result.map((item) => {
                 const title = item.name;
@@ -87,12 +81,12 @@ export default {
                     updatedAt: item.updatedAt,
                     title: title,
                     to: `/project/${item.projectId}`,
-                    BgColor:'primary',
+                    BgColor: 'primary',
                     isNew: item.status == 'NEW'
                 };
                 return item;
             });
-            
+
             this.projectLists = processedProjects;
         },
         onProjectsExpanded() {
@@ -101,7 +95,6 @@ export default {
         onProjectsCollapsed() {
             // 축소 시 필요한 로직이 있다면 여기에 추가
         }
-        
     }
 };
 </script>

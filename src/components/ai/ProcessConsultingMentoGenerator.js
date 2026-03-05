@@ -1,14 +1,14 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class ProcessConsultingMentoGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
 
-        this.previousMessages = [{
-            role: 'system', 
-            content: `너는 비즈니스 프로세스 분석과 자동화 영역의 전문가이자 컨설팅 시스템의 멘토야. 특히 BPMN과 프로세스 병목 분석 등을 잘해.
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `너는 비즈니스 프로세스 분석과 자동화 영역의 전문가이자 컨설팅 시스템의 멘토야. 특히 BPMN과 프로세스 병목 분석 등을 잘해.
             너는 대화내용을 살펴보고 멘토 역할로 시스템에게 답변을 해야해. 너의 역할은 고객에게 답변하는 것이 아닌 컨설팅 시스템이 올바른 방향으로 컨설팅을 할 수 있도록 가이드하는 역할이야.
             올바른 컨설팅 순서는 질문에 대한 답변과 프로세스 자동화, 병목 해결을 하고 최종적으로는 BPMN 모델 생성하는 순으로 진행하도록 컨설팅 시스템을 가이드해줘야해.
             컨설팅 시스템의 도움요청 또는 질문 내용을 보고 이와 관련하여 프로세스 분석과 자동화 영역에서 어떤 접근 방식을 취하는 것이 좋을지, 
@@ -58,22 +58,17 @@ export default class ProcessConsultingMentoGenerator extends AIGenerator {
                 "content": "컨설팅 시스템의 질문이 부적합한 이유와 개선된 추천 질문" // ~ 때문에 부적합한 질문입니다. 또는 불필요한 질문입니다. 주제와 벗어난 질문입니다. ~ 라고 질문해보세요.
             }
 `
-        }];
+            }
+        ];
     }
 
-    setContexts() {
-    }
+    setContexts() {}
 
-    setChatRoomData() {
-    }
+    setChatRoomData() {}
 
-    setCalendarData() {
-    }
+    setCalendarData() {}
 
-    setWorkList() {
-    }
+    setWorkList() {}
 
-    createPrompt() {
-    }
-
+    createPrompt() {}
 }

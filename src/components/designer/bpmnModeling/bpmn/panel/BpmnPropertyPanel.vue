@@ -1,5 +1,7 @@
 <template>
-    <div id="property-panel" style="overflow: auto;"
+    <div
+        id="property-panel"
+        style="overflow: auto"
         class="is-work-height"
         :class="{ 'view-mode-panel-content': isViewMode, 'pal-view-mode': isViewMode && isPALMode }"
     >
@@ -9,8 +11,12 @@
                 {{ $t('BpmnPropertyPanel.readOnly') || 'Read Only' }}
             </v-chip>
             <v-card-title v-if="isViewMode" class="pa-0 view-mode-title">{{ name }}</v-card-title>
-            <v-combobox v-else-if="!isPALMode && isTaskElement" v-model="name" :label="$t('BpmnPropertyPanel.name')"
-                :disabled="isViewMode" ref="cursor"
+            <v-combobox
+                v-else-if="!isPALMode && isTaskElement"
+                v-model="name"
+                :label="$t('BpmnPropertyPanel.name')"
+                :disabled="isViewMode"
+                ref="cursor"
                 :items="termSuggestions"
                 :loading="termLoading"
                 @update:search="onTermSearch"
@@ -19,11 +25,15 @@
                 clearable
                 class="bpmn-property-panel-name mb-3 delete-input-details"
             ></v-combobox>
-            <v-text-field v-else-if="!isPALMode" v-model="name" :label="$t('BpmnPropertyPanel.name')"
-                :disabled="isViewMode" ref="cursor"
+            <v-text-field
+                v-else-if="!isPALMode"
+                v-model="name"
+                :label="$t('BpmnPropertyPanel.name')"
+                :disabled="isViewMode"
+                ref="cursor"
                 class="bpmn-property-panel-name mb-3 delete-input-details"
             ></v-text-field>
-            <div v-if="!isViewMode && isPALMode" style="position: relative; width: 200px;">
+            <div v-if="!isViewMode && isPALMode" style="position: relative; width: 200px">
                 <v-text-field
                     v-model="name"
                     :label="$t('BpmnPropertyPanel.name')"
@@ -43,12 +53,8 @@
                     max-height="200"
                 >
                     <v-list>
-                        <v-list-item
-                            v-for="(item, index) in filteredTemplateOptions"
-                            :key="index"
-                            @click="selectItem(item)"
-                        >
-                        <v-list-item-title>{{ item }}</v-list-item-title>
+                        <v-list-item v-for="(item, index) in filteredTemplateOptions" :key="index" @click="selectItem(item)">
+                            <v-list-item-title>{{ item }}</v-list-item-title>
                         </v-list-item>
                     </v-list>
                 </v-menu>
@@ -108,20 +114,15 @@
                 @update:uengineProperties="(newProps) => (uengineProperties = newProps)"
             />
 
-            <v-dialog
-                v-if="isViewMode"
-                v-model="printDialog"
-                max-width="1150px"
-                max-height="80vh"
-            >
+            <v-dialog v-if="isViewMode" v-model="printDialog" max-width="1150px" max-height="80vh">
                 <template v-slot:activator="{ props }">
                     <v-btn block color="primary" class="panel-download-btn" v-bind="props" @click="printDocument">
                         {{ $t('BpmnPropertyPanel.printDocument') }}
                     </v-btn>
                 </template>
-                <v-card style="max-height: 80vh; display: flex; flex-direction: column;">
+                <v-card style="max-height: 80vh; display: flex; flex-direction: column">
                     <v-card-title class="headline">{{ $t('BpmnPropertyPanel.pdfPreview') }}</v-card-title>
-                    <v-card-text style="flex: 1; overflow: auto;">
+                    <v-card-text style="flex: 1; overflow: auto">
                         <PDFPreviewer ref="pdfPreviewer" :element="html" :name="name" />
                     </v-card-text>
                     <v-card-actions>
@@ -182,13 +183,13 @@ export default {
         }
         const extensionElement = this.element.extensionElements.values[0];
         const json = extensionElement.json;
-        if( json ) {
+        if (json) {
             this.uengineProperties = JSON.parse(json);
         }
 
         // customProperties 복원
         if (extensionElement.variables && extensionElement.variables.length > 0) {
-            this.uengineProperties.customProperties = extensionElement.variables.map(variable => {
+            this.uengineProperties.customProperties = extensionElement.variables.map((variable) => {
                 return {
                     key: variable.key,
                     value: variable.value
@@ -282,8 +283,8 @@ export default {
     },
     computed: {
         filteredTemplateOptions() {
-            const filtered = this.templateOptions.filter(option => option.includes(this.name));
-            return filtered? filtered : [];
+            const filtered = this.templateOptions.filter((option) => option.includes(this.name));
+            return filtered ? filtered : [];
         },
         mode() {
             return window.$mode;
@@ -298,25 +299,25 @@ export default {
             return window.$mode === 'uEngine';
         },
         panelName() {
-            var type = _.kebabCase(this.element.$type.split(':')[1])
-            if(type.indexOf('task') > -1 && this.isPALMode) {
+            var type = _.kebabCase(this.element.$type.split(':')[1]);
+            if (type.indexOf('task') > -1 && this.isPALMode) {
                 type = 'pal-user-task';
             }
             if (type === 'call-activity' && this.isPALMode) {
                 type = 'pal-call-activity';
             }
             if (this.isGPTMode) {
-                if(type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task' || type == 'lane') {
+                if (type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task' || type == 'lane') {
                     type = 'gpt-' + type;
                 }
             }
-            if(type.indexOf('gateway') > -1) {
+            if (type.indexOf('gateway') > -1) {
                 type = 'gateway';
             }
             return type + '-panel';
         },
         isForCompensation() {
-            if(!this.element) return false;
+            if (!this.element) return false;
             return this.element.isForCompensation ? true : false;
         },
         isTaskElement() {
@@ -327,7 +328,7 @@ export default {
             if (!this.element || !this.element.extensionElements || !this.element.extensionElements.values) {
                 return false;
             }
-            return this.element.extensionElements.values.some(ext => {
+            return this.element.extensionElements.values.some((ext) => {
                 const type = ext.$type || '';
                 return type.startsWith('zeebe:');
             });
@@ -359,8 +360,8 @@ export default {
             me.printDialog = true;
         },
         saveHTML() {
-            const panelElement = document.querySelector("#property-panel");
-            
+            const panelElement = document.querySelector('#property-panel');
+
             return panelElement;
         },
         ensureKeyExists(obj, key, defaultValue) {
@@ -383,12 +384,12 @@ export default {
         // addParameter() {
         //     this.uengineProperties.parameters.push({ key: this.paramKey, value: this.paramValue });
         // },
-        
+
         addCheckpoint() {
             this.uengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
         },
         async save() {
-            if(window.$pal && this.isViewMode) {
+            if (window.$pal && this.isViewMode) {
                 this.$emit('close');
                 return;
             }
@@ -407,13 +408,13 @@ export default {
 
             const json = JSON.stringify(this.uengineProperties);
             const bpmnFactory = this.bpmnModeler.get('bpmnFactory');
-            
+
             // customProperties 처리
             let variables = [];
             if (this.uengineProperties.customProperties && Array.isArray(this.uengineProperties.customProperties)) {
                 variables = this.uengineProperties.customProperties
-                    .filter(prop => prop.key && prop.key.trim() !== '') // 빈 키 필터링
-                    .map(prop => {
+                    .filter((prop) => prop.key && prop.key.trim() !== '') // 빈 키 필터링
+                    .map((prop) => {
                         return bpmnFactory.create('uengine:Variable', {
                             key: prop.key,
                             value: prop.value,
@@ -426,30 +427,30 @@ export default {
             // const propertiesToSave = { ...this.uengineProperties };
             // delete propertiesToSave.customProperties;
             // const json = JSON.stringify(propertiesToSave);
-            
+
             const elementCopyDeep = _.cloneDeep(this.elementCopy);
-            if(task) {
+            if (task) {
                 modeling.updateProperties(task, { name: name });
             } else {
                 this.$emit('close');
             }
             if (task.type == 'bpmn:TextAnnotation') {
                 // TextAnnotation Size 깨지는 현상 해결
-                const originTaskWidth = task.width? JSON.parse(JSON.stringify(task.width)) : null;
-                const originTaskHeight = task.height? JSON.parse(JSON.stringify(task.height)) : null;
-                const originTaskX = task.x? JSON.parse(JSON.stringify(task.x)) : null;
-                const originTaskY = task.y? JSON.parse(JSON.stringify(task.y)) : null;
-                
+                const originTaskWidth = task.width ? JSON.parse(JSON.stringify(task.width)) : null;
+                const originTaskHeight = task.height ? JSON.parse(JSON.stringify(task.height)) : null;
+                const originTaskX = task.x ? JSON.parse(JSON.stringify(task.x)) : null;
+                const originTaskY = task.y ? JSON.parse(JSON.stringify(task.y)) : null;
+
                 if (this.text) {
                     const text = this.text;
                     modeling.updateProperties(task, { text: text });
                 }
-                if(originTaskX && originTaskY && originTaskWidth && originTaskHeight) {
+                if (originTaskX && originTaskY && originTaskWidth && originTaskHeight) {
                     modeling.resizeShape(task, {
                         x: originTaskX,
                         y: originTaskY,
                         width: originTaskWidth,
-                        height: originTaskHeight 
+                        height: originTaskHeight
                     });
                 }
             }
@@ -460,7 +461,7 @@ export default {
 
             if (extensionElements && extensionElements.values) {
                 // 기존 값들 중 uengine:Properties가 아닌 것들은 유지
-                values = extensionElements.values.filter(value => value.$type !== 'uengine:Properties');
+                values = extensionElements.values.filter((value) => value.$type !== 'uengine:Properties');
             }
 
             // 새로운 uengine:Properties 생성
@@ -489,7 +490,7 @@ export default {
             if (!this.bpmnModeler) return;
 
             const eventBus = this.bpmnModeler.get('eventBus');
-            
+
             // BPMN 요소 변경 이벤트 리스너 설정
             this.eventBusListener = (event) => {
                 // 현재 패널이 열려있는 요소와 변경된 요소가 같은지 확인
@@ -525,9 +526,7 @@ export default {
                 this.taskList = await backend.getTaskList();
 
                 // task_name만 추출해서 templateOptions에 저장
-                this.templateOptions = (this.taskList || [])
-                .map(task => task.name)
-                .filter(Boolean); // null/undefined 제거
+                this.templateOptions = (this.taskList || []).map((task) => task.name).filter(Boolean); // null/undefined 제거
             } catch (error) {
                 console.error('템플릿 목록을 불러오는데 실패했습니다:', error);
             }
@@ -542,27 +541,27 @@ export default {
         },
         applyTask() {
             // 선택된 값이 템플릿 ID가 아닌 경우 (사용자 직접 입력) 종료
-            const selectedTemplate = this.taskList.find(t => t.name === this.name);
+            const selectedTemplate = this.taskList.find((t) => t.name === this.name);
             if (!selectedTemplate || !selectedTemplate.json_ko) return;
-            
+
             try {
                 const json = selectedTemplate.json_ko;
-                let activity = this.processDefinition.activities.find(a => a.id === this.element.id);
-                
+                let activity = this.processDefinition.activities.find((a) => a.id === this.element.id);
+
                 if (activity) {
                     // 대상 activity가 존재하면 속성을 복사합니다 (참조를 유지)
                     // 직접 대입하지 않고 개별 속성을 복사
-                    Object.keys(json).forEach(key => {
+                    Object.keys(json).forEach((key) => {
                         activity[key] = json[key];
                     });
                     activity.uuid = json.uuid || activity.uuid;
                     activity.type = selectedTemplate.type || activity.type;
-                    
+
                     // processDefinition 갱신을 위한 이벤트 발생
                     this.$forceUpdate();
                     this.$emit('update:processDefinition', this.processDefinition);
                     this.$emit('process-definition-updated');
-                    
+
                     // 자식 컴포넌트 재렌더링을 위한 트리거
                     this.componentKey++;
                 }
@@ -576,7 +575,7 @@ export default {
             try {
                 const { loadTerminology } = useTerminology();
                 this.allTerms = await loadTerminology('task_name');
-                this.termSuggestions = this.allTerms.slice(0, 10).map(t => t.term);
+                this.termSuggestions = this.allTerms.slice(0, 10).map((t) => t.term);
             } catch (error) {
                 console.warn('용어 로드 실패:', error);
                 this.allTerms = [];
@@ -587,14 +586,14 @@ export default {
         },
         onTermSearch(searchText) {
             if (!searchText || searchText.trim() === '') {
-                this.termSuggestions = this.allTerms.slice(0, 10).map(t => t.term);
+                this.termSuggestions = this.allTerms.slice(0, 10).map((t) => t.term);
                 return;
             }
             const lowered = searchText.toLowerCase();
             this.termSuggestions = this.allTerms
-                .filter(t => t.term.toLowerCase().includes(lowered))
+                .filter((t) => t.term.toLowerCase().includes(lowered))
                 .slice(0, 10)
-                .map(t => t.term);
+                .map((t) => t.term);
         },
         async recordTermUsage(term) {
             try {
@@ -613,7 +612,7 @@ export default {
             }
 
             const extensionElements = this.element.extensionElements.values;
-            const hasZeebe = extensionElements.some(ext => (ext.$type || '').startsWith('zeebe:'));
+            const hasZeebe = extensionElements.some((ext) => (ext.$type || '').startsWith('zeebe:'));
 
             if (!hasZeebe) {
                 return;
@@ -639,7 +638,7 @@ export default {
             }
 
             // Extract Zeebe properties from extension elements
-            extensionElements.forEach(ext => {
+            extensionElements.forEach((ext) => {
                 const type = ext.$type || '';
 
                 if (type === 'zeebe:TaskDefinition') {
@@ -647,79 +646,69 @@ export default {
                         type: ext.type || '',
                         retries: ext.retries || '3'
                     };
-                }
-                else if (type === 'zeebe:FormDefinition') {
+                } else if (type === 'zeebe:FormDefinition') {
                     this.uengineProperties.zeebe.formDefinition = {
                         formId: ext.formId || '',
                         formKey: ext.formKey || ''
                     };
-                }
-                else if (type === 'zeebe:AssignmentDefinition') {
+                } else if (type === 'zeebe:AssignmentDefinition') {
                     this.uengineProperties.zeebe.assignmentDefinition = {
                         assignee: ext.assignee || '',
                         candidateGroups: ext.candidateGroups || '',
                         candidateUsers: ext.candidateUsers || ''
                     };
-                }
-                else if (type === 'zeebe:PriorityDefinition') {
+                } else if (type === 'zeebe:PriorityDefinition') {
                     this.uengineProperties.zeebe.priorityDefinition = {
                         priority: ext.priority || ''
                     };
-                }
-                else if (type === 'zeebe:TaskSchedule') {
+                } else if (type === 'zeebe:TaskSchedule') {
                     this.uengineProperties.zeebe.taskSchedule = {
                         dueDate: ext.dueDate || '',
                         followUpDate: ext.followUpDate || ''
                     };
-                }
-                else if (type === 'zeebe:CalledDecision') {
+                } else if (type === 'zeebe:CalledDecision') {
                     this.uengineProperties.zeebe.calledDecision = {
                         decisionId: ext.decisionId || '',
                         resultVariable: ext.resultVariable || ''
                     };
-                }
-                else if (type === 'zeebe:CalledElement') {
+                } else if (type === 'zeebe:CalledElement') {
                     this.uengineProperties.zeebe.calledElement = {
                         processId: ext.processId || '',
                         propagateAllChildVariables: ext.propagateAllChildVariables === true || ext.propagateAllChildVariables === 'true'
                     };
-                }
-                else if (type === 'zeebe:Script') {
+                } else if (type === 'zeebe:Script') {
                     this.uengineProperties.zeebe.script = {
                         expression: ext.expression || '',
                         resultVariable: ext.resultVariable || ''
                     };
-                }
-                else if (type === 'zeebe:IoMapping') {
+                } else if (type === 'zeebe:IoMapping') {
                     const inputs = [];
                     const outputs = [];
 
                     if (ext.inputParameters) {
-                        ext.inputParameters.forEach(inp => {
+                        ext.inputParameters.forEach((inp) => {
                             inputs.push({ source: inp.source || '', target: inp.target || '' });
                         });
                     }
                     if (ext.outputParameters) {
-                        ext.outputParameters.forEach(out => {
+                        ext.outputParameters.forEach((out) => {
                             outputs.push({ source: out.source || '', target: out.target || '' });
                         });
                     }
 
                     this.uengineProperties.zeebe.ioMapping = { inputs, outputs };
-                }
-                else if (type === 'zeebe:TaskHeaders') {
+                } else if (type === 'zeebe:TaskHeaders') {
                     const headers = [];
                     if (ext.values) {
-                        ext.values.forEach(h => {
+                        ext.values.forEach((h) => {
                             headers.push({ key: h.key || '', value: h.value || '' });
                         });
                     }
                     this.uengineProperties.zeebe.taskHeaders = headers;
-                }
-                else if (type === 'zeebe:ExecutionListeners') {
+                } else if (type === 'zeebe:ExecutionListeners') {
                     const listeners = [];
                     if (ext.executionListeners) {
-                        ext.executionListeners.forEach(l => {
+                        ext.executionListeners.forEach((l) => {
                             listeners.push({
                                 eventType: l.eventType || 'start',
                                 type: l.type || '',
@@ -728,11 +717,10 @@ export default {
                         });
                     }
                     this.uengineProperties.zeebe.executionListeners = listeners;
-                }
-                else if (type === 'zeebe:TaskListeners') {
+                } else if (type === 'zeebe:TaskListeners') {
                     const listeners = [];
                     if (ext.taskListeners) {
-                        ext.taskListeners.forEach(l => {
+                        ext.taskListeners.forEach((l) => {
                             listeners.push({
                                 eventType: l.eventType || 'creating',
                                 type: l.type || '',
@@ -741,11 +729,10 @@ export default {
                         });
                     }
                     this.uengineProperties.zeebe.taskListeners = listeners;
-                }
-                else if (type === 'zeebe:Properties') {
+                } else if (type === 'zeebe:Properties') {
                     const props = [];
                     if (ext.properties) {
-                        ext.properties.forEach(p => {
+                        ext.properties.forEach((p) => {
                             props.push({ name: p.name || '', value: p.value || '' });
                         });
                     }
@@ -935,4 +922,3 @@ export default {
     font-size: 0.875rem;
 }
 </style>
-

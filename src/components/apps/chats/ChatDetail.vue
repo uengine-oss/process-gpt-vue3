@@ -26,7 +26,7 @@ function toggleRpart() {
 <template>
     <div v-if="chatDetail" class="customHeight">
         <div>
-            <div class="d-flex align-center gap-3 pa-4  justify-space-between">
+            <div class="d-flex align-center gap-3 pa-4 justify-space-between">
                 <!---Topbar Row-->
                 <div class="d-flex gap-2 align-center">
                     <!---User Avatar-->
@@ -72,7 +72,7 @@ function toggleRpart() {
             <!---Chat History-->
             <perfect-scrollbar class="rightpartHeight h-100">
                 <div class="d-flex">
-                    <div class="w-100" style="height: calc(100vh - 360px);">
+                    <div class="w-100" style="height: calc(100vh - 360px)">
                         <div v-for="chat in chatDetail.chatHistory" :key="chat.id" class="pa-5">
                             <div v-if="chatDetail.id === chat.senderId" class="justify-end d-flex text-end mb-1">
                                 <div>

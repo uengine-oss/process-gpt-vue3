@@ -129,7 +129,7 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

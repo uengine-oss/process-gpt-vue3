@@ -3,7 +3,11 @@
         <!-- 메인 댓글 -->
         <div class="comment-main pa-2 rounded" :class="reviewerTypeClass">
             <!-- Reviewer type indicator strip -->
-            <div v-if="comment.reviewer_type && comment.reviewer_type !== 'general'" class="ct-reviewer-strip" :class="`ct-strip--${comment.reviewer_type}`"></div>
+            <div
+                v-if="comment.reviewer_type && comment.reviewer_type !== 'general'"
+                class="ct-reviewer-strip"
+                :class="`ct-strip--${comment.reviewer_type}`"
+            ></div>
 
             <div class="d-flex align-start">
                 <!-- 아바타 -->
@@ -11,7 +15,7 @@
                     <span class="text-white text-caption">{{ getInitials(comment.author_name) }}</span>
                 </v-avatar>
 
-                <div class="flex-grow-1" style="min-width: 0;">
+                <div class="flex-grow-1" style="min-width: 0">
                     <!-- 헤더 -->
                     <div class="d-flex align-center flex-wrap gap-1">
                         <span class="text-subtitle-2 font-weight-medium mr-2">
@@ -21,17 +25,12 @@
                             v-if="comment.reviewer_type && comment.reviewer_type !== 'general'"
                             class="ct-reviewer-badge"
                             :class="`ct-badge--${comment.reviewer_type}`"
-                        >{{ getReviewerTypeLabel(comment.reviewer_type) }}</span>
+                            >{{ getReviewerTypeLabel(comment.reviewer_type) }}</span
+                        >
                         <span class="text-caption text-grey">
                             {{ formatDate(comment.created_at) }}
                         </span>
-                        <v-chip
-                            v-if="comment.is_resolved"
-                            size="x-small"
-                            color="success"
-                            variant="tonal"
-                            class="ml-1"
-                        >
+                        <v-chip v-if="comment.is_resolved" size="x-small" color="success" variant="tonal" class="ml-1">
                             <v-icon start size="12">mdi-check</v-icon>
                             {{ $t('elementComment.resolved') }}
                         </v-chip>
@@ -39,14 +38,7 @@
 
                     <!-- 내용 (수정 모드) -->
                     <div v-if="isEditing" class="mt-2">
-                        <v-textarea
-                            v-model="editContent"
-                            variant="outlined"
-                            density="compact"
-                            rows="2"
-                            auto-grow
-                            hide-details
-                        />
+                        <v-textarea v-model="editContent" variant="outlined" density="compact" rows="2" auto-grow hide-details />
                         <div class="d-flex justify-end mt-1">
                             <v-btn size="small" variant="text" @click="cancelEdit">
                                 {{ $t('elementComment.cancel') }}
@@ -71,12 +63,7 @@
 
                     <!-- 액션 버튼 -->
                     <div v-if="!isEditing" class="d-flex align-center mt-1">
-                        <v-btn
-                            size="x-small"
-                            variant="text"
-                            color="grey"
-                            @click="showReplyInput = !showReplyInput"
-                        >
+                        <v-btn size="x-small" variant="text" color="grey" @click="showReplyInput = !showReplyInput">
                             <v-icon start size="14">mdi-reply</v-icon>
                             {{ $t('elementComment.reply') }}
                         </v-btn>
@@ -98,22 +85,10 @@
 
                         <!-- 작성자만 수정/삭제 가능 -->
                         <template v-if="isOwner">
-                            <v-btn
-                                size="x-small"
-                                variant="text"
-                                color="grey"
-                                icon
-                                @click="startEdit"
-                            >
+                            <v-btn size="x-small" variant="text" color="grey" icon @click="startEdit">
                                 <v-icon size="14">mdi-pencil</v-icon>
                             </v-btn>
-                            <v-btn
-                                size="x-small"
-                                variant="text"
-                                color="error"
-                                icon
-                                @click="confirmDelete"
-                            >
+                            <v-btn size="x-small" variant="text" color="error" icon @click="confirmDelete">
                                 <v-icon size="14">mdi-delete</v-icon>
                             </v-btn>
                         </template>
@@ -136,13 +111,7 @@
                     <v-btn size="small" variant="text" @click="showReplyInput = false">
                         {{ $t('elementComment.cancel') }}
                     </v-btn>
-                    <v-btn
-                        size="small"
-                        color="primary"
-                        variant="text"
-                        :disabled="!replyContent.trim()"
-                        @click="submitReply"
-                    >
+                    <v-btn size="small" color="primary" variant="text" :disabled="!replyContent.trim()" @click="submitReply">
                         {{ $t('elementComment.submit') }}
                     </v-btn>
                 </div>
@@ -151,19 +120,15 @@
 
         <!-- 답글 목록 -->
         <div v-if="replies && replies.length > 0" class="replies-container ml-6 mt-1">
-            <div
-                v-for="reply in replies"
-                :key="(reply as any).id"
-                class="reply-item pa-2 rounded"
-            >
+            <div v-for="reply in replies" :key="(reply as any).id" class="reply-item pa-2 rounded">
                 <div class="d-flex align-start">
                     <v-avatar size="24" color="grey-lighten-1" class="mr-2 flex-shrink-0">
-                        <span class="text-white text-caption" style="font-size: 10px;">
+                        <span class="text-white text-caption" style="font-size: 10px">
                             {{ getInitials((reply as any).author_name) }}
                         </span>
                     </v-avatar>
 
-                    <div class="flex-grow-1" style="min-width: 0;">
+                    <div class="flex-grow-1" style="min-width: 0">
                         <div class="d-flex align-center flex-wrap">
                             <span class="text-body-2 font-weight-medium mr-2">
                                 {{ (reply as any).author_name }}
@@ -176,13 +141,7 @@
 
                         <!-- 답글 작성자만 삭제 가능 -->
                         <div v-if="(reply as any).author_id === currentUserId" class="d-flex justify-end">
-                            <v-btn
-                                size="x-small"
-                                variant="text"
-                                color="error"
-                                icon
-                                @click="$emit('delete', (reply as any).id)"
-                            >
+                            <v-btn size="x-small" variant="text" color="error" icon @click="$emit('delete', (reply as any).id)">
                                 <v-icon size="12">mdi-delete</v-icon>
                             </v-btn>
                         </div>
@@ -225,9 +184,7 @@
                         <div class="ct-resolve-original-label">원본 피드백</div>
                         <div class="ct-resolve-original-text">{{ comment.content }}</div>
                     </div>
-                    <p class="text-body-2 text-medium-emphasis mt-3 mb-2">
-                        조치 내용 (Action Taken) <span class="text-error">*</span>
-                    </p>
+                    <p class="text-body-2 text-medium-emphasis mt-3 mb-2">조치 내용 (Action Taken) <span class="text-error">*</span></p>
                     <v-textarea
                         v-model="resolveActionText"
                         placeholder="어떻게 조치했는지 구체적으로 입력하세요 (필수)..."
@@ -241,13 +198,7 @@
                 <v-card-actions class="px-4 pb-4">
                     <v-spacer />
                     <v-btn variant="text" size="small" @click="resolveDialog = false">취소</v-btn>
-                    <v-btn
-                        color="success"
-                        variant="flat"
-                        size="small"
-                        :disabled="!resolveActionText.trim()"
-                        @click="submitResolve"
-                    >
+                    <v-btn color="success" variant="flat" size="small" :disabled="!resolveActionText.trim()" @click="submitResolve">
                         <v-icon start size="16">mdi-check</v-icon>
                         Resolve 완료
                     </v-btn>
@@ -464,9 +415,15 @@ export default defineComponent({
     width: 3px;
     border-radius: 2px 0 0 2px;
 }
-.ct-strip--hq    { background: #1d4ed8; }
-.ct-strip--field { background: #059669; }
-.ct-strip--public{ background: #6b7280; }
+.ct-strip--hq {
+    background: #1d4ed8;
+}
+.ct-strip--field {
+    background: #059669;
+}
+.ct-strip--public {
+    background: #6b7280;
+}
 
 /* reviewer_type 배지 */
 .ct-reviewer-badge {
@@ -477,9 +434,18 @@ export default defineComponent({
     border-radius: 10px;
     white-space: nowrap;
 }
-.ct-badge--hq    { background: #dbeafe; color: #1d4ed8; }
-.ct-badge--field { background: #d1fae5; color: #065f46; }
-.ct-badge--public{ background: #f1f5f9; color: #475569; }
+.ct-badge--hq {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.ct-badge--field {
+    background: #d1fae5;
+    color: #065f46;
+}
+.ct-badge--public {
+    background: #f1f5f9;
+    color: #475569;
+}
 
 /* resolve 조치 내용 표시 */
 .ct-resolve-info {

@@ -2,34 +2,39 @@
     <!-- ---------------------------------------------------- -->
     <!-- Table Basic -->
     <!-- ---------------------------------------------------- -->
-     <div>
-        <v-card elevation="10" class="cursor-pointer pa-2 pt-1" @click="executeTask"
+    <div>
+        <v-card
+            elevation="10"
+            class="cursor-pointer pa-2 pt-1"
+            @click="executeTask"
             :class="[
                 { 'border-primary': isDueTodayOrTomorrow },
                 { 'border-purple': isPastDue },
-                { 'choice-background-color': isMyTask && !isTodolistPath &&  task.status !== 'DONE'}
+                { 'choice-background-color': isMyTask && !isTodolistPath && task.status !== 'DONE' }
             ]"
         >
-            <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
+            <div class="ma-0 pa-0 mt-1" style="line-height: 100%">
                 <!-- 가로배치 -->
                 <div class="pa-0">
-                    <v-row class="ma-0 pa-0" style="width: 100%;">
+                    <v-row class="ma-0 pa-0" style="width: 100%">
                         <v-col class="pa-0" cols="9">
-                            <div style="font-size:16px; font-weight:500; line-height: 20px;">{{ task.title }}</div>
+                            <div style="font-size: 16px; font-weight: 500; line-height: 20px">{{ task.title }}</div>
                         </v-col>
                         <v-col class="pa-0" cols="3">
-                            <v-row class="ma-0 pa-0 justify-end align-start"
-                                style="margin-top: 1px !important;"
-                            >
-                                <v-chip v-if="category"
+                            <v-row class="ma-0 pa-0 justify-end align-start" style="margin-top: 1px !important">
+                                <v-chip
+                                    v-if="category"
                                     :color="isMyTask && !isTodolistPath ? 'white' : category.color"
-                                    size="small" variant="outlined"
+                                    size="small"
+                                    variant="outlined"
                                     density="comfortable"
-                                >{{ category.name }}</v-chip>
-                
-                                <RouterLink v-if="managed" to="" class="px-0 ml-1" >
-                                    <DotsVerticalIcon size="15"
-                                        :style="isMyTask && !isTodolistPath &&  task.status !== 'DONE' ? 'color: white;' : 'color: black;'"
+                                    >{{ category.name }}</v-chip
+                                >
+
+                                <RouterLink v-if="managed" to="" class="px-0 ml-1">
+                                    <DotsVerticalIcon
+                                        size="15"
+                                        :style="isMyTask && !isTodolistPath && task.status !== 'DONE' ? 'color: white;' : 'color: black;'"
                                     />
                                     <v-menu activator="parent">
                                         <v-list density="compact">
@@ -45,32 +50,29 @@
                 </div>
                 <!-- 세로배치 -->
                 <div class="mt-1">
-                    <div v-if="mode == 'uEngine'" 
-                        class="pa-0"
-                        style="font-size:12px; margin-top: 5px;"
-                    >
+                    <div v-if="mode == 'uEngine'" class="pa-0" style="font-size: 12px; margin-top: 5px">
                         TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
                     </div>
                     <div v-else-if="isMyTask && isTodolistPath" colos="12" class="pa-0">
-                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%">
                             {{ task.proc_inst_name }}
                         </div>
                     </div>
                     <div v-else colos="12" class="pa-0">
-                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%">
                             {{ task.instName }}
                         </div>
                     </div>
                 </div>
                 <v-row v-if="userInfoForTask" class="pa-0 ma-0 mt-1 d-flex align-center">
-                    <div class="mr-1" style="width: 24px;">
+                    <div class="mr-1" style="width: 24px">
                         <v-img
                             :src="userInfoForTask.profile"
                             alt="profile"
                             width="24"
                             height="24"
                             class="mr-2"
-                            style="border-radius: 50%;"
+                            style="border-radius: 50%"
                         />
                     </div>
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
@@ -95,11 +97,7 @@
             </div>
 
             <v-dialog v-model="dialog" max-width="500">
-                <TodoDialog persistent
-                    :type="dialogType"
-                    :task="task"
-                    @close="closeDialog"
-                />
+                <TodoDialog persistent :type="dialogType" :task="task" @close="closeDialog" />
             </v-dialog>
         </v-card>
     </div>
@@ -107,7 +105,7 @@
 
 <script>
 import { format } from 'date-fns';
-import TodoDialog from './TodoDialog.vue'
+import TodoDialog from './TodoDialog.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -128,7 +126,7 @@ task: {
 */
 export default {
     components: {
-        TodoDialog,
+        TodoDialog
     },
     props: {
         task: Object,
@@ -181,26 +179,26 @@ export default {
             return dueDate < today;
         },
         formattedDate() {
-            var dateString = "";
+            var dateString = '';
             if (this.task.startDate) {
-                dateString += format(new Date(this.task.startDate), "yyyy.MM.dd") + " ~";
-            } 
+                dateString += format(new Date(this.task.startDate), 'yyyy.MM.dd') + ' ~';
+            }
             if (this.task.dueDate) {
-                if (!dateString.includes("~")) dateString += "~ "
-                dateString += format(new Date(this.task.dueDate), "yyyy.MM.dd");
+                if (!dateString.includes('~')) dateString += '~ ';
+                dateString += format(new Date(this.task.dueDate), 'yyyy.MM.dd');
             }
             return dateString;
         },
         category() {
             if (!this.task.instId || this.task.adhoc) {
-                return null
+                return null;
             } else {
                 return { name: 'BPM', color: 'primary' };
             }
         },
         userInfoForTask() {
             if (!this.userInfo || !this.task || !this.task.endpoint) return null;
-            return this.userInfo.find(user => user.email === this.task.endpoint);
+            return this.userInfo.find((user) => user.email === this.task.endpoint);
         },
         isMyTask() {
             // localStorage의 email과 task의 endpoint가 일치하고, task의 status가 'DONE'이 아닐 때 true 반환
@@ -218,17 +216,15 @@ export default {
         } else {
             this.managed = false;
         }
-        
+
         try {
             // 인스턴스 목록 가져오기
-            const result = await backend.getInstanceListByStatus(["NEW", "RUNNING"]);
+            const result = await backend.getInstanceListByStatus(['NEW', 'RUNNING']);
             if (!result) return;
-            
+
             // 현재 task의 instId와 일치하는 인스턴스 찾기
             if (this.task.instId) {
-                const matchingInstance = result.find(
-                    inst => inst.instId === this.task.instId
-                );
+                const matchingInstance = result.find((inst) => inst.instId === this.task.instId);
                 if (matchingInstance) {
                     this.task.proc_inst_name = matchingInstance.instName;
                 }
@@ -252,6 +248,6 @@ export default {
         deleteTask() {
             this.$emit('deleteTask', this.task);
         }
-    },
-}
+    }
+};
 </script>

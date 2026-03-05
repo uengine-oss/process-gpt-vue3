@@ -28,7 +28,6 @@ const filteredCards = computed(() => {
         return card.name.toLowerCase().includes(searchValue.value.toLowerCase());
     });
 });
-
 </script>
 
 <template>
@@ -68,7 +67,7 @@ const filteredCards = computed(() => {
                         </v-card-item>
                         <v-divider />
                         <v-sheet class="bg-lightprimary px-4 py-2 d-flex align-center justify-center gap-2">
-                            <v-btn color="primary" icon variant="text"  size="x-small">
+                            <v-btn color="primary" icon variant="text" size="x-small">
                                 <BrandFacebookIcon size="16" />
                             </v-btn>
                             <v-btn color="error" icon variant="text" size="x-small">
@@ -77,7 +76,7 @@ const filteredCards = computed(() => {
                             <v-btn color="info" icon variant="text" size="x-small">
                                 <BrandGithubIcon size="16" />
                             </v-btn>
-                            <v-btn color="secondary" icon variant="text"  size="x-small">
+                            <v-btn color="secondary" icon variant="text" size="x-small">
                                 <BrandTwitterIcon size="16" />
                             </v-btn>
                         </v-sheet>

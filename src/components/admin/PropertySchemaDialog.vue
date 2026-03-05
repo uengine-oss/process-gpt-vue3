@@ -1,6 +1,11 @@
 <template>
-    <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '600px'">
-        <v-card class="ma-0 pa-0" style="overflow: hidden;">
+    <v-dialog
+        :model-value="modelValue"
+        @update:model-value="$emit('update:modelValue', $event)"
+        :fullscreen="isMobile"
+        :max-width="isMobile ? '100%' : '600px'"
+    >
+        <v-card class="ma-0 pa-0" style="overflow: hidden">
             <!-- [BLOCK:dialog.header.v1] -->
             <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
                 {{ schema ? $t('taskCatalog.editProperty') : $t('taskCatalog.addProperty') }}
@@ -17,7 +22,10 @@
                             <v-text-field
                                 v-model="formData.property_key"
                                 :label="$t('taskCatalog.propertyKey')"
-                                :rules="[v => !!v || $t('taskCatalog.required'), v => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(v) || $t('taskCatalog.invalidKey')]"
+                                :rules="[
+                                    (v) => !!v || $t('taskCatalog.required'),
+                                    (v) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(v) || $t('taskCatalog.invalidKey')
+                                ]"
                                 required
                                 hint="camelCase or snake_case"
                             />
@@ -26,7 +34,7 @@
                             <v-text-field
                                 v-model="formData.property_label"
                                 :label="$t('taskCatalog.propertyLabel')"
-                                :rules="[v => !!v || $t('taskCatalog.required')]"
+                                :rules="[(v) => !!v || $t('taskCatalog.required')]"
                                 required
                             />
                         </v-col>
@@ -43,31 +51,19 @@
                             />
                         </v-col>
                         <v-col cols="12" md="6">
-                            <v-text-field
-                                v-model.number="formData.display_order"
-                                :label="$t('taskCatalog.order')"
-                                type="number"
-                                min="0"
-                            />
+                            <v-text-field v-model.number="formData.display_order" :label="$t('taskCatalog.order')" type="number" min="0" />
                         </v-col>
                     </v-row>
 
                     <v-row>
                         <v-col cols="12">
-                            <v-switch
-                                v-model="formData.is_mandatory"
-                                :label="$t('taskCatalog.mandatory')"
-                                color="error"
-                            />
+                            <v-switch v-model="formData.is_mandatory" :label="$t('taskCatalog.mandatory')" color="error" />
                         </v-col>
                     </v-row>
 
                     <v-row>
                         <v-col cols="12">
-                            <v-text-field
-                                v-model="formData.default_value"
-                                :label="$t('taskCatalog.defaultValue')"
-                            />
+                            <v-text-field v-model="formData.default_value" :label="$t('taskCatalog.defaultValue')" />
                         </v-col>
                     </v-row>
 
@@ -77,12 +73,7 @@
 
                     <v-row>
                         <v-col cols="12" md="4">
-                            <v-text-field
-                                v-model.number="formData.row_index"
-                                :label="$t('taskCatalog.rowIndex')"
-                                type="number"
-                                min="0"
-                            />
+                            <v-text-field v-model.number="formData.row_index" :label="$t('taskCatalog.rowIndex')" type="number" min="0" />
                         </v-col>
                         <v-col cols="12" md="4">
                             <v-select
@@ -94,10 +85,7 @@
                             />
                         </v-col>
                         <v-col cols="12" md="4">
-                            <v-text-field
-                                v-model="formData.section_name"
-                                :label="$t('taskCatalog.sectionName')"
-                            />
+                            <v-text-field v-model="formData.section_name" :label="$t('taskCatalog.sectionName')" />
                         </v-col>
                     </v-row>
 
@@ -105,11 +93,7 @@
                     <v-row v-if="formData.property_type === 'select'">
                         <v-col cols="12">
                             <v-label>{{ $t('taskCatalog.options') }}</v-label>
-                            <div
-                                v-for="(option, index) in formData.options"
-                                :key="index"
-                                class="d-flex align-center mb-2"
-                            >
+                            <div v-for="(option, index) in formData.options" :key="index" class="d-flex align-center mb-2">
                                 <v-text-field
                                     v-model="option.label"
                                     :label="$t('taskCatalog.optionLabel')"
@@ -122,21 +106,11 @@
                                     density="compact"
                                     class="mr-2"
                                 />
-                                <v-btn
-                                    icon
-                                    size="small"
-                                    color="error"
-                                    variant="text"
-                                    @click="removeOption(index)"
-                                >
+                                <v-btn icon size="small" color="error" variant="text" @click="removeOption(index)">
                                     <v-icon>mdi-minus</v-icon>
                                 </v-btn>
                             </div>
-                            <v-btn
-                                variant="outlined"
-                                size="small"
-                                @click="addOption"
-                            >
+                            <v-btn variant="outlined" size="small" @click="addOption">
                                 <v-icon start>mdi-plus</v-icon>
                                 {{ $t('taskCatalog.addOption') }}
                             </v-btn>
@@ -147,14 +121,7 @@
 
             <!-- [BLOCK:dialog.footer.v1] -->
             <v-row class="d-flex justify-end align-center pa-4 ma-0">
-                <v-btn
-                    color="primary"
-                    rounded
-                    variant="flat"
-                    :loading="loading"
-                    :disabled="!formValid"
-                    @click="save"
-                >
+                <v-btn color="primary" rounded variant="flat" :loading="loading" :disabled="!formValid" @click="save">
                     {{ $t('taskCatalog.save') }}
                 </v-btn>
             </v-row>
@@ -214,21 +181,24 @@ export default defineComponent({
 
         const formData = ref(defaultFormData());
 
-        watch(() => props.modelValue, (open) => {
-            if (open) {
-                if (props.schema) {
-                    formData.value = {
-                        ...props.schema,
-                        options: props.schema.options ? [...props.schema.options] : [],
-                        row_index: props.schema.row_index ?? 0,
-                        col_span: props.schema.col_span ?? 12,
-                        section_name: props.schema.section_name ?? ''
-                    };
-                } else {
-                    formData.value = defaultFormData();
+        watch(
+            () => props.modelValue,
+            (open) => {
+                if (open) {
+                    if (props.schema) {
+                        formData.value = {
+                            ...props.schema,
+                            options: props.schema.options ? [...props.schema.options] : [],
+                            row_index: props.schema.row_index ?? 0,
+                            col_span: props.schema.col_span ?? 12,
+                            section_name: props.schema.section_name ?? ''
+                        };
+                    } else {
+                        formData.value = defaultFormData();
+                    }
                 }
             }
-        });
+        );
 
         const addOption = () => {
             if (!formData.value.options) {

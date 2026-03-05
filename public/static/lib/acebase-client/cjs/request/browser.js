@@ -1,25 +1,28 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const error_1 = require("./error");
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+const error_1 = require('./error');
 /**
  * @returns returns a promise that resolves with an object containing data and an optionally returned context
  */
-async function request(method, url, options = { accessToken: null, data: null, dataReceivedCallback: null, dataRequestCallback: null, context: null }) {
+async function request(
+    method,
+    url,
+    options = { accessToken: null, data: null, dataReceivedCallback: null, dataRequestCallback: null, context: null }
+) {
     var _a;
     let postData = options.data;
     if (typeof postData === 'undefined' || postData === null) {
         postData = '';
-    }
-    else if (typeof postData === 'object') {
+    } else if (typeof postData === 'object') {
         postData = JSON.stringify(postData);
     }
     const headers = {
-        'AceBase-Context': JSON.stringify(options.context || null),
+        'AceBase-Context': JSON.stringify(options.context || null)
     };
     const init = {
         method,
         headers,
-        body: undefined,
+        body: undefined
     };
     if (typeof options.dataRequestCallback === 'function') {
         // Stream data to the server instead of posting all from memory at once
@@ -34,22 +37,22 @@ async function request(method, url, options = { accessToken: null, data: null, d
                 async pull(controller) {
                     var _a;
                     const chunkSize = controller.desiredSize || 1024 * 16;
-                    const chunk = await ((_a = options.dataRequestCallback) === null || _a === void 0 ? void 0 : _a.call(options, chunkSize));
+                    const chunk = await ((_a = options.dataRequestCallback) === null || _a === void 0
+                        ? void 0
+                        : _a.call(options, chunkSize));
                     if (canceled || [null, ''].includes(chunk)) {
                         controller.close();
-                    }
-                    else {
+                    } else {
                         controller.enqueue(chunk);
                     }
                 },
                 // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unused-vars
-                async start(controller) { },
+                async start(controller) {},
                 cancel() {
                     canceled = true;
-                },
+                }
             });
-        }
-        else {
+        } else {
             // Streaming not supported
             postData = '';
             const chunkSize = 1024 * 512; // Use large chunk size, we have to store everything in memory anyway.
@@ -59,8 +62,7 @@ async function request(method, url, options = { accessToken: null, data: null, d
             }
             init.body = postData;
         }
-    }
-    else if (postData.length > 0) {
+    } else if (postData.length > 0) {
         headers['Content-Type'] = 'application/json';
         init.body = postData;
     }
@@ -68,7 +70,7 @@ async function request(method, url, options = { accessToken: null, data: null, d
         headers['Authorization'] = `Bearer ${options.accessToken}`;
     }
     const request = { url, method, headers, body: undefined };
-    const res = await fetch(request.url, init).catch(err => {
+    const res = await fetch(request.url, init).catch((err) => {
         // console.error(err);
         throw new error_1.AceBaseRequestError(request, null, 'fetch_failed', err.message);
     });
@@ -81,20 +83,20 @@ async function request(method, url, options = { accessToken: null, data: null, d
                 var _a;
                 try {
                     const result = await (reader === null || reader === void 0 ? void 0 : reader.read());
-                    (_a = options.dataReceivedCallback) === null || _a === void 0 ? void 0 : _a.call(options, result === null || result === void 0 ? void 0 : result.value);
+                    (_a = options.dataReceivedCallback) === null || _a === void 0
+                        ? void 0
+                        : _a.call(options, result === null || result === void 0 ? void 0 : result.value);
                     if (result === null || result === void 0 ? void 0 : result.done) {
                         return resolve();
                     }
                     readNext();
-                }
-                catch (err) {
+                } catch (err) {
                     reader === null || reader === void 0 ? void 0 : reader.cancel('error');
                     reject(err);
                 }
             })();
         });
-    }
-    else {
+    } else {
         data = await res.text();
     }
     const isJSON = data[0] === '{' || data[0] === '['; // || (res.headers['content-type'] || '').startsWith('application/json')
@@ -103,24 +105,23 @@ async function request(method, url, options = { accessToken: null, data: null, d
         let context;
         if (contextHeader && contextHeader[0] === '{') {
             context = JSON.parse(contextHeader);
-        }
-        else {
+        } else {
             context = {};
         }
         if (isJSON) {
             data = JSON.parse(data);
         }
         return { context, data };
-    }
-    else {
+    } else {
         request.body = postData;
         const response = {
             statusCode: res.status,
             statusMessage: res.statusText,
             headers: res.headers,
-            body: data,
+            body: data
         };
-        let code = res.status, message = res.statusText;
+        let code = res.status,
+            message = res.statusText;
         if (isJSON) {
             const err = JSON.parse(data);
             if (err.code) {
@@ -130,7 +131,7 @@ async function request(method, url, options = { accessToken: null, data: null, d
                 message = err.message;
             }
         }
-        throw (new error_1.AceBaseRequestError(request, response, code, message));
+        throw new error_1.AceBaseRequestError(request, response, code, message);
     }
 }
 exports.default = request;

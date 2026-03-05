@@ -18,4 +18,4 @@ const faqPage: faqPageType[] = [
     }
 ];
 
-export { faqPage};
+export { faqPage };

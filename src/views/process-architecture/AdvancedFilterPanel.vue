@@ -178,7 +178,8 @@
                     <div class="d-flex justify-space-between align-center mb-1">
                         <span class="text-caption text-grey-darken-1">{{ $t('processArchitecture.advancedFilter.leadTimeRange') }}</span>
                         <span class="text-caption font-weight-medium">
-                            {{ localFilters.leadTimeRange[0] }} – {{ localFilters.leadTimeRange[1] }} {{ $t('processArchitecture.advancedFilter.days') }}
+                            {{ localFilters.leadTimeRange[0] }} – {{ localFilters.leadTimeRange[1] }}
+                            {{ $t('processArchitecture.advancedFilter.days') }}
                         </span>
                     </div>
                     <v-range-slider
@@ -333,8 +334,18 @@ const PRESETS_KEY = 'process_arch_filter_presets';
 const STATUS_OPTIONS = computed(() => [
     { value: 'draft', label: t('processArchitecture.advancedFilter.statusDraft'), color: 'grey', icon: 'mdi-pencil-outline' },
     { value: 'review', label: t('processArchitecture.advancedFilter.statusReview'), color: 'orange', icon: 'mdi-eye-outline' },
-    { value: 'public_review', label: t('processArchitecture.advancedFilter.statusPublicReview'), color: 'blue', icon: 'mdi-account-group-outline' },
-    { value: 'published', label: t('processArchitecture.advancedFilter.statusPublished'), color: 'success', icon: 'mdi-check-circle-outline' },
+    {
+        value: 'public_review',
+        label: t('processArchitecture.advancedFilter.statusPublicReview'),
+        color: 'blue',
+        icon: 'mdi-account-group-outline'
+    },
+    {
+        value: 'published',
+        label: t('processArchitecture.advancedFilter.statusPublished'),
+        color: 'success',
+        icon: 'mdi-check-circle-outline'
+    },
     { value: 'wip', label: t('processArchitecture.advancedFilter.statusWip'), color: 'amber', icon: 'mdi-wrench-outline' }
 ]);
 
@@ -402,7 +413,7 @@ function savePresets(list: FilterPreset[]) {
 function savePreset() {
     const name = newPresetName.value.trim();
     if (!name) return;
-    const existing = presets.value.findIndex(p => p.name === name);
+    const existing = presets.value.findIndex((p) => p.name === name);
     const newPreset = { name, filters: JSON.parse(JSON.stringify(localFilters.value)) };
     if (existing >= 0) {
         presets.value[existing] = newPreset;
@@ -421,7 +432,7 @@ function applyPreset(preset: FilterPreset) {
 }
 
 function deletePreset(name: string) {
-    presets.value = presets.value.filter(p => p.name !== name);
+    presets.value = presets.value.filter((p) => p.name !== name);
     savePresets(presets.value);
     if (activePresetName.value === name) activePresetName.value = null;
 }
@@ -466,9 +477,13 @@ function applyFilters() {
 }
 
 // Reset preset indicator when filters change manually
-watch(localFilters, () => {
-    // Intentionally not resetting activePresetName here so chip stays highlighted
-}, { deep: true });
+watch(
+    localFilters,
+    () => {
+        // Intentionally not resetting activePresetName here so chip stays highlighted
+    },
+    { deep: true }
+);
 </script>
 
 <style scoped>

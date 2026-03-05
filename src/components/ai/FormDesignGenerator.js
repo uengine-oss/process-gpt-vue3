@@ -1,39 +1,44 @@
-import AIGenerator from "@/components/ai/AIGenerator";
-import promptSnippetData from "./FormDesignGeneratorPromptSnipptsData";
+import AIGenerator from '@/components/ai/AIGenerator';
+import promptSnippetData from './FormDesignGeneratorPromptSnipptsData';
 import BackendFactory from '@/components/api/BackendFactory';
-import { aW } from "@fullcalendar/core/internal-common";
+import { aW } from '@fullcalendar/core/internal-common';
 
 const backend = BackendFactory.createBackend();
 
 // '화면 정의' 메뉴에서 AI를 통한 폼 생성을 위한 생성기 클래스
-export default class FormDesignGenerator extends AIGenerator{
-    constructor(client, language){
+export default class FormDesignGenerator extends AIGenerator {
+    constructor(client, language) {
         super(client, language);
 
         this.datasourceURL = this.client.datasourceURL;
         this.datasourcePrompt = this.getDatasourcePrompt();
 
         // 유효한 컴포넌트 이름 목록을 형성해서 향후 유효성 검증시에 시용
-        this.availableComponentTagNames = promptSnippetData.componentInfos.map((componentInfo) => componentInfo.tag.match(/\<\/(.*)\>/)[1].toLowerCase())
-        
-        // 컨테이너 조합, 컴포넌트 정보, 예시를 프롬프트에 적용하기 위한 문자열을 생성하기 위해서
-        this.containerSpaceSetsPromptStr = 
-          promptSnippetData.containerSpaceSets.map((containerSpaceSet) => "{" + containerSpaceSet.join(", ") + "}").join(", ")
+        this.availableComponentTagNames = promptSnippetData.componentInfos.map((componentInfo) =>
+            componentInfo.tag.match(/\<\/(.*)\>/)[1].toLowerCase()
+        );
 
-        const componentInfosPromptStr = promptSnippetData.componentInfos.map(componentInfo => {
-          return `#### ${componentInfo.tagName}
+        // 컨테이너 조합, 컴포넌트 정보, 예시를 프롬프트에 적용하기 위한 문자열을 생성하기 위해서
+        this.containerSpaceSetsPromptStr = promptSnippetData.containerSpaceSets
+            .map((containerSpaceSet) => '{' + containerSpaceSet.join(', ') + '}')
+            .join(', ');
+
+        const componentInfosPromptStr = promptSnippetData.componentInfos
+            .map((componentInfo) => {
+                return `#### ${componentInfo.tagName}
 1. Tag Syntax
 \`${componentInfo.tag}\`
 
 2. Purpose
 ${componentInfo.purpose}${componentInfo.limit ? `\n\n3. Limitation\n${componentInfo.limit}` : ''}
-`}).join("\n")
+`;
+            })
+            .join('\n');
 
-
-this.previousMessageFormats = [
-  {
-    role: 'system',
-    content: `\
+        this.previousMessageFormats = [
+            {
+                role: 'system',
+                content: `\
 # Role
 You are an HTML form creator assistant for process management systems, designed to generate and modify structured forms with precision and adherence to specific component guidelines. As a specialized form design expert, you understand the intricacies of form layout, component placement, and responsive design principles.
 
@@ -82,12 +87,11 @@ For every new field you generate:
 ⚠️ This logic must be applied at **field generation time**, not after.
 
 You represent a professional form design system that prioritizes structural integrity, usability, and adherence to established component guidelines.`
+            },
 
-  },
-
-  {
-    role: 'user',
-    content: `\
+            {
+                role: 'user',
+                content: `\
 # Task Guidelines
 ## About Task
 You create forms based on user instructions and, if provided with form images, you must replicate them as closely as possible.
@@ -233,151 +237,158 @@ When responding, provide only the JSON response in markdown format, wrapped in t
 
 This is the entire guideline.
 When you're ready, please output 'Approved.' Then I will begin user input.`
-  },
-  {
-    role: 'assistant',
-    content: `Approved.`
-  }
-]
+            },
+            {
+                role: 'assistant',
+                content: `Approved.`
+            }
+        ];
     }
 
     async sendMessageWithPrevFormOutput(newMessage) {
-      if(!newMessage.text && !newMessage.image) {
-        alert("Please enter your request or provide a reference image to create a form.")
-        return
-      }
+        if (!newMessage.text && !newMessage.image) {
+            alert('Please enter your request or provide a reference image to create a form.');
+            return;
+        }
 
-      const isModify = this.client.prevFormOutput && this.client.prevFormOutput !== '<section></section>'
-      this.userInputs = {
-        requestType: isModify ? "Modify" : "Create",
-        request: newMessage.text,
-        existingForm: isModify ? this.client.prevFormOutput : "",
-        imageUrl: newMessage.image
-      }
+        const isModify = this.client.prevFormOutput && this.client.prevFormOutput !== '<section></section>';
+        this.userInputs = {
+            requestType: isModify ? 'Modify' : 'Create',
+            request: newMessage.text,
+            existingForm: isModify ? this.client.prevFormOutput : '',
+            imageUrl: newMessage.image
+        };
 
-      this.client.sendMessage(newMessage);
+        this.client.sendMessage(newMessage);
     }
 
     async getMessageToSend(userInputs, messages) {
-      const makeUserMessage = (requestType, request, existingForm, note) => {
-        return `
+        const makeUserMessage = (requestType, request, existingForm, note) => {
+            return `
 # Request Type
 ${requestType}
 
 # Request
-${request}${existingForm ? `\n\n# Existing Form
+${request}${
+                existingForm
+                    ? `\n\n# Existing Form
 \`\`\`html
 ${existingForm}
 \`\`\`
-` : ""}${note ? `\n\n# Note
-${note}
-` : ""}
 `
-      }
+                    : ''
+            }${
+                note
+                    ? `\n\n# Note
+${note}
+`
+                    : ''
+            }
+`;
+        };
 
-      const copiedPreviousMessageFormats = [...this.previousMessageFormats]
-      if(promptSnippetData.examples && promptSnippetData.examples.length > 0)
-      {
-        for(const example of promptSnippetData.examples)
-        {
-          copiedPreviousMessageFormats.push({
-            role: 'user',
-            content: makeUserMessage(
-              example.input.requestType, example.input.request, example.input.existingForm
-            )
-          })
+        const copiedPreviousMessageFormats = [...this.previousMessageFormats];
+        if (promptSnippetData.examples && promptSnippetData.examples.length > 0) {
+            for (const example of promptSnippetData.examples) {
+                copiedPreviousMessageFormats.push({
+                    role: 'user',
+                    content: makeUserMessage(example.input.requestType, example.input.request, example.input.existingForm)
+                });
 
-          copiedPreviousMessageFormats.push({
-            role: 'assistant',
-            content: example.output
-          })
+                copiedPreviousMessageFormats.push({
+                    role: 'assistant',
+                    content: example.output
+                });
 
-          if(!userInputs) {
-            break;
-          }
+                if (!userInputs) {
+                    break;
+                }
+            }
         }
-      }
 
-      const noteMessage =  `Please write values such as alias and label of the form being created in ${this.preferredLanguage}. However, make sure all name attributes are written in English only.`
-      if(userInputs){
-        if(userInputs.imageUrl) {
-            const userRequest = `\
+        const noteMessage = `Please write values such as alias and label of the form being created in ${this.preferredLanguage}. However, make sure all name attributes are written in English only.`;
+        if (userInputs) {
+            if (userInputs.imageUrl) {
+                const userRequest = `\
   Please create an appropriate form based on the provided image. 
 
   # Image Analysis Instructions
-- Analyze the visual layout: Identify sections, rows, and columns based on alignment and spacing to determine the grid structure (\`section\`, \`div.row\`, \`div.col-sm-*\`). Ensure the sum of column numbers in each row equals 12, using only the allowed combinations: [${this.containerSpaceSetsPromptStr}].
+- Analyze the visual layout: Identify sections, rows, and columns based on alignment and spacing to determine the grid structure (\`section\`, \`div.row\`, \`div.col-sm-*\`). Ensure the sum of column numbers in each row equals 12, using only the allowed combinations: [${
+                    this.containerSpaceSetsPromptStr
+                }].
 - Identify components: Match visual elements (input boxes, dropdowns, checkboxes, radio buttons, etc.) to the allowed component tags provided in the documentation. Pay close attention to visual cues.
 - Extract labels: Accurately transcribe the text label associated with each identified component. Associate labels correctly with their corresponding form elements.
 - Detect placeholders/defaults: Note any placeholder text within input fields or pre-selected values (e.g., in dropdowns, radio buttons) and represent them using appropriate attributes like 'placeholder' or default 'value'.
 - Analyze grouping: Use layout elements (\`section\`, \`div.row\`) logically to group related fields based on proximity, visual dividers, or contextual clues in the image.
-- Infer attributes: Generate unique and meaningful English \`name\` attributes for all components and layouts. Generate descriptive \`alias\` attributes in ${this.preferredLanguage} based on the labels or purpose. Determine if \`is_multidata_mode='true'\` is appropriate for sections representing repeatable data rows. Ensure ALL name attributes are unique across the entire form.
+- Infer attributes: Generate unique and meaningful English \`name\` attributes for all components and layouts. Generate descriptive \`alias\` attributes in ${
+                    this.preferredLanguage
+                } based on the labels or purpose. Determine if \`is_multidata_mode='true'\` is appropriate for sections representing repeatable data rows. Ensure ALL name attributes are unique across the entire form.
 - Adhere strictly to specifications: Your primary goal is to translate the visual form from the image into a functional and valid HTML structure using ONLY the allowed components and layout elements. Follow all specified tag syntax, attribute requirements, and formatting rules precisely. Do not introduce any elements or attributes not explicitly defined.
 
-${userInputs.request ? `\n\n# Additional User Request
-  ${userInputs.request}` : ""}
-  `
-          copiedPreviousMessageFormats.push({
-            role: 'user',
-            content: [
-              {
-                "type": "image_url",
-                "image_url": {
-                  "url": userInputs.imageUrl
-                }
-              },
-              {
-                "type": "text",
-                "text": makeUserMessage(
-                  userInputs.requestType, userRequest, userInputs.existingForm, noteMessage
-                )
-              }
-            ]
-          })
+${
+    userInputs.request
+        ? `\n\n# Additional User Request
+  ${userInputs.request}`
+        : ''
+}
+  `;
+                copiedPreviousMessageFormats.push({
+                    role: 'user',
+                    content: [
+                        {
+                            type: 'image_url',
+                            image_url: {
+                                url: userInputs.imageUrl
+                            }
+                        },
+                        {
+                            type: 'text',
+                            text: makeUserMessage(userInputs.requestType, userRequest, userInputs.existingForm, noteMessage)
+                        }
+                    ]
+                });
+            } else {
+                copiedPreviousMessageFormats.push({
+                    role: 'user',
+                    content: makeUserMessage(userInputs.requestType, userInputs.request, userInputs.existingForm, noteMessage)
+                });
+            }
+        } else {
+            copiedPreviousMessageFormats.push(messages[0]);
         }
-        else {
-          copiedPreviousMessageFormats.push({
-            role: 'user',
-            content: makeUserMessage(
-              userInputs.requestType, userInputs.request, userInputs.existingForm, noteMessage
-            )
-          })
-        }
-      } else {
-        copiedPreviousMessageFormats.push(messages[0])
-      }
 
-      return copiedPreviousMessageFormats
+        return copiedPreviousMessageFormats;
     }
 
     async createMessagesAsync(messages) {
-      if (messages) {
-        messages = messages.filter(message => message !== undefined);
-      }
-      const messagesToSend = await this.getMessageToSend(this.userInputs, messages)
-      console.log("[*][FormDesignGenerator] 전달되는 시스템상 AI 메시지", {messagesToSend: messagesToSend})
-      return messagesToSend
+        if (messages) {
+            messages = messages.filter((message) => message !== undefined);
+        }
+        const messagesToSend = await this.getMessageToSend(this.userInputs, messages);
+        console.log('[*][FormDesignGenerator] 전달되는 시스템상 AI 메시지', { messagesToSend: messagesToSend });
+        return messagesToSend;
     }
 
     getDatasourcePrompt() {
-      const datasourceSchema = this.client?.datasourceSchema;
-      if (!datasourceSchema) {
-        return null;
-      }
+        const datasourceSchema = this.client?.datasourceSchema;
+        if (!datasourceSchema) {
+            return null;
+        }
 
-      return `
+        return `
     # Datasource
     ${JSON.stringify(datasourceSchema, null, 2)}
     `;
     }
 
     createMessages() {
-      if(!this.userInputs && this.client.userInputs)  {
-        this.userInputs = this.client.userInputs
-      }
-      return null
+        if (!this.userInputs && this.client.userInputs) {
+            this.userInputs = this.client.userInputs;
+        }
+        return null;
     }
 
-    createPrompt(){
-       return this.client.newMessage
+    createPrompt() {
+        return this.client.newMessage;
     }
 }

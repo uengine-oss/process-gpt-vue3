@@ -5,7 +5,10 @@
             <div class="header-content">
                 <div class="header-icon">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 10.99h6c-.45 3.4-2.93 6.22-6 7.01V13H6v-4.28l6-2.25V13z" fill="currentColor"/>
+                        <path
+                            d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm0 10.99h6c-.45 3.4-2.93 6.22-6 7.01V13H6v-4.28l6-2.25V13z"
+                            fill="currentColor"
+                        />
                     </svg>
                 </div>
                 <div class="header-text">
@@ -18,7 +21,7 @@
             </div>
             <button class="close-btn" @click="close">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
+                    <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -28,8 +31,8 @@
             <div class="section">
                 <div class="section-label">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M12 6v6l4 2"/>
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
                     </svg>
                     {{ $t('permissionDialog.permissionLevel') }}
                 </div>
@@ -53,7 +56,10 @@
                 <div class="toggle-content">
                     <div class="toggle-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="currentColor"/>
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"
+                                fill="currentColor"
+                            />
                         </svg>
                     </div>
                     <div class="toggle-text">
@@ -62,7 +68,7 @@
                     </div>
                 </div>
                 <label class="switch">
-                    <input type="checkbox" v-model="isPublic">
+                    <input type="checkbox" v-model="isPublic" />
                     <span class="slider"></span>
                 </label>
             </div>
@@ -71,9 +77,9 @@
             <div v-if="!isPublic" class="section add-target-section">
                 <div class="section-label">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M19 8v6M22 11h-6"/>
+                        <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M19 8v6M22 11h-6" />
                     </svg>
                     {{ $t('permissionDialog.addTarget') }}
                 </div>
@@ -96,15 +102,15 @@
                 <div class="search-container">
                     <div class="search-icon">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="M21 21l-4.35-4.35" />
                         </svg>
                     </div>
                     <v-autocomplete
                         v-if="targetTab === 'user'"
                         v-model="selectedUser"
                         :items="availableUsers"
-                        :item-title="item => `${item.username} (${item.email})`"
+                        :item-title="(item) => `${item.username} (${item.email})`"
                         item-value="id"
                         :placeholder="$t('permissionDialog.searchUser')"
                         variant="plain"
@@ -118,7 +124,7 @@
                         v-else-if="targetTab === 'organization'"
                         v-model="selectedOrganization"
                         :items="availableOrganizations"
-                        :item-title="item => item.data?.name || item.name"
+                        :item-title="(item) => item.data?.name || item.name"
                         item-value="id"
                         :placeholder="$t('permissionDialog.searchOrganization')"
                         variant="plain"
@@ -149,8 +155,8 @@
             <div v-if="!isPublic" class="permission-list-section">
                 <div class="section-label">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 11l3 3L22 4"/>
-                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                        <path d="M9 11l3 3L22 4" />
+                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
                     </svg>
                     {{ $t('permissionDialog.permissionList') }}
                     <span class="count-badge" v-if="permissionList.length > 0">{{ permissionList.length }}</span>
@@ -160,8 +166,8 @@
                 <div v-if="permissionList.length === 0" class="empty-state">
                     <div class="empty-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0110 0v4"/>
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0110 0v4" />
                         </svg>
                     </div>
                     <p class="empty-text">{{ $t('permissionDialog.noPermissions') }}</p>
@@ -169,19 +175,25 @@
 
                 <!-- Permission Cards -->
                 <TransitionGroup name="permission-card" tag="div" class="permission-cards">
-                    <div
-                        v-for="item in permissionList"
-                        :key="item.id"
-                        class="permission-card"
-                    >
+                    <div v-for="item in permissionList" :key="item.id" class="permission-card">
                         <div class="card-main">
                             <div class="avatar" :class="item.target_type">
                                 <span v-if="item.target_type === 'user'">{{ getInitials(item.name) }}</span>
-                                <svg v-else-if="item.target_type === 'organization'" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/>
+                                <svg
+                                    v-else-if="item.target_type === 'organization'"
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"
+                                    />
                                 </svg>
                                 <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91zM4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58A2.01 2.01 0 000 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29zM20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm4 3.43c0-.81-.48-1.53-1.22-1.85A6.95 6.95 0 0020 14c-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24v-1.57zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/>
+                                    <path
+                                        d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91zM4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58A2.01 2.01 0 000 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29zM20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm4 3.43c0-.81-.48-1.53-1.22-1.85A6.95 6.95 0 0020 14c-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24v-1.57zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"
+                                    />
                                 </svg>
                             </div>
                             <div class="card-info">
@@ -192,23 +204,23 @@
                             </div>
                             <button class="delete-btn" @click="removePermission(item)">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
                                 </svg>
                             </button>
                         </div>
                         <div class="card-permissions">
                             <label class="permission-toggle" :class="{ active: item.readable }">
-                                <input type="checkbox" v-model="item.readable">
+                                <input type="checkbox" v-model="item.readable" />
                                 <span class="toggle-indicator view"></span>
                                 <span class="toggle-label">{{ $t('permissionDialog.view') }}</span>
                             </label>
                             <label class="permission-toggle" :class="{ active: item.executable }">
-                                <input type="checkbox" v-model="item.executable">
+                                <input type="checkbox" v-model="item.executable" />
                                 <span class="toggle-indicator execute"></span>
                                 <span class="toggle-label">{{ $t('permissionDialog.execute') }}</span>
                             </label>
                             <label class="permission-toggle" :class="{ active: item.writable }">
-                                <input type="checkbox" v-model="item.writable">
+                                <input type="checkbox" v-model="item.writable" />
                                 <span class="toggle-indicator edit"></span>
                                 <span class="toggle-label">{{ $t('permissionDialog.edit') || '수정' }}</span>
                             </label>
@@ -279,22 +291,16 @@ export default {
             ];
         },
         availableUsers() {
-            const addedUserIds = this.permissionList
-                .filter(p => p.target_type === 'user')
-                .map(p => p.target_id);
-            return this.userList.filter(u => !addedUserIds.includes(u.id));
+            const addedUserIds = this.permissionList.filter((p) => p.target_type === 'user').map((p) => p.target_id);
+            return this.userList.filter((u) => !addedUserIds.includes(u.id));
         },
         availableOrganizations() {
-            const addedOrgIds = this.permissionList
-                .filter(p => p.target_type === 'organization')
-                .map(p => p.target_id);
-            return this.organizationList.filter(o => !addedOrgIds.includes(o.id));
+            const addedOrgIds = this.permissionList.filter((p) => p.target_type === 'organization').map((p) => p.target_id);
+            return this.organizationList.filter((o) => !addedOrgIds.includes(o.id));
         },
         availableOrgGroups() {
-            const addedGroupIds = this.permissionList
-                .filter(p => p.target_type === 'org_group')
-                .map(p => p.target_id);
-            return this.orgGroupList.filter(g => !addedGroupIds.includes(g.id));
+            const addedGroupIds = this.permissionList.filter((p) => p.target_type === 'org_group').map((p) => p.target_id);
+            return this.orgGroupList.filter((g) => !addedGroupIds.includes(g.id));
         },
         hasMajorLevel() {
             return this.processHierarchy?.major !== null;
@@ -352,7 +358,7 @@ export default {
                 const permissions = await backend.getPermissionsByProcDef(this.procDef.id);
                 if (permissions && permissions.length > 0) {
                     this.originalPermissions = [...permissions];
-                    this.permissionList = permissions.map(p => ({
+                    this.permissionList = permissions.map((p) => ({
                         id: p.id,
                         target_type: p.target_type || 'user',
                         target_id: p.user_id || p.organization_id || p.org_group_id,
@@ -376,13 +382,13 @@ export default {
         },
         getTargetName(permission) {
             if (permission.target_type === 'user' || !permission.target_type) {
-                const user = this.userList.find(u => u.id === permission.user_id);
+                const user = this.userList.find((u) => u.id === permission.user_id);
                 return user ? `${user.username} (${user.email})` : permission.user_id;
             } else if (permission.target_type === 'organization') {
-                const org = this.organizationList.find(o => o.id === permission.organization_id);
+                const org = this.organizationList.find((o) => o.id === permission.organization_id);
                 return org?.name || permission.organization_id;
             } else if (permission.target_type === 'org_group') {
-                const group = this.orgGroupList.find(g => g.id === permission.org_group_id);
+                const group = this.orgGroupList.find((g) => g.id === permission.org_group_id);
                 return group?.name || permission.org_group_id;
             }
             return 'Unknown';
@@ -403,7 +409,7 @@ export default {
                     }
 
                     if (major.sub_proc_list) {
-                        const sub = major.sub_proc_list.find(s => s.id === this.procDef.id);
+                        const sub = major.sub_proc_list.find((s) => s.id === this.procDef.id);
                         if (sub) {
                             result.sub = sub;
                             result.major = major;
@@ -423,7 +429,7 @@ export default {
         },
         addUserPermission(userId) {
             if (!userId) return;
-            const user = this.userList.find(u => u.id === userId);
+            const user = this.userList.find((u) => u.id === userId);
             if (!user) return;
 
             this.permissionList.push({
@@ -440,7 +446,7 @@ export default {
         },
         addOrganizationPermission(orgId) {
             if (!orgId) return;
-            const org = this.organizationList.find(o => o.id === orgId);
+            const org = this.organizationList.find((o) => o.id === orgId);
             if (!org) return;
 
             this.permissionList.push({
@@ -457,7 +463,7 @@ export default {
         },
         addOrgGroupPermission(groupId) {
             if (!groupId) return;
-            const group = this.orgGroupList.find(g => g.id === groupId);
+            const group = this.orgGroupList.find((g) => g.id === groupId);
             if (!group) return;
 
             this.permissionList.push({
@@ -473,7 +479,7 @@ export default {
             this.selectedOrgGroup = null;
         },
         removePermission(item) {
-            const index = this.permissionList.findIndex(p => p.id === item.id);
+            const index = this.permissionList.findIndex((p) => p.id === item.id);
             if (index !== -1) {
                 this.permissionList.splice(index, 1);
             }
@@ -507,7 +513,7 @@ export default {
 
             for (const mega of this.processMap.mega_proc_list) {
                 if (!mega.major_proc_list) continue;
-                const matchingMajors = mega.major_proc_list.filter(m => m.domain === domain);
+                const matchingMajors = mega.major_proc_list.filter((m) => m.domain === domain);
                 if (matchingMajors.length > 0) {
                     domainProcesses.major_proc_list.push(...matchingMajors);
                 }
@@ -520,7 +526,7 @@ export default {
                 const procDefIds = this.getProcDefIds();
 
                 for (const original of this.originalPermissions) {
-                    const stillExists = this.permissionList.find(p => p.id === original.id);
+                    const stillExists = this.permissionList.find((p) => p.id === original.id);
                     if (!stillExists) {
                         await backend.deleteUserPermission({ match: { id: original.id } });
                     }
@@ -678,8 +684,13 @@ export default {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .close-btn {
@@ -867,7 +878,7 @@ export default {
 
 .slider:before {
     position: absolute;
-    content: "";
+    content: '';
     height: 20px;
     width: 20px;
     left: 3px;
@@ -1276,7 +1287,9 @@ export default {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Scrollbar */

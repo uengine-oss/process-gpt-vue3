@@ -12,7 +12,6 @@ import user8 from '@/assets/images/profile/user-8.jpg';
 import user9 from '@/assets/images/profile/user-9.jpg';
 import user10 from '@/assets/images/profile/user-10.jpg';
 
-
 // types
 export type KeyedObject = {
     [key: string]: string | number | KeyedObject | any;
@@ -127,6 +126,5 @@ const contacts: KeyedObject[] = [
 mock.onGet('/api/contacts').reply(() => {
     return [200, contacts];
 });
-
 
 export default contacts;

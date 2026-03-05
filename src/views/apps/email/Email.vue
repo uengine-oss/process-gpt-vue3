@@ -27,16 +27,10 @@ const breadcrumbs = ref([
 
     <v-card elevation="10" class="inside-left-sidebar">
         <AppBaseCard>
-            <template v-slot:leftpart>
-                test
-            </template>
-            <template v-slot:rightpart>
-                test
-            </template>
+            <template v-slot:leftpart> test </template>
+            <template v-slot:rightpart> test </template>
 
-            <template v-slot:mobileLeftContent>
-               test
-            </template>
+            <template v-slot:mobileLeftContent> test </template>
         </AppBaseCard>
     </v-card>
 </template>

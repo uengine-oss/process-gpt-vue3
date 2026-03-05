@@ -1,9 +1,9 @@
-import type { TablerIconComponent } from "vue-tabler-icons";
-type listPriceType={
+import type { TablerIconComponent } from 'vue-tabler-icons';
+type listPriceType = {
     icon: TablerIconComponent;
     iconcolor: string;
     listtitle: string;
-    status:boolean
+    status: boolean;
 };
 type pricingType = {
     caption: string;
@@ -13,6 +13,6 @@ type pricingType = {
     tagtext: boolean;
     price: number;
     yearlyprice: number;
-    list:listPriceType[];
+    list: listPriceType[];
 };
 export type { pricingType };

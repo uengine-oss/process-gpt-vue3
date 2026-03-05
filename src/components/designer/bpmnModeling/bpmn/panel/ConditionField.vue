@@ -9,7 +9,7 @@
                         :items="varItems"
                         variant="outlined"
                         density="comfortable"
-                        style="max-width: 120px;"
+                        style="max-width: 120px"
                     ></v-combobox>
 
                     <v-select
@@ -17,7 +17,7 @@
                         v-model="cond.condition"
                         :items="conditionList"
                         class="mx-1"
-                        style="max-width: 100px;"
+                        style="max-width: 100px"
                     ></v-select>
 
                     <v-combobox
@@ -26,14 +26,11 @@
                         :items="varItems"
                         variant="outlined"
                         density="comfortable"
-                        style="max-width: 120px;"
+                        style="max-width: 120px"
                     ></v-combobox>
 
                     <div class="mt-1">
-                        <v-btn icon variant="text"
-                            density="comfortable"
-                            class="ml-1"
-                        >
+                        <v-btn icon variant="text" density="comfortable" class="ml-1">
                             <v-icon>mdi-file-tree</v-icon>
                             <!-- <DotsVerticalIcon /> -->
                             <v-menu activator="parent">
@@ -44,38 +41,59 @@
                                 </v-list>
                             </v-menu>
                         </v-btn>
-                        <v-btn v-if="showSubAddCondition()" icon variant="text" @click="addCondition(idx)"
+                        <v-btn
+                            v-if="showSubAddCondition()"
+                            icon
+                            variant="text"
+                            @click="addCondition(idx)"
                             density="comfortable"
                             class="ml-1"
                         >
                             <v-icon>mdi-plus</v-icon>
                         </v-btn>
-                        <v-btn v-if="filteredCondition.length > 1" icon variant="text" @click="deleteCondition(cond, idx)"
-                            density="comfortable"    
+                        <v-btn
+                            v-if="filteredCondition.length > 1"
+                            icon
+                            variant="text"
+                            @click="deleteCondition(cond, idx)"
+                            density="comfortable"
                             class="ml-1"
                         >
                             <Icons :icon="'trash'" />
                         </v-btn>
                     </div>
                 </div>
-                <div v-else class="pa-3 border" style="border-radius:8px;">
+                <div v-else class="pa-3 border" style="border-radius: 8px">
                     <div class="d-flex">
                         <v-chip @click="changeConditionType(cond)" :color="getTypeColor(cond._type)" variant="flat">
                             {{ getTypeShortName(cond._type) }}
                         </v-chip>
-                       
-                        <v-btn v-if="showMainAddCondition(cond)" icon variant="text" class="ml-auto" @click="addCondition(idx)"
-                                    density="comfortable"
+
+                        <v-btn
+                            v-if="showMainAddCondition(cond)"
+                            icon
+                            variant="text"
+                            class="ml-auto"
+                            @click="addCondition(idx)"
+                            density="comfortable"
                         >
                             <v-icon>mdi-plus</v-icon>
                         </v-btn>
-                        <v-btn icon variant="text"  :class="showMainAddCondition(cond)? '': 'ml-auto'" @click="deleteCondition(cond, idx)"
+                        <v-btn
+                            icon
+                            variant="text"
+                            :class="showMainAddCondition(cond) ? '' : 'ml-auto'"
+                            @click="deleteCondition(cond, idx)"
                             density="comfortable"
                         >
                             <Icons :icon="'trash'" />
                         </v-btn>
                     </div>
-                    <ConditionField :rootCond="cond" :value="cond.conditionsVt ? cond.conditionsVt : cond.condition" @update:value="(val) => updateChild(cond, val)" />
+                    <ConditionField
+                        :rootCond="cond"
+                        :value="cond.conditionsVt ? cond.conditionsVt : cond.condition"
+                        @update:value="(val) => updateChild(cond, val)"
+                    />
                 </div>
             </template>
         </draggable>
@@ -98,7 +116,7 @@ export default {
             conditionList: ['==', '!=', '>', '>=', '<', '<='],
             menuList: ['AND', 'OR', 'NOT'],
             modeler: null,
-            updateKey: 0,
+            updateKey: 0
         };
     },
     watch: {
@@ -123,13 +141,13 @@ export default {
             };
         }
     },
-    computed:{
-        filteredCondition(){
+    computed: {
+        filteredCondition() {
             if (Array.isArray(this.condition)) {
-               return this.condition;
+                return this.condition;
             }
-            return [this.condition]
-        },
+            return [this.condition];
+        }
     },
     mounted() {
         const bpmnStore = useBpmnStore();
@@ -149,41 +167,40 @@ export default {
         });
     },
     methods: {
-        showSubAddCondition(){
-            if(this.rootCond && this.rootCond._type.includes('Not')) return false;
-            if(!Array.isArray(this.condition) && this.condition._type.includes('Evaluate')) return true
-            return false
+        showSubAddCondition() {
+            if (this.rootCond && this.rootCond._type.includes('Not')) return false;
+            if (!Array.isArray(this.condition) && this.condition._type.includes('Evaluate')) return true;
+            return false;
         },
-        showMainAddCondition(conf){
-            if(conf._type == 'org.uengine.kernel.Not') return false;
+        showMainAddCondition(conf) {
+            if (conf._type == 'org.uengine.kernel.Not') return false;
 
             return true;
         },
         updateChild(item, val) {
-            if(item._type == 'org.uengine.kernel.Not')
-            item.condition = val
+            if (item._type == 'org.uengine.kernel.Not') item.condition = val;
         },
-        changeConditionType(item){
-            if(item._type == 'org.uengine.kernel.And'){
+        changeConditionType(item) {
+            if (item._type == 'org.uengine.kernel.And') {
                 item._type = 'org.uengine.kernel.Or';
-            } else if(item._type == 'org.uengine.kernel.Or'){
+            } else if (item._type == 'org.uengine.kernel.Or') {
                 // item._type = 'org.uengine.kernel.Not';
-                if(item.conditionsVt.length > 1) {
+                if (item.conditionsVt.length > 1) {
                     // 조건이 여러개 일땐 NOT x -> AND 변경
-                    item._type = 'org.uengine.kernel.And'; 
+                    item._type = 'org.uengine.kernel.And';
                 } else {
-                    // 조건이 1개 일때만 
+                    // 조건이 1개 일때만
                     item.condition = {
                         _type: 'org.uengine.kernel.Evaluate',
                         key: '',
                         value: '',
                         condition: ''
-                    }
+                    };
                     delete item.conditionsVt;
                     item._type = 'org.uengine.kernel.Not';
                 }
-            } else if(item._type == 'org.uengine.kernel.Not'){
-                if(!item.conditionsVt) {
+            } else if (item._type == 'org.uengine.kernel.Not') {
+                if (!item.conditionsVt) {
                     item.conditionsVt = [];
                     item.conditionsVt.push(item.condition);
                 }
@@ -192,23 +209,23 @@ export default {
             }
         },
         getTypeColor(type) {
-            if(type.includes('And')) {
+            if (type.includes('And')) {
                 return 'primary';
-            } else if(type.includes('Or')) {
+            } else if (type.includes('Or')) {
                 return 'success';
-            } else if(type.includes('Not')) {
+            } else if (type.includes('Not')) {
                 return 'error';
             }
             return 'grey';
         },
         changeCondition(item, type) {
-            if(!type) return;
+            if (!type) return;
 
             const child = JSON.parse(JSON.stringify(item));
             if ('AND'.toLowerCase() == type.toLowerCase()) {
                 item._type = 'org.uengine.kernel.And';
 
-                if(!item.conditionsVt) {
+                if (!item.conditionsVt) {
                     item.conditionsVt = [];
                     item.conditionsVt.push(child);
                 }
@@ -220,14 +237,13 @@ export default {
                     condition: ''
                 });
 
-               
                 delete item.key;
                 delete item.value;
                 delete item.condition;
             } else if ('OR'.toLowerCase() == type.toLowerCase()) {
                 item._type = 'org.uengine.kernel.Or';
 
-                if(!item.conditionsVt) {
+                if (!item.conditionsVt) {
                     item.conditionsVt = [];
                     item.conditionsVt.push(child);
                 }
@@ -276,15 +292,15 @@ export default {
                     key: '',
                     value: '',
                     condition: ''
-                }
+                };
 
-                if(condition.conditionsVt){
+                if (condition.conditionsVt) {
                     condition.conditionsVt.push(child);
                 } else {
                     this.condition.push(child);
                 }
             } else {
-                let conf = this.getTypeShortName(this.condition._type)
+                let conf = this.getTypeShortName(this.condition._type);
                 conf = conf == 'Evaluate' ? 'AND' : conf;
                 this.changeCondition(this.condition, conf);
 
@@ -312,7 +328,7 @@ export default {
         getTypeShortName(type) {
             const parts = type.split('.');
             return parts[parts.length - 1];
-        },
+        }
     }
 };
 </script>

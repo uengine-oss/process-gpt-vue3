@@ -1,5 +1,6 @@
 <template>
-    <v-btn icon
+    <v-btn
+        icon
         v-if="globalIsMobile.value"
         v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
@@ -8,7 +9,7 @@
         size="40"
         color="primary"
     >
-        <Icons :icon="'list-bold-duotone'"/>
+        <Icons :icon="'list-bold-duotone'" />
     </v-btn>
     <v-badge
         v-if="notiCount > 0"
@@ -34,12 +35,15 @@
         expand-on-hover
         width="275"
     >
-        <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc" >
-            <Logo :style="logoPadding"/>
+        <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc">
+            <Logo :style="logoPadding" />
             <v-spacer></v-spacer>
             <v-tooltip v-if="!pal" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn icon variant="text" density="comfortable"
+                    <v-btn
+                        icon
+                        variant="text"
+                        density="comfortable"
                         v-bind="props"
                         class="text-medium-emphasis"
                         :to="'/definition-map'"
@@ -50,9 +54,7 @@
                 </template>
             </v-tooltip>
         </div>
-        <div class="pa-4 is-sidebar-mobile"
-            :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }"
-        >
+        <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
             <v-row class="ma-0 pa-0" align="center">
                 <Logo />
                 <v-spacer></v-spacer>
@@ -120,25 +122,17 @@
                             <v-tooltip location="bottom" :text="$t(item.title)">
                                 <template v-slot:activator="{ props }">
                                     <div class="sidebar-title-icon" @click="navigateTo(item.to)" v-bind="props">
-                                        <Icons
-                                            :icon="item.icon"
-                                            :size="14"
-                                            :color="'#808080'"
-                                            style="width: 14px; height: 14px;"
-                                        />
+                                        <Icons :icon="item.icon" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
                                     </div>
                                 </template>
                             </v-tooltip>
                         </div>
                     </div>
-                    <ProcessInstanceList
-                        @update:instanceLists="handleInstanceListUpdate" 
-                    />
+                    <ProcessInstanceList @update:instanceLists="handleInstanceListUpdate" />
 
                     <!-- 대화목록 -->
                     <ChatList v-if="!gs" />
                 </v-col>
-
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
                 <div v-if="mode !== 'uEngine'" class="mb-4">
@@ -151,12 +145,7 @@
                                 <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
                                     <template v-slot:activator="{ props }">
                                         <div class="sidebar-title-icon" v-bind="props" @click="navigateTo(item.to)">
-                                            <Icons
-                                                :icon="item.icon"
-                                                :size="14"
-                                                :color="'#808080'"
-                                                style="width: 14px; height: 14px;"
-                                            />
+                                            <Icons :icon="item.icon" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
                                         </div>
                                     </template>
                                 </v-tooltip>
@@ -193,16 +182,11 @@
                 <!-- 유저 목록 -->
                 <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
                     <div class="d-flex align-center ml-2">
-                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0">
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
                         </div>
                         <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
-                            <Icons
-                                :icon="'search'"
-                                :size="14"
-                                :color="'#808080'"
-                                style="width: 14px; height: 14px;"
-                            />
+                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
                         </div>
                     </div>
                     <v-col class="pa-0">
@@ -213,7 +197,7 @@
                 <!-- 스킬 타이틀 + 목록 -->
                 <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
-                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.skills') }}
                         </div>
                         <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
@@ -225,13 +209,13 @@
                         </v-tooltip>
                     </v-row>
                     <v-col class="pa-0">
-                        <SkillList/>
+                        <SkillList />
                     </v-col>
                 </div>
 
                 <!-- Analytics 타이틀 + 목록 -->
                 <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
-                    <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('VerticalSidebar.analytics') }}
                     </div>
                     <v-col class="pa-0">
@@ -258,37 +242,34 @@
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
                         <div v-if="item.header && !item.disable" class="d-flex align-center mt-3 ml-2">
-                            <div v-if="index === 0"
-                                style="font-size:14px;"
-                                class="text-medium-emphasis cp-menu flex-shrink-0 mr-1"
-                            >{{ $t(item.header) }}</div>
-                        <v-row
-                            class="pa-0 ma-0 flex-nowrap" 
-                        >
-                            <template v-for="subItem in definitionItem" :key="subItem.title">
-                                <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-if="!subItem.header && !subItem.disable"
-                                            @click="navigateTo(subItem.to)"
-                                            v-bind="props"
-                                            icon
-                                            variant="text"
-                                            class="text-medium-emphasis cp-menu"
-                                            density="comfortable"
-                                        >
-                                            <!-- 룰 정의 버튼은 bpmn-io(bpmn-font) 아이콘 사용 -->
-                                            <span
-                                                v-if="subItem.type === 'rule'"
-                                                class="bpmn-icon-business-rule bpmn-sidebar-icon"
-                                                aria-hidden="true"
-                                            />
-                                            <Icons v-else :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />   
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                            </template>
-                        </v-row>
+                            <div v-if="index === 0" style="font-size: 14px" class="text-medium-emphasis cp-menu flex-shrink-0 mr-1">
+                                {{ $t(item.header) }}
+                            </div>
+                            <v-row class="pa-0 ma-0 flex-nowrap">
+                                <template v-for="subItem in definitionItem" :key="subItem.title">
+                                    <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-if="!subItem.header && !subItem.disable"
+                                                @click="navigateTo(subItem.to)"
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis cp-menu"
+                                                density="comfortable"
+                                            >
+                                                <!-- 룰 정의 버튼은 bpmn-io(bpmn-font) 아이콘 사용 -->
+                                                <span
+                                                    v-if="subItem.type === 'rule'"
+                                                    class="bpmn-icon-business-rule bpmn-sidebar-icon"
+                                                    aria-hidden="true"
+                                                />
+                                                <Icons v-else :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                </template>
+                            </v-row>
                         </div>
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
@@ -322,18 +303,18 @@
                                             <v-icon icon="mdi-dots-vertical" size="20" />
                                         </v-btn>
                                     </template>
-                                <v-list density="compact" min-width="160">
-                                    <v-list-item
-                                        v-for="dropItem in processSectionDropdownItems"
-                                        :key="dropItem.title"
-                                        @click="handleProcessSectionClick(dropItem)"
-                                    >
-                                        <template v-slot:prepend>
-                                            <Icons :icon="dropItem.icon" :size="18" class="mr-2" />
-                                        </template>
-                                        <v-list-item-title>{{ $t(dropItem.title) }}</v-list-item-title>
-                                    </v-list-item>
-                                </v-list>
+                                    <v-list density="compact" min-width="160">
+                                        <v-list-item
+                                            v-for="dropItem in processSectionDropdownItems"
+                                            :key="dropItem.title"
+                                            @click="handleProcessSectionClick(dropItem)"
+                                        >
+                                            <template v-slot:prepend>
+                                                <Icons :icon="dropItem.icon" :size="18" class="mr-2" />
+                                            </template>
+                                            <v-list-item-title>{{ $t(dropItem.title) }}</v-list-item-title>
+                                        </v-list-item>
+                                    </v-list>
                                 </v-menu>
                             </div>
                         </template>
@@ -598,10 +579,11 @@ export default {
                     );
                 }
                 if (this.pal) {
-                    this.definitionItem = this.definitionItem.filter((item) => 
-                        item.title !== 'uiDefinition.title' && 
-                        item.title !== 'definitionManagement.defaultForm' &&
-                        item.title !== 'systemDefinition.title'
+                    this.definitionItem = this.definitionItem.filter(
+                        (item) =>
+                            item.title !== 'uiDefinition.title' &&
+                            item.title !== 'definitionManagement.defaultForm' &&
+                            item.title !== 'systemDefinition.title'
                     );
                 }
                 this.getDefinitionList();
@@ -655,32 +637,37 @@ export default {
                     to: '/version-comparison',
                     disable: false
                 },
-                ...(this.pal ? [] : [
-                    {
-                        title: 'reviewBoard.title',
-                        icon: 'submit-document',
-                        BgColor: 'primary',
-                        to: '/review-board',
-                        disable: false
-                    },
-                    {
-                        title: 'reviewBoard.myInbox',
-                        icon: 'submit-document',
-                        BgColor: 'primary',
-                        to: '/my-inbox',
-                        disable: false
-                    }
-                ])
+                ...(this.pal
+                    ? []
+                    : [
+                          {
+                              title: 'reviewBoard.title',
+                              icon: 'submit-document',
+                              BgColor: 'primary',
+                              to: '/review-board',
+                              disable: false
+                          },
+                          {
+                              title: 'reviewBoard.myInbox',
+                              icon: 'submit-document',
+                              BgColor: 'primary',
+                              to: '/my-inbox',
+                              disable: false
+                          }
+                      ])
             ];
 
             // 프로세스 섹션: 프로세스 정의(메인 행) + 옆 작은 버튼으로 드롭다운
             this.processSectionListItems = [
                 { title: 'definitionManagement.processDefinition', icon: 'flowchart', to: '/definitions/chat' }
             ];
-            this.processSectionDropdownItems = this.mode !== 'ProcessGPT' ? [
-                { title: 'definitionManagement.upload', icon: 'upload', action: 'upload' },
-                { title: 'definitionManagement.release', icon: 'download', action: 'openDownloadDialog' }
-            ] : [];
+            this.processSectionDropdownItems =
+                this.mode !== 'ProcessGPT'
+                    ? [
+                          { title: 'definitionManagement.upload', icon: 'upload', action: 'upload' },
+                          { title: 'definitionManagement.release', icon: 'download', action: 'openDownloadDialog' }
+                      ]
+                    : [];
 
             // Analytics 메뉴
             this.analyticsItem = [
@@ -726,15 +713,17 @@ export default {
                     to: '/analytics/query',
                     disable: false
                 },
-                ...(this.pal ? [] : [
-                    {
-                        title: 'analytics.heatmap',
-                        icon: 'ibm-process-mining',
-                        BgColor: 'primary',
-                        to: '/analytics/heatmap',
-                        disable: false
-                    }
-                ]),
+                ...(this.pal
+                    ? []
+                    : [
+                          {
+                              title: 'analytics.heatmap',
+                              icon: 'ibm-process-mining',
+                              BgColor: 'primary',
+                              to: '/analytics/heatmap',
+                              disable: false
+                          }
+                      ])
             ];
 
             // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
@@ -847,7 +836,9 @@ export default {
                             obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
                         } else if (el.name.split('.')[1] == 'rule') {
                             // rule은 path에 prefix(ex: businessRules/<id>.rule)가 붙을 수 있어 마지막 파일명 기준으로 ruleId만 사용
-                            const fileBase = String(el.path || '').split('/').pop();
+                            const fileBase = String(el.path || '')
+                                .split('/')
+                                .pop();
                             const ruleId = String(fileBase || '').split('.')[0];
                             obj.to = `/business-rule/${ruleId}`;
                         } else {
@@ -903,7 +894,9 @@ export default {
                                 };
                                 menu.children.push(obj);
                             } else if (item.path && item.path.includes('.rule')) {
-                                const fileBase = String(item.path || '').split('/').pop();
+                                const fileBase = String(item.path || '')
+                                    .split('/')
+                                    .pop();
                                 const ruleId = String(fileBase || '').split('.')[0];
                                 obj = {
                                     title: item.name,
@@ -963,7 +956,9 @@ export default {
                                 };
                                 deletedMenu.children.push(obj);
                             } else if (item.path && item.path.includes('.rule')) {
-                                const fileBase = String(item.path || '').split('/').pop();
+                                const fileBase = String(item.path || '')
+                                    .split('/')
+                                    .pop();
                                 const ruleId = String(fileBase || '').split('.')[0];
                                 obj = {
                                     title: item.name,
