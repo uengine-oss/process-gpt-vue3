@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytic-deployment
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: analytic
+  template:
+    metadata:
+      labels:
+        app: analytic
+    spec:
+      containers:
+      - name: analytic
+        image: ghcr.io/uengine-oss/process-gpt-analytic:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+        env:
+        # Database connection
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_NAME
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: DB_PASSWORD
+        # ETL configuration
+        - name: ETL_AUTO_START
+          value: "true"
+        - name: ETL_INTERVAL_SECONDS
+          value: "60"
+        # OpenAI for Text2SQL (optional)
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: OPENAI_API_KEY
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytic-service
+spec:
+  selector:
+    app: analytic
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000

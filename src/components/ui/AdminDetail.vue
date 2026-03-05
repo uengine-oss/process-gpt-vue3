@@ -72,9 +72,61 @@
                     style="height:69vh;
                     overflow: auto;"
                 >
+                    <!-- Back To Here 확인 다이얼로그 -->
+                    <v-dialog
+                        v-model="backToHereDialog"
+                        :fullscreen="isMobile"
+                        width="90vw"
+                        max-width="480px"
+                        persistent
+                    >
+                        <v-card class="pa-4">
+                            <v-card-title class="pa-0 d-flex align-center">
+                                되돌리기 (Back To Here)
+                                <v-spacer></v-spacer>
+                                <v-btn icon variant="text" density="compact" @click="closeBackToHereDialog">
+                                    <v-icon>mdi-close</v-icon>
+                                </v-btn>
+                            </v-card-title>
+                            <v-card-text class="pa-0 pt-4">
+                                <v-alert
+                                    v-if="backToHereError"
+                                    type="error"
+                                    variant="tonal"
+                                    density="compact"
+                                    class="mb-4"
+                                    closable
+                                >
+                                    {{ backToHereError }}
+                                </v-alert>
+                                <p class="text-body-2 mb-2">
+                                    선택한 활동으로 인스턴스를 되돌리시겠습니까?
+                                </p>
+                                <p v-if="backToHerePendingItem" class="text-caption text-medium-emphasis">
+                                    {{ backToHerePendingItem.title || backToHerePendingItem.taskId || '-' }}
+                                </p>
+                            </v-card-text>
+                            <v-card-actions class="pa-0 pt-4">
+                                <v-spacer></v-spacer>
+                                <v-btn variant="text" @click="closeBackToHereDialog">취소</v-btn>
+                                <v-btn
+                                    color="primary"
+                                    :loading="backToHereLoading"
+                                    :disabled="backToHereLoading"
+                                    @click="confirmBackToHere"
+                                >
+                                    되돌리기
+                                </v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-dialog>
+
                     <v-tabs v-model="tab" color="primary">
                         <v-tab>{{ $t('adminDetail.processVariables') }}</v-tab>
                         <v-tab>{{ $t('adminDetail.properties') }}</v-tab>
+                        <v-tab>{{ $t('adminDetail.history') }}</v-tab>
+                        <v-tab>{{ $t('adminDetail.participants') }}</v-tab>
+                        
                     </v-tabs>
                     <v-window v-model="tab">
                         <v-window-item>
@@ -168,6 +220,61 @@
                                 </template>
                             </v-data-table>
                         </v-window-item>
+                        <v-window-item>
+                            <div style="height: 62vh;">
+                                <InstanceHistory :instId="instanceId" :instance="instanceDetail">
+                                    <template #header>
+                                        <div></div>
+                                    </template>
+                                    <template #actions="{ item }">
+                                        <v-btn v-if="isBackToHereAllowedFor(item)" icon variant="text" density="comfortable" @click="openBackToHere(item)">
+                                            <v-icon>mdi-undo</v-icon>
+                                        </v-btn>
+                                    </template>
+                                </InstanceHistory>
+                            </div>
+                        </v-window-item>
+                        <v-window-item>
+                            <div class="pa-4">
+                                <v-text-field
+                                    v-model="participantSearch"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    clearable
+                                    :label="$t('adminDetail.participantsSearch')"
+                                />
+                                <v-alert
+                                    v-if="!filteredRoles.length"
+                                    type="info"
+                                    variant="tonal"
+                                    density="compact"
+                                    class="mt-3"
+                                >
+                                    {{ $t('adminDetail.noParticipants') }}
+                                </v-alert>
+                                <v-data-table
+                                    v-else
+                                    :items="filteredRoles"
+                                    :headers="participantHeaders"
+                                    item-value="name"
+                                    :items-per-page="-1"
+                                    hide-default-footer
+                                    density="compact"
+                                    class="elevation-1 custom-table mt-3"
+                                >
+                                    <template v-slot:[`item.name`]="{ item }">
+                                        <span>{{ item.name }}</span>
+                                    </template>
+                                    <template v-slot:[`item.endpoint`]="{ item }">
+                                        <span style="white-space: pre-wrap;">{{ item.endpoint || '-' }}</span>
+                                    </template>
+                                    <template v-slot:[`item.resourceName`]="{ item }">
+                                        <span style="white-space: pre-wrap;">{{ item.resourceName || '-' }}</span>
+                                    </template>
+                                </v-data-table>
+                            </div>
+                        </v-window-item>
                     </v-window>
 
                     <v-dialog v-model="rollbackDialog"
@@ -206,16 +313,18 @@ const backend = BackendFactory.createBackend();
 import BpmnUengine from '@/components/BpmnUengineViewer.vue';
 import customBpmnModule from '@/components/customBpmn';
 import { VDataTable } from 'vuetify/components/VDataTable';
+import InstanceHistory from '@/components/ui/InstanceHistory.vue';
 export default {
     name: 'admin-detail',
     components: {
         BpmnUengine,
-        VDataTable
+        VDataTable,
+        InstanceHistory
     },
     data: () => ({
         instanceId: null,
         instanceDetail: null,
-        tab: null,
+        tab: 0,
         processDefinition: null,
         processVariables: [],
         properties: [],
@@ -231,7 +340,15 @@ export default {
         selectedExecutionScope: null,
         taskStatus:{},
         rollbackDialog: false,
-        rollbackElement: null
+        rollbackElement: null,
+        participantHeaders: [],
+        participantSearch: '',
+
+        // back to here
+        backToHereDialog: false,
+        backToHerePendingItem: null,
+        backToHereError: null,
+        backToHereLoading: false
     }),
     async created() {
         await this.init();
@@ -255,13 +372,60 @@ export default {
                 key: 'save',
             },
         ];
+
+        this.participantHeaders = [
+            { title: this.$t('adminDetail.role'), key: 'name', sortable: true, width: 160 },
+            { title: this.$t('adminDetail.endpoint'), key: 'endpoint', sortable: true },
+            { title: this.$t('adminDetail.resourceName'), key: 'resourceName', sortable: true }
+        ];
     },
     computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
+        /**
+         * "현재 인스턴스가 진행중" 조건
+         * - 가능하면 instanceDetail.status 로 판정
+         * - 없으면 종료일/완료 여부로 폴백
+         */
+        isInstanceInProgress() {
+            if (this.instanceDetail && this.instanceDetail.status != null) {
+                const s = String(this.instanceDetail.status).toUpperCase();
+                return (
+                    s.includes('RUN') ||
+                    s === 'IN_PROGRESS' ||
+                    s === 'NEW' ||
+                    s === 'ACTIVE'
+                );
+            }
+            // finishedDate가 있으면 완료로 간주
+            if (this.instanceDetail && (this.instanceDetail.finishedDate || this.instanceDetail.endDate)) return false;
+            return !!this.instanceId;
+        },
+        showBackToHereButton() {
+            return !!this.instanceId && this.isInstanceInProgress;
+        },
+        instanceForBackToHere() {
+            if (this.instanceDetail) return this.instanceDetail;
+            if (!this.instanceId) return null;
+            return { instId: this.instanceId, name: '' };
+        },
         rollbackElementName(){
             if(this.rollbackElement){
                 return this.rollbackElement.businessObject ? this.rollbackElement.businessObject.name : '';
             }
             return null;
+        },
+        filteredRoles() {
+            const q = String(this.participantSearch || '').trim().toLowerCase();
+            if (!q) return this.roles || [];
+            return (this.roles || []).filter((r) => {
+                return (
+                    String(r?.name || '').toLowerCase().includes(q) ||
+                    String(r?.endpoint || '').toLowerCase().includes(q) ||
+                    String(r?.resourceName || '').toLowerCase().includes(q)
+                );
+            });
         }
     },
     watch: {
@@ -276,6 +440,82 @@ export default {
         }
     },
     methods: {
+        isBackToHereAllowedFor(item) {
+            if(!item) return false;
+            if(!item.raw) return false;
+            if(!item.raw.task) return false;
+            if(item.raw.task.actType) return false;
+
+            return item?.status === 'COMPLETED';
+        },
+        openBackToHere(item) {
+            const tracingTag = item?.raw?.tracingTag ?? item?.raw?.taskId ?? item?.taskId;
+            if (!tracingTag) return;
+            this.backToHerePendingItem = item;
+            this.backToHereError = null;
+            this.backToHereDialog = true;
+        },
+        closeBackToHereDialog() {
+            this.backToHereDialog = false;
+            this.backToHerePendingItem = null;
+            this.backToHereError = null;
+        },
+        async confirmBackToHere() {
+            const item = this.backToHerePendingItem;
+            if (!item) return;
+            const tracingTag = item?.raw?.tracingTag ?? item?.raw?.taskId ?? item?.taskId;
+            if (!tracingTag) {
+                this.backToHereError = 'instanceId/tracingTag가 없습니다.';
+                return;
+            }
+            this.backToHereError = null;
+            this.backToHereLoading = true;
+            try {
+                await backend.backToHere(this.instanceId, tracingTag);
+                this.closeBackToHereDialog();
+                await this.init();
+                window.$app_.snackbarMessage = '선택한 위치로 되돌렸습니다.';
+                window.$app_.snackbarColor = 'success';
+                window.$app_.snackbar = true;
+                window.$app_.snackbarSuccessStatus = true;
+                window.$app_.clickCount = 0;
+            } catch (e) {
+                let errorMessage = 'Back To Here 실행에 실패했습니다.';
+                if (e.response?.data?.message) {
+                    errorMessage = e.response.data.message;
+                } else if (e.message) {
+                    errorMessage = e.message;
+                }
+                this.backToHereError = errorMessage;
+            } finally {
+                this.backToHereLoading = false;
+            }
+        },
+        handleRequestBackToHere(payload) {
+            const me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    if (!payload || !payload.instanceId || !payload.tracingTag) {
+                        throw new Error('instanceId/tracingTag가 없습니다.');
+                    }
+                    me.backToHereLoading = true;
+                    await backend.backToHere(payload.instanceId, payload.tracingTag);
+                    await me.init();
+                },
+                successMsg: '선택한 위치로 되돌렸습니다.',
+                onFail: (e) => {
+                    let errorMessage = 'Back To Here 실행에 실패했습니다.';
+                    if (e.response?.data?.message) errorMessage = e.response.data.message;
+                    else if (e.message) errorMessage = e.message;
+                    me.backToHereError = errorMessage;
+                    me.backToHereDialog = true;
+                },
+                finalAction: () => {
+                    me.backToHereLoading = false;
+                }
+            });
+        },
         formatJsonValue(value) {
             try {
                 const parsed = JSON.parse(value);

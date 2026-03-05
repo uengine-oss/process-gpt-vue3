@@ -7,8 +7,15 @@
             >
                 <!-- 데스크톱: 기존 탭 -->
                 <div v-if="!isMobile">
-                    <v-row class="ma-0 pa-0 align-center">
-                        <v-tabs v-model="tab" bg-color="transparent" min-height="70" height="70" color="default">
+                    <v-row class="ma-0 pa-0 align-center account-settings-header-row">
+                        <v-tabs
+                            v-model="tab"
+                            bg-color="transparent"
+                            min-height="70"
+                            height="70"
+                            color="default"
+                            show-arrows
+                        >
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
                                 <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
@@ -47,11 +54,7 @@
                             class="language-chip-select-wrapper"
                             style="margin-right: 16px;"
                             color="gray"
-                        >
                             <v-select
-                                v-model="selectedLanguage"
-                                :items="languageOptions"
-                                item-title="displayLabel"
                                 item-value="value"
                                 @update:model-value="changeLanguage"
                                 variant="plain"
@@ -202,63 +205,75 @@
                 <v-divider></v-divider>
                 <v-card-text class="pa-0">
                     <v-window v-model="tab">
+                        <!-- Account: 계정 설정 탭 (accountTab.accountSetting) -->
                         <v-window-item value="Account">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <AccountTab />
                             </div>
                         </v-window-item>
+                        
+                        <!-- ManageAccess: 사용자 관리 탭 (accountTab.manageAccess) -->
                         <v-window-item value="ManageAccess">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <ManageAccessTab :editable="superAdmin" />
                             </div>
                         </v-window-item>
-                        <v-window-item value="Drive">
+                        
+                        <!-- Drive: 구글 드라이브 설정 탭 (accountTab.drive) -->
+                        <v-window-item v-if="!isUEngineMode" value="Drive">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <DriveTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="ConnectionInfo">
+                        
+                        <!-- ConnectionInfo: 데이터소스 탭 (accountTab.dataSource) -->
+                        <v-window-item v-if="!isUEngineMode" value="ConnectionInfo">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <ConnectionInfoTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="MCP-Servers">
+                        
+                        <!-- MCP-Servers: MCP 서버 탭 (accountTab.mcpServers) -->
+                        <v-window-item v-if="!isUEngineMode" value="MCP-Servers">
                             <div>
                                 <MCPServerTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="MCP-Environments">
+                        
+                        <!-- MCP-Environments: 환경변수 탭 (accountTab.environments) -->
+                        <v-window-item v-if="!isUEngineMode" value="MCP-Environments">
                             <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <MCPEnvSecretTab />
                             </div>
                         </v-window-item>
-                        <v-window-item value="Skills">
-                            <div
+                        <!-- Skills: 스킬 탭 (accountTab.skills) -->
+                        <!-- <v-window-item v-if="!isUEngineMode" value="Skills">
+                            <div 
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <SkillsTab />
                             </div>
-                        </v-window-item>
-                        <v-window-item value="TaskCatalog">
+                        </v-window-item> -->
+                        <v-window-item v-if="!isUEngineMode" value="TaskCatalog">
                             <div
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <TaskCatalogAdmin />
                             </div>
@@ -266,7 +281,7 @@
                         <v-window-item value="OrgChartGroup">
                             <div
                                 style="overflow: auto;"
-                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
                                 <OrgChartGroupTab />
                             </div>
@@ -341,7 +356,7 @@ export default {
                 { value: 'ManageAccess', label: 'Manage Access' },
                 { value: 'Drive', label: 'Drive' },
                 { value: 'MCP', label: 'MCP Servers' },
-                { value: 'Skills', label: 'Skills' },
+                // { value: 'Skills', label: 'Skills' },
                 { value: 'ConnectionInfo', label: 'Connection Info' }
             ],
             admin: localStorage.getItem('isAdmin') === 'true',
@@ -354,8 +369,16 @@ export default {
     },
     mounted() {
         // this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
+        // 초기 탭이 비어있거나(uEngine 모드에서 숨긴 탭으로 들어온 경우 포함) 안전하게 Account로 보정
+        this.ensureVisibleTab();
     },
     computed: {
+        isUEngineMode() {
+            return window.$mode === 'uEngine';
+        },
+        gs() {
+            return window.$gs;
+        },
         isMobile() {
             return window.innerWidth <= 768;
         },
@@ -364,6 +387,19 @@ export default {
         }
     },
     methods: {
+        ensureVisibleTab() {
+            const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog']);
+            const hiddenInGs = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog', 'OrgChartGroup']);
+            if (!this.tab) {
+                this.tab = 'Account';
+                return;
+            }
+            if (this.gs && hiddenInGs.has(this.tab)) {
+                this.tab = 'Account';
+            } else if (this.isUEngineMode && hiddenInUEngine.has(this.tab)) {
+                this.tab = 'Account';
+            }
+        },
         goToTenantManage() {
             // ===== 로컬 테스트용 코드 시작 =====
             // 로컬호스트에서 테넌트 관리 페이지 테스트를 위한 코드
@@ -441,6 +477,20 @@ export default {
     height: 2px;
     background-color: transparent;
     transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.account-settings-header-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+}
+
+.settings-tenant-manage-btn {
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.language-chip-select-wrapper {
+    flex: 0 0 auto;
 }
 </style>
 

@@ -1,98 +1,92 @@
 <template>
-    <div class="w-100 h-100"
+    <div
         @drop="onDrop" 
         @dragover="onDragOver" 
         @dragleave="onDragLeave"
     >
-       <v-row class="ma-0 pa-0">
+        <div class="d-flex flex-column ga-2">
             <!-- 새 파일 추가 카드 -->
-            <v-col cols="12" 
-                :lg="isMobile || isStarted ? 12 : 4" 
-                :md="isMobile || isStarted ? 12 : 6" 
-                :sm="isMobile || isStarted ? 12 : 6" 
-                class="pa-2"
+            <v-card 
+                class="add-file-card d-flex align-center justify-center text-gray"
+                :class="{ 'drag-over': isDragOver }"
+                elevation="2"
+                hover
+                @click="openFileDialog"
             >
-                <v-card 
-                    class="add-file-card d-flex align-center justify-center text-gray"
-                    :class="{ 'drag-over': isDragOver }"
-                    elevation="2"
-                    hover
-                    @click="openFileDialog"
-                >
-                    <div class="text-center">
-                        <v-icon size="48" color="grey" class="add-file-icon">mdi-plus</v-icon>
-                        <p class="text-body-1 text-grey add-file-text">{{ $t('InstanceSource.addFile') }}</p>
-                        <p class="text-caption text-grey-darken-1">{{ $t('InstanceSource.dragAndDrop') }}</p>
-                    </div>
-                </v-card>
-            </v-col>
-            <v-col
+                <div class="text-center">
+                    <v-icon size="48" color="grey" class="add-file-icon">mdi-plus</v-icon>
+                    <p class="text-body-1 text-grey add-file-text">{{ $t('InstanceSource.addFile') }}</p>
+                    <p class="text-caption text-grey-darken-1">{{ $t('InstanceSource.dragAndDrop') }}</p>
+                </div>
+            </v-card>
+
+            <!-- 첨부된 파일 카드 목록 -->
+            <v-card
                 v-for="(item, index) in sourceList"
                 :key="item.id || index"
-                cols="12"
-                :lg="isMobile || isStarted ? 12 : 4"
-                :md="isMobile || isStarted ? 12 : 6"
-                :sm="isMobile || isStarted ? 12 : 6"
-                class="pa-2"
+                class="source-card"
+                :class="{ 'error-border': item.isError }"
+                elevation="2"
+                hover
             >
-                <v-card
-                    class="source-card"
-                    :class="{ 'uploading-border': !item.isProcess, 'error-border': item.isError }"
-                    elevation="2"
-                    hover
-                >
-                    <v-card-title class="d-flex align-center justify-space-between pa-4 pb-2">
-                        <div class="d-flex align-center">
-                            <v-icon
-                                :icon="getFileIcon(item.type)"
-                                :color="getFileColor(item.type)"
-                                class="mr-3"
-                            ></v-icon>
-                            <span class="text-truncate">{{ item.name }}</span>
-                        </div>
-                        <v-menu>
-                            <template v-slot:activator="{ props }">
-                                <v-btn
-                                    icon="mdi-dots-vertical"
-                                    variant="text"
-                                    size="small"
-                                    v-bind="props"
-                                    :disabled="!item.isProcess && !item.isError"
-                                ></v-btn>
-                            </template>
-                            <v-list>
-                                <v-list-item
-                                    v-if="item.isProcess && !item.isError"
-                                    prepend-icon="mdi-download"
-                                    title="다운로드"
-                                    @click="downloadFile(item)"
-                                ></v-list-item>
-                                <v-list-item
-                                    prepend-icon="mdi-delete"
-                                    title="삭제"
-                                    @click="deleteFile(item)"
-                                    color="error"
-                                ></v-list-item>
-                            </v-list>
-                        </v-menu>
-                    </v-card-title>
-                    
-                    <v-card-text class="pa-4 pt-0">
-                        <div class="file-info">
-                            <div class="d-flex justify-end">
-                                <v-chip
-                                    :color="item.isProcess ? 'success' : item.isError ? 'error' : 'warning'"
-                                    size="small"
-                                    variant="tonal"
-                                >
-                                    {{ item.isProcess ? '업로드 완료' : item.isError ? '업로드 실패' : '업로드 중' }}
-                                </v-chip>
+                <!-- 업로드 중 로딩 표시 -->
+                <template v-if="!item.isProcess && !item.isError">
+                    <div class="source-loading-overlay">
+                        <div class="source-progress-container">
+                            <div class="source-file-name-uploading">{{ item.name }}</div>
+                            <v-progress-linear
+                                :model-value="item.uploadProgress || 0"
+                                color="primary"
+                                height="8"
+                                rounded
+                                class="mt-2 progress-wave-animation"
+                            ></v-progress-linear>
+                            <div class="d-flex justify-space-between align-center mt-1">
+                                <span class="text-primary text-caption">{{ $t('InstanceSource.uploading') }}</span>
+                                <span class="text-primary text-caption font-weight-bold">{{ item.uploadProgress || 0 }}%</span>
                             </div>
                         </div>
-                    </v-card-text>
-                </v-card>
-            </v-col>
-        </v-row>
+                    </div>
+                </template>
+
+                <template v-else>
+                    <!-- 상단: 파일명 + 상태 칩 -->
+                    <div class="d-flex align-start ga-2">
+                        <div class="source-file-name flex-grow-1">{{ item.name }}</div>
+                        <v-chip
+                            :color="item.isProcess ? 'success' : 'error'"
+                            size="x-small"
+                            variant="tonal"
+                        >
+                            {{ item.isProcess ? $t('InstanceSource.complete') : $t('InstanceSource.failed') }}
+                        </v-chip>
+                    </div>
+
+                    <v-spacer />
+
+                    <!-- 하단: 액션 버튼 -->
+                    <div class="d-flex justify-end">
+                        <v-btn
+                            variant="text"
+                            density="compact"
+                            icon
+                            @click="deleteFile(item)"
+                        >
+                            <v-icon size="16" color="error">mdi-delete-outline</v-icon>
+                        </v-btn>
+                        <v-btn style="padding-top:2px;"
+                            v-if="item.isProcess && !item.isError"
+                            variant="text"
+                            density="compact"
+                            icon
+                            @click="downloadFile(item)"
+                        >
+                            <v-icon size="16" color="primary">mdi-download</v-icon>
+                        </v-btn>
+                    </div>
+                </template>
+            </v-card>
+        </div>
 
         <!-- 파일 선택 다이얼로그 -->
         <input
@@ -232,7 +226,8 @@ export default {
                         path: '',
                         type: file.name.split('.').pop(),
                         isProcess: false,
-                        isError: false
+                        isError: false,
+                        uploadProgress: 0
                     };
                     this.sourceList.push(sourceItem);
                     const defId = me.instance && me.instance.defId ? me.instance.defId : me.processDefinitionId;
@@ -248,7 +243,16 @@ export default {
                         file_id: fileId
                     };
 
-                    const response = await backend.uploadFile(file.name, file, options);
+                    const onProgress = (percent) => {
+                        me.sourceList.forEach(item => {
+                            if (item.id === fileId) {
+                                // 업로드 진행률을 0~95%로 매핑 (서버 처리 대기 구간 확보)
+                                item.uploadProgress = Math.round(percent * 0.95);
+                            }
+                        });
+                    };
+
+                    const response = await backend.uploadFile(file.name, file, options, onProgress);
                     if (response.error) {
                         me.$try({
                             action: () => {
@@ -264,6 +268,13 @@ export default {
                             errorMsg: `${file.name} 파일 업로드에 실패했습니다. ${response.message}`
                         })
                     } else {
+                        // 서버 응답 완료 시 100%로 설정 후 완료 카드로 전환
+                        me.sourceList.forEach(item => {
+                            if (item.id === fileId) {
+                                item.uploadProgress = 100;
+                            }
+                        });
+                        await new Promise(resolve => setTimeout(resolve, 300));
                         me.$try({
                             action: () => {
                                 me.sourceList.forEach(item => {
@@ -399,31 +410,66 @@ export default {
 </script>
 
 <style scoped>
-.uploading-border {
-    border: 2px dashed #ff9800 !important;
-    border-radius: 8px;
-    position: relative;
-}
-
 .error-border {
     border: 2px solid #f44336 !important;
     border-radius: 8px;
-    position: relative;
 }
 
 .source-card {
-    transition: all 0.3s ease;
-    position: relative;
+    min-height: 90px;
+    min-width: 280px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
 }
 
 .source-card:hover {
     transform: translateY(-2px);
 }
 
+.source-loading-overlay {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+}
+
+.source-progress-container {
+    width: 100%;
+}
+
+.source-file-name-uploading {
+    font-size: 12px;
+    font-weight: 500;
+    word-break: break-all;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.source-file-name {
+    font-size: 12px;
+    font-weight: 500;
+    word-break: break-all;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .add-file-card {
-    min-height: 105px;
+    min-width: 280px;
+    padding: 12px;
     border: 2px dashed #9e9e9e;
-    border-radius: 12px;
+    border-radius: 8px;
     cursor: pointer;
 }
 
@@ -438,14 +484,6 @@ export default {
 
 .add-file-card:hover .add-file-text {
     color: rgb(var(--v-theme-primary)) !important;
-}
-
-.file-info {
-    font-size: 0.875rem;
-}
-
-.text-truncate {
-    max-width: 200px;
 }
 
 /* 드래그앤드롭 스타일 */

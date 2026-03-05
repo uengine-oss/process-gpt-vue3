@@ -16,147 +16,97 @@ export default class WorkAssistantGenerator extends AIGenerator {
 
         this.previousMessages = [{
             role: 'system', 
-            content: `너는 직무 관련 도움을 주는 도우미야. 대화를 듣고, 아래의 유형 중 하나에 해당할 때 개입하여 답변해야 해.
+            content: `너는 사용자의 의도를 파악하여 적절한 작업 유형을 분류하는 시스템이야. 
+사용자의 메시지를 분석하고, 다음 3가지 유형 중 하나로 분류하여 JSON 형식으로 답변해야 해.
+
 중요 정보:
-- 현재 날짜: ${this.timeStamp} (e.g., 2024-01-24 Wed)
-- 내일: 현재 날짜 기준 다음 날 (e.g., 2024-01-25 Thu)
-- 다음주 월요일: 오늘 이후로 가장 가까운 월요일 (e.g., 2024-01-29 Mon)
-- 현재 채팅방 정보: {{ 현재 채팅방 정보 }}
-- 전체 일정 데이터: {{ 전체 일정 데이터 }}
-- 전체 작업 목록: {{ 전체 작업 목록 }}
-- 전체 프로세스 정보: {{ 전체 프로세스 정보 }}
+전체 프로세스 정보: {{ 전체 프로세스 정보 }}
+현재 사용자 정보: {{ 사용자 정보 }}
+오늘 날짜: {{ 오늘 날짜 }}
 
-너가 생성할 수 있는 답변 유형은 다음과 같아: [스케줄 등록, 일정 조회, 프로세스 시작, 회사 문서 또는 정보 조회, 문서 생성, 할 일 목록 등록, 프로세스 정의, 프로세스 수정].
-다른 무엇보다 중요한 너의 목표는 대화를 통해 유저의 의도를 정확히 파악하고, 그에 맞는 적절한 "JSON 형식의 답변"을 생성하는 것이야.
-각 유형에 따라 필요한 정보가 다를 수 있으니, 대화 내용을 잘 파악해서 적절한 JSON 응답을 생성해야 해. 이 과정에서 중요 정보 섹션을 참고하여, 제공받은 날짜가 명확하지 않은 경우나 오늘, 내일 등의 추상적인 표현을 사용할 때는 현재 날짜를 기준으로 적절한 날짜로 변환하여 사용해야 해.
+너는 반드시 JSON 형식으로만 답변해야 하며, 다른 형식의 답변은 절대 금지야.
 
-유저간 대화 내용을 파악하고 특정 대화의 내용이 제공해준 작업 유형중 하나에 해당되고, 제공해준 전체 작업 목록 중 중복되는 작업이 없다고 판단되는 경우에 답변을 해야한다.
-유저의 요청 e.g. "휴가 일정 등록해줘" 을 보고 판단하는 것이 아니라 대화 내용을 보고 수행 가능한 작업을 추천해야한다.
-전체적인 대화를 보고 판단해야하며, 대화 내용이 프로세스로 정의가 가능할거같으면 프로세스 정의 생성 작업을 추천해야함.
+분류 가능한 작업 유형:
 
-만약 입력 받은 내용이 이미지만 있는 경우, "현재 채팅방 정보"와 "전체 대화 맥락" 을 파악하여 반드시 적정한 작업을 추천해야한다. e.g. "프로세스를 시작하고 싶으면 장애 내역 이미지를 올려주세요." 같은 내용이 대화에 있는 경우 "3. 프로세스 시작" 항목을 추천해야함. 최대한 스킵은 반환하지말것.
-
-너는 사용자가 원하는 작업이 어떤 종류인지 분류하는 역할을 하는 시스템이야. 제공한 json 형식 이외의 답변을 해선 안돼.
-
-사용자가 "우리 회사에 어떤 프로세스들이 존재하는지 알고싶다" 또는 "인스턴스 목록(작업 목록)이 알고싶다" 라고 한다면 "CompanyQuery" 항목으로 답변해야함.
-
-
-결과 생성 예시: 
-{ 
-    "work": "ScheduleRegistration", 
-    "title": "...",
-    ...
-}
-    
-각 'work' 유형에 따른 JSON 형식:
-
-1. 스케줄 등록: 대화 중 스케줄 등록에 관련된 내용이 있을 때,
-\`\`\`
+1. 프로세스 생성 (CreateProcessDefinition)
+   - 사용자가 새로운 프로세스를 만들거나 정의하고 싶어할 때
+   - 업무 프로세스, 워크플로우 등을 생성하고 싶다는 의도가 있을 때
+   - 예: "휴가 신청 프로세스 만들어줘", "장애 처리 프로세스 정의하고 싶어"
+\`\`\`json
 {
-    "work": "ScheduleRegistration",
-    "title": "스케줄 명칭",
-    "description": "스케줄 설명",
-    "startDateTime": "yyyy-mm-dd/hh:mm",
-    "endDateTime": "yyyy-mm-dd/hh:mm",
-    "location": "장소",
-    "messageForUser": "스케줄 명칭 + 일정 등록", // 날짜나 요약 정보등을 포함하여 해당 스케줄이 다른 스케줄과 구분될 수 있도록 생성해야함.
-    "participants": [
-        "현재 채팅방에 참가자들중 해당 일정에 참가한다고 판단되는 유저의 id" // 채팅방의 id로 세팅될 경우 시스템에 인식되지 않으며, 오류로 간주됨. 반드시 유저의 id 값들을 추가해야함.
-    ]
+    "work": "CreateProcessDefinition",
+    "messageForUser": "프로세스 정의 생성", // 생성하고자 하는 프로세스의 요약 정보를 포함
+    "userMessage": "사용자가 입력한 원본 메시지",
+    "summaryUserRequest": "사용자가 입력한 원본 메시지를 요약한 내용, 채팅방 이름으로 사용될 내용으로 어떤 요청에 대한 채팅방인지 한눈에 알아볼 수 있는 요약 내용"
 }
 \`\`\`
 
-2. 일정 조회: 일정에 대한 질문이 있을 때,
-\`\`\`
-{
-    "work": "ScheduleQuery",
-    "content": "사용자 질의내용",
-    "messageForUser": "요약된 일정 답변"
-}
-\`\`\`
-
-3. 프로세스 시작: 프로세스 시작 요청 혹은 실행에 관련된 대화 내용이 있을 때,
-\`\`\`
+2. 프로세스 실행 (StartProcessInstance)
+   - 사용자가 기존 프로세스를 시작하거나 실행하고 싶어할 때
+   - 전체 프로세스 정보에 존재하는 프로세스를 실행하려는 의도가 있을 때
+   - 예: "휴가 신청하고 싶어", "장애 처리 시작해줘"
+\`\`\`json
 {
     "work": "StartProcessInstance",
-    "title": "프로세스명",
-    "content": "프로세스명 + 프로세스 실행",
-    "process_definition_id": "시작할 프로세스 ID", // 전체 프로세스 정보에서 존재하는 id 값으로 생성되어야함.
-    "messageForUser": "프로세스명 + 프로세스 실행", // 프로세스에 대한 요약 정보등을 포함하여 시작하고자 하는 프로세스와 다른 프로세스가 구분될 수 있도록 생성해야함.
-    "prompt": "유저 요청 내용"
+    "process_definition_id": "시작할 프로세스 ID", // 전체 프로세스 정보에서 찾은 실제 ID, 제공받은 프로세스 목록중 사용자의 요구사항의 프로세스 명칭(name)을 보고 정확한 프로세스 id 를 찾아야함. 절대 임의로 생성하면 안됨. 존재하지 않는 프로세스 id 로 답변할 경우 실행이 불가능함.
+    "process_definition_name": "프로세스명", // 제공받은 프로세스 목록중 사용자의 요구사항의 프로세스 명칭(name)을 보고 정확한 프로세스 명칭을 찾아야함. 절대 임의로 생성하면 안됨. 존재하지 않는 프로세스 명칭으로 답변할 경우 실행이 불가능함.
+    "messageForUser": "프로세스 실행", // 프로세스명과 간단한 설명 포함
+    "userMessage": "사용자가 입력한 원본 메시지",
+    "summaryUserRequest": "사용자가 입력한 원본 메시지를 요약한 내용, 채팅방 이름으로 사용될 내용으로 어떤 요청에 대한 채팅방인지 한눈에 알아볼 수 있는 요약 내용"
 }
 \`\`\`
 
-4. 회사 문서 또는 정보 조회: 문서나 정보에 대한 질문이 있을 때,
-\`\`\`
+3. 회사 정보 조회 (CompanyQuery)
+   - 사용자가 회사 내 정보를 조회하고 싶어할 때
+   - 프로세스 목록, 인스턴스 실행 현황, 조직도 등에 대한 질문
+   - 예: "현재 실행중인 프로세스 알려줘", "우리 회사 조직도 보여줘", "어떤 프로세스들이 있어?"
+\`\`\`json
 {
     "work": "CompanyQuery",
-    "content": "질의 내용",
-    "messageForUser": "요청에 대한 요약된 생성 정보"
+    "queryType": "processes" | "instances" | "organization" | "general", // 조회 유형
+    "content": "사용자 질의내용",
+    "messageForUser": "질문에 대한 간단한 답변 또는 안내",
+    "summaryUserRequest": "사용자가 입력한 원본 메시지를 요약한 내용, 채팅방 이름으로 사용될 내용으로 어떤 요청에 대한 채팅방인지 한눈에 알아볼 수 있는 요약 내용"
 }
 \`\`\`
 
-5. 문서 생성: 문서 생성 요청이 있을 때,
-\`\`\`
-{
-    "work": "CreateAgent"
-}
-\`\`\`
-
-6. 할 일 목록 등록: 할 일 목록 등록에 대한 대화 내용이 있을 때,
-\`\`\`
-{
-    "work": "TodoListRegistration",
-    "status": "TODO",
-    "activity_id": "할일 명칭",
-    "description": "할일 설명",
-    "start_date": "yyyy-mm-dd/hh:mm",
-    "end_date": "yyyy-mm-dd/hh:mm",
-    "messageForUser": "요청에 대한 요약된 생성 정보 + 할 일 목록 추가", // 날짜나 요약 정보등을 포함하여 해당 할일이 다른 할일과 구분될 수 있도록 생성해야함.
-    "participants": [
-        "현재 채팅방에 참가자들중 해당 일정에 참가한다고 판단되는 유저의 email",
-    ]
-}
-\`\`\`
+중요 규칙:
+1. 사용자 메시지를 분석하여 가장 적합한 하나의 작업 유형으로 분류해야 해
+2. 프로세스 실행 시, 전체 프로세스 정보에서 실제 존재하는 프로세스 ID를 찾아서 사용해야 해
+3. 애매한 경우:
+   - "만들다", "생성하다", "정의하다" → CreateProcessDefinition
+   - "시작하다", "실행하다", "신청하다" → StartProcessInstance  
+   - "조회하다", "알려줘", "보여줘", "뭐가 있어?" → CompanyQuery
+4. 반드시 위의 JSON 형식을 준수해야 하며, 추가 설명은 하지 않아
 `
         }];
     }
-// 7. 프로세스 정의 생성: 대화내용으로 프로세스 정의 생성이 가능하다고 판단 될 때,
-// \`\`\`
-// {
-//     "work": "CreateProcessDefinition",
-//     "messageForUser": "프로세스 정의 생성" // 생성하고자하는 프로세스의 요약 정보등을 포함하여 해당 프로세스가 다른 프로세스와 구분될 수 있도록 생성해야함.
-// }
-// \`\`\`
-
-// 8. 프로세스 정의 수정: 제공해준 전체 프로세스 정보 목록 중 현재 생성하고자 하는 프로세스와 유사한 프로세스 정의가 이미 존재한다고 판단될 때,
-// \`\`\`
-// {
-//     "work": "ModifyProcessDefinition",
-//     "messageForUser": "기존에 존재하던 프로세스명칭 + 프로세스 정의 수정", // 수정하고자하는 프로세스의 요약 정보등을 포함하여 해당 프로세스가 다른 프로세스와 구분될 수 있도록 생성해야함.
-//     "processId": "수정될 프로세스 id" // 반드시 제공해준 전체 프로세스 정보 중에 존재하는 id 값으로 생성되어야함.
-// }
-// \`\`\`
 
     setContexts(contexts) {
         this.contexts = contexts;
-        // contexts.forEach(context => {
-        //     this.previousMessages[0].content += context + "\n\n";
-        // });
-        contexts.forEach(context => {
-            if(context.bpmn){
-                delete context.bpmn
-            }
+        // 간소화된 프로세스 목록 생성 (이름, ID, 설명만)
+        const simplifiedProcesses = contexts.map(context => ({
+            id: context.id,
+            name: context.name,
+            description: context.description || ''
+        }));
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 전체 프로세스 정보 }}`, JSON.stringify(simplifiedProcesses));
+    }
+
+    setUserInfo(userInfo) {
+        const userInfoStr = JSON.stringify({
+            id: userInfo.uid || userInfo.id,
+            name: userInfo.name,
+            email: userInfo.email,
+            department: userInfo.department || ''
         });
-        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 전체 프로세스 정보 }}`, JSON.stringify(contexts));
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 사용자 정보 }}`, userInfoStr);
     }
 
-    setChatRoomData(chatRoom) {
-        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 현재 채팅방 정보 }}`, JSON.stringify(chatRoom));
-    }
-
-    setCalendarData(calendar) {
-        this.previousMessages[0].content = this.previousMessages[0].content.replace('{{ 전체 일정 데이터 }}', JSON.stringify(calendar));
+    setToday() {
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} (${['일', '월', '화', '수', '목', '금', '토'][today.getDay()]}요일)`;
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 오늘 날짜 }}`, todayStr);
     }
 
     setWorkList(workList) {
@@ -164,23 +114,11 @@ export default class WorkAssistantGenerator extends AIGenerator {
     }
 
     createPrompt() {
-        // this.model = "gpt-3.5-turbo-16k"
         const lastMessage = this.previousMessages[this.previousMessages.length - 1];
         if (lastMessage.role === 'user') {
-            lastMessage.content = `${lastMessage.content}. 제공해준 JSON 형식으로 답변해.`;
+            lastMessage.content = `${lastMessage.content}. 반드시 위에서 제공한 JSON 형식으로만 답변해.`;
         }
         return this.client.newMessage;
     }
-
-    // uuid() {
-    //     function s4() {
-    //         return Math.floor((1 + Math.random()) * 0x10000)
-    //             .toString(16)
-    //             .substring(1);
-    //     }
-
-    //     return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    //         s4() + '-' + s4() + s4() + s4();
-    // }
 
 }

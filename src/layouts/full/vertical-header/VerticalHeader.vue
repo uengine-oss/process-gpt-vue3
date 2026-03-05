@@ -46,13 +46,13 @@ const sidebarItems = ref<SidebarItem[]>([
         isMobile: false,
         isVisible: true
     },
-    {
-        title: 'chats.title',
-        icon: 'chat-round-unread-line-duotone',
-        to: '/chats',
-        disable: false,
-        isVisible: window.$mode === 'ProcessGPT' && !window.$pal
-    },
+    // {
+    //     title: 'chats.title',
+    //     icon: 'chat-round-unread-line-duotone',
+    //     to: '/chats',
+    //     disable: false,
+    //     isVisible: window.$mode === 'ProcessGPT' && !window.$pal
+    // },
     {
         title: 'headerMenu.todoList',
         icon: 'overview',

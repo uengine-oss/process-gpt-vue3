@@ -1,6 +1,8 @@
 <script setup>
 // import Icond from '../Icon.vue';
 import { Icon } from '@iconify/vue';
+import { useRoute } from 'vue-router';
+
 const props = defineProps({
     item: Object,
     level: Number, 
@@ -9,11 +11,19 @@ const props = defineProps({
         default: true
     }
 });
+
+const route = useRoute();
+
+function isItemActive(item) {
+    if (!item || !item.to) return false;
+    const itemPath = typeof item.to === 'object' ? item.to.path : item.to;
+    return route.path === itemPath;
+}
 </script>
 
 <template>
     <!---Single Item-->
-    <div class="mb-1 item-hover">
+    <div class="mb-1 item-hover sidebar-list-hover-bg" :class="{ 'sidebar-list-hover-bg--active': isItemActive(item) }">
         <v-list-item  :to="item.type === 'external' ? '' : item.to" :href="item.type === 'external' ? item.to : ''" rounded
             :class="'  bg-hover-' + item.BgColor" :color="item.BgColor" :ripple="false" :disabled="item.disabled"
             :target="item.type === 'external' ? '_blank' : ''" v-scroll-to="{ el: '#top' }">
@@ -47,9 +57,4 @@ const props = defineProps({
 </template>
 
 <style scoped>
-.item-hover:hover {
-    border-radius: 8px;
-    background-color: #e3f2fd;
-    transform: translateX(2px);
-}
 </style>

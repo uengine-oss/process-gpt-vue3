@@ -14,7 +14,7 @@
                     density="compact"
                     style="background-color: #808080; color: white;"
                 >{{ $t('FormWorkItem.previousStep') }}</v-btn>
-                <v-btn v-if="!isDryRun" @click="saveTask" 
+                <v-btn v-if="!isDryRun && !gs" @click="saveTask" 
                     density="compact"
                     class="mr-2 default-gray-btn" rounded variant="flat"
                 >{{ $t('FormWorkItem.intermediateSave') }}</v-btn>
@@ -94,7 +94,7 @@
                                     <!-- 직접 입력 탭 -->
                                     <!-- <v-window-item value="direct-input"> -->
                                         <!-- 슬랏으로 버튼 추가 영역  -->
-                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem"></DynamicForm>
+                                        <DynamicForm v-if="html" ref="dynamicForm" :formHTML="html" v-model="formData" class="dynamic-form mb-4" :readonly="isCompleted || !isOwnWorkItem || isGeneratingExample"></DynamicForm>
                                         <!-- <div v-if="!isCompleted" class="mb-4">
                                             <v-checkbox v-if="html" v-model="useTextAudio" label="자유롭게 결과 입력" hide-details density="compact"></v-checkbox>
                                             <AudioTextarea v-model="newMessage" :workItem="workItem" :useTextAudio="useTextAudio" @close="close" />
@@ -129,7 +129,7 @@
                                 density="compact"
                                 style="background-color: #808080; color: white;"
                             >{{ $t('FormWorkItem.previousStep') }}</v-btn>
-                            <v-btn v-if="!isDryRun && isSimulate != 'true'"
+                            <v-btn v-if="!isDryRun && isSimulate != 'true' && !gs"
                                 @click="saveTask"
                                 class="mr-2  default-gray-btn"
                                 density="compact"
@@ -148,7 +148,8 @@
                                 rounded variant="flat"
                                 :disabled="isLoading"
                                 :loading="isLoading"
-                            >{{ $t('FormWorkItem.submitComplete') }}</v-btn>
+                            >{{ $t('FormWorkItem.submitComplete') }}
+                            </v-btn>
                         </v-row>
                     </div>
                 </v-card-text>
@@ -219,6 +220,10 @@ export default {
             default: "false"
         },
         isFinishedAgentGeneration: Boolean,
+        isGeneratingExample: {
+            type: Boolean,
+            default: false
+        },
         processDefinition: Object,
         isOwnWorkItem: Boolean,
         isInWorkItem: {
@@ -228,6 +233,14 @@ export default {
         activityIndex: {
             type: Number,
             default: 0
+        },
+        deployDefinitionId: {
+            type: String,
+            default: ''
+        },
+        deployVersion: {
+            type: String,
+            default: ''
         }
     },
     data: () => ({
@@ -255,6 +268,9 @@ export default {
         },
         mode() {
             return window.$mode;
+        },
+        gs() {
+            return window.$gs;
         },
         hasInputFields() {
             return this.inputFields && this.inputFields.length > 0
@@ -334,6 +350,39 @@ export default {
         await this.init();
     },
     methods: {
+        injectDeployTargetToBpmnField() {
+            if (!this.deployDefinitionId || !this.html) return;
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(this.html, 'text/html');
+                const nodes = Array.from(doc.querySelectorAll('bpmn-uengine-field'));
+                if (nodes.length === 0) return;
+                // 우선순위:
+                // 1) name="definition_id"
+                // 2) bpmn-uengine-field가 1개면 그 name
+                // 3) alias에 "요청"이 포함된 필드 (요청 프로세스 등)
+                let target = nodes.find(n => (n.getAttribute('name') || '') === 'definition_id');
+                if (!target && nodes.length === 1) target = nodes[0];
+                if (!target) {
+                    target = nodes.find(n => ((n.getAttribute('alias') || '') + '').includes('요청')) || nodes[0];
+                }
+                const fieldName = (target.getAttribute('name') || '').trim();
+                if (!fieldName) return;
+                const current = this.formData ? this.formData[fieldName] : undefined;
+                const existingBpmn =
+                    (current && typeof current === 'object' && (current.bpmn || current.xml)) ||
+                    (typeof current === 'string' ? current : undefined);
+                if (!this.formData) this.formData = {};
+                this.formData[fieldName] = {
+                    definition_id: this.deployDefinitionId,
+                    version: this.deployVersion || undefined,
+                    ...(existingBpmn ? { bpmn: existingBpmn } : {})
+                };
+            } catch (e) {
+                // eslint-disable-next-line no-console
+                console.warn('[FormWorkItem] injectDeployTargetToBpmnField failed:', e);
+            }
+        },
         async init() {
             var me = this;
             me.$try({
@@ -341,8 +390,16 @@ export default {
                 action: async () => {
                     // 안전한 formDefId 설정
                     try {
-                        const tool = me.workItem?.worklist?.tool;
-                        me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
+                        if(me.processDefinition 
+                        && me.processDefinition.processDefinitionId
+                        && me.workItem
+                        && me.workItem.activity
+                        && me.workItem.activity.tracingTag) {
+                            me.formDefId = `${me.processDefinition.processDefinitionId}_${me.workItem.activity.tracingTag.toLowerCase()}_form`;
+                        } else {
+                            const tool = me.workItem?.worklist?.tool;
+                            me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
+                        }
                     } catch (error) {
                         console.warn('formDefId 설정 중 오류:', error);
                         me.formDefId = null;
@@ -368,7 +425,7 @@ export default {
                             }
                         }
                         me.formInfo = await backend.getFormFields(me.formDefId);
-                        me.html = me.formInfo?.html;
+                        me.html = me.formInfo?.html || null;
                     }
                     if(!me.html) {
                         me.formDefId = 'defaultform'
@@ -393,6 +450,9 @@ export default {
                     } else {
                         await me.loadInputData()
                     }
+
+                    // 반영 요청 등에서, 대상 프로세스 정보를 폼 내 bpmn-uengine-field에 주입
+                    me.injectDeployTargetToBpmnField();
                     
                     me.isInitialized = true;
                 }
@@ -608,7 +668,11 @@ export default {
                 if(this.isSimulate == 'true') {
                     this.isLoading = false;
                 }
-                // 경고 메시지 표시
+                // 경고 메시지 표시 (스낵바)
+                this.$try({
+                    action: async () => {},
+                    warningMsg: this.$t('Checkpoints.checkBottomArea')
+                });
                 this.$refs.checkpoints.showWarning = true;
                 // 체크포인트 컴포넌트로 스크롤
                 this.$nextTick(() => {

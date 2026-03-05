@@ -35,9 +35,9 @@ export interface PropertySchema {
     visible_by_default?: boolean;
     config?: Record<string, any>;
     // Layout properties
-    row_index?: number;
-    col_span?: number;
-    section_name?: string;
+    row_index?: number;      // Row position (0-based, properties with same row_index appear on same row)
+    col_span?: number;       // Column span (1-12, Vuetify grid system)
+    section_name?: string;   // Section header name (properties with same section are grouped)
 }
 
 export interface PaletteSettings {

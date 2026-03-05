@@ -77,11 +77,12 @@
                 :messages="chatMessages"
                 :agentInfo="{ isRunning: isLoading, isConnection: false }"
                 :disableChat="isLoading"
-                type="chats"
                 :userInfo="{ name: '', email: '' }"
                 :chatRoomId="getTaskIdFromWorkItem()"
+                type="monitor"
                 @sendMessage="submitChat"
                 @stopMessage="stopTask"
+                @uploadedFile="handleUploadedFile"
             >
                 <template #custom-input-tools>
                     <div v-if="isGeneralAgent" class="simple-dropdown" @click="toggleDropdown" ref="dropdown">
@@ -167,6 +168,11 @@ export default {
         selectedAgentType: {
             type: String,
             default: null
+        },
+        // 자동 전송 메시지 (메인 채팅에서 전달)
+        autoMessage: {
+            type: String,
+            default: null
         }
     },
     data() {
@@ -209,6 +215,23 @@ export default {
                             { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.0.title' },
                             { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.1.title' },
                             { title: 'AgentSelectInfo.orchestration.crewaiDeepResearch.detailDesc.details.2.title' }
+                        ]
+                    }
+                },
+                { 
+                    titleKey: 'AgentSelectInfo.orchestration.deepResearchCustom.title',
+                    value: 'deep-research-custom', 
+                    label: this.$t('AgentSelectInfo.orchestration.deepResearchCustom.title'), 
+                    startLabel: 'Deep Research Custom', 
+                    icon: 'playoff',
+                    descKey: 'AgentSelectInfo.orchestration.deepResearchCustom.description',
+                    costKey: 'AgentSelectInfo.cost.medium',
+                    detailDesc: {
+                        title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.title',
+                        details: [
+                            { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.0.title' },
+                            { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.1.title' },
+                            { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.2.title' }
                         ]
                     }
                 },
@@ -450,7 +473,9 @@ export default {
         },
         isGeneralAgent() {
             if (this.selectedAgent) {
-                return this.selectedAgent.orchestration === 'crewai-action' || this.selectedAgent.orchestration === 'crewai-deep-research';
+                return this.selectedAgent.orchestration === 'crewai-action' ||
+                    this.selectedAgent.orchestration === 'crewai-deep-research' ||
+                    this.selectedAgent.orchestration === 'deep-research-custom';
             }
             return false;
         },
@@ -487,6 +512,14 @@ export default {
                         agentMode: newVal.worklist.agentMode.toLowerCase() || "none",
                         orchestration: newVal.worklist.orchestration || null
                     };
+                }
+                
+                // autoMessage가 있고 상태가 NEW이면 자동 전송
+                if (this.autoMessage && this.todoStatus && this.todoStatus.status === 'NEW') {
+                    this.$nextTick(() => {
+                        this.submitChat({ text: this.autoMessage });
+                        this.$emit('auto-message-sent');
+                    });
                 }
             },
         }
@@ -749,11 +782,21 @@ export default {
         // ========================================
         submitTask(task) {
             const original = task.outputRaw;
-            const payloadForSubmit = (task.crewType === 'text')
-                ? (task.content ?? this.resolvePrimaryValue(original, 'text'))
-                : original;
+            // 항상 원본 객체를 우선 사용해 폼 키를 유지, 없으면 content/primary로 대체
+            let payloadForSubmit = original;
+            if (!payloadForSubmit || typeof payloadForSubmit !== 'object' || Array.isArray(payloadForSubmit)) {
+                payloadForSubmit = task.content ?? this.resolvePrimaryValue(original, task.crewType || 'text');
+            }
             const normalized = this.normalizeFormValues(payloadForSubmit);
             // console.log('[AgentMonitor] submitTask!!', normalized);
+            
+            // 의도 분석 결과 감지 및 emit (work 필드가 있는 경우)
+            if (normalized && normalized.work) {
+                console.log('[AgentMonitor] 의도 분석 결과 감지:', normalized);
+                this.$emit('intent-detected', normalized);
+                this.EventBus.emit('agent-intent-result', normalized);
+            }
+            
             this.EventBus.emit('form-values-updated', normalized);
         },
 
@@ -866,6 +909,7 @@ export default {
         // 📡 실시간 구독 및 이벤트 처리
         // ========================================
         setupRealtimeSubscription(taskId) {
+            if (window.$mode === 'uEngine') return;
             try {
                 const validEventTypes = [
                     'task_started',
@@ -1117,6 +1161,7 @@ export default {
             }
         },
         async fetchTodoStatus() {
+            if (window.$mode === 'uEngine') return;
             var me = this;
             const taskId = this.validateTaskId();
             if (!taskId) return;
@@ -1124,7 +1169,7 @@ export default {
             try {
                 const { data, error } = await window.$supabase
                     .from('todolist')
-                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft')
+                    .select('status, agent_mode, draft_status, feedback, agent_orch, consumer, draft, query')
                     .eq('id', taskId)
                     .single();
 
@@ -1228,10 +1273,14 @@ export default {
 
             if (this.isActionsMode) {
                 if (this.todoStatus.status === 'NEW') {
+                    let query = content.text;
+                    if (this.todoStatus.query && this.todoStatus.query.trim() !== '') {
+                        query = this.todoStatus.query + '\n\n' + content.text;
+                    }
                     await this.backend.putWorkItem(taskId, {
                         status: 'IN_PROGRESS',
                         description: content.text,
-                        query: content.text,
+                        query: query,
                     });
                     this.isLoading = true;
                     this.chatMessages.push({ time: new Date().toISOString(), content: content.text });
@@ -1248,20 +1297,23 @@ export default {
                 const updatedFeedback = [...existingFeedback, { time: now, content: text }];
                 const agentOrch = this.selectedOrchestrationMethod || this.todoStatus.agent_orch;
 
-                await this.backend.putWorkItem(taskId, {
+                let putItem = {
                     feedback: updatedFeedback,
-                    draft_status: 'FB_REQUESTED',
-                    status: 'IN_PROGRESS',
-                    agent_orch: agentOrch
-                });
+                    agent_orch: agentOrch,
+                }
+
+                if (agentOrch == 'agent') {
+                    putItem['feedback_status'] = 'REQUESTED';
+                }
+
+                if (this.todoStatus.status != 'DONE') {
+                    putItem['draft_status'] = 'FB_REQUESTED';
+                }
+
+                await this.backend.putWorkItem(taskId, putItem);
 
                 // 상태 업데이트
-                Object.assign(this.todoStatus, {
-                    draft_status: 'FB_REQUESTED',
-                    status: 'IN_PROGRESS',
-                    agent_orch: agentOrch,
-                    feedback: updatedFeedback
-                });
+                Object.assign(this.todoStatus, putItem);
                 
                 this.isLoading = true;
                 this.chatMessages.push({ time: now, content: text });
@@ -1273,6 +1325,21 @@ export default {
                 });
             } catch (error) {
                 this.handleError(error, '채팅 전송 중 오류가 발생했습니다');
+            }
+        },
+        async handleUploadedFile(response) {
+            if (response && response.publicUrl) {
+                var me = this;
+                const taskId = this.validateTaskId();
+                if (!taskId) return;
+
+                const query = me.todoStatus.query;
+                const responseStr = JSON.stringify(response);
+                const newQuery = query ? `${query}\n\n[InputData]\n${responseStr}` : `[InputData]\n${responseStr}`;
+
+                await this.backend.putWorkItem(taskId, {
+                    query: newQuery
+                });
             }
         },
         // ========================================

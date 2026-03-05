@@ -4,7 +4,7 @@
  * 프로세스 실행 요약 통계 및 차트
  * BPM 표준 통계 포함: 부서별 Task 수량, 프로세스 성능, Agent vs Human 비교
  */
-import { onMounted, computed, ref, shallowRef } from 'vue'
+import { onMounted, computed, ref, shallowRef, getCurrentInstance } from 'vue'
 import { useOlapStore } from '@/stores/analytics/olapStore'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Filler } from 'chart.js'
 import { Doughnut, Line, Bar } from 'vue-chartjs'
@@ -18,10 +18,7 @@ const backend = BackendFactory.createBackend()
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Filler)
 
 const store = useOlapStore()
-const loading = ref(false)
-const syncing = ref(false)
-
-// Chart ready flags
+const { proxy } = getCurrentInstance()
 const chartsReady = ref(false)
 
 // Chart data - shallowRef 사용 (vue-chartjs 권장)
@@ -167,7 +164,7 @@ async function loadDepartmentTaskStats() {
       departmentTaskData.value = response.data
 
       // 차트 데이터 업데이트
-      const labels = response.data.map(d => d.department_name || '미지정')
+      const labels = response.data.map(d => d.department_name || proxy.$t('analyticsDashboard.unassigned'))
       const agentTasks = response.data.map(d => d.agent_tasks || 0)
       const humanTasks = response.data.map(d => d.human_tasks || 0)
 
@@ -175,13 +172,13 @@ async function loadDepartmentTaskStats() {
         labels: labels.slice(0, 8), // 최대 8개 부서만 표시
         datasets: [
           {
-            label: 'Agent Tasks',
+            label: proxy.$t('analyticsDashboard.agentTasksLabel'),
             data: agentTasks.slice(0, 8),
             backgroundColor: 'rgba(0, 133, 219, 0.8)',
             borderRadius: 4
           },
           {
-            label: 'Human Tasks',
+            label: proxy.$t('analyticsDashboard.humanTasksLabel'),
             data: humanTasks.slice(0, 8),
             backgroundColor: 'rgba(135, 99, 218, 0.8)',
             borderRadius: 4
@@ -196,8 +193,8 @@ async function loadDepartmentTaskStats() {
     departmentChartData.value = {
       labels: [],
       datasets: [
-        { label: 'Agent Tasks', data: [], backgroundColor: 'rgba(0, 133, 219, 0.8)', borderRadius: 4 },
-        { label: 'Human Tasks', data: [], backgroundColor: 'rgba(135, 99, 218, 0.8)', borderRadius: 4 }
+        { label: proxy.$t('analyticsDashboard.agentTasksLabel'), data: [], backgroundColor: 'rgba(0, 133, 219, 0.8)', borderRadius: 4 },
+        { label: proxy.$t('analyticsDashboard.humanTasksLabel'), data: [], backgroundColor: 'rgba(135, 99, 218, 0.8)', borderRadius: 4 }
       ]
     }
   }
@@ -224,9 +221,9 @@ async function loadMonthlyTrend() {
       const trendData = response.data.slice(0, 6).reverse()
       // 전체 객체 교체 (shallowRef 필수)
       monthlyTrendData.value = {
-        labels: trendData.map(d => `${d.month}월`),
+        labels: trendData.map(d => getMonthLabel(d.month)),
         datasets: [{
-          label: 'Tasks',
+          label: proxy.$t('analyticsDashboard.tasksLabel'),
           data: trendData.map(d => d.total_tasks || 0),
           borderColor: '#0085db',
           backgroundColor: 'rgba(0, 133, 219, 0.1)',
@@ -376,35 +373,25 @@ const statsCards = computed(() => {
 
   return [
     {
-      title: '프로세스 인스턴스',
+      title: proxy.$t('analyticsDashboard.processInstances'),
       value: instances.total_instances ?? 0,
-      subtitle: `완료: ${instances.completed ?? 0}`,
+      subtitle: proxy.$t('analyticsDashboard.completedCount', { count: instances.completed ?? 0 }),
       icon: 'mdi-cube-outline',
       color: 'primary',
       bgColor: 'lightprimary'
     },
     {
-      title: '전체 Tasks',
-      value: tasks.total_tasks ?? 0,
-      subtitle: tasks.avg_duration_sec
-        ? `평균 처리시간: ${Math.round(tasks.avg_duration_sec)}초`
-        : '평균 처리시간: -',
-      icon: 'mdi-checkbox-marked-circle-outline',
-      color: 'success',
-      bgColor: 'lightsuccess'
-    },
-    {
-      title: 'Agent Tasks',
+      title: proxy.$t('analyticsDashboard.agentTasks'),
       value: instances.agent_tasks ?? 0,
-      subtitle: `Human: ${instances.human_tasks ?? 0}`,
+      subtitle: proxy.$t('analyticsDashboard.humanCount', { count: instances.human_tasks ?? 0 }),
       icon: 'mdi-robot',
       color: 'info',
       bgColor: 'lightinfo'
     },
     {
-      title: 'Total FTE',
+      title: proxy.$t('analyticsDashboard.totalFte'),
       value: totalFte.value,
-      subtitle: '프로세스별 인력 투입',
+      subtitle: proxy.$t('analyticsDashboard.fteSubtitle'),
       icon: 'mdi-account-group-outline',
       color: 'warning',
       bgColor: 'lightwarning'
@@ -588,9 +575,16 @@ const safeMonthlyTrendData = computed(() => {
     return d
   }
   return {
-    labels: ['1월', '2월', '3월', '4월', '5월', '6월'],
+    labels: [
+      proxy.$t('analyticsDashboard.months.jan'),
+      proxy.$t('analyticsDashboard.months.feb'),
+      proxy.$t('analyticsDashboard.months.mar'),
+      proxy.$t('analyticsDashboard.months.apr'),
+      proxy.$t('analyticsDashboard.months.may'),
+      proxy.$t('analyticsDashboard.months.jun')
+    ],
     datasets: [{
-      label: 'Tasks',
+      label: proxy.$t('analyticsDashboard.tasksLabel'),
       data: [0, 0, 0, 0, 0, 0],
       borderColor: '#0085db',
       backgroundColor: 'rgba(0, 133, 219, 0.1)',
@@ -608,8 +602,8 @@ const safeDepartmentChartData = computed(() => {
   return {
     labels: [],
     datasets: [
-      { label: 'Agent Tasks', data: [], backgroundColor: 'rgba(0, 133, 219, 0.8)', borderRadius: 4 },
-      { label: 'Human Tasks', data: [], backgroundColor: 'rgba(135, 99, 218, 0.8)', borderRadius: 4 }
+      { label: proxy.$t('analyticsDashboard.agentTasksLabel'), data: [], backgroundColor: 'rgba(0, 133, 219, 0.8)', borderRadius: 4 },
+      { label: proxy.$t('analyticsDashboard.humanTasksLabel'), data: [], backgroundColor: 'rgba(135, 99, 218, 0.8)', borderRadius: 4 }
     ]
   }
 })
@@ -619,6 +613,16 @@ const totalDeptTasks = computed(() => {
   if (!departmentTaskData.value || !Array.isArray(departmentTaskData.value)) return 0
   return departmentTaskData.value.reduce((sum, d) => sum + (d.total_tasks || 0), 0)
 })
+
+// 월 라벨 생성 함수
+function getMonthLabel(month) {
+  const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+  const monthIndex = parseInt(month) - 1
+  if (monthIndex >= 0 && monthIndex < 12) {
+    return proxy.$t(`analyticsDashboard.months.${monthKeys[monthIndex]}`)
+  }
+  return `${month}`
+}
 
 // FTE Heatmap 색상 계산 (Primary color 기반)
 function getFteColor(value) {
@@ -693,21 +697,16 @@ async function syncDepartments() {
 
 <template>
   <v-card elevation="10" class="rounded-xl">
-    <v-card-text class="pa-6">
+    <v-card-text class="pa-4">
       <!-- Header -->
       <div class="d-flex justify-space-between align-center mb-6">
         <div>
-          <h1 class="text-h5 font-weight-bold text-textPrimary">Analytics Dashboard</h1>
-          <p class="text-body-2 text-grey100 mb-0 mt-1">프로세스 실행 현황 및 분석</p>
+          <h1 class="text-h5 font-weight-bold text-textPrimary">{{ $t('analyticsDashboard.title') }}</h1>
+          <p class="text-body-2 text-grey100 mb-0 mt-1">{{ $t('analyticsDashboard.subtitle') }}</p>
         </div>
-        <v-btn
-          color="primary"
-          variant="tonal"
-          :loading="loading"
-          @click="refresh"
-        >
+        <v-btn color="primary" rounded variant="flat" :loading="loading" @click="refresh">
           <v-icon start>mdi-refresh</v-icon>
-          새로고침
+          {{ $t('analyticsDashboard.refresh') }}
         </v-btn>
       </div>
 
@@ -715,7 +714,7 @@ async function syncDepartments() {
       <v-row class="mb-2">
         <v-col v-for="card in statsCards" :key="card.title" cols="12" sm="6" lg="3">
           <v-card variant="outlined" class="rounded-lg">
-            <v-card-text class="pa-5">
+            <v-card-text class="pa-4">
               <div class="d-flex align-center">
                 <v-avatar :color="card.bgColor" size="52" class="mr-4">
                   <v-icon :icon="card.icon" :color="card.color" size="24" />
@@ -732,14 +731,14 @@ async function syncDepartments() {
       </v-row>
 
       <!-- Charts Row 1 -->
-      <v-row class="mb-2" align="stretch">
+      <v-row class="mb-2">
         <!-- Task Distribution -->
-        <v-col cols="12" md="4">
-          <v-card variant="outlined" class="rounded-lg task-distribution-card">
+        <v-col cols="12" md="4" class="d-flex">
+          <v-card variant="outlined" class="rounded-lg task-distribution-card flex-grow-1">
             <v-card-text class="pa-4">
               <div class="d-flex justify-space-between align-center mb-3">
-                <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">Task 배분</h3>
-                <v-chip size="x-small" color="primary" variant="tonal">Agent vs Human</v-chip>
+                <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.taskDistribution') }}</h3>
+                <v-chip size="x-small" color="primary" variant="tonal">{{ $t('analyticsDashboard.agentVsHuman') }}</v-chip>
               </div>
               <div v-if="canRenderTaskDistribution && hasTaskDistributionData" class="doughnut-wrapper">
                 <Doughnut
@@ -753,7 +752,7 @@ async function syncDepartments() {
               <div v-else class="d-flex align-center justify-center" style="height: 200px;">
                 <div class="text-center">
                   <v-icon icon="mdi-chart-donut" size="40" color="grey-lighten-1" class="mb-2" />
-                  <p class="text-body-2 text-grey100 mb-0">데이터가 없습니다</p>
+                  <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.noData') }}</p>
                 </div>
               </div>
             </v-card-text>
@@ -764,13 +763,12 @@ async function syncDepartments() {
         <v-col cols="12" md="8">
           <v-card variant="outlined" class="rounded-lg">
             <v-card-text class="pa-4">
-              <div class="d-flex justify-space-between align-center mb-3">
-                <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">월별 Task 추이</h3>
-                <v-chip size="x-small" color="info" variant="tonal">최근 6개월</v-chip>
+              <div>
+                <h3 class="text-subtitle-1 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.monthlyTrend') }}</h3>
+                <v-chip size="x-small" color="info" variant="tonal">{{ $t('analyticsDashboard.last6Months') }}</v-chip>
               </div>
               <div v-if="canRenderMonthlyTrend" class="chart-wrapper">
                 <Line
-                  :chartData="safeMonthlyTrendData"
                   :chartOptions="lineChartOptions"
                 />
               </div>
@@ -780,7 +778,7 @@ async function syncDepartments() {
               <div v-else class="d-flex align-center justify-center" style="height: 150px;">
                 <div class="text-center">
                   <v-icon icon="mdi-chart-line" size="40" color="grey-lighten-1" class="mb-2" />
-                  <p class="text-body-2 text-grey100 mb-0">월별 데이터가 없습니다</p>
+                  <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.noMonthlyData') }}</p>
                 </div>
               </div>
             </v-card-text>
@@ -791,12 +789,12 @@ async function syncDepartments() {
       <!-- Charts Row 2: FTE Heatmap & Domain Count -->
       <v-row class="mb-2">
         <!-- FTE Heatmap -->
-        <v-col cols="12" md="7">
-          <v-card variant="outlined" class="rounded-lg">
-            <v-card-text class="pa-5">
+        <v-col cols="12" md="7" class="d-flex">
+          <v-card variant="outlined" class="rounded-lg flex-grow-1">
+            <v-card-text class="pa-4">
               <div class="d-flex justify-space-between align-center mb-4">
-                <h3 class="text-h6 font-weight-semibold text-textPrimary">FTE Heatmap</h3>
-                <v-chip size="small" color="success" variant="tonal">프로세스 × 부서</v-chip>
+                <h3 class="text-h6 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.fteHeatmap') }}</h3>
+                <v-chip size="small" color="success" variant="tonal">{{ $t('analyticsDashboard.processXDept') }}</v-chip>
               </div>
               <div v-if="hasFteData" class="heatmap-scroll">
                 <table class="heatmap-table">
@@ -827,16 +825,16 @@ async function syncDepartments() {
                 </table>
               </div>
               <div v-if="hasFteData" class="d-flex align-center justify-end ga-3 mt-4">
-                <span class="text-caption text-grey100">FTE 강도</span>
+                <span class="text-caption text-grey100">{{ $t('analyticsDashboard.fteIntensity') }}</span>
                 <div class="legend-gradient"></div>
                 <div class="d-flex ga-2">
                   <span class="text-caption text-grey100">0</span>
                   <span class="text-caption text-grey100">4+</span>
                 </div>
               </div>
-              <div v-else class="text-center pa-6">
+              <div v-else class="text-center pa-4">
                 <v-icon icon="mdi-table-large" size="48" color="grey-lighten-1" class="mb-2" />
-                <p class="text-body-2 text-grey100 mb-0">FTE 데이터가 없습니다<br/>부서별 프로세스 실행 후 확인하세요</p>
+                <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.noFteData') }}<br/>{{ $t('analyticsDashboard.checkAfterExecution') }}</p>
               </div>
             </v-card-text>
           </v-card>
@@ -848,14 +846,12 @@ async function syncDepartments() {
             <v-card-text class="pa-5">
               <div class="d-flex justify-space-between align-center mb-4">
                 <h3 class="text-h6 font-weight-semibold text-textPrimary">Domain별 Sub Process</h3>
-                <v-chip size="small" color="warning" variant="tonal">
-                  {{ domainData.reduce((a, b) => a + b.subProcessCount, 0) }}개
+                  {{ $t('analyticsDashboard.totalCount', { count: domainData.reduce((a, b) => a + b.subProcessCount, 0) }) }}
                 </v-chip>
               </div>
               <div v-if="domainData.length > 0" class="domain-list">
                 <div
                   v-for="item in domainData"
-                  :key="item.domain"
                   class="domain-item"
                 >
                   <div class="d-flex justify-space-between align-center mb-2">
@@ -871,9 +867,9 @@ async function syncDepartments() {
                   />
                 </div>
               </div>
-              <div v-else class="text-center pa-6">
+              <div v-else class="text-center pa-4">
                 <v-icon icon="mdi-domain" size="48" color="grey-lighten-1" class="mb-2" />
-                <p class="text-body-2 text-grey100 mb-0">프로세스 체계도에서<br/>Domain을 설정해주세요</p>
+                <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.setDomainHint') }}<br/>{{ $t('analyticsDashboard.setDomainHint2') }}</p>
               </div>
             </v-card-text>
           </v-card>
@@ -883,25 +879,25 @@ async function syncDepartments() {
       <!-- Charts Row 3: 부서별 Task 수량 & Agent vs Human -->
       <v-row class="mb-2">
         <!-- 부서별 Task 수량 -->
-        <v-col cols="12" md="7">
-          <v-card variant="outlined" class="rounded-lg">
-            <v-card-text class="pa-5">
+        <v-col cols="12" md="7" class="d-flex">
+          <v-card variant="outlined" class="rounded-lg flex-grow-1">
+            <v-card-text class="pa-4">
               <div class="d-flex justify-space-between align-center mb-4">
-                <h3 class="text-h6 font-weight-semibold text-textPrimary">부서별 Task 수량</h3>
+                <h3 class="text-h6 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.deptTaskCount') }}</h3>
                 <div class="d-flex align-center ga-2">
                   <v-btn
-                    icon
-                    size="x-small"
-                    variant="text"
-                    color="grey"
+                    color="gray"
+                    rounded="pill"
+                    variant="flat"
+                    size="small"
                     :loading="syncing"
                     @click="syncDepartments"
-                    title="조직도에서 부서 동기화"
                   >
-                    <v-icon size="18">mdi-sync</v-icon>
+                    <v-icon start size="16">mdi-sync</v-icon>
+                    {{ $t('analyticsDashboard.syncFromOrg') }}
                   </v-btn>
                   <v-chip size="small" color="primary" variant="tonal">
-                    총 {{ totalDeptTasks }}건
+                    {{ $t('analyticsDashboard.totalCount', { count: totalDeptTasks }) }}
                   </v-chip>
                 </div>
               </div>
@@ -914,55 +910,27 @@ async function syncDepartments() {
               <div v-else-if="loading" class="d-flex align-center justify-center" style="height: 150px;">
                 <v-progress-circular indeterminate color="primary" />
               </div>
-              <div v-else class="text-center pa-6">
+              <div v-else class="text-center pa-4">
                 <v-icon icon="mdi-office-building-outline" size="48" color="grey-lighten-1" class="mb-2" />
-                <p class="text-body-2 text-grey100 mb-0">부서별 데이터가 없습니다</p>
-                <v-btn
-                  color="primary"
-                  variant="tonal"
-                  size="small"
-                  class="mt-3"
-                  :loading="syncing"
-                  @click="syncDepartments"
-                >
-                  <v-icon start size="16">mdi-sync</v-icon>
-                  조직도에서 부서 동기화
-                </v-btn>
+                <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.noDeptData') }}</p>
               </div>
             </v-card-text>
           </v-card>
         </v-col>
 
         <!-- Agent vs Human 비교 -->
-        <v-col cols="12" md="5">
-          <v-card variant="outlined" class="rounded-lg">
-            <v-card-text class="pa-5">
+        <v-col cols="12" md="5" class="d-flex">
+          <v-card variant="outlined" class="rounded-lg flex-grow-1">
+            <v-card-text class="pa-4">
               <div class="d-flex justify-space-between align-center mb-4">
-                <h3 class="text-h6 font-weight-semibold text-textPrimary">Agent vs Human</h3>
-                <v-chip size="small" color="info" variant="tonal">성능 비교</v-chip>
+                <h3 class="text-h6 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.agentVsHuman') }}</h3>
+                <v-chip size="small" color="info" variant="tonal">{{ $t('analyticsDashboard.performanceComparison') }}</v-chip>
               </div>
               <div v-if="hasAgentVsHumanData" class="comparison-grid">
                 <!-- Agent Column -->
                 <div class="comparison-col agent-col">
                   <div class="comparison-header">
                     <v-icon icon="mdi-robot" color="primary" size="20" class="mr-1" />
-                    <span class="font-weight-semibold">Agent</span>
-                  </div>
-                  <div class="comparison-stat">
-                    <span class="stat-value text-primary">{{ getAgentStats?.total_tasks || 0 }}</span>
-                    <span class="stat-label">Tasks</span>
-                  </div>
-                  <div class="comparison-stat">
-                    <span class="stat-value text-primary">{{ getAgentStats?.avg_duration_sec?.toFixed(0) || 0 }}초</span>
-                    <span class="stat-label">평균 처리시간</span>
-                  </div>
-                  <div class="comparison-stat">
-                    <span class="stat-value text-success">{{ getAgentStats?.first_time_right_pct?.toFixed(1) || 0 }}%</span>
-                    <span class="stat-label">First-Time-Right</span>
-                  </div>
-                  <div class="comparison-stat">
-                    <span class="stat-value text-error">{{ getAgentStats?.error_rate_pct?.toFixed(1) || 0 }}%</span>
-                    <span class="stat-label">오류율</span>
                   </div>
                 </div>
 
@@ -971,37 +939,36 @@ async function syncDepartments() {
                   <span class="vs-text">VS</span>
                 </div>
 
-                <!-- Human Column -->
                 <div class="comparison-col human-col">
                   <div class="comparison-header">
                     <v-icon icon="mdi-account" color="indigo" size="20" class="mr-1" />
-                    <span class="font-weight-semibold">Human</span>
+                    <span class="font-weight-semibold">{{ $t('analyticsDashboard.human') }}</span>
                   </div>
                   <div class="comparison-stat">
                     <span class="stat-value text-indigo">{{ getHumanStats?.total_tasks || 0 }}</span>
-                    <span class="stat-label">Tasks</span>
+                    <span class="stat-label">{{ $t('analyticsDashboard.tasks') }}</span>
                   </div>
                   <div class="comparison-stat">
-                    <span class="stat-value text-indigo">{{ getHumanStats?.avg_duration_sec?.toFixed(0) || 0 }}초</span>
-                    <span class="stat-label">평균 처리시간</span>
+                    <span class="stat-value text-indigo">{{ getHumanStats?.avg_duration_sec?.toFixed(0) || 0 }}{{ $t('analyticsDashboard.seconds') }}</span>
+                    <span class="stat-label">{{ $t('analyticsDashboard.avgProcessingTime') }}</span>
                   </div>
                   <div class="comparison-stat">
                     <span class="stat-value text-success">{{ getHumanStats?.first_time_right_pct?.toFixed(1) || 0 }}%</span>
-                    <span class="stat-label">First-Time-Right</span>
+                    <span class="stat-label">{{ $t('analyticsDashboard.firstTimeRight') }}</span>
                   </div>
                   <div class="comparison-stat">
                     <span class="stat-value text-error">{{ getHumanStats?.error_rate_pct?.toFixed(1) || 0 }}%</span>
-                    <span class="stat-label">오류율</span>
+                    <span class="stat-label">{{ $t('analyticsDashboard.errorRate') }}</span>
                   </div>
                 </div>
               </div>
-              <div v-else class="text-center pa-6">
+              <div v-else class="text-center pa-4">
                 <div v-if="loading">
                   <v-progress-circular indeterminate color="primary" />
                 </div>
                 <div v-else>
                   <v-icon icon="mdi-account-multiple-outline" size="48" color="grey-lighten-1" class="mb-2" />
-                  <p class="text-body-2 text-grey100 mb-0">비교 데이터가 없습니다</p>
+                  <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.noComparisonData') }}</p>
                 </div>
               </div>
             </v-card-text>
@@ -1014,10 +981,10 @@ async function syncDepartments() {
         <!-- 프로세스 성능 -->
         <v-col cols="12" md="6">
           <v-card variant="outlined" class="rounded-lg">
-            <v-card-text class="pa-5">
+            <v-card-text class="pa-4">
               <div class="d-flex justify-space-between align-center mb-4">
-                <h3 class="text-h6 font-weight-semibold text-textPrimary">프로세스 성능</h3>
-                <v-chip size="small" color="success" variant="tonal">Cycle Time</v-chip>
+                <h3 class="text-h6 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.processPerformance') }}</h3>
+                <v-chip size="small" color="success" variant="tonal">{{ $t('analyticsDashboard.cycleTime') }}</v-chip>
               </div>
               <div v-if="processPerformanceData.length > 0" class="process-perf-list">
                 <div
@@ -1030,7 +997,7 @@ async function syncDepartments() {
                       {{ proc.process_name || 'Unnamed' }}
                     </span>
                     <span class="text-caption text-grey100">
-                      {{ proc.completed_instances }}/{{ proc.total_instances }} 완료
+                      {{ proc.completed_instances }}/{{ proc.total_instances }} {{ $t('analyticsDashboard.completed') }}
                     </span>
                   </div>
                   <div class="d-flex align-center ga-3 mb-2">
@@ -1047,14 +1014,14 @@ async function syncDepartments() {
                     </span>
                   </div>
                   <div class="d-flex justify-space-between text-caption text-grey100">
-                    <span>평균: {{ formatDuration(proc.avg_cycle_time_sec) }}</span>
+                    <span>{{ $t('analyticsDashboard.average') }}: {{ formatDuration(proc.avg_cycle_time_sec) }}</span>
                     <span>P95: {{ formatDuration(proc.p95_cycle_time_sec) }}</span>
                   </div>
                 </div>
               </div>
-              <div v-else class="text-center pa-6">
+              <div v-else class="text-center pa-4">
                 <v-icon icon="mdi-chart-timeline-variant" size="48" color="grey-lighten-1" class="mb-2" />
-                <p class="text-body-2 text-grey100 mb-0">성능 데이터가 없습니다</p>
+                <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.noPerformanceData') }}</p>
               </div>
             </v-card-text>
           </v-card>
@@ -1063,10 +1030,10 @@ async function syncDepartments() {
         <!-- 병목 분석 -->
         <v-col cols="12" md="6">
           <v-card variant="outlined" class="rounded-lg">
-            <v-card-text class="pa-5">
+            <v-card-text class="pa-4">
               <div class="d-flex justify-space-between align-center mb-4">
-                <h3 class="text-h6 font-weight-semibold text-textPrimary">병목 분석</h3>
-                <v-chip size="small" color="error" variant="tonal">대기시간 Top 5</v-chip>
+                <h3 class="text-h6 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.bottleneckAnalysis') }}</h3>
+                <v-chip size="small" color="error" variant="tonal">{{ $t('analyticsDashboard.waitTimeTop5') }}</v-chip>
               </div>
               <div v-if="bottleneckData.length > 0" class="bottleneck-list">
                 <div
@@ -1084,7 +1051,7 @@ async function syncDepartments() {
                     </div>
                     <div class="text-right">
                       <div class="text-body-2 font-weight-bold text-error">{{ formatDuration(item.avg_wait_time_sec) }}</div>
-                      <div class="text-caption text-grey100">대기</div>
+                      <div class="text-caption text-grey100">{{ $t('analyticsDashboard.wait') }}</div>
                     </div>
                   </div>
                   <div class="bottleneck-bar">
@@ -1098,15 +1065,15 @@ async function syncDepartments() {
                     ></div>
                   </div>
                   <div class="d-flex justify-space-between text-caption mt-1">
-                    <span class="text-error">대기: {{ formatDuration(item.avg_wait_time_sec) }}</span>
-                    <span class="text-primary">처리: {{ formatDuration(item.avg_processing_time_sec) }}</span>
-                    <span class="text-grey100">{{ item.execution_count }}건</span>
+                    <span class="text-error">{{ $t('analyticsDashboard.wait') }}: {{ formatDuration(item.avg_wait_time_sec) }}</span>
+                    <span class="text-primary">{{ $t('analyticsDashboard.processing') }}: {{ formatDuration(item.avg_processing_time_sec) }}</span>
+                    <span class="text-grey100">{{ item.execution_count }}{{ $t('analyticsDashboard.cases') }}</span>
                   </div>
                 </div>
               </div>
-              <div v-else class="text-center pa-6">
+              <div v-else class="text-center pa-4">
                 <v-icon icon="mdi-traffic-cone" size="48" color="grey-lighten-1" class="mb-2" />
-                <p class="text-body-2 text-grey100 mb-0">병목 데이터가 없습니다</p>
+                <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.noBottleneckData') }}</p>
               </div>
             </v-card-text>
           </v-card>
@@ -1116,21 +1083,21 @@ async function syncDepartments() {
       <!-- Recent Instances Table -->
       <v-card variant="outlined" class="rounded-lg">
         <v-card-text class="pa-0">
-          <div class="d-flex justify-space-between align-center pa-5 pb-0">
-            <h3 class="text-h6 font-weight-semibold text-textPrimary">최근 프로세스 인스턴스</h3>
-            <v-btn variant="text" color="primary" size="small" to="/analytics/heatmap">
-              더보기
+          <div class="d-flex justify-space-between align-center pa-4">
+            <h3 class="text-h6 font-weight-semibold text-textPrimary">{{ $t('analyticsDashboard.recentInstances') }}</h3>
+            <v-btn color="gray" rounded="pill" variant="flat" size="small" to="/analytics/heatmap">
+              {{ $t('analyticsDashboard.viewMore') }}
               <v-icon end size="16">mdi-arrow-right</v-icon>
             </v-btn>
           </div>
           <v-table class="month-table" hover>
             <thead>
               <tr>
-                <th class="text-subtitle-2 font-weight-semibold">인스턴스 ID</th>
-                <th class="text-subtitle-2 font-weight-semibold">프로세스</th>
-                <th class="text-subtitle-2 font-weight-semibold">상태</th>
-                <th class="text-subtitle-2 font-weight-semibold">시작 시간</th>
-                <th class="text-subtitle-2 font-weight-semibold">소요 시간</th>
+                <th class="text-subtitle-2 font-weight-semibold">{{ $t('analyticsDashboard.instanceId') }}</th>
+                <th class="text-subtitle-2 font-weight-semibold">{{ $t('analyticsDashboard.process') }}</th>
+                <th class="text-subtitle-2 font-weight-semibold">{{ $t('analyticsDashboard.status') }}</th>
+                <th class="text-subtitle-2 font-weight-semibold">{{ $t('analyticsDashboard.startTime') }}</th>
+                <th class="text-subtitle-2 font-weight-semibold">{{ $t('analyticsDashboard.duration') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1150,13 +1117,13 @@ async function syncDepartments() {
                 </td>
                 <td class="text-body-2 text-grey100">{{ formatDateTime(instance.started_at) }}</td>
                 <td class="text-body-2 font-weight-medium text-textPrimary">
-                  {{ instance.duration_sec ? `${instance.duration_sec}초` : '-' }}
+                  {{ instance.duration_sec ? `${instance.duration_sec}${$t('analyticsDashboard.seconds')}` : '-' }}
                 </td>
               </tr>
               <tr v-if="!store.instances || store.instances.length === 0">
                 <td colspan="5" class="text-center pa-8">
                   <v-icon icon="mdi-clipboard-text-outline" size="48" color="grey-lighten-1" class="mb-2" />
-                  <p class="text-body-2 text-grey100 mb-0">데이터가 없습니다</p>
+                  <p class="text-body-2 text-grey100 mb-0">{{ $t('analyticsDashboard.noData') }}</p>
                 </td>
               </tr>
             </tbody>

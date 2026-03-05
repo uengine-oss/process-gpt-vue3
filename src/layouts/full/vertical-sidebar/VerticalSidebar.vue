@@ -2,6 +2,7 @@
     <v-btn
         icon
         v-if="globalIsMobile.value"
+        v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
         class="mobile-side-bar-btn"
         size="40"
@@ -11,6 +12,7 @@
     </v-btn>
     <v-badge
         v-if="notiCount > 0"
+        v-show="!$globalState.state.isMobileDrawerOpen"
         class="mobile-side-bar-btn"
         :content="notiCount"
         :model-value="notiCount > 0"
@@ -33,18 +35,25 @@
         @mouseenter="isRailHovered = true"
         @mouseleave="isRailHovered = false"
     >
-        <v-row class="pa-5 pl-4 ma-0 is-sidebar-pc">
-            <Logo :style="logoPadding" />
+        <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc" >
+            <Logo :style="logoPadding"/>
             <v-spacer></v-spacer>
             <v-tooltip v-if="!pal" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn icon variant="text" density="comfortable" v-bind="props" class="text-medium-emphasis" :to="'/definition-map'">
+                    <v-btn icon variant="text" density="comfortable"
+                        v-bind="props"
+                        class="text-medium-emphasis"
+                        :to="'/definition-map'"
+                        @click="closeChatPanelIfOpen"
+                    >
                         <Icons :icon="'write'" />
                     </v-btn>
                 </template>
             </v-tooltip>
-        </v-row>
-        <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
+        </div>
+        <div class="pa-4 is-sidebar-mobile"
+            :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }"
+        >
             <v-row class="ma-0 pa-0" align="center">
                 <Logo />
                 <v-spacer></v-spacer>
@@ -230,6 +239,45 @@
                     </template>
                 </div>
 
+                <!-- 유저 목록 -->
+                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                    <div class="d-flex align-center ml-2">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0">
+                            {{ $t('VerticalSidebar.userList') || '유저 목록' }}
+                        </div>
+                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
+                            <Icons
+                                :icon="'search'"
+                                :size="14"
+                                :color="'#808080'"
+                                style="width: 14px; height: 14px;"
+                            />
+                        </div>
+                    </div>
+                    <v-col class="pa-0">
+                        <SidebarUserList ref="sidebarUserList" />
+                    </v-col>
+                </div>
+
+                <!-- 스킬 타이틀 + 목록 -->
+                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                    <v-row class="align-center pa-0 ma-0">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                            {{ $t('VerticalSidebar.skills') }}
+                        </div>
+                        <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
+                            <template v-slot:activator="{ props }">
+                                <div class="sidebar-title-icon" v-bind="props" @click="navigateTo('/skills')">
+                                    <SettingsIcon size="14" color="#808080" />
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
+                    <v-col class="pa-0">
+                        <SkillList/>
+                    </v-col>
+                </div>
+
                 <!-- Analytics 타이틀 + 목록 -->
                 <div v-if="analyticsItem.length > 0" class="mb-4">
                     <!-- Rail mode: icons -->
@@ -316,7 +364,6 @@
                                     <v-icon size="20">mdi-file-document-multiple-outline</v-icon>
                                 </template>
                             </v-list-item>
-                        </template>
                         <div>
                             <div class="font-weight-bold text-body-2">{{ $t('definitionManagement.title') || '프로세스 정의 관리' }}</div>
                             <div class="text-caption" style="opacity:0.85;">BPMN 프로세스 정의를 생성하고 편집합니다.</div>
@@ -380,11 +427,6 @@
         <div class="pa-4 px-4 bg-containerBg">
             <ExtraBox />
         </div>
-    </v-navigation-drawer>
-
-    <v-dialog v-model="isNewProjectOpen" max-width="400" class="delete-input-details" persistent>
-        <ProjectCreationForm @close="closeNewProject" @save="createNewProject" />
-    </v-dialog>
 
     <v-dialog v-model="isOpen" max-width="400" class="delete-input-details">
         <v-card class="pa-4 pt-2">
@@ -409,7 +451,10 @@ import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
 import AgentList from '@/components/ui/AgentList.vue';
+import SkillList from '@/components/ui/SkillList.vue';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
+import SidebarUserList from '@/components/ui/SidebarUserList.vue';
+import ChatList from '@/components/ui/ChatList.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
 
@@ -429,9 +474,12 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         ProcessInstanceList,
+        ChatList,
         ProjectList,
         ProjectCreationForm,
         AgentList,
+        SkillList,
+        SidebarUserList,
         ExpandableList,
         Logo,
         NavCollapse,
@@ -481,6 +529,9 @@ export default {
         pal() {
             return window.$pal;
         },
+        gs() {
+            return window.$gs;
+        },
         isShowInstances() {
             if (!this.pal && !this.JMS) {
                 return true;
@@ -519,11 +570,30 @@ export default {
         });
     },
     methods: {
+        isAnalyticsItemActive(item) {
+            if (!item || !item.to) return false;
+            return this.$route?.path === item.to;
+        },
+        closeChatPanelIfOpen() {
+            this.EventBus.emit('close-chat-panel');
+        },
+        toggleSidebarUserSearch() {
+            try {
+                const comp = this.$refs.sidebarUserList;
+                if (comp && typeof comp.toggleSearch === 'function') {
+                    comp.toggleSearch();
+                }
+            } catch (e) {
+                // ignore
+            }
+        },
         updateNotiCount(count) {
             this.notiCount = count;
         },
         async loadSidebar(isAdmin) {
             if (isAdmin) {
+                const isUEngineMode = window.$mode === 'uEngine';
+
                 this.definitionItem = [
                     {
                         header: 'definitionManagement.title',
@@ -536,6 +606,18 @@ export default {
                         to: '/definitions/chat',
                         disable: false
                     },
+                    ...(isUEngineMode && !this.pal
+                        ? [
+                              {
+                                  title: 'businessRuleDefinition.title',
+                                  type: 'rule',
+                                  icon: 'bpmn-icon-business-rule',
+                                  BgColor: 'primary',
+                                  to: '/business-rule',
+                                  disable: false
+                              }
+                          ]
+                        : []),
                     {
                         title: 'uiDefinition.title',
                         icon: 'document',
@@ -601,6 +683,13 @@ export default {
                             item.title !== 'definitionManagement.release'
                     );
                 }
+                if (this.pal) {
+                    this.definitionItem = this.definitionItem.filter((item) => 
+                        item.title !== 'uiDefinition.title' && 
+                        item.title !== 'definitionManagement.defaultForm' &&
+                        item.title !== 'systemDefinition.title'
+                    );
+                }
                 this.getDefinitionList();
             }
 
@@ -609,7 +698,7 @@ export default {
                 this.instanceItem = [
                     {
                         title: 'definitionManagement.completedList',
-                        icon: 'search',
+                        icon: 'check-mark',
                         BgColor: 'primary',
                         disable: true,
                         to: '/list-pages/completed',
@@ -806,6 +895,11 @@ export default {
                     } else {
                         if (el.name.split('.')[1] == 'form') {
                             obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
+                        } else if (el.name.split('.')[1] == 'rule') {
+                            // rule은 path에 prefix(ex: businessRules/<id>.rule)가 붙을 수 있어 마지막 파일명 기준으로 ruleId만 사용
+                            const fileBase = String(el.path || '').split('/').pop();
+                            const ruleId = String(fileBase || '').split('.')[0];
+                            obj.to = `/business-rule/${ruleId}`;
                         } else {
                             obj.to = `/definitions/${el.path.split('.')[0]}`;
                         }
@@ -858,9 +952,19 @@ export default {
                                     type: 'form'
                                 };
                                 menu.children.push(obj);
+                            } else if (item.path && item.path.includes('.rule')) {
+                                const fileBase = String(item.path || '').split('/').pop();
+                                const ruleId = String(fileBase || '').split('.')[0];
+                                obj = {
+                                    title: item.name,
+                                    to: `/business-rule/${ruleId}`,
+                                    BgColor: 'primary',
+                                    type: 'rule'
+                                };
+                                menu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
-                                    title: item.definition.processDefinitionName,
+                                    title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
                                     type: 'bpmn'
@@ -908,9 +1012,19 @@ export default {
                                     type: 'form'
                                 };
                                 deletedMenu.children.push(obj);
+                            } else if (item.path && item.path.includes('.rule')) {
+                                const fileBase = String(item.path || '').split('/').pop();
+                                const ruleId = String(fileBase || '').split('.')[0];
+                                obj = {
+                                    title: item.name,
+                                    to: `/business-rule/${ruleId}`,
+                                    BgColor: 'primary',
+                                    type: 'rule'
+                                };
+                                deletedMenu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
-                                    title: item.definition.processDefinitionName,
+                                    title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
                                     type: 'bpmn'
@@ -1021,5 +1135,14 @@ export default {
 }
 .rail-icon-item:hover {
     background-color: rgba(var(--v-theme-primary), 0.08);
+.bpmn-sidebar-icon {
+    font-size: 20px;
+    line-height: 1;
+    /* 상단 아이콘 버튼(row)과 동일한 색을 쓰도록 상속 */
+    color: inherit;
+}
+.bpmn-sidebar-icon:before {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 </style>

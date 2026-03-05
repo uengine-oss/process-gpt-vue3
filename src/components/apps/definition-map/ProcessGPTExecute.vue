@@ -32,7 +32,7 @@
             </v-row>
             
             <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
-                <div v-if="isSimulate == 'false'" :class="isMobile ? 'pa-4 pb-0' : 'pa-4'" style="min-width: 300px;">
+                <div v-if="isSimulate == 'false'" class="pa-4">
                     <v-row class="ma-0 pa-0">
                         <div class="text-h5 font-weight-semibold">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
                     </v-row>
@@ -69,6 +69,8 @@
                             :activityIndex="activityIndex"
                             :processDefinition="processDefinition"
                             :isStarted="true"
+                            :deployDefinitionId="deployDefinitionId"
+                            :deployVersion="deployVersion"
                             :disableAdvancedResearch="disableAdvancedResearch"
                             @close="closeDialog"
                             @executeProcess="executeProcess"
@@ -127,6 +129,14 @@ export default {
         isSimulate: String,
         bpmn: String,
         processDefinition: Object,
+        deployDefinitionId: {
+            type: String,
+            default: '',
+        },
+        deployVersion: {
+            type: String,
+            default: '',
+        },
         isExecutionByProject: {
             type: Boolean,
             default: false
@@ -370,7 +380,7 @@ export default {
                 proc_def_id: me.processDefinition.processDefinitionId,
                 activity_id: activity.id,
                 activity_name: activity.name,
-                status: 'NEW',
+                status: 'IN_PROGRESS',
                 tool: activity.tool || "",
                 description: activity.description || "",
                 query: query || "",
@@ -452,6 +462,8 @@ export default {
                     // todolist / 엔진 쪽에서 사용할 버전 정보 전달
                     version_tag: me.processDefinition.version_tag || 'major',
                     version: me.processDefinition.version || null,
+                    // 백엔드에서 프로세스 정의를 조회하기 위한 테넌트 정보 전달
+                    tenant_id: window.$tenantName,
                 };
                 
                 if (me.$refs.instanceSourceRef) {

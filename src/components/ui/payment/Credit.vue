@@ -34,6 +34,7 @@
 
                         <!-- 버튼  -->
                         <v-btn 
+                            v-if="!gs"
                             block
                             rounded
                             id="payment-request-button"
@@ -104,6 +105,9 @@ export default {
        this.init()
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
         filteredList() {
             if (!this.list || this.list.length === 0) return [];
             

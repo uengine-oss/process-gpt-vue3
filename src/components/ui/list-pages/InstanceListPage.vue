@@ -125,8 +125,8 @@ export default {
             },
             filter: {
                 period: {
-                    startDate:new Date(Date.now() - (30 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10).replace(/-/g, '-'),
-                    endDate: new Date().toISOString().slice(0, 10).replace(/-/g, '-')
+                    startDate: null,
+                    endDate: null
                 },
                 sort: 'end_date',
                 status: ['NEW', 'IN_PROGRESS', 'PENDING', 'COMPLETED', 'CANCELLED']
@@ -171,9 +171,9 @@ export default {
                     me.currentOptions = {
                         orderBy: me.filter.sort, 
                         range: {from: 0, to: itemsPerPage - 1},
-                        startAt: me.filter.period.startDate,
-                        endAt: `${me.filter.period.endDate} 23:59:59` // 종료일 23:59:59 추가
                     }
+                    if (me.filter.period.startDate) me.currentOptions.startAt = me.filter.period.startDate;
+                    if (me.filter.period.endDate) me.currentOptions.endAt = `${me.filter.period.endDate} 23:59:59`;
                     
                     me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
                     if(!me.initLoading) me.initLoading = true
@@ -253,10 +253,10 @@ export default {
                         me.currentOptions = {
                             orderBy: me.filter.sort, 
                             range: {from: 0, to: itemsPerPage - 1},
-                            startAt: me.filter.period.startDate,
-                            endAt: `${me.filter.period.endDate} 23:59:59`,
                             like: {key: 'proc_inst_name', value: `%${searchWord}%`},
                         }
+                        if (me.filter.period.startDate) me.currentOptions.startAt = me.filter.period.startDate;
+                        if (me.filter.period.endDate) me.currentOptions.endAt = `${me.filter.period.endDate} 23:59:59`;
                         me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);
                     } else {
                         me.init()
@@ -301,9 +301,9 @@ export default {
                         sort: filter.sort == "start_date" ? "asc" : "desc",
                         orderBy: filter.sort, 
                         range: {from: 0, to: itemsPerPage - 1},
-                        startAt: filter.period.startDate,
-                        endAt: `${filter.period.endDate} 23:59:59`,
                     }
+                    if (filter.period.startDate) me.currentOptions.startAt = filter.period.startDate;
+                    if (filter.period.endDate) me.currentOptions.endAt = `${filter.period.endDate} 23:59:59`;
                     me.filter = filter
 
                     me.list = await backend.getInstanceListByStatus(me.listType, me.currentOptions);

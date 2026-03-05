@@ -118,7 +118,7 @@
     KEditor.DEFAULTS = {
         niceScrollEnabled: true,
         btnMoveContainerText: '<i class="mdi mdi-arrow-all"></i>',
-        btnMoveComponentText: '<i class="fa fa-arrows"></i>',
+        btnMoveComponentText: '<i class="mdi mdi-arrow-all"></i>',
         btnSettingContainerText: '<i class="mdi mdi-pencil"></i>',
         btnSettingComponentText: '<i class="mdi mdi-pencil"></i>',
         btnDuplicateContainerText: '<i class="mdi mdi-content-duplicate"></i>',

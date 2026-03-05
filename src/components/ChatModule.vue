@@ -40,6 +40,7 @@ export default {
         activeBackgroundRequests: new Map(),
         beforeUnloadHandler: null,
         routerBeforeEach: null,
+        chatsWatchRef: null,
     }),
     computed: {
         useLock() {
@@ -91,6 +92,11 @@ export default {
         })
     },
     beforeUnmount() {
+        try {
+            if (this.chatsWatchRef && typeof this.chatsWatchRef.unsubscribe === 'function') {
+                this.chatsWatchRef.unsubscribe();
+            }
+        } catch (e) {}
         this.releaseAgent();
         this.handlePageUnload();
     },
@@ -158,8 +164,18 @@ export default {
         async setWatchChatList(chatRoomIds) {
             var me = this;
             me.userInfo = await this.backend.getUserInfo();
-           
-            await this.backend.watchChats((data) => {
+            // 기존 구독 정리 (중복 구독 방지)
+            try {
+                if (me.chatsWatchRef && typeof me.chatsWatchRef.unsubscribe === 'function') {
+                    await me.chatsWatchRef.unsubscribe();
+                }
+            } catch (e) {}
+            me.chatsWatchRef = null;
+
+            // 감시할 방이 없으면 구독하지 않음
+            if (!Array.isArray(chatRoomIds) || chatRoomIds.length === 0) return;
+
+            me.chatsWatchRef = await this.backend.watchChats((data) => {
                 if(data && data.new){
                     if(data.eventType == "DELETE"){
                         let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);
@@ -582,7 +598,7 @@ export default {
                 context: this,
                 action: async () => { // Changed to arrow function
                     if(!this.isVisionMode){
-                        if(!this.ProcessGPTActive){
+                        // if(!this.ProcessGPTActive){
                             if(this.messages && this.messages.length == 0){
                                 this.messages.push({
                                     role: 'system',
@@ -638,7 +654,7 @@ export default {
                                 }
                             }
                             this.afterModelCreated(response);
-                        }
+                        // }
                     }
                 },
                 onFail: () => {
@@ -665,7 +681,7 @@ export default {
             if(this.isVisionMode){
                 this.generateAgentAI(response)
             } else {
-                if(!this.ProcessGPTActive){
+                // if(!this.ProcessGPTActive){
                     if(this.messages && this.messages.length == 0){
                         this.messages.push({
                             role: 'system',
@@ -681,7 +697,7 @@ export default {
                             delete message.isLoading;
                         }
                     });
-                }
+                // }
     
                 let jsonData = response;
                 if (typeof response == 'string' && !this.isMentoMode) {

@@ -122,25 +122,65 @@
                             <div class="result-content">
                                 <!-- 슬라이드 결과 -->
                                 <div v-if="item.payload.crewType === 'slide'" class="slides-container">
-                                    <div class="slides-header">
-                                        <div class="header-info">
-                                            <h5>{{ $t('agentMonitor.presentationMode') }}</h5>
-                                            <span class="slide-hint">{{ $t('agentMonitor.slideHint') }}</span>
+                                    <template v-if="isDeepResearchCustom">
+                                        <div class="slides-header">
+                                            <div class="header-info">
+                                                <h5>{{ $t('agentMonitor.presentationMode') }}</h5>
+                                                <span class="slide-hint">{{ $t('agentMonitor.slideHint') }}</span>
+                                            </div>
+                                            <div class="slide-navigation">
+                                                <button @click="previousSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === 0" class="nav-btn">←</button>
+                                                <span class="slide-counter">{{ getSlideIndex(item.payload.id) + 1 }} / {{ getSlideCount(item.payload) }}</span>
+                                                <button @click="nextSlide(item.payload.id, getSlideCount(item.payload))" :disabled="getSlideIndex(item.payload.id) === getSlideCount(item.payload) - 1" class="nav-btn">→</button>
+                                            </div>
                                         </div>
-                                        <div class="slide-navigation">
-                                            <button @click="previousSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === 0" class="nav-btn">←</button>
-                                            <span class="slide-counter">{{ getSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.content).length }}</span>
-                                            <button @click="nextSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === getSlides(item.payload.content).length - 1" class="nav-btn">→</button>
-                                        </div>
-                                    </div>
-                                    <div class="slide-content">
-                                            <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
-                                    </div>
-                                    <div class="slide-indicators">
-                                            <span v-for="(slide, index) in getSlides(item.payload.content)" :key="index"
+
+                                        <!-- 이미지 캐러셀 우선 -->
+                                        <div v-if="getSlideImages(item.payload).length" class="slide-image-carousel">
+                                            <div class="slide-image-wrapper">
+                                                <img
+                                                    :src="getSlideImages(item.payload)[getSlideIndex(item.payload.id)]"
+                                                    class="slide-image"
+                                                    :alt="`slide-${getSlideIndex(item.payload.id)+1}`"
+                                                />
+                                            </div>
+                                            <div class="slide-indicators">
+                                                <span v-for="(img, index) in getSlideImages(item.payload)" :key="index"
                                                     :class="['indicator', { active: index === getSlideIndex(item.payload.id) }]"
                                                     @click="goToSlide(item.payload.id, index)"></span>
-                                    </div>
+                                            </div>
+                                        </div>
+                                        <!-- 이미지가 없으면 기존 markdown 슬라이드 fallback -->
+                                        <div v-else class="slide-content">
+                                                <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
+                                        </div>
+                                        <div v-if="!getSlideImages(item.payload).length" class="slide-indicators">
+                                                <span v-for="(slide, index) in getSlides(item.payload.content)" :key="index"
+                                                        :class="['indicator', { active: index === getSlideIndex(item.payload.id) }]"
+                                                        @click="goToSlide(item.payload.id, index)"></span>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <div class="slides-header">
+                                            <div class="header-info">
+                                                <h5>{{ $t('agentMonitor.presentationMode') }}</h5>
+                                                <span class="slide-hint">{{ $t('agentMonitor.slideHint') }}</span>
+                                            </div>
+                                            <div class="slide-navigation">
+                                                <button @click="previousSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === 0" class="nav-btn">←</button>
+                                                <span class="slide-counter">{{ getSlideIndex(item.payload.id) + 1 }} / {{ getSlides(item.payload.content).length }}</span>
+                                                <button @click="nextSlide(item.payload.id)" :disabled="getSlideIndex(item.payload.id) === getSlides(item.payload.content).length - 1" class="nav-btn">→</button>
+                                            </div>
+                                        </div>
+                                        <div class="slide-content">
+                                                <div v-html="getCurrentSlide(item.payload)" class="slide-inner"></div>
+                                        </div>
+                                        <div class="slide-indicators">
+                                                <span v-for="(slide, index) in getSlides(item.payload.content)" :key="index"
+                                                        :class="['indicator', { active: index === getSlideIndex(item.payload.id) }]"
+                                                        @click="goToSlide(item.payload.id, index)"></span>
+                                        </div>
+                                    </template>
                                 </div>
                                 
                                 <!-- Browser-use 결과 -->
@@ -402,6 +442,9 @@ export default {
         };
     },
     computed: {
+        isDeepResearchCustom() {
+            return this.todoStatus?.agent_orch === 'deep-research-custom';
+        },
         filteredFiles() {
             return (files) => {
                 if (!files) return [];
@@ -660,6 +703,19 @@ export default {
                 .filter(slide => slide.trim())
                 .map(slide => this.formatOutput(slide.trim(), 'markdown'));
         },
+        getSlideImages(payload) {
+            if (!payload || !payload.outputRaw) return [];
+            const raw = payload.outputRaw;
+            if (raw.images && Array.isArray(raw.images)) return raw.images;
+            if (raw.data && raw.data.images && Array.isArray(raw.data.images)) return raw.data.images;
+            return [];
+        },
+        getSlideCount(payload) {
+            const imgs = this.getSlideImages(payload);
+            if (imgs.length) return imgs.length;
+            const slides = this.getSlides(payload.content);
+            return slides.length || 1;
+        },
         getSlideIndex(taskId) {
             return this.slideIndexes[taskId] || 0;
         },
@@ -668,13 +724,18 @@ export default {
             return slides[this.getSlideIndex(task.id)] || '';
         },
         previousSlide(taskId) {
-            this.$emit('previousSlide', taskId)
+            const currentIndex = this.getSlideIndex(taskId);
+            if (currentIndex <= 0) return;
+            this.$emit('update:slideIndexes', { ...this.slideIndexes, [taskId]: currentIndex - 1 });
         },
-        nextSlide(taskId) {
-            this.$emit('nextSlide', taskId)
+        nextSlide(taskId, totalSlides) {
+            const currentIndex = this.getSlideIndex(taskId);
+            const limit = typeof totalSlides === 'number' ? totalSlides : Number.MAX_SAFE_INTEGER;
+            if (currentIndex >= limit - 1) return;
+            this.$emit('update:slideIndexes', { ...this.slideIndexes, [taskId]: currentIndex + 1 });
         },
         goToSlide(taskId, index) {
-            this.$emit('goToSlide', taskId, index)
+            this.$emit('update:slideIndexes', { ...this.slideIndexes, [taskId]: index });
         },
         getImageSlides(files) {
             if (!files) return [];
@@ -826,6 +887,16 @@ export default {
         },
         removeFences(str) {
             return str.replace(/^```[a-zA-Z0-9]*\s*/, '').replace(/```$/, '').trim();
+        },
+        // 단일 ~가 스트라이크로 변환되는 것을 방지 (~~는 그대로 유지)
+        escapeSingleTildes(str) {
+            if (!str) return str;
+            return str.replace(/~/g, (match, idx, src) => {
+                const prev = src[idx - 1];
+                const next = src[idx + 1];
+                if (prev === '~' || next === '~') return match;
+                return '&#126;';
+            });
         },
         parseJson(data, fallback = {}) {
             if (!data) return fallback;
@@ -1517,6 +1588,14 @@ export default {
     background: transparent;
     color: inherit;
     padding: 0;
+}
+
+/* 이미지 가로 스크롤 방지 */
+.markdown-container :deep(img) {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 12px 0;
 }
 
 /* 더보기 컨트롤 스타일 */
@@ -2375,5 +2454,36 @@ export default {
   height: 100%;
   border: none;
   background: white;
+}
+
+/* 슬라이드 이미지 캐러셀 (16:9) */
+.slide-image-carousel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.slide-image-wrapper {
+  width: 100%;
+  max-width: 960px; /* 16:9 1280x720~1408x768 대응 */
+  height: 540px;
+  max-height: 540px;
+  aspect-ratio: 16 / 9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0f1117;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.slide-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #0f1117;
 }
 </style>

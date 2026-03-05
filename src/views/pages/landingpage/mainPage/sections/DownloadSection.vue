@@ -1,10 +1,9 @@
 <template>
   <section id="download" class="download">
     <div class="container">
-      <div class="section-header">
-        <h2>{{ $t('DownloadSection.title') }}</h2>
-        <p>{{ $t('DownloadSection.subtitle') }}</p>
-      </div>
+      <h2 class="section-title font-bold text-center">{{ $t('DownloadSection.title') }}</h2>
+      <h3 class="section-subtitle font-bold text-center mb-12">{{ $t('DownloadSection.subtitle') }}</h3>
+
       <div class="download-content">
         <div class="download-text">
           <p>{{ $t('DownloadSection.description') }}</p>
@@ -118,25 +117,16 @@ export default {
   background-color: #1976D2;
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: 50px;
+.section-title {
+  font-size: 48px;
+  line-height: 1.6;
+  color: white;
 }
 
-.section-header h2 {
-  font-size: 2.2rem;
-  font-weight: 700;
+.section-subtitle {
+  font-size: 20px;
+  padding-top: 5px;
   color: white;
-  /* color: #333; */
-  margin-bottom: 15px;
-}
-
-.section-header p {
-  font-size: 1.1rem;
-  color: white;
-  /* color: #555; */
-  max-width: 700px;
-  margin: 0 auto;
 }
 
 .download-content {
@@ -273,6 +263,14 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .section-title {
+    font-size: 32px;
+  }
+
+  .section-subtitle {
+    font-size: 18px;
+  }
+
   .download-buttons {
     flex-direction: column;
     align-items: center;

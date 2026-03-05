@@ -2,7 +2,10 @@
     <div v-if="show" class="profile-container" :class="{ 'mobile': isMobile }">
         <div class="profile-wrapper">
             <v-row class="profile-header ma-0 pa-4 pb-0">
-                <span class="profile-title">{{ agentName }}</span>
+                <div class="d-flex flex-column">
+                    <span class="profile-title">{{ agentName }}</span>
+                    <span v-if="knowledgeSetupMessage" class="profile-subtitle">{{ knowledgeSetupMessage }}</span>
+                </div>
                 <div v-if="agentData && agentData.id"
                     class="ml-2"
                 >
@@ -44,6 +47,7 @@
                         <div v-else class="profile-emoji">🤖</div>
                     </div>
                     <h3 class="agent-name">{{ agentName }}</h3>
+                    <span v-if="knowledgeSetupMessage" class="profile-subtitle">{{ knowledgeSetupMessage }}</span>
                 </div>
                 
                 <div class="mobile-sections">
@@ -85,11 +89,24 @@ export default {
         svgWidth: 420,
         svgHeight: 400,
         mobileSections: [],
-        zoomLevel: 1
+        zoomLevel: 1,
+        knowledgeSetupStatus: null,
+        knowledgeSetupClearTimer: null
     }),
     computed: {
         agentName() {
             return this.agentData?.name || 'Agent';
+        },
+        knowledgeSetupMessage() {
+            if (!this.agentData?.id || !this.knowledgeSetupStatus || this.knowledgeSetupStatus.agentId !== this.agentData.id) {
+                return '';
+            }
+            const key = {
+                pending: 'AgentBadgesDiagram.knowledgeSetupPending',
+                success: 'AgentBadgesDiagram.knowledgeSetupSuccess',
+                error: 'AgentBadgesDiagram.knowledgeSetupError'
+            }[this.knowledgeSetupStatus.status];
+            return key ? this.$t(key) : '';
         },
         agentType() {
             return this.agentData?.type || 'agent';
@@ -134,11 +151,32 @@ export default {
     mounted() {
         this.checkMobile();
         window.addEventListener('resize', this.handleResize);
+        if (this.EventBus) {
+            this.EventBus.on('agentKnowledgeSetupStatus', this.handleKnowledgeSetupStatus);
+        }
     },
     beforeUnmount() {
         window.removeEventListener('resize', this.handleResize);
+        if (this.EventBus) {
+            this.EventBus.off('agentKnowledgeSetupStatus', this.handleKnowledgeSetupStatus);
+        }
+        if (this.knowledgeSetupClearTimer) {
+            clearTimeout(this.knowledgeSetupClearTimer);
+        }
     },
     methods: {
+        handleKnowledgeSetupStatus(payload) {
+            this.knowledgeSetupStatus = payload;
+            if (this.knowledgeSetupClearTimer) clearTimeout(this.knowledgeSetupClearTimer);
+            if (payload && (payload.status === 'success' || payload.status === 'error')) {
+                this.knowledgeSetupClearTimer = setTimeout(() => {
+                    if (this.knowledgeSetupStatus && this.knowledgeSetupStatus.agentId === payload.agentId) {
+                        this.knowledgeSetupStatus = null;
+                    }
+                    this.knowledgeSetupClearTimer = null;
+                }, 4000);
+            }
+        },
         checkMobile() {
             this.isMobile = window.innerWidth <= 768;
         },
@@ -748,6 +786,11 @@ export default {
     font-weight: 600;
 }
 
+.mobile-center .profile-subtitle {
+    display: block;
+    margin-top: 4px;
+}
+
 .mobile-sections {
     space-y: 15px;
 }
@@ -794,6 +837,13 @@ export default {
     font-weight: 600;
     font-size: 14px;
     margin-top: 2px;
+}
+
+.profile-subtitle {
+    font-size: 11px;
+    color: #636e72;
+    margin-top: 2px;
+    font-weight: 400;
 }
 
 .header-controls {

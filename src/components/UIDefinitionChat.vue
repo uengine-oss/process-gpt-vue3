@@ -13,12 +13,12 @@
                         @stopMessage="stopMessage"
                     >
                         <template v-slot:custom-tools>
-                            <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
+                            <div class="d-flex flex-row-reverse pr-2">
                                 <v-tooltip>
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-bind="props"
-                                            icon variant="text"
-                                            class="text-medium-emphasis"
+                                            icon variant="text" size="small"
+                                            class="text-medium-emphasis mr-2"
                                             @click="openSaveDialog"
                                         >
                                             <Icons :icon="'save'"
@@ -31,14 +31,17 @@
                                     <span>{{ $t('uiDefinition.save') }}</span>
                                 </v-tooltip>
 
-                                <v-tooltip>
+                                <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-if="isLoadedForm" 
                                             v-bind="props" 
-                                            icon  variant="text" 
+                                            icon variant="text"
                                             class="text-medium-emphasis"
-                                            @click="openDeleteDialog">
-                                            <TrashIcon size="24" />
+                                            density="comfortable"
+                                            @click="openDeleteDialog"
+                                            size="40"
+                                        >
+                                            <v-icon color="error">mdi-delete-outline</v-icon>
                                         </v-btn>
                                     </template>
                                     <span>{{ $t('uiDefinition.deleteForm') }}</span>
@@ -615,35 +618,20 @@ export default {
          * 'Save' 버튼을 누를 경우, 최종 결과를 DB에 저장하기 위해서
          */
         async saveFormDefinition({ id, html }) {
-            // const isNewSave = this.loadFormId !== id;
-
-            const isFormAlreadyExist = await this.backend.getRawDefinition(id, { type: 'form_def' });
-
-            // if (isNewSave) {
-            //     try {
-                    if (isFormAlreadyExist && isFormAlreadyExist.id !== "defaultform") {
-                        if (!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`)) return;
-                    }
-                // } catch (error) {
-
-                // }
-            // }
+            const existingForm = await this.backend.getRawDefinition(id, { type: 'form_def' });
+            if (existingForm && existingForm.id !== "defaultform") {
+                if (!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`)) return;
+            }
 
             await this.backend.putRawDefinition(html, id, {
                 type: 'form',
-                proc_def_id: isFormAlreadyExist?.proc_def_id || id,
-                activity_id: isFormAlreadyExist?.activity_id || 'standalone'
+                proc_def_id: existingForm?.proc_def_id || id,
+                activity_id: existingForm?.activity_id || 'standalone'
             });
             this.isOpenSaveDialog = false;
 
             this.kEditorContentBeforeSave = this.$refs.mashup.getKEditorContentHtml();
             this.isAIUpdated = false
-
-            // if (!isFormAlreadyExist) {
-            //     await this.$router.push(`/ui-definitions/${id}`);
-            //     window.location.reload();
-            // }
-
 
             if(this.processDefUrlData) {
                 const channel = new BroadcastChannel(this.processDefUrlData.channelId);

@@ -15,7 +15,8 @@ import { is } from 'bpmn-js/lib/util/ModelUtil';
 import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil';
 
 const HIGH_PRIORITY = 1500,
-  TASK_BORDER_RADIUS = 10;
+  TASK_BORDER_RADIUS = 10,
+  COLOR_RULES_STORAGE_KEY = 'bpmn_color_rules';
 
 // Check if text contains Korean characters
 function containsKorean(text) {

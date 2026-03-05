@@ -1,6 +1,10 @@
 <script setup>
 import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+
 const props = defineProps({ item: Object, level: Number });
+const route = useRoute();
+
 const useI18n = computed(() => {
     if (props.level > 0) {
         return false;
@@ -27,33 +31,47 @@ function getIconColor(item) {
         return '#64B5F6';
     } else if (item.type && item.type.includes('dmn')) {
         return '#BA68C8';
+    } else if (item.type && item.type.includes('rule')) {
+        return '#BA68C8';
     } else if (item.type && item.type.includes('form')) {
         return '#81C784';
     } else {
         return '';
     }
 }
+
+function isItemActive(item) {
+    if (!item || !item.to) return false;
+    const itemPath = typeof item.to === 'object' ? item.to.path : item.to;
+    return route.path === itemPath;
+}
 </script>
 
 <template>
-    <div class="mb-0 item-hover">
+    <div class="mb-0 sidebar-list-hover-bg" :class="{ 'sidebar-list-hover-bg--active': isItemActive(item) }">
         <!---Single Item-->
         <v-list-item
             :to="item.to"
             rounded="lg"
-            :color="item.BgColor"
             :ripple="false"
             :disabled="item.disabled"
             :target="item.type === 'external' ? '_blank' : ''"
             v-scroll-to="{ el: '#top' }"
             :style="{ marginLeft: 8 + (level - 1) + 'px' }"
+            class="sidebar-list-item"
         >
             <!-- 정의관리 아이콘 보여지던곳 -->
             <template v-slot:prepend>
                 <div :color="item.BgColor"
                     class="mr-2"
                 >
+                    <span
+                        v-if="item.type && item.type.includes('rule')"
+                        class="bpmn-icon-business-rule bpmn-sidebar-icon"
+                        aria-hidden="true"
+                    />
                     <Icons
+                        v-else
                         :icon="getIcon(item)"
                         :color="getIconColor(item)"
                     />
@@ -91,9 +109,13 @@ function getIconColor(item) {
 </template>
 
 <style scoped>
-.item-hover:hover {
-    border-radius: 8px;
-    background-color: #e3f2fd;
-    transform: translateX(2px);
+.bpmn-sidebar-icon {
+    font-size: 20px;
+    line-height: 1;
+    color: #BA68C8;
+}
+.bpmn-sidebar-icon:before {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
 </style>

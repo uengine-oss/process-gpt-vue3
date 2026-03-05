@@ -52,7 +52,7 @@
             </div>
         </div>
         <!-- Add Major Process Dialog: 특정 도메인 탭에서만 표시 -->
-        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && selectedDomain"
+        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -94,6 +94,9 @@ export default {
         hover: false,
     }),
     computed: {
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
         filteredMajorProcList() {
             if (!this.selectedDomain || !this.value.major_proc_list) {
                 return this.value.major_proc_list || [];
@@ -156,6 +159,14 @@ export default {
         },
         deleteProcess() {
             this.parent.mega_proc_list = this.parent.mega_proc_list.filter(item => item.id != this.value.id);
+            
+            // 성공 메시지 표시
+            if (window.$app_) {
+                window.$app_.snackbarMessage = this.$t('successMsg.delete');
+                window.$app_.snackbarColor = 'success';
+                window.$app_.snackbar = true;
+                window.$app_.snackbarSuccessStatus = true;
+            }
         },
         clickProcess(id) {
             this.$emit('clickProcess', id);

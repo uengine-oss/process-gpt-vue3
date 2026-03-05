@@ -59,6 +59,7 @@
                         @beforeReply="beforeReply"
                         @sendMessage="beforeSendMessage"
                         @startProcess="startProcess"
+                        @executeProcess="handleExecuteProcess"
                         @cancelProcess="cancelProcess"
                         @deleteWorkList="deleteWorkList"
                         @deleteAllWorkList="deleteAllWorkList"
@@ -228,7 +229,9 @@
 import AssistantChats from "../chat/AssistantChats.vue";
 import Attachments from "./Attachments.vue";
 import ChatModule from "@/components/ChatModule.vue";
-import ChatGenerator from "@/components/ai/WorkAssistantGenerator.js";
+import WorkAssistantGenerator from "@/components/ai/WorkAssistantGenerator.js";
+import ConsultingGenerator from "@/components/ai/ProcessConsultingGenerator.js";
+import CompanyQueryGenerator from "@/components/ai/CompanyQueryGenerator.js";
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
 import UserListing from '@/components/apps/chats/UserListing.vue';
 import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
@@ -314,10 +317,13 @@ export default {
                 if (newVal && newVal.id) {
                     if(this.generator) {
                         this.chatRoomId = newVal.id;
-                        this.generator.setChatRoomData(newVal);
+                        // setChatRoomData는 일부 generator에만 있음
+                        if(this.generator.setChatRoomData) {
+                            this.generator.setChatRoomData(newVal);
+                        }
                         await this.getAttachments();
                     } else {
-                        this.generator = new ChatGenerator(this, {
+                        this.generator = new WorkAssistantGenerator(this, {
                             isStream: true,
                             preferredLanguage: "Korean"
                         });
@@ -348,21 +354,6 @@ export default {
             this.chatRenderKey++;
         });
 
-        // ProcessDefinitionMap에서 전달된 메시지 처리 (query parameter 확인)
-        if (this.$route.query.processMessage) {
-            try {
-                const messageData = JSON.parse(decodeURIComponent(this.$route.query.processMessage));
-                await this.handleProcessDefinitionMessage(messageData);
-                
-                // query parameter 제거 (메시지 처리 완료 후)
-                this.$router.replace({ path: '/chats' });
-            } catch (error) {
-                console.error('ProcessDefinitionMap 메시지 처리 실패:', error);
-                // 에러 발생 시에도 query parameter는 제거
-                this.$router.replace({ path: '/chats' });
-            }
-        }
-
         if (this.$route.query.id) {
             this.chatRoomSelected(this.chatRoomList.find(room => room.id === this.$route.query.id));
         }
@@ -378,10 +369,15 @@ export default {
             this.chatRoomId = this.currentChatRoom.id;
         }
 
-        this.generator = new ChatGenerator(this, {
-            isStream: true,
-            preferredLanguage: "Korean"
-        });
+        // 메인 채팅에서 전달된 메시지 처리
+        if (this.$route.query.mainChatMessage) {
+            await this.handleMainChatMessage(decodeURIComponent(this.$route.query.mainChatMessage));
+        } else {
+            this.generator = new WorkAssistantGenerator(this, {
+                isStream: true,
+                preferredLanguage: "Korean"
+            });
+        }
     },
     beforeUnmount() {
         this.EventBus.emit('chat-room-unselected');
@@ -482,7 +478,7 @@ export default {
             }
             const res = await this.getData(`calendar/${this.userInfo.uid}`, option);
             this.calendarData = res && res.data ? res.data : {};
-            this.generator.setCalendarData(this.calendarData);
+            if(this.generator && this.generator.setCalendarData) this.generator.setCalendarData(this.calendarData);
         },
         async getUserList(){
             var me = this
@@ -701,13 +697,6 @@ export default {
         async beforeSendMessage(newMessage) {
             if (newMessage && (newMessage.text != '' || (newMessage.images && newMessage.images.length > 0) || newMessage.image != null)) {
                 this.putMessage(this.createMessageObj(newMessage))
-                if(!this.generator.contexts) {
-                    let contexts = await this.backend.listDefinition();
-                    this.generator.setContexts(contexts);
-                }
-                
-                let instanceList = await this.backend.getAllInstanceList(); 
-                this.generator.setWorkList(instanceList);
                 newMessage.callType = 'chats'
                 this.sendMessage(newMessage);
                 
@@ -716,6 +705,213 @@ export default {
                     console.warn('saveAccessPage 실패:', e);
                 });
             }
+        },
+        async handleExecuteProcessRequest(executeData) {
+            const me = this;
+            me.$try({
+                context: me,
+                action: async () => {
+                    // 프로세스 정의 가져오기
+                    const processDef = await me.backend.getRawDefinition(executeData.processDefinitionId, null);
+                    
+                    if (!processDef) {
+                        const errorMsg = me.createMessageObj(
+                            me.$t('chats.processNotFound', { name: executeData.processDefinitionName }), 
+                            'system'
+                        );
+                        me.putMessage(errorMsg);
+                        me.messages.push(errorMsg);
+                        return;
+                    }
+
+                    // 프로세스 정의에서 첫 번째 액티비티 찾기
+                    let firstActivity = null;
+                    let firstActivityForm = null;
+                    
+                    if (processDef && processDef.definition) {
+                        const definition = processDef.definition;
+                        
+                        // Start Event 찾기
+                        const startEvent = definition.events?.find(event => event.type === 'startEvent');
+                        
+                        if (startEvent) {
+                            // Start Event 이후의 첫 번째 Sequence 찾기
+                            const firstSequence = definition.sequences?.find(seq => seq.source === startEvent.id);
+                            
+                            if (firstSequence && firstSequence.target) {
+                                // 첫 번째 액티비티 찾기
+                                firstActivity = definition.activities?.find(activity => activity.id === firstSequence.target);
+                                
+                                if (firstActivity) {
+                                    // 액티비티의 폼 정보 가져오기
+                                    if (firstActivity.tool && firstActivity.tool.startsWith('formHandler:')) {
+                                        const formKey = firstActivity.tool.replace('formHandler:', '');
+                                        
+                                        try {
+                                            // 폼 정보 가져오기
+                                            const formInfo = await me.backend.getFormFields(formKey);
+                                            
+                                            if (formInfo) {
+                                                firstActivityForm = {
+                                                    formKey: formKey,
+                                                    formHtml: formInfo.html,
+                                                    fields: formInfo.fields_json,
+                                                    activityName: firstActivity.name || firstActivity.id,
+                                                    activityId: firstActivity.id
+                                                };
+                                            }
+                                        } catch (error) {
+                                            console.error('폼 정보 가져오기 오류:', error);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 시스템 응답 메시지 추가 (프로세스 설명 + 폼)
+                    const systemMsg = me.createMessageObj(
+                        `"${executeData.processDefinitionName}" 프로세스를 실행합니다.\n\n${processDef.description || ''}`,
+                        'system'
+                    );
+                    
+                    // 프로세스 실행에 필요한 정보 추가
+                    systemMsg.processDefinitionId = executeData.processDefinitionId;
+                    systemMsg.processDefinitionName = executeData.processDefinitionName;
+                    systemMsg.processDefinition = processDef;
+                    systemMsg.firstActivityForm = firstActivityForm;
+                    systemMsg.work = 'StartProcessInstance';
+                    
+                    me.putMessage(systemMsg);
+                    me.messages.push(systemMsg);
+                }
+            });
+        },
+        async handleCompanyQuery(queryData) {
+            const me = this;
+            await me.$try({
+                context: me,
+                action: async () => {     
+                    // CompanyQueryGenerator 초기화
+                    me.generator = new CompanyQueryGenerator(me, {
+                        isStream: false,
+                        preferredLanguage: "Korean"
+                    });
+                    
+                    // 간소화된 프로세스 목록은 이미 WorkAssistantGenerator가 제공했으므로
+                    // 동일한 목록을 사용 (중복 로드 방지)
+                    const processes = await me.backend.listDefinition();
+                    const simplifiedProcesses = processes.map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        description: p.description || ''
+                    }));
+                    me.generator.setSimplifiedProcesses(simplifiedProcesses);
+                    me.generator.setUserInfo(me.userInfo);
+                    me.generator.setToday();
+                    me.generator.setQueryType(queryData.queryType);
+                    
+                    // 전체 대화 내역을 previousMessages에 추가
+                    let chatMsgs = [];
+                    if (me.messages && me.messages.length > 0) {
+                        me.messages.forEach((msg) => {
+                            if (msg.content && !msg.isLoading) {
+                                chatMsgs.push({
+                                    role: msg.role,
+                                    content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+                                });
+                            }
+                        });
+                    }
+                    me.generator.previousMessages = [me.generator.previousMessages[0], ...chatMsgs];
+                    
+                    // 1단계 LLM 실행
+                    await me.startGenerate();
+                }
+            });
+        },
+        async fetchDetailedDataAndRetry(responseObj) {
+            const me = this;
+            await me.$try({
+                context: me,
+                action: async () => {
+                    // 로딩 메시지 업데이트
+                    // if (me.messages.length > 0 && me.messages[me.messages.length - 1].isLoading) {
+                        
+                        if (responseObj.requiredDataType === 'processDetail') {
+                            
+                            // 프로세스 상세 정보 조회
+                            const processDetails = [];
+                            for (const processId of (responseObj.requiredProcessIds || [])) {
+                                const detail = await me.backend.getRawDefinition(processId, null);
+                                if (detail) {
+                                    processDetails.push(detail);
+                                }
+                            }
+                            me.generator.setDetailedData({ processes: processDetails });
+                            
+                        } else if (responseObj.requiredDataType === 'instances') {
+                            
+                            // 인스턴스 목록 조회
+                            const instances = await me.backend.getAllInstanceList();
+                            
+                            // 사용자가 참가하고 있는 인스턴스만 필터링
+                            let filteredInstances = instances.filter(inst => 
+                                inst.participants && inst.participants.includes(me.userInfo.uid)
+                            );
+                            
+                            // 특정 프로세스의 인스턴스만 추가 필터링
+                            if (responseObj.requiredProcessIds && responseObj.requiredProcessIds.length > 0) {
+                                filteredInstances = filteredInstances.filter(inst => 
+                                    responseObj.requiredProcessIds.includes(inst.defId)
+                                );
+                            }
+                            
+                            // 인스턴스 ID 목록 추출
+                            const instanceIds = filteredInstances.map(inst => inst.instId);
+                            
+                            // todolist 정보 가져오기 (중복 제거된 구조)
+                            const todoListData = await me.backend.getTodoListByInstances(instanceIds);
+                            
+                            // 인스턴스 기본 정보와 todolist 상세 정보 결합
+                            const instancesWithDetails = {};
+                            
+                            Object.keys(todoListData).forEach(defId => {
+                                instancesWithDetails[defId] = {
+                                    processDefinitionId: defId,
+                                    processName: filteredInstances.find(inst => inst.defId === defId)?.name?.split('_')[0] || defId,
+                                    instances: {}
+                                };
+                                
+                                Object.keys(todoListData[defId].instances).forEach(instId => {
+                                    const instanceInfo = filteredInstances.find(inst => inst.instId === instId);
+                                    instancesWithDetails[defId].instances[instId] = {
+                                        instanceId: instId,
+                                        instanceName: instanceInfo?.name || instId,
+                                        status: instanceInfo?.status,
+                                        startDate: instanceInfo?.startDate,
+                                        currentActivityIds: instanceInfo?.currentActivityIds,
+                                        activities: todoListData[defId].instances[instId].activities
+                                    };
+                                });
+                            });
+                            
+                            me.generator.setDetailedData({ instances: instancesWithDetails });
+                            
+                        } else if (responseObj.requiredDataType === 'organization') {
+                            
+                            // 조직도 정보 조회
+                            const orgData = await me.getData(`configuration`, { match: { key: 'organization' } });
+                            if (orgData && orgData.value && orgData.value.chart) {
+                                me.generator.setDetailedData({ organization: orgData.value.chart });
+                            }
+                        }
+                    // }
+                    
+                    // 2단계 LLM 실행
+                    await me.startGenerate();
+                }
+            });
         },
         async executeProcess(input) {
             var me = this;
@@ -732,6 +928,89 @@ export default {
                     }
                 }
             })
+        },
+        async handleExecuteProcess(data) {
+            const me = this;
+            await me.$try({
+                context: me,
+                action: async () => {
+                    // 첫 번째 액티비티 ID 및 폼 키 가져오기
+                    const activityId = data.firstActivityForm?.activityId;
+                    const formKey = data.firstActivityForm?.formKey;
+                    
+                    if (!activityId || !formKey) {
+                        console.error('Activity ID 또는 Form Key를 찾을 수 없습니다.');
+                        return;
+                    }
+                    
+                    // Role mappings 가져오기 및 첫 번째 액티비티의 role을 현재 사용자로 설정
+                    const roleMappings = JSON.parse(JSON.stringify(data.processDefinition?.definition?.roles || []));
+                    
+                    // 첫 번째 액티비티 정보 가져오기
+                    const firstActivity = data.processDefinition?.definition?.activities?.find(
+                        act => act.id === activityId
+                    );
+                    
+                    if (firstActivity && firstActivity.role) {
+                        // 해당 role의 endpoint를 현재 사용자로 변경
+                        const roleMapping = roleMappings.find(r => r.name === firstActivity.role);
+                        if (roleMapping) {
+                            roleMapping.endpoint = [me.userInfo.uid];
+                            roleMapping.default = [me.userInfo.uid];
+                        }
+                    }
+                    
+                    // 폼 데이터를 프로세스 시작 입력으로 변환
+                    const input = {
+                        process_definition_id: data.processDefinitionId,
+                        activity_id: activityId,
+                        answer: "",
+                        form_values: {
+                            [formKey]: data.formValues || {}
+                        },
+                        role_mappings: roleMappings,
+                        version_tag: data.processDefinition?.definition?.version_tag || 'major',
+                        version: data.processDefinition?.definition?.version || null,
+                        source_list: []
+                    };
+                    
+                    console.log('프로세스 실행 input:', input);
+                    
+                    // 프로세스 실행
+                    const response = await me.backend.start(input);
+                    console.log('프로세스 실행 응답:', response);
+                    
+                    if (response && !response.error && !response.detail) {
+                        me.EventBus.emit('instances-updated');
+                        
+                        // 성공 메시지 추가
+                        const successMsg = me.createMessageObj(
+                            `"${data.processDefinitionName}" 프로세스가 성공적으로 실행되었습니다.`,
+                            'system'
+                        );
+                        me.putMessage(successMsg);
+                        me.messages.push(successMsg);
+                        
+                        // 인스턴스 상세 페이지로 이동할 수 있는 버튼 추가
+                        const linkMsg = me.createMessageObj(
+                            '실행된 프로세스 인스턴스를 확인하시겠습니까?',
+                            'system'
+                        );
+                        linkMsg.instanceId = response.process_instance_id || response.proc_inst_id || response.id;
+                        linkMsg.instanceUrl = `/todolist`;
+                        linkMsg.companyQueryUrl = `/todolist`;
+                        me.putMessage(linkMsg);
+                        me.messages.push(linkMsg);
+                    } else {
+                        const errorMsg = me.createMessageObj(
+                            response?.detail || response?.error || me.$t('chats.processExecutionFailed', { title: data.processDefinitionName }),
+                            'system'
+                        );
+                        me.putMessage(errorMsg);
+                        me.messages.push(errorMsg);
+                    }
+                }
+            });
         },
         afterModelCreated(response) {
             if (response.work == 'A2AResponse') {
@@ -769,23 +1048,23 @@ export default {
                 }
                 // process instance execute
                 if(responseObj.work == 'StartProcessInstance') {
-                    if(!this.lastSendMessage) {
-                        const userMsgs = this.messages.filter(msg => msg.role === 'user');
-                        this.lastSendMessage = userMsgs[userMsgs.length - 1];
+                    if(!me.lastSendMessage) {
+                        const userMsgs = me.messages.filter(msg => msg.role === 'user');
+                        me.lastSendMessage = userMsgs[userMsgs.length - 1];
                     }
-                    systemMsg = this.$t('chats.startProcess', { title: responseObj.title });
+                    systemMsg = me.$t('chats.startProcess', { title: responseObj.title });
                     const input = {
                         process_name: responseObj.title,
                         process_definition_id: responseObj.process_definition_id,
                         answer: {
                             text: responseObj.prompt,
-                            image: this.lastSendMessage.image
+                            image: me.lastSendMessage.image
                         }
                     };
-                    await this.executeProcess(input);
+                    await me.executeProcess(input);
 
                 } else if(responseObj.work == 'TodoListRegistration'){
-                    systemMsg = this.$t('chats.todoAdded', { activityId: responseObj.activity_id })
+                    systemMsg = me.$t('chats.todoAdded', { activityId: responseObj.activity_id })
 
                     if(!responseObj.participants){
                         responseObj.participants = []
@@ -815,7 +1094,7 @@ export default {
                     })
 
                 } else if(responseObj.work == 'ScheduleRegistration'){
-                    systemMsg = this.$t('chats.scheduleAdded', { title: responseObj.title })
+                    systemMsg = me.$t('chats.scheduleAdded', { title: responseObj.title })
                     let start = responseObj.startDateTime.split('/')
                     let startDate = start[0].split("-")
                     let end = responseObj.endDateTime.split('/')
@@ -875,17 +1154,17 @@ export default {
                 //     me.$router.push(`/definitions/${responseObj.processId}`);
                 // }
 
-                systemMsg = this.$t('chats.userRequestedAction', { name: me.userInfo.name, action: systemMsg })
-                const systemMsgObj = me.createMessageObj(systemMsg, 'system')
-                if(this.currentChatRoom.id == this.chatRoomId){
+                const finalMsg = `${me.userInfo.name}님이 요청하신 ${systemMsg}`;
+                const systemMsgObj = me.createMessageObj(finalMsg, 'system')
+                if(me.currentChatRoom.id == me.chatRoomId){
                     
-                    if(this.messages[this.messages.length - 1].content === '...' && this.messages[this.messages.length - 1].isLoading){
-                        this.messages.pop()
+                    if(me.messages[me.messages.length - 1].content === '...' && me.messages[me.messages.length - 1].isLoading){
+                        me.messages.pop()
                     }
-                    this.messages.push(systemMsgObj)
+                    me.messages.push(systemMsgObj)
                 }
                 
-                me.putMessage(systemMsgObj, this.chatRoomId)
+                me.putMessage(systemMsgObj, me.chatRoomId)
                 
                 if(response.content){
                     me.deleteSystemMessage(response)
@@ -894,20 +1173,186 @@ export default {
         afterModelStopped(response) {
             // console.log(response)
         },
+        async handleMainChatMessage(messageText) {
+            const me = this;
+            await me.$try({
+                context: me,
+                action: async () => {
+                    // 1. 새 시스템 채팅방 생성
+                    const systemChatRoom = {
+                        "name": "Process GPT",
+                        "participants": [
+                            {
+                                email: "system@uengine.org",
+                                id: "system_id",
+                                username: "System",
+                                is_admin: true,
+                                notifications: null
+                            }
+                        ]
+                    };
+                    me.createChatRoom(systemChatRoom);
+                    
+                    // 2. 사용자 메시지 생성 및 저장
+                    const userMsg = me.createMessageObj({ text: messageText });
+                    me.messages.push(userMsg);
+                    me.putMessage(userMsg);
+                    
+                    // 3. WorkAssistantGenerator로 초기화
+                    me.generator = new WorkAssistantGenerator(me, {
+                        isStream: false,
+                        preferredLanguage: "Korean"
+                    });
+                    
+                    // 컨텍스트 설정
+                    const contexts = await me.backend.listDefinition();
+                    me.generator.setContexts(contexts);
+                    me.generator.setUserInfo(me.userInfo);
+                    me.generator.setToday();
+                    
+                    // 4. sendMessage 호출 (ChatModule의 생명주기 활용, 중복 체크로 메시지는 추가 안됨)
+                    await me.sendMessage({ text: messageText });
+                    
+                    // query parameter 제거
+                    me.$router.replace({ path: '/chats' });
+                }
+            });
+        },
         async afterGenerationFinished(responseObj, chatRoomId = null) {
-            if(responseObj){
+            const me = this;
+            
+            // 메인 채팅에서 넘어온 intent 처리
+            if (responseObj && responseObj.work) {
+                // 채팅방 이름 및 메시지 업데이트
+                if (me.currentChatRoom) {
+                    me.currentChatRoom.name = responseObj.summaryUserRequest || responseObj.messageForUser || me.currentChatRoom.name;
+                    
+                    // 채팅방 목록 업데이트
+                    const chatRoomIndex = me.chatRoomList.findIndex(room => room.id === me.currentChatRoom.id);
+                    if (chatRoomIndex !== -1) {
+                        me.chatRoomList[chatRoomIndex].name = me.currentChatRoom.name;
+                    }
+                    
+                    // 채팅방 저장
+                    await me.putObject(`chat_rooms`, me.currentChatRoom);
+                }
+                
+                if (responseObj.work === 'CreateProcessDefinition') {
+                    // 컨설팅 모드로 전환
+                    me.generator = new ConsultingGenerator(me, {
+                        isStream: true,
+                        preferredLanguage: "Korean"
+                    });
+                    
+                    // 시스템 메시지 제거 (WorkAssistantGenerator의 응답)
+                    if (me.messages[me.messages.length - 1].role === 'system') {
+                        me.messages.pop();
+                    }
+                    
+                    // 전체 대화 내역을 previousMessages에 추가
+                    let chatMsgs = [];
+                    if (me.messages && me.messages.length > 0) {
+                        me.messages.forEach((msg) => {
+                            if (msg.content && !msg.isLoading) {
+                                chatMsgs.push({
+                                    role: msg.role,
+                                    content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+                                });
+                            }
+                        });
+                    }
+                    me.generator.previousMessages = [me.generator.previousMessages[0], ...chatMsgs];
+                    
+                    // 컨설팅 시작
+                    await me.startGenerate();
+                    return;
+                    
+                } else if (responseObj.work === 'StartProcessInstance') {
+                    // 시스템 메시지 제거
+                    if (me.messages[me.messages.length - 1].role === 'system') {
+                        me.messages.pop();
+                    }
+                    
+                    const lastUserMessage = me.messages.filter(msg => msg.role === 'user').pop();
+                    await me.handleExecuteProcessRequest({
+                        processDefinitionId: responseObj.process_definition_id || responseObj.processDefinitionId,
+                        processDefinitionName: responseObj.process_definition_name || responseObj.processDefinitionName || responseObj.messageForUser,
+                        userMessage: lastUserMessage ? lastUserMessage.content : ''
+                    });
+                    return;
+                    
+                } else if (responseObj.work === 'CompanyQuery') {
+                    // 회사 정보 조회 - 2단계 LLM 실행
+                    // WorkAssistantGenerator의 응답 메시지 제거
+                    if (me.messages[me.messages.length - 1].role === 'system') {
+                        me.messages.pop();
+                    }
+                    
+                    const lastUserMessage = me.messages.filter(msg => msg.role === 'user').pop();
+                    await me.handleCompanyQuery({
+                        queryType: responseObj.queryType || 'general',
+                        userQuestion: lastUserMessage ? lastUserMessage.content : ''
+                    });
+                    return;
+                }
+            }
+            
+            // CompanyQueryGenerator의 1차 응답 처리 (추가 정보 필요 여부 확인)
+            if (responseObj && responseObj.needMoreInfo && !responseObj.work) {
+                // 2차 LLM 실행을 위한 데이터 fetch
+                await me.fetchDetailedDataAndRetry(responseObj);
+                return;
+            }
+            
+            // CompanyQueryGenerator의 최종 답변 처리
+            if (responseObj && responseObj.answer && !responseObj.work && !responseObj.needMoreInfo) {
+                // 로딩 메시지 제거
+                if (me.messages.length > 0 && me.messages[me.messages.length - 1].role === 'system') {
+                    me.messages.pop();
+                }
+                // 최종 답변 메시지 추가
+                const answerMsg = me.createMessageObj(responseObj.answer, 'system');
+                answerMsg.companyQueryResult = true;
+                me.messages.push(answerMsg);
+                me.putMessage(answerMsg);
+
+                me.generator = new WorkAssistantGenerator(me, {
+                    isStream: false,
+                    preferredLanguage: "Korean"
+                });
+                return;
+            }
+            
+            // 컨설팅 모드 응답 처리
+            if (responseObj && (responseObj.answerType || responseObj.validity)) {
+                // 컨설팅 응답 메시지 저장
+                if (me.messages.length > 0) {
+                    const lastMessage = me.messages[me.messages.length - 1];
+                    if (lastMessage.role === 'system' && !lastMessage.uuid && !lastMessage.isLoading) {
+                        me.putMessage(lastMessage);
+                    }
+                }
+                
+                // 프로세스 생성 모드로 전환
+                if (responseObj.answerType === 'generateProcessDef') {
+                    // 현재까지의 대화 내용을 store에 저장
+                    me.$store.dispatch('updateMessages', me.messages);
+                    
+                    // /definitions/chat로 이동
+                    me.$router.push('/definitions/chat');
+                    return;
+                }
+            }
+            
+            // 기존 채팅에서의 응답 처리
+            if(responseObj && !responseObj.work){ // work가 없는 경우만 처리 (메인 채팅 intent는 위에서 처리됨)
                 let startProcess = false;
                 let role = 'system';
-                let obj = this.createMessageObj(responseObj, role)
+                let obj = me.createMessageObj(responseObj, role)
                 if(responseObj.messageForUser){
                     obj.messageForUser = responseObj.messageForUser
                 }
-                if(responseObj.work || this.isSystemChat) {
-                    // this.messages.push({
-                    //     role: 'system',
-                    //     content: '...',
-                    //     isLoading: true
-                    // });
+                if(me.isSystemChat) {
                     if(responseObj.work == 'CompanyQuery'){
                         try{
                             const token = localStorage.getItem('accessToken');
@@ -960,14 +1405,12 @@ export default {
                     } else {
                         startProcess = true;
                     }
-                    obj.uuid = this.uuid()
-                    if(startProcess) {
-                        this.startProcess(obj, chatRoomId)
-                    } else {
-                        this.putMessage(obj, chatRoomId)
+                    obj.uuid = me.uuid()
+                    if(!startProcess) {
+                        me.putMessage(obj, chatRoomId)
                     }
                 } else {
-                    if(!this.ProcessGPTActive) this.ProcessGPTActive = true
+                    if(!me.ProcessGPTActive) me.ProcessGPTActive = true
                     if (typeof responseObj == 'string') {
                         responseObj = {
                             messageForUser: responseObj
@@ -976,7 +1419,7 @@ export default {
                     if (!responseObj.expanded) {
                         responseObj.expanded = false
                     }
-                    this.generatedWorkList.push(responseObj)
+                    me.generatedWorkList.push(responseObj)
                 }
             }
         },

@@ -1,6 +1,9 @@
 <template>
     <div class="w-100">
         <slot name="contents">
+            <div>
+                <InstanceHistory/>
+            </div>
             <div v-for="(message, index) in filterMessages" :key="index" class="w-100 pa-4">
                 <slot name="messageProfile">
                     <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
@@ -55,11 +58,18 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import DefaultForm from '@/components/designer/DefaultForm.vue';
+import InstanceHistory from '@/components/ui/InstanceHistory.vue';
 
 const backend = BackendFactory.createBackend()
 export default {
     props: {
         messages: Array,
+        // WorkItem.vue 에서 내려주는 값(진행중 조건 판단에 사용)
+        isCompleted: {
+            type: Boolean,
+            default: false
+        },
+        instance: Object,
     },
     data() {
         return {
@@ -69,7 +79,8 @@ export default {
     },
     components: {
         DynamicForm,
-        DefaultForm
+        DefaultForm,
+        InstanceHistory
     },
     created(){
         this.init()

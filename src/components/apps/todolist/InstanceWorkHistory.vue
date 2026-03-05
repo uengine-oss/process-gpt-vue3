@@ -1,7 +1,11 @@
 <template>
     <div>
-        <perfect-scrollbar v-if="messages.length > 0" class="h-100" ref="scrollContainer" @scroll="handleScroll">
-            <div class="d-flex w-100">
+        <perfect-scrollbar class="h-100" ref="scrollContainer" @scroll="handleScroll">
+            <div v-if="mode == 'uEngine'" class="d-flex w-100"  >
+                <component :is="'work-history-' + mode" :instance="instance" :messages="messages" :isComplete="isComplete"
+                    @clickMessage="navigateToWorkItemByTaskId" @updated="$emit('updated')" />
+            </div>
+            <div v-else-if="messages.length > 0" class="d-flex w-100" >
                 <component :is="'work-history-' + mode" :messages="messages" :isComplete="isComplete"
                     @clickMessage="navigateToWorkItemByTaskId" @updated="$emit('updated')" />
             </div>
@@ -11,7 +15,7 @@
 
 <script>
 import WorkItemChat from '@/components/ui/WorkItemChat.vue';
-import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
+import ProcessInstanceTable from '@/components/ProcessInstanceTable.vue';
 import ScrollBottomHandle from '@/components/ui/ScrollBottomHandle.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
@@ -21,7 +25,7 @@ export default {
     mixins: [ScrollBottomHandle],
     components: {
         'work-history-uEngine': WorkItemChat,
-        'work-history-ProcessGPT': ProcessInstanceChat,
+        'work-history-ProcessGPT': ProcessInstanceTable,
     },
     props: {
         instance: Object,

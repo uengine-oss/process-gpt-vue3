@@ -2,7 +2,7 @@
   <section class="hero">
     <div class="container">
       <div class="hero-content">
-        <h1>{{ $t('HeroSection.title1') }}</h1>
+        <h1 class="mb-2">{{ $t('HeroSection.title1') }}</h1>
         <h1>{{ $t('HeroSection.title2') }}</h1>
         <p class="pa-0 ma-0 pt-4 pb-4">{{ $t('HeroSection.description1') }}</p>
         
@@ -120,17 +120,17 @@ export default {
 
 .hero h1 {
   /* font-size: 2.5rem; */
-  font-size: 36px;
+  font-size: 46px;
   font-weight: 700;
   color: var(--text-color-dark);
-  line-height: 1.4;
+  line-height: 1.2;
 }
 
 .hero p {
   /* font-size: 1.1rem; */
-  font-size: 17px;
+  font-size: 20px;
   color: var(--text-color);
-  line-height: 1.6;
+  line-height: 1.4;
 }
 
 .hero-buttons {
@@ -205,16 +205,19 @@ export default {
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
   .hero {
     padding: 100px 0 40px;
   }
   
   .hero h1 {
-    font-size: 28px;
-    /* font-size: 1.8rem; */
+    font-size: 32px;
   }
   
+  .hero p {
+    font-size: 18px;
+  }
+
   .hero-buttons {
     flex-direction: column;
     width: 100%;
@@ -223,6 +226,12 @@ export default {
   .btn {
     width: 100%;
     text-align: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero h1 {
+    font-size: 28px;
   }
 }
 </style>

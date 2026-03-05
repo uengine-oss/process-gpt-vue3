@@ -7,6 +7,23 @@ const axiosInstance = axios.create();
 
 class PalModeBackend extends ProcessGPTBackend  {
 
+    async getProdVersion(procDefId: string): Promise<string | null> {
+        try {
+            if (!procDefId) return null;
+            const defId = String(procDefId).toLowerCase();
+            // StorageBaseSupabase.getString은 match/key 기반으로 컬럼을 조회할 수 있음
+            const value = await storage.getString('proc_def', {
+                match: {
+                    id: defId,
+                    tenant_id: window.$tenantName
+                },
+                column: 'prod_version'
+            });
+            return value || null;
+        } catch (e) {
+            return null;
+        }
+    }
 
     async dryRun(isSimulate: string, command: object) {
         // command를 object json으로 변경

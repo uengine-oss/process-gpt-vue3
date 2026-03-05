@@ -23,6 +23,12 @@ const isWidthUnder1279 = ref(window.innerWidth <= 1279);
 // 모바일 여부 (768px 이하)를 추적하는 반응형 참조
 const isMobile = ref(window.innerWidth <= 768);
 
+// 리사이즈 관련 상태
+const leftPartWidth = ref(30); // 퍼센트 단위
+const isResizing = ref(false);
+const startX = ref(0);
+const startWidth = ref(0);
+
 // 화면 크기 변경 이벤트 핸들러
 function handleResize() {
     isWidthUnder1279.value = window.innerWidth <= 1279;
@@ -81,6 +87,10 @@ const slotName = computed(() => {
     }
 });
 
+watch(sDrawer, (val) => {
+    globalState?.methods.setMobileDrawerOpen(val);
+});
+
 // drawer를 닫는 함수
 const closeDrawer = () => {
     sDrawer.value = false;
@@ -131,6 +141,71 @@ const menuButtonStyle = computed(() => {
     }
     return '';
 });
+
+// 리사이즈 메서드들
+const startResize = (e: MouseEvent) => {
+    isResizing.value = true;
+    startX.value = e.clientX;
+    startWidth.value = leftPartWidth.value;
+    
+    document.addEventListener('mousemove', doResize);
+    document.addEventListener('mouseup', stopResize);
+    
+    // 드래그 중 텍스트 선택 방지
+    e.preventDefault();
+};
+
+const doResize = (e: MouseEvent) => {
+    if (!isResizing.value) return;
+    
+    const container = document.querySelector('.mainbox');
+    if (!container) return;
+    
+    const containerWidth = container.clientWidth;
+    const deltaX = e.clientX - startX.value;
+    const deltaPercent = (deltaX / containerWidth) * 100;
+    const newWidth = startWidth.value + deltaPercent;
+    
+    // 최소 20%, 최대 70%로 제한
+    if (newWidth >= 20 && newWidth <= 70) {
+        leftPartWidth.value = newWidth;
+    }
+};
+
+const stopResize = () => {
+    isResizing.value = false;
+    document.removeEventListener('mousemove', doResize);
+    document.removeEventListener('mouseup', stopResize);
+};
+
+// /chats 경로인지 확인
+const isChatPage = computed(() => {
+    return route.path === '/chats';
+});
+
+// left-part와 right-part의 동적 스타일
+const leftPartStyle = computed(() => {
+    if (isChatPage.value) {
+        return `width: ${leftPartWidth.value}%;`;
+    }
+    
+    const path = route.path;
+    // /definitions/:id, /dmn/:id 같은 BPMN 편집 페이지에서는 width 지정 안 함
+    if (/^\/definitions\//.test(path) || /^\/dmn\//.test(path)) {
+        return '';
+    }
+    
+    return 'width: 320px;'; // 기본 고정 너비
+});
+
+const rightPartStyle = computed(() => {
+    // /chats 페이지 + lgAndUp + !isInstanceChat: 리사이즈 가능한 퍼센트 너비
+    if (isChatPage.value && lgAndUp.value && !props.isInstanceChat) {
+        return `width: ${100 - leftPartWidth.value}%;`;
+    }
+    // 그 외 모든 경우: 남은 공간 차지
+    return 'flex: 1;';
+});
 </script>
 
 <template>
@@ -139,14 +214,21 @@ const menuButtonStyle = computed(() => {
         :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
         style="overflow: auto;"
     >
-        <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="canvasReSize">
+        <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="[canvasReSize, leftPartStyle]">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
             <slot name="leftpart"></slot>
             <!-- </perfect-scrollbar> -->
         </div>
 
+        <!-- 리사이즈 핸들 (/chats 페이지에서만 표시) -->
+        <div 
+            v-if="lgAndUp && !props.isInstanceChat && !$globalState.state.isZoomed && !$globalState.state.isRightZoomed && isChatPage"
+            class="resize-handle"
+            @mousedown="startResize"
+        ></div>
+
         <!---right chat conversation -->
-        <div class="right-part" :class="{ 'chat-hidden': isChatHidden }">
+        <div class="right-part" :style="rightPartStyle" :class="{ 'chat-hidden': isChatHidden }">
             <!---Toggle Button For mobile-->
             <v-tooltip location="right">
                 <template v-slot:activator="{ props: tooltipProps }">
@@ -156,12 +238,12 @@ const menuButtonStyle = computed(() => {
                         @click="sDrawer = !sDrawer"
                         variant="text"
                         class="mobile-menu-toggle-btn d-lg-none"
+                        :style="menuButtonStyle"
                         v-bind="tooltipProps"
                     >
                         <Icons :icon="'list-bold-duotone'"
                             :size="16"
                             :color="'#ffffff'"
-                            :style="menuButtonStyle"
                         />
                     </v-btn>
                 </template>
@@ -174,9 +256,15 @@ const menuButtonStyle = computed(() => {
     </div>
 
     <v-navigation-drawer temporary v-model="sDrawer" top v-if="!lgAndUp"
-        class="mobile-menu-nav"
+        class="mobile-menu-nav mobile-drawer-flex"
     >
-        <v-card-text class="pa-0 mobile-left-menu">
+        <div v-if="isMobile" class="mobile-drawer-header-bar">
+            <span class="mobile-drawer-header-title">{{ menuName }}</span>
+            <v-btn variant="text" density="compact" icon @click="closeDrawer">
+                <v-icon>mdi-close</v-icon>
+            </v-btn>
+        </div>
+        <v-card-text class="pa-0 mobile-left-menu mobile-drawer-content">
             <slot 
                 :name="route.path === '/definition-map' ? 'rightpart' : 'mobileLeftContent'" 
                 :closeDrawer="handleCloseDrawer"
@@ -187,13 +275,13 @@ const menuButtonStyle = computed(() => {
 
 <style lang="scss">
 .left-part {
-    width: 320px;
     border-right: 1px solid rgb(var(--v-theme-borderColor));
     // min-height: 500px;
-    transition: 0.1s ease-in;
+    transition: width 0.1s ease-out;
     flex-shrink: 0;
-    overflow: auto;
+    overflow: visible;
     background-color: white;
+    position: relative;
 }
 
 .v-theme--light {
@@ -208,8 +296,25 @@ const menuButtonStyle = computed(() => {
     }
 }
 
+.resize-handle {
+    width: 6px;
+    cursor: ew-resize;
+    background-color: transparent;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+
+    &:hover {
+        background-color: rgba(var(--v-theme-primary), 0.3);
+    }
+
+    &:active {
+        background-color: rgba(var(--v-theme-primary), 0.5);
+    }
+}
+
 .right-part {
-    width: 100%;
     overflow: auto;
     background: white;
     display: flex;
@@ -221,6 +326,32 @@ const menuButtonStyle = computed(() => {
 
 .right-part.chat-hidden {
     display: none;
+}
+
+.mobile-drawer-flex {
+    display: flex;
+    flex-direction: column;
+}
+
+.mobile-drawer-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 8px 12px 16px;
+    flex-shrink: 0;
+    background-color: inherit;
+    border-bottom: 1px solid rgb(var(--v-theme-borderColor));
+}
+
+.mobile-drawer-header-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.mobile-drawer-content {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .mobile-menu-toggle-btn {
@@ -236,12 +367,5 @@ const menuButtonStyle = computed(() => {
     &:hover {
         opacity: 1;
     }
-}
-
-.left-part {
-    // width: 80%;
-    // min-height: 500px;
-    position: relative;
-    overflow: auto;
 }
 </style>

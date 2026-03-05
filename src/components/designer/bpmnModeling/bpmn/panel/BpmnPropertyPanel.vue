@@ -1,7 +1,7 @@
 <template>
     <div id="property-panel" style="overflow: auto;"
         class="is-work-height"
-        :class="{ 'view-mode-panel-content': isViewMode }"
+        :class="{ 'view-mode-panel-content': isViewMode, 'pal-view-mode': isViewMode && isPALMode }"
     >
         <v-row class="ma-0 pa-4 pb-0" :class="{ 'view-mode-header': isViewMode }">
             <v-chip v-if="isViewMode" color="info" variant="tonal" size="x-small" class="mr-2">
@@ -54,7 +54,7 @@
                 </v-menu>
             </div>
             <v-spacer></v-spacer>
-            <v-tooltip v-if="!isViewMode && isTaskElement" location="bottom">
+            <v-tooltip v-if="!isViewMode && isTaskElement && !isUEngineMode" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn v-bind="props" @click="$emit('saveToCatalog')" icon variant="text" density="comfortable" class="panel-close-btn">
                         <v-icon>mdi-folder-plus</v-icon>
@@ -86,6 +86,7 @@
                 :roles="roles"
                 :process-variables="processVariables"
                 :element="element"
+                :isForCompensation="isForCompensation"
                 ref="panelComponent"
                 @update:name="(val) => (name = val)"
                 @update:text="(val) => (text = val)"
@@ -293,13 +294,16 @@ export default {
         isPALMode() {
             return window.$pal;
         },
+        isUEngineMode() {
+            return window.$mode === 'uEngine';
+        },
         panelName() {
             var type = _.kebabCase(this.element.$type.split(':')[1])
             if(type.indexOf('task') > -1 && this.isPALMode) {
                 type = 'pal-user-task';
             }
             if (this.isGPTMode) {
-                if(type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task') {
+                if(type == 'user-task' || type == 'script-task' || type == 'service-task' || type == 'task' || type == 'lane') {
                     type = 'gpt-' + type;
                 }
             }
@@ -307,6 +311,10 @@ export default {
                 type = 'gateway';
             }
             return type + '-panel';
+        },
+        isForCompensation() {
+            if(!this.element) return false;
+            return this.element.isForCompensation ? true : false;
         },
         isTaskElement() {
             const type = this.element?.$type || '';
@@ -748,7 +756,7 @@ export default {
 
 <style>
 /* ============================================
-   View Mode Panel Styles
+   View Mode Panel Styles - Compact
    ============================================ */
 .view-mode-panel-content {
     background: #ffffff;
@@ -765,33 +773,33 @@ export default {
 .view-mode-panel-content > .v-card-text {
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 12px 16px !important;
+    padding: 8px 12px !important;
 }
 
 /* View Mode Header */
 .view-mode-header {
     background: linear-gradient(to right, #f8fafc, #ffffff);
     border-bottom: 1px solid #e2e8f0;
-    padding: 4px 12px !important;
+    padding: 4px 10px !important;
     flex-shrink: 0;
     flex-grow: 0;
     align-items: center;
-    min-height: auto !important;
-    max-height: 40px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
 }
 
 .view-mode-title {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    font-size: 0.9375rem !important;
+    font-size: 0.85rem !important;
     font-weight: 600 !important;
     color: #1e293b;
-    line-height: 1.3;
+    line-height: 1.2;
     padding: 0 !important;
     margin: 0 !important;
 }
 
 .view-mode-header .v-chip {
-    height: 22px !important;
+    height: 20px !important;
     font-size: 0.7rem !important;
     font-weight: 600;
     background: rgba(99, 102, 241, 0.1) !important;
@@ -799,12 +807,12 @@ export default {
 }
 
 .view-mode-header .panel-close-btn {
-    width: 32px !important;
-    height: 32px !important;
+    width: 24px !important;
+    height: 24px !important;
 }
 
 .view-mode-header .panel-close-btn .v-icon {
-    font-size: 18px !important;
+    font-size: 16px !important;
 }
 
 /* Keep tabs interactive in view mode for navigation */
@@ -871,13 +879,23 @@ export default {
     background: #f8fafc;
 }
 
+/* Compact spacing */
+.view-mode-panel-content .mb-6 {
+    margin-bottom: 8px !important;
+}
+
+.view-mode-panel-content .mt-6 {
+    margin-top: 8px !important;
+}
+
+.view-mode-panel-content .pa-4,
+.view-mode-panel-content .pa-2 {
+    padding: 6px !important;
+}
+
 /* Spacing adjustments for view mode */
 .view-mode-panel-content .mb-4 {
     margin-bottom: 12px !important;
-}
-
-.view-mode-panel-content .v-input {
-    margin-bottom: 8px !important;
 }
 
 /* Section labels in view mode */
@@ -894,7 +912,24 @@ export default {
     padding: 8px 12px;
     background: #f1f5f9;
     border-radius: 8px;
-    margin-bottom: 12px !important;
+    margin-bottom: 4px !important;
+}
+
+/* Hide print button in compact view */
+.view-mode-panel-content:not(.pal-view-mode) .panel-download-btn {
+    display: none !important;
+}
+.view-mode-panel-content.pal-view-mode .panel-download-btn {
+    display: inline-flex !important;
+}
+
+/* Compact input fields */
+.view-mode-panel-content .v-input {
+    margin-bottom: 4px !important;
+}
+
+.view-mode-panel-content .v-field {
+    font-size: 0.875rem;
 }
 </style>
 

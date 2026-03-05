@@ -131,6 +131,7 @@ import ConditionField from './ConditionField.vue';
 import TextConditionField from './TextConditionField.vue';
 import ConditionExampleField from './ConditionExampleField.vue';
 import ConditionRuleGenerator from '@/components/ai/ConditionRuleGenerator.js';
+import { extractJSONFromText, parseJsonLike } from '@/utils/parsers/jsonLikeParser';
 
 import BackendFactory from '@/components/api/BackendFactory';
 
@@ -208,8 +209,13 @@ export default {
                 }];
             }
         }
-        if (!this.copyUengineProperties.conditionMode) {
-            this.copyUengineProperties.conditionMode = 'text';
+        // conditionMode는 GPT 모드에서만 사용/저장
+        if (this.mode == 'ProcessGPT') {
+            if (!this.copyUengineProperties.conditionMode) {
+                this.copyUengineProperties.conditionMode = 'text';
+            }
+        } else if (this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('conditionMode')) {
+            delete this.copyUengineProperties.conditionMode;
         }
 
         // Ensure io_examples are stored locally, not in copyUengineProperties
@@ -249,27 +255,22 @@ export default {
             }
         },
         updateConditionMode(mode) {
-            this.copyUengineProperties.conditionMode = mode;
-            this.$emit('update:uengineProperties', this.copyUengineProperties)
+            if (this.mode !== 'ProcessGPT') {
+                if (this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('conditionMode')) {
+                    delete this.copyUengineProperties.conditionMode;
+                    this.$emit('update:uengineProperties', this.copyUengineProperties);
+                }
+                return;
+            }
         },
         generateRule() {
             const conditionRuleClient = {
                 onGenerationFinished: (response) => {
                     console.log(response);
-                    let jsonData = this.extractJSON(response);
-                    if (jsonData && jsonData.includes('{')) {
-                        try {
-                            jsonData = JSON.parse(jsonData);
-                        } catch(e) {
-                            try {
-                                jsonData = partialParse(jsonData);
-                            } catch(e) {
-                                console.log(e);
-                            }
-                        }
-                    } else {
-                        jsonData = null;
-                    }
+                    const extracted = extractJSONFromText(response);
+                    const jsonData = extracted && extracted.includes('{')
+                        ? parseJsonLike(extracted)
+                        : null;
  
                      if (jsonData) {
                          if (!this.lastIsInitial && this.lastHasMismatch && this.lastSingleFieldTarget && Array.isArray(this.lastSingleFieldTarget.trueValues) && this.lastSingleFieldTarget.trueValues.length > 0) {
@@ -473,6 +474,11 @@ export default {
             // Ensure io_examples are not persisted into uengineProperties
             if (this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('io_examples')) {
                 delete this.copyUengineProperties.io_examples;
+            }
+
+            // conditionMode는 GPT 모드에서만 저장
+            if (this.mode !== 'ProcessGPT' && this.copyUengineProperties && this.copyUengineProperties.hasOwnProperty('conditionMode')) {
+                delete this.copyUengineProperties.conditionMode;
             }
 
             if (!this.name || this.name == '') {

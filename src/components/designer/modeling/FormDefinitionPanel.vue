@@ -244,6 +244,10 @@
           return acc
       }, {})
 
+      if(!this.componentProps['localIsDynamicLoad']) {
+          this.componentProps['localIsDynamicLoad'] = 'fixed'
+      }
+
       this.loadDataSource();
 
       this.$nextTick(() => {

@@ -12,10 +12,10 @@
                 <div class="pa-0">
                     <v-row class="ma-0 pa-0" style="width: 100%;">
                         <v-col class="pa-0 d-flex align-center" cols="9">
-                            <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ task.name }}</span>
+                            <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ displayTitle }}</span>
                             <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{ reworkCount }}</v-chip>
                             <v-chip v-if="task.status === 'SUBMITTED'" class="ml-1" size="small" color="success" variant="flat" density="comfortable">
-                                제출됨
+                                {{ $t('kanbanColumnCard.submitted') }}
                             </v-chip>
                         </v-col>
                         <v-col class="pa-0" cols="3">
@@ -93,14 +93,15 @@
                             {{ formattedDate }}
                         </div>
                         <v-spacer></v-spacer>
-                        <div v-if="isDueTodayOrTomorrow" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert" style="color: #FF9800;" />
-                            <span class="text-caption ml-1" style="color: #FF9800;">{{ $t('kanbanColumnCard.overdue') }}</span>
-                        </div>
-                        <div v-else-if="isPastDue" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336; padding-top: 3px;" />
-                            <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.pastDue') }}</span>
-                        </div>
+                        <v-chip 
+                            v-if="isDueTodayOrTomorrow || isPastDue"
+                            size="x-small" 
+                            :color="isDueTodayOrTomorrow ? 'warning' : 'error'" 
+                            variant="tonal"
+                            class="ml-auto"
+                        >
+                            {{ isPastDue ? $t('kanbanColumnCard.pastDue') : $t('kanbanColumnCard.overdue') }}
+                        </v-chip>
                         <v-tooltip v-if="isPending" location="right">
                             <template v-slot:activator="{ props }">
                                 <div class="d-flex align-center ml-2" v-bind="props">
@@ -125,7 +126,7 @@
                             class="text-subtitle-2"
                         >
                             <div class="thinking-wave-text">
-                                <div v-for="(char, index) in '에이전트 작업중'" :key="index" 
+                                <div v-for="(char, index) in $t('kanbanColumnCard.agentWorking')" :key="index" 
                                     :style="{ animationDelay: `${index * 0.1}s` }"
                                     class="thinking-char"
                                 >{{ char === ' ' ? '\u00A0' : char }}
@@ -143,6 +144,26 @@
                     <div v-else
                         class="text-subtitle-2"
                     >{{ $t('kanbanColumnCard.agentCompleted') }}
+                    </div>
+                </div>
+                <div v-if="isSubmittedStatus && !currentDraftStatus"
+                    class="my-2"
+                >
+                    <div class="text-subtitle-2">
+                        <div class="thinking-wave-text">
+                            <div v-for="(char, index) in $t('kanbanColumnCard.submitProcessing')" :key="'submit-' + index" 
+                                :style="{ animationDelay: `${index * 0.1}s` }"
+                                class="submit-processing-char"
+                            >{{ char === ' ' ? '\u00A0' : char }}
+                            </div>
+                        </div>
+                        <span class="loading-dots" style="color: #ffffff;">
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                            <span>.</span>
+                        </span>
                     </div>
                 </div>
                 <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
@@ -175,9 +196,9 @@
                     </div>
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
                     <div class="body-text-2 text-dark mr-2">
-                        <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username).join(', ') }}</span>
+                        <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username || user.name).join(', ') }}</span>
                         <span v-else-if="isMyTask">{{ $t('TodoTaskItemCard.myTask') }}</span>
-                        <span v-else-if="userInfoForTask">{{ userInfoForTask.username }}</span>
+                        <span v-else-if="userInfoForTask">{{ userInfoForTask.username || userInfoForTask.name }}</span>
                         <span v-else>{{ $t('TodoTaskItemCard.noAssignee') }}</span>
                         <!-- 프로필 이미지를 v-img로 표시, 없으면 기본 이미지 사용 -->
                     </div>
@@ -229,6 +250,14 @@ export default {
         }
     },
     computed: {
+        displayTitle() {
+            // 모드별 필드 우선순위:
+            // - uEngine(worklist): title
+            // - ProcessGPT(worklist): name
+            const mode = window.$mode;
+            if (mode === 'ProcessGPT') return this.task?.name || this.task?.title || '';
+            return this.task?.title || this.task?.name || '';
+        },
         mode() {
             return window.$mode;
         },
@@ -302,29 +331,60 @@ export default {
         },
         userInfoForTask() {
             if (!this.userList || !this.task || !this.task.endpoint) return null;
+            
             if (this.task.endpoint.includes(',')) {
-                const endpoints = this.task.endpoint.split(',');
+                const endpoints = this.task.endpoint.split(',').map(e => e.trim());
                 let users = [];
                 let user = null;
                 for (const endpoint of endpoints) {
                     user = this.userList.find(user => (user.email && user.email === endpoint) || user.id == endpoint);
                     if (user) {
-                        users.push(user)
+                        users.push(user);
+                    } else {
+                        // 사용자를 못 찾은 경우 역할명인지 체크
+                        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(endpoint);
+                        const isEmail = endpoint.includes('@');
+                        
+                        if (!isUUID && !isEmail) {
+                            users.push({
+                                username: `[${this.$t('Common.role')}] ${endpoint}`,
+                                name: `[${this.$t('Common.role')}] ${endpoint}`,
+                                id: endpoint
+                            });
+                        } else {
+                            users.push({
+                                username: endpoint,
+                                name: endpoint,
+                                id: endpoint
+                            });
+                        }
                     }
-                };
-                return users;
+                }
+                return users.length > 0 ? users : null;
             } else {
                 let user = this.userList.find(user => (user.email && user.email === this.task.endpoint) || user.id == this.task.endpoint);
                 if (!user) {
-                    user = {
-                        name: this.task.endpoint
+                    // UUID나 email 형식이 아니면 역할명으로 판단
+                    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(this.task.endpoint);
+                    const isEmail = this.task.endpoint.includes('@');
+                    
+                    if (!isUUID && !isEmail) {
+                        user = {
+                            username: `[${this.$t('Common.role')}] ${this.task.endpoint}`,
+                            name: `[${this.$t('Common.role')}] ${this.task.endpoint}`
+                        }
+                    } else {
+                        user = {
+                            username: this.task.endpoint,
+                            name: this.task.endpoint
+                        }
                     }
                 }
                 return user;
             }
         },
         isMultiUser() {
-            return this.task.endpoint.includes(',');
+            return this.task.endpoint && this.task.endpoint.includes(',');
         },
         isMyTask() {
             // localStorage의 uid와 task의 endpoint가 일치하는지 확인 (uid 또는 이메일 비교)
@@ -361,6 +421,9 @@ export default {
         },
         isStartedStatus() {
             return this.currentDraftStatus === 'STARTED';
+        },
+        isSubmittedStatus() {
+            return this.task.status === 'SUBMITTED';
         },
         reworkCount() {
             if (this.task && this.task.task && this.task.task.rework_count) {

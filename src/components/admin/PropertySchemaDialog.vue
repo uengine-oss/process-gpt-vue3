@@ -210,12 +210,6 @@ export default defineComponent({
     emits: ['update:modelValue', 'saved'],
     setup(props, { emit }) {
         const store = useTaskCatalogStore();
-        const { proxy } = getCurrentInstance();
-        const locale = computed(() => proxy?.$i18n?.locale || 'en');
-
-        const formRef = ref(null);
-        const formValid = ref(false);
-        const loading = ref(false);
         const configText = ref('');
 
         const propertyTypes = computed(() => PROPERTY_TYPES);
@@ -266,14 +260,6 @@ export default defineComponent({
                     formData.value = {
                         ...props.schema,
                         options: props.schema.options ? [...props.schema.options] : [],
-                        applies_to: props.schema.applies_to || 'both',
-                        placeholder: props.schema.placeholder || '',
-                        visible_by_default: props.schema.visible_by_default !== false,
-                        config: props.schema.config || null,
-                        row_index: props.schema.row_index ?? 0,
-                        col_span: props.schema.col_span ?? 12,
-                        section_name: props.schema.section_name ?? ''
-                    };
                     // Serialize config
                     if (props.schema.config) {
                         if (props.schema.property_type === 'db-select') {

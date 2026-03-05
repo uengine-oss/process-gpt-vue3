@@ -31,6 +31,7 @@
 import { createApp } from 'vue';
 import axios from 'axios';
 import vuetify from "@/plugins/vuetify";
+import hammerDirective from '@/components/directive/hammerDirective';
 import ChatModule from "@/components/ChatModule.vue";
 import FormDefinitionPanel from '@/components/designer/modeling/FormDefinitionPanel.vue';
 import ContainerSettingPanel from '@/components/designer/modeling/ContainerSettingPanel.vue';
@@ -283,7 +284,9 @@ export default {
             }
 
             const app = createApp(DynamicComponent, {content:snipptDom.body.innerHTML, vueRenderUUID:vueRenderUUID})
-                            .use(vuetify).mount('#'+vueRenderUUID);
+                            .use(vuetify)
+                            .directive('hammer', hammerDirective)
+                            .mount('#'+vueRenderUUID);
             window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
         },
 
@@ -545,7 +548,10 @@ export default {
                 // AI가 태그를 이상하게 생성했을 경우, 이곳에서 에러가 발생할 수 있음. 일단 넘기도록 처리함
                 try {
                     const vueRenderUUID = vueRenderElement.id
-                    const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID}).use(vuetify).mount('#'+vueRenderUUID);
+                    const app = createApp(DynamicComponent, {content:vueRenderElement.innerHTML, vueRenderUUID:vueRenderUUID})
+                        .use(vuetify)
+                        .directive('hammer', hammerDirective)
+                        .mount('#'+vueRenderUUID);
                     window.mashup.componentRefs[vueRenderUUID] = app.componentRef;
 
                 } catch(e) {

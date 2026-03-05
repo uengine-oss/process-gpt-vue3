@@ -55,6 +55,8 @@
                             @multiSelect="onMultiSelect"
                             :onLoadStart="onBpmnLoadStart"
                             :onLoadEnd="onBpmnLoadEnd"
+                            @openProcessVariables="openProcessVariables"
+                            style="height: 100%"
                             >
                                 <!-- Extra controls in BpmnUengine toolbar -->
                                 <template #extra-controls>
@@ -112,7 +114,7 @@
                         </div>
                         <!-- Task Catalog Section for drag & drop -->
                         <TaskCatalogSection
-                            v-if="!isViewMode"
+                            v-if="!isViewMode && mode !== 'uEngine'"
                             :bpmnModeler="$refs.bpmnVue?.bpmnViewer"
                             class="task-catalog-floating-panel"
                         />
@@ -162,7 +164,8 @@
                         />
 
                         <!-- View Mode Property Panel (inside canvas) -->
-                        <div v-if="panel && isViewMode" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
+                        <Transition name="slide-panel">
+                            <div v-if="panel && isViewMode && !isPal" class="view-mode-panel" :style="{ width: viewPanelWidth + 'px' }">
                                 <div class="resize-handle" @mousedown="startResize"></div>
                                 <v-card elevation="4" class="view-mode-panel-card">
                                     <bpmn-property-panel
@@ -187,15 +190,8 @@
                                     ></bpmn-property-panel>
                                 </v-card>
                             </div>
+                        </Transition>
                     </template>
-                    
-                    <!-- <vue-bpmn ref='bpmnVue' :bpmn="bpmn" :options="options" :isViewMode="isViewMode"
-                        :currentActivities="currentActivities" v-on:error="handleError" v-on:shown="handleShown"
-                        v-on:openDefinition="ele => openSubProcess(ele)" v-on:loading="handleLoading"
-                        v-on:openPanel="(id) => openPanel(id)" v-on:update-xml="val => $emit('update-xml', val)"
-                        v-on:definition="(def) => (definitions = def)" v-on:add-shape="onAddShape"
-                        v-on:change-sequence="onChangeSequence" v-on:remove-shape="onRemoveShape"
-                        v-on:change-shape="onChangeShape"></vue-bpmn> -->
                 </v-card>
             </v-col>
             <div v-if="panel && !isViewMode" style="position: fixed; z-index: 999; right: 0; height: 100%">
@@ -205,6 +201,30 @@
                         :element="element"
                         @close="closePanel"
                         @saveToCatalog="openSaveToCatalog"
+                        :roles="roles"
+                        :process-variables="processVariables"
+                        :key="element.id"
+                        :isViewMode="isViewMode"
+                        v-on:updateElement="(val) => updateElement(val)"
+                        :definition="thisDefinition"
+                        :processDefinitionId="definitionPath"
+                        :processDefinition="processDefinition"
+                        :validationList="validationList"
+                        :isPreviewMode="isPreviewMode"
+                        v-on:change-sequence="onChangeSequence"
+                        v-on:remove-shape="onRemoveShape"
+                        v-on:change-shape="onChangeShape"
+                        @addUengineVariable="addUengineVariable"
+                    ></bpmn-property-panel>
+                    <!-- {{ definition }} -->
+                </v-card>
+            </div>
+            <div v-else-if="panel && isPal && isViewMode" class="pal-view-mode-panel" style="position: fixed; z-index: 999; right: 0; top: 123px; width: 40vw; min-width: 360px; max-width: 560px; height: calc(100vh - 123px);">
+                <v-card elevation="1" class="pal-view-mode-panel-card">
+                    <bpmn-property-panel
+                        ref="bpmnPropertyPanel"
+                        :element="element"
+                        @close="closePanel"
                         :roles="roles"
                         :process-variables="processVariables"
                         :key="element.id"
@@ -485,6 +505,9 @@ export default {
         isPal() {
             return window.$pal;
         },
+        isPalUengine() {
+            return !!(window.$pal && window.$mode === 'uEngine');
+        },
         thisDefinition() {
             return {
                 processVariables: this.processVariables
@@ -654,6 +677,9 @@ export default {
         if (this.definitionPath) {
             this.loadCommentCounts();
         }
+        this.EventBus.on('autoLayout.complete', () => {
+            this.applyAutoLayout();
+        });
     },
     methods: {
         // 댓글 관련 메서드
@@ -758,6 +784,46 @@ export default {
         },
         onBpmnLoadEnd() {
             this.isBpmnLoading = false;
+        },
+        applyAutoLayout() {
+            if (window.$pal && window.$mode === 'uEngine') return;
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            
+            if (modeler) {
+                try {
+                    const paletteProvider = modeler.get('paletteProvider');
+                    if (paletteProvider && paletteProvider.applyAutoLayout) {
+                        paletteProvider.applyAutoLayout();
+                    }
+                } catch (error) {
+                    console.error('자동 레이아웃 적용 실패:', error);
+                }
+            }
+        },
+        changeOrientation() {
+            if (window.$pal && window.$mode === 'uEngine') return;
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            
+            if (modeler) {
+                try {
+                    const paletteProvider = modeler.get('paletteProvider');
+                    const elementRegistry = modeler.get('elementRegistry');
+                    const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+                    
+                    participant.forEach(element => {
+                        const horizontal = element.di.isHorizontal;
+                        if (horizontal) {
+                            paletteProvider.changeParticipantHorizontalToVertical(null, element);
+                        } else {
+                            paletteProvider.changeParticipantVerticalToHorizontal(null, element);
+                        }
+                    });
+                } catch (error) {
+                    console.error('방향 변경 실패:', error);
+                }
+            }
         },
         updateCurrentStep(){
             this.closePanel();
@@ -1217,8 +1283,11 @@ export default {
                 this.$emit('changeElement', xmlObj.xml);
             });
         },
-        handleError() {
+        handleError(err) {
+            // BpmnUengine.vue에서 import 실패 시 error 이벤트로 전달되는 에러를 받는다.
+            // 여기서 err 미정의로 크래시 나면 로딩이 영원히 끝나지 않을 수 있음.
             console.error('failed to show diagram', err);
+            this.onBpmnLoadEnd();
         },
         handleShown() {
             console.log('diagram shown');
@@ -1413,6 +1482,119 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+/* Slide Panel Animation */
+.slide-panel-enter-active {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+
+.slide-panel-leave-active {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1), opacity 0.15s ease;
+}
+
+.slide-panel-enter-from {
+    transform: translateX(20px) scale(0.95);
+    opacity: 0;
+}
+
+.slide-panel-leave-to {
+    transform: translateX(20px) scale(0.95);
+    opacity: 0;
+}
+
+.slide-panel-enter-to,
+.slide-panel-leave-from {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+}
+
+.btn-simulate {
+    margin-top:-3px;
+}
+
+@media only screen and (max-width: 550px) {
+    .btn-simulate {
+        order: 4;
+    }
+    .btn-execute {
+        order: 3;
+    }
+    .btn-variables {
+        order: 2;
+    }
+    .btn-zoom {
+        order: 1;
+    }
+}
+
+/* Task Catalog Floating Panel */
+.task-catalog-floating-panel {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 10;
+    background: white;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px 8px 0 0;
+}
+
+/* View Mode Panel Styles - Inside Canvas */
+.view-mode-panel {
+    position: absolute;
+    z-index: 100;
+    right: 12px;
+    top: 12px;
+    bottom: 12px;
+    display: flex;
+}
+
+/* Resize Handle */
+.resize-handle {
+    width: 6px;
+    cursor: ew-resize;
+    background: transparent;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    border-radius: 3px;
+    margin-right: 2px;
+}
+
+.resize-handle:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.resize-handle:active {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.view-mode-panel-card {
+    border-radius: 12px !important;
+    overflow: hidden;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.pal-view-mode-panel {
+    display: flex;
+    flex-direction: column;
+}
+.pal-view-mode-panel-card {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    border-radius: 8px 0 0 8px !important;
+}
+.pal-view-mode-panel-card #property-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: auto;
 }
 
 /* Slide Panel Animation */

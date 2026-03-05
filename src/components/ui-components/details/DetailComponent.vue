@@ -1,9 +1,6 @@
 <template>
     <div class="detail-component-wrapper">
         <v-menu
-            open-on-hover
-            :open-delay="200"
-            :close-delay="200"
             location="bottom"
             max-width="400"
             :close-on-content-click="false"

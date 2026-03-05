@@ -1,13 +1,13 @@
 <template>
-    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop" @contextmenu.prevent="onContextMenu">
+    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal, 'mini-preview': isPreviewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop" @contextmenu.prevent="onContextMenu">
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
-        <div v-if="isViewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
+        <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
                 <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
                 <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
                 <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
                 <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
-                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
@@ -94,7 +94,8 @@ import paletteProvider from './customPalette/PaletteProvider';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
 import customPopupMenu from './customPopupMenu';
-import customReplaceModule from './customReplace';
+// skt 마이그레이션 요소 변경 비활성화
+// import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
@@ -163,6 +164,10 @@ export default {
         isAIGenerated: {
             type: Boolean
         },
+        registerToStore: {
+            type: Boolean,
+            default: true
+        },
         commentCounts: {
             type: Object,
             default: () => ({})
@@ -203,8 +208,19 @@ export default {
             isHorizontal: false,
             labelFontSize: 12, // Default font size for task labels
             currentZoomLevel: 100, // Current zoom level percentage
+            // Playwright 테스트용 클래스 카운터
+            playwrightClassCounters: {
+                task: 0,
+                lane: 0,
+                gateway: 0,
+                event: 0,
+                sequenceflow: 0,
+                participant: 0
+            },
             showColorRulesetDialog: false,
             colorRules: [], // Color rules loaded from BPMN XML
+            // compensate boundaryEvent ↔ 보상 task 연결 시 자동으로 compensateTask 채움
+            compensateAutoFillInstalled: false
         };
     },
     computed: {
@@ -221,6 +237,9 @@ export default {
         isPal() {
             return window.$pal;
         },
+        isPalUengine() {
+            return !!(window.$pal && window.$mode === 'uEngine');
+        },
     },
     async mounted() {
         this.onLoadStart();
@@ -231,22 +250,25 @@ export default {
 
         this.initializeViewer();
         this.setDiagramEvent();
-        if (this.bpmn) {
+        if (typeof this.bpmn === 'string' && this.bpmn.trim().length > 0) {
             this.diagramXML = this.bpmn;
         } else {
-            // 사용자 팀명 조회하여 Lane 이름에 사용
-            let laneName = 'Lane 1';
-            try {
-                const teamName = await getCurrentUserTeamName();
-                if (teamName) {
-                    laneName = teamName;
+            const isGsDefinitionChat = !!window.$gs && this.$route?.path === '/definitions/chat';
+            if (isGsDefinitionChat) {
+                // GS 모드의 definitions/chat에서는 초기 기본값(BPMN)을 주입하지 않는다.
+                this.diagramXML = null;
+            } else {
+                let laneName = 'Lane 1';
+                try {
+                    const teamName = await getCurrentUserTeamName();
+                    if (teamName) {
+                        laneName = teamName;
+                    }
+                } catch (e) {
+                    console.warn('[BpmnUengine] 팀명 조회 실패, 기본값 사용:', e);
                 }
-            } catch (e) {
-                console.warn('[BpmnUengine] 팀명 조회 실패, 기본값 사용:', e);
-            }
-
-            // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
-            this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
+                // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
+                this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
   <bpmn:collaboration id="Collaboration_1">
     <bpmn:participant id="Participant_1" name="Process" processRef="Process_1"/>
@@ -310,9 +332,23 @@ export default {
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
+            }
         }
-        // if (this.mode == 'uEngine') {
-        this.bpmnViewer.importXML(this.diagramXML);
+        Promise.resolve()
+            .then(() => {
+                if (!this.diagramXML) return;
+                return this.bpmnViewer.importXML(this.diagramXML);
+            })
+            .catch((e) => {
+                console.error('[BpmnUengine] 초기 import 실패:', e);
+                this.$emit('error', e);
+            })
+            .finally(() => {
+                try {
+                    this.onLoadEnd();
+                } catch (_) {
+                }
+            });
         this.initResizeObserver();
         // }
 
@@ -331,6 +367,28 @@ export default {
         }
     },
     watch: {
+       bpmn: {
+            async handler(newVal) {
+                if(this.registerToStore) {
+                    return;
+                }
+                try {
+                    if (typeof newVal !== 'string' || newVal.trim().length === 0) return;
+                    if (!this.bpmnViewer) return;
+                    this.onLoadStart();
+                    this.diagramXML = newVal;
+                    await this.bpmnViewer.importXML(newVal);
+                } catch (e) {
+                    console.error('[BpmnUengine] bpmn prop 변경시 import 실패:', e);
+                    this.$emit('error', e);
+                } finally {
+                    try {
+                        this.onLoadEnd();
+                    } catch (_) {
+                    }
+                }
+            }
+        },
         isViewMode(val) {
             this.initializeViewer();
         },
@@ -521,6 +579,119 @@ export default {
             }
         },
 
+        hasCompensateEventDefinition(element) {
+            const defs = element?.businessObject?.eventDefinitions || [];
+            return Array.isArray(defs) && defs.some((d) => d?.$type === 'bpmn:CompensateEventDefinition');
+        },
+        isCompensationHandlerTask(element) {
+            return element?.businessObject?.isForCompensation === true;
+        },
+        ensureUengineJsonOnElement(element) {
+            const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
+            const bo = element?.businessObject;
+            if (!bo) return { bo: null, uengineProps: null, jsonObj: {} };
+
+            if (!bo.extensionElements) {
+                bo.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+            }
+            if (!bo.extensionElements.values) {
+                bo.extensionElements.values = [];
+            }
+            if (bo.extensionElements.values.length === 0) {
+                bo.extensionElements.values.push(
+                    bpmnFactory.create('uengine:Properties', {
+                        json: '{}',
+                        variables: []
+                    })
+                );
+            }
+
+            const uengineProps = bo.extensionElements.values[0];
+            if (typeof uengineProps.json !== 'string') uengineProps.json = '{}';
+
+            let jsonObj = {};
+            try {
+                jsonObj = JSON.parse(uengineProps.json || '{}');
+            } catch (e) {
+                jsonObj = {};
+            }
+
+            return { bo, uengineProps, jsonObj };
+        },
+        applyCompensateTaskAutoFillFromConnection(connection) {
+            if (!connection || connection?.businessObject?.$type !== 'bpmn:Association') return;
+
+            const a = connection.source;
+            const b = connection.target;
+
+            // 양방향 케이스 모두 지원
+            let boundary = null;
+            let handlerTask = null;
+
+            if (this.hasCompensateEventDefinition(a) && this.isCompensationHandlerTask(b)) {
+                boundary = a;
+                handlerTask = b;
+            } else if (this.hasCompensateEventDefinition(b) && this.isCompensationHandlerTask(a)) {
+                boundary = b;
+                handlerTask = a;
+            } else {
+                return;
+            }
+
+            const modeling = this.bpmnViewer.get('modeling');
+            const { bo, uengineProps, jsonObj } = this.ensureUengineJsonOnElement(boundary);
+            if (!bo || !uengineProps) return;
+
+            jsonObj.compensateTask = {
+                name: handlerTask?.businessObject?.name || '',
+                tracingTag: handlerTask?.businessObject?.id || handlerTask?.id || ''
+            };
+
+            uengineProps.json = JSON.stringify(jsonObj);
+
+            // 모델에 반영 (저장 시 XML에도 반영됨)
+            modeling.updateProperties(boundary, {
+                extensionElements: bo.extensionElements
+            });
+        },
+        clearCompensateTaskIfAssociationRemoved(connection) {
+            if (!connection || connection?.businessObject?.$type !== 'bpmn:Association') return;
+            const a = connection.source;
+            const b = connection.target;
+
+            // association이 제거될 때, source/target 중 compensate boundaryEvent가 있으면 compensateTask를 비움
+            const boundary = this.hasCompensateEventDefinition(a) ? a : this.hasCompensateEventDefinition(b) ? b : null;
+            if (!boundary) return;
+
+            const modeling = this.bpmnViewer.get('modeling');
+            const { bo, uengineProps, jsonObj } = this.ensureUengineJsonOnElement(boundary);
+            if (!bo || !uengineProps) return;
+
+            // 연결이 사라졌으니 초기화(기존 null 형태와 호환)
+            jsonObj.compensateTask = null;
+            uengineProps.json = JSON.stringify(jsonObj);
+            modeling.updateProperties(boundary, {
+                extensionElements: bo.extensionElements
+            });
+        },
+        setupCompensateAutoFillListeners() {
+            // 뷰어가 없거나 이미 설치했으면 스킵
+            if (!this.bpmnViewer || this.compensateAutoFillInstalled) return;
+            // 편집 모드에서만 자동 채움 (읽기모드에서는 불필요)
+            if (this.isViewMode) return;
+
+            const eventBus = this.bpmnViewer.get('eventBus');
+
+            const onConnCreate = (e) => this.applyCompensateTaskAutoFillFromConnection(e?.context?.connection);
+            const onReconnect = (e) => this.applyCompensateTaskAutoFillFromConnection(e?.context?.connection);
+            const onDelete = (e) => this.clearCompensateTaskIfAssociationRemoved(e?.context?.connection);
+
+            eventBus.on('commandStack.connection.create.executed', onConnCreate);
+            eventBus.on('commandStack.connection.reconnectEnd.executed', onReconnect);
+            eventBus.on('commandStack.connection.delete.executed', onDelete);
+
+            this.compensateAutoFillInstalled = true;
+        },
         async loadPaletteSettings() {
             try {
                 const catalogStore = useTaskCatalogStore();
@@ -541,10 +712,12 @@ export default {
             }
         },
         applyAutoLayout() {
+            if (window.$pal) return;
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
             const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
             window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
+            this.EventBus.emit('autoLayout.complete');
         },
         revertAutoLayout() {
             if (!window.BpmnAutoLayout || !window.BpmnAutoLayout.hasLayoutSnapshot()) {
@@ -846,7 +1019,82 @@ export default {
             }
             self.$emit('changeElement', self.bpmnXML);
         },
+        addTestClassToElement(element, canvas) {
+            // 개별 요소에 Playwright 테스트 클래스 추가
+            const gfx = canvas.getGraphics(element);
+            if (!gfx) return;
+
+            let testClass = '';
+            let elementType = element.type;
+            let categoryType = '';
+
+            // 타입별 클래스 매핑
+            if (elementType.includes('Task') || elementType === 'bpmn:CallActivity') {
+                categoryType = 'task';
+                testClass = `playwright-task-${this.playwrightClassCounters.task}`;
+                this.playwrightClassCounters.task++;
+            } else if (elementType === 'bpmn:Lane') {
+                categoryType = 'lane';
+                testClass = `playwright-lane-${this.playwrightClassCounters.lane}`;
+                this.playwrightClassCounters.lane++;
+            } else if (elementType.includes('Gateway')) {
+                categoryType = 'gateway';
+                testClass = `playwright-gateway-${this.playwrightClassCounters.gateway}`;
+                this.playwrightClassCounters.gateway++;
+            } else if (elementType.includes('Event')) {
+                categoryType = 'event';
+                testClass = `playwright-event-${this.playwrightClassCounters.event}`;
+                this.playwrightClassCounters.event++;
+            } else if (elementType === 'bpmn:SequenceFlow') {
+                categoryType = 'sequenceflow';
+                testClass = `playwright-sequenceflow-${this.playwrightClassCounters.sequenceflow}`;
+                this.playwrightClassCounters.sequenceflow++;
+            } else if (elementType === 'bpmn:Participant') {
+                categoryType = 'participant';
+                testClass = `playwright-participant-${this.playwrightClassCounters.participant}`;
+                this.playwrightClassCounters.participant++;
+            }
+
+            if (testClass) {
+                // 메인 그래픽 요소에 클래스 추가
+                gfx.classList.add(testClass);
+                
+                // 레인과 참가자의 경우 모든 .djs-hit 영역에도 클래스 추가
+                if (categoryType === 'lane' || categoryType === 'participant') {
+                    const hitAreas = gfx.querySelectorAll('.djs-hit');
+                    hitAreas.forEach(hitArea => {
+                        hitArea.classList.add(testClass);
+                        if (element.businessObject && element.businessObject.name) {
+                            hitArea.setAttribute('data-test-name', element.businessObject.name);
+                        }
+                    });
+                }
+                
+                // 요소 이름이 있으면 data 속성으로도 추가
+                if (element.businessObject && element.businessObject.name) {
+                    gfx.setAttribute('data-test-name', element.businessObject.name);
+                }
+            }
+        },
+        addTestClassesToElements(canvas, elementRegistry) {
+            // 모든 요소에 Playwright 테스트 클래스 추가 (초기 로드 시)
+            // 카운터 초기화
+            this.playwrightClassCounters = {
+                task: 0,
+                lane: 0,
+                gateway: 0,
+                event: 0,
+                sequenceflow: 0,
+                participant: 0
+            };
+
+            const allElements = elementRegistry.getAll();
+            allElements.forEach(element => {
+                this.addTestClassToElement(element, canvas);
+            });
+        },
         changeOrientation() {
+            if (window.$pal && window.$mode === 'uEngine') return;
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
@@ -949,6 +1197,10 @@ export default {
 
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
+                
+                // Playwright 테스트용 고유 클래스 추가
+                self.addTestClassesToElements(canvas, elementRegistry);
+                
                 var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
 
                 // 안전한 zoom 함수 - Pool을 화면 중앙에 정렬
@@ -1284,7 +1536,7 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated) {
+                if(self.isAIGenerated && !(window.$pal && window.$mode === 'uEngine')) {
                     if(self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
@@ -1303,7 +1555,36 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
+                if (!(window.$pal && window.$mode === 'uEngine')) {
+                    self.applyAutoLayout();
+                }
+                self.resetZoom();
             });
+            
+            // 사용자가 수동으로 요소를 추가할 때 클래스 추가
+            eventBus.on('shape.added', function(event) {
+                const element = event.element;
+                const canvas = self.bpmnViewer.get('canvas');
+                
+                // 실시간으로 추가되는 요소에 클래스 추가
+                setTimeout(() => {
+                    self.addTestClassToElement(element, canvas);
+                }, 100);
+            });
+            
+            // 연결(시퀀스 플로우)이 추가될 때도 클래스 추가
+            eventBus.on('connection.added', function(event) {
+                const element = event.element;
+                const canvas = self.bpmnViewer.get('canvas');
+                
+                setTimeout(() => {
+                    self.addTestClassToElement(element, canvas);
+                }, 100);
+            });
+
+            // compensate boundaryEvent ↔ 보상 task 연결 시 compensateTask 자동 채움
+            // (association 연결 시 target의 name/id를 boundaryEvent uengine:json.compensateTask로 저장)
+            this.setupCompensateAutoFillListeners();
         },
         initializeViewer() {
             var container = this.$refs.container;
@@ -1419,7 +1700,8 @@ export default {
                             customContextPadModule,
                             customReplaceElement,
                             customPopupMenu,
-                            customReplaceModule,
+                            // skt 마이그레이션 요소 변경 비활성화
+                            // customReplaceModule,
                             ZoomScroll,
                             MoveCanvas,
                             minimapModule
@@ -1429,8 +1711,10 @@ export default {
                 self.bpmnViewer = markRaw(new BpmnModeler(_options));
             }
             
-            self.bpmnStore = useBpmnStore();
-            self.bpmnStore.setModeler(self.bpmnViewer);
+            if (self.registerToStore) {
+                self.bpmnStore = useBpmnStore();
+                self.bpmnStore.setModeler(self.bpmnViewer);
+            }
         },
         extendUEngineProperties(businessObject) {
             let self = this;
@@ -2406,6 +2690,17 @@ export default {
   z-index: 10;
 }
 
+.font-size-controls-mobile {
+    top: 12px;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.controls-group {
+  display: flex;
+  align-items: center;
+}
+
 .font-size-value {
   font-size: 12px;
   color: #666;
@@ -2423,6 +2718,13 @@ export default {
 .controls-divider {
   color: #ccc;
   margin: 0 4px;
+}
+
+.mini-preview .bjs-powered-by,
+.mini-preview .djs-palette,
+.mini-preview .djs-context-pad,
+.mini-preview .djs-overlay-container {
+  display: none !important;
 }
 
 /* Dynamic text color for dark backgrounds */
@@ -2479,5 +2781,4 @@ export default {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
-
 </style>

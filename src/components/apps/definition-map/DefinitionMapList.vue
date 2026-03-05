@@ -10,8 +10,8 @@
                 >
                     <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
                 </v-col>
-                <!-- MegaProcess 추가 카드: 특정 도메인 탭에서만 표시 -->
-                <v-col v-if="selectedDomain" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
+                <!-- MegaProcess 추가 카드 -->
+                <v-col v-if="selectedDomain || isPalUengine" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
                     <v-card v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
                         class="cp-add-mega"
@@ -75,28 +75,64 @@ export default {
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
         domains: Array,
-        selectedDomain: [String, Number],
-        filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
+        selectedDomain: String,
+        filteredProcDefIds: Array,  // null = no filter, [] = filter active but no matches
+        searchQuery: {
+            type: String,
+            default: ''
+        }
     },
     computed: {
-        // 미분류 Mega Process를 항상 마지막에 위치시킴
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
+        // 검색어로 필터링된 값 반환
         filteredValue() {
-            if (!this.value || !this.value.mega_proc_list) return this.value;
-
-            const uncategorizedNames = ['미분류', 'Uncategorized', 'unclassified'];
-            const sortedList = [...this.value.mega_proc_list].sort((a, b) => {
-                const aIsUncategorized = uncategorizedNames.includes(a.name) || uncategorizedNames.includes(a.id);
-                const bIsUncategorized = uncategorizedNames.includes(b.name) || uncategorizedNames.includes(b.id);
-
-                if (aIsUncategorized && !bIsUncategorized) return 1;  // a를 뒤로
-                if (!aIsUncategorized && bIsUncategorized) return -1; // b를 뒤로
-                return 0; // 순서 유지
-            });
-
-            return {
-                ...this.value,
-                mega_proc_list: sortedList
-            };
+            if (!this.searchQuery || !this.searchQuery.trim()) {
+                return this.value;
+            }
+            
+            const query = this.searchQuery.toLowerCase().trim();
+            const filtered = JSON.parse(JSON.stringify(this.value)); // deep copy
+            
+            if (!filtered || !filtered.mega_proc_list) {
+                return filtered;
+            }
+            
+            // mega_proc_list 필터링
+            filtered.mega_proc_list = filtered.mega_proc_list.map(megaProc => {
+                const filteredMajorList = [];
+                
+                if (megaProc.major_proc_list) {
+                    megaProc.major_proc_list.forEach(majorProc => {
+                        if (majorProc.sub_proc_list) {
+                            // sub_proc_list에서 검색어가 포함된 프로세스만 필터링
+                            const filteredSubList = majorProc.sub_proc_list.filter(subProc => {
+                                return subProc.name && subProc.name.toLowerCase().includes(query);
+                            });
+                            
+                            // 필터링된 sub_proc_list가 있으면 majorProc 유지
+                            if (filteredSubList.length > 0) {
+                                filteredMajorList.push({
+                                    ...majorProc,
+                                    sub_proc_list: filteredSubList
+                                });
+                            }
+                        }
+                    });
+                }
+                
+                // 필터링된 major_proc_list가 있으면 megaProc 유지
+                if (filteredMajorList.length > 0) {
+                    return {
+                        ...megaProc,
+                        major_proc_list: filteredMajorList
+                    };
+                }
+                return null;
+            }).filter(Boolean); // null 제거
+            
+            return filtered;
         },
         // metrics 구조 상 모든 Domain은 같은 MegaProcess를 가지고 있어야함
         // 모든 MegaProcess를 항상 표시

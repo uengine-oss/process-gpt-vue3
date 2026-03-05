@@ -2,13 +2,15 @@
     <div v-if="!isLoading">
         <div flat>
             <v-col class="pa-0">
-                <v-text-field class="mb-4" label="URL" v-model="value.url" v-if="selectedActivity === 'URLActivity'"></v-text-field>
+                <v-text-field class="mb-4" :label="$t('EventSynchronizationForm.url')" v-model="value.url" v-if="selectedActivity === 'URLActivity'"></v-text-field>
                 
 
-                <!-- <div style="font-size: medium;">Event Type</div> -->
-                <!-- <div>
-                    <v-text-field v-model="value.eventSynchronization.eventType"></v-text-field>
-                </div> -->
+                <v-text-field
+                    v-if="selectedActivity === 'URLActivity'"
+                    class="mb-4"
+                    :label="$t('EventSynchronizationForm.eventType')"
+                    v-model="value.eventSynchronization.eventType"
+                ></v-text-field>
 
                 <v-card-title v-if="showAttributes" class="pa-0">{{ $t('EventSynchronizationForm.eventAttributes') }}</v-card-title>
                 <draggable v-if="showAttributes" v-model="attributes" :options="dragOptions" class="mb-6 pt-2" style="max-height:200px; overflow:auto;">
@@ -310,6 +312,11 @@ export default {
             me.isLoading = true;
             me.bpmnModeler = useBpmnStore().getModeler;
             me.value = JSON.parse(JSON.stringify(me.modelValue));
+            // 방어 로직: URLActivity 등에서 eventSynchronization가 없을 수 있음
+            if (!me.value.eventSynchronization) me.value.eventSynchronization = {};
+            if (!me.value.eventSynchronization.eventType) me.value.eventSynchronization.eventType = '';
+            if (!me.value.eventSynchronization.attributes) me.value.eventSynchronization.attributes = [];
+            if (!me.value.eventSynchronization.mappingContext) me.value.eventSynchronization.mappingContext = { mappingElements: [] };
             me.attributes = me.value.eventSynchronization.attributes.map(attribute => ({ ...attribute, isEdit: false }))
             me.isLoading = false;
         },

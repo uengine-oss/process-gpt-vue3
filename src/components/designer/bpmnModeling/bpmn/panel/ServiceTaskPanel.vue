@@ -83,6 +83,7 @@
             />
         </div>
 
+
         <!-- Schema-based Properties -->
         <div class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
@@ -101,6 +102,81 @@
                 :readonly="isViewMode"
             />
         </div>
+
+        <!-- Task Color Picker -->
+        <div class="mt-4">
+            <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
+
+            <!-- Preset Colors -->
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <v-btn
+                    v-for="color in presetColors"
+                    :key="color.value"
+                    :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }"
+                    size="small"
+                    icon
+                    :disabled="isViewMode"
+                    @click="setTaskColor(color.value)"
+                >
+                    <v-icon v-if="copyUengineProperties.taskColor === color.value" size="small" color="white">mdi-check</v-icon>
+                </v-btn>
+            </div>
+
+            <!-- Custom Color Picker -->
+            <v-row class="ma-0 pa-0 align-center">
+                <v-menu
+                    v-model="showColorPicker"
+                    :close-on-content-click="false"
+                    location="bottom"
+                >
+                    <template v-slot:activator="{ props }">
+                        <v-btn
+                            v-bind="props"
+                            :disabled="isViewMode"
+                            variant="outlined"
+                            size="small"
+                            class="mr-2"
+                        >
+                            <v-icon start size="small">mdi-palette</v-icon>
+                            {{ $t('BpmnPropertyPanel.customColor') || '사용자 정의 색상' }}
+                        </v-btn>
+                    </template>
+                    <v-card min-width="300">
+                        <v-color-picker
+                            v-model="customColor"
+                            mode="hexa"
+                            hide-inputs
+                        ></v-color-picker>
+                        <v-card-actions>
+                            <v-btn size="small" @click="showColorPicker = false">{{ $t('common.cancel') || '취소' }}</v-btn>
+                            <v-btn size="small" color="primary" @click="applyCustomColor">{{ $t('common.confirm') || '적용' }}</v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-menu>
+
+                <v-btn
+                    v-if="copyUengineProperties.taskColor"
+                    variant="text"
+                    size="small"
+                    color="error"
+                    :disabled="isViewMode"
+                    @click="resetTaskColor"
+                >
+                    <v-icon size="small">mdi-close</v-icon>
+                    {{ $t('BpmnPropertyPanel.resetColor') || '초기화' }}
+                </v-btn>
+            </v-row>
+
+            <!-- Current Color Preview -->
+            <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
+                <div
+                    :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }"
+                    class="mr-2"
+                ></div>
+                <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
+            </div>
+        </div>
+
         <div>
             <!-- <div>Return 값을 저장 할 변수</div> -->
             <!-- <v-row class="ma-0 pa-0">
@@ -163,14 +239,69 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         element: Object,
-        definition: Object
+        definition: Object,
+        isForCompensation: Boolean
     },
     async created() {
         this.isLoading = true;
+        this.copyUengineProperties = {};
+
         if (this.uengineProperties) {
             this.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
+        }
+        // _type 고정
+        this.copyUengineProperties._type = 'org.uengine.kernel.bpmn.ServiceTask';
+
+        // role 정규화 (저장 시 Role 객체 형태로 들어가야 함)
+        const laneRoleName = this.element?.lanes?.[0]?.name || '';
+        if (!this.copyUengineProperties.role || typeof this.copyUengineProperties.role === 'string') {
+            const name = typeof this.copyUengineProperties.role === 'string' ? this.copyUengineProperties.role : laneRoleName;
+            this.copyUengineProperties.role = {
+                _type: 'org.uengine.kernel.Role',
+                name: name || ''
+            };
         } else {
-            this.copyUengineProperties = {};
+            if (!this.copyUengineProperties.role._type) this.copyUengineProperties.role._type = 'org.uengine.kernel.Role';
+            if (typeof this.copyUengineProperties.role.name !== 'string') this.copyUengineProperties.role.name = laneRoleName || '';
+        }
+
+        // uriTemplate / method / payloadTemplate
+        if (typeof this.copyUengineProperties.uriTemplate !== 'string') this.copyUengineProperties.uriTemplate = this.copyUengineProperties.uriTemplate ? String(this.copyUengineProperties.uriTemplate) : '';
+        if (!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET';
+        this.copyUengineProperties.method = String(this.copyUengineProperties.method).toUpperCase();
+        if (typeof this.copyUengineProperties.inputPayloadTemplate !== 'string') {
+            this.copyUengineProperties.inputPayloadTemplate =
+                this.copyUengineProperties.inputPayloadTemplate == null ? '' : JSON.stringify(this.copyUengineProperties.inputPayloadTemplate);
+        }
+
+        // flags
+        if (typeof this.copyUengineProperties.noValidationForSSL !== 'boolean') this.copyUengineProperties.noValidationForSSL = false;
+        if (typeof this.copyUengineProperties.skipIfNotFound !== 'boolean') this.copyUengineProperties.skipIfNotFound = false;
+
+        // headers 정규화 (HttpHeader[])
+        if (!Array.isArray(this.copyUengineProperties.headers)) {
+            this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }];
+        } else if (this.copyUengineProperties.headers.length === 0) {
+            this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }];
+        } else {
+            this.copyUengineProperties.headers = this.copyUengineProperties.headers.map((h) => ({
+                name: h?.name ?? h?.key ?? '',
+                value: h?.value ?? '',
+                _type: 'org.uengine.kernel.bpmn.HttpHeader'
+            }));
+        }
+
+        // outputMapping(EventSynchronization) 초기화
+        if (!this.copyUengineProperties.outputMapping || typeof this.copyUengineProperties.outputMapping !== 'object') {
+            this.copyUengineProperties.outputMapping = {};
+        }
+        if (typeof this.copyUengineProperties.outputMapping.eventType !== 'string') this.copyUengineProperties.outputMapping.eventType = '';
+        if (!Array.isArray(this.copyUengineProperties.outputMapping.attributes)) this.copyUengineProperties.outputMapping.attributes = [];
+        if (!this.copyUengineProperties.outputMapping.mappingContext || typeof this.copyUengineProperties.outputMapping.mappingContext !== 'object') {
+            this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] };
+        }
+        if (!Array.isArray(this.copyUengineProperties.outputMapping.mappingContext.mappingElements)) {
+            this.copyUengineProperties.outputMapping.mappingContext.mappingElements = [];
         }
 
         if(!this.copyUengineProperties) this.copyUengineProperties = {}
@@ -188,6 +319,7 @@ export default {
        if(typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
             this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
         }
+
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
@@ -249,6 +381,21 @@ export default {
                     title: 'BpmnPropertyPanel.mapperDescriptionSubTitle2',
                     image: "EventSynchronizationFomVariablesHowToUse.gif"
                 },
+            ],
+            // Color picker
+            showColorPicker: false,
+            customColor: '#e3f2fd',
+            presetColors: [
+                { name: 'Default Blue', value: '#e3f2fd' },
+                { name: 'Light Yellow', value: '#fdf2d0' },
+                { name: 'Light Green', value: '#e8f5e9' },
+                { name: 'Light Purple', value: '#f3e5f5' },
+                { name: 'Light Orange', value: '#fff3e0' },
+                { name: 'Light Pink', value: '#fce4ec' },
+                { name: 'Light Cyan', value: '#e0f7fa' },
+                { name: 'Light Red', value: '#ffebee' },
+                { name: 'Light Gray', value: '#f5f5f5' },
+                { name: 'White', value: '#ffffff' }
             ]
         };
     },
@@ -451,6 +598,41 @@ export default {
 
             // 매치된 결과가 없으면 null 반환
             return null;
+        },
+        setTaskColor(color) {
+            this.copyUengineProperties.taskColor = color;
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+            this.refreshTaskVisual();
+        },
+        applyCustomColor() {
+            this.copyUengineProperties.taskColor = this.customColor;
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+            this.showColorPicker = false;
+            this.refreshTaskVisual();
+        },
+        resetTaskColor() {
+            delete this.copyUengineProperties.taskColor;
+            this.$emit('update:uengineProperties', this.copyUengineProperties);
+            this.refreshTaskVisual();
+        },
+        refreshTaskVisual() {
+            const store = useBpmnStore();
+            const modeler = store.getModeler;
+            if (modeler) {
+                try {
+                    const elementRegistry = modeler.get('elementRegistry');
+                    const graphicsFactory = modeler.get('graphicsFactory');
+                    const element = elementRegistry.get(this.element?.id);
+                    if (element) {
+                        const gfx = elementRegistry.getGraphics(element);
+                        if (gfx) {
+                            graphicsFactory.update('shape', element, gfx);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not refresh task visual:', e);
+                }
+            }
         },
     }
 };

@@ -4,7 +4,6 @@
     >
         <div>
             <div>
-                <!-- 한글: 세로 기준 중앙정렬을 위해 align-center 클래스 추가 -->
                 <v-row class="ma-0 pa-4 pb-0 align-center instance-card-title">
                     <!-- 한글: 인스턴스 이름이 길 경우 줄바꿈이 가능하도록 스타일 추가 -->
                     <div class="text-h5 font-weight-semibold align-center"
@@ -42,7 +41,7 @@
                         </v-btn>
                     </div>
                     <v-spacer></v-spacer>
-                    <div v-if="isParticipant && !isNew">
+                    <div v-if="isParticipant">
                         <div v-if="instance.is_deleted">
                             <div class="text-caption">
                                 {{ getRemainingTime(instance.deleted_at) }}
@@ -484,7 +483,21 @@ export default {
         }
     },
     methods: {
-        async handleInstanceUpdated() {
+        async handleInstanceUpdated(payload) {
+            // DONE 신호를 받은 즉시 UI부터 완료 상태로 전환한다 (낙관적 업데이트)
+            if (this.instance && this.instance.status === 'NEW') {
+                this.instance = {
+                    ...this.instance,
+                    // 실제 인스턴스 상태 값은 백엔드에서 다시 받아오지만,
+                    // NEW에서 벗어났다는 것만 보장되면 되므로 우선 COMPLETED로 표시한다.
+                    status: 'COMPLETED',
+                };
+            }
+
+            // 하위 컴포넌트 강제 리렌더링을 위해 키 증가
+            this.updatedKey++;
+
+            // 이후 백엔드에서 최신 데이터를 다시 로드 (느려도 UI는 이미 완료 화면)
             await this.init();
         },
         async init() {
@@ -494,7 +507,23 @@ export default {
                 action: async () => {
                     if (!me.id) return;
                     me.isLoading = true;
-                    me.instance = await backend.getInstance(me.id);
+
+                    const serverInstance = await backend.getInstance(me.id);
+
+                    if (serverInstance) {
+                        // 로컬에서 이미 NEW가 아닌 상태로 전환했다면,
+                        // 서버가 아직 NEW라고 하더라도 NEW로 되돌리지 않도록 상태를 병합한다.
+                        if (me.instance && me.instance.status && me.instance.status !== 'NEW' && serverInstance.status === 'NEW') {
+                            me.instance = {
+                                ...serverInstance,
+                                status: me.instance.status,
+                            };
+                        } else {
+                            me.instance = serverInstance;
+                        }
+                    } else {
+                        me.instance = serverInstance;
+                    }
                     
                     if (me.instance) {
                         me.eventList = await backend.getEventList(me.instance.instId);
@@ -551,12 +580,18 @@ export default {
                 result = result.concat(updatedWorklist);
             }
             me.tasks = result;
-            let dependencies = await backend.getTaskDependencyByInstId(me.id)
+            const rawDependencies = await backend.getTaskDependencyByInstId(me.id);
+            const dependencies = Array.isArray(rawDependencies) ? rawDependencies : [];
+            if (!Array.isArray(rawDependencies) && rawDependencies != null) {
+                console.warn(
+                    `[InstanceCard] getTaskDependencyByInstId returned non-array. skipping as empty array.`,
+                    rawDependencies
+                );
+            }
             me.dependencies = me.settingTaskDependency(dependencies, me.tasks);
-            // 칸반 컬럼 업데이트
             me.columns.forEach(column => {
                 if(column.id == 'IN_PROGRESS') {
-                    column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS');
+                    column.tasks = me.tasks.filter(task => task.status === 'SUBMITTED' || task.status === 'IN_PROGRESS' || task.status === 'NEW' || task.status === 'Running');
                 } else {
                     column.tasks = me.tasks.filter(task => task.status === column.id);
                 }

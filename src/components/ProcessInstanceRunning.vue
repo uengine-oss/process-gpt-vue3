@@ -98,7 +98,11 @@ export default {
             }
             if (task.status == "DONE") {
                 this.EventBus.emit('instances-updated');
-                this.$emit('updated');
+                // 인스턴스가 완료되었음을 부모에 알리기 위해 인스턴스 ID와 상태를 함께 전달
+                this.$emit('updated', {
+                    instId: this.instance?.instId,
+                    status: 'DONE',
+                });
             }
         });
     },

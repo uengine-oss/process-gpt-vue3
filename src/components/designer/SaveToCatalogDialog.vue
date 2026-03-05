@@ -229,7 +229,7 @@
                                         </v-col>
                                         <v-col cols="6" sm="3">
                                             <div class="fte-number-input">
-                                                <label class="fte-input-label">{{ $t('fteInput.hoursPerTime') || '1회 소요시간' }}</label>
+                                                <label class="fte-input-label">{{ $t('fteInput.hoursPerTime') }}</label>
                                                 <div class="fte-stepper">
                                                     <button type="button" class="fte-stepper-btn" @click="fteData.hoursPerTime = Math.max(0, parseFloat(fteData.hoursPerTime) - 0.5); calculateFte()">
                                                         <v-icon size="18">mdi-minus</v-icon>
