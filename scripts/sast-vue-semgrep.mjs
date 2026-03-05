@@ -87,6 +87,7 @@ function runSemgrep() {
         'dist',
         '--exclude',
         'public',
+        '--no-git-ignore',
         '--json',
         '--output',
         SEMGREP_REPORT,
