@@ -29,6 +29,10 @@ jobs:
         filePath: "_manifest/spdx_2.2/"
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -139,6 +143,19 @@ jobs:
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
           echo "IMAGE_NAME_LATEST=$IMAGE_NAME_LATEST" >> $GITHUB_ENV
 
+      # ── Docker 이미지 서명 (cosign keyless - Sigstore OIDC) ──
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign Docker image with cosign
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME 2>/dev/null || \
+                   docker inspect --format='{{.Id}}' $IMAGE_NAME)
+          cosign sign --yes "$DIGEST"
+          echo "SIGNED_DIGEST=$DIGEST" >> $GITHUB_ENV
+
       - name: Checkout GitOps repository
         if: github.ref_name == 'main'
         uses: actions/checkout@v3
@@ -184,7 +201,8 @@ jobs:
           echo "| **Image (latest)** | \`${{ env.IMAGE_NAME_LATEST }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Tag** | \`${{ env.IMAGE_TAG }}\` / \`latest\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Commit** | [\`${{ github.sha }}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
-          
+          echo "| **Cosign Signed** | \`${{ env.SIGNED_DIGEST }}\` |" >> $GITHUB_STEP_SUMMARY
+
           if [ "${{ github.ref_name }}" == "main" ]; then
             echo "| **GitOps Repo** | [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s) |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
