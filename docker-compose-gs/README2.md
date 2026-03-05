@@ -132,6 +132,7 @@ Supabase 로그인 감사로그(`record_auth_audit()` 등)에 `172.x.x.x` 같은
 
 ```bash
 caddy run --config docker-compose-gs/Caddyfile.kong.local
+caddy run --config Caddyfile.kong.local
 ```
 
 - **3) `docker-compose/.env` 수정**: Supabase 외부 URL을 Caddy 포트로 변경합니다.

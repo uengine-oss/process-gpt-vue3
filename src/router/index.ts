@@ -79,8 +79,23 @@ function isOnResetPasswordWithRecoveryHash(): boolean {
         window.location.hash.includes('type=recovery');
 }
 
+function isPublicRoute(path: string): boolean {
+    return path === '/' || path.startsWith('/auth/') || path.startsWith('/external-forms/');
+}
+
 router.beforeEach(async (to: any, from: any, next: any) => {
     try {
+        // /definitions/* 에서 다른 경로로 라우팅 시 SPA 전환 대신 하드 리로드
+        const fromPath = (from?.path || '').toString();
+        if (fromPath.startsWith('/definitions')) {
+            const targetUrl = (to?.fullPath || to?.path || '/').toString();
+            const currentUrl = (from?.fullPath || from?.path || '').toString();
+            if (targetUrl && targetUrl !== currentUrl) {
+                window.location.assign(targetUrl);
+                return next(false);
+            }
+        }
+
         // 라우터 에러 상태가 있으면 상태 리셋 후 계속 진행
         if (hasRouterError) {
             console.log('[라우터] 에러 상태 감지 - 상태 리셋 후 계속 진행');
@@ -92,6 +107,24 @@ router.beforeEach(async (to: any, from: any, next: any) => {
             const isBlocked = to.path.startsWith('/tenant/');
             if (isBlocked) {
                 return next(false);
+            }
+        }
+
+        // 보호 경로는 로그인 세션이 없으면 접근 차단
+        if (!isPublicRoute(to.path)) {
+            let isAuthenticated = false;
+            try {
+                const supabase = window.$supabase;
+                if (supabase?.auth?.getSession) {
+                    const { data, error } = await supabase.auth.getSession();
+                    isAuthenticated = !error && Boolean(data?.session);
+                }
+            } catch (e) {
+                isAuthenticated = false;
+            }
+
+            if (!isAuthenticated) {
+                return next('/auth/login');
             }
         }
 

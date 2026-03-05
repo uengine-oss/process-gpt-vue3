@@ -48,7 +48,8 @@
                         <v-spacer></v-spacer>
                         
                         <!-- 언어 선택 -->
-                        <v-chip 
+                        <v-chip
+                            v-if="!gs"
                             variant="outlined"
                             class="language-chip-select-wrapper"
                             style="margin-right: 16px;"
@@ -172,7 +173,7 @@
                         </v-btn>
                     </div>
                     <!-- 모바일 언어 선택 -->
-                    <div class="d-flex justify-end mb-2">
+                    <div v-if="!gs" class="d-flex justify-end mb-2">
                         <v-chip 
                             variant="outlined"
                             class="language-chip-select-wrapper"
@@ -357,6 +358,7 @@ export default {
     mounted() {
         // this.admin = localStorage.getItem('isAdmin') === 'true' || localStorage.getItem('role') === 'superAdmin';
         // 초기 탭이 비어있거나(uEngine 모드에서 숨긴 탭으로 들어온 경우 포함) 안전하게 Account로 보정
+        this.applyGsLanguagePolicy();
         this.ensureVisibleTab();
     },
     computed: {
@@ -371,6 +373,16 @@ export default {
         }
     },
     methods: {
+        applyGsLanguagePolicy() {
+            if (!this.gs) return;
+
+            this.selectedLanguage = 'ko';
+            this.$i18n.locale = 'ko';
+            localStorage.setItem('locale', 'ko');
+            if (window.$i18n) {
+                window.$i18n.global.locale = 'ko';
+            }
+        },
         ensureVisibleTab() {
             const hiddenInUEngine = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog']);
             const hiddenInGs = new Set(['Drive', 'MCP-Servers', 'MCP-Environments', 'ConnectionInfo', 'TaskCatalog', 'OrgChartGroup']);
@@ -402,6 +414,10 @@ export default {
             location.href = getMainDomainUrl('/tenant/manage?clear=true');
         },
         changeLanguage(locale) {
+            if (this.gs) {
+                this.applyGsLanguagePolicy();
+                return;
+            }
             this.$try({
                 action: async () => {
                     // i18n locale 변경

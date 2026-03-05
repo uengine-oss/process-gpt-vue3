@@ -13,17 +13,17 @@ export default class StorageBaseSupabase {
 
     async recordAuthAudit({ action, email, success, errorMessage, tenantId, metadata }) {
         try {
-            // const supabase = window.$supabase;
-            // if (!supabase || typeof supabase.rpc !== 'function') return;
+            const supabase = window.$supabase;
+            if (!supabase || typeof supabase.rpc !== 'function') return;
 
-            // await supabase.rpc('record_auth_audit', {
-            //     p_action: action,
-            //     p_email: email ?? null,
-            //     p_success: Boolean(success),
-            //     p_error_message: errorMessage ?? null,
-            //     p_tenant_id: tenantId ?? null,
-            //     p_metadata: metadata ?? {}
-            // });
+            await supabase.rpc('record_auth_audit', {
+                p_action: action,
+                p_email: email ?? null,
+                p_success: Boolean(success),
+                p_error_message: errorMessage ?? null,
+                p_tenant_id: tenantId ?? null,
+                p_metadata: metadata ?? {}
+            });
         } catch (e) {
             // 감사 로그 기록 실패는 UX를 깨지 않도록 조용히 무시 (콘솔만)
             console.warn('[auth_login_audit] 기록 실패:', e);
