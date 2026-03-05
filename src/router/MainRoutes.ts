@@ -429,6 +429,11 @@ const MainRoutes = {
                 name: 'My Inbox',
                 path: '/my-inbox',
                 component: () => import('@/views/review-board/MyInbox.vue')
+            },
+            {
+                name: 'Admin Console',
+                path: '/admin-console',
+                component: () => import('@/views/admin/AdminConsole.vue')
             }
         ] : [])
     ]

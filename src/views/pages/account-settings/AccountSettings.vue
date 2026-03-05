@@ -12,11 +12,11 @@
                             <v-tab value="Account"> <UserCircleIcon class="mr-2" size="20" />{{ $t('accountTab.accountSetting') }} </v-tab>
                             <div v-if="admin">
                                 <v-tab value="ManageAccess"> <UsersIcon class="mr-2" size="20" />{{ $t('accountTab.manageAccess') }} </v-tab>
-                                <v-tab v-if="superAdmin" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
-                                <v-tab value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
-                                <v-tab value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
-                                <v-tab value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab>
-                                <v-tab value="ConnectionInfo">
+                                <v-tab v-if="superAdmin && !pal" value="Drive"> <BrandGoogleDriveIcon class="mr-2" size="20" />{{ $t('accountTab.drive') }} </v-tab>
+                                <v-tab v-if="!pal" value="MCP-Servers"> <v-icon class="mr-2" size="20">mdi-server</v-icon> {{ $t('accountTab.mcpServers') }} </v-tab>
+                                <v-tab v-if="!pal" value="MCP-Environments"> <v-icon class="mr-2" size="20">mdi-application-variable-outline</v-icon> {{ $t('accountTab.environments') }} </v-tab>
+                                <v-tab v-if="!pal" value="Skills"> <v-icon class="mr-2" size="20">mdi-brain</v-icon> {{ $t('accountTab.skills') }} </v-tab>
+                                <v-tab v-if="!pal" value="ConnectionInfo">
                                     <DatabaseIcon class="mr-2" size="20" />{{ $t('accountTab.dataSource') }}
                                 </v-tab>
                                 <v-tab value="TaskCatalog">
@@ -25,12 +25,15 @@
                                 <v-tab value="OrgChartGroup">
                                     <v-icon class="mr-2" size="20">mdi-account-group</v-icon> {{ $t('accountTab.orgChartGroup') }}
                                 </v-tab>
+                                <v-tab v-if="pal" value="AdminConsole">
+                                    <v-icon class="mr-2" size="20">mdi-shield-lock-outline</v-icon> {{ $t('adminConsole.title') }}
+                                </v-tab>
                             </div>
                             <!-- <v-tab value="Notification"  class=""><BellIcon class="mr-2" size="20"/>Notification</v-tab> -->
                             <!-- <v-tab value="Bills"  class=""><ArticleIcon class="mr-2" size="20"/>Bills</v-tab> -->
                             <!-- <v-tab value="Security"  class=""><LockIcon class="mr-2" size="20"/>Security</v-tab> -->
                         </v-tabs>
-                        <div @click="goToTenantManage"
+                        <div v-if="!pal" @click="goToTenantManage"
                             class="settings-tenant-manage-btn v-tab-style text-none"
                             style="letter-spacing: 0;"
                         >
@@ -89,7 +92,7 @@
                             </v-btn>
 
                             <v-btn
-                                v-if="superAdmin"
+                                v-if="superAdmin && !pal"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -100,6 +103,7 @@
                             </v-btn>
 
                             <v-btn
+                                v-if="!pal"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -109,6 +113,7 @@
                                 {{ $t('accountTab.mcpServers') }}
                             </v-btn>
                             <v-btn
+                                v-if="!pal"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -118,6 +123,7 @@
                                 {{ $t('accountTab.environments') }}
                             </v-btn>
                             <v-btn
+                                v-if="!pal"
                                 variant="text"
                                 color="default"
                                 size="small"
@@ -144,9 +150,20 @@
                             >
                                 <v-icon class="mr-2" size="16">mdi-account-group</v-icon>{{ $t('accountTab.orgChartGroup') }}
                             </v-btn>
+                            <v-btn
+                                v-if="pal"
+                                variant="text"
+                                color="default"
+                                size="small"
+                                @click="tab = 'AdminConsole'"
+                                :class="{ 'selected-tab': tab === 'AdminConsole' }"
+                            >
+                                <v-icon class="mr-2" size="16">mdi-shield-lock-outline</v-icon>{{ $t('adminConsole.title') }}
+                            </v-btn>
                         </template>
 
                         <v-btn
+                            v-if="!pal"
                             variant="text"
                             color="default"
                             size="small"
@@ -254,6 +271,14 @@
                                 <OrgChartGroupTab />
                             </div>
                         </v-window-item>
+                        <v-window-item value="AdminConsole">
+                            <div
+                                style="overflow: auto;"
+                                :style="!isMobile ? 'height: calc(100vh - 205px);' : 'height: calc(100vh - 80px);'"
+                            >
+                                <AdminConsole />
+                            </div>
+                        </v-window-item>
                         <!-- <v-window-item value="Notification">
                             <NotificationTab/>
                         </v-window-item>
@@ -284,6 +309,7 @@ import ConnectionInfoTab from '@/components/pages/account-settings/ConnectionInf
 import SkillsTab from '@/components/pages/account-settings/SkillsTab.vue';
 import TaskCatalogAdmin from '@/components/admin/TaskCatalogAdmin.vue';
 import OrgChartGroupTab from '@/components/pages/account-settings/OrgChartGroupTab.vue';
+import AdminConsole from '@/views/admin/AdminConsole.vue';
 
 // import NotificationTab from '@/components/pages/account-settings/NotificationTab.vue';
 // import BillsTab from '@/components/pages/account-settings/BillsTab.vue';
@@ -303,7 +329,8 @@ export default {
         ConnectionInfoTab,
         SkillsTab,
         TaskCatalogAdmin,
-        OrgChartGroupTab
+        OrgChartGroupTab,
+        AdminConsole
     },
     data() {
         return {
@@ -331,6 +358,9 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
+        },
+        pal() {
+            return window.$pal;
         }
     },
     methods: {

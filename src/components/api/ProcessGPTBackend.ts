@@ -8285,6 +8285,422 @@ class ProcessGPTBackend implements Backend {
             return [];
         }
     }
+
+    // ============================================
+    // Admin Console APIs
+    // ============================================
+
+    /**
+     * Data Freeze - 잠금 목록 조회
+     */
+    async getDataFreezeList(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('configuration')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .eq('key', 'data_freeze')
+                .maybeSingle();
+
+            if (error) throw error;
+            if (!data || !data.value) return [];
+
+            try {
+                return typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+            } catch {
+                return [];
+            }
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getDataFreezeList error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Data Freeze - 잠금 설정
+     */
+    async setDataFreeze(item: any): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const currentList = await this.getDataFreezeList();
+            const newItem = {
+                ...item,
+                id: `freeze_${Date.now()}`,
+                locked_by: (window as any).$userName || 'admin',
+                locked_at: new Date().toISOString()
+            };
+            currentList.push(newItem);
+
+            const { error } = await supabase
+                .from('configuration')
+                .upsert({
+                    tenant_id: window.$tenantName,
+                    key: 'data_freeze',
+                    value: currentList
+                }, { onConflict: 'tenant_id,key' });
+
+            if (error) throw error;
+            return newItem;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] setDataFreeze error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Data Freeze - 잠금 해제
+     */
+    async removeDataFreeze(targetId: string): Promise<void> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const currentList = await this.getDataFreezeList();
+            const filtered = currentList.filter((item: any) => item.target_id !== targetId && item.id !== targetId);
+
+            const { error } = await supabase
+                .from('configuration')
+                .upsert({
+                    tenant_id: window.$tenantName,
+                    key: 'data_freeze',
+                    value: filtered
+                }, { onConflict: 'tenant_id,key' });
+
+            if (error) throw error;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] removeDataFreeze error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Recycle Bin - 삭제된 프로세스 정의 조회
+     */
+    async getDeletedProcesses(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            const { data, error } = await supabase
+                .from('tb_bpmn_model')
+                .select('id, name, deleted_at, updated_by')
+                .eq('tenant_id', window.$tenantName)
+                .not('deleted_at', 'is', null)
+                .order('deleted_at', { ascending: false });
+
+            if (error) throw error;
+            return (data || []).map((p: any) => ({
+                ...p,
+                deleted_by: p.updated_by || 'Unknown',
+                remaining_days: Math.max(0, 30 - Math.floor((Date.now() - new Date(p.deleted_at).getTime()) / 86400000))
+            }));
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getDeletedProcesses error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Recycle Bin - 프로세스 정의 복원
+     */
+    async restoreProcess(procDefId: string): Promise<void> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase
+                .from('tb_bpmn_model')
+                .update({ deleted_at: null })
+                .eq('id', procDefId)
+                .eq('tenant_id', window.$tenantName);
+
+            if (error) throw error;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] restoreProcess error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Recycle Bin - 프로세스 정의 영구 삭제
+     */
+    async hardDeleteProcess(procDefId: string): Promise<void> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase
+                .from('tb_bpmn_model')
+                .delete()
+                .eq('id', procDefId)
+                .eq('tenant_id', window.$tenantName);
+
+            if (error) throw error;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] hardDeleteProcess error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Recycle Bin - 인스턴스 영구 삭제
+     */
+    async hardDeleteInstance(instId: string): Promise<void> {
+        try {
+            await storage.delete('bpm_proc_inst', { match: { proc_inst_id: instId } });
+        } catch (e) {
+            console.error('[ProcessGPTBackend] hardDeleteInstance error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * KPI Target 삭제
+     */
+    async deleteKpiTarget(id: string): Promise<void> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase
+                .from('kpi_targets')
+                .delete()
+                .eq('id', id)
+                .eq('tenant_id', window.$tenantName);
+
+            if (error) throw error;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] deleteKpiTarget error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * 조직별 Published 프로세스 개수 조회
+     */
+    async getPublishedCountByOrg(): Promise<Record<string, number>> {
+        const supabase = window.$supabase;
+        if (!supabase) return {};
+
+        try {
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .select('proc_def_id, state')
+                .eq('tenant_id', window.$tenantName)
+                .eq('state', 'published');
+
+            if (error) throw error;
+
+            // Get proc_def -> domain mapping from metricsMap
+            const metricsMap = (window as any).$metricsMap;
+            const result: Record<string, number> = {};
+
+            if (metricsMap?.processes && data) {
+                data.forEach((item: any) => {
+                    const proc = metricsMap.processes.find((p: any) => p.id === item.proc_def_id);
+                    const domainId = proc?.domain_id || 'unknown';
+                    result[domainId] = (result[domainId] || 0) + 1;
+                });
+            }
+
+            return result;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getPublishedCountByOrg error:', e);
+            return {};
+        }
+    }
+
+    /**
+     * Notice Banner 조회
+     */
+    async getNoticeBanner(): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return null;
+
+        try {
+            const { data, error } = await supabase
+                .from('configuration')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .eq('key', 'notice_banner')
+                .maybeSingle();
+
+            if (error) throw error;
+            if (!data || !data.value) return { enabled: false, text: '', color: 'info', start_date: '', end_date: '' };
+
+            return typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getNoticeBanner error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Notice Banner 저장
+     */
+    async saveNoticeBanner(config: any): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase
+                .from('configuration')
+                .upsert({
+                    tenant_id: window.$tenantName,
+                    key: 'notice_banner',
+                    value: config
+                }, { onConflict: 'tenant_id,key' });
+
+            if (error) throw error;
+            return config;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] saveNoticeBanner error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * Maintenance Mode 조회
+     */
+    async getMaintenanceMode(): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return null;
+
+        try {
+            const { data, error } = await supabase
+                .from('configuration')
+                .select('*')
+                .eq('tenant_id', window.$tenantName)
+                .eq('key', 'maintenance_mode')
+                .maybeSingle();
+
+            if (error) throw error;
+            if (!data || !data.value) return { enabled: false, message: '' };
+
+            return typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getMaintenanceMode error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Maintenance Mode 설정
+     */
+    async setMaintenanceMode(config: any): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase
+                .from('configuration')
+                .upsert({
+                    tenant_id: window.$tenantName,
+                    key: 'maintenance_mode',
+                    value: config
+                }, { onConflict: 'tenant_id,key' });
+
+            if (error) throw error;
+            return config;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] setMaintenanceMode error:', e);
+            throw e;
+        }
+    }
+
+    /**
+     * 전체 감사 로그 조회
+     */
+    async getAllAuditLogs(filters?: any): Promise<any> {
+        const supabase = window.$supabase;
+        if (!supabase) return { data: [], total: 0 };
+
+        try {
+            const page = filters?.page || 0;
+            const pageSize = filters?.pageSize || 50;
+            const from = page * pageSize;
+            const to = from + pageSize - 1;
+
+            let query = supabase
+                .from('proc_def_approval_history')
+                .select('*', { count: 'exact' })
+                .eq('tenant_id', window.$tenantName)
+                .order('created_at', { ascending: false })
+                .range(from, to);
+
+            if (filters?.startDate) {
+                query = query.gte('created_at', filters.startDate);
+            }
+            if (filters?.endDate) {
+                query = query.lte('created_at', filters.endDate + 'T23:59:59');
+            }
+            if (filters?.action) {
+                query = query.eq('action', filters.action);
+            }
+            if (filters?.actorId) {
+                query = query.ilike('actor_id', `%${filters.actorId}%`);
+            }
+            if (filters?.procDefId) {
+                query = query.eq('proc_def_id', filters.procDefId);
+            }
+
+            const { data, error, count } = await query;
+
+            if (error) throw error;
+            return { data: data || [], total: count || 0 };
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getAllAuditLogs error:', e);
+            return { data: [], total: 0 };
+        }
+    }
+
+    /**
+     * 속성 사용 횟수 조회 (Property Schema)
+     */
+    async getPropertyUsageCount(propertyKey: string): Promise<number> {
+        const supabase = window.$supabase;
+        if (!supabase) return 0;
+
+        try {
+            const { count, error } = await supabase
+                .from('proc_def_properties')
+                .select('*', { count: 'exact', head: true })
+                .eq('tenant_id', window.$tenantName)
+                .not(propertyKey, 'is', null);
+
+            if (error) throw error;
+            return count || 0;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getPropertyUsageCount error:', e);
+            return 0;
+        }
+    }
+
+    /**
+     * Property Schema Soft Delete (deprecated_at 설정)
+     */
+    async softDeletePropertySchema(id: string): Promise<void> {
+        const supabase = window.$supabase;
+        if (!supabase) throw new Error('Supabase not initialized');
+
+        try {
+            const { error } = await supabase
+                .from('property_schema')
+                .update({ deprecated_at: new Date().toISOString() })
+                .eq('id', id)
+                .eq('tenant_id', window.$tenantName);
+
+            if (error) throw error;
+        } catch (e) {
+            console.error('[ProcessGPTBackend] softDeletePropertySchema error:', e);
+            throw e;
+        }
+    }
 }
 
 export default ProcessGPTBackend;

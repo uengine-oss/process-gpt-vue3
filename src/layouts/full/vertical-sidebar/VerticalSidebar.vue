@@ -269,6 +269,43 @@
                     </template>
                 </div>
 
+                <!-- Admin 관리 메뉴 (PAL mode + Admin only) -->
+                <div v-if="adminItem.length > 0" class="mb-4">
+                    <!-- Rail mode: icons -->
+                    <template v-if="isRailCollapsed">
+                        <v-tooltip v-for="item in adminItem" :key="'rail-'+item.title" location="right">
+                            <template v-slot:activator="{ props }">
+                                <v-list-item v-bind="props" :to="item.to" density="compact" class="rail-icon-item">
+                                    <template v-slot:prepend>
+                                        <v-icon size="20">{{ item.icon }}</v-icon>
+                                    </template>
+                                </v-list-item>
+                            </template>
+                            <div>
+                                <div class="font-weight-bold text-body-2">{{ $t(item.title) }}</div>
+                            </div>
+                        </v-tooltip>
+                    </template>
+                    <!-- Expanded mode: full -->
+                    <template v-else>
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">Admin</div>
+                        <v-col class="pa-0">
+                            <v-list-item
+                                v-for="item in adminItem"
+                                :key="item.title"
+                                :to="item.to"
+                                density="compact"
+                                class="leftPadding"
+                            >
+                                <template v-slot:prepend>
+                                    <v-icon size="20" class="mr-2">{{ item.icon }}</v-icon>
+                                </template>
+                                <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                            </v-list-item>
+                        </v-col>
+                    </template>
+                </div>
+
                 <!-- 정의관리 타이틀 + 목록 -->
                 <v-col v-if="!pal" class="pa-0">
                     <!-- Rail mode: icon -->
@@ -418,6 +455,7 @@ export default {
         definitionList: null,
         processItem: [],
         analyticsItem: [],
+        adminItem: [],
         logoPadding: '',
         instanceLists: [],
         isOpen: false,
@@ -625,6 +663,24 @@ export default {
                     icon: 'submit-document',
                     BgColor: 'primary',
                     to: '/my-inbox',
+                    disable: false
+                }
+            ] : [];
+
+            // Admin 메뉴 (PAL mode + Admin only)
+            this.adminItem = (window.$pal && isAdmin) ? [
+                {
+                    title: 'adminConsole.title',
+                    icon: 'mdi-shield-lock-outline',
+                    BgColor: 'primary',
+                    to: '/admin-console',
+                    disable: false
+                },
+                {
+                    title: 'taskCatalog.title',
+                    icon: 'mdi-folder-cog',
+                    BgColor: 'primary',
+                    to: '/admin/task-catalog',
                     disable: false
                 }
             ] : [];
