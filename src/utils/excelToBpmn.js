@@ -5,7 +5,7 @@
  * - 메모: '메모' 컬럼 값은 해당 액티비티에 연결되는 BPMN 텍스트 어노테이션으로 출력
  */
 
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const DATA_START_ROW = 4;
 const DATA_START_COL = 0;
@@ -178,25 +178,47 @@ function isHeaderLikeRow(row, indices) {
     return false;
 }
 
-/** 엑셀 워크북에서 첫 시트를 배열(행 배열)로 반환 */
-export function parseExcelFile(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target.result);
-                const wb = XLSX.read(data, { type: 'array', cellDates: true });
-                const firstSheetName = wb.SheetNames[0];
-                const ws = wb.Sheets[firstSheetName];
-                const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
-                resolve(rows);
-            } catch (err) {
-                reject(err);
-            }
-        };
-        reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
-        reader.readAsArrayBuffer(file);
+function normalizeExcelCellValue(value) {
+    if (value == null) return '';
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'object') {
+        if (Object.prototype.hasOwnProperty.call(value, 'result')) {
+            return normalizeExcelCellValue(value.result);
+        }
+        if (Array.isArray(value.richText)) {
+            return value.richText.map((item) => item?.text || '').join('');
+        }
+        if (typeof value.text === 'string') return value.text;
+        if (typeof value.hyperlink === 'string' && typeof value.tooltip === 'string') return value.tooltip;
+    }
+    return String(value);
+}
+
+function worksheetToRowArrays(worksheet) {
+    const rows = [];
+    const colCount = Math.max(worksheet?.actualColumnCount || 0, 1);
+    worksheet.eachRow({ includeEmpty: true }, (row) => {
+        const current = [];
+        for (let col = 1; col <= colCount; col += 1) {
+            current.push(normalizeExcelCellValue(row.getCell(col).value));
+        }
+        rows.push(current);
     });
+    return rows;
+}
+
+/** 엑셀 워크북에서 첫 시트를 배열(행 배열)로 반환 */
+export async function parseExcelFile(file) {
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
+        const firstSheet = workbook.worksheets[0];
+        if (!firstSheet) return [];
+        return worksheetToRowArrays(firstSheet);
+    } catch (err) {
+        throw err instanceof Error ? err : new Error('파일을 읽을 수 없습니다.');
+    }
 }
 
 // ----- ProcessDefinitionExcelImporter 형식 (uenginePhase 동일: No, Activity 명, 상세 업무 Description, 담당조직, 유형, 선행, 후행, 메모) -----

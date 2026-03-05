@@ -196,7 +196,6 @@
 
 <script>
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
-import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
@@ -211,7 +210,6 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         ProcessDefinition,
-        ProcessExecuteDialog,
         'dry-run-process': DryRunProcess,
         'process-gpt-execute': ProcessGPTExecute
     },
@@ -331,7 +329,9 @@ export default {
                     try {
                         const raw = e.extensionElements.values[0];
                         json = raw.$children?.[0]?.$body ? JSON.parse(raw.$children[0].$body) : JSON.parse(raw.json || '{}');
-                    } catch (_) {}
+                    } catch (_) {
+                        // ignore
+                    }
                     if (json.definitionId) {
                         const rawId = String(json.definitionId).trim();
                         const normalizedId = rawId.replace(/\.bpmn$/i, '');

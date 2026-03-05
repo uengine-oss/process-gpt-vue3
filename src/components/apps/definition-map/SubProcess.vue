@@ -33,8 +33,8 @@
                     :status="processStatus"
                     size="x-small"
                     :showIcon="true"
-                    class="ml-1"
                 />
+                <v-chip v-if="isNew(value.id) && !enableEdit" color="primary" variant="outlined" size="x-small">New</v-chip>
                 <div class="ml-auto add-sub-process" style="flex-shrink: 0">
                     <v-btn
                         v-if="isExecutionByProject"

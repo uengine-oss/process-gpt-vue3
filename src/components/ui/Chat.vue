@@ -52,10 +52,11 @@
                         </v-icon>
                     </div>
 
-                    <div
-                        v-if="!workAssistantAgentMode"
-                        class="chat-split-container"
-                        :class="{ 'chat-split-active': showAgentMessagePanel }"
+                    <div v-if="!workAssistantAgentMode" ref="chatSplitContainer" class="chat-split-container" :class="{ 'chat-split-active': showAgentMessagePanel }">
+                    <perfect-scrollbar
+                        :class="['h-100 chat-view-box', { 'chat-room-mode': chatRoomMode }, showAgentMessagePanel ? 'chat-view-box-split-left' : '']"
+                        ref="scrollContainer"
+                        @scroll="handleScroll"
                     >
                         <perfect-scrollbar
                             :class="[
@@ -73,123 +74,171 @@
 
                                     <InfoAlert :howToUseInfo="howToUseInfo" :chatInfo="chatInfo" />
 
-                                    <!-- 참여자 현황 UI -->
-                                    <div v-if="participantUsers.length > 0" class="pa-4 chat-participants-box">
-                                        <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333">
-                                            {{ $t('chat.participants') }}
-                                        </h6>
-                                        <v-row class="ma-0 pa-0">
-                                            <div v-for="participant in participantUsers" :key="participant.id" class="mr-4">
-                                                <div class="d-flex align-center">
-                                                    <v-avatar size="24" class="mr-2">
-                                                        <v-img
-                                                            :src="participant.profile || '/images/defaultUser.png'"
-                                                            :alt="participant.username"
-                                                            cover
-                                                        >
-                                                            <template v-slot:error>
-                                                                <v-img src="/images/defaultUser.png" cover>
-                                                                    <template v-slot:error>
-                                                                        <v-icon size="small" style="color: #666">mdi-account</v-icon>
-                                                                    </template>
-                                                                </v-img>
-                                                            </template>
-                                                        </v-img>
-                                                    </v-avatar>
-                                                    <div class="flex-grow-1">
-                                                        <div class="text-body-2 font-weight-medium" style="color: #444">
-                                                            {{ participant.username || '이름 없음' }}
-                                                        </div>
-                                                        <div class="text-caption" style="color: #666">
-                                                            {{ participant.email || 'ID: ' + participant.id }}
-                                                        </div>
-                                                    </div>
+                                <!-- 참여자 현황 UI -->
+                                <div v-if="participantUsers.length > 0"
+                                    class="pa-4 chat-participants-box"
+                                >
+                                    <h6 class="text-subtitle-1 font-weight-bold mb-2" style="color: #333;">{{ $t('chat.participants') }}</h6>
+                                    <v-row class="ma-0 pa-0">
+                                        <div v-for="participant in participantUsers" :key="participant.id" class="mr-4">
+                                            <div class="d-flex align-center">
+                                                <v-avatar size="24" class="mr-2">
+                                                    <v-img 
+                                                        :src="participant.profile || '/images/defaultUser.png'" 
+                                                        :alt="participant.username"
+                                                        cover
+                                                    >
+                                                        <template v-slot:error>
+                                                            <v-img src="/images/defaultUser.png" cover>
+                                                                <template v-slot:error>
+                                                                    <v-icon size="small" style="color: #666;">mdi-account</v-icon>
+                                                                </template>
+                                                            </v-img>
+                                                        </template>
+                                                    </v-img>
+                                                </v-avatar>
+                                                <div class="flex-grow-1">
+                                                    <div class="text-body-2 font-weight-medium" style="color: #444;">{{ participant.username || '이름 없음' }}</div>
+                                                    <div class="text-caption" style="color: #666;">{{ participant.email || 'ID: ' + participant.id }}</div>
                                                 </div>
                                             </div>
-                                        </v-row>
+                                        </div>
+                                    </v-row>
+                                </div>
+                                
+                                <div
+                                    v-for="(message, index) in userFilteredMessages"
+                                    :key="index"
+                                    class="py-1 px-3 chat-message-row"
+                                    :class="{ 'chat-message-row--highlight': highlightedMessageUuid && message && message.uuid === highlightedMessageUuid }"
+                                    :data-msg-uuid="message && message.uuid ? message.uuid : ''"
+                                >
+                                    <!-- 날짜 구분선 표시 -->
+                                    <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
+                                        <v-divider class="date-separator-line"></v-divider>
+                                        <div class="date-separator-text">
+                                            {{ formatDateSeparator(message.timeStamp) }}
+                                        </div>
+                                        <v-divider class="date-separator-line"></v-divider>
+                                    </div>
+                                    
+                                    <!-- PDF2BPMN 진행 카드 (마지막 메시지 하단) -->
+                                    <div
+                                        v-if="chatRoomMode && pdf2bpmnProgress && pdf2bpmnProgress.isActive && index === userFilteredMessages.length - 1"
+                                        class="pdf2bpmn-progress-wrap mb-2"
+                                    >
+                                        <div class="d-flex align-center mb-1">
+                                            <v-icon size="16" color="primary" class="mr-1">mdi-file-pdf-box</v-icon>
+                                            <span class="text-caption font-weight-bold">PDF → BPMN 변환</span>
+                                            <v-chip
+                                                size="x-small"
+                                                class="ml-2"
+                                                :color="getProgressChipColor(pdf2bpmnProgress.status)"
+                                                variant="tonal"
+                                            >
+                                                {{ pdf2bpmnProgress.status }}
+                                            </v-chip>
+                                        </div>
+                                        <v-card class="pa-3" variant="tonal">
+                                            <v-progress-linear
+                                                :model-value="pdf2bpmnProgress.progress || 0"
+                                                height="8"
+                                                rounded
+                                                class="mb-2"
+                                                :color="(pdf2bpmnProgress.status === 'completed') ? 'success' : 'primary'"
+                                            />
+                                            <div class="d-flex align-center justify-space-between">
+                                                <div class="text-caption text-medium-emphasis" style="max-width: 75%;">
+                                                    {{ pdf2bpmnProgress.message || '' }}
+                                                </div>
+                                                <div class="text-caption font-weight-bold">
+                                                    {{ pdf2bpmnProgress.progress || 0 }}%
+                                                    <v-progress-circular
+                                                        v-if="pdf2bpmnProgress.status === 'processing'"
+                                                        style="margin-left: 3px; margin-bottom: 3px;"
+                                                        indeterminate
+                                                        size="12"
+                                                        width="2"
+                                                        color="primary"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div v-if="pdf2bpmnProgress.generatedBpmns && pdf2bpmnProgress.generatedBpmns.length > 0" class="mt-2">
+                                                <div class="text-caption font-weight-bold mb-1">
+                                                    생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
+                                                </div>
+                                                <div class="d-flex flex-wrap" style="gap: 8px;">
+                                                    <v-chip
+                                                        v-for="(bpmn, bIdx) in pdf2bpmnProgress.generatedBpmns"
+                                                        :key="bIdx"
+                                                        size="small"
+                                                        variant="tonal"
+                                                        color="success"
+                                                        @click="emitPreviewBpmn(bpmn)"
+                                                        style="cursor: pointer;"
+                                                    >
+                                                        <v-icon start size="14">mdi-sitemap</v-icon>
+                                                        {{ bpmn.process_name || bpmn.process_id }}
+                                                    </v-chip>
+                                                </div>
+                                            </div>
+                                        </v-card>
+                                    </div>
+                                    
+                                    <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
+                                    <div v-if="message && message.__routingLoading">
+                                        <div class="message-bubble-wrap message-bubble-wrap--other">
+                                            <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
+                                                <div class="pa-2">
+                                                    <pre class="text-body-1 routing-loading-text">{{ (message.content || '...') }}</pre>
+                                                </div>
+                                            </v-sheet>
+                                        </div>
                                     </div>
 
-                                    <div
-                                        v-for="(message, index) in userFilteredMessages"
-                                        :key="index"
-                                        class="py-1 px-3 chat-message-row"
-                                        :class="{
-                                            'chat-message-row--highlight':
-                                                highlightedMessageUuid && message && message.uuid === highlightedMessageUuid
-                                        }"
-                                        :data-msg-uuid="message && message.uuid ? message.uuid : ''"
-                                    >
-                                        <!-- 날짜 구분선 표시 -->
-                                        <div v-if="shouldDisplayDateSeparator(message, index)" class="date-separator-container">
-                                            <v-divider class="date-separator-line"></v-divider>
-                                            <div class="date-separator-text">
-                                                {{ formatDateSeparator(message.timeStamp) }}
-                                            </div>
-                                            <v-divider class="date-separator-line"></v-divider>
-                                        </div>
+                                    <!-- 자동 추천(초대) 카드 -->
+                                    <div v-else-if="message && message.__agentInviteRecommendation">
+                                        <div class="message-bubble-wrap message-bubble-wrap--other">
+                                            <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
+                                                <div class="pa-3 pb-2">
+                                                    <div class="text-body-2 font-weight-bold mb-1">적절한 담당자를 초대해볼까요?</div>
+                                                    <div
+                                                        v-if="(message.__agentInviteRecommendation.reason || '').toString().trim()"
+                                                        class="text-caption text-medium-emphasis mb-2"
+                                                    >
+                                                        {{ message.__agentInviteRecommendation.reason }}
+                                                    </div>
 
-                                        <!-- PDF2BPMN 진행 카드 (마지막 메시지 하단) -->
-                                        <div
-                                            v-if="
-                                                chatRoomMode &&
-                                                pdf2bpmnProgress &&
-                                                pdf2bpmnProgress.isActive &&
-                                                index === userFilteredMessages.length - 1
-                                            "
-                                            class="pdf2bpmn-progress-wrap mb-2"
-                                        >
-                                            <div class="d-flex align-center mb-1">
-                                                <v-icon size="16" color="primary" class="mr-1">mdi-file-pdf-box</v-icon>
-                                                <span class="text-caption font-weight-bold">PDF → BPMN 변환</span>
-                                                <v-chip
-                                                    size="x-small"
-                                                    class="ml-2"
-                                                    :color="getProgressChipColor(pdf2bpmnProgress.status)"
-                                                    variant="tonal"
-                                                >
-                                                    {{ pdf2bpmnProgress.status }}
-                                                </v-chip>
-                                            </div>
-                                            <v-card class="pa-3" variant="tonal">
-                                                <v-progress-linear
-                                                    :model-value="pdf2bpmnProgress.progress || 0"
-                                                    height="8"
-                                                    rounded
-                                                    class="mb-2"
-                                                    :color="pdf2bpmnProgress.status === 'completed' ? 'success' : 'primary'"
-                                                />
-                                                <div class="d-flex align-center justify-space-between">
-                                                    <div class="text-caption text-medium-emphasis" style="max-width: 75%">
-                                                        {{ pdf2bpmnProgress.message || '' }}
-                                                    </div>
-                                                    <div class="text-caption font-weight-bold">
-                                                        {{ pdf2bpmnProgress.progress || 0 }}%
-                                                        <v-progress-circular
-                                                            v-if="pdf2bpmnProgress.status === 'processing'"
-                                                            style="margin-left: 3px; margin-bottom: 3px"
-                                                            indeterminate
-                                                            size="12"
-                                                            width="2"
-                                                            color="primary"
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div
-                                                    v-if="pdf2bpmnProgress.generatedBpmns && pdf2bpmnProgress.generatedBpmns.length > 0"
-                                                    class="mt-2"
-                                                >
-                                                    <div class="text-caption font-weight-bold mb-1">
-                                                        생성된 프로세스 ({{ pdf2bpmnProgress.generatedBpmns.length }})
-                                                    </div>
-                                                    <div class="d-flex flex-wrap" style="gap: 8px">
-                                                        <v-chip
-                                                            v-for="(bpmn, bIdx) in pdf2bpmnProgress.generatedBpmns"
-                                                            :key="bIdx"
+                                                    <div
+                                                        v-for="agent in (message.__agentInviteRecommendation.recommendedAgents || [])"
+                                                        :key="agent.id"
+                                                        class="d-flex align-center justify-space-between mb-2 pa-2 rounded-lg"
+                                                        style="gap: 10px; background: rgba(0,0,0,0.03);"
+                                                    >
+                                                        <div class="d-flex align-center" style="gap: 10px; min-width: 0; flex: 1; overflow: hidden;">
+                                                            <v-avatar size="30" color="grey-lighten-3" style="flex-shrink: 0;">
+                                                                <v-img :src="agent.profile || '/images/chat-icon.png'" cover />
+                                                            </v-avatar>
+                                                            <div style="min-width: 0; flex: 1;">
+                                                                <div class="text-body-2 font-weight-medium" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                                    {{ agent.username || agent.id }}
+                                                                </div>
+                                                                <div
+                                                                    class="text-caption text-medium-emphasis"
+                                                                    style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                                                >
+                                                                    {{ agent.role || agent.description || agent.goal || '' }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <v-btn
                                                             size="small"
-                                                            variant="tonal"
-                                                            color="success"
-                                                            @click="emitPreviewBpmn(bpmn)"
-                                                            style="cursor: pointer"
+                                                            color="primary"
+                                                            rounded
+                                                            variant="flat"
+                                                            style="flex-shrink: 0;"
+                                                            :disabled="isRecommendationInvited(message, agent.id)"
+                                                            @click="inviteAgentFromRecommendation(message, agent)"
                                                         >
                                                             <v-icon start size="14">mdi-sitemap</v-icon>
                                                             {{ bpmn.process_name || bpmn.process_id }}
@@ -1852,21 +1901,33 @@
                                             :currentIndex="-1"
                                         />
                                     </div>
-                                    <slot name="custom-chat"></slot>
-                                </v-col>
-                            </div>
-                        </perfect-scrollbar>
-                        <AgentMessagePanel
-                            v-if="showAgentMessagePanel"
-                            class="chat-view-box-split-right"
-                            :messages="agentFilteredMessages"
-                            :agentInfo="agentInfo"
-                            :userInfo="userInfo"
-                            :userList="userList"
-                            @invite-agent="(payload) => $emit('invite-agent', payload)"
-                            @preview-image="(url) => $emit('preview-image', url)"
-                            @preview-bpmn="(bpmn) => $emit('preview-bpmn', bpmn)"
-                        />
+                                    <AgentsChat
+                                        v-if="type == 'instances' && agentInfo.isRunning && userFilteredMessages.length == 0"
+                                        class="px-5 py-1" :agentInfo="agentInfo" :totalSize="userFilteredMessages.length"
+                                        :currentIndex="-1" />
+
+                                </div>
+                                <slot name="custom-chat"></slot>
+                            </v-col>
+                        </div>
+                    </perfect-scrollbar>
+                    <div
+                        v-if="showAgentMessagePanel"
+                        class="chat-split-resize-handle"
+                        @mousedown="startAgentPanelResize"
+                    ></div>
+                    <AgentMessagePanel
+                        v-if="showAgentMessagePanel"
+                        class="chat-view-box-split-right"
+                        :style="{ width: agentPanelWidth + 'px' }"
+                        :messages="agentFilteredMessages"
+                        :agentInfo="agentInfo"
+                        :userInfo="userInfo"
+                        :userList="userList"
+                        @invite-agent="(payload) => $emit('invite-agent', payload)"
+                        @preview-image="(url) => $emit('preview-image', url)"
+                        @preview-bpmn="(bpmn) => $emit('preview-bpmn', bpmn)"
+                    />
                     </div>
                     <div v-if="!workAssistantAgentMode" style="position: relative; z-index: 9999; margin-bottom: 10px">
                         <v-row class="pa-0 ma-0">
@@ -2834,6 +2895,9 @@ export default {
 
             //preview-message
             previewMessage: null,
+            
+            agentPanelWidth: 380,
+            isResizingAgentPanel: false,
 
             // 채팅창 높이 관련 변수
             windowWidth: window.innerWidth,
@@ -2900,8 +2964,8 @@ export default {
         });
     },
     beforeUnmount() {
-        // 컴포넌트 제거 시 이벤트 리스너 제거
         window.removeEventListener('resize', this.handleResize);
+        this.stopAgentPanelResize();
         try {
             if (this._highlightTimer) clearTimeout(this._highlightTimer);
         } catch (e) {}
@@ -3017,6 +3081,15 @@ export default {
             if (list.length > 0 && list[list.length - 1].email == myEmail) {
                 this.setRenderTime();
             }
+            const seenRecommendationKeys = new Set();
+            list = list.filter(m => {
+                if (!m || !m.__agentInviteRecommendation) return true;
+                const agents = m.__agentInviteRecommendation.recommendedAgents || [];
+                const key = agents.map(a => a.id).sort().join(',');
+                if (!key || seenRecommendationKeys.has(key)) return false;
+                seenRecommendationKeys.add(key);
+                return true;
+            });
             return list;
         },
         isMultiHumanChatRoom() {
@@ -3122,6 +3195,30 @@ export default {
         }
     },
     methods: {
+        startAgentPanelResize(e) {
+            e.preventDefault();
+            this.isResizingAgentPanel = true;
+            document.addEventListener('mousemove', this.onAgentPanelResize);
+            document.addEventListener('mouseup', this.stopAgentPanelResize);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        },
+        onAgentPanelResize(e) {
+            if (!this.isResizingAgentPanel) return;
+            const container = this.$refs.chatSplitContainer;
+            if (!container) return;
+            const containerRect = container.getBoundingClientRect();
+            const newWidth = containerRect.right - e.clientX;
+            const maxWidth = containerRect.width * 0.8;
+            this.agentPanelWidth = Math.max(280, Math.min(newWidth, maxWidth));
+        },
+        stopAgentPanelResize() {
+            this.isResizingAgentPanel = false;
+            document.removeEventListener('mousemove', this.onAgentPanelResize);
+            document.removeEventListener('mouseup', this.stopAgentPanelResize);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        },
         isAgentRelatedMessage(message) {
             if (!message) return false;
             return !!(
@@ -4171,6 +4268,7 @@ export default {
             }
         },
         cancel() {
+            // eslint-disable-next-line vue/no-mutating-props
             this.messages[this.editIndex].content = this.editText;
             this.editIndex = -1;
         },
@@ -4243,7 +4341,9 @@ export default {
                                     .join('')}-${hex.slice(10, 16).join('')}`;
                             }
                         }
-                    } catch (err) {}
+                    } catch (err) {
+                        // ignore
+                    }
                     // 최후 fallback (형식만 UUID v4 형태)
                     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
                         const r = (Math.random() * 16) | 0;
@@ -5387,9 +5487,20 @@ pre {
     border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 .chat-view-box-split-right {
-    width: 380px;
-    min-width: 320px;
-    max-width: 420px;
-    flex-shrink: 0;
+  min-width: 280px;
+  flex-shrink: 0;
+}
+.chat-split-resize-handle {
+  width: 4px;
+  cursor: col-resize;
+  background-color: transparent;
+  flex-shrink: 0;
+  transition: background-color 0.15s;
+  position: relative;
+  z-index: 10;
+}
+.chat-split-resize-handle:hover,
+.chat-split-resize-handle:active {
+  background-color: rgba(var(--v-theme-primary), 0.3);
 }
 </style>

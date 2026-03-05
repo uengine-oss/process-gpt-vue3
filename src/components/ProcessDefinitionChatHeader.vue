@@ -137,8 +137,7 @@
                                 accept=".bpmn,.jsonold,.csv"
                                 style="display: none"
                             />
-                            <input type="file" ref="excelFileInput" @change="onExcelFileChange" accept=".xlsx,.xls" style="display: none" />
-
+                            <input type="file" ref="excelFileInput" @change="onExcelFileChange" accept=".xlsx" style="display: none" />
                             <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map' && !isMobile">
                                 <!-- ProcessDefinitionChatHeader.vue 프로세스 정의 수정 및 저장 아이콘 -->
                                 <v-tooltip location="bottom">

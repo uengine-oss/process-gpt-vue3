@@ -130,12 +130,11 @@ export default defineConfig({
     build: {
         rollupOptions: {
             // Node.js 내장 모듈들을 외부 모듈로 처리하여 번들에서 제외
-            external: ['https', 'xlsx'],
+            external: ['https'],
             output: {
                 // 외부 모듈에 대한 globals 설정
                 globals: {
-                    https: '{}',
-                    xlsx: '{}'
+                    https: '{}'
                 }
             }
         }
