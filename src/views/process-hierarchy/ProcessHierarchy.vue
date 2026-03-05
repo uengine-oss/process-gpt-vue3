@@ -11,7 +11,6 @@
             />
             <div class="resize-handle-left" @mousedown="startResizeLeft"></div>
         </div>
-
         <!-- Center Panel: BPMN Designer -->
         <div class="hierarchy-center-panel">
             <ProcessHierarchyDesigner
@@ -378,7 +377,7 @@ export default {
                 let def = this.definitionList.find(d => d.id === id || d.file_name === id);
 
                 // uEngine 모드: definitionList에 없으면 getRawDefinition으로 직접 로드 (트리 id는 map 기준이라 listDefinition 결과와 불일치할 수 있음)
-                if (!def && typeof window !== 'undefined' && window.$mode === 'uEngine') {
+                if (typeof window !== 'undefined' && window.$mode === 'uEngine') {
                     const rawBpmn = await backend.getRawDefinition(id, { type: 'bpmn' });
                     if (rawBpmn && typeof rawBpmn === 'string') {
                         def = {
