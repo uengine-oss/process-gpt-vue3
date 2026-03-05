@@ -1009,12 +1009,36 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    /** GET /definition/metrics — definition/map과 동일한 방식으로 metrics 데이터 조회 */
     async getMetricsMap() {
-        return null;
+        try {
+            const response = await axiosInstance.get(`/definition/metrics`);
+            const data = response?.data;
+            return this.__normalizeMetricsMap(data);
+        } catch (e) {
+            console.warn('[UEngineBackend] getMetricsMap failed, returning empty structure:', e);
+            return { domains: [], mega_processes: [], processes: [] };
+        }
     }
 
+    private __normalizeMetricsMap(data: any): { domains: any[]; mega_processes: any[]; processes: any[] } {
+        if (!data || typeof data !== 'object') return { domains: [], mega_processes: [], processes: [] };
+        const ensureList = (arr: any[] | undefined) => (Array.isArray(arr) ? arr : []);
+        return {
+            domains: ensureList(data.domains ?? data.domainList ?? []),
+            mega_processes: ensureList(data.mega_processes ?? data.megaProcesses ?? data.megaProcList ?? []),
+            processes: ensureList(data.processes ?? data.processList ?? [])
+        };
+    }
+
+    /** PUT /definition/metrics — definition/map과 동일한 방식으로 metrics 저장 (metrics.json 등) */
     async putMetricsMap(metricsMap: any) {
-        return null;
+        const body = typeof metricsMap === 'object' && (metricsMap?.domains != null || metricsMap?.mega_processes != null || metricsMap?.processes != null)
+            ? metricsMap
+            : metricsMap;
+        const payload = typeof body === 'object' ? JSON.stringify(body) : body;
+        const response = await axiosInstance.put(`/definition/metrics`, payload, { headers: { 'Content-Type': 'text/plain' } });
+        return response?.data;
     }
 
     async getAllInstanceList(page: any, size: any) {
