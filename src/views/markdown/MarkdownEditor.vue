@@ -98,6 +98,7 @@ import { Editor, EditorContent, BubbleMenu as BubbleMenuComponent } from '@tipta
 import { DOMSerializer, DOMParser as ProseMirrorDOMParser } from 'prosemirror-model';
 import { Markdown } from 'tiptap-markdown';
 import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import mermaid from 'mermaid';
 
 import StarterKit from '@tiptap/starter-kit';
@@ -564,7 +565,7 @@ export default {
                     // 빈 텍스트나 너무 짧은 텍스트는 건너뛰기
                     if (!graphDefinition || graphDefinition.length < 5) {
                         console.warn('Mermaid: 빈 다이어그램 건너뛰기');
-                        element.innerHTML = `<div style="color: #666; font-style: italic;">빈 다이어그램</div>`;
+                        element.innerHTML = DOMPurify.sanitize(`<div style="color: #666; font-style: italic;">빈 다이어그램</div>`);
                         element.setAttribute('data-processed', 'true');
                         continue;
                     }
@@ -576,21 +577,21 @@ export default {
                         );
                     if (!hasValidType) {
                         console.warn('Mermaid: 알 수 없는 다이어그램 타입');
-                        element.innerHTML = `<pre><code>${graphDefinition}</code></pre>`;
+                        element.innerHTML = DOMPurify.sanitize(`<pre><code>${graphDefinition}</code></pre>`);
                         element.setAttribute('data-processed', 'true');
                         continue;
                     }
 
                     const { svg } = await mermaid.render(`mermaid-${Date.now()}-${i}`, graphDefinition);
-                    element.innerHTML = svg;
+                    element.innerHTML = DOMPurify.sanitize(svg);
                     element.setAttribute('data-processed', 'true');
                     console.log(`Mermaid 다이어그램 ${i + 1} 렌더링 완료`);
                 } catch (error) {
                     console.error('Mermaid 렌더링 오류:', error);
-                    element.innerHTML = `<div style="color: #d73a49; background: #fff5f5; padding: 8px; border-radius: 4px; border: 1px solid #f85149;">
+                    element.innerHTML = DOMPurify.sanitize(`<div style="color: #d73a49; background: #fff5f5; padding: 8px; border-radius: 4px; border: 1px solid #f85149;">
                         <strong>Mermaid 렌더링 실패:</strong><br>
                         <pre style="margin: 4px 0; font-size: 12px;">${element.textContent}</pre>
-                    </div>`;
+                    </div>`);
                     element.setAttribute('data-processed', 'true');
                 }
             }

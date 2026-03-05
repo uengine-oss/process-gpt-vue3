@@ -36,6 +36,7 @@
 <script>
 import { jsPDF } from 'jspdf';
 import { toPng } from 'html-to-image';
+import DOMPurify from 'dompurify';
 
 export default {
     name: 'PDFPreviewer',
@@ -71,7 +72,7 @@ export default {
                 .then(({ svg }) => {
                     const previewsContainer = document.getElementById('svgPreviews');
                     if (!previewsContainer) return;
-                    previewsContainer.innerHTML = ''; // 기존 내용 초기화
+                    previewsContainer.innerHTML = DOMPurify.sanitize(''); // 기존 내용 초기화
 
                     const parser = new DOMParser();
                     const svgDoc = parser.parseFromString(svg, 'image/svg+xml');
@@ -135,7 +136,7 @@ export default {
                         pageDiv.style.margin = '10px';
                         pageDiv.style.padding = '10px';
                         pageDiv.style.display = 'inline-block';
-                        pageDiv.innerHTML = `<h3>Page ${index + 1}</h3>`;
+                        pageDiv.innerHTML = DOMPurify.sanitize(`<h3>Page ${index + 1}</h3>`);
                         pageDiv.appendChild(newSvg);
                         previewsContainer.appendChild(pageDiv);
                     });

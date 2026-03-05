@@ -180,6 +180,7 @@
 </template>
 
 <script>
+import DOMPurify from 'dompurify';
 import * as jsondiff from 'jsondiffpatch';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
 import ChatListing from '@/components/apps/chats/ChatListing.vue';
@@ -882,7 +883,7 @@ export default {
                             });
                         });
 
-                    row.innerHTML = '';
+                    row.innerHTML = DOMPurify.sanitize('');
                     row.appendChild(newCol);
                 }
             });
@@ -1020,14 +1021,14 @@ export default {
             // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
             if (dom.body.querySelectorAll('section').length == 0) {
                 const rows = Array.from(dom.body.querySelectorAll('.row'));
-                dom.body.innerHTML = rows
+                dom.body.innerHTML = DOMPurify.sanitize(rows
                     .map((row) => {
                         const section = document.createElement('section');
-                        section.innerHTML = row.outerHTML;
+                        section.innerHTML = DOMPurify.sanitize(row.outerHTML);
                         return section.outerHTML;
                     })
                     .join('')
-                    .replace(/&quot;/g, `'`);
+                    .replace(/&quot;/g, `'`));
             }
 
             // KEdtior에서 인식할 수 있도록 클래스 추가하기

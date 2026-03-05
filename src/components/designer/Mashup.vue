@@ -28,6 +28,7 @@
 </template>
 
 <script>
+import DOMPurify from 'dompurify';
 import { createApp } from 'vue';
 import axios from 'axios';
 import vuetify from '@/plugins/vuetify';
@@ -114,7 +115,7 @@ export default {
          * KEditor를 조작한 모든 내용을 초기화시키기 위해서
          */
         clearStat() {
-            window.mashup.kEditor[0].children[0].innerHTML = '';
+            window.mashup.kEditor[0].children[0].innerHTML = DOMPurify.sanitize('');
             window.mashup.kEditorContent = '';
 
             window.mashup.$emit('onChangeKEditorContent', {
@@ -155,7 +156,7 @@ export default {
                     } else newElement.setAttribute(settingInfo.htmlAttribute, componentRef[settingInfo.dataToUse]);
                 });
 
-                vueRenderElement.innerHTML = newElement.outerHTML;
+                vueRenderElement.innerHTML = DOMPurify.sanitize(newElement.outerHTML);
             });
 
             doc.querySelectorAll('div.keditor-toolbar').forEach((toolbar) => {
@@ -331,7 +332,7 @@ export default {
         window.mashup.loadStylesForKEditor();
 
         window.mashup.kEditor = $('#kEditor1');
-        if (window.mashup.modelValue) $(window.mashup.kEditor)[0].innerHTML = window.mashup.modelValue;
+        if (window.mashup.modelValue) $(window.mashup.kEditor)[0].innerHTML = DOMPurify.sanitize(window.mashup.modelValue);
 
         window.mashup.kEditor.keditor({
             tabContainersText: '<i class="fa fa-th-list"></i>',
@@ -468,7 +469,7 @@ export default {
 
                                 const newVueRenderId = `vuemount_${getUUID()}`;
                                 htmlToRender = htmlToRender.replace(prevVueRenderId, newVueRenderId);
-                                comp[0].querySelector('.keditor-component-content').innerHTML = htmlToRender;
+                                comp[0].querySelector('.keditor-component-content').innerHTML = DOMPurify.sanitize(htmlToRender);
 
                                 window.mashup.renderWithDynamicComponent(
                                     new DOMParser().parseFromString(htmlToRender, 'text/html').body.firstChild.innerHTML,

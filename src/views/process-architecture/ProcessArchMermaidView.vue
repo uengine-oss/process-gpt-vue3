@@ -75,6 +75,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import mermaid from 'mermaid';
+import DOMPurify from 'dompurify';
 
 const props = defineProps<{
     procMap: any;
@@ -236,14 +237,14 @@ async function renderDiagrams() {
         if (!el) continue;
         const def = buildMermaidDef(domain);
         if (!def) {
-            el.innerHTML = `<div class="text-caption text-grey pa-4">No processes in this domain.</div>`;
+            el.innerHTML = DOMPurify.sanitize(`<div class="text-caption text-grey pa-4">No processes in this domain.</div>`);
             continue;
         }
         try {
             el.removeAttribute('data-processed');
             const uniqueId = `mermaid-${sanitizeId(domain.id)}-${Date.now()}`;
             const { svg } = await mermaid.render(uniqueId, def);
-            el.innerHTML = svg;
+            el.innerHTML = DOMPurify.sanitize(svg);
             // Make SVG responsive
             const svgEl = el.querySelector('svg');
             if (svgEl) {
@@ -252,7 +253,7 @@ async function renderDiagrams() {
             }
         } catch (err) {
             console.error(`Mermaid render error for domain ${domain.name}:`, err);
-            el.innerHTML = `<div class="text-caption text-error pa-4">Diagram render failed.</div>`;
+            el.innerHTML = DOMPurify.sanitize(`<div class="text-caption text-error pa-4">Diagram render failed.</div>`);
         }
     }
 }

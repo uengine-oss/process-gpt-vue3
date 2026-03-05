@@ -97,6 +97,7 @@ import BpmnModeler from 'bpmn-js/lib/Modeler';
 import BpmnViewer from 'bpmn-js/lib/Viewer';
 import BpmnModdle from 'bpmn-moddle';
 import ZoomScroll from './customZoomScroll';
+import DOMPurify from 'dompurify';
 // import ZoomScroll from 'diagram-js/lib/navigation/zoomscroll';
 import MoveCanvas from './customMoveCanvas';
 // import MoveCanvas from 'diagram-js/lib/navigation/movecanvas';
@@ -1063,7 +1064,7 @@ export default {
                                         html.style.cssText =
                                             'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
                                         html.innerHTML =
-                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>';
+                                            DOMPurify.sanitize('<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>');
 
                                         html.addEventListener('click', function (e) {
                                             e.stopPropagation(); // Prevent element selection

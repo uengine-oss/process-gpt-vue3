@@ -3,6 +3,7 @@
 </template>
 
 <script>
+import DOMPurify from 'dompurify';
 import 'dmn-js/dist/assets/diagram-js.css';
 import 'dmn-js/dist/assets/dmn-js-drd.css';
 import 'dmn-js/dist/assets/dmn-js-decision-table.css';
@@ -264,7 +265,7 @@ export default {
             centerButton.setAttribute('draggable', 'true');
             centerButton.setAttribute('data-action', 'center-viewport');
             centerButton.setAttribute('title', 'Center viewport');
-            centerButton.innerHTML = '<i class="mdi mdi-crosshairs-gps" style="font-size: 20px; color: #444;"></i>';
+            centerButton.innerHTML = DOMPurify.sanitize('<i class="mdi mdi-crosshairs-gps" style="font-size: 20px; color: #444;"></i>');
 
             centerButton.addEventListener('click', () => {
                 this.resetViewportToCenter();

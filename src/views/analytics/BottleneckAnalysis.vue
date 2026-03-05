@@ -8,6 +8,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 import BpmnUengineViewer from '@/components/BpmnUengineViewer.vue';
 import { olapApi } from '@/services/analyticsApi';
 import dayjs from 'dayjs';
+import DOMPurify from 'dompurify';
 
 const backend = BackendFactory.createBackend() as any; // FTE API 포함
 const { proxy } = getCurrentInstance() as any;
@@ -694,7 +695,7 @@ function applyHeatmapOverlay() {
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       border: 1px solid rgba(255,255,255,0.1);
     `;
-        tooltip.innerHTML = `
+        tooltip.innerHTML = DOMPurify.sanitize(`
       <div style="font-weight: 600; margin-bottom: 4px; color: ${color};">${metrics.activityName}</div>
       <div style="display: flex; gap: 12px;">
         <span>⏱ ${formatDuration(metrics.avgDuration)}</span>
@@ -705,7 +706,7 @@ function applyHeatmapOverlay() {
             metrics.normalizedBottleneck
         )}%</strong>
       </div>
-    `;
+    `);
 
         // Hover area for tooltip
         const hoverArea = document.createElement('div');

@@ -29,6 +29,7 @@
 <script>
 import { jsPDF } from 'jspdf';
 import { toPng, toJpeg } from 'html-to-image';
+import DOMPurify from 'dompurify';
 
 export default {
     name: 'PDFPreviewer',
@@ -57,7 +58,7 @@ export default {
         formatHtml() {
             const element = this.element;
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = element.innerHTML;
+            tempDiv.innerHTML = DOMPurify.sanitize(element.innerHTML);
 
             const qlContainer = tempDiv.querySelector('.ql-container');
             if (qlContainer) {

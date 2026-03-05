@@ -198,6 +198,7 @@
 </template>
 
 <script>
+import DOMPurify from 'dompurify';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import ActivityInputData from '@/components/ui/ActivityInputData.vue';
 // import FormInterviewChat from './FormInterviewChat.vue';
@@ -975,7 +976,7 @@ export default {
                     const chipValues = JSON.parse(chipValuesJson);
 
                     // 기존 내용 제거
-                    chipGroup.innerHTML = '';
+                    chipGroup.innerHTML = DOMPurify.sanitize('');
 
                     // chip container 생성
                     const chipContainer = document.createElement('div');
