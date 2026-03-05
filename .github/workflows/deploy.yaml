@@ -125,8 +125,10 @@ jobs:
           
           if [ "${{ github.ref_name }}" == "skt" ]; then
             IMAGE_NAME=ghcr.io/uengine-oss/process-gpt-skt:$IMAGE_TAG
+            IMAGE_NAME_LATEST=ghcr.io/uengine-oss/process-gpt-skt:latest
           else
             IMAGE_NAME=ghcr.io/uengine-oss/process-gpt:$IMAGE_TAG
+            IMAGE_NAME_LATEST=ghcr.io/uengine-oss/process-gpt:latest
           fi
 
           docker build -t $IMAGE_NAME -t $IMAGE_NAME_LATEST .

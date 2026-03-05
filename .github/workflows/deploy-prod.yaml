@@ -69,7 +69,7 @@ jobs:
       # Optional cryptographic signature for hash manifest.
       # Requires: GPG_PRIVATE_KEY, GPG_PASSPHRASE secrets.
       - name: Optional GPG sign SHA256SUMS
-        if: secrets.GPG_PRIVATE_KEY != ''
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
           gpg --batch --yes --pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
