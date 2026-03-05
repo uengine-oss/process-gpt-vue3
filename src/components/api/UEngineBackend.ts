@@ -208,36 +208,53 @@ class UEngineBackend implements Backend {
         __warnUnsupported('setNotifications');
         return { ok: false };
     }
-    async search(keyword: string) {
-        let url = '/definition';
-        let result = [];
+    /** uEngine 전용: 폴더를 재귀 탐색해 .bpmn 파일만 수집 */
+    private async __collectBpmnDefinitionsOnly(basePath: string): Promise<{ id: string; name: string; path: string }[]> {
+        const list = await this.listDefinition(basePath);
+        const result: { id: string; name: string; path: string }[] = [];
+        for (const item of list || []) {
+            if (item.directory) {
+                const subPath = item.path || item.name || item.id;
+                if (subPath) {
+                    const children = await this.__collectBpmnDefinitionsOnly(subPath);
+                    result.push(...children);
+                }
+            } else {
+                const path = String(item.path || item.name || item.id || '');
+                if (path.toLowerCase().endsWith('.bpmn')) {
+                    const id = (item.id || path.replace(/\.bpmn$/i, '')).toString().replace(/\.bpmn$/i, '');
+                    const name = item.name || id;
+                    result.push({ id, name, path });
+                }
+            }
+        }
+        return result;
+    }
 
-        // 데이터 요청
-        const response = await axiosInstance.get(url);
-        const definitions = response.data?._embedded?.definitions;
+    async search(keyword: string, callback?: (results: any[]) => void) {
+        const result: any[] = [];
 
-        // 데이터 변환
-        const formattedData = {
-            type: "definition",
-            header: "프로세스 정의",
-            list: definitions
-                .map((definition: any) => ({
-                    title: definition.name,
-                    href: `/definitions/${encodeURIComponent(definition.path)}`,
-                    matches: [
-                        definition.name,
-                        definition.path,
-                        definition._links?.raw?.href || ""
-                    ].filter(Boolean), // 유효한 값만 포함
-                }))
-                .filter((item: any) =>
-                    item.title.includes(keyword) ||
-                    item.href.includes(keyword) ||
-                    item.matches.some((match: string) => match.includes(keyword))
-                ) // keyword가 title, href, matches 셋 중 아무거나 포함되면 필터링
-        };
+        // uEngine: 폴더 제외, 하위까지 재귀 탐색한 .bpmn만 검색 대상으로 사용
+        const bpmnOnly = await this.__collectBpmnDefinitionsOnly('');
+        const list = bpmnOnly
+            .filter(
+                (item) =>
+                    (item.name && item.name.includes(keyword)) ||
+                    (item.path && item.path.includes(keyword)) ||
+                    (item.id && item.id.includes(keyword))
+            )
+            .map((item) => ({
+                title: item.name,
+                href: `/definitions/${encodeURIComponent(item.id)}`,
+                matches: [item.name, item.path, item.id].filter(Boolean),
+            }));
 
-        result.push(formattedData);
+        result.push({
+            type: 'definition',
+            header: '프로세스 정의',
+            list,
+        });
+        if (callback) callback(result);
         return result;
     }
 
