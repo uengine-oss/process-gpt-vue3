@@ -16,8 +16,8 @@
       </template>
       <template v-else>
         <v-list-group no-action append-icon="">
-          <template v-slot:activator="{ props, on }">
-            <v-list-item v-bind="props" v-on="on" class="validation-item activator-item">
+          <template v-slot:activator="{ props }">
+            <v-list-item v-bind="props" class="validation-item activator-item">
               <v-list-item-content class="validation-item-content">
                 <v-list-item-icon>
                   <v-icon :style="{ color: getIconColor(validation[0].errorLevel) }">

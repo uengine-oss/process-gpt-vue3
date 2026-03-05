@@ -1,8 +1,10 @@
 <template>
     <v-btn icon
         v-if="globalIsMobile.value"
+        v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
         class="mobile-side-bar-btn"
+        :style="mobileSideBarBtnStyle"
         size="40"
         color="primary"
     >
@@ -10,7 +12,9 @@
     </v-btn>
     <v-badge
         v-if="notiCount > 0"
+        v-show="!$globalState.state.isMobileDrawerOpen"
         class="mobile-side-bar-btn"
+        :style="mobileSideBarBtnStyle"
         :content="notiCount"
         :model-value="notiCount > 0"
         color="error"
@@ -33,9 +37,7 @@
         <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc" >
             <Logo :style="logoPadding"/>
             <v-spacer></v-spacer>
-            <v-tooltip v-if="!pal" :text="$t('processDefinitionMap.title')"
-                location="bottom"
-            >
+            <v-tooltip v-if="!pal" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
                     <v-btn icon variant="text" density="comfortable"
                         v-bind="props"
@@ -54,22 +56,17 @@
             <v-row class="ma-0 pa-0" align="center">
                 <Logo />
                 <v-spacer></v-spacer>
-                <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER"
-                    style="margin-top: -8px; cursor: pointer;"
-                    :icon="'close'" :size="16"
-                />
+                <Icons @click.stop="customizer.SET_SIDEBAR_DRAWER" style="margin-top: -8px; cursor: pointer" :icon="'close'" :size="16" />
             </v-row>
         </div>
         <!-- ---------------------------------------------- -->
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <div class="scrollnavbar bg-containerBg overflow-y-auto">
-            <v-list class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2 pl-2"
+            <v-list
+                class="py-4 px-4 bg-containerBg pt-0 pb-0 pr-2 pl-2"
                 :class="globalIsMobile.value ? 'pr-4' : ''"
-                style="display: flex;
-                    flex-direction: column;
-                    flex: 1 1 auto;
-                    overflow: hidden;"
+                style="display: flex; flex-direction: column; flex: 1 1 auto; overflow: hidden"
             >
                 <!---Menu Loop -->
                 <template v-for="item in sidebarItem" :key="item.title">
@@ -81,11 +78,7 @@
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-btn variant="text"
-                    class="text-medium-emphasis d-flex align-center"
-                    :to="'/definition-map'"
-                    v-if="pal"
-                >
+                <v-btn variant="text" class="text-medium-emphasis d-flex align-center" :to="'/definition-map'" v-if="pal">
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
@@ -116,70 +109,73 @@
                         <ProjectList/>
                     </v-col>
                 </div> -->
-                
+
                 <!-- 인스턴스 타이틀 + 목록 -->
                 <v-col v-if="isShowInstances" class="pa-0 mb-4">
                     <div v-if="!pal && !JMS" class="d-flex align-center">
-                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.instanceList') }}
                         </div>
                         <div v-for="item in instanceItem" :key="item.title">
                             <v-tooltip location="bottom" :text="$t(item.title)">
                                 <template v-slot:activator="{ props }">
-                                    <div class="pl-2 pt-1">
-                                        <Icons @click="navigateTo(item.to)" v-bind="props"
+                                    <div class="sidebar-title-icon" @click="navigateTo(item.to)" v-bind="props">
+                                        <Icons
                                             :icon="item.icon"
-                                            :size="16"
+                                            :size="14"
                                             :color="'#808080'"
-                                            style="cursor: pointer; width: 16px; height: 16px;"
+                                            style="width: 14px; height: 14px;"
                                         />
                                     </div>
                                 </template>
                             </v-tooltip>
                         </div>
                     </div>
-
                     <ProcessInstanceList
                         @update:instanceLists="handleInstanceListUpdate" 
                     />
+
+                    <!-- 대화목록 -->
+                    <ChatList v-if="!gs" />
                 </v-col>
 
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
                 <div v-if="mode !== 'uEngine'" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
-                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
                         </div>
                         <template v-if="isAdmin">
                             <div v-for="item in organizationItem" :key="item.title">
                                 <v-tooltip v-if="item.icon && !item.disable" location="bottom" :text="$t(item.title)">
                                     <template v-slot:activator="{ props }">
-                                        <Icons @click="navigateTo(item.to)" v-bind="props"
-                                            class="ml-2"
-                                            :icon="item.icon"
-                                            :size="item.size || 20"
-                                            :color="'#808080'"
-                                            style="cursor: pointer;"
-                                        />
+                                        <div class="sidebar-title-icon" v-bind="props" @click="navigateTo(item.to)">
+                                            <Icons
+                                                :icon="item.icon"
+                                                :size="14"
+                                                :color="'#808080'"
+                                                style="width: 14px; height: 14px;"
+                                            />
+                                        </div>
                                     </template>
                                 </v-tooltip>
                             </div>
                         </template>
                     </v-row>
                     <v-col class="pa-0">
-                        <AgentList/>
+                        <AgentList />
                     </v-col>
                 </div>
 
-                <!-- Analytics 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0" class="mb-4">
-                    <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
-                        Analytics
+                <!-- 프로세스 관리 타이틀 + 목록 -->
+                <div v-if="processItem.length > 0" class="mb-4">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        {{ $t('processHierarchy.processManagement') || '프로세스 관리' }}
                     </div>
                     <v-col class="pa-0">
                         <v-list-item
-                            v-for="item in analyticsItem"
+                            v-for="item in processItem"
                             :key="item.title"
                             :to="item.to"
                             :disabled="item.disable"
@@ -194,17 +190,80 @@
                     </v-col>
                 </div>
 
+                <!-- 유저 목록 -->
+                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                    <div class="d-flex align-center ml-2">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0">
+                            {{ $t('VerticalSidebar.userList') || '유저 목록' }}
+                        </div>
+                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
+                            <Icons
+                                :icon="'search'"
+                                :size="14"
+                                :color="'#808080'"
+                                style="width: 14px; height: 14px;"
+                            />
+                        </div>
+                    </div>
+                    <v-col class="pa-0">
+                        <SidebarUserList ref="sidebarUserList" />
+                    </v-col>
+                </div>
+
+                <!-- 스킬 타이틀 + 목록 -->
+                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                    <v-row class="align-center pa-0 ma-0">
+                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                            {{ $t('VerticalSidebar.skills') }}
+                        </div>
+                        <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
+                            <template v-slot:activator="{ props }">
+                                <div class="sidebar-title-icon" v-bind="props" @click="navigateTo('/skills')">
+                                    <SettingsIcon size="14" color="#808080" />
+                                </div>
+                            </template>
+                        </v-tooltip>
+                    </v-row>
+                    <v-col class="pa-0">
+                        <SkillList/>
+                    </v-col>
+                </div>
+
+                <!-- Analytics 타이틀 + 목록 -->
+                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
+                    <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        {{ $t('VerticalSidebar.analytics') }}
+                    </div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in analyticsItem"
+                            :key="item.title"
+                            :to="item.to"
+                            :disabled="item.disable"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': isAnalyticsItemActive(item) }"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div>
+
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
                 <v-col class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
-                        <div v-if="item.header && index === 0"
-                            style="font-size:14px;"
-                            class="text-medium-emphasis cp-menu mt-3 ml-2"
-                        >{{ $t(item.header) }}</div>
-                        <v-row v-if="item.header && !item.disable"
-                            class="pa-0 ma-0" 
+                        <div v-if="item.header && !item.disable" class="d-flex align-center mt-3 ml-2">
+                            <div v-if="index === 0"
+                                style="font-size:14px;"
+                                class="text-medium-emphasis cp-menu flex-shrink-0 mr-1"
+                            >{{ $t(item.header) }}</div>
+                        <v-row
+                            class="pa-0 ma-0 flex-nowrap" 
                         >
                             <template v-for="subItem in definitionItem" :key="subItem.title">
                                 <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
@@ -213,7 +272,8 @@
                                             v-if="!subItem.header && !subItem.disable"
                                             @click="navigateTo(subItem.to)"
                                             v-bind="props"
-                                            icon variant="text" 
+                                            icon
+                                            variant="text"
                                             class="text-medium-emphasis cp-menu"
                                             density="comfortable"
                                         >
@@ -229,24 +289,73 @@
                                 </v-tooltip>
                             </template>
                         </v-row>
+                        </div>
                         <NavCollapse v-else-if="item.children && !item.disable" class="leftPadding" :item="item" :level="0" />
                     </template>
                 </v-col>
+                <!-- 프로세스 섹션: 프로세스 정의 + 옆 작은 버튼 클릭 시 업로드/내보내기 드롭다운 -->
+                <v-col v-if="processSectionListItems.length > 0" class="pa-0">
+                    <v-list-item
+                        v-for="item in processSectionListItems"
+                        :key="item.title"
+                        :to="item.to"
+                        density="compact"
+                        class="leftPadding"
+                    >
+                        <template v-slot:prepend>
+                            <Icons v-if="item.icon" :icon="item.icon" :size="20" class="mr-2" />
+                        </template>
+                        <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        <template v-slot:append v-if="processSectionDropdownItems.length > 0">
+                            <div @click.stop.prevent>
+                                <v-menu location="end" :close-on-content-click="true">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            size="small"
+                                            density="comfortable"
+                                            class="mr-1 process-section-dropdown-btn"
+                                            @click.stop.prevent
+                                        >
+                                            <v-icon icon="mdi-dots-vertical" size="20" />
+                                        </v-btn>
+                                    </template>
+                                <v-list density="compact" min-width="160">
+                                    <v-list-item
+                                        v-for="dropItem in processSectionDropdownItems"
+                                        :key="dropItem.title"
+                                        @click="handleProcessSectionClick(dropItem)"
+                                    >
+                                        <template v-slot:prepend>
+                                            <Icons :icon="dropItem.icon" :size="18" class="mr-2" />
+                                        </template>
+                                        <v-list-item-title>{{ $t(dropItem.title) }}</v-list-item-title>
+                                    </v-list-item>
+                                </v-list>
+                                </v-menu>
+                            </div>
+                        </template>
+                    </v-list-item>
+                </v-col>
                 <v-col class="pa-0">
-                    <ExpandableList 
+                    <ExpandableList
                         v-if="definitionList && definitionList.children"
-                        :items="definitionList.children" 
+                        :items="definitionList.children"
                         :limit="10"
                         @expanded="onDefinitionsExpanded"
                         @collapsed="onDefinitionsCollapsed"
                     >
                         <template #items="{ displayedItems }">
-                            <NavCollapse v-for="(definition, i) in displayedItems" :key="i"
-                                :item="definition" 
+                            <NavCollapse
+                                v-for="(definition, i) in displayedItems"
+                                :key="i"
+                                :item="definition"
                                 class="leftPadding"
-                                @update:item="(def) => (displayedItems[i] = def)" 
-                                :level="0" 
-                                :type="'definition-list'" 
+                                @update:item="(def) => (displayedItems[i] = def)"
+                                :level="0"
+                                :type="'definition-list'"
                             />
                         </template>
                     </ExpandableList>
@@ -260,9 +369,8 @@
     </v-navigation-drawer>
 
     <v-dialog v-model="isNewProjectOpen" max-width="400" class="delete-input-details" persistent>
-        <ProjectCreationForm  @close="closeNewProject" @save="createNewProject" />
+        <ProjectCreationForm @close="closeNewProject" @save="createNewProject" />
     </v-dialog>
-
 
     <v-dialog v-model="isOpen" max-width="400" class="delete-input-details">
         <v-card class="pa-4 pt-2">
@@ -273,12 +381,7 @@
                     <Icons :icon="'close'" :size="16" />
                 </v-btn>
             </v-row>
-            <v-text-field
-                v-model="release"
-                :label="$t('VerticalSidebar.saveFileName')"
-                required
-                class="pb-2"
-            ></v-text-field>
+            <v-text-field v-model="release" :label="$t('VerticalSidebar.saveFileName')" required class="pb-2"></v-text-field>
             <v-row class="pa-0 pa-4">
                 <v-spacer></v-spacer>
                 <v-btn @click="downloadDefinitionList(release)" color="primary" rounded>{{ $t('VerticalSidebar.save') }}</v-btn>
@@ -292,7 +395,10 @@ import ProcessInstanceList from '@/components/ui/ProcessInstanceList.vue';
 import ProjectList from '@/components/ui/ProjectList.vue';
 import ProjectCreationForm from '@/components/apps/todolist/ProjectCreationForm.vue';
 import AgentList from '@/components/ui/AgentList.vue';
+import SkillList from '@/components/ui/SkillList.vue';
 import ExpandableList from '@/components/ui/ExpandableList.vue';
+import SidebarUserList from '@/components/ui/SidebarUserList.vue';
+import ChatList from '@/components/ui/ChatList.vue';
 
 import { useCustomizerStore } from '@/stores/customizer';
 
@@ -305,16 +411,19 @@ import BackendFactory from '@/components/api/BackendFactory';
 
 import VerticalHeader from '../vertical-header/VerticalHeader.vue';
 
-import Footer from '../Footer.vue'
+import Footer from '../Footer.vue';
 
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
         ProcessInstanceList,
+        ChatList,
         ProjectList,
         ProjectCreationForm,
         AgentList,
+        SkillList,
+        SidebarUserList,
         ExpandableList,
         Logo,
         NavCollapse,
@@ -336,6 +445,9 @@ export default {
         organizationItem: [],
         definitionItem: [],
         definitionList: null,
+        processItem: [],
+        processSectionListItems: [],
+        processSectionDropdownItems: [],
         analyticsItem: [],
         logoPadding: '',
         instanceLists: [],
@@ -345,13 +457,17 @@ export default {
         newProjectInfo: {
             name: '',
             startDate: null,
-            dueDate: null,
+            dueDate: null
         },
         isNewProjectOpen: false,
         deletedDefinitionList: [],
-        notiCount: 0,
+        notiCount: 0
     }),
     computed: {
+        mobileSideBarBtnStyle() {
+            const isDefinitionsChat = this.$route?.path?.includes('definitions/chat');
+            return isDefinitionsChat ? { bottom: '48px' } : {};
+        },
         JMS() {
             return window.$jms;
         },
@@ -361,19 +477,22 @@ export default {
         pal() {
             return window.$pal;
         },
+        gs() {
+            return window.$gs;
+        },
         isShowInstances() {
             if (!this.pal && !this.JMS) {
                 return true;
             }
             return false;
         },
-        isShowProject(){
+        isShowProject() {
             return true;
         },
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
             return isAdmin;
-        },
+        }
     },
     async mounted() {
         await this.loadSidebar(this.isAdmin);
@@ -382,7 +501,7 @@ export default {
             await this.getDefinitionList();
         });
         if (window.$mode === 'uEngine') {
-            this.logoPadding = 'padding:6px'
+            this.logoPadding = 'padding:6px';
         }
 
         window.addEventListener('localStorageChange', (event) => {
@@ -396,8 +515,22 @@ export default {
         });
     },
     methods: {
+        isAnalyticsItemActive(item) {
+            if (!item || !item.to) return false;
+            return this.$route?.path === item.to;
+        },
         closeChatPanelIfOpen() {
             this.EventBus.emit('close-chat-panel');
+        },
+        toggleSidebarUserSearch() {
+            try {
+                const comp = this.$refs.sidebarUserList;
+                if (comp && typeof comp.toggleSearch === 'function') {
+                    comp.toggleSearch();
+                }
+            } catch (e) {
+                // ignore
+            }
         },
         updateNotiCount(count) {
             this.notiCount = count;
@@ -411,19 +544,11 @@ export default {
                         header: 'definitionManagement.title',
                         disable: false
                     },
-                    {
-                        title: 'processDefinition.title',
-                        icon: 'sidebarProcess',
-                        BgColor: 'primary',
-                        to: '/definitions/chat',
-                        disable: false
-                    },
-                    // 비즈니스 룰 정의는 uEngine 모드에서만 노출
-                    ...(isUEngineMode
+                    // 프로세스 정의, 정의 업로드/내보내기는 processSectionListItems로 아래에 아이콘 없이 표시
+                    ...(isUEngineMode && !this.pal
                         ? [
                               {
                                   title: 'businessRuleDefinition.title',
-                                  // 룰 정의: bpmn-io(bpmn-font) 아이콘 사용(렌더링은 템플릿에서 분기)
                                   type: 'rule',
                                   icon: 'bpmn-icon-business-rule',
                                   BgColor: 'primary',
@@ -460,56 +585,39 @@ export default {
                         disable: true,
                         to: '/ui-definitions/defaultform',
                         size: 24
-                    },
-                    {
-                        title: 'definitionManagement.upload',
-                        icon: 'upload',
-                        BgColor: 'primary',
-                        to: function() {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = '.zip';
-                            input.onchange = (event) => {
-                                const file = event.target.files[0];
-                                if (file) {
-                                    backend.uploadDefinition(file);
-                                }
-                            };
-                            input.click();
-                        },
-                        disable: true
-                    },
-                    {
-                        title: 'definitionManagement.release',
-                        icon: 'download',
-                        BgColor: 'primary',
-                        disable: true,
-                        to: this.openDialog
-                    },
+                    }
                 ];
-                
+
                 if (this.mode === 'ProcessGPT') {
+                    this.definitionItem = this.definitionItem.filter(
+                        (item) =>
+                            item.title !== 'uiDefinition.title' &&
+                            item.title !== 'systemDefinition.title' &&
+                            item.title !== 'definitionManagement.upload' &&
+                            item.title !== 'definitionManagement.release'
+                    );
+                }
+                if (this.pal) {
                     this.definitionItem = this.definitionItem.filter((item) => 
                         item.title !== 'uiDefinition.title' && 
-                        item.title !== 'systemDefinition.title' &&
-                        item.title !== 'definitionManagement.upload' &&
-                        item.title !== 'definitionManagement.release'
+                        item.title !== 'definitionManagement.defaultForm' &&
+                        item.title !== 'systemDefinition.title'
                     );
                 }
                 this.getDefinitionList();
             }
 
             if (!this.pal && !this.JMS) {
-                // 사이드바에서 완료된 인스턴스 목록 보기 버튼 
+                // 사이드바에서 완료된 인스턴스 목록 보기 버튼
                 this.instanceItem = [
                     {
                         title: 'definitionManagement.completedList',
-                        icon: 'search',
+                        icon: 'check-mark',
                         BgColor: 'primary',
                         disable: true,
                         to: '/list-pages/completed',
                         size: 20
-                    },
+                    }
                 ];
                 this.organizationItem = [
                     {
@@ -519,9 +627,57 @@ export default {
                         to: '/organization',
                         disable: false,
                         size: 12
-                    },
+                    }
                 ];
             }
+
+            // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
+            this.processItem = [
+                {
+                    title: 'processArchitecture.title',
+                    icon: 'sitemap',
+                    BgColor: 'primary',
+                    to: '/process-architecture',
+                    disable: false
+                },
+                {
+                    title: 'processHierarchy.title',
+                    icon: 'file-tree',
+                    BgColor: 'primary',
+                    to: '/process-hierarchy',
+                    disable: false
+                },
+                {
+                    title: 'versionComparison.title',
+                    icon: 'file-document-edit-outline',
+                    BgColor: 'primary',
+                    to: '/version-comparison',
+                    disable: false
+                },
+                {
+                    title: 'reviewBoard.title',
+                    icon: 'submit-document',
+                    BgColor: 'primary',
+                    to: '/review-board',
+                    disable: false
+                },
+                {
+                    title: 'reviewBoard.myInbox',
+                    icon: 'submit-document',
+                    BgColor: 'primary',
+                    to: '/my-inbox',
+                    disable: false
+                }
+            ];
+
+            // 프로세스 섹션: 프로세스 정의(메인 행) + 옆 작은 버튼으로 드롭다운
+            this.processSectionListItems = [
+                { title: 'definitionManagement.processDefinition', icon: 'flowchart', to: '/definitions/chat' }
+            ];
+            this.processSectionDropdownItems = this.mode !== 'ProcessGPT' ? [
+                { title: 'definitionManagement.upload', icon: 'upload', action: 'upload' },
+                { title: 'definitionManagement.release', icon: 'download', action: 'openDownloadDialog' }
+            ] : [];
 
             // Analytics 메뉴
             this.analyticsItem = [
@@ -539,7 +695,49 @@ export default {
                     to: '/analytics/heatmap',
                     disable: false
                 },
+                {
+                    title: 'analytics.kpi',
+                    icon: 'strategy',
+                    BgColor: 'primary',
+                    to: '/analytics/kpi',
+                    disable: false
+                },
+                {
+                    title: 'analytics.pivot',
+                    icon: 'tuning-square-2-linear',
+                    BgColor: 'primary',
+                    to: '/analytics/pivot',
+                    disable: false
+                },
+                {
+                    title: 'analytics.performance',
+                    icon: 'graph-up-linear',
+                    BgColor: 'primary',
+                    to: '/analytics/performance',
+                    disable: false
+                },
+                {
+                    title: 'analytics.query',
+                    icon: 'chat-round-line-linear',
+                    BgColor: 'primary',
+                    to: '/analytics/query',
+                    disable: false
+                },
+                ...(this.pal ? [] : [
+                    {
+                        title: 'analytics.heatmap',
+                        icon: 'ibm-process-mining',
+                        BgColor: 'primary',
+                        to: '/analytics/heatmap',
+                        disable: false
+                    }
+                ]),
             ];
+
+            // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
+            if (this.pal) {
+                this.analyticsItem = [];
+            }
 
             if (!this.JMS) {
                 this.definitionItem.forEach((item) => {
@@ -548,7 +746,7 @@ export default {
                     }
                 });
             }
-            
+
             // 완료된 인스턴스가 있는지 직접 확인
             await this.checkCompletedInstances();
         },
@@ -558,9 +756,9 @@ export default {
                 const completedList = await backend.getInstanceListByStatus(['COMPLETED'], {
                     range: { from: 0, to: 0 } // 1개만 가져와서 존재 여부만 확인
                 });
-                
+
                 const hasCompleted = completedList && completedList.length > 0;
-                
+
                 // 버튼 상태 즉시 업데이트
                 if (this.instanceItem && this.instanceItem.length > 0) {
                     this.instanceItem[0].disable = !hasCompleted;
@@ -572,14 +770,14 @@ export default {
                 }
             }
         },
-        openCompletedList(){
+        openCompletedList() {
             this.$router.push('/list-pages/completed');
         },
-        openNewProject(){
+        openNewProject() {
             this.isNewProjectOpen = true;
         },
-        async createNewProject(value){
-            var me = this
+        async createNewProject(value) {
+            var me = this;
             me.$try({
                 context: me,
                 async action() {
@@ -588,26 +786,40 @@ export default {
                         startDate: value.startDate,
                         dueDate: value.dueDate,
                         endDate: null,
-                        status: "NEW",
+                        status: 'NEW',
                         createdDate: new Date().toISOString(),
-                        userId: localStorage.getItem('email'),
+                        userId: localStorage.getItem('email')
                     });
                     me.closeNewProject();
-                },
-            })
+                }
+            });
         },
-        closeNewProject(){
+        closeNewProject() {
             this.isNewProjectOpen = false;
         },
         openDialog() {
             this.isOpen = true;
+        },
+        handleProcessSectionClick(item) {
+            if (item.action === 'upload') {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.zip';
+                input.onchange = (event) => {
+                    const file = event.target.files[0];
+                    if (file) backend.uploadDefinition(file);
+                };
+                input.click();
+            } else if (item.action === 'openDownloadDialog') {
+                this.openDialog();
+            }
         },
         closeDownloadDefinitionList() {
             this.isOpen = false;
         },
         async downloadDefinitionList(releaseName) {
             await backend.releaseVersion(releaseName);
-            this.closeDownloadDefinitionList()
+            this.closeDownloadDefinitionList();
         },
         async getChild(subitem) {
             let res = await backend.listDefinition(subitem.path);
@@ -622,7 +834,7 @@ export default {
                         BgColor: 'primary'
                     };
 
-                    if (el.directory) {                 
+                    if (el.directory) {
                         obj.directory = true;
                         obj.children = [];
                         obj.path = el.path;
@@ -645,7 +857,7 @@ export default {
             subitem.children = menu;
         },
         async getDefinitionList() {
-            const me = this
+            const me = this;
             const list = await backend.listDefinition();
             if (list && list.length > 0) {
                 var menu = {
@@ -655,9 +867,9 @@ export default {
                     children: []
                 };
                 list.forEach((item) => {
-                    if(!item.isDeleted){
+                    if (!item.isDeleted) {
                         if (item.directory) {
-                            if (item.name != 'instances'  || item.name != 'archive') {
+                            if (item.name != 'instances' || item.name != 'archive') {
                                 var obj = {
                                     title: item.name,
                                     icon: 'outline-folder',
@@ -666,7 +878,7 @@ export default {
                                     BgColor: 'primary',
                                     path: item.path
                                 };
-                                me.getChild(obj)
+                                me.getChild(obj);
                                 menu.children.push(obj);
                             }
                         } else if (item) {
@@ -699,7 +911,7 @@ export default {
                                 menu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
-                                    title: item.definition.processDefinitionName,
+                                    title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
                                     type: 'bpmn'
@@ -717,7 +929,7 @@ export default {
                         }
                     } else {
                         if (item.directory) {
-                            if (item.name != 'instances'  || item.name != 'archive') {
+                            if (item.name != 'instances' || item.name != 'archive') {
                                 var obj = {
                                     title: item.name,
                                     icon: 'outline-folder',
@@ -726,7 +938,7 @@ export default {
                                     BgColor: 'primary',
                                     path: item.path
                                 };
-                                me.getChild(obj)
+                                me.getChild(obj);
                                 menu.children.push(obj);
                             }
                         } else if (item) {
@@ -759,7 +971,7 @@ export default {
                                 deletedMenu.children.push(obj);
                             } else if (item.definition) {
                                 obj = {
-                                    title: item.definition.processDefinitionName,
+                                    title: item.name,
                                     to: `/definitions/${item.definition.processDefinitionId}`,
                                     BgColor: 'primary',
                                     type: 'bpmn'
@@ -769,11 +981,11 @@ export default {
                         }
                     }
                 });
-                
+
                 // title이 있는 항목들만 필터링
-                menu.children = menu.children.filter(item => item && item.title && item.title.trim().length > 0);
-                deletedMenu.children = deletedMenu.children.filter(item => item && item.title && item.title.trim().length > 0);
-                
+                menu.children = menu.children.filter((item) => item && item.title && item.title.trim().length > 0);
+                deletedMenu.children = deletedMenu.children.filter((item) => item && item.title && item.title.trim().length > 0);
+
                 this.definitionList = this.sortProjectList(menu);
                 this.deletedDefinitionList = this.sortProjectList(deletedMenu);
             }
@@ -795,31 +1007,31 @@ export default {
             list.children.sort((a, b) => {
                 // title이 없는 경우 안전하게 처리
                 if (!a || !a.title || !b || !b.title) {
-                    if (!a || !a.title) return 1;  // a를 뒤로
+                    if (!a || !a.title) return 1; // a를 뒤로
                     if (!b || !b.title) return -1; // b를 뒤로
                     return 0;
                 }
 
                 // title이 빈 문자열인 경우도 처리
                 if (a.title.length === 0 || b.title.length === 0) {
-                    if (a.title.length === 0) return 1;  // a를 뒤로
+                    if (a.title.length === 0) return 1; // a를 뒤로
                     if (b.title.length === 0) return -1; // b를 뒤로
                     return 0;
                 }
 
                 const titleA = a.title.charAt(0);
                 const titleB = b.title.charAt(0);
-                
+
                 const typeA = getCharType(titleA);
                 const typeB = getCharType(titleB);
 
                 if (typeA !== typeB) {
                     return typeA - typeB;
                 }
-                
+
                 return a.title.localeCompare(b.title, 'ko-KR');
             });
-            
+
             // 원본 list 객체를 반환 (children이 정렬된 상태)
             return list;
         },
@@ -848,7 +1060,6 @@ export default {
     padding-bottom: 0px !important;
 }
 
-/* bpmn-io(bpmn-font) 아이콘을 사이드바 버튼 크기에 맞춤 */
 .bpmn-sidebar-icon {
     font-size: 20px;
     line-height: 1;
@@ -858,5 +1069,18 @@ export default {
 .bpmn-sidebar-icon:before {
     margin-left: 0 !important;
     margin-right: 0 !important;
+}
+
+.mobile-side-bar-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 58px;
+    z-index: 999;
+}
+
+/* 프로세스 정의 옆 점 세 개 버튼 클릭 영역 확대 */
+.process-section-dropdown-btn {
+    min-width: 36px !important;
+    min-height: 36px !important;
 }
 </style>

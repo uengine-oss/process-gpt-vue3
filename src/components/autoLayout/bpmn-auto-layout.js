@@ -7,6 +7,128 @@
   // 전역 네임스페이스
   const BpmnAutoLayout = {};
 
+  // Store layout snapshot for recovery
+  let layoutSnapshot = null;
+
+  /**
+   * Capture current layout state for later recovery
+   * @param {BpmnJS} bpmnModeler - BPMN-JS 모델러 인스턴스
+   * @returns {Object} Layout snapshot
+   */
+  BpmnAutoLayout.captureLayoutSnapshot = function(bpmnModeler) {
+    if (!bpmnModeler) return null;
+
+    const elementRegistry = bpmnModeler.get('elementRegistry');
+    const elements = elementRegistry.getAll();
+    const snapshot = {
+      timestamp: Date.now(),
+      elements: {}
+    };
+
+    elements.forEach(element => {
+      if (element.id && typeof element.x === 'number' && typeof element.y === 'number') {
+        snapshot.elements[element.id] = {
+          x: element.x,
+          y: element.y,
+          width: element.width,
+          height: element.height
+        };
+      }
+      // Also capture waypoints for connections
+      if (element.waypoints) {
+        snapshot.elements[element.id] = {
+          waypoints: element.waypoints.map(wp => ({ x: wp.x, y: wp.y }))
+        };
+      }
+    });
+
+    layoutSnapshot = snapshot;
+    return snapshot;
+  };
+
+  /**
+   * Restore layout from snapshot
+   * @param {BpmnJS} bpmnModeler - BPMN-JS 모델러 인스턴스
+   * @param {Object} snapshot - Layout snapshot to restore (optional, uses stored snapshot if not provided)
+   * @returns {boolean} Success status
+   */
+  BpmnAutoLayout.restoreLayoutSnapshot = function(bpmnModeler, snapshot = null) {
+    const snapshotToRestore = snapshot || layoutSnapshot;
+
+    if (!bpmnModeler || !snapshotToRestore || !snapshotToRestore.elements) {
+      console.warn('No snapshot available to restore');
+      return false;
+    }
+
+    try {
+      const modeling = bpmnModeler.get('modeling');
+      const elementRegistry = bpmnModeler.get('elementRegistry');
+
+      // Restore shapes first
+      Object.entries(snapshotToRestore.elements).forEach(([elementId, data]) => {
+        const element = elementRegistry.get(elementId);
+        if (!element) return;
+
+        // Restore shape position and size
+        if (typeof data.x === 'number' && typeof data.y === 'number') {
+          if (element.waypoints) {
+            // Skip connections for now
+            return;
+          }
+
+          const deltaX = data.x - element.x;
+          const deltaY = data.y - element.y;
+
+          if (deltaX !== 0 || deltaY !== 0) {
+            modeling.moveShape(element, { x: deltaX, y: deltaY });
+          }
+
+          // Resize if dimensions changed
+          if (data.width && data.height &&
+              (data.width !== element.width || data.height !== element.height)) {
+            modeling.resizeShape(element, {
+              x: data.x,
+              y: data.y,
+              width: data.width,
+              height: data.height
+            });
+          }
+        }
+      });
+
+      // Restore connections (waypoints)
+      Object.entries(snapshotToRestore.elements).forEach(([elementId, data]) => {
+        if (!data.waypoints) return;
+
+        const element = elementRegistry.get(elementId);
+        if (!element || !element.waypoints) return;
+
+        modeling.updateWaypoints(element, data.waypoints);
+      });
+
+      console.log('Layout restored from snapshot');
+      return true;
+    } catch (e) {
+      console.error('Failed to restore layout:', e);
+      return false;
+    }
+  };
+
+  /**
+   * Check if a layout snapshot is available
+   * @returns {boolean}
+   */
+  BpmnAutoLayout.hasLayoutSnapshot = function() {
+    return layoutSnapshot !== null && layoutSnapshot.elements !== null;
+  };
+
+  /**
+   * Clear the stored layout snapshot
+   */
+  BpmnAutoLayout.clearLayoutSnapshot = function() {
+    layoutSnapshot = null;
+  };
+
   /**
    * BPMN 다이어그램에 자동 레이아웃 적용
    * @param {BpmnJS} bpmnModeler - BPMN-JS 모델러 인스턴스
@@ -16,13 +138,17 @@
   BpmnAutoLayout.applyAutoLayout = function(bpmnModeler, options = {}, onLoadStart = () => {}, onLoadEnd = () => {}) {
     const { horizontal = false } = options;
     onLoadStart();
-    
+
     // 가로 모드 여부를 전역 변수로 설정하여 다른 클래스/함수에서도 참조 가능하게 함
     window.isHorizontalLayout = horizontal;
-    
+
     if (!bpmnModeler) {
       throw new Error('BPMN 모델러가 제공되지 않았습니다.');
     }
+
+    // Capture layout snapshot before applying auto layout for recovery
+    BpmnAutoLayout.captureLayoutSnapshot(bpmnModeler);
+    console.log('Layout snapshot captured for recovery');
 
     try {
       // 그래프 객체 초기화

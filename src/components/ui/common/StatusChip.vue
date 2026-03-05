@@ -79,6 +79,7 @@
             'TODO': 'grey',
             'IN_PROGRESS': 'blue',
             'PENDING': 'yellow',
+            'SKIPPED': 'grey',
             'CANCELLED': 'red',
             'DONE': 'green',
             // 기본값
@@ -110,6 +111,7 @@
             'TODO': this.$t('statusChip.scheduled'),
             'IN_PROGRESS': this.$t('statusChip.inProgress'),
             'PENDING': this.$t('statusChip.pending'),
+            'SKIPPED': this.$t('statusChip.skipped'),
             'CANCELLED': this.$t('statusChip.cancelled'),
             'COMPLETED': this.$t('statusChip.completed'),
             'DONE': this.$t('statusChip.completed'),
@@ -135,6 +137,7 @@
             'TODO': this.$t('statusChip.scheduled'),
             'IN_PROGRESS': this.$t('statusChip.inProgress'),
             'PENDING': this.$t('statusChip.pending'),
+            'SKIPPED': this.$t('statusChip.skipped'),
             'CANCELLED': this.$t('statusChip.cancelled'),
             'DONE': this.$t('statusChip.completed'),
             // 기본값
@@ -153,6 +156,7 @@
             'TODO': 'mdi-circle',
             'IN_PROGRESS': 'mdi-progress-clock',
             'PENDING':  'mdi-clock-outline',
+            'SKIPPED': 'mdi-skip-next',
             'DONE':  'mdi-check-circle',
             'CANCELLED': 'mdi-close-circle',
             'COMPLETED': 'mdi-check-circle',
@@ -178,6 +182,7 @@
             'TODO': 'mdi-circle',
             'IN_PROGRESS': 'mdi-progress-clock',
             'PENDING':  'mdi-clock-outline',
+            'SKIPPED': 'mdi-skip-next',
             'DONE':  'mdi-check-circle',
             'CANCELLED': 'mdi-close-circle',
 

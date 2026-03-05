@@ -1,7 +1,7 @@
 <template>
     <v-card elevation="10">
         <div class="pa-4" :class="this.globalIsMobile.value ? 'todolist-card-box-is-mobile' : 'todolist-card-box'">
-            <div class="d-flex align-center justify-space-between ml-2">
+            <div class="d-flex align-center justify-space-between ml-2 mt-1">
                 <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
                 <v-spacer></v-spacer>
                 

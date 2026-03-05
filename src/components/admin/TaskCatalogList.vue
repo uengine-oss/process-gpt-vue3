@@ -1,54 +1,64 @@
 <template>
-    <v-card-text>
-        <v-alert type="info" variant="tonal" class="mb-4">
-            {{ $t('taskCatalog.catalogDescription') }}
+    <v-card-text class="pa-0">
+        <!-- [BLOCK:alert.info.v1] -->
+        <v-alert dense outlined type="info" color="gray" class="mb-4 pa-4 pt-2 pb-2">
+            <span class="text-body-1">{{ $t('taskCatalog.catalogDescription') }}</span>
         </v-alert>
 
-        <v-row class="mb-4">
-            <v-col cols="12" md="4">
+        <div class="d-flex align-center flex-wrap ga-3 mb-4">
+            <!-- [BLOCK:field.search.v1] -->
+            <div class="d-flex align-center border border-borderColor header-search rounded-pill px-5"
+                style="max-width: 246px; min-width: 160px;"
+            >
+                <Icons :icon="'magnifer-linear'" :size="20" />
                 <v-text-field
                     v-model="searchQuery"
-                    :label="$t('taskCatalog.search')"
-                    prepend-inner-icon="mdi-magnify"
-                    clearable
+                    variant="plain"
+                    density="compact"
+                    class="position-relative pt-0 ml-3 custom-placeholer-color"
+                    :placeholder="$t('taskCatalog.search')"
+                    single-line
                     hide-details
                 />
-            </v-col>
-            <v-col cols="12" md="3">
-                <v-select
-                    v-model="filterTaskType"
-                    :items="availableTaskTypes"
-                    :label="$t('taskCatalog.filterByTaskType')"
-                    item-title="label"
-                    item-value="value"
-                    clearable
-                    hide-details
-                />
-            </v-col>
-            <v-col cols="12" md="3">
-                <v-select
-                    v-model="filterSystem"
-                    :items="systems"
-                    :label="$t('taskCatalog.filterBySystem')"
-                    item-title="name"
-                    item-value="name"
-                    clearable
-                    hide-details
-                />
-            </v-col>
-            <v-col cols="12" md="2" class="d-flex align-center justify-end">
-                <v-btn
-                    color="primary"
-                    @click="openDialog()"
-                >
-                    <v-icon start>mdi-plus</v-icon>
-                    {{ $t('taskCatalog.addTask') }}
-                </v-btn>
-            </v-col>
-        </v-row>
+            </div>
+            <!-- [BLOCK:field.select.v1] -->
+            <v-select
+                v-model="filterTaskType"
+                :items="availableTaskTypes"
+                :label="$t('taskCatalog.filterByTaskType')"
+                item-title="label"
+                item-value="value"
+                clearable
+                variant="outlined"
+                density="compact"
+                hide-details
+                class="flex-grow-0"
+                style="min-width: 180px;"
+            />
+            <!-- [BLOCK:field.select.v1] -->
+            <v-select
+                v-model="filterSystem"
+                :items="systems"
+                :label="$t('taskCatalog.filterBySystem')"
+                item-title="name"
+                item-value="name"
+                clearable
+                variant="outlined"
+                density="compact"
+                hide-details
+                class="flex-grow-0"
+                style="min-width: 180px;"
+            />
+            <v-spacer />
+            <!-- [BLOCK:button.primary.v1] -->
+            <v-btn color="primary" rounded variant="flat" @click="openDialog()">
+                <v-icon start>mdi-plus</v-icon>
+                {{ $t('taskCatalog.addTask') }}
+            </v-btn>
+        </div>
 
-        <v-row>
-            <v-col
+        <v-row class="ma-0 pa-0">
+            <v-col class="pa-0"
                 v-for="item in filteredItems"
                 :key="item.id"
                 cols="12"
@@ -69,9 +79,9 @@
                         <span class="task-name">{{ item.name }}</span>
                     </div>
 
-                    <div class="task-tags">
-                        <span class="tag tag-system">{{ item.system_name }}</span>
-                        <span class="tag tag-type">{{ getTaskTypeLabel(item.task_type) }}</span>
+                    <div class="d-flex flex-wrap ga-1 mb-2">
+                        <v-chip size="small" variant="tonal">{{ item.system_name }}</v-chip>
+                        <v-chip size="small" variant="tonal" color="primary">{{ getTaskTypeLabel(item.task_type) }}</v-chip>
                     </div>
 
                     <div v-if="item.description" class="task-description">
@@ -79,20 +89,20 @@
                     </div>
 
                     <div class="task-actions">
-                        <button class="action-btn action-edit" @click="openDialog(item)">
+                        <!-- [BLOCK:button.icon.v1] -->
+                        <v-btn variant="text" density="compact" icon @click="openDialog(item)">
                             <v-icon size="16">mdi-pencil</v-icon>
-                        </button>
-                        <button class="action-btn action-delete" @click="confirmDelete(item)">
+                        </v-btn>
+                        <v-btn variant="text" density="compact" icon color="error" @click="confirmDelete(item)">
                             <v-icon size="16">mdi-delete</v-icon>
-                        </button>
+                        </v-btn>
                     </div>
                 </div>
             </v-col>
         </v-row>
 
-        <v-alert v-if="filteredItems.length === 0" type="info" variant="tonal" class="mt-4">
-            {{ $t('taskCatalog.noCatalogItems') }}
-        </v-alert>
+        <!-- [BLOCK:alert.info.v1] -->
+        <div v-if="filteredItems.length === 0" class="text-center pa-8 text-medium-emphasis">{{ $t('taskCatalog.noCatalogItems') }}</div>
 
         <!-- Add/Edit Dialog -->
         <TaskCatalogDialog
@@ -102,29 +112,26 @@
         />
 
         <!-- Delete Confirmation Dialog -->
-        <v-dialog v-model="deleteDialogOpen" max-width="400">
+        <v-dialog v-model="deleteDialogOpen" max-width="400" persistent>
             <v-card>
-                <v-card-title>
-                    {{ $t('taskCatalog.confirmDelete') }}
+                <!-- [BLOCK:dialog.header.v1] -->
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    <div class="d-flex align-center">{{ $t('taskCatalog.confirmDelete') }}</div>
+                    <v-btn variant="text" density="compact" icon @click="deleteDialogOpen = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
                 </v-card-title>
 
-                <v-card-text>
+                <v-card-text class="pa-4">
                     {{ $t('taskCatalog.deleteCatalogConfirm', { name: deletingItem?.display_name }) }}
                 </v-card-text>
 
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn
-                        variant="text"
-                        @click="deleteDialogOpen = false"
-                    >
+                <!-- [BLOCK:dialog.footer.v1] -->
+                <v-card-actions class="d-flex justify-end align-center pa-4 pt-0">
+                    <v-btn variant="text" @click="deleteDialogOpen = false">
                         {{ $t('taskCatalog.cancel') }}
                     </v-btn>
-                    <v-btn
-                        color="error"
-                        :loading="loading"
-                        @click="deleteItem"
-                    >
+                    <v-btn color="error" rounded variant="flat" :loading="loading" @click="deleteItem">
                         {{ $t('taskCatalog.delete') }}
                     </v-btn>
                 </v-card-actions>
@@ -352,33 +359,6 @@ export default defineComponent({
     -webkit-box-orient: vertical;
 }
 
-/* Tags */
-.task-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
-}
-
-.tag {
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: 500;
-}
-
-.tag-system {
-    background-color: #f3f4f6;
-    color: #4b5563;
-    border: 1px solid #e5e7eb;
-}
-
-.tag-type {
-    background-color: #eff6ff;
-    color: #3b82f6;
-    border: 1px solid #dbeafe;
-}
-
 /* Description */
 .task-description {
     font-size: 12px;
@@ -400,40 +380,5 @@ export default defineComponent({
     margin-top: auto;
     padding-top: 8px;
     border-top: 1px solid #f3f4f6;
-}
-
-.action-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s ease;
-}
-
-.action-btn:hover {
-    background-color: #f3f4f6;
-}
-
-.action-edit {
-    color: #6b7280;
-}
-
-.action-edit:hover {
-    color: #3b82f6;
-    background-color: #eff6ff;
-}
-
-.action-delete {
-    color: #9ca3af;
-}
-
-.action-delete:hover {
-    color: #ef4444;
-    background-color: #fef2f2;
 }
 </style>

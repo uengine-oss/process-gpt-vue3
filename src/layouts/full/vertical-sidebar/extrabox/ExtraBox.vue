@@ -1,6 +1,6 @@
 <template>
     <v-menu
-        v-if="false"
+        v-if="!gs"
         location="top"
         offset="8"
         open-on-hover
@@ -79,6 +79,9 @@ export default defineComponent({
         };
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
         userRole() {
             return this.isAdmin ? 'Admin' : '';
         },

@@ -1,11 +1,16 @@
 <template>
-    <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" max-width="600">
-        <v-card>
-            <v-card-title>
+    <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '600px'">
+        <v-card class="ma-0 pa-0" style="overflow: hidden;">
+            <!-- [BLOCK:dialog.header.v1] -->
+            <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
                 {{ schema ? $t('taskCatalog.editProperty') : $t('taskCatalog.addProperty') }}
+                <v-btn variant="text" density="compact" icon @click="$emit('update:modelValue', false)">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
             </v-card-title>
 
-            <v-card-text>
+            <!-- [BLOCK:dialog.body.v1] -->
+            <v-card-text class="pa-4 pb-0 property-schema-dialog-scroll">
                 <v-form ref="formRef" v-model="formValid">
                     <v-row>
                         <v-col cols="12" md="6">
@@ -140,23 +145,19 @@
                 </v-form>
             </v-card-text>
 
-            <v-card-actions>
-                <v-spacer />
-                <v-btn
-                    variant="text"
-                    @click="$emit('update:modelValue', false)"
-                >
-                    {{ $t('taskCatalog.cancel') }}
-                </v-btn>
+            <!-- [BLOCK:dialog.footer.v1] -->
+            <v-row class="d-flex justify-end align-center pa-4 ma-0">
                 <v-btn
                     color="primary"
+                    rounded
+                    variant="flat"
                     :loading="loading"
                     :disabled="!formValid"
                     @click="save"
                 >
                     {{ $t('taskCatalog.save') }}
                 </v-btn>
-            </v-card-actions>
+            </v-row>
         </v-card>
     </v-dialog>
 </template>
@@ -176,6 +177,7 @@ export default defineComponent({
     setup(props, { emit }) {
         const store = useTaskCatalogStore();
 
+        const isMobile = computed(() => window.innerWidth <= 768);
         const formRef = ref(null);
         const formValid = ref(false);
         const loading = ref(false);
@@ -256,6 +258,7 @@ export default defineComponent({
         };
 
         return {
+            isMobile,
             formRef,
             formValid,
             loading,
@@ -269,3 +272,9 @@ export default defineComponent({
     }
 });
 </script>
+<style>
+.property-schema-dialog-scroll {
+    overflow-y: auto;
+    max-height: calc(100vh - 110px);
+}
+</style>

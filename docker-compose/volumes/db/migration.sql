@@ -104,6 +104,8 @@ ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials;
 ALTER TABLE public.users DROP COLUMN IF EXISTS google_credentials_updated_at;
 ALTER TABLE public.users DROP COLUMN IF EXISTS url;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS alias text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_used_at timestamptz NULL;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tool_priority jsonb NULL;
 
 
 -- configuration table
@@ -292,6 +294,7 @@ ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS participants jsonb;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS message jsonb;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS name text;
 ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT public.tenant_id();
+ALTER TABLE public.chat_rooms ADD COLUMN IF NOT EXISTS primary_agent_id text;
 
 -- chats table
 ALTER TABLE public.chats ADD COLUMN IF NOT EXISTS uuid text;
@@ -681,6 +684,7 @@ BEGIN
     END IF;
 END $$;
 
+ALTER TYPE public.agent_orch ADD VALUE IF NOT EXISTS 'deep-research-custom';
 
 -- 2) events.event_type 컬럼 마이그레이션 (임시 컬럼 → 이관 → 드롭 → 리네임)
 DO $$
@@ -1916,3 +1920,26 @@ BEGIN
         RAISE NOTICE 'todolist.agent_orch is already text or column does not exist';
     END IF;
 END $$;
+
+
+
+
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS user_id UUID;
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS tenant_id TEXT;
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS skill_name TEXT;
+ALTER TABLE public.agent_skills ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+insert into public.agent_skills (user_id, tenant_id, skill_name)
+select distinct
+  u.id,
+  u.tenant_id,
+  trim(s) as skill_name
+from public.users u,
+     unnest(string_to_array(u.skills, ',')) as s
+where u.agent_type = 'agent'
+  and u.is_agent = true
+  and u.skills is not null
+  and trim(u.skills) <> ''
+  and trim(s) <> ''
+on conflict (user_id, tenant_id, skill_name) do nothing;

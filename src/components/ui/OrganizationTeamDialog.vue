@@ -17,12 +17,6 @@
             <!-- add team -->
             <div v-if="dialogType == 'add'">
                 <v-text-field 
-                    v-model="newTeam.id" 
-                    :label="$t('organizationChartDefinition.teamId')"
-                    :rules="idRules"
-                    class="mb-2"
-                ></v-text-field>
-                <v-text-field 
                     v-model="newTeam.name" 
                     :label="$t('organizationChartDefinition.teamName')"
                     :rules="nameRules"
@@ -86,11 +80,6 @@ export default {
         },
     }),
     computed: {
-        idRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.idRequired'),
-            ];
-        },
         nameRules() {
             return [
                 (value) => !!value || this.$t('organizationChartDefinition.nameRequired'),
@@ -98,7 +87,7 @@ export default {
         },
         isValid() {
             if (this.dialogType == 'add') {
-                return this.idRules.every(rule => rule(this.newTeam.id) === true) && this.nameRules.every(rule => rule(this.newTeam.name) === true);
+                return this.nameRules.every(rule => rule(this.newTeam.name) === true);
             } else {
                 return true
             }
@@ -125,7 +114,7 @@ export default {
     mounted() {
         if (this.dialogType == 'add') {
             this.newTeam = {
-                id: '',
+                id: crypto.randomUUID(),
                 name: '',
                 isTeam: true,
                 img: '/images/chat-icon.png',

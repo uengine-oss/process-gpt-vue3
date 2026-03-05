@@ -1,85 +1,26 @@
 <template>
     <div>
+        <DetailComponent
+            :title="$t('UserTaskPanel.radioSelectDescriptionTitle')"
+            :details="radioSelectDescription"
+            :detailUrl="'https://www.youtube.com/watch?v=E-tjj20-xxI&t'"
+        />
+      
         <v-radio-group v-model="selectedActivity" inline class="delete-input-details">
             <v-radio :label="$t('UserTaskPanel.default')" value="HumanActivity"></v-radio>
             <v-radio :label="$t('UserTaskPanel.form')" value="FormActivity"></v-radio>
             <v-radio v-if="useEvent" :label="$t('UserTaskPanel.external')" value="URLActivity"></v-radio>
         </v-radio-group>
-        <v-radio-group
-            v-if="useEvent"
-            v-model="copyUengineProperties.assignmentType"
-            inline
-            class="mt-4"
-            :label="$t('UserTaskPanel.assignmentType')"
-        >
-            <v-radio :label="$t('UserTaskPanel.default')" value="default"></v-radio>
-            <v-radio :label="$t('UserTaskPanel.sharedGroup')" value="sharedGroup"></v-radio>
-            <v-radio :label="$t('UserTaskPanel.assignee')" value="assignee"></v-radio>
-            <v-radio :label="$t('UserTaskPanel.loadBalancing')" value="loadBalancing"></v-radio>
-            <v-radio :label="$t('UserTaskPanel.expression')" value="expression"></v-radio>
-        </v-radio-group>
-        <div v-if="copyUengineProperties.assignmentType === 'default'" class="mt-2">
+        
+        <div v-if="copyUengineProperties.assignType === 'default'" class="mt-2">
             <DetailComponent
                 :title="$t('UserTaskPanel.defaultInfo')"
             />
         </div>
 
+       
 
-        <div v-if="copyUengineProperties.assignmentType === 'sharedGroup'" class="mt-2">
-            <DetailComponent :title="$t('UserTaskPanel.sharedGroupInfo')" />
-            <v-combobox
-                v-model="copyUengineProperties.sharedGroup"
-                :label="$t('UserTaskPanel.sharedGroup')"
-                multiple
-                chips
-                variant="outlined"
-                density="compact"
-                hide-details
-            ></v-combobox>
-        </div>
-
-        
-        <!-- 업무 할당 타입별 설정 필드 -->
-        <div v-if="copyUengineProperties.assignmentType === 'assignee'" class="mt-2">
-            <DetailComponent :title="$t('UserTaskPanel.assigneeInfo')" />
-            <v-text-field
-                v-model="copyUengineProperties.assignee"
-                :label="$t('UserTaskPanel.assignee')"
-                variant="outlined"
-                density="compact"
-                hide-details
-            ></v-text-field>
-        </div>
-
-        <div v-if="copyUengineProperties.assignmentType === 'loadBalancing'" class="mt-2">
-            <DetailComponent :title="$t('UserTaskPanel.loadBalancingInfo')" />
-            <!-- 로드밸런싱 그룹 선택 -->
-            <v-combobox
-                v-model="copyUengineProperties.roundRobinGroup"
-                :label="$t('UserTaskPanel.loadBalancingGroup')"
-                variant="outlined"
-                hide-details
-                density="compact"
-                :items="roles.map(r => r.name)"
-            ></v-combobox>
-
-            <!-- 로드밸런싱 전략 선택 -->
-            <v-select
-                v-model="copyUengineProperties.loadBalancingStrategy"
-                :label="$t('UserTaskPanel.loadBalancingStrategy')"
-                :items="[
-                { title: $t('UserTaskPanel.roundRobin'), value: 'roundRobin' },
-                { title: $t('UserTaskPanel.leastTasks'), value: 'leastTasks' },
-                { title: $t('UserTaskPanel.idle'), value: 'idle' }
-                ]"
-                variant="outlined"
-                density="compact"
-                hide-details
-                class="mt-2"
-            ></v-select>
-        </div>
-
-        <div v-if="copyUengineProperties.assignmentType === 'expression'" class="mt-2">
+        <div v-if="copyUengineProperties.assignType === 'expression'" class="mt-2">
             <DetailComponent :title="$t('UserTaskPanel.expressionInfo')" />
             <v-text-field
                 v-model="copyUengineProperties.assignmentExpression"
@@ -92,11 +33,7 @@
         </div>
 
 
-        <DetailComponent
-            :title="$t('UserTaskPanel.radioSelectDescriptionTitle')"
-            :details="radioSelectDescription"
-            :detailUrl="'https://www.youtube.com/watch?v=E-tjj20-xxI&t'"
-        />
+      
         <div v-if="!isLoading && selectedActivity == 'HumanActivity'">
             <EventSynchronizationForm
                 v-if="useEvent"
@@ -192,15 +129,33 @@
             </div>
         </div>
         <div v-else-if="!isLoading && selectedActivity == 'URLActivity' && useEvent">
-            <EventSynchronizationForm
+            <v-text-field
+                v-model="copyUengineProperties.url"
+                :label="$t('EventSynchronizationForm.url')"
+                variant="outlined"
+                density="compact"
+                hide-details
+                class="mb-4"
+            />
+            <MultiEventSynchronizationForm
                 v-model="copyUengineProperties"
                 :roles="roles"
                 :taskName="name"
                 :definition="copyDefinition"
                 :selectedActivity="selectedActivity"
-            ></EventSynchronizationForm>
+            ></MultiEventSynchronizationForm>
         </div>
     </div>
+
+    <!-- Lead Time -->
+    <div class="mt-4">
+        <LeadTimeInput
+            v-model="copyUengineProperties.leadTime"
+            :label="$t('leadTime.title') || 'Lead Time'"
+            :disabled="isViewMode"
+        />
+    </div>
+
 
     <!-- Schema-based Properties -->
     <div class="mt-4">
@@ -287,6 +242,7 @@
         </div>
     </div>
 
+
     <v-dialog
         v-model="isOpenFieldMapper"
         class="mapper-dialog"
@@ -333,10 +289,13 @@ import Mapper from '@/components/designer/mapper/Mapper.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
+import MultiEventSynchronizationForm from '@/components/designer/MultiEventSynchronizationForm.vue';
 import DefaultArguments from '@/components/designer/DefaultArguments.vue';
 import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import Instruction from '@/components/designer/InstructionField.vue';
+import { getGroups, getUsersByGroups, getAllUsers } from '@/utils/keycloak';
 import SchemaBasedProperties from './SchemaBasedProperties.vue';
+import LeadTimeInput from './LeadTimeInput.vue';
 
 export default {
     name: 'user-task-panel',
@@ -344,10 +303,12 @@ export default {
         BpmnParameterContexts,
         Mapper,
         EventSynchronizationForm,
+        MultiEventSynchronizationForm,
         DefaultArguments,
         Checkpoints,
         Instruction,
-        SchemaBasedProperties
+        SchemaBasedProperties,
+        LeadTimeInput
     },
     props: {
         uengineProperties: Object,
@@ -410,6 +371,9 @@ export default {
                     title: 'UserTaskPanel.radioSelectDescriptionSubTitle1'
                 },
             ],
+            candidateRoles: [], // Keycloak 그룹 목록 (역할/그룹 선택용)
+            candidateGroups: [], // 선택 가능한 그룹 목록 (candidateRoles와 동일)
+            candidateUsers: [],
             // Color picker
             showColorPicker: false,
             customColor: '#fdf2d0',
@@ -442,6 +406,10 @@ export default {
         let me = this;
         me.bpmnModeler = useBpmnStore().getModeler;
         me.init();
+        me.loadCandidateRoles();
+        me.loadCandidateUsers();
+        me.loadCurrentLaneRole();
+        me.loadCurrentPoolRole();
     },
     computed: {
         useEvent() {
@@ -550,6 +518,18 @@ export default {
                     this.EventBus.emit('process-definition-updated', this.processDefinition);
                 }
             }
+        },
+        'copyUengineProperties.candidateGroups': {
+            handler(newVal) {
+                // Candidate Groups가 변경되면 해당 그룹의 사용자 목록 자동 업데이트
+                if (newVal && newVal.length > 0) {
+                    this.loadCandidateUsersFromGroups(newVal);
+                } else {
+                    // 그룹이 없으면 전체 사용자 목록으로 리셋
+                    this.loadCandidateUsers();
+                }
+            },
+            deep: true
         }
     },
     methods: {
@@ -581,6 +561,12 @@ export default {
                 }
 
                 if (me.useEvent) {
+                    if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
+                    if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
+                    if (!me.copyUengineProperties.eventSynchronization.attributes)
+                        me.copyUengineProperties.eventSynchronization.attributes = [];
+                    if (!me.copyUengineProperties.eventSynchronization.mappingContext)
+                        me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
                     me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
                 }
                 if (!me.selectedForm) {
@@ -590,13 +576,8 @@ export default {
                 me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
                 if (me.useEvent) {
-                    if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                    if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
-                    if (!me.copyUengineProperties.eventSynchronization.attributes)
-                        me.copyUengineProperties.eventSynchronization.attributes = [];
-                    if (!me.copyUengineProperties.eventSynchronization.mappingContext)
-                        me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
-                    me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
+                    me.normalizeEventSynchronizations();
+                    me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization?.mappingContext ?? { mappingElements: [] }, null, 2);
                 }
             } else {
                 me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';
@@ -611,12 +592,43 @@ export default {
             }
 
             if(window.$mode == "uEngine"){
-                if(!me.copyUengineProperties.assignmentType){
-                    me.copyUengineProperties.assignmentType = 'default';
+                if(!me.copyUengineProperties.assignType){
+                    me.copyUengineProperties.assignType = 'claim';
                 }
             }
 
+            // 경합 모드 기본값: false (Pool 역할 사용 - BPMN 기본값)
+            if (me.copyUengineProperties.useCompetingMode === undefined) {
+                me.copyUengineProperties.useCompetingMode = false;
+            }
+
             me.copyDefinition = me.definition;
+        },
+        /** eventSynchronization 단일 → eventSynchronizations 배열 정규화 (기존 데이터 호환) */
+        normalizeEventSynchronizations() {
+            var me = this;
+            var p = me.copyUengineProperties;
+            if (!p) return;
+            var list = p.eventSynchronizations;
+            if (!Array.isArray(list) || list.length === 0) {
+                var single = p.eventSynchronization;
+                if (single && typeof single === 'object') {
+                    list = [{
+                        eventType: single.eventType ?? '',
+                        attributes: Array.isArray(single.attributes) ? single.attributes : [],
+                        mappingContext: single.mappingContext && typeof single.mappingContext === 'object' ? single.mappingContext : { mappingElements: [] }
+                    }];
+                } else {
+                    list = [{ eventType: '', attributes: [], mappingContext: { mappingElements: [] } }];
+                }
+                p.eventSynchronizations = list;
+            }
+            list.forEach(function (sync) {
+                if (!sync.eventType) sync.eventType = '';
+                if (!Array.isArray(sync.attributes)) sync.attributes = [];
+                if (!sync.mappingContext || typeof sync.mappingContext !== 'object') sync.mappingContext = { mappingElements: [] };
+            });
+            p.eventSynchronization = list[0];
         },
         updateParameters(mappingContext) {
             console.log(mappingContext)
@@ -627,7 +639,6 @@ export default {
             me.isLoading = true;
             if (me.selectedActivity == 'FormActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.FormActivity';
-                // if (!me.copyUengineProperties.variableForHtmlFormContext) me.copyUengineProperties.variableForHtmlFormContext = {};
                 if (!me.copyUengineProperties.parameters) me.copyUengineProperties.parameters = [];
                 if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
                 if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
@@ -635,20 +646,12 @@ export default {
                     me.copyUengineProperties.eventSynchronization.attributes = [];
                 if (!me.copyUengineProperties.eventSynchronization.mappingContext)
                     me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
-
-                // me.selectedForm = me.copyUengineProperties.variableForHtmlFormContext.name;
                 me.formMapperJson = JSON.stringify(me.copyUengineProperties.eventSynchronization.mappingContext, null, 2);
-
                 if (!me.selectedForm) me.isOpenFormCreateDialog = true;
             } else if (me.selectedActivity == 'URLActivity') {
                 me.copyUengineProperties._type = 'org.uengine.kernel.URLActivity';
                 if (!me.copyUengineProperties.url) me.copyUengineProperties.url = '';
-                if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
-                if (!me.copyUengineProperties.eventSynchronization.eventType) me.copyUengineProperties.eventSynchronization.eventType = '';
-                if (!me.copyUengineProperties.eventSynchronization.attributes)
-                    me.copyUengineProperties.eventSynchronization.attributes = [];
-                if (!me.copyUengineProperties.eventSynchronization.mappingContext)
-                    me.copyUengineProperties.eventSynchronization.mappingContext = { mappingElements: [] };
+                me.normalizeEventSynchronizations();
             } else {
                 me.copyUengineProperties._type = 'org.uengine.kernel.HumanActivity';
                 if (!me.copyUengineProperties.eventSynchronization) me.copyUengineProperties.eventSynchronization = {};
@@ -658,12 +661,10 @@ export default {
         },
         beforeSave() {
             var me = this;
-            // 필수 요소만 포함, 나머지 제거.
             if (me.useEvent) {
+                var p = me.copyUengineProperties;
                 if (me.selectedActivity == 'FormActivity') {
-                    // const { variableForHtmlFormContext, eventSynchronization, _type } = me.copyUengineProperties;
-                    // me.copyUengineProperties = { variableForHtmlFormContext, eventSynchronization, _type };
-                    const { parameters, eventSynchronization, _type } = me.copyUengineProperties;
+                    const { parameters, eventSynchronization, _type } = p;
                     const outParameter = parameters.find(param => param.direction === 'OUT');
                     if (outParameter) {
                         parameters.filter(param => param.direction.includes('IN')).forEach(param => {
@@ -674,16 +675,17 @@ export default {
                             }
                         });
                     }
-
                     me.copyUengineProperties = { parameters, eventSynchronization, _type };
                 } else if (me.selectedActivity == 'URLActivity') {
-                    const { url, eventSynchronization, _type } = me.copyUengineProperties;
-                    me.copyUengineProperties = { url, eventSynchronization, _type };
-                } else if(me.selectedActivity == 'HumanActivity'){
-                    const { eventSynchronization, _type } = me.copyUengineProperties;
+                    me.normalizeEventSynchronizations();
+                    const { url, eventSynchronizations, _type } = p;
+                    // eventSynchronizations가 있으면 eventSynchronization은 저장하지 않음 (배열만 전송)
+                    me.copyUengineProperties = { url, eventSynchronizations, _type };
+                } else if (me.selectedActivity == 'HumanActivity') {
+                    const { eventSynchronization, _type } = p;
                     me.copyUengineProperties = { eventSynchronization, _type };
                 } else {
-                    const { eventSynchronization } = me.copyUengineProperties;
+                    const { eventSynchronization } = p;
                     me.copyUengineProperties = { eventSynchronization };
                 }
             }
@@ -822,6 +824,60 @@ export default {
 
                 this.selectedForm = formValueInfo.name;
             };
+        },
+        async loadCandidateRoles() {
+            try { 
+                this.candidateRoles = await getGroups();
+                // candidateGroups도 동일하게 설정 (UI에서 사용)
+                this.candidateGroups = this.candidateRoles.map(group => ({
+                    title: group,
+                    value: group
+                }));
+                console.log('Candidate groups loaded:', this.candidateGroups);
+            } catch (error) {
+                console.error('Failed to load candidate groups:', error);
+                this.candidateRoles = [];
+                this.candidateGroups = [];
+            }
+        },
+        async loadCandidateUsers() {
+            try {
+                // 선택된 그룹이 있으면 해당 그룹의 사용자 가져오기
+                if (this.copyUengineProperties.candidateGroups && this.copyUengineProperties.candidateGroups.length > 0) {
+                    await this.loadCandidateUsersFromGroups(this.copyUengineProperties.candidateGroups);
+                } else {
+                    // 기본적으로 Keycloak에서 전체 사용자 목록 가져오기
+                    const userList = await getAllUsers({ max: 100 });
+                    this.candidateUsers = userList.map(user => ({
+                        title: user.username || user.email || user.id,
+                        value: user.email || user.username || user.id
+                    }));
+                }
+                console.log(this.candidateUsers)
+            } catch (error) {
+                console.error('Failed to load candidate users:', error);
+                this.candidateUsers = [];
+            }
+        },
+        async loadCandidateUsersFromGroups(groupNames) {
+            try {
+                // Keycloak에서 그룹에 속한 사용자 목록 가져오기
+                const users = await getUsersByGroups(groupNames);
+                // SelectBox 형식으로 변환
+                this.candidateUsers = users.map(user => ({
+                    title: user.username || user.email || user.id,
+                    value: user.email || user.username || user.id
+                }));
+                console.log('Users from groups:', this.candidateUsers);
+            } catch (error) {
+                console.error('Failed to load users from groups:', error);
+                // 에러 발생 시 Keycloak에서 전체 사용자 목록으로 fallback
+                const userList = await getAllUsers({ max: 100 });
+                this.candidateUsers = userList.map(user => ({
+                    title: user.username || user.email || user.id,
+                    value: user.email || user.username || user.id
+                }));
+            }
         },
         setTaskColor(color) {
             this.copyUengineProperties.taskColor = color;

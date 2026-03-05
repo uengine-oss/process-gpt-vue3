@@ -10,8 +10,8 @@
                 >
                     <MegaProcess :value="item" :parent="value" :enableEdit="enableEdit"  @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn" :domains="domains" :selectedDomain="selectedDomain" :filteredProcDefIds="filteredProcDefIds"/>
                 </v-col>
-                <!-- MegaProcess 추가 카드: 특정 도메인 탭에서만 표시 -->
-                <v-col v-if="selectedDomain" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
+                <!-- MegaProcess 추가 카드 -->
+                <v-col v-if="selectedDomain || isPalUengine" key="add-mega-card" class="cursor-pointer" cols="12" md="3" sm="3">
                     <v-card v-if="!processDialogStatus"
                         @click="openProcessDialog('add')"
                         class="cp-add-mega"
@@ -83,6 +83,9 @@ export default {
         }
     },
     computed: {
+        isPalUengine() {
+            return typeof window !== 'undefined' && window.$pal && window.$mode === 'uEngine';
+        },
         // 검색어로 필터링된 값 반환
         filteredValue() {
             if (!this.searchQuery || !this.searchQuery.trim()) {
@@ -143,7 +146,16 @@ export default {
         processRenderer: 0
     }),
     created() {
-        this.classifyProcess();
+        // 미분류 처리는 ProcessDefinitionMap.vue의 updateUncategorizedProcesses()에서 담당
+
+        // 다른 곳에서 프로세스 다이얼로그가 열리면 자신의 다이얼로그 닫기
+        this._processDialogId = Math.random().toString(36).substr(2, 9);
+        this._closeDialogHandler = (event) => {
+            if (event.detail !== this._processDialogId) {
+                this.processDialogStatus = false;
+            }
+        };
+        window.addEventListener('closeAllProcessDialogs', this._closeDialogHandler);
     },
     mounted() {
         this.EventBus.on('openPermissionDialog', (process) => {
@@ -151,12 +163,11 @@ export default {
             this.permissionDialogStatus = true;
         });
     },
+    beforeUnmount() {
+        window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
+    },
     watch: {
-        enableEdit(newVal, oldVal) {
-            if(newVal !== oldVal) {
-                this.classifyProcess();
-            }
-        }
+        // 미분류 처리는 ProcessDefinitionMap.vue의 updateUncategorizedProcesses()에서 담당
     },
     methods: {
         addProcess(newProcess) {
@@ -176,69 +187,6 @@ export default {
                 major_proc_list: [],
             };
             this.value.mega_proc_list.push(newMegaProc);
-        },
-        async classifyProcess() {
-            let subProcList = [];
-            let unclassifiedIdx = -1;
-            if (!this.value.mega_proc_list || this.value.mega_proc_list.length == 0) {
-                this.value.mega_proc_list = [];
-                return;
-            }
-            this.value.mega_proc_list.forEach((mega, index) => {
-                if (mega.id == "unclassified") {
-                    unclassifiedIdx = index;
-                } else {
-                    mega.major_proc_list.forEach(major => {
-                        subProcList = [...subProcList, ...major.sub_proc_list];
-                    });
-                }
-            })
-            if (subProcList.length > 0) {
-                subProcList = subProcList.map(sub => sub.id);
-                const backend = BackendFactory.createBackend();
-                const listDefinition = await backend.listDefinition();
-                let definitions = [];
-                
-                const addChildDefinitions = async (parentDefinition) => {
-                    parentDefinition.id = parentDefinition.path;
-                    definitions.push(parentDefinition);
-
-                    if(parentDefinition.directory){
-                        const childDefinitions = await backend.listDefinition(parentDefinition.path);
-                        for (const child of childDefinitions) {
-                            await addChildDefinitions(child);
-                        }
-                    }
-
-                };
-
-                for(const definition of listDefinition){
-                    await addChildDefinitions(definition);
-                }
-
-                definitions = definitions.filter(definition => !subProcList.includes(definition.id) && definition.path.includes('.bpmn'));
-                
-                if (definitions.length > 0) {
-                    definitions = definitions.map(definition => { return { id: definition.id, name: definition.name, path: definition.path } });
-                    if (unclassifiedIdx == -1) {
-                        this.value.mega_proc_list.push({
-                            id: "unclassified",
-                            name: "미분류",
-                            major_proc_list: [{
-                                id: "unclassified_major",
-                                name: "미분류",
-                                sub_proc_list: definitions,
-                            }],
-                        })
-                    } else {
-                        this.value.mega_proc_list[unclassifiedIdx].major_proc_list = [{
-                            id: "unclassified_major",
-                            name: "미분류",
-                            sub_proc_list: definitions,
-                        }];
-                    }
-                }
-            }
         },
         clickProcess(id) {
             this.$emit('clickProcess', id);

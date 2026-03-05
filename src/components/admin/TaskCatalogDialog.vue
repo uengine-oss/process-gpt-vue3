@@ -1,14 +1,17 @@
 <template>
-    <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" max-width="700">
+    <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '700px'" persistent>
         <v-card>
-            <v-card-title>
+            <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
                 {{ item ? $t('taskCatalog.editTask') : $t('taskCatalog.addTask') }}
+                <v-btn variant="text" density="compact" icon @click="$emit('update:modelValue', false)">
+                    <v-icon>mdi-close</v-icon>
+                </v-btn>
             </v-card-title>
 
-            <v-card-text>
+            <v-card-text class="pa-4 pb-0" style="overflow: auto;">
                 <v-form ref="formRef" v-model="formValid">
-                    <v-row>
-                        <v-col cols="12" md="6">
+                    <v-row class="ma-0 pa-0">
+                        <v-col cols="12" md="6" class="pa-0">
                             <v-text-field
                                 v-model="formData.name"
                                 :label="$t('taskCatalog.taskName')"
@@ -16,7 +19,7 @@
                                 required
                             />
                         </v-col>
-                        <v-col cols="12" md="6">
+                        <v-col cols="12" md="6" class="pa-0">
                             <v-select
                                 v-model="formData.system_name"
                                 :items="store.systems"
@@ -37,8 +40,8 @@
                         </v-col>
                     </v-row>
 
-                    <v-row>
-                        <v-col cols="12" md="6">
+                    <v-row class="ma-0 pa-0">
+                        <v-col cols="12" md="6" class="pa-0">
                             <v-select
                                 v-model="formData.task_type"
                                 :items="availableTaskTypes"
@@ -49,7 +52,7 @@
                                 required
                             />
                         </v-col>
-                        <v-col cols="12" md="6">
+                        <v-col cols="12" md="6" class="pa-0">
                             <v-select
                                 v-model="formData.level"
                                 :items="levels"
@@ -59,8 +62,8 @@
                         </v-col>
                     </v-row>
 
-                    <v-row>
-                        <v-col cols="12">
+                    <v-row class="ma-0 pa-0">
+                        <v-col cols="12" class="pa-0">
                             <v-textarea
                                 v-model="formData.description"
                                 :label="$t('taskCatalog.description')"
@@ -74,8 +77,8 @@
                     <v-label class="mb-2">{{ $t('taskCatalog.properties') }}</v-label>
 
                     <div v-if="propertySchemas.length > 0">
-                        <v-row v-for="schema in propertySchemas" :key="schema.id">
-                            <v-col cols="12">
+                        <v-row v-for="schema in propertySchemas" :key="schema.id" class="ma-0 pa-0">
+                            <v-col cols="12" class="pa-0">
                                 <!-- String type -->
                                 <v-text-field
                                     v-if="schema.property_type === 'string'"
@@ -123,22 +126,17 @@
                             </v-col>
                         </v-row>
                     </div>
-                    <v-alert v-else type="info" variant="tonal" density="compact">
-                        {{ $t('taskCatalog.noPropertiesSchema') }}
+                    <v-alert v-else dense outlined type="info" color="gray" class="pa-4 pt-2 pb-2">
+                        <span class="text-body-1">{{ $t('taskCatalog.noPropertiesSchema') }}</span>
                     </v-alert>
                 </v-form>
             </v-card-text>
 
-            <v-card-actions>
-                <v-spacer />
-                <v-btn
-                    variant="text"
-                    @click="$emit('update:modelValue', false)"
-                >
-                    {{ $t('taskCatalog.cancel') }}
-                </v-btn>
+            <v-card-actions class="d-flex justify-end align-center pa-4">
                 <v-btn
                     color="primary"
+                    rounded
+                    variant="flat"
                     :loading="loading"
                     :disabled="!formValid"
                     @click="save"
@@ -166,6 +164,7 @@ export default defineComponent({
         const locale = computed(() => proxy.$i18n?.locale || 'en');
         const store = useTaskCatalogStore();
 
+        const isMobile = computed(() => window.innerWidth <= 768);
         const formRef = ref(null);
         const formValid = ref(false);
         const loading = ref(false);
@@ -245,6 +244,7 @@ export default defineComponent({
 
         return {
             store,
+            isMobile,
             formRef,
             formValid,
             loading,

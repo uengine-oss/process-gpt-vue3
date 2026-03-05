@@ -1,5 +1,5 @@
 <template>
-    <div class="settings-container">
+    <div class="settings-container pa-4">
         <!-- Info Banner -->
         <div class="info-banner">
             <v-icon size="18" color="primary">mdi-information-outline</v-icon>
@@ -9,10 +9,10 @@
         <!-- Header with Add Button -->
         <div class="section-header">
             <span class="section-title">{{ $t('orgChartGroup.title') }}</span>
-            <button class="add-btn" @click="openGroupDialog()">
-                <v-icon size="16">mdi-plus</v-icon>
+            <v-btn color="primary" rounded variant="flat" @click="openGroupDialog()">
+                <v-icon size="16" class="mr-1">mdi-plus</v-icon>
                 {{ $t('orgChartGroup.addGroup') }}
-            </button>
+            </v-btn>
         </div>
 
         <!-- Groups List -->
@@ -88,43 +88,35 @@
         </div>
 
         <!-- Add/Edit Group Dialog -->
-        <v-dialog v-model="groupDialog" max-width="450">
-            <div class="dialog-card">
-                <div class="dialog-header">
-                    <span>{{ editingGroup ? $t('orgChartGroup.editGroup') : $t('orgChartGroup.addGroup') }}</span>
-                    <button class="dialog-close" @click="groupDialog = false">
-                        <v-icon size="18">mdi-close</v-icon>
-                    </button>
-                </div>
-                <div class="dialog-content">
-                    <div class="form-field">
-                        <label>{{ $t('orgChartGroup.groupName') }} *</label>
-                        <input
-                            v-model="groupForm.name"
-                            type="text"
-                            :placeholder="$t('orgChartGroup.groupNamePlaceholder')"
-                            class="flat-input"
-                        />
-                    </div>
-                    <div class="form-field">
-                        <label>{{ $t('orgChartGroup.groupDescription') }}</label>
-                        <textarea
-                            v-model="groupForm.description"
-                            :placeholder="$t('orgChartGroup.groupDescriptionPlaceholder')"
-                            class="flat-textarea"
-                            rows="3"
-                        ></textarea>
-                    </div>
-                </div>
-                <div class="dialog-actions">
-                    <button class="btn-cancel" @click="groupDialog = false">
-                        {{ $t('common.cancel') }}
-                    </button>
-                    <button class="btn-save" @click="saveGroup" :disabled="!groupForm.name">
+        <v-dialog v-model="groupDialog" max-width="450" persistent>
+            <v-card>
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    {{ editingGroup ? $t('orgChartGroup.editGroup') : $t('orgChartGroup.addGroup') }}
+                    <v-btn variant="text" density="compact" icon @click="groupDialog = false">
+                        <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                </v-card-title>
+                <v-card-text class="pa-4 pb-0">
+                    <v-text-field
+                        v-model="groupForm.name"
+                        :label="$t('orgChartGroup.groupName') + ' *'"
+                        :placeholder="$t('orgChartGroup.groupNamePlaceholder')"
+                        variant="outlined"
+                    />
+                    <v-textarea
+                        v-model="groupForm.description"
+                        :label="$t('orgChartGroup.groupDescription')"
+                        :placeholder="$t('orgChartGroup.groupDescriptionPlaceholder')"
+                        variant="outlined"
+                        rows="3"
+                    />
+                </v-card-text>
+                <v-card-actions class="d-flex justify-end align-center pa-4">
+                    <v-btn color="primary" rounded variant="flat" @click="saveGroup" :disabled="!groupForm.name">
                         {{ $t('common.save') }}
-                    </button>
-                </div>
-            </div>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
         </v-dialog>
 
         <!-- Team Selector Dialog -->
@@ -491,9 +483,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.settings-container {
-    padding: 24px;
-}
 
 /* Info Banner */
 .info-banner {

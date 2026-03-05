@@ -7,7 +7,14 @@
  */
 
 // 개발 환경에서는 vite 프록시 사용, 프로덕션에서는 환경 변수 사용
-const AGENT_BASE_URL = import.meta.env.VITE_AGENT_BASE_URL || '/agent';
+// - env가 "/" 또는 빈 값이면 잘못된 경로(예: "/chat/stream")가 만들어질 수 있어 정규화한다.
+const normalizeBaseUrl = (value, fallback) => {
+    const v = (value ?? '').toString().trim();
+    if (!v || v === '/') return fallback;
+    return v.endsWith('/') ? v.slice(0, -1) : v;
+};
+
+const AGENT_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_AGENT_BASE_URL, '/agent');
 
 class WorkAssistantAgentService {
     constructor() {

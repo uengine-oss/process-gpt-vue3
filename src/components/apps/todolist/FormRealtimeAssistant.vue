@@ -13,13 +13,14 @@
                 :elevation="10"
                 @mousedown.stop
             >
-                <div class="ai-chat-header" @mousedown="startDrag">
+                <div class="ai-chat-header" @mousedown="startDrag" @touchstart="startDragTouch">
                     <div class="ai-chat-title">
-                        Voice Agent
-                        <span v-if="connected" class="ai-chat-status success">연결됨</span>
-                        <span v-else class="ai-chat-status warn">{{ connecting ? '연결 중' : '연결 안 됨' }}</span>
-                        <span v-if="assistantStreaming" class="ai-chat-status">응답 중</span>
-                        <span v-if="isMicOn" class="ai-chat-status">마이크 ON</span>
+                        {{ $t('FormRealtimeAssistant.title') }}
+                        <v-chip v-if="connected" size="x-small" color="success" variant="tonal">{{ $t('FormRealtimeAssistant.connected') }}</v-chip>
+                        <v-chip v-else-if="connecting" size="x-small" color="warning" variant="tonal">{{ $t('FormRealtimeAssistant.connecting') }}</v-chip>
+                        <v-chip v-else size="x-small" color="error" variant="tonal">{{ $t('FormRealtimeAssistant.disconnected') }}</v-chip>
+                        <v-chip v-if="assistantStreaming" size="x-small" color="info" variant="tonal">{{ $t('FormRealtimeAssistant.responding') }}</v-chip>
+                        <v-chip v-if="isMicOn" size="x-small" color="primary" variant="tonal">{{ $t('FormRealtimeAssistant.micOn') }}</v-chip>
                     </div>
                     <v-btn icon density="comfortable" variant="text" @click="closeDialog">
                         <v-icon>mdi-close</v-icon>
@@ -46,7 +47,7 @@
                         rows="1"
                         density="compact"
                         variant="outlined"
-                        placeholder="메시지를 입력하거나 마이크로 말해보세요."
+                        :placeholder="$t('FormRealtimeAssistant.inputPlaceholder')"
                         :disabled="sending"
                         @keydown.enter.prevent="sendUserMessage"
                     />
@@ -219,7 +220,10 @@ watch(
     (val) => {
         localOpen.value = val;
         if (val) {
-            nextTick(() => connectAndBootstrap());
+            nextTick(() => {
+                dragDelta.value = { x: 0, y: 0 };
+                connectAndBootstrap();
+            });
         } else {
             cleanupWs();
         }
@@ -815,15 +819,37 @@ const startDrag = (event) => {
     window.addEventListener('mouseup', stopDrag);
 };
 
+const startDragTouch = (event) => {
+    if (!event.touches || event.touches.length === 0) return;
+    const touch = event.touches[0];
+    dragStart.value = { x: touch.clientX, y: touch.clientY };
+    dragStartDelta.value = { ...dragDelta.value };
+    window.addEventListener('touchmove', onDragTouch);
+    window.addEventListener('touchend', stopDragTouch);
+};
+
 const onDrag = (event) => {
     const nextX = dragStartDelta.value.x + (event.clientX - dragStart.value.x);
     const nextY = dragStartDelta.value.y + (event.clientY - dragStart.value.y);
     dragDelta.value = clampDragDelta(nextX, nextY);
 };
 
+const onDragTouch = (event) => {
+    if (!event.touches || event.touches.length === 0) return;
+    const touch = event.touches[0];
+    const nextX = dragStartDelta.value.x + (touch.clientX - dragStart.value.x);
+    const nextY = dragStartDelta.value.y + (touch.clientY - dragStart.value.y);
+    dragDelta.value = clampDragDelta(nextX, nextY);
+};
+
 const stopDrag = () => {
     window.removeEventListener('mousemove', onDrag);
     window.removeEventListener('mouseup', stopDrag);
+};
+
+const stopDragTouch = () => {
+    window.removeEventListener('touchmove', onDragTouch);
+    window.removeEventListener('touchend', stopDragTouch);
 };
 
 const clampDragDelta = (deltaX, deltaY) => {

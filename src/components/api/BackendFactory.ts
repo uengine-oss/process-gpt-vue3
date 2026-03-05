@@ -1,6 +1,7 @@
 import UEngineBackend from './UEngineBackend';
 import ProcessGPTBackend from './ProcessGPTBackend';
 import PalModeBackend from './PalModeBackend';
+import PalUengineBackend from './PalUengineBackend';
 
 class BackendFactory extends Window {
     static wrapBackendWithNullSkip<T extends Record<string, any>>(backend: T): T {
@@ -116,12 +117,16 @@ class BackendFactory extends Window {
     }
 
     static createBackend() {
-        try { 
-            // console.log((window as any).$mode);
-            if((window as any).$pal == true) {
+        try {
+            const pal = (window as any).$pal === true;
+            const mode = (window as any).$mode;
+            if (pal && mode === 'uEngine') {
+                return BackendFactory.wrapBackendWithNullSkip(new PalUengineBackend() as any);
+            }
+            if (pal) {
                 return BackendFactory.wrapBackendWithNullSkip(new PalModeBackend() as any);
             }
-            switch ((window as any).$mode) {
+            switch (mode) {
                 case 'uEngine':
                     return BackendFactory.wrapBackendWithNullSkip(new UEngineBackend() as any);
                 case 'ProcessGPT':

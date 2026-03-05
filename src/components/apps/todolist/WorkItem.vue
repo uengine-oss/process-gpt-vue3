@@ -4,6 +4,7 @@
         elevation="10" 
         :key="updatedKey"
     >
+
         <div class="pa-2 pb-0 pl-4 pr-4 align-center">
             <div class="d-flex align-center"
                 :style="isMobile ? 'display: block !important;' : ''"
@@ -35,8 +36,9 @@
                         {{ workItemVersionLabel }}
                     </v-chip>
                     <v-spacer></v-spacer>
+                   
                     <!-- 위임하기 UI -->
-                    <v-row class="ma-0 pa-0"  v-if="!isCompleted && !isOwnWorkItem && isSimulate != 'true'">
+                    <v-row class="ma-0 pa-0" v-if="!isCompleted && (isNoAssignee || !isOwnWorkItem) && isSimulate != 'true'">
                         <v-spacer></v-spacer>
                         <v-tooltip :text="$t('WorkItem.delegate')">
                             <template v-slot:activator="{ props }">
@@ -46,26 +48,12 @@
                                     v-bind="props"
                                     style="cursor: pointer;"
                                 >
-                                    <!-- 현재 담당자 정보 표시 -->
-                                    <div v-if="assigneeUserInfo && assigneeUserInfo.length > 0">
-                                        <div v-for="user in assigneeUserInfo" :key="user.email">
-                                            <div class="d-flex align-center">
-                                                <v-img v-if="user.profile" :src="user.profile" width="32px" height="32px"
-                                                    class="rounded-circle img-fluid"
-                                                />
-                                                <v-avatar v-else size="32">
-                                                    <Icons :icon="'user-circle-bold'" :size="32" />
-                                                </v-avatar>
-                                                <!-- <div class="ml-3">
-                                                    <div class="d-flex align-center">
-                                                        <span class="text-subtitle-2 font-weight-medium text-no-wrap">{{ user.username }} </span>
-                                                    </div>
-                                                </div> -->
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <v-avatar v-else size="32">
-                                        <v-img src="/images/defaultUser.png" />
+                                    <v-avatar size="32">
+                                        <v-img 
+                                            :src="assigneeUserInfo && assigneeUserInfo[0] && assigneeUserInfo[0].profile 
+                                                ? assigneeUserInfo[0].profile 
+                                                : '/images/defaultUser.png'" 
+                                        />
                                     </v-avatar>
                                 </div>
                             </template>
@@ -291,7 +279,6 @@
                             </DynamicForm>
                         </v-window-item>
                         <v-window-item v-if="isTabAvailable('output')" value="output" class="pa-2">
-                            666
                             <InstanceOutput :instance="processInstance" :isInWorkItem="true" />
                         </v-window-item>
                     </v-window>
@@ -338,6 +325,7 @@
                             @backToPrevStep="backToPrevStep"
                             :is-simulate="isSimulate"
                             :is-finished-agent-generation="isFinishedAgentGeneration"
+                            :is-generating-example="isGeneratingExample"
                             :processDefinition="processDefinition"
                         >   
                             <template #form-work-item-action-label>
@@ -347,10 +335,10 @@
                                 <div v-if="formData && Object.keys(formData).length > 0 && !isCompleted && isOwnWorkItem"
                                     class="work-item-form-btn-box align-center"
                                 >
-                                    <v-btn
+                                    <v-btn v-if="!gs"
                                         class="mr-1"
-                                        color="primary"
-                                        :variant="isMobile ? 'outlined' : 'flat'"
+                                        color="gray"
+                                        variant="flat"
                                         :icon="isMobile"
                                         density="comfortable"
                                         :size="isMobile ? 'small' : 'default'"
@@ -358,7 +346,7 @@
                                         @click="openRealtimeAssistant"
                                     >
                                         <v-icon>mdi-robot</v-icon>
-                                        <span v-if="!isMobile" class="ms-1">Voice Agent</span>
+                                        <span v-if="!isMobile" class="ms-1">{{ $t('FormRealtimeAssistant.title') }}</span>
                                     </v-btn>
                                     <v-btn v-if="hasGeneratedContent && (!selectedResearchMethod || selectedResearchMethod === 'default')"
                                         @click="resetGeneratedContent"
@@ -375,7 +363,7 @@
                                         <span v-if="!isMobile" class="ms-1">{{ $t('WorkItem.resetContent') }}</span>
                                     </v-btn>
                                     <v-menu
-                                        v-if="!isMobile"
+                                        v-if="!isMobile && !gs"
                                         v-model="researchMethodMenu"
                                         :close-on-content-click="false"
                                         location="bottom"
@@ -384,7 +372,8 @@
                                             <v-btn class="mr-1"
                                                 density="comfortable"
                                                 rounded
-                                                style="background-color: #808080; color: white;"
+                                                color="gray"
+                                                variant="flat"
                                                 v-bind="props"
                                                 :loading="isGeneratingExample"
                                                 :disabled="isGeneratingExample"
@@ -404,6 +393,7 @@
                                                 :model-value="selectedAgent"
                                                 :backend="backend"
                                                 :is-execute="true"
+                                                :show-quick-create="true"
                                                 @update:model-value="updateWorkItem"
                                             />
                                         </v-card>
@@ -432,7 +422,7 @@
                                     >
                                         <v-icon>{{ showFeedbackForm ? 'mdi-close' : 'mdi-message-reply-text' }}</v-icon>
                                     </v-btn>
-                                    <v-btn v-if="!isMicRecording && !isMicRecorderLoading" @click="startVoiceRecording()"
+                                    <v-btn v-if="!isMicRecording && !isMicRecorderLoading && !gs" @click="startVoiceRecording()"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
@@ -443,7 +433,7 @@
                                     >
                                         <Icons :icon="'sharp-mic'" :size="'16'" />
                                     </v-btn>
-                                    <v-btn v-else-if="!isMicRecorderLoading" @click="stopVoiceRecording()"
+                                    <v-btn v-else-if="!isMicRecorderLoading && !gs" @click="stopVoiceRecording()"
                                         class="mr-1 text-medium-emphasis"
                                         density="comfortable"
                                         icon
@@ -824,6 +814,9 @@ export default {
         window.removeEventListener('resize', this.handleResize);
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
         currentRunningResearchMethod() {
             // 에이전트가 진행 중이고 workItem에 orchestration 정보가 있는 경우
             if (this.isAgentBusy && this.workItem && this.workItem.worklist && this.workItem.worklist.orchestration) {
@@ -866,20 +859,39 @@ export default {
             if (this.isStarted || this.isSimulate == 'true' || this.pal) {
                 return true;
             }
-            const currentUserId = localStorage.getItem('uid');
+
+            if(this.mode == 'uEngine') {
+                const currentUserEmail = localStorage.getItem('email');
+                const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;
+
+                if (!currentUserEmail || !endpoint) {
+                    return false;
+                }
+
+                return currentUserEmail === endpoint;
+            } else {
+                const currentUserId = localStorage.getItem('uid');
+                const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;
+                
+                if (!currentUserId || !endpoint) {
+                    return false;
+                }
+                
+                if (Array.isArray(endpoint)) {
+                    return endpoint.includes(currentUserId);
+                }
+                
+                // endpoint가 단일 값일 때 uid와 일치하면 내 업무
+                const endpointList = String(endpoint).split(',').map(e => e.trim());
+                return endpointList.includes(currentUserId);
+            }
+
+            return false;
+           
+        },
+        isNoAssignee() {
             const endpoint = this.workItem && this.workItem.worklist ? this.workItem.worklist.endpoint : null;
-            
-            if (!currentUserId || !endpoint) {
-                return false;
-            }
-            
-            if (Array.isArray(endpoint)) {
-                return endpoint.includes(currentUserId);
-            }
-            
-            // endpoint가 단일 값일 때 uid와 일치하면 내 업무
-            const endpointList = String(endpoint).split(',').map(e => e.trim());
-            return endpointList.includes(currentUserId);
+            return !endpoint;
         },
         mode() {
             return window.$mode;
@@ -1035,6 +1047,7 @@ export default {
                     this.loadAssigneeInfo();
                     this.enableReworkButton = await this.backend.enableRework(newVal);
                     // 에이전트 상태 초기화
+                    if(this.mode == 'uEngine') return;
                     this.checkInitialAgentBusyState();
 
                     this.selectedAgent = {
@@ -1436,6 +1449,10 @@ export default {
             this.isAgentBusy = isBusy;
         },
         async checkInitialAgentBusyState() {
+            if (window.$mode === 'uEngine') {
+                this.isAgentBusy = false;
+                return;
+            }
             // workItem의 상태를 기반으로 에이전트가 진행 중인지 확인
             if (!this.workItem || !this.workItem.worklist || this.isStarted) {
                 this.isAgentBusy = false;
@@ -2040,11 +2057,22 @@ export default {
                     try {
                         const latestWorkItem = await this.backend.getWorkItem(me.workItem.worklist.taskId);
                         if (latestWorkItem && latestWorkItem.worklist.endpoint) {
-                            me.assigneeUserInfo = await this.backend.getUserList({
-                                orderBy: 'id',
-                                startAt: latestWorkItem.worklist.endpoint,
-                                endAt: latestWorkItem.worklist.endpoint
-                            });
+                            const endpoint = latestWorkItem.worklist.endpoint;
+                            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(endpoint);
+                            if (isUUID) {
+                                try {
+                                    const user = await this.backend.getUserById(endpoint);
+                                    me.assigneeUserInfo = user ? [user] : null;
+                                } catch (e) {
+                                    me.assigneeUserInfo = null;
+                                }
+                            } else {
+                                me.assigneeUserInfo = await this.backend.getUserList({
+                                    orderBy: 'email',
+                                    startAt: endpoint,
+                                    endAt: endpoint
+                                });
+                            }
                         } else {
                             me.assigneeUserInfo = null;
                         }
@@ -2067,97 +2095,107 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    let notificationMessage = me.$t('WorkItem.delegateMessage', {
-                        taskName: me.workItem.activity.name,
-                        username: delegateUser.username
-                    });
-                    if(assigneeUserInfo){
-                        const formattedAssigneeInfo = assigneeUserInfo.map(user => user.username).join(',');
-                        notificationMessage = me.$t('WorkItem.delegateMessageWithAssignee', {
+                    if(me.mode == 'uEngine') {
+                        await this.backend.delegateWorkItem(me.workItem.worklist.taskId, {
+                            endpoint: delegateUser.email
+                        });
+
+                        me.workItem.worklist.endpoint = delegateUser.email;
+                        me.workItem.worklist.status = 'DELEGATED';   
+                    } else {
+                        let notificationMessage = me.$t('WorkItem.delegateMessage', {
                             taskName: me.workItem.activity.name,
-                            assigneeInfo: formattedAssigneeInfo,
                             username: delegateUser.username
                         });
-                    }
-                    
-                    // uid 값을 백엔드로 전송
-                    const userIdForBackend = delegateUser.uid;
-                    const previousUserId = me.workItem.worklist.endpoint;
-                    
-                    // role_bindings 업데이트
-                    const instance = await this.backend.getInstance(me.workItem.worklist.instId);
-                    if (instance && instance.roleBindings) {
-                        const roleBindings = instance.roleBindings;
-                        let updated = false;
-
-                        console.log(`담당자 변경: ${previousUserId} -> ${userIdForBackend}`);
-                        console.log('현재 workItem 구조:', me.workItem);
-                        console.log('role_bindings 구조:', roleBindings);
-
-                        // 이전 담당자가 있으면 교체, 없으면 새 담당자만 추가
-                        roleBindings.forEach((role) => {
-                            if (role.default) {
-                                // default가 배열이 아니면 배열로 변환
-                                if (!Array.isArray(role.default)) {
-                                    role.default = [role.default];
-                                }
-                                
-                                // 이전 담당자가 있으면 제거
-                                if (previousUserId && role.default.includes(previousUserId)) {
-                                    role.default = role.default.filter(id => id !== previousUserId);
-                                }
-                                // 새 담당자가 없으면 추가
-                                if (!role.default.includes(userIdForBackend)) {
-                                    role.default.push(userIdForBackend);
-                                    updated = true;
-                                    console.log(`역할 '${role.name}'의 default에 담당자 추가됨`);
-                                }
-                            }
-
-                            if (role.endpoint) {
-                                // endpoint가 배열이 아니면 배열로 변환
-                                if (!Array.isArray(role.endpoint)) {
-                                    role.endpoint = [role.endpoint];
-                                }
-                                
-                                // 이전 담당자가 있으면 제거
-                                if (previousUserId && role.endpoint.includes(previousUserId)) {
-                                    role.endpoint = role.endpoint.filter(id => id !== previousUserId);
-                                }
-                                // 새 담당자가 없으면 추가
-                                if (!role.endpoint.includes(userIdForBackend)) {
-                                    role.endpoint.push(userIdForBackend);
-                                    updated = true;
-                                    console.log(`역할 '${role.name}'의 endpoint에 담당자 추가됨`);
-                                }
-                            }
-                        });
-
-                        if (updated) {
-                            await this.backend.putObject('bpm_proc_inst', {
-                                proc_inst_id: me.workItem.worklist.instId,
-                                role_bindings: roleBindings
+                        if(assigneeUserInfo){
+                            const formattedAssigneeInfo = assigneeUserInfo.map(user => user.username).join(',');
+                            notificationMessage = me.$t('WorkItem.delegateMessageWithAssignee', {
+                                taskName: me.workItem.activity.name,
+                                assigneeInfo: formattedAssigneeInfo,
+                                username: delegateUser.username
                             });
-                            console.log('역할 바인딩 업데이트 완료');
                         }
-                    }
-                  
-                    await Promise.all([
-                        this.backend.updateInstanceChat(me.workItem.worklist.instId, {
-                            "name": localStorage.getItem('userName'),
-                            "role": "user",
-                            "email": localStorage.getItem('email'),
-                            "image": "",
-                            "content": notificationMessage,
-                            "timeStamp": new Date().toISOString()
-                        }),
-                        this.backend.putWorkItem(me.workItem.worklist.taskId, {
-                            'user_id': userIdForBackend,
-                            'username': delegateUser.username
-                        })
-                    ]);
+                        
+                        // uid 값을 백엔드로 전송
+                        const userIdForBackend = delegateUser.uid;
+                        const previousUserId = me.workItem.worklist.endpoint;
+                        
+                        // role_bindings 업데이트
+                        const instance = await this.backend.getInstance(me.workItem.worklist.instId);
+                        if (instance && instance.roleBindings) {
+                            const roleBindings = instance.roleBindings;
+                            let updated = false;
+
+                            console.log(`담당자 변경: ${previousUserId} -> ${userIdForBackend}`);
+                            console.log('현재 workItem 구조:', me.workItem);
+                            console.log('role_bindings 구조:', roleBindings);
+
+                            // 이전 담당자가 있으면 교체, 없으면 새 담당자만 추가
+                            roleBindings.forEach((role) => {
+                                if (role.default) {
+                                    // default가 배열이 아니면 배열로 변환
+                                    if (!Array.isArray(role.default)) {
+                                        role.default = [role.default];
+                                    }
+                                    
+                                    // 이전 담당자가 있으면 제거
+                                    if (previousUserId && role.default.includes(previousUserId)) {
+                                        role.default = role.default.filter(id => id !== previousUserId);
+                                    }
+                                    // 새 담당자가 없으면 추가
+                                    if (!role.default.includes(userIdForBackend)) {
+                                        role.default.push(userIdForBackend);
+                                        updated = true;
+                                        console.log(`역할 '${role.name}'의 default에 담당자 추가됨`);
+                                    }
+                                }
+
+                                if (role.endpoint) {
+                                    // endpoint가 배열이 아니면 배열로 변환
+                                    if (!Array.isArray(role.endpoint)) {
+                                        role.endpoint = [role.endpoint];
+                                    }
+                                    
+                                    // 이전 담당자가 있으면 제거
+                                    if (previousUserId && role.endpoint.includes(previousUserId)) {
+                                        role.endpoint = role.endpoint.filter(id => id !== previousUserId);
+                                    }
+                                    // 새 담당자가 없으면 추가
+                                    if (!role.endpoint.includes(userIdForBackend)) {
+                                        role.endpoint.push(userIdForBackend);
+                                        updated = true;
+                                        console.log(`역할 '${role.name}'의 endpoint에 담당자 추가됨`);
+                                    }
+                                }
+                            });
+
+                            if (updated) {
+                                await this.backend.putObject('bpm_proc_inst', {
+                                    proc_inst_id: me.workItem.worklist.instId,
+                                    role_bindings: roleBindings
+                                });
+                                console.log('역할 바인딩 업데이트 완료');
+                            }
+                        }
                     
-                    me.workItem.worklist.endpoint = userIdForBackend;
+                        await Promise.all([
+                            this.backend.updateInstanceChat(me.workItem.worklist.instId, {
+                                "name": localStorage.getItem('userName'),
+                                "role": "user",
+                                "email": localStorage.getItem('email'),
+                                "image": "",
+                                "content": notificationMessage,
+                                "timeStamp": new Date().toISOString()
+                            }),
+                            this.backend.putWorkItem(me.workItem.worklist.taskId, {
+                                'user_id': userIdForBackend,
+                                'username': delegateUser.username
+                            })
+                        ]);
+                        
+                        me.workItem.worklist.endpoint = userIdForBackend;
+                    }
+
                     me.updatedKey++;
                     me.closeDelegateTask();
                     me.loadAssigneeInfo();

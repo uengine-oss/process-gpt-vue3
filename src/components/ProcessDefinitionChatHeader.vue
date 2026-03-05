@@ -14,7 +14,7 @@
                                 <v-text-field v-if="isEditableTitle" v-model="processName"
                                     :label="$t('ProcessDefinitionChatHeader.processDefinitionName')" variant="underlined" hide-details class="pa-0 ma-0"
                                 ></v-text-field>
-                                <div v-else>
+                                <div v-else-if="!isMobile">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
                                             <h5
@@ -40,6 +40,7 @@
                                     </v-tooltip>
                                 </div>
                             </div>
+                            <h5 v-else-if="modelValue" class="text-h5 mb-n1">{{ modelValue }}</h5>
                             <h5 v-else class="text-h5 mb-n1">{{ $t('processDefinition.title') }}</h5>
                         </div>
 
@@ -47,20 +48,30 @@
                         <div v-if="chatMode != 'consulting' && fullPath != 'chat'" class="playwright-chat-header-delete-icon ml-4 flex-shrink-0  align-start">
                             <v-tooltip v-if="isDeleted" location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
-                                        density="comfortable" @click="beforeRestore"
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="beforeRestore"
                                     >
-                                    <div class="mdi mdi-refresh" style="font-size: 24px;"></div>
+                                        <v-icon>mdi-refresh</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('processDefinition.restoreProcess') }}</span>
                             </v-tooltip>
                             <v-tooltip v-else location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis"
-                                        density="comfortable" @click="beforeDelete"
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="beforeDelete"
                                     >
-                                        <TrashIcon size="24" style="color:#FB977D"/>
+                                        <v-icon color="error">mdi-delete-outline</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>{{ $t('processDefinition.deleteProcess') }}</span>
@@ -86,17 +97,25 @@
                         </div>
                         <!-- 저장 관련 버튼  -->
                         <div class="mr-4 d-flex">
-                            <!-- 파일업로드 아이콘 -->
-                            <v-tooltip v-if="fullPath != 'definition-map' && !Pal" location="bottom">
+                            <!-- BPMN 가져오기 메뉴 (직접 불러오기 / 엑셀 업로드) - PAL 모드에서도 표시 -->
+                            <v-menu v-if="fullPath != 'definition-map'" offset-y location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="triggerFileInput">
-                                        <Icons :icon="'upload'" />
-                                    </v-btn>
+                                    <v-tooltip location="bottom">
+                                        <template v-slot:activator="{ props: tooltipProps }">
+                                            <v-btn v-bind="{ ...props, ...tooltipProps }" icon variant="text" class="text-medium-emphasis" density="comfortable">
+                                                <Icons :icon="'upload'" />
+                                            </v-btn>
+                                        </template>
+                                        <span>{{ $t('chat.importMenu') }}</span>
+                                    </v-tooltip>
                                 </template>
-                                <span>{{ $t('chat.import') }}</span>
-                            </v-tooltip>
-                            <input type="file" ref="fileInput" @change="handleFileChange" accept=".bpmn ,.jsonold, .csv, .xlsx" style="display: none" />
+                                <v-list density="compact">
+                                    <v-list-item @click="triggerBpmnFileInput" :title="$t('chat.importBpmnFile')" />
+                                    <v-list-item @click="triggerExcelFileInput" :title="$t('chat.importFromExcel')" />
+                                </v-list>
+                            </v-menu>
+                            <input type="file" ref="fileInput" @change="onBpmnFileChange" accept=".bpmn,.jsonold,.csv" style="display: none" />
+                            <input type="file" ref="excelFileInput" @change="onExcelFileChange" accept=".xlsx,.xls" style="display: none" />
                     
                             <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map' && !isMobile">
                                 <!-- ProcessDefinitionChatHeader.vue 프로세스 정의 수정 및 저장 아이콘 -->
@@ -105,13 +124,13 @@
                                         <div v-bind="props">
                                             <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
                                                 density="comfortable" @click="toggleLock">
-                                                <!-- lock 값에 따라 아이콘과 사이즈를 분리하여 통일성 있게 처리 -->
-                                                <Icons v-if="lock" :icon="'pencil'" :size="18"/>
+                                                <!-- lock 값에 따라 아이콘과 사이즈 분리 -->
+                                                <Icons v-if="effectiveLock" :icon="'pencil'" :size="18"/>
                                                 <Icons v-else :icon="'save'" :size="24"/>
                                             </v-btn>
                                         </div>
                                     </template>
-                                    <span v-if="lock">
+                                    <span v-if="effectiveLock">
                                         {{ editUser != '' && editUser != userInfo.name
                                             ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
                                             : $t('chat.unlock') }}
@@ -262,8 +281,11 @@ export default {
         Pal() {
             return window.$pal;
         },
+        effectiveLock() {
+            return this.lock && window.$mode !== 'uEngine';
+        },
         modelValueStyle() {
-            if(this.modelValue && this.modelValue !== '' && !this.lock && this.editUser != '' && this.editUser == this.userInfo.name) {
+            if(this.modelValue && this.modelValue !== '' && !this.effectiveLock && this.editUser != '' && this.editUser == this.userInfo.name) {
                 return true
             } else {
                 return false
@@ -271,7 +293,7 @@ export default {
         },
         isEditableTitle() {
             const checkGPT =  this.mode === 'ProcessGPT' ? ( this.editUser != '' && this.editUser == this.userInfo.name) : true;
-            return !this.lock && checkGPT;
+            return !this.effectiveLock && checkGPT;
         },
         hasExternalCustomerRole() {
             return this.bpmn.includes('ExternalCustomer') || this.bpmn.includes('externalCustomer');
@@ -300,10 +322,10 @@ export default {
             return window.innerWidth <= 768;
         },
         isHistoryButtonDisabled() {
-            return this.lock || !this.hasVersionsToCompare;
+            return this.effectiveLock || !this.hasVersionsToCompare;
         },
         historyTooltipText() {
-            if (this.lock) {
+            if (this.effectiveLock) {
                 return this.$t('chat.historyDisabled');
             } else if (!this.hasVersionsToCompare) {
                 return this.$t('ProcessDefinitionVersionManager.noVersionsAvailable');
@@ -320,11 +342,19 @@ export default {
             console.log("simulate")
             this.$emit('executeSimulate');
         },
-        triggerFileInput() {
+        triggerBpmnFileInput() {
             this.$refs.fileInput.click();
         },
-        handleFileChange(event) {
-            this.$emit('handleFileChange', event);
+        triggerExcelFileInput() {
+            this.$refs.excelFileInput.click();
+        },
+        onBpmnFileChange(event) {
+            this.$emit('handleFileChange', event, { source: 'bpmn' });
+            event.target.value = '';
+        },
+        onExcelFileChange(event) {
+            this.$emit('handleFileChange', event, { source: 'excel' });
+            event.target.value = '';
         },
         toggleLock() {
             this.$emit('toggleLock');

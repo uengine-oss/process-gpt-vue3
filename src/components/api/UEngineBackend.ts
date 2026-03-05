@@ -1,6 +1,7 @@
 import axios from 'axios';
 const axiosInstance = axios.create();
 import type { Backend } from './Backend';
+import { getAllUsers } from '@/utils/keycloak';
 import { businessRuleToDmnXml, dmnXmlToBusinessRule } from '@/utils/businessRuleDmn';
 
 // uEngine 모드에서 ProcessGPT 전용(또는 미지원) 메서드 호출 시
@@ -186,29 +187,16 @@ class UEngineBackend implements Backend {
     }
 
     async getUserList(options: any) {
-        return [
-            {
-                id: 1,
-                profile: null,
-                username: 'hong',
-                email: 'hong@uengine.io',
-                is_admin: true
-            },
-            {
-                id: 2,
-                profile: null,
-                username: 'lee',
-                email: 'lee@uengine.io',
-                is_admin: true
-            },
-            {
-                id: 3,
-                profile: null,
-                username: 'kim',
-                email: 'kim@uengine.io',
-                is_admin: true
+        const users = await getAllUsers(options);
+        return users.map(user => {
+            return {
+                id: user.id,
+                profile: user.profile || null,
+                username: user.username,
+                email: user.email,
+                is_admin: user.is_admin || false 
             }
-        ];
+        })
     }
 
     async getGroupList() {
@@ -253,6 +241,18 @@ class UEngineBackend implements Backend {
         return result;
     }
 
+    private __normalizeListDefinitionItem(item: any): { path: string; name: string; directory: boolean; id?: string; isDeleted?: boolean } {
+        const path =
+            (item.path ??
+                (item._links?.self?.href ? String(item._links.self.href).replace(/.*\/definition\/?/, '').replace(/\/$/, '') : '')) ||
+            item.id ||
+            '';
+        const name = item.name ?? (path ? (path.split('/').pop()?.split('.')[0] ?? path) : '');
+        const directory = item.directory ?? (typeof path === 'string' && !path.match(/\.(bpmn|form|rule|json)$/i));
+        const isDeleted = item.isDeleted ?? item.isdeleted ?? false;
+        return { path, name, directory, id: path, isDeleted };
+    }
+
     // Process Definition Service Impl API
     async listDefinition(basePath: string) {
         let url = '/definition';
@@ -270,19 +270,21 @@ class UEngineBackend implements Backend {
             }
         }
 
-        // HAL 형태: _embedded 아래 배열 key가 'definitions'가 아닐 수 있으므로 첫 번째 배열을 탐색한다.
+        let list: any[] = [];
         if (data && data._embedded) {
-            if (Array.isArray(data._embedded.definitions)) return data._embedded.definitions;
-            const embedded = data._embedded;
-            const firstArrayKey = Object.keys(embedded).find((k) => Array.isArray(embedded[k]));
-            if (firstArrayKey) return embedded[firstArrayKey];
+            if (Array.isArray(data._embedded.definitions)) list = data._embedded.definitions;
+            else {
+                const embedded = data._embedded;
+                const firstArrayKey = Object.keys(embedded).find((k) => Array.isArray(embedded[k]));
+                if (firstArrayKey) list = embedded[firstArrayKey];
+            }
+        } else if (Array.isArray(data)) {
+            list = data;
+        } else if (data && Array.isArray(data.content)) {
+            list = data.content;
         }
 
-        // 일부 구현은 그냥 배열을 반환할 수 있다.
-        if (Array.isArray(data)) return data;
-        if (data && Array.isArray(data.content)) return data.content;
-
-        return [];
+        return list.map((item: any) => this.__normalizeListDefinitionItem(item));
     }
     async listVersionDefinitions(version: string, basePath: string) {
         const response = await axiosInstance.get(`/version/${version}/definition/?basePath=${basePath}`);
@@ -356,29 +358,49 @@ class UEngineBackend implements Backend {
         document.body.removeChild(link);
     }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
-        console.log(options);
         var config = {
             headers: {
                 'Content-Type': 'application/json'
             }
         };
-        let body = {
-            definition: definition,
-            version: options.releaseName ? options.releaseName : options.version
+        const body = {
+            definition: typeof definition === 'string' ? definition : (definition?.bpmn ?? (definition && JSON.stringify(definition))),
+            version: options?.releaseName ?? options?.version ?? null
         };
-        const response = await axiosInstance.put('/definition/raw/' + requestPath + '.' + options.type, body, config);
+        let pathToUse = requestPath;
+        const type = options?.type ?? 'bpmn';
+        if (type === 'rule' && !pathToUse.toLowerCase().endsWith('.rule')) {
+            pathToUse = pathToUse + '.rule';
+        } else if (type === 'json' && !pathToUse.toLowerCase().endsWith('.json')) {
+            pathToUse = pathToUse + '.json';
+        }
+        let url = pathToUse;
+        if (!pathToUse.includes('/definition/raw')) {
+            url = `/definition/raw/${pathToUse}`;
+        }
+        const response = await axiosInstance.put(url, body, config);
         return response.data;
     }
     // @ts-ignore
     async getRawDefinition(defPath: string, options) {
-        if (options.type == 'deleted') return null;
-        let path = `/definition/raw/${defPath}.${options.type}`;
-        if (options.version) {
-            path = path + `/version/${options.version}`
-        }
-        const response = await axiosInstance.get(path, options);
-        return response.data;
+        if (!defPath) return null;
+        if (options?.type === 'deleted') return null;
 
+        const type = options?.type ?? 'bpmn';
+        let requestPath = String(defPath).replace(/\.bpmn$/i, '');
+        if (type === 'bpmn' && !requestPath.includes('definitions/')) {
+            requestPath = requestPath ? `definitions/${requestPath}` : 'definitions';
+        }
+        let path = `/definition/raw/${requestPath}.${type}`;
+        if (options?.version) path = path + `/version/${options.version}`;
+
+        const response = await axiosInstance.get(path, options ?? {});
+        let data = response?.data;
+        if (data == null) return null;
+
+        if (type === 'bpmn' && typeof data === 'object' && 'bpmn' in data) return data.bpmn;
+        if (type === 'form' && typeof data === 'object' && 'html' in data) return data.html;
+        return data;
     }
 
     // Process Service Impl API
@@ -424,6 +446,64 @@ class UEngineBackend implements Backend {
 
     async backToHere(instanceId: string, tracingTag: string) {
         const response = await axiosInstance.post(`/instance/${instanceId}/activity/${tracingTag}/backToHere`);
+        return response.data;
+    }
+
+    /**
+     * 태스크 반송(이전 단계 담당자에게 재처리 요청) 가능 여부 조회
+     * - 실제 조건 판단/후보(이전 단계) 계산은 백엔드에서 수행
+     */
+    async getTaskReturnAvailability(taskId: string): Promise<any> {
+        const response = await axiosInstance.get(`/work-item/${taskId}/return/availability`);
+        return response.data;
+    }
+
+    /**
+     * 태스크 반송 실행
+     * - 백엔드에서 검증 후 상태 변경/담당자 변경/로그 기록 등 처리
+     */
+    async returnTask(taskId: string, payload: any): Promise<any> {
+        const response = await axiosInstance.post(`/work-item/${taskId}/return`, payload);
+        return response.data;
+    }
+
+    /**
+     * 태스크 SKIP(건너뛰기) 가능 여부 조회
+     */
+    async getTaskSkipAvailability(taskId: string): Promise<any> {
+        const response = await axiosInstance.get(`/work-item/${taskId}/skip/availability`);
+        return response.data;
+    }
+
+    /**
+     * 태스크 SKIP(건너뛰기) 실행
+     */
+    async skipTask(taskId: string, payload: any = {}): Promise<any> {
+        const response = await axiosInstance.post(`/work-item/${taskId}/skip`, payload);
+        return response.data;
+    }
+
+    async advanceToActivity(
+        instanceId: string,
+        tracingTag: string,
+        body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }
+    ) {
+        const response = await axiosInstance.post(
+            `/instance/${instanceId}/advance-to-activity/${tracingTag}`,
+            body || {}
+        );
+        return response.data;
+    }
+
+    async startFromActivity(
+        instanceId: string,
+        tracingTag: string,
+        body?: { variables?: Record<string, any> }
+    ) {
+        const response = await axiosInstance.post(
+            `/instance/${instanceId}/state/start-from-activity/${tracingTag}`,
+            body || {}
+        );
         return response.data;
     }
 
@@ -474,6 +554,11 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    async putRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
+        const response = await axiosInstance.put(`/instance/${instanceId}/role-mapping/${roleName}`, roleMapping);
+        return response.data;
+    }
+
     async setRoleMapping(instanceId: string, roleName: string, roleMapping: any) {
         const response = await axiosInstance.post(`/instance/${instanceId}/role-mapping/${roleName}`, roleMapping);
         return response.data;
@@ -495,6 +580,10 @@ class UEngineBackend implements Backend {
     }
     async putWorkItem(taskId: string, workItem: any) {
         const response = await axiosInstance.post(`/work-item/${taskId}/save`, workItem);
+        return response.data;
+    }
+    async delegateWorkItem(taskId: string, delegatedRoleMapping: any, delegateOnlyForWorkitem = false) {
+        const response = await axiosInstance.post(`/work-item/${taskId}/delegate`, delegatedRoleMapping, { params: { delegateOnlyForWorkitem } });
         return response.data;
     }
 
@@ -797,13 +886,70 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
+    private __normalizeProcessDefinitionMap(data: any): { mega_proc_list: any[] } {
+        if (!data || typeof data !== 'object') return { mega_proc_list: [] };
+        const ensureName = (o: any) => (o && ('name' in o ? o : { ...o, name: o.label ?? o.id ?? '' }));
+        const ensureList = (arr: any[] | undefined) => (Array.isArray(arr) ? arr : []);
+
+        const megaList = ensureList(data.mega_proc_list ?? data.megaProcList ?? data.content);
+        if (megaList.length === 0 && Array.isArray(data)) {
+            const subList = (data as any[]).map((d: any) => {
+                const rawId = d.id ?? d.path ?? String(d);
+                const id = typeof rawId === 'string' ? rawId.trim() : rawId;
+                return {
+                    id,
+                    name: d.name ?? d.label ?? d.id ?? d.path ?? String(d),
+                    path: d.path ?? d.id
+                };
+            });
+            return {
+                mega_proc_list: [
+                    {
+                        id: 'default',
+                        name: '프로세스',
+                        major_proc_list: [{ id: 'default_major', name: '전체', sub_proc_list: subList }]
+                    }
+                ]
+            };
+        }
+
+        return {
+            mega_proc_list: megaList.map((mega: any) => {
+                const m = ensureName(mega);
+                const majorList = ensureList(m.major_proc_list ?? m.majorProcList);
+                return {
+                    ...m,
+                    id: m.id ?? m.name,
+                    major_proc_list: majorList.map((major: any) => {
+                        const j = ensureName(major);
+                        const subList = ensureList(j.sub_proc_list ?? j.subProcList);
+                        return {
+                            ...j,
+                            id: j.id ?? j.name,
+                            sub_proc_list: subList.map((sub: any) => {
+                                const s = ensureName(sub);
+                                // path 우선 사용(경로는 공백 없이 API 식별자로 쓰임), 없으면 id/name. 앞뒤 공백 제거.
+                                const rawId = s.id ?? s.path ?? s.name ?? '';
+                                return { ...s, id: typeof rawId === 'string' ? rawId.trim() : rawId };
+                            })
+                        };
+                    })
+                };
+            })
+        };
+    }
+
     async getProcessDefinitionMap() {
         const response = await axiosInstance.get(`/definition/map`);
-        return response.data;
+        const data = response?.data;
+        return this.__normalizeProcessDefinitionMap(data);
     }
 
     async putProcessDefinitionMap(definitionMap: any) {
-        definitionMap = JSON.stringify(definitionMap);
+        const body = typeof definitionMap === 'object' && definitionMap?.mega_proc_list
+            ? definitionMap
+            : definitionMap;
+        definitionMap = JSON.stringify(body);
         const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
         return response.data;
     }
@@ -1020,6 +1166,9 @@ class UEngineBackend implements Backend {
     }
 
     async validate(xml: string) {
+        if ((window as any).$pal) {
+            return {};
+        }
         try {
             const response = await axiosInstance.post(`/validate`, xml);
             if (!response.data) return {};
@@ -1221,28 +1370,23 @@ class UEngineBackend implements Backend {
         return this.__fromBusinessRuleDto(dto);
     }
 
-    async saveBusinessRule(rule: any) {
+    async saveBusinessRule(rule: any, options?: { isNew?: boolean }) {
         const toSave = { ...(rule || {}) };
         if (!toSave.id) toSave.id = this.__uuid();
 
-        // 기존 룰이 있으면 버전 관리 (이전 버전을 versions 폴더에 저장)
         let currentVersion = '1.0';
-        try {
+        if (!options?.isNew) {
             const existingRaw = await this.getRawDefinition(`businessRules/${encodeURIComponent(String(toSave.id))}`, { type: 'rule' });
             if (existingRaw) {
                 const existingDto = typeof existingRaw === 'string' ? JSON.parse(existingRaw) : existingRaw;
-                
-                // 기존 버전 번호 확인 및 증가
                 if (existingDto.version) {
                     const versionParts = String(existingDto.version).split('.');
                     const major = parseInt(versionParts[0] || '1', 10);
                     const minor = parseInt(versionParts[1] || '0', 10);
                     currentVersion = `${major}.${minor + 1}`;
                 } else {
-                    currentVersion = '1.1'; // 버전이 없으면 1.1로 시작
+                    currentVersion = '1.1';
                 }
-                
-                // 이전 버전을 versions 폴더에 저장 (원본 저장 전에)
                 const previousVersion = existingDto.version || '1.0';
                 await this.putRawDefinition(
                     JSON.stringify({
@@ -1254,9 +1398,6 @@ class UEngineBackend implements Backend {
                     { type: 'rule' }
                 );
             }
-        } catch (e) {
-            // 기존 룰이 없으면 신규 룰로 처리
-            console.log('신규 룰 생성:', toSave.id);
         }
 
         // 원본 저장 (기존 방식 유지, 버전 정보만 추가)
@@ -1821,6 +1962,10 @@ class UEngineBackend implements Backend {
         return null;
     }
 
+    async claimWorkItem(taskId: string, data: any){
+        const response = await axiosInstance.post(`/work-item/${taskId}/claim`, data);
+        return response.data;
+    }
     // ============================================
     // Task Catalog API (Process-GPT Mode only)
     // ============================================
@@ -1873,8 +2018,8 @@ class UEngineBackend implements Backend {
     }
 
     async getPaletteSettings(): Promise<any> {
-        console.warn("getPaletteSettings is not implemented - only use Process-GPT Mode");
-        return { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
+        // uEngine 모드: 사용자 작업(UserTask)만 팔레트에 표시
+        return { visibleTaskTypes: ['bpmn:UserTask'] };
     }
 
     async savePaletteSettings(settings: any): Promise<any> {
@@ -1898,7 +2043,21 @@ class UEngineBackend implements Backend {
         return null;
     }
 
-    async saveTaskExecutionProperties(params: any): Promise<any> {
+    async getData(path: string, options: any): Promise<any> {
+        console.warn("getData is not implemented - only use Process-GPT Mode");
+        return null;
+    }
+
+    // Task Execution Properties API (분석용) - UEngine 모드에서는 미지원
+    async saveTaskExecutionProperties(params: {
+        procDefId: string;
+        procInstId: string;
+        activityId: string;
+        activityName?: string;
+        todoId?: string;
+        properties: any;
+        executorEmail?: string;
+    }): Promise<any> {
         console.warn("saveTaskExecutionProperties is not implemented - only use Process-GPT Mode");
         return null;
     }
@@ -1911,6 +2070,11 @@ class UEngineBackend implements Backend {
     async getTaskExecutionProperties(options?: any): Promise<any[]> {
         console.warn("getTaskExecutionProperties is not implemented - only use Process-GPT Mode");
         return [];
+    }
+
+    async setupAgentKnowledge(params: any): Promise<any> {
+        console.warn("setupAgentKnowledge is not implemented - only use Process-GPT Mode");
+        return null;
     }
 
 }

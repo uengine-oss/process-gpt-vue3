@@ -32,7 +32,7 @@
             </v-row>
             
             <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
-                <div v-if="isSimulate == 'false'" :class="isMobile ? 'pa-4 pb-0' : 'pa-4'" style="min-width: 300px;">
+                <div v-if="isSimulate == 'false'" class="pa-4">
                     <v-row class="ma-0 pa-0">
                         <div class="text-h5 font-weight-semibold">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
                     </v-row>
@@ -349,8 +349,16 @@ export default {
             if (!activity) return;
             var me = this;
             const query = `[Description]\n${activity.description}\n\n[Instruction]\n${activity.instruction}`;
-            const agentMode = activity.agentMode && activity.agentMode !== 'none' ? activity.agentMode.toUpperCase() : null;
-            const agentOrch = activity.orchestration && activity.orchestration !== 'none' ? activity.orchestration : null;
+
+            // enum 유효성 검사
+            const validAgentModes = ['DRAFT', 'COMPLETE'];
+            const validAgentOrch = ['crewai-action', 'openai-deep-research', 'crewai-deep-research', 'langchain-react', 'browser-automation-agent', 'a2a', 'visionparse'];
+
+            const rawAgentMode = activity.agentMode && activity.agentMode !== 'none' ? activity.agentMode.toUpperCase() : null;
+            const agentMode = rawAgentMode && validAgentModes.includes(rawAgentMode) ? rawAgentMode : null;
+
+            const rawAgentOrch = activity.orchestration && activity.orchestration !== 'none' ? activity.orchestration : null;
+            const agentOrch = rawAgentOrch && validAgentOrch.includes(rawAgentOrch) ? rawAgentOrch : null;
             let userId = localStorage.getItem('uid');
             let username = localStorage.getItem('userName');
             if (agentMode && activity.agent && activity.agent !== 'none') {

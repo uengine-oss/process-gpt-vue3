@@ -16,7 +16,7 @@
                     <v-icon>mdi-folder-zip-outline</v-icon>
                 </v-btn>
                 <v-tooltip activator="parent" location="right">
-                    <span>파일로 스킬 추가</span>
+                    <span>압축 파일로 스킬 추가</span>
                 </v-tooltip>
                 <input type="file" ref="skillUploadInput" accept=".zip" style="display: none;" @change="handleSkillUpload">
             </div>
@@ -49,27 +49,6 @@
                 </v-tooltip>
             </div>
         </div>
-
-        <div v-if="showRepositoryUpload" class="d-flex align-center mt-3 px-2">
-            <v-text-field
-                v-model="repositoryUrl"
-                label="Repository URL"
-                placeholder="https://github.com/username/repository.git"
-                variant="outlined"
-                density="compact"
-                hide-details
-                :disabled="isLoading"
-            ></v-text-field>
-            <v-btn @click="uploadSkills({ type: 'url', url: repositoryUrl })" 
-                :loading="isLoading && repositoryUrl !== ''"
-                variant="text" 
-                size="small" 
-                color="primary"
-            >
-                {{ $t('Common.add') }}
-            </v-btn>
-        </div>
-        
 
         <!-- skills tree -->
         <v-card flat class="px-3 py-2">
@@ -163,6 +142,39 @@
             </v-treeview>
         </v-card>
 
+        <v-dialog v-model="showRepositoryUpload" max-width="400">
+            <v-card>
+                <v-card-title>
+                    스킬 추가
+                </v-card-title>
+                <v-card-subtitle>
+                    Repository URL을 입력하여 스킬을 추가합니다.
+                </v-card-subtitle>
+                <v-card-text>
+                    <v-text-field
+                        v-model="repositoryUrl"
+                        label="Repository URL"
+                        placeholder="https://github.com/username/repository.git"
+                        variant="outlined"
+                        density="compact"
+                        hide-details
+                        :disabled="isLoading"
+                    ></v-text-field>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn @click="showRepositoryUpload = false" variant="flat" color="error" rounded>
+                        {{ $t('common.cancel') }}
+                    </v-btn>
+                    <v-btn @click="uploadSkills({ type: 'url', url: repositoryUrl })" 
+                        :loading="isLoading && repositoryUrl !== ''"
+                        variant="flat" color="primary" rounded>
+                        {{ $t('common.add') }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
         <v-dialog v-model="showDeleteDialog" max-width="400">
             <v-card>
                 <v-card-title>
@@ -174,10 +186,10 @@
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn @click="showDeleteDialog = false" variant="flat" color="error" rounded>
-                        {{ $t('Common.cancel') }}
+                        {{ $t('common.cancel') }}
                     </v-btn>
                     <v-btn @click="deleteSkills" variant="flat" color="primary" rounded>
-                        {{ $t('Common.delete') }}
+                        {{ $t('common.delete') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -193,6 +205,12 @@ import BackendFactory from '@/components/api/BackendFactory';
 export default {
     components: {
         VTreeview,
+    },
+    props: {
+        isLoading: {
+            type: Boolean,
+            default: false
+        }
     },
     data: () => ({
         backend: null,
@@ -216,8 +234,6 @@ export default {
         editingNodeId: null,
         editingFolderName: '',
         originalFolderName: '',
-
-        isLoading: false,
     }),
     computed: {
         isFileNode() {
@@ -231,7 +247,6 @@ export default {
                 if (!selectedNode || (selectedNode.data && selectedNode.data.type !== 'file')) {
                     return;
                 }
-                console.log(selectedNode);
                 const skillName = selectedNode.id.split('::')[0];
                 const filePath = selectedNode.data.path;
                 const skillFile = await this.backend.getSkillFile(skillName, filePath);
@@ -290,10 +305,10 @@ export default {
             this.repositoryUrl = '';
         },
         async uploadSkills(options) {
-            this.isLoading = true;
+            this.$emit('update:isLoading', true);
             try {
                 const data = await this.backend.uploadSkills(options);
-                this.isLoading = false;
+                this.$emit('update:isLoading', false);
                 if (data && data.skills_added && data.skills_added.length > 0) {
                     await this.loadSkillFiles();
                 } else {
@@ -302,7 +317,7 @@ export default {
                 }
             } catch (error) {
                 console.error('스킬 업로드 실패:', error);
-                this.isLoading = false;
+                this.$emit('update:isLoading', false);
                 // 에러 발생 시에도 데이터 정합성을 위해 동기화 시도
                 await this.syncTenantSkills();
             }
@@ -311,7 +326,6 @@ export default {
             const result = await this.backend.getTenantSkills(window.$tenantName);
             const tenantSkills = result.skills;
             this.skills = Array.isArray(tenantSkills) ? tenantSkills : (tenantSkills?.skills || []);
-            console.log(this.skills);
 
             this.nodes = {};
             this.config.roots = [];

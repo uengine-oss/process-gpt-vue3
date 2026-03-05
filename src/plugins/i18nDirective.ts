@@ -174,6 +174,11 @@ function scanAndTagI18nTexts(el: HTMLElement) {
 
 export default {
   install(app: App) {
+    // 이미 등록된 directive인지 확인 (Vue 앱 컨텍스트에서 확인)
+    if (app._context?.directives?.t) {
+      return;
+    }
+
     // v-t 디렉티브 (선택적 사용)
     app.directive('t', {
       mounted(el, binding) {

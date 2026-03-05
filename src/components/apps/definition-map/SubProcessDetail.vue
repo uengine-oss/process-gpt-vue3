@@ -4,10 +4,24 @@
         style="overflow: auto;"
         class="is-work-height"
     >
-        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center" 
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center"
             :style="isMobile ? 'display: block !important;' : ''"
         >
             <div class="d-flex">
+                <!-- Back button for subprocess navigation -->
+                <v-btn
+                    v-if="subProcessBreadCrumb.length > 0 || selectedProc.major"
+                    @click="goBack"
+                    variant="text"
+                    size="small"
+                    class="mr-2"
+                    icon
+                >
+                    <v-icon>mdi-arrow-left</v-icon>
+                    <v-tooltip activator="parent" location="bottom">
+                        {{ $t('subProcessDetail.backToParent') || 'Back' }}
+                    </v-tooltip>
+                </v-btn>
                 <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis"
                     @click="goProcess()">
                     <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
@@ -152,9 +166,9 @@
         </div>
 
         <v-card-text style="width: 100%;"
-            :style="isMobile ? 'height: calc(100vh - 80px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 180px); padding: 10px;'"
+            :style="isMobile ? 'height: calc(100vh - 94px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 180px); padding: 10px;'"
         >
-            <ProcessDefinition v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
+            <ProcessDefinition ref="processDefinitionRef" v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
                 :processDefinition="processDefinitionData"
                 :isViewMode="isViewMode"
                 :isAdmin="isAdmin"
@@ -201,6 +215,7 @@ import BaseProcess from './BaseProcess.vue'
 
 import BackendFactory from '@/components/api/BackendFactory';
 import { useBpmnStore } from '@/stores/bpmn';
+import { useBpmnExport } from '@/composables/useBpmnExport';
 
 const backend = BackendFactory.createBackend();
 
@@ -255,15 +270,19 @@ export default {
     watch: {
         '$route.params': {
             handler(newVal, oldVal) {
-                if(!newVal.id) return;
-                if(newVal.id !== oldVal.id) {
-                    this.init(newVal);
+                const id = this.getSubIdFromParams(newVal);
+                const oldId = oldVal && this.getSubIdFromParams(oldVal);
+                if (!id) return;
+                if (id !== oldId) {
+                    this.init({ id, name: id });
                 }
             },
         },
     },
     created() {
-        this.init(this.$route.params);
+        const params = this.$route.params;
+        const id = this.getSubIdFromParams(params);
+        this.init(id ? { id, name: params.name || id } : params);
     },
     methods: {
         async checkEditable() {
@@ -288,6 +307,22 @@ export default {
             this.updateBpmn(this.subProcessBreadCrumb[idx].xml);
             this.removeHistoryAfterIndex(idx)
         },
+        goBack() {
+            // Navigate back to previous subprocess or main process
+            if (this.subProcessBreadCrumb.length > 1) {
+                // Go to previous subprocess
+                const prevIdx = this.subProcessBreadCrumb.length - 2;
+                this.updateBpmn(this.subProcessBreadCrumb[prevIdx].xml);
+                this.subProcessBreadCrumb.pop();
+            } else if (this.subProcessBreadCrumb.length === 1) {
+                // Go back to main process
+                this.init(this.$route.params);
+                this.subProcessBreadCrumb = [];
+            } else if (this.selectedProc.major) {
+                // Go back to Definition Map (when accessed from Definition Map)
+                this.goProcess();
+            }
+        },
         removeHistoryAfterIndex(index) {
             if (index < 0 || index >= this.subProcessBreadCrumb.length) {
                 console.error("Invalid index");
@@ -301,25 +336,25 @@ export default {
         },
         async openSubProcess(e) {
             let me = this;
-            if(this.Pal) {
-                if(e.extensionElements?.values[0]) {
-                    let json = '';
-                    try{
-                        json = JSON.parse(e.extensionElements.values[0].$children[0].$body);
-                    } catch(error) {
-                        json = JSON.parse(e.extensionElements.values[0].json);
-                    }
-                    if(json.definitionId) { 
-                        const defInfo = await backend.getRawDefinition(json.definitionId, null);
-                        if (defInfo) {
-                            let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
-                            me.subProcessBreadCrumb.push(obj)
-                            me.selectedSubProcess = e.extensionElements.values[0].definition
-                            me.updateBpmn(defInfo.bpmn)
+            if (this.Pal) {
+                if (e.extensionElements?.values?.[0]) {
+                    let json = {};
+                    try {
+                        const raw = e.extensionElements.values[0];
+                        json = raw.$children?.[0]?.$body
+                            ? JSON.parse(raw.$children[0].$body)
+                            : JSON.parse(raw.json || '{}');
+                    } catch (_) {}
+                    if (json.definitionId) {
+                        const rawId = String(json.definitionId).trim();
+                        const normalizedId = rawId.replace(/\.bpmn$/i, '');
+                        if (normalizedId) {
+                            me.$router.push(`/definition-map/sub/${normalizedId}`);
+                            return;
                         }
                     }
                 }
-            } else {
+            } else if (!this.Pal) {
                 if (e.extensionElements?.values[0]?.definition) {
                     const backend = BackendFactory.createBackend();
                     const defId = e.extensionElements.values[0].definition;
@@ -332,6 +367,13 @@ export default {
                     }
                 }
             }
+        },
+        getSubIdFromParams(params) {
+            if (!params) return null;
+            if (params.pathMatch != null) {
+                return Array.isArray(params.pathMatch) ? params.pathMatch.join('/') : params.pathMatch;
+            }
+            return params.id || null;
         },
         async init(obj) {
             var me = this;
@@ -391,8 +433,22 @@ export default {
                 this.$router.push(`/definitions/chat?id=${this.processDefinition.id}&name=${this.processDefinition.name}`);
             }
         },
-        capture() {
-            this.$emit('capture')
+        async capture() {
+            const processDefinitionRef = this.$refs.processDefinitionRef;
+            if (!processDefinitionRef || !processDefinitionRef.$refs?.bpmnVue) {
+                console.error('BPMN component not found');
+                return;
+            }
+
+            const bpmnVue = processDefinitionRef.$refs.bpmnVue;
+            const bpmnViewer = bpmnVue.bpmnViewer;
+
+            // 공통 유틸리티 사용
+            const { capturePng } = useBpmnExport();
+            await capturePng({
+                bpmnViewer,
+                processName: this.processDefinition?.name || 'Process Diagram'
+            });
         },
         savePDF() {
             this.isPreviewPDFDialog = false;

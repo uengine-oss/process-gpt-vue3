@@ -191,6 +191,37 @@ PaletteProvider.prototype.applyAutoLayout = function(onLoadStart = () => {}, onL
   }
 }
 
+/**
+ * Revert to the previous layout (before auto layout was applied)
+ */
+PaletteProvider.prototype.revertLayout = function() {
+  try {
+    if (!window.BpmnAutoLayout) {
+      console.error('BpmnAutoLayout이 존재하지 않습니다.');
+      return false;
+    }
+
+    if (!window.BpmnAutoLayout.hasLayoutSnapshot()) {
+      console.warn('복구할 레이아웃 스냅샷이 없습니다.');
+      return false;
+    }
+
+    const bpmnJS = this._injector;
+    const success = window.BpmnAutoLayout.restoreLayoutSnapshot(bpmnJS);
+
+    if (success) {
+      console.log('레이아웃이 복구되었습니다.');
+      // Clear the snapshot after successful restore
+      window.BpmnAutoLayout.clearLayoutSnapshot();
+    }
+
+    return success;
+  } catch (error) {
+    console.error('레이아웃 복구에 실패했습니다.', error);
+    return false;
+  }
+}
+
 PaletteProvider.prototype._rotateRelativePosition = function(relativeX, relativeY, scaleX, scaleY) {
   return {
     x: relativeY * scaleY,
@@ -212,14 +243,6 @@ PaletteProvider.prototype.changeParticipantHorizontalToVertical = function(event
     }
 
     const childElements = element.children || [];
-    // Phase(PhaseContainer)가 포함된 경우 회전을 조용히 막는다. (PaletteProvider copy.js 참고)
-    const parentChildren = (element.parent && element.parent.children) || [];
-    const hasPhaseContainer = parentChildren.some(child => child && child.type === 'phase:PhaseContainer');
-    if (hasPhaseContainer) {
-      console.warn(`${logPrefix} phase:PhaseContainer 가 존재하여 회전을 중단합니다.`);
-      onLoadEnd();
-      return;
-    }
     let isSubprocessImported = false;
     // 서브프로세스가 있으면 깨지는 문제가 있어 서브프로세스가 있을 경우에는 임시 비활성화
     childElements.forEach(child => {
@@ -434,14 +457,6 @@ PaletteProvider.prototype.changeParticipantVerticalToHorizontal = function(event
     }
 
     const childElements = element.children || [];
-    // Phase(PhaseContainer)가 포함된 경우 회전을 조용히 막는다. (PaletteProvider copy.js 참고)
-    const parentChildren = (element.parent && element.parent.children) || [];
-    const hasPhaseContainer = parentChildren.some(child => child && child.type === 'phase:PhaseContainer');
-    if (hasPhaseContainer) {
-      console.warn(`${logPrefix} phase:PhaseContainer 가 존재하여 회전을 중단합니다.`);
-      onLoadEnd();
-      return;
-    }
     let isSubprocessImported = false;
     // 서브프로세스가 있으면 깨지는 문제가 있어 서브프로세스가 있을 경우에는 임시 비활성화
     childElements.forEach(child => {
@@ -790,11 +805,15 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
   });
 
   // Add task types based on palette settings
-  // Use new table-based palette task types if available
+  // uEngine·PAL 모드: 팔레트에는 "사용자 작업"만 표시 (ManualTask 대신 UserTask 사용)
+  var isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
   var enabledTaskTypes = window.$enabledPaletteTaskTypes || [];
   var visibleTaskTypes = enabledTaskTypes.length > 0
     ? enabledTaskTypes.map(t => t.task_type)
     : (window.$paletteSettings?.visibleTaskTypes || ['bpmn:ManualTask', 'bpmn:ServiceTask']);
+  if (isUEngineOrPal) {
+    visibleTaskTypes = ['bpmn:UserTask'];
+  }
 
   if (visibleTaskTypes.includes('bpmn:ManualTask')) {
     actions['create.manual-task'] = createAction(
@@ -875,36 +894,46 @@ PaletteProvider.prototype.getPaletteEntries = function(element) {
         }
       }
     },
-    // 'auto-layout': {
-    //   group: 'collaboration',
-    //   className: 'mdi mdi-auto-fix',
-    //   title: i18n.global.t('PaletteProvider.autoLayout'),
-    //   action: {
-    //     click: function(event) {
-    //       me.applyAutoLayout();
-    //     }
-    //   }
-    // },
-    // 'change-orientation': {
-    //   group: 'collaboration',
-    //   className: 'mdi mdi-crop-rotate',
-    //   title: i18n.global.t('PaletteProvider.changeOrientation'),
-    //   action: {
-    //     click: function(event) {
-    //       const bpmnJS = injector;
-    //       const elementRegistry = bpmnJS.get('elementRegistry');
-    //       const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-    //       participant.forEach(element => {
-    //         const horizontal = element.di.isHorizontal;
-    //         if(horizontal) {
-    //           me.changeParticipantHorizontalToVertical(event, element);
-    //         } else {
-    //           me.changeParticipantVerticalToHorizontal(event, element);
-    //         }
-    //       });
-    //     }
-    //   }
-    // }
+    'auto-layout': {
+      group: 'collaboration',
+      className: 'mdi mdi-auto-fix',
+      title: i18n.global.t('PaletteProvider.autoLayout'),
+      action: {
+        click: function(event) {
+          me.applyAutoLayout();
+        }
+      }
+    },
+    'revert-layout': {
+      group: 'collaboration',
+      className: 'mdi mdi-restore',
+      title: i18n.global.t('PaletteProvider.revertLayout') || 'Revert Layout',
+      action: {
+        click: function(event) {
+          me.revertLayout();
+        }
+      }
+    },
+    'change-orientation': {
+      group: 'collaboration',
+      className: 'mdi mdi-crop-rotate',
+      title: i18n.global.t('PaletteProvider.changeOrientation'),
+      action: {
+        click: function(event) {
+          const bpmnJS = injector;
+          const elementRegistry = bpmnJS.get('elementRegistry');
+          const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+          participant.forEach(element => {
+            const horizontal = element.di.isHorizontal;
+            if(horizontal) {
+              me.changeParticipantHorizontalToVertical(event, element);
+            } else {
+              me.changeParticipantVerticalToHorizontal(event, element);
+            }
+          });
+        }
+      }
+    }
     
   });
 

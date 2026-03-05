@@ -1,5 +1,6 @@
 import BackendFactory from '@/components/api/BackendFactory';
 import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import { getLLMConfig } from './llmConfig.js';
 const storage = StorageBaseFactory.getStorage();
 
 export default class AIGenerator {
@@ -69,7 +70,9 @@ export default class AIGenerator {
 
         this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay : 3000;
         
-        this.backendUrl = '/completion/langchain-chat';
+        // Vite dev server에서는 /langchain-chat 프록시를 사용하고,
+        // 빌드/배포(nginx)에서는 /completion prefix 경로를 사용한다.
+        this.backendUrl = import.meta.env.DEV ? '/langchain-chat' : '/completion/langchain-chat';
         this.vendor = 'openai';
         this.modelConfig = {
             temperature: 1,
@@ -77,15 +80,10 @@ export default class AIGenerator {
             presence_penalty: 0
         }
 
-        this.forced_vendor = "openai";
-        // this.forced_model = options && options.model ? options.model : "gpt-4.1-2025-04-14";
-        this.forced_model = "gpt-4.1-2025-04-14";
-        this.forced_model_config = {
-            temperature: 1,
-            top_p: 0.9,
-            frequency_penalty: 0,
-            presence_penalty: 0
-        }
+        const llmConfig = getLLMConfig(options?.llmPurpose || 'default');
+        this.forced_vendor = llmConfig.vendor;
+        this.forced_model = llmConfig.model;
+        this.forced_model_config = { ...llmConfig.modelConfig };
     }
 
     createPrompt() {
@@ -213,14 +211,21 @@ export default class AIGenerator {
     async checkBackendConnection() {
         try {
             // return true;
-            let response = await fetch(`${this.backendUrl}/sanity-check`);
+            const authHeaders = this.getAuthHeaders();
+            let response = await fetch(`${this.backendUrl}/sanity-check`, {
+                headers: authHeaders,
+                credentials: 'include'
+            });
             if(response.status == 401){
                 // access_token이 만료되어서 접속이 안되는 경우가 있기 때문에 이런 경우, 강재로 세션을 갱신 후, 재시도
                 const backend = BackendFactory.createBackend();
                 const tenantId = window.$tenantName;
                 await backend.setTenant(tenantId)
                 
-                response = await fetch(`${this.backendUrl}/sanity-check`);
+                response = await fetch(`${this.backendUrl}/sanity-check`, {
+                    headers: this.getAuthHeaders(),
+                    credentials: 'include'
+                });
             }
 
             if (!response.ok) {
@@ -273,6 +278,10 @@ export default class AIGenerator {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', url);
         xhr.setRequestHeader('Content-Type', 'application/json');
+        const authHeaders = this.getAuthHeaders();
+        if (authHeaders.Authorization) {
+            xhr.setRequestHeader('Authorization', authHeaders.Authorization);
+        }
 
         // const apiProvider = await storage.getObject('api_key', {
         //     match: {
@@ -500,6 +509,14 @@ export default class AIGenerator {
 
         console.log("[*][AIGenerator] 백엔드 서버로 LLM 요청 데이터 전송", {requestData: data});
         xhr.send(JSON.stringify(data));
+    }
+
+    getAuthHeaders() {
+        const token = localStorage.getItem('keycloak') || localStorage.getItem('accessToken');
+        if (token) {
+            return { Authorization: `Bearer ${token}` };
+        }
+        return {};
     }
 
     _addDetailHighToImageUrl(messages) {
