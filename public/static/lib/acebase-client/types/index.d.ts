@@ -21,11 +21,32 @@
  * (c) 2018-2022 Ewout Stortenbeker <http://appy.one>
  * Released under MIT license
  */
-export { AceBaseClient, AceBaseClientConnectionSettings, AceBaseClientCacheSettings, AceBaseClientSyncSettings, } from './acebase-client';
-export { IAceBaseAuthProviderSignInResult, IAceBaseAuthProviderTokens, } from './api-web';
+export { AceBaseClient, AceBaseClientConnectionSettings, AceBaseClientCacheSettings, AceBaseClientSyncSettings } from './acebase-client';
+export { IAceBaseAuthProviderSignInResult, IAceBaseAuthProviderTokens } from './api-web';
 export { AceBaseClientAuth } from './auth';
 export { AceBaseUser } from './user';
 export { ServerDate } from './server-date';
 export { CachedValueUnavailableError } from './errors';
-export { DataReference, DataSnapshot, DataSnapshotsArray, DataReferencesArray, EventStream, EventSubscription, PathReference, TypeMappings, TypeMappingOptions, IReflectionNodeInfo, IReflectionChildrenInfo, IStreamLike, ILiveDataProxy, ILiveDataProxyValue, IObjectCollection, ObjectCollection, ID, proxyAccess, PartialArray, Transport, } from 'acebase-core';
+export {
+    DataReference,
+    DataSnapshot,
+    DataSnapshotsArray,
+    DataReferencesArray,
+    EventStream,
+    EventSubscription,
+    PathReference,
+    TypeMappings,
+    TypeMappingOptions,
+    IReflectionNodeInfo,
+    IReflectionChildrenInfo,
+    IStreamLike,
+    ILiveDataProxy,
+    ILiveDataProxyValue,
+    IObjectCollection,
+    ObjectCollection,
+    ID,
+    proxyAccess,
+    PartialArray,
+    Transport
+} from 'acebase-core';
 //# sourceMappingURL=index.d.ts.map

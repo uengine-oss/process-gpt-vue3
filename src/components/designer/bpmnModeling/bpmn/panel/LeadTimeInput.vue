@@ -10,7 +10,7 @@
                 variant="outlined"
                 density="compact"
                 hide-details
-                style="max-width: 80px;"
+                style="max-width: 80px"
                 :min="0"
                 :disabled="disabled"
                 @update:model-value="emitChange"
@@ -25,7 +25,7 @@
                 variant="outlined"
                 density="compact"
                 hide-details
-                style="max-width: 80px;"
+                style="max-width: 80px"
                 :min="0"
                 :max="23"
                 :disabled="disabled"
@@ -41,7 +41,7 @@
                 variant="outlined"
                 density="compact"
                 hide-details
-                style="max-width: 80px;"
+                style="max-width: 80px"
                 :min="0"
                 :max="59"
                 :disabled="disabled"

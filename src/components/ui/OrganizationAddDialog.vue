@@ -6,7 +6,7 @@
                 v-model="selectedTeam"
                 :items="teamList"
                 item-title="data.name"
-                :item-value="item => item"
+                :item-value="(item) => item"
                 label="팀 선택"
                 variant="outlined"
                 density="compact"
@@ -35,9 +35,7 @@
             </div>
         </div>
 
-        <v-divider v-if="selectedTeam"
-            class="mb-2"
-        ></v-divider>
+        <v-divider v-if="selectedTeam" class="mb-2"></v-divider>
 
         <!-- 팀 관리 다이얼로그 -->
         <v-dialog v-model="teamDialog" max-width="500">
@@ -53,21 +51,16 @@
         <div v-if="selectedTeam">
             <!-- 대탭: 팀원추가 | 에이전트 생성 -->
             <v-tabs v-model="mainTab" density="compact" color="primary" class="mx-4 mb-2">
-                <v-tab
-                    v-for="item in mainTabItems"
-                    :key="item.value"
-                    :value="item.value"
-                >
+                <v-tab v-for="item in mainTabItems" :key="item.value" :value="item.value">
                     {{ $t(item.text) }}
                 </v-tab>
             </v-tabs>
 
             <!-- 에이전트 생성 하위탭 -->
-            <div v-if="mainTab === 'agent'" class="px-4 pb-2"
-                style="border-bottom: 1px solid #e0e0e0;"
-            >
+            <div v-if="mainTab === 'agent'" class="px-4 pb-2" style="border-bottom: 1px solid #e0e0e0">
                 <div class="d-flex flex-wrap">
-                    <v-btn v-for="item in filteredAgentSubTabItems"
+                    <v-btn
+                        v-for="item in filteredAgentSubTabItems"
                         class="mr-2"
                         :key="item.value"
                         variant="text"
@@ -81,10 +74,11 @@
                 </div>
             </div>
 
-            <v-card-text class="pa-4 pb-0 pt-0"
+            <v-card-text
+                class="pa-4 pb-0 pt-0"
                 :style="{
                     'max-height': 'calc(100vh - 300px)',
-                    'overflow': 'auto',
+                    overflow: 'auto',
                     'border-bottom': mainTab === 'agent' ? '1px solid #e0e0e0' : 'none'
                 }"
             >
@@ -92,30 +86,42 @@
                 <div v-if="mainTab === 'user'">
                     <v-autocomplete
                         v-if="!isNewUser"
-                        v-model="selectedList" 
-                        :items="teamMembers" 
-                        item-title="data.name" 
-                        :item-value="item => item" 
-                        :label="$t('organizationChartDefinition.selectTeamMember')" 
+                        v-model="selectedList"
+                        :items="teamMembers"
+                        item-title="data.name"
+                        :item-value="(item) => item"
+                        :label="$t('organizationChartDefinition.selectTeamMember')"
                         variant="outlined"
                         class="my-2"
-                        color="blue-grey-lighten-2" 
-                        multiple 
-                        chips 
-                        closable-chips 
+                        color="blue-grey-lighten-2"
+                        multiple
+                        chips
+                        closable-chips
                         small-chips
                         hide-details
                     >
                         <template v-slot:chip="{ props, item }">
-                            <v-chip v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" :text="item.raw.data.name"></v-chip>
+                            <v-chip
+                                v-if="item.raw.data.img"
+                                v-bind="props"
+                                :prepend-avatar="item.raw.data.img"
+                                :text="item.raw.data.name"
+                            ></v-chip>
                             <v-chip v-else v-bind="props" prepend-icon="mdi-account-circle" :text="item.raw.data.name"></v-chip>
                         </template>
                         <template v-slot:item="{ props, item }">
-                            <v-list-item v-if="item.raw.data.img" v-bind="props" :prepend-avatar="item.raw.data.img" 
-                                :title="item.raw.data.name" :subtitle="item.raw.data.email"></v-list-item>
+                            <v-list-item
+                                v-if="item.raw.data.img"
+                                v-bind="props"
+                                :prepend-avatar="item.raw.data.img"
+                                :title="item.raw.data.name"
+                                :subtitle="item.raw.data.email"
+                            ></v-list-item>
                             <v-list-item v-else v-bind="props" :title="item.raw.data.name" :subtitle="item.raw.data.email">
                                 <template v-slot:prepend>
-                                    <v-icon style="position: relative; margin-right: 10px; margin-left: -3px;" size="48">mdi-account-circle</v-icon>
+                                    <v-icon style="position: relative; margin-right: 10px; margin-left: -3px" size="48"
+                                        >mdi-account-circle</v-icon
+                                    >
                                 </template>
                             </v-list-item>
                         </template>
@@ -126,7 +132,8 @@
                 <div v-if="mainTab === 'agent'">
                     <v-window v-model="agentSubTab">
                         <v-window-item value="agent">
-                            <AgentField v-model="newAgent"
+                            <AgentField
+                                v-model="newAgent"
                                 class="agent-field-dialog-contents"
                                 :nameRules="nameRules"
                                 :teamInfo="selectedTeam"
@@ -135,7 +142,8 @@
                         </v-window-item>
 
                         <v-window-item v-if="!gs" value="a2a">
-                            <AgentField v-model="newAgent"
+                            <AgentField
+                                v-model="newAgent"
                                 class="agent-field-dialog-contents"
                                 :nameRules="nameRules"
                                 :teamInfo="selectedTeam"
@@ -145,7 +153,8 @@
                         </v-window-item>
 
                         <v-window-item v-if="!gs" value="pgagent">
-                            <AgentField v-model="newAgent"
+                            <AgentField
+                                v-model="newAgent"
                                 class="agent-field-dialog-contents"
                                 :nameRules="nameRules"
                                 :teamInfo="selectedTeam"
@@ -159,12 +168,7 @@
 
             <v-row class="ma-0 pa-4">
                 <v-spacer></v-spacer>
-                <v-btn @click="save"
-                    :disabled="!isValid"
-                    color="primary" 
-                    rounded 
-                    variant="flat" 
-                >
+                <v-btn @click="save" :disabled="!isValid" color="primary" rounded variant="flat">
                     {{ $t('organizationChartDefinition.save') }}
                 </v-btn>
             </v-row>
@@ -184,16 +188,16 @@ export default {
     props: {
         teamInfo: {
             type: Object,
-            default: () => ({}),
+            default: () => ({})
         },
         userList: {
             type: Array,
-            default: [],
+            default: []
         },
         organizationChart: {
             type: Object,
-            default: () => ({}),
-        },
+            default: () => ({})
+        }
     },
     data: () => ({
         mainTab: 'user',
@@ -227,28 +231,28 @@ export default {
         mainTabItems: [
             {
                 text: 'organizationChartDefinition.addNewUser',
-                value: 'user',
+                value: 'user'
             },
             {
                 text: 'organizationChartDefinition.createAgentTab',
-                value: 'agent',
-            },
+                value: 'agent'
+            }
         ],
         agentSubTabItems: [
             {
                 text: 'organizationChartDefinition.addNewAgent',
-                value: 'agent',
+                value: 'agent'
             },
             {
                 text: 'organizationChartDefinition.addNewA2A',
-                value: 'a2a',
+                value: 'a2a'
             },
             {
                 text: 'organizationChartDefinition.addNewPGAgent',
-                value: 'pgagent',
-            },
+                value: 'pgagent'
+            }
         ],
-        
+
         selectedList: [],
         teamMembers: [],
         dialogReset: false,
@@ -277,7 +281,7 @@ export default {
             description: '',
             tools: '',
             alias: ''
-        },
+        }
     }),
     computed: {
         gs() {
@@ -288,7 +292,7 @@ export default {
         },
         filteredAgentSubTabItems() {
             if (this.gs) {
-                return this.agentSubTabItems.filter(item => item.value === 'agent');
+                return this.agentSubTabItems.filter((item) => item.value === 'agent');
             }
             return this.agentSubTabItems;
         },
@@ -296,31 +300,31 @@ export default {
             if (!this.organizationChart || !this.organizationChart.children) {
                 return [];
             }
-            return this.organizationChart.children.filter(child => child.data && child.data.isTeam);
+            return this.organizationChart.children.filter((child) => child.data && child.data.isTeam);
         },
         emailRules() {
             return [
                 (value) => !!value || this.$t('organizationChartDefinition.emailRequired'),
                 (value) => /.+@.+\..+/.test(value) || this.$t('organizationChartDefinition.emailInvalid'),
-                (value) => !this.isExistUser(value) || this.$t('organizationChartDefinition.emailAlreadyExists'),
+                (value) => !this.isExistUser(value) || this.$t('organizationChartDefinition.emailAlreadyExists')
             ];
         },
         nameRules() {
-            return [
-                (value) => !!value || this.$t('organizationChartDefinition.nameRequired'),
-            ];
+            return [(value) => !!value || this.$t('organizationChartDefinition.nameRequired')];
         },
         isValid() {
             if (this.mainTab == 'user') {
                 if (this.isNewUser) {
-                    return this.newUser && 
-                           this.emailRules.every(rule => rule(this.newUser.email) === true) && 
-                           this.nameRules.every(rule => rule(this.newUser.name) === true);
+                    return (
+                        this.newUser &&
+                        this.emailRules.every((rule) => rule(this.newUser.email) === true) &&
+                        this.nameRules.every((rule) => rule(this.newUser.name) === true)
+                    );
                 } else {
                     return true;
                 }
             } else {
-                return this.newAgent && this.nameRules.every(rule => rule(this.newAgent.name) === true);
+                return this.newAgent && this.nameRules.every((rule) => rule(this.newAgent.name) === true);
             }
         }
     },
@@ -340,7 +344,7 @@ export default {
             deep: true,
             handler(newVal) {
                 if (!this.selectedTeam && newVal && newVal.children) {
-                    const teams = newVal.children.filter(child => child.data && child.data.isTeam);
+                    const teams = newVal.children.filter((child) => child.data && child.data.isTeam);
                     if (teams.length > 0) {
                         this.selectedTeam = teams[0];
                         // 초기 선택 시에도 selectTeam을 호출하여 teamMembers 업데이트
@@ -404,75 +408,75 @@ export default {
                 this.selectedList = [];
             }
 
-            this.teamMembers = this.userList.map(member => {
-            if (!member.isAgent) {
-                return {
-                    id: member.id,
-                    name: member.username,
-                    data: {
-                        id: member.id,
-                        name: member.username,
-                        img: member.profile || '/images/defaultUser.png',
-                        email: member.email,
-                        role: member.role || '',
-                        pid: this.selectedTeam ? this.selectedTeam.id : ''
-                    }
-                }
-            } else {
-                if (member.agent_type == 'a2a') {
+            this.teamMembers = this.userList.map((member) => {
+                if (!member.isAgent) {
                     return {
                         id: member.id,
                         name: member.username,
                         data: {
                             id: member.id,
                             name: member.username,
-                            img: member.profile || '/images/chat-icon.png',
+                            img: member.profile || '/images/defaultUser.png',
+                            email: member.email,
                             role: member.role || '',
-                            endpoint: member.endpoint || '',
-                            description: member.description || '',
-                            skills: member.skills || '',
-                            isAgent: member.is_agent || true,
-                            type: member.agent_type,
                             pid: this.selectedTeam ? this.selectedTeam.id : ''
                         }
-                    }
-                } else if (member.agent_type == 'pgagent') {
-                    return {
-                        id: member.id,
-                        name: member.username,
-                        data: {
-                            id: member.id,
-                            name: member.username,
-                            img: member.profile || '/images/chat-icon.png',
-                            role: member.role || '',
-                            description: member.description || '',
-                            skills: member.skills || '',
-                            isAgent: member.is_agent || true,
-                            type: member.agent_type,
-                            pid: this.selectedTeam ? this.selectedTeam.id : '',
-                            alias: member.alias || ''
-                        }
-                    }
+                    };
                 } else {
-                    return {
-                        id: member.id,
-                        name: member.username,
-                        data: {
+                    if (member.agent_type == 'a2a') {
+                        return {
                             id: member.id,
                             name: member.username,
-                            img: member.profile || '/images/chat-icon.png',
-                            role: member.role || '',
-                            goal: member.goal || '',
-                            persona: member.persona || '',
-                            tools: member.tools || '',
-                            isAgent: member.is_agent || true,
-                            type: member.agent_type || 'agent',
-                            pid: this.selectedTeam ? this.selectedTeam.id : ''
-                        }
+                            data: {
+                                id: member.id,
+                                name: member.username,
+                                img: member.profile || '/images/chat-icon.png',
+                                role: member.role || '',
+                                endpoint: member.endpoint || '',
+                                description: member.description || '',
+                                skills: member.skills || '',
+                                isAgent: member.is_agent || true,
+                                type: member.agent_type,
+                                pid: this.selectedTeam ? this.selectedTeam.id : ''
+                            }
+                        };
+                    } else if (member.agent_type == 'pgagent') {
+                        return {
+                            id: member.id,
+                            name: member.username,
+                            data: {
+                                id: member.id,
+                                name: member.username,
+                                img: member.profile || '/images/chat-icon.png',
+                                role: member.role || '',
+                                description: member.description || '',
+                                skills: member.skills || '',
+                                isAgent: member.is_agent || true,
+                                type: member.agent_type,
+                                pid: this.selectedTeam ? this.selectedTeam.id : '',
+                                alias: member.alias || ''
+                            }
+                        };
+                    } else {
+                        return {
+                            id: member.id,
+                            name: member.username,
+                            data: {
+                                id: member.id,
+                                name: member.username,
+                                img: member.profile || '/images/chat-icon.png',
+                                role: member.role || '',
+                                goal: member.goal || '',
+                                persona: member.persona || '',
+                                tools: member.tools || '',
+                                isAgent: member.is_agent || true,
+                                type: member.agent_type || 'agent',
+                                pid: this.selectedTeam ? this.selectedTeam.id : ''
+                            }
+                        };
                     }
                 }
-            }
-        })
+            });
         },
         closeDialog() {
             this.$emit('closeDialog');
@@ -510,27 +514,27 @@ export default {
             }
 
             if (this.mainTab == 'user') {
-                this.selectedList.map(member => {
+                this.selectedList.map((member) => {
                     if (member && member.data) {
-                        member.data.id = member.id
-                        member.data.pid = this.selectedTeam.id
+                        member.data.id = member.id;
+                        member.data.pid = this.selectedTeam.id;
                     }
-                })
+                });
                 if (this.isNewUser) {
-                    this.$emit('addUser', this.selectedTeam, this.selectedList, this.newUser)
+                    this.$emit('addUser', this.selectedTeam, this.selectedList, this.newUser);
                 } else {
-                    this.$emit('addUser', this.selectedTeam, this.selectedList, null)
+                    this.$emit('addUser', this.selectedTeam, this.selectedList, null);
                 }
             } else {
-                this.newAgent.type = this.agentSubTab
-                this.$emit('addAgent', this.selectedTeam, this.newAgent)
+                this.newAgent.type = this.agentSubTab;
+                this.$emit('addAgent', this.selectedTeam, this.newAgent);
             }
         },
         isExistUser(email) {
-            return this.userList.some(user => user.email === email)
+            return this.userList.some((user) => user.email === email);
         }
     }
-}
+};
 </script>
 
 <style scoped>

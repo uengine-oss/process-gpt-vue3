@@ -4,7 +4,7 @@
             <v-card-title class="d-flex justify-space-between align-center pa-4">
                 <div class="d-flex align-center gap-2">
                     <v-icon color="primary">mdi-palette</v-icon>
-                    <span class="text-h6">Color Ruleset</span>
+                    <span class="text-h6">{{ $t('colorRuleset.title') }}</span>
                 </div>
                 <v-btn icon variant="text" size="small" @click="closeDialog">
                     <v-icon>mdi-close</v-icon>
@@ -13,28 +13,18 @@
 
             <v-divider />
 
-            <v-card-text class="pa-4" style="max-height: 550px; overflow-y: auto;">
+            <v-card-text class="pa-4" style="max-height: 550px; overflow-y: auto">
                 <!-- Quick Add Section -->
                 <div class="add-rule-section mb-4">
-                    <div class="text-subtitle-2 mb-2 text-grey-darken-1">Add New Rule</div>
+                    <div class="text-subtitle-2 mb-2 text-grey-darken-1">{{ $t('colorRuleset.addNewRule') }}</div>
                     <div class="d-flex gap-2">
-                        <v-btn
-                            variant="outlined"
-                            color="blue"
-                            @click="addRule('taskType')"
-                            class="flex-grow-1"
-                        >
+                        <v-btn variant="outlined" color="blue" @click="addRule('taskType')" class="flex-grow-1">
                             <v-icon start>mdi-shape</v-icon>
-                            Task Type Rule
+                            {{ $t('colorRuleset.taskTypeRule') }}
                         </v-btn>
-                        <v-btn
-                            variant="outlined"
-                            color="green"
-                            @click="addRule('leadTime')"
-                            class="flex-grow-1"
-                        >
+                        <v-btn variant="outlined" color="green" @click="addRule('leadTime')" class="flex-grow-1">
                             <v-icon start>mdi-clock-outline</v-icon>
-                            Lead Time Rule
+                            {{ $t('colorRuleset.leadTimeRule') }}
                         </v-btn>
                     </div>
                 </div>
@@ -43,15 +33,15 @@
 
                 <!-- Rules List -->
                 <div class="text-subtitle-2 mb-2 text-grey-darken-1">
-                    Rules ({{ rules.length }})
+                    {{ $t('colorRuleset.rulesCount', { count: rules.length }) }}
                 </div>
 
                 <!-- Empty State -->
                 <div v-if="rules.length === 0" class="empty-state text-center py-8">
                     <v-icon size="64" color="grey-lighten-1">mdi-palette-outline</v-icon>
-                    <div class="text-h6 text-grey mt-2">No Rules Defined</div>
+                    <div class="text-h6 text-grey mt-2">{{ $t('colorRuleset.noRulesDefined') }}</div>
                     <div class="text-body-2 text-grey-darken-1 mt-1">
-                        Add a rule above to colorize tasks based on type or lead time
+                        {{ $t('colorRuleset.noRulesHint') }}
                     </div>
                 </div>
 
@@ -76,15 +66,12 @@
                                 }"
                             />
                             <!-- Intensity Preview for leadTime -->
-                            <div
-                                v-else
-                                class="intensity-preview-box mr-3"
-                            />
+                            <div v-else class="intensity-preview-box mr-3" />
 
                             <!-- Rule Name -->
                             <v-text-field
                                 v-model="rule.name"
-                                :placeholder="rule.type === 'taskType' ? 'Task Type Rule' : 'Lead Time Rule'"
+                                :placeholder="rule.type === 'taskType' ? $t('colorRuleset.taskTypeRule') : $t('colorRuleset.leadTimeRule')"
                                 variant="plain"
                                 density="compact"
                                 hide-details
@@ -92,33 +79,16 @@
                             />
 
                             <!-- Rule Type Badge -->
-                            <v-chip
-                                size="small"
-                                :color="rule.type === 'taskType' ? 'blue' : 'green'"
-                                variant="flat"
-                                class="mx-2"
-                            >
+                            <v-chip size="small" :color="rule.type === 'taskType' ? 'blue' : 'green'" variant="flat" class="mx-2">
                                 <v-icon start size="small">
                                     {{ rule.type === 'taskType' ? 'mdi-shape' : 'mdi-clock-outline' }}
                                 </v-icon>
-                                {{ rule.type === 'taskType' ? 'Type' : 'Time' }}
+                                {{ rule.type === 'taskType' ? $t('colorRuleset.ruleTypeType') : $t('colorRuleset.ruleTypeTime') }}
                             </v-chip>
 
                             <!-- Toggle & Delete -->
-                            <v-switch
-                                v-model="rule.enabled"
-                                hide-details
-                                density="compact"
-                                color="primary"
-                                class="mr-1"
-                            />
-                            <v-btn
-                                icon
-                                variant="text"
-                                size="small"
-                                color="error"
-                                @click="removeRule(index)"
-                            >
+                            <v-switch v-model="rule.enabled" hide-details density="compact" color="primary" class="mr-1" />
+                            <v-btn icon variant="text" size="small" color="error" @click="removeRule(index)">
                                 <v-icon size="small">mdi-delete-outline</v-icon>
                             </v-btn>
                         </div>
@@ -130,7 +100,7 @@
 
                                 <!-- Task Type Condition -->
                                 <div v-if="rule.type === 'taskType'" class="condition-section">
-                                    <div class="text-caption text-grey mb-1">Apply to task types:</div>
+                                    <div class="text-caption text-grey mb-1">{{ $t('colorRuleset.applyToTaskTypes') }}</div>
 
                                     <!-- Warning for duplicate task types -->
                                     <v-alert
@@ -141,16 +111,15 @@
                                         class="mb-2"
                                     >
                                         <span class="text-caption">
-                                            Warning: {{ getDuplicateTaskTypes(rule, index).join(', ') }} already defined in another rule
+                                            {{
+                                                $t('colorRuleset.duplicateWarning', {
+                                                    types: getDuplicateTaskTypes(rule, index).join(', ')
+                                                })
+                                            }}
                                         </span>
                                     </v-alert>
 
-                                    <v-chip-group
-                                        v-model="rule.taskTypes"
-                                        multiple
-                                        column
-                                        selected-class="bg-blue-lighten-4"
-                                    >
+                                    <v-chip-group v-model="rule.taskTypes" multiple column selected-class="bg-blue-lighten-4">
                                         <v-chip
                                             v-for="taskType in taskTypeOptions"
                                             :key="taskType.value"
@@ -160,13 +129,10 @@
                                             size="small"
                                             :class="{ 'duplicate-warning': isTaskTypeDuplicate(taskType.value, index) }"
                                         >
-                                            {{ taskType.text }}
-                                            <v-icon
-                                                v-if="isTaskTypeDuplicate(taskType.value, index)"
-                                                end
-                                                size="x-small"
-                                                color="warning"
-                                            >mdi-alert</v-icon>
+                                            {{ $t(taskType.labelKey) }}
+                                            <v-icon v-if="isTaskTypeDuplicate(taskType.value, index)" end size="x-small" color="warning"
+                                                >mdi-alert</v-icon
+                                            >
                                         </v-chip>
                                     </v-chip-group>
 
@@ -180,9 +146,9 @@
                                                 v-for="preset in presetColors"
                                                 :key="preset.value"
                                                 class="preset-color"
-                                                :class="{ 'selected': normalizeColor(rule.fillColor) === preset.value }"
+                                                :class="{ selected: normalizeColor(rule.fillColor) === preset.value }"
                                                 :style="{ backgroundColor: preset.value }"
-                                                :title="preset.name"
+                                                :title="$t(preset.nameKey)"
                                                 @click="rule.fillColor = preset.value"
                                             />
                                         </div>
@@ -190,7 +156,7 @@
                                         <!-- Custom Color Pickers -->
                                         <div class="d-flex align-center gap-4">
                                             <div class="d-flex align-center gap-2">
-                                                <span class="text-caption">Fill:</span>
+                                                <span class="text-caption">{{ $t('colorRuleset.fill') }}</span>
                                                 <v-menu :close-on-content-click="false">
                                                     <template v-slot:activator="{ props }">
                                                         <div
@@ -201,16 +167,12 @@
                                                             <v-icon size="x-small" color="grey-darken-2">mdi-eyedropper</v-icon>
                                                         </div>
                                                     </template>
-                                                    <v-color-picker
-                                                        v-model="rule.fillColor"
-                                                        mode="hexa"
-                                                        show-swatches
-                                                    />
+                                                    <v-color-picker v-model="rule.fillColor" mode="hexa" show-swatches />
                                                 </v-menu>
                                             </div>
 
                                             <div class="d-flex align-center gap-2">
-                                                <span class="text-caption">Border:</span>
+                                                <span class="text-caption">{{ $t('colorRuleset.border') }}</span>
                                                 <v-menu :close-on-content-click="false">
                                                     <template v-slot:activator="{ props }">
                                                         <div
@@ -233,14 +195,10 @@
                                                                 @click="rule.strokeColor = ''"
                                                                 class="mb-2"
                                                             >
-                                                                No Border
+                                                                {{ $t('colorRuleset.noBorder') }}
                                                             </v-btn>
                                                         </v-card-text>
-                                                        <v-color-picker
-                                                            v-model="rule.strokeColor"
-                                                            mode="hexa"
-                                                            show-swatches
-                                                        />
+                                                        <v-color-picker v-model="rule.strokeColor" mode="hexa" show-swatches />
                                                     </v-card>
                                                 </v-menu>
                                             </div>
@@ -250,32 +208,32 @@
 
                                 <!-- Lead Time Condition -->
                                 <div v-if="rule.type === 'leadTime'" class="condition-section">
-                                    <div class="text-caption text-grey mb-2">Lead time range:</div>
+                                    <div class="text-caption text-grey mb-2">{{ $t('colorRuleset.leadTimeRange') }}</div>
 
                                     <!-- Min Duration -->
                                     <div class="duration-input-group mb-3">
-                                        <div class="text-caption text-grey-darken-1 mb-1">Minimum:</div>
+                                        <div class="text-caption text-grey-darken-1 mb-1">{{ $t('colorRuleset.minimum') }}</div>
                                         <div class="d-flex align-center gap-2">
                                             <v-text-field
                                                 :model-value="getDurationPart(rule.minDuration, 'days')"
                                                 @update:model-value="setDurationPart(rule, 'minDuration', 'days', $event)"
                                                 type="number"
-                                                label="Days"
+                                                :label="$t('colorRuleset.days')"
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                             />
                                             <v-text-field
                                                 :model-value="getDurationPart(rule.minDuration, 'hours')"
                                                 @update:model-value="setDurationPart(rule, 'minDuration', 'hours', $event)"
                                                 type="number"
-                                                label="Hours"
+                                                :label="$t('colorRuleset.hours')"
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                                 :max="23"
                                             />
@@ -283,11 +241,11 @@
                                                 :model-value="getDurationPart(rule.minDuration, 'minutes')"
                                                 @update:model-value="setDurationPart(rule, 'minDuration', 'minutes', $event)"
                                                 type="number"
-                                                label="Min"
+                                                :label="$t('colorRuleset.min')"
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                                 :max="59"
                                             />
@@ -297,28 +255,28 @@
 
                                     <!-- Max Duration -->
                                     <div class="duration-input-group mb-4">
-                                        <div class="text-caption text-grey-darken-1 mb-1">Maximum:</div>
+                                        <div class="text-caption text-grey-darken-1 mb-1">{{ $t('colorRuleset.maximum') }}</div>
                                         <div class="d-flex align-center gap-2">
                                             <v-text-field
                                                 :model-value="getDurationPart(rule.maxDuration, 'days')"
                                                 @update:model-value="setDurationPart(rule, 'maxDuration', 'days', $event)"
                                                 type="number"
-                                                label="Days"
+                                                :label="$t('colorRuleset.days')"
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                             />
                                             <v-text-field
                                                 :model-value="getDurationPart(rule.maxDuration, 'hours')"
                                                 @update:model-value="setDurationPart(rule, 'maxDuration', 'hours', $event)"
                                                 type="number"
-                                                label="Hours"
+                                                :label="$t('colorRuleset.hours')"
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                                 :max="23"
                                             />
@@ -326,11 +284,11 @@
                                                 :model-value="getDurationPart(rule.maxDuration, 'minutes')"
                                                 @update:model-value="setDurationPart(rule, 'maxDuration', 'minutes', $event)"
                                                 type="number"
-                                                label="Min"
+                                                :label="$t('colorRuleset.min')"
                                                 variant="outlined"
                                                 density="compact"
                                                 hide-details
-                                                style="max-width: 80px;"
+                                                style="max-width: 80px"
                                                 :min="0"
                                                 :max="59"
                                             />
@@ -340,14 +298,9 @@
 
                                     <!-- Intensity-based Color Description -->
                                     <div class="intensity-section">
-                                        <v-alert
-                                            type="info"
-                                            variant="tonal"
-                                            density="compact"
-                                            class="mb-3"
-                                        >
+                                        <v-alert type="info" variant="tonal" density="compact" class="mb-3">
                                             <div class="text-caption">
-                                                Lead Time rule adjusts the intensity of the task's base color:
+                                                {{ $t('colorRuleset.leadTimeDescription') }}
                                             </div>
                                             <div class="d-flex align-center gap-2 mt-2">
                                                 <span class="text-caption">{{ formatDuration(rule.minDuration) }}</span>
@@ -355,8 +308,8 @@
                                                 <span class="text-caption">{{ formatDuration(rule.maxDuration) }}</span>
                                             </div>
                                             <div class="d-flex justify-space-between text-caption text-grey mt-1">
-                                                <span>Light (short time)</span>
-                                                <span>Dark (long time)</span>
+                                                <span>{{ $t('colorRuleset.lightShortTime') }}</span>
+                                                <span>{{ $t('colorRuleset.darkLongTime') }}</span>
                                             </div>
                                         </v-alert>
                                     </div>
@@ -370,9 +323,7 @@
             <v-divider />
 
             <v-card-actions class="pa-4">
-                <v-btn variant="text" color="grey" @click="closeDialog">
-                    Cancel
-                </v-btn>
+                <v-btn variant="text" color="grey" @click="closeDialog"> Cancel </v-btn>
                 <v-spacer />
                 <v-btn color="primary" variant="flat" @click="saveRules">
                     <v-icon start>mdi-check</v-icon>
@@ -401,26 +352,26 @@ export default {
         return {
             rules: [],
             taskTypeOptions: [
-                { text: 'User Task', value: 'bpmn:UserTask' },
-                { text: 'Manual Task', value: 'bpmn:ManualTask' },
-                { text: 'Service Task', value: 'bpmn:ServiceTask' },
-                { text: 'Script Task', value: 'bpmn:ScriptTask' },
-                { text: 'Business Rule Task', value: 'bpmn:BusinessRuleTask' },
-                { text: 'Send Task', value: 'bpmn:SendTask' },
-                { text: 'Receive Task', value: 'bpmn:ReceiveTask' }
+                { labelKey: 'colorRuleset.taskTypes.userTask', value: 'bpmn:UserTask' },
+                { labelKey: 'colorRuleset.taskTypes.manualTask', value: 'bpmn:ManualTask' },
+                { labelKey: 'colorRuleset.taskTypes.serviceTask', value: 'bpmn:ServiceTask' },
+                { labelKey: 'colorRuleset.taskTypes.scriptTask', value: 'bpmn:ScriptTask' },
+                { labelKey: 'colorRuleset.taskTypes.businessRuleTask', value: 'bpmn:BusinessRuleTask' },
+                { labelKey: 'colorRuleset.taskTypes.sendTask', value: 'bpmn:SendTask' },
+                { labelKey: 'colorRuleset.taskTypes.receiveTask', value: 'bpmn:ReceiveTask' }
             ],
             presetColors: [
-                { name: 'Yellow (Default)', value: '#fdf2d0' },
-                { name: 'Blue', value: '#e3f2fd' },
-                { name: 'Green', value: '#e8f5e9' },
-                { name: 'Purple', value: '#f3e5f5' },
-                { name: 'Orange', value: '#fff3e0' },
-                { name: 'Pink', value: '#fce4ec' },
-                { name: 'Cyan', value: '#e0f7fa' },
-                { name: 'Red', value: '#ffebee' },
-                { name: 'Grey', value: '#f5f5f5' },
-                { name: 'White', value: '#ffffff' }
-            ],
+                { nameKey: 'colorRuleset.presets.yellowDefault', value: '#fdf2d0' },
+                { nameKey: 'colorRuleset.presets.blue', value: '#e3f2fd' },
+                { nameKey: 'colorRuleset.presets.green', value: '#e8f5e9' },
+                { nameKey: 'colorRuleset.presets.purple', value: '#f3e5f5' },
+                { nameKey: 'colorRuleset.presets.orange', value: '#fff3e0' },
+                { nameKey: 'colorRuleset.presets.pink', value: '#fce4ec' },
+                { nameKey: 'colorRuleset.presets.cyan', value: '#e0f7fa' },
+                { nameKey: 'colorRuleset.presets.red', value: '#ffebee' },
+                { nameKey: 'colorRuleset.presets.grey', value: '#f5f5f5' },
+                { nameKey: 'colorRuleset.presets.white', value: '#ffffff' }
+            ]
         };
     },
     computed: {
@@ -467,7 +418,7 @@ export default {
                 newRule.strokeColor = '';
             } else if (type === 'leadTime') {
                 newRule.minDuration = 0;
-                newRule.maxDuration = 480;  // Default 8 hours (480 minutes)
+                newRule.maxDuration = 480; // Default 8 hours (480 minutes)
             }
 
             this.rules.push(newRule);
@@ -506,7 +457,7 @@ export default {
                 newMinutes = Math.min(59, Math.max(0, numValue));
             }
 
-            rule[field] = (newDays * 24 * 60) + (newHours * 60) + newMinutes;
+            rule[field] = newDays * 24 * 60 + newHours * 60 + newMinutes;
         },
         // Format duration for display
         formatDuration(totalMinutes) {
@@ -534,10 +485,10 @@ export default {
         getDuplicateTaskTypes(rule, currentRuleIndex) {
             if (!rule.taskTypes) return [];
             return rule.taskTypes
-                .filter(tt => this.isTaskTypeDuplicate(tt, currentRuleIndex))
-                .map(tt => {
-                    const option = this.taskTypeOptions.find(o => o.value === tt);
-                    return option ? option.text : tt;
+                .filter((tt) => this.isTaskTypeDuplicate(tt, currentRuleIndex))
+                .map((tt) => {
+                    const option = this.taskTypeOptions.find((o) => o.value === tt);
+                    return option ? this.$t(option.labelKey) : tt;
                 });
         },
         normalizeColor(color) {
@@ -598,7 +549,7 @@ export default {
 }
 
 .rule-card:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .rule-card.rule-disabled {
@@ -618,7 +569,6 @@ export default {
     border: 2px solid;
     flex-shrink: 0;
 }
-
 
 .rule-name-input {
     font-weight: 500;
@@ -645,7 +595,7 @@ export default {
 
 .preset-color:hover {
     transform: scale(1.15);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .preset-color.selected {
@@ -666,7 +616,7 @@ export default {
 }
 
 .color-picker-btn:hover {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .condition-section {
@@ -705,11 +655,8 @@ export default {
 .intensity-preview-bar {
     height: 16px;
     border-radius: 4px;
-    background: linear-gradient(to right,
-        rgba(200, 200, 200, 0.3),
-        rgba(50, 50, 50, 0.8)
-    );
-    border: 1px solid rgba(0,0,0,0.1);
+    background: linear-gradient(to right, rgba(200, 200, 200, 0.3), rgba(50, 50, 50, 0.8));
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .intensity-section {

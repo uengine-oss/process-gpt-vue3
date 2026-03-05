@@ -6,17 +6,18 @@
                 <v-card-item class="pa-0">
                     <!-- <h5 class="text-h5 mb-4">MCP Servers</h5> -->
                     <!-- 검색 UI -->
-                    <v-row class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0 mb-3"
-                        style="min-width:100%;"
+                    <v-row
+                        class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0 mb-3"
+                        style="min-width: 100%"
                     >
                         <Icons :icon="'magnifer-linear'" :size="22" />
-                        <v-text-field 
-                            v-model="searchQuery" 
-                            variant="plain" 
+                        <v-text-field
+                            v-model="searchQuery"
+                            variant="plain"
                             density="compact"
-                            class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                            class="position-relative pt-0 ml-3 custom-placeholer-color"
                             :placeholder="$t('MCPServer.searchMCPServers')"
-                            single-line 
+                            single-line
                             hide-details
                         ></v-text-field>
                     </v-row>
@@ -42,11 +43,11 @@
 
                                 <template v-slot:append>
                                     <div class="d-flex align-center">
-                                        <v-btn 
-                                            :icon="isDefaultServer(key) ? 'mdi-eye' : 'mdi-pencil'" 
-                                            variant="text" 
-                                            size="small" 
-                                            class="mr-2" 
+                                        <v-btn
+                                            :icon="isDefaultServer(key) ? 'mdi-eye' : 'mdi-pencil'"
+                                            variant="text"
+                                            size="small"
+                                            class="mr-2"
                                             @click.stop="editJson(key)"
                                         ></v-btn>
                                         <v-switch
@@ -83,12 +84,7 @@
                     <v-row class="ma-0 pa-0 align-center">
                         <h5 class="text-h5 mb-3">{{ formatServerName(editingKey) }}</h5>
                     </v-row>
-                    <vue-monaco-editor
-                        v-model:value="mcpJsonText"
-                        language="json"
-                        :options="getEditorOptions()"
-                        @mount="handleMount"
-                    />
+                    <vue-monaco-editor v-model:value="mcpJsonText" language="json" :options="getEditorOptions()" @mount="handleMount" />
                     <!-- <v-textarea 
                         v-model="mcpJsonText" 
                         label="MCP JSON" 
@@ -99,26 +95,26 @@
                 </div>
 
                 <div class="d-flex justify-space-between pb-2">
-                    <v-btn 
+                    <v-btn
                         v-if="editingKey && !isEditingDefaultServer"
-                        class=" mr-2" 
-                        color="error" 
-                        variant="flat" 
-                        rounded 
+                        class="mr-2"
+                        color="error"
+                        variant="flat"
+                        rounded
                         @click="deleteServer"
                         :loading="saving || adding"
-                    >{{ $t('accountTab.delete') }}
+                        >{{ $t('accountTab.delete') }}
                     </v-btn>
                     <div class="d-flex align-center ml-auto">
                         <v-btn color="grey" variant="flat" rounded class="mr-2" @click="closeEdit">{{ $t('accountTab.cancel') }}</v-btn>
-                        <v-btn 
+                        <v-btn
                             v-if="!isEditingDefaultServer"
-                            color="primary" 
-                            variant="flat" 
-                            rounded 
-                            @click="saveServerChanges" 
+                            color="primary"
+                            variant="flat"
+                            rounded
+                            @click="saveServerChanges"
                             :loading="saving"
-                        >{{ $t('accountTab.save') }}
+                            >{{ $t('accountTab.save') }}
                         </v-btn>
                     </div>
                 </div>
@@ -127,12 +123,7 @@
             <div v-else-if="isAddMode && !editingKey" flat>
                 <div class="pt-0 pb-4">
                     <h5 class="text-h5 mb-3">New MCP</h5>
-                    <vue-monaco-editor
-                        v-model:value="newJsonText"
-                        language="json"
-                        :options="monacoEditorOptions"
-                        @mount="handleMount"
-                    />
+                    <vue-monaco-editor v-model:value="newJsonText" language="json" :options="monacoEditorOptions" @mount="handleMount" />
                     <!-- <v-textarea 
                         v-model="newJsonText" 
                         label="MCP JSON" 
@@ -145,7 +136,9 @@
                 <div class="d-flex justify-end pb-2">
                     <div class="d-flex align-center ml-auto">
                         <v-btn color="grey" variant="flat" rounded class="mr-2" @click="closeEdit">{{ $t('accountTab.cancel') }}</v-btn>
-                        <v-btn color="primary" variant="flat" rounded @click="saveNewMCP" :loading="adding">{{ $t('accountTab.add') }}</v-btn>
+                        <v-btn color="primary" variant="flat" rounded @click="saveNewMCP" :loading="adding">{{
+                            $t('accountTab.add')
+                        }}</v-btn>
                     </div>
                 </div>
             </div>
@@ -154,10 +147,11 @@
                 <div class="text-center">
                     <v-icon size="64" color="gray" class="mb-4 server-icon">mdi-server</v-icon>
                     <v-list-item class="mt-4 add-mcp-server-item">
-                        
                         <v-row class="pa-0 ma-0 align-center">
-                            <v-icon icon="mdi-plus" color="gray" size="24" class="plus-icon" style="padding-top: 1px;"></v-icon>
-                            <v-list-item-title class="font-weight-medium text-gray ml-2 server-title">{{ $t('accountTab.addMCPServer') }}</v-list-item-title>
+                            <v-icon icon="mdi-plus" color="gray" size="24" class="plus-icon" style="padding-top: 1px"></v-icon>
+                            <v-list-item-title class="font-weight-medium text-gray ml-2 server-title">{{
+                                $t('accountTab.addMCPServer')
+                            }}</v-list-item-title>
                         </v-row>
                     </v-list-item>
                 </div>
@@ -184,13 +178,7 @@
                     :options="getEditorOptions()"
                     @mount="handleMount"
                 />
-                <vue-monaco-editor
-                    v-else
-                    v-model:value="newJsonText"
-                    language="json"
-                    :options="monacoEditorOptions"
-                    @mount="handleMount"
-                />
+                <vue-monaco-editor v-else v-model:value="newJsonText" language="json" :options="monacoEditorOptions" @mount="handleMount" />
                 <!-- <v-textarea 
                     v-if="editingKey" 
                     v-model="mcpJsonText" 
@@ -212,25 +200,25 @@
             <!-- 하단 버튼 -->
             <div class="pa-4 pt-0">
                 <div class="d-flex align-center ml-auto">
-                    <v-btn 
+                    <v-btn
                         v-if="editingKey && !isEditingDefaultServer"
-                        class=" mr-2" 
-                        color="error" 
-                        variant="flat" 
-                        rounded 
+                        class="mr-2"
+                        color="error"
+                        variant="flat"
+                        rounded
                         @click="deleteServer"
                         :loading="saving || adding"
-                    >{{ $t('accountTab.delete') }}
+                        >{{ $t('accountTab.delete') }}
                     </v-btn>
-                    <v-btn 
+                    <v-btn
                         v-if="!editingKey || !isEditingDefaultServer"
-                        @click="editingKey ? saveServerChanges : saveNewMCP" 
+                        @click="editingKey ? saveServerChanges : saveNewMCP"
                         class="ml-auto"
-                        color="primary" 
-                        variant="flat" 
-                        rounded 
+                        color="primary"
+                        variant="flat"
+                        rounded
                         :loading="saving || adding"
-                    >{{ editingKey ? $t('accountTab.save') : $t('accountTab.add') }}
+                        >{{ editingKey ? $t('accountTab.save') : $t('accountTab.add') }}
                     </v-btn>
                 </div>
             </div>
@@ -304,21 +292,21 @@ export default {
             if (!this.searchQuery || this.searchQuery.trim() === '') {
                 return this.mcpServers;
             }
-            
+
             const query = this.searchQuery.toLowerCase();
             const filtered = {};
-            
-            Object.keys(this.mcpServers).forEach(key => {
+
+            Object.keys(this.mcpServers).forEach((key) => {
                 const server = this.mcpServers[key];
                 const serverName = this.formatServerName(key).toLowerCase();
                 const serverDescription = this.getServerDescription(server).toLowerCase();
-                
+
                 // 타이틀(서버명)과 서브타이틀(설명)에서 검색
                 if (serverName.includes(query) || serverDescription.includes(query)) {
                     filtered[key] = server;
                 }
             });
-            
+
             return filtered;
         },
         isDefaultServer() {
@@ -369,14 +357,14 @@ export default {
             this.isAddMode = false;
             this.editingKey = serverKey;
             const server = this.mcpServers[serverKey];
-            
+
             // 기본 서버인 경우 is_default 속성 제외
             let serverData = { ...server };
             if (this.isDefaultServer(serverKey)) {
                 const { is_default, ...serverWithoutDefault } = serverData;
                 serverData = serverWithoutDefault;
             }
-            
+
             const jsonData = {
                 mcpServers: {
                     [serverKey]: serverData
@@ -420,7 +408,7 @@ export default {
         },
         async saveServerChanges() {
             if (!this.editingKey) return;
-            
+
             // 기본 서버는 수정 불가능
             if (this.isDefaultServer(this.editingKey)) {
                 console.warn('기본 서버는 수정할 수 없습니다.');
@@ -435,13 +423,13 @@ export default {
                 } catch (e) {
                     return;
                 }
-                
+
                 let updatedServer = {};
-                
+
                 if (parsedJson.mcpServers && parsedJson.mcpServers[this.editingKey]) {
                     // mcpServers 구조에서 해당 서버 정보 추출
                     let serverData = parsedJson.mcpServers[this.editingKey];
-                    
+
                     // serverData 안에 또 mcpServers가 중첩되어 있는 경우 처리
                     if (serverData.mcpServers) {
                         // 중첩된 구조에서 실제 서버 데이터 추출
@@ -450,7 +438,7 @@ export default {
                             serverData = serverData.mcpServers[nestedKey];
                         }
                     }
-                    
+
                     // 모든 속성을 그대로 복사하고, enabled 기본값만 설정
                     updatedServer = {
                         ...serverData,
@@ -484,7 +472,7 @@ export default {
         },
         async deleteServer() {
             if (!this.editingKey) return;
-            
+
             // 기본 서버는 삭제 불가능
             if (this.isDefaultServer(this.editingKey)) {
                 console.warn('기본 서버는 삭제할 수 없습니다.');
@@ -555,9 +543,9 @@ export default {
                     if (!serverKey) {
                         serverKey = `custom-server-${Date.now()}`;
                     }
-                    
+
                     let serverData = mcpServers[serverKey];
-                    
+
                     // serverData 안에 또 mcpServers가 중첩되어 있는 경우 처리
                     if (serverData.mcpServers) {
                         // 중첩된 구조에서 실제 서버 데이터 추출
@@ -567,7 +555,7 @@ export default {
                             serverData = serverData.mcpServers[nestedKey];
                         }
                     }
-                    
+
                     // 모든 속성을 그대로 복사하고, enabled 기본값만 설정
                     newServer = {
                         ...serverData,
@@ -576,7 +564,7 @@ export default {
                 } else {
                     // mcpServers 구조가 없는 경우 (직접 서버 설정)
                     serverKey = `custom-server-${Date.now()}`;
-                    
+
                     // 모든 속성을 그대로 복사하고, enabled 기본값만 설정
                     newServer = {
                         ...parsedJson,

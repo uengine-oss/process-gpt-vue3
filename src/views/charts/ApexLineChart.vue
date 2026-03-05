@@ -5,7 +5,7 @@ import { ref } from 'vue';
 // common components
 import UiParentCard from '@/components/shared/UiParentCard.vue';
 import UiChildCard from '@/components/shared/UiChildCard.vue';
-import { getPrimary, getSecondary,getLightborder } from '@/utils/UpdateColors';
+import { getPrimary, getSecondary, getLightborder } from '@/utils/UpdateColors';
 
 // common components
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
@@ -69,7 +69,7 @@ const chartOptions = computed(() => {
         },
         grid: {
             show: false,
-             borderColor: getLightborder.value, 
+            borderColor: getLightborder.value
         },
         dataLabels: {
             enabled: true
@@ -120,4 +120,3 @@ const lineChart = {
         </v-col>
     </v-row>
 </template>
-

@@ -11,7 +11,7 @@
                     <v-text-field
                         v-model="localRule.name"
                         :label="$t('colorRules.ruleName')"
-                        :rules="[v => !!v || $t('colorRules.ruleNameRequired')]"
+                        :rules="[(v) => !!v || $t('colorRules.ruleNameRequired')]"
                         variant="outlined"
                         density="compact"
                         class="mb-3"
@@ -88,17 +88,11 @@
                             <v-menu :close-on-content-click="false">
                                 <template v-slot:activator="{ props }">
                                     <v-btn v-bind="props" size="small" variant="outlined">
-                                        <div
-                                            class="color-preview mr-2"
-                                            :style="{ backgroundColor: localRule.fillColor }"
-                                        />
+                                        <div class="color-preview mr-2" :style="{ backgroundColor: localRule.fillColor }" />
                                         {{ $t('colorRules.custom') }}
                                     </v-btn>
                                 </template>
-                                <v-color-picker
-                                    v-model="localRule.fillColor"
-                                    mode="hexa"
-                                />
+                                <v-color-picker v-model="localRule.fillColor" mode="hexa" />
                             </v-menu>
                         </div>
                     </div>
@@ -122,11 +116,7 @@
                                             @click="localRule.strokeColor = color.value"
                                         />
                                     </div>
-                                    <v-btn
-                                        size="small"
-                                        variant="text"
-                                        @click="localRule.strokeColor = undefined"
-                                    >
+                                    <v-btn size="small" variant="text" @click="localRule.strokeColor = undefined">
                                         {{ $t('colorRules.noStroke') }}
                                     </v-btn>
                                 </div>
@@ -135,12 +125,7 @@
                     </v-expansion-panels>
 
                     <!-- Enable/Disable -->
-                    <v-switch
-                        v-model="localRule.enabled"
-                        :label="$t('colorRules.enabled')"
-                        color="primary"
-                        hide-details
-                    />
+                    <v-switch v-model="localRule.enabled" :label="$t('colorRules.enabled')" color="primary" hide-details />
                 </v-form>
             </v-card-text>
 
@@ -149,11 +134,7 @@
                 <v-btn variant="text" @click="cancel">
                     {{ $t('common.cancel') }}
                 </v-btn>
-                <v-btn
-                    color="primary"
-                    :disabled="!formValid"
-                    @click="save"
-                >
+                <v-btn color="primary" :disabled="!formValid" @click="save">
                     {{ $t('common.save') }}
                 </v-btn>
             </v-card-actions>
@@ -234,15 +215,18 @@ export default defineComponent({
             { name: 'Black', value: '#212121' }
         ];
 
-        watch(() => props.modelValue, (newVal) => {
-            if (newVal) {
-                if (props.rule) {
-                    localRule.value = { ...props.rule };
-                } else {
-                    localRule.value = { ...defaultRule };
+        watch(
+            () => props.modelValue,
+            (newVal) => {
+                if (newVal) {
+                    if (props.rule) {
+                        localRule.value = { ...props.rule };
+                    } else {
+                        localRule.value = { ...defaultRule };
+                    }
                 }
             }
-        });
+        );
 
         const cancel = () => {
             dialogVisible.value = false;

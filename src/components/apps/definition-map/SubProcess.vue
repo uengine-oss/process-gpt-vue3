@@ -10,20 +10,18 @@
                     @mouseenter.native="loadProcessInfo"
                 >
                     <template #default="tooltipProps">
-                        <div v-bind="tooltipProps"
+                        <div
+                            v-bind="tooltipProps"
                             @click="handleClick"
+                            @dblclick.stop="handleDoubleClick"
                             @mouseenter="loadProcessInfo"
                             class="ma-0 pa-0 d-flex align-center"
-                            style="flex: 1; min-width: 0; gap: 4px;"
+                            style="flex: 1; min-width: 0; gap: 4px"
                         >
                             <div>{{ value.name }}</div>
 
                             <!-- New 뱃지 -->
-                            <v-chip v-if="isNew(value.id) && !enableEdit"
-                                color="primary"
-                                variant="outlined"
-                                size="x-small"
-                            >New</v-chip>
+                            <v-chip v-if="isNew(value.id) && !enableEdit" color="primary" variant="outlined" size="x-small">New</v-chip>
                         </div>
                     </template>
                 </ProcessTooltip>
@@ -35,9 +33,9 @@
                     :status="processStatus"
                     size="x-small"
                     :showIcon="true"
-                    class="ml-1"
                 />
-                <div class="ml-auto add-sub-process" style="flex-shrink: 0;">
+                <v-chip v-if="isNew(value.id) && !enableEdit" color="primary" variant="outlined" size="x-small">New</v-chip>
+                <div class="ml-auto add-sub-process" style="flex-shrink: 0">
                     <v-btn
                         v-if="isExecutionByProject"
                         variant="elevated"
@@ -59,11 +57,13 @@
                         @setPermission="openPermissionDialog(value)"
                         @duplicate="duplicateProcess"
                         @setOwner="openOwnerDialog"
+                        @openSubprocessSettings="openSubprocessSettingsDialog"
                     />
                 </div>
             </v-row>
         </h6>
-        <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'update'"
+        <ProcessDialog
+            v-else-if="processDialogStatus && enableEdit && processType === 'update'"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -74,17 +74,39 @@
         />
 
         <!-- 담당자 설정 다이얼로그 -->
-        <OwnerSettingDialog
-            v-model="ownerDialogOpen"
-            :process="value"
-            @saved="onOwnerSaved"
-        />
+        <OwnerSettingDialog v-model="ownerDialogOpen" :process="value" @saved="onOwnerSaved" />
+
+        <!-- PAL 전용: 서브프로세스 설정 (공통 모듈) 다이얼로그 -->
+        <v-dialog v-model="subprocessSettingsDialog" max-width="400" persistent>
+            <v-card>
+                <v-card-title class="text-subtitle-1">
+                    {{ $t('ProcessMenu.settings') || '설정' }}
+                </v-card-title>
+                <v-card-text>
+                    <v-switch
+                        v-model="subprocessSettingsCommonModule"
+                        :label="$t('ProcessMenu.commonModule') || '공통 모듈'"
+                        color="primary"
+                        hide-details
+                    />
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn variant="text" @click="subprocessSettingsDialog = false">
+                        {{ $t('common.cancel') || '취소' }}
+                    </v-btn>
+                    <v-btn color="primary" variant="flat" @click="saveSubprocessSettings">
+                        {{ $t('common.save') || '저장' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
 <script>
 import ProcessMenu from './ProcessMenu.vue';
-import ProcessDialog from './ProcessDialog.vue'
+import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import ProgressBadge from '@/components/ui/ProgressBadge.vue';
@@ -98,7 +120,7 @@ export default {
         ProcessDialog,
         ProgressBadge,
         ProcessTooltip,
-        OwnerSettingDialog,
+        OwnerSettingDialog
     },
     mixins: [BaseProcess],
     props: {
@@ -137,6 +159,9 @@ export default {
         },
         processStatus: null,
         tooltipLoaded: false,
+        // PAL 전용: 서브프로세스 설정 다이얼로그
+        subprocessSettingsDialog: false,
+        subprocessSettingsCommonModule: false
     }),
     async created() {
         this.checkedProcess = JSON.parse(localStorage.getItem('checkedProcess')) || [];
@@ -163,28 +188,30 @@ export default {
             return !this.checkedProcess.includes(id);
         },
         handleClick() {
-            if(this.isExecutionByProject) return;
-            
+            if (this.isExecutionByProject) return;
+
             if (window.$mode == 'ProcessGPT') {
                 this.goProcess(this.value.id, 'sub');
             } else {
                 this.$emit('clickProcess', this.value.path);
             }
-            if(!this.checkedProcess.includes(this.value.id)) {
+            if (!this.checkedProcess.includes(this.value.id)) {
                 this.checkedProcess.push(this.value.id);
                 localStorage.setItem('checkedProcess', JSON.stringify(this.checkedProcess));
             }
         },
         handleDoubleClick() {
             if (this.isExecutionByProject) return;
-            if (window.$mode === 'uEngine') {
-                const path = this.value.id ?? this.value.path;
-                if (path) this.goProcess(path, 'sub');
+            const path = this.value.id ?? this.value.path;
+            if (!path) return;
+            // PAL 모드 또는 uEngine 모드: 더블클릭 시 SubProcessDetail 화면으로 이동
+            if (window.$pal || window.$mode === 'uEngine') {
+                this.goProcess(path, 'sub');
             }
         },
         deleteProcess() {
-            this.parent.sub_proc_list = this.parent.sub_proc_list.filter(item => item.id != this.value.id);
-            
+            this.parent.sub_proc_list = this.parent.sub_proc_list.filter((item) => item.id != this.value.id);
+
             // 성공 메시지 표시
             if (window.$app_) {
                 window.$app_.snackbarMessage = this.$t('successMsg.delete');
@@ -194,7 +221,7 @@ export default {
             }
         },
         async editProcessModel() {
-            const id = this.value.id.replace(/ /g, '_')
+            const id = this.value.id.replace(/ /g, '_');
             const backend = BackendFactory.createBackend();
             const value = await backend.getRawDefinition(id);
             let url;
@@ -205,14 +232,30 @@ export default {
             }
             window.open(url, '_blank');
         },
-        clickPlayBtn(){
-            this.$emit('clickPlayBtn', this.value)
+        clickPlayBtn() {
+            this.$emit('clickPlayBtn', this.value);
         },
         /**
          * 담당자 설정 다이얼로그 열기
          */
         openOwnerDialog() {
             this.ownerDialogOpen = true;
+        },
+        /** PAL 전용: 서브프로세스 설정 다이얼로그 열기 (공통 모듈 토글) */
+        openSubprocessSettingsDialog() {
+            this.subprocessSettingsCommonModule = !!this.value.commonModule;
+            this.subprocessSettingsDialog = true;
+        },
+        /** PAL 전용: 공통 모듈 설정 저장 후 정의체계도 저장 */
+        saveSubprocessSettings() {
+            this.value.commonModule = this.subprocessSettingsCommonModule;
+            this.subprocessSettingsDialog = false;
+            this.EventBus.emit('saveProcessDefinitionMap');
+            if (window.$app_) {
+                window.$app_.snackbarMessage = this.$t('successMsg.save') || '저장되었습니다.';
+                window.$app_.snackbarColor = 'success';
+                window.$app_.snackbar = true;
+            }
         },
         /**
          * 담당자 저장 완료 처리
@@ -242,12 +285,7 @@ export default {
                 const definition = originalDef?.definition || null;
 
                 // duplicateLocalProcess 사용 (ID는 _copy 형태로 자동 생성)
-                const result = await backend.duplicateLocalProcess(
-                    process.id,
-                    newName,
-                    bpmn,
-                    definition
-                );
+                const result = await backend.duplicateLocalProcess(process.id, newName, bpmn, definition);
 
                 if (result.success) {
                     // Add to parent's sub_proc_list
@@ -279,11 +317,7 @@ export default {
                 }
 
                 // lock 테이블에서 해당 프로세스가 잠겨있는지 확인
-                const { data: lockData } = await supabase
-                    .from('lock')
-                    .select('id')
-                    .eq('id', this.value.id)
-                    .maybeSingle();
+                const { data: lockData } = await supabase.from('lock').select('id').eq('id', this.value.id).maybeSingle();
 
                 // lock이 있으면 작성중, 없으면 완료
                 this.processStatus = lockData ? 'draft' : 'published';
@@ -313,11 +347,7 @@ export default {
                     let status = 'published';
                     const supabase = window.$supabase;
                     if (supabase) {
-                        const { data: lockData } = await supabase
-                            .from('lock')
-                            .select('id')
-                            .eq('id', this.value.id)
-                            .maybeSingle();
+                        const { data: lockData } = await supabase.from('lock').select('id').eq('id', this.value.id).maybeSingle();
                         status = lockData ? 'draft' : 'published';
                     }
 
@@ -373,21 +403,21 @@ export default {
                 return member?.name || ownerId;
             } catch (error) {
                 console.warn('Owner 이름 조회 실패:', error);
-                return ownerId;  // 실패 시 ID 그대로 반환
+                return ownerId; // 실패 시 ID 그대로 반환
             }
         }
-    },
-}
+    }
+};
 </script>
 
 <style scoped>
 .sub-process-style {
     background-color: transparent;
-    padding:5px;
-    border-radius:8px;
+    padding: 5px;
+    border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 연한 그림자 추가 */
 }
 .sub-process-hover:hover {
-    background-color:#E7ECF0 !important;
+    background-color: #e7ecf0 !important;
 }
 </style>

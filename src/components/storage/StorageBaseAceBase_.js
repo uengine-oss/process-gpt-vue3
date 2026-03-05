@@ -1,4 +1,3 @@
-
 export default class StorageBaseAceBase_ {
     constructor(client) {
         this.client = client;
@@ -7,135 +6,141 @@ export default class StorageBaseAceBase_ {
     _signIn(userInfo) {
         return new Promise(function (resolve, reject) {
             userInfo.displayName = userInfo.username;
-            window.$acebase.auth.signInWithEmail(userInfo.email, userInfo.password).then(result => {
-                resolve(result)
-            }).catch(e => {
-                reject(e)
-            })
-        })
+            window.$acebase.auth
+                .signInWithEmail(userInfo.email, userInfo.password)
+                .then((result) => {
+                    resolve(result);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
 
     _signUp(userInfo) {
         return new Promise(function (resolve, reject) {
             userInfo.displayName = userInfo.username;
-            window.$acebase.auth.signUp(userInfo).then(result => {
-                resolve(result)
-            }).catch(e => {
-                reject(e)
-            })
-        })
+            window.$acebase.auth
+                .signUp(userInfo)
+                .then((result) => {
+                    resolve(result);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
 
     _signOut(userInfo) {
         return new Promise(function (resolve, reject) {
-            window.$acebase.auth.signOut().then(result => {
-                resolve(result)
-            }).catch(e => {
-                reject(e)
-            })
-        })
+            window.$acebase.auth
+                .signOut()
+                .then((result) => {
+                    resolve(result);
+                })
+                .catch((e) => {
+                    reject(e);
+                });
+        });
     }
 
     _getRef(auth) {
         if (auth && auth == 'auth') {
-            return window.$acebase.auth
+            return window.$acebase.auth;
         } else if (auth && auth == 'db') {
             // 수정필요
-            var reference = window.$acebase.ref()
-            return reference.query(reference.db)
+            var reference = window.$acebase.ref();
+            return reference.query(reference.db);
         }
     }
 
     _getUserInfo() {
         return new Promise(async function (resolve, reject) {
-            if (window.localStorage.getItem("accessToken")){
-                try{
-                    window.$acebase.auth.signInWithToken(window.localStorage.getItem("accessToken"))
-                        .then(result => {
-                            var obj = {
-                                name: result.user.username,
-                                email: result.user.email,
-                                uid: result.user.uid,
-                                profile: result.user.picture,
-                                authorized: null,
-                                accessToken: result.accessToken,
-                            }
-                            resolve(obj)
-                        })
-                }catch (e) {
-                    console.log('Error] AceBase _getUserInfo: ',e)
-                    resolve(null)
+            if (window.localStorage.getItem('accessToken')) {
+                try {
+                    window.$acebase.auth.signInWithToken(window.localStorage.getItem('accessToken')).then((result) => {
+                        var obj = {
+                            name: result.user.username,
+                            email: result.user.email,
+                            uid: result.user.uid,
+                            profile: result.user.picture,
+                            authorized: null,
+                            accessToken: result.accessToken
+                        };
+                        resolve(obj);
+                    });
+                } catch (e) {
+                    console.log('Error] AceBase _getUserInfo: ', e);
+                    resolve(null);
                 }
             } else {
-                resolve(null)
+                resolve(null);
             }
-        })
+        });
     }
 
     _list(reference) {
         return new Promise(function (resolve, reject) {
-            try{
-                reference.get(snapshot => {
+            try {
+                reference.get((snapshot) => {
                     if (snapshot) {
-                        resolve(snapshot)
+                        resolve(snapshot);
                     } else {
-                        resolve(null)
+                        resolve(null);
                     }
                 });
-            }catch (e) {
-                console.log('Error] AceBase _list: ',e)
-                resolve(null)
+            } catch (e) {
+                console.log('Error] AceBase _list: ', e);
+                resolve(null);
             }
-        })
+        });
     }
 
     _push(reference, value) {
         return new Promise(function (resolve, reject) {
-            var snapshots = null
+            var snapshots = null;
             try {
-                if(value){
-                    reference
-                    .push(value)
-                    .then(userRef => {
-                        resolve(userRef)
+                if (value) {
+                    reference.push(value).then((userRef) => {
+                        resolve(userRef);
                     });
-                }else{
-                    snapshots = reference.push()
-                    resolve(snapshots)
+                } else {
+                    snapshots = reference.push();
+                    resolve(snapshots);
                 }
             } catch (e) {
-                console.log('Error] AceBase _push')
-                resolve(null)
+                console.log('Error] AceBase _push');
+                resolve(null);
             }
-        })
+        });
     }
 
     _delete(reference) {
-        try{
-            reference.remove()
-                // .then(() => { /* removed successfully */ )};
-            return true
-        }catch (e) {
-            console.log('Error] AceBase _delete: ', e)
-            return false
+        try {
+            reference.remove();
+            // .then(() => { /* removed successfully */ )};
+            return true;
+        } catch (e) {
+            console.log('Error] AceBase _delete: ', e);
+            return false;
         }
     }
 
     _get(reference) {
         return new Promise(function (resolve, reject) {
-            try{
-                reference.get(snapshot => {
+            try {
+                reference.get((snapshot) => {
                     if (snapshot) {
-                        resolve(snapshot)
+                        resolve(snapshot);
                     } else {
-                        resolve(null)
+                        resolve(null);
                     }
                 });
             } catch (e) {
-                console.log('Error] AceBase _get: ', e)
-                resolve(null)
+                console.log('Error] AceBase _get: ', e);
+                resolve(null);
             }
-        })
+        });
     }
 
     _put(reference, value) {
@@ -143,86 +148,82 @@ export default class StorageBaseAceBase_ {
             try {
                 reference.update(value, (error) => {
                     if (error) {
-                        resolve(false)
+                        resolve(false);
                     } else {
-                        resolve(true)
+                        resolve(true);
                     }
                 });
             } catch (e) {
-                console.log('Error] AceBase _put: ', e)
-                resolve(false)
+                console.log('Error] AceBase _put: ', e);
+                resolve(false);
             }
-        })
+        });
     }
 
     _set(reference, value) {
-
         return new Promise(async function (resolve, reject) {
             try {
                 reference.set(value, (error) => {
                     if (error) {
-                        resolve(false)
+                        resolve(false);
                     } else {
-                        resolve(true)
+                        resolve(true);
                     }
                 });
             } catch (e) {
-                console.log('Error] AceBase _set: ', e)
-                resolve(false)
+                console.log('Error] AceBase _set: ', e);
+                resolve(false);
             }
-        })
+        });
     }
 
     _watch(reference, callback) {
-        try{
-            reference.on('value',snapshot => {
+        try {
+            reference.on('value', (snapshot) => {
                 if (snapshot) {
-                    callback(snapshot)
+                    callback(snapshot);
                 } else {
-                    callback(null)
+                    callback(null);
                 }
             });
-            
-        }catch (e) {
-            console.log('Error] AceBase _watch: ', e)
-            callback(undefined)
+        } catch (e) {
+            console.log('Error] AceBase _watch: ', e);
+            callback(undefined);
         }
     }
-    
+
     _watch_added(reference, option, callback) {
-        try{
-            reference.on('child_added', (snapshot) =>{
+        try {
+            reference.on('child_added', (snapshot) => {
                 if (snapshot) {
-                    callback(snapshot)
+                    callback(snapshot);
                 } else {
-                    callback(null)
+                    callback(null);
                 }
             });
-
-        }catch (e) {
-            console.log('Error] AceBase _watch_added: ', e)
-            callback(undefined)
+        } catch (e) {
+            console.log('Error] AceBase _watch_added: ', e);
+            callback(undefined);
         }
     }
-    
+
     _watch_off(reference) {
-        reference.off('child_added')
-        reference.off('value')
-        reference.off('child_changed')
+        reference.off('child_added');
+        reference.off('value');
+        reference.off('child_changed');
     }
 
-    _isConnection(reference, callback){
-        try{
-            reference.on("value", (snap) => {
+    _isConnection(reference, callback) {
+        try {
+            reference.on('value', (snap) => {
                 if (snap.val() === false && navigator.onLine == false) {
-                    callback(false)
+                    callback(false);
                 }
-                callback(true)
+                callback(true);
             });
-        }catch (e) {
-            callback(undefined)
-            console.log('Error] AceBase _isConnection: ', e)
+        } catch (e) {
+            callback(undefined);
+            console.log('Error] AceBase _isConnection: ', e);
         }
-
     }
 }

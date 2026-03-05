@@ -1,11 +1,13 @@
 <template>
     <div class="mb-3 major-hover">
-        <v-card class="align-center pa-2 pr-2 pl-2 cp-major" elevation="10"
-            style="border-radius: 10px !important; margin-bottom:5px; border: 4px solid rgba(var(--v-theme-primary), 0.2);"
+        <v-card
+            class="align-center pa-2 pr-2 pl-2 cp-major"
+            elevation="10"
+            style="border-radius: 10px !important; margin-bottom: 5px; border: 4px solid rgba(var(--v-theme-primary), 0.2)"
         >
             <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-1 font-weight-semibold">
                 <v-row class="ma-0 pa-0 align-center">
-                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1 d-flex align-center" style="min-width: 0;">
+                    <v-col cols="auto" class="ma-0 pa-0 text-left flex-grow-1 d-flex align-center" style="min-width: 0">
                         <!-- 전체 탭에서 도메인 표시 (이름 왼쪽) -->
                         <!-- <v-chip v-if="!selectedDomain && value.domain"
                             size="x-small"
@@ -16,7 +18,13 @@
                         >
                             {{ value.domain }}
                         </v-chip> -->
-                        <div class="text-truncate font-weight-bold cursor-pointer" style="font-size: 0.9rem;" @click="goProcess(parent.name, 'mega')">{{ value.name }}</div>
+                        <div
+                            class="text-truncate font-weight-bold cursor-pointer"
+                            style="font-size: 0.9rem"
+                            @click="goProcess(parent.name, 'mega')"
+                        >
+                            {{ value.name }}
+                        </div>
                     </v-col>
                     <v-col cols="auto" class="ma-0 pa-0">
                         <ProcessMenu
@@ -33,7 +41,8 @@
                     </v-col>
                 </v-row>
             </h6>
-            <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'update'"
+            <ProcessDialog
+                v-else-if="processDialogStatus && enableEdit && processType === 'update'"
                 :enableEdit="enableEdit"
                 :process="value"
                 :processDialogStatus="processDialogStatus"
@@ -44,7 +53,8 @@
             />
         </v-card>
 
-        <draggable v-if="enableEdit"
+        <draggable
+            v-if="enableEdit"
             class="dragArea list-group"
             :list="value.sub_proc_list"
             :animation="200"
@@ -53,17 +63,32 @@
         >
             <transition-group>
                 <div v-for="item in value.sub_proc_list" :key="item.id" class="cursor-pointer" v-show="isSubProcessVisible(item)">
-                    <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                    <SubProcess
+                        :value="item"
+                        :parent="value"
+                        :enableEdit="enableEdit"
+                        @clickProcess="clickProcess"
+                        :isExecutionByProject="isExecutionByProject"
+                        @clickPlayBtn="clickPlayBtn"
+                    />
                 </div>
             </transition-group>
         </draggable>
         <div v-else>
             <div v-for="item in filteredSubProcList" :key="item.id">
-                <SubProcess :value="item" :parent="value" :enableEdit="enableEdit" @clickProcess="clickProcess" :isExecutionByProject="isExecutionByProject" @clickPlayBtn="clickPlayBtn"/>
+                <SubProcess
+                    :value="item"
+                    :parent="value"
+                    :enableEdit="enableEdit"
+                    @clickProcess="clickProcess"
+                    :isExecutionByProject="isExecutionByProject"
+                    @clickPlayBtn="clickPlayBtn"
+                />
             </div>
         </div>
         <!-- Add Sub Process Dialog: 특정 도메인 탭에서만 표시 -->
-        <ProcessDialog v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
+        <ProcessDialog
+            v-if="processDialogStatus && enableEdit && processType === 'add' && (selectedDomain || isPalUengine)"
             :enableEdit="enableEdit"
             :process="value"
             :processDialogStatus="processDialogStatus"
@@ -71,7 +96,7 @@
             :type="type"
             @add="addProcess"
             @closeProcessDialog="closeProcessDialog"
-            style="margin-top:20px !important;"
+            style="margin-top: 20px !important"
         />
     </div>
 </template>
@@ -96,7 +121,7 @@ export default {
         isExecutionByProject: Boolean,
         selectedDomain: [String, Number],
         domains: Array,
-        filteredProcDefIds: Array  // null = no filter, [] = filter active but no matches
+        filteredProcDefIds: Array // null = no filter, [] = filter active but no matches
     },
     data: () => ({
         type: 'major'
@@ -120,7 +145,7 @@ export default {
         },
         domainColor() {
             if (!this.value.domain || !this.domains) return null;
-            const domain = this.domains.find(d => d.name === this.value.domain);
+            const domain = this.domains.find((d) => d.name === this.value.domain);
             return domain?.color || null;
         },
         domainTextColor() {
@@ -138,7 +163,7 @@ export default {
                 return this.value.sub_proc_list || [];
             }
             // Filter by proc_def_ids from process_organizations table
-            return this.value.sub_proc_list.filter(sub => {
+            return this.value.sub_proc_list.filter((sub) => {
                 return this.filteredProcDefIds.includes(sub.id);
             });
         }
@@ -146,9 +171,7 @@ export default {
     methods: {
         async addProcess(newProcess) {
             // 같은 레벨에 동일한 이름이 있는지 검증
-            const isDuplicate = this.value.sub_proc_list.some(
-                item => item.name.toLowerCase() === newProcess.name.toLowerCase()
-            );
+            const isDuplicate = this.value.sub_proc_list.some((item) => item.name.toLowerCase() === newProcess.name.toLowerCase());
             if (isDuplicate) {
                 this.$toast.error(this.$t('processDefinitionMap.duplicateName') || '동일한 이름의 프로세스가 이미 존재합니다.');
                 return;
@@ -166,7 +189,8 @@ export default {
 
             this.value.sub_proc_list.push({
                 id: processId,
-                name: newProcess.name
+                name: newProcess.name,
+                ...(newProcess.commonModule !== undefined && { commonModule: !!newProcess.commonModule })
             });
 
             // Navigate to process editor if this is a newly created process
@@ -180,8 +204,8 @@ export default {
             this.processDialogStatus = true;
         },
         deleteProcess() {
-            this.parent.major_proc_list = this.parent.major_proc_list.filter(item => item.id != this.value.id);
-            
+            this.parent.major_proc_list = this.parent.major_proc_list.filter((item) => item.id != this.value.id);
+
             // 성공 메시지 표시
             if (window.$app_) {
                 window.$app_.snackbarMessage = this.$t('successMsg.delete');
@@ -193,8 +217,8 @@ export default {
         clickProcess(id) {
             this.$emit('clickProcess', id);
         },
-        clickPlayBtn(value){
-            this.$emit('clickPlayBtn', value)
+        clickPlayBtn(value) {
+            this.$emit('clickPlayBtn', value);
         },
         isSubProcessVisible(item) {
             // null = no filter active, show all
@@ -202,10 +226,9 @@ export default {
                 return true;
             }
             return this.filteredProcDefIds.includes(item.id);
-        },
-    },
-}
+        }
+    }
+};
 </script>
 
-<style>
-</style>
+<style></style>

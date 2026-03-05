@@ -1,14 +1,14 @@
 <template>
     <div class="tutorial-main">
         <div class="tutorial-layout">
-            <TutorialSidebar 
+            <TutorialSidebar
                 ref="sidebar"
                 :current-page="currentPage"
                 :sections-data="sectionsData"
                 @page-selected="selectPage"
                 @close-tutorial="closeTutorial"
             />
-            <TutorialContent 
+            <TutorialContent
                 :current-page="currentPage"
                 :all-pages="allPages"
                 @page-selected="selectPage"
@@ -19,9 +19,9 @@
 </template>
 
 <script>
-import TutorialSidebar from './TutorialSidebar.vue'
-import TutorialContent from './TutorialContent.vue'
-import markdownLoader from './utils/markdownLoader.js'
+import TutorialSidebar from './TutorialSidebar.vue';
+import TutorialContent from './TutorialContent.vue';
+import markdownLoader from './utils/markdownLoader.js';
 
 export default {
     name: 'TutorialMain',
@@ -34,7 +34,7 @@ export default {
             currentPage: null,
             allPages: [],
             sectionsData: {}
-        }
+        };
     },
     async created() {
         await this.initializePages();
@@ -45,21 +45,21 @@ export default {
                 // 마크다운 메타데이터 가져오기
                 const groupedMetadata = await markdownLoader.getGroupedMetadata();
                 this.sectionsData = groupedMetadata;
-                
+
                 // 모든 페이지를 평면화하여 배열로 만듦
                 this.allPages = [];
-                Object.values(groupedMetadata).forEach(sectionItems => {
-                    sectionItems.forEach(item => {
-                                                       this.allPages.push({
-                                   path: item.path, // 라우트 구조의 path 사용
-                                   title: item.title,
-                                   markdownFile: item.fileName,
-                                   section: item.section,
-                                   order: item.order
-                               });
+                Object.values(groupedMetadata).forEach((sectionItems) => {
+                    sectionItems.forEach((item) => {
+                        this.allPages.push({
+                            path: item.path, // 라우트 구조의 path 사용
+                            title: item.title,
+                            markdownFile: item.fileName,
+                            section: item.section,
+                            order: item.order
+                        });
                     });
                 });
-                
+
                 // 로딩 완료 이벤트 전송
                 this.$emit('tutorial-loaded');
             } catch (error) {
@@ -74,7 +74,7 @@ export default {
         closeTutorial() {
             this.$emit('close-tutorial');
         },
-        
+
         // 튜토리얼 링크 클릭 처리
         handleTutorialLinkClick(targetPath) {
             // 사이드바의 selectPageByPath 메서드 호출
@@ -83,7 +83,7 @@ export default {
             }
         }
     }
-}
+};
 </script>
 
 <style scoped>
@@ -102,7 +102,7 @@ export default {
         width: 100%;
         height: auto;
     }
-    
+
     .tutorial-content {
         margin-left: 0;
     }

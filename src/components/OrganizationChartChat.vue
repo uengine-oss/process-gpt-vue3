@@ -46,13 +46,13 @@
 
             <template v-slot:rightpart>
                 <OrganizationChart
-                        :node="organizationChart"
-                        :key="organizationChart.id"
-                        :userList="userList"
-                        @updateNode="updateNode"
-                        @addMember="openAddDialog"
-                        @deleteAgent="handleDeleteAgentFromChart"
-                        ref="organizationChart"
+                    :node="organizationChart"
+                    :key="organizationChart.id"
+                    :userList="userList"
+                    @updateNode="updateNode"
+                    @addMember="openAddDialog"
+                    @deleteAgent="handleDeleteAgentFromChart"
+                    ref="organizationChart"
                 ></OrganizationChart>
             </template>
 
@@ -72,18 +72,18 @@
 </template>
 
 <script>
-import partialParse from "partial-json-parser";
+import partialParse from 'partial-json-parser';
 
-import ChatGenerator from "@/components/ai/OrganizationChartGenerator";
-import ChatModule from "@/components/ChatModule.vue";
+import ChatGenerator from '@/components/ai/OrganizationChartGenerator';
+import ChatModule from '@/components/ChatModule.vue';
 import AgentCrudMixin from '@/mixins/AgentCrudMixin.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 
 import AppBaseCard from '@/components/shared/AppBaseCard.vue';
 
-import Chat from "@/components/ui/Chat.vue";
-import OrganizationChart from "@/components/ui/OrganizationChart.vue";
-import OrganizationAddDialog from "@/components/ui/OrganizationAddDialog.vue";
+import Chat from '@/components/ui/Chat.vue';
+import OrganizationChart from '@/components/ui/OrganizationChart.vue';
+import OrganizationAddDialog from '@/components/ui/OrganizationAddDialog.vue';
 
 export default {
     mixins: [ChatModule, AgentCrudMixin],
@@ -91,18 +91,18 @@ export default {
         AppBaseCard,
         Chat,
         OrganizationChart,
-        OrganizationAddDialog,
+        OrganizationAddDialog
     },
     data: () => ({
         organizationChart: {},
         organizationChartId: null,
         chatInfo: {
-            title: "organizationChartDefinition.cardTitle",
-            text: "organizationChartDefinition.organizationChartExplanation"
+            title: 'organizationChartDefinition.cardTitle',
+            text: 'organizationChartDefinition.organizationChartExplanation'
         },
         addDialog: false,
         userList: [],
-        editNode: null,
+        editNode: null
     }),
     async mounted() {
         await this.init();
@@ -110,16 +110,16 @@ export default {
 
         this.generator = new ChatGenerator(this, {
             isStream: true,
-            preferredLanguage: "Korean"
+            preferredLanguage: 'Korean'
         });
 
         if (this.organizationChart && !this.organizationChart.id) {
             this.organizationChart = {
-                id: "root",
+                id: 'root',
                 data: {
-                    id: "root",
-                    img: "",
-                    name: defaultName,
+                    id: 'root',
+                    img: '',
+                    name: defaultName
                 },
                 children: []
             };
@@ -135,7 +135,7 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
-        },
+        }
     },
     watch: {
         organizationChart: {
@@ -174,23 +174,23 @@ export default {
         beforeSendMessage(newMessage) {
             this.sendMessage(newMessage);
             const msgObj = this.createMessageObj(newMessage);
-            const putObj =  {
+            const putObj = {
                 id: 'organization_chart_chat',
                 uuid: this.uuid(),
-                messages: msgObj,
+                messages: msgObj
             };
-            this.putObject("chats", putObj);
+            this.putObject('chats', putObj);
         },
         afterModelCreated(response) {
             let messageWriting = this.messages[this.messages.length - 1];
 
             if (messageWriting.jsonContent) {
-                let unknown
+                let unknown;
                 try {
                     unknown = partialParse(messageWriting.jsonContent);
-                } catch(e) {
-                    console.log(e)
-                    unknown = JSON.parse(messageWriting.jsonContent)
+                } catch (e) {
+                    console.log(e);
+                    unknown = JSON.parse(messageWriting.jsonContent);
                 }
 
                 if (unknown && !unknown.modifications) {
@@ -211,71 +211,70 @@ export default {
                 if (messageWriting.jsonContent) {
                     let unknown;
                     try {
-                        unknown = JSON.parse(messageWriting.jsonContent)
-                    } catch(e) {
+                        unknown = JSON.parse(messageWriting.jsonContent);
+                    } catch (e) {
                         try {
                             unknown = partialParse(messageWriting.jsonContent);
-                        } catch(e) {
-                            console.log(e)
+                        } catch (e) {
+                            console.log(e);
                             return;
                         }
                     }
 
                     if (unknown && unknown.modifications) {
-                        unknown.modifications.forEach(modification => {
-                            if (modification.action == "replace") {
-                                this.jsonPathReplace(this, modification.targetJsonPath, modification.value)
-                            } else if (modification.action == "add") {
-                                this.jsonPathAdd(this, modification.targetJsonPath, modification.value)
-                            } else if (modification.action == "delete") {
-                                this.jsonPathDelete(this, modification.targetJsonPath)
+                        unknown.modifications.forEach((modification) => {
+                            if (modification.action == 'replace') {
+                                this.jsonPathReplace(this, modification.targetJsonPath, modification.value);
+                            } else if (modification.action == 'add') {
+                                this.jsonPathAdd(this, modification.targetJsonPath, modification.value);
+                            } else if (modification.action == 'delete') {
+                                this.jsonPathDelete(this, modification.targetJsonPath);
                             }
                         });
                     }
 
-                    
-                    var putObj =  {
+                    var putObj = {
                         key: 'organization',
                         value: {
-                            chart: this.organizationChart,
-                        },
+                            chart: this.organizationChart
+                        }
                     };
                     this.drawChart(this.organizationChart);
                     if (this.organizationChartId) {
                         putObj.uuid = this.organizationChartId;
                     }
-                    await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
+                    await this.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
                 }
 
                 const newMessage = this.messages[this.messages.length - 1];
-                var putObj =  {
+                var putObj = {
                     id: 'organization_chart_chat',
                     uuid: this.uuid(),
-                    messages: newMessage,
+                    messages: newMessage
                 };
-                this.putObject("chats", putObj);
-            } catch(e) {
+                this.putObject('chats', putObj);
+            } catch (e) {
                 console.log(e);
             }
         },
         afterModelStopped(response) {
             const newMessage = this.messages[this.messages.length - 1];
-            const putObj =  {
+            const putObj = {
                 id: 'organization_chart_chat',
                 uuid: this.uuid(),
-                messages: newMessage,
+                messages: newMessage
             };
-            this.putObject("chats", putObj);
+            this.putObject('chats', putObj);
         },
         async createNewUser(user) {
-            var me = this
+            var me = this;
             me.$try({
                 action: async () => {
                     let userInfo = {
                         username: user.name,
                         email: user.email,
                         role: user.role
-                    }
+                    };
                     const result = await me.backend.createUser(userInfo);
                     if (!result.error) {
                         const newUserId = result.user.id;
@@ -283,13 +282,13 @@ export default {
                             id: newUserId,
                             data: {
                                 id: newUserId,
-                                img: "/images/defaultUser.png",
+                                img: '/images/defaultUser.png',
                                 name: user.name,
                                 email: user.email,
                                 role: user.role,
-                                pid: me.editNode.id,
+                                pid: me.editNode.id
                             },
-                            name: user.name,
+                            name: user.name
                         });
 
                         // 새 사용자의 department_id 설정
@@ -304,27 +303,27 @@ export default {
                     }
                 },
                 successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
-                errorMsg: me.$t('organizationChartDefinition.addUserFailed'),
+                errorMsg: me.$t('organizationChartDefinition.addUserFailed')
             });
         },
         async updateNode() {
-            var putObj =  {
+            var putObj = {
                 key: 'organization',
                 value: {
-                    chart: this.organizationChart,
+                    chart: this.organizationChart
                 }
             };
             if (this.organizationChartId) {
                 putObj.uuid = this.organizationChartId;
             }
-            await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
+            await this.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
         },
         async updateTeam(type, editNode, newTeam) {
             console.log('OrganizationChartChat - updateTeam 호출');
             console.log('type:', type);
             console.log('editNode:', editNode);
             console.log('newTeam:', newTeam);
-            
+
             if (type == 'add') {
                 this.organizationChart.children.push({
                     id: newTeam.id,
@@ -332,10 +331,10 @@ export default {
                     children: []
                 });
             } else if (type == 'delete') {
-                this.organizationChart.children = this.organizationChart.children.filter(child => child.id !== editNode.id);
+                this.organizationChart.children = this.organizationChart.children.filter((child) => child.id !== editNode.id);
             } else if (type == 'edit') {
                 console.log('팀 수정 전 organizationChart.children:', JSON.parse(JSON.stringify(this.organizationChart.children)));
-                const teamIndex = this.organizationChart.children.findIndex(team => team.id === editNode.id);
+                const teamIndex = this.organizationChart.children.findIndex((team) => team.id === editNode.id);
                 console.log('수정할 팀 인덱스:', teamIndex);
                 if (teamIndex !== -1) {
                     console.log('수정 전 팀 데이터:', JSON.parse(JSON.stringify(this.organizationChart.children[teamIndex])));
@@ -386,9 +385,7 @@ export default {
                 if (!supabase) return;
 
                 // 각 사용자의 department_id 업데이트
-                const userIds = userList
-                    .filter(u => u.id && !u.data?.isAgent && !u.isAgent)
-                    .map(u => u.id);
+                const userIds = userList.filter((u) => u.id && !u.data?.isAgent && !u.isAgent).map((u) => u.id);
 
                 if (userIds.length > 0) {
                     const { error } = await supabase
@@ -431,19 +428,19 @@ export default {
             });
         },
         deleteNode(obj, children) {
-            if (children && children.some(item => item.id == obj.id)) {
-                children = children.filter(item => item.id != obj.id);
+            if (children && children.some((item) => item.id == obj.id)) {
+                children = children.filter((item) => item.id != obj.id);
             } else {
                 children.forEach((item) => {
                     item.children = this.deleteNode(obj, item.children);
-                })
+                });
             }
             return children;
         },
         async handleUserDeleted(userId) {
             this.organizationChart.children = this.deleteNode({ id: userId }, this.organizationChart.children);
             await this.updateNode();
-            
+
             if (this.$refs.organizationChart) {
                 this.$refs.organizationChart.loadUserList();
                 this.$refs.organizationChart.drawTree();
@@ -483,5 +480,5 @@ export default {
             return null;
         }
     }
-}
+};
 </script>

@@ -1,8 +1,7 @@
-
 <script setup lang="ts">
 import { ref } from 'vue';
 // icons
-import { UserIcon} from 'vue-tabler-icons';
+import { UserIcon } from 'vue-tabler-icons';
 </script>
 <template>
     <div class="text-center">

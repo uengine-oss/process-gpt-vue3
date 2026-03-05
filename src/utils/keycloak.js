@@ -63,7 +63,7 @@ export function getKeycloakTokenParsed() {
     if (keycloak && keycloak.tokenParsed) {
         return keycloak.tokenParsed;
     }
-    
+
     // localStorage에서 토큰을 가져와서 파싱 시도
     const token = getKeycloakToken();
     if (token) {
@@ -71,9 +71,14 @@ export function getKeycloakTokenParsed() {
             // JWT 토큰은 base64로 인코딩된 3부분으로 구성: header.payload.signature
             const base64Url = token.split('.')[1];
             const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map(function (c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    })
+                    .join('')
+            );
             return JSON.parse(jsonPayload);
         } catch (e) {
             console.warn('Failed to parse token:', e);
@@ -81,8 +86,6 @@ export function getKeycloakTokenParsed() {
     }
     return null;
 }
-
-
 
 /**
  * Keycloak Admin API를 통해 전체 그룹 목록 가져오기
@@ -100,7 +103,7 @@ async function getGroupsFromAdminAPI(token, keycloakUrl, realm) {
         const response = await fetch(adminUrl, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
@@ -110,7 +113,7 @@ async function getGroupsFromAdminAPI(token, keycloakUrl, realm) {
             // 그룹 이름만 추출 (중첩된 그룹도 처리)
             const extractGroupNames = (groupList) => {
                 const names = [];
-                groupList.forEach(group => {
+                groupList.forEach((group) => {
                     if (group.name) {
                         names.push(group.name);
                     }
@@ -121,7 +124,7 @@ async function getGroupsFromAdminAPI(token, keycloakUrl, realm) {
                 });
                 return names;
             };
-            return extractGroupNames(groups).filter(g => g && g.trim());
+            return extractGroupNames(groups).filter((g) => g && g.trim());
         } else if (response.status === 401) {
             const errorText = await response.text().catch(() => '');
             console.error('Keycloak Admin API 401 Unauthorized:', errorText);
@@ -168,7 +171,7 @@ async function getUserGroups(token, keycloakUrl, realm, userId = null) {
         const userInfoResponse = await fetch(userInfoUrl, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
@@ -176,11 +179,13 @@ async function getUserGroups(token, keycloakUrl, realm, userId = null) {
         if (userInfoResponse.ok) {
             const userInfo = await userInfoResponse.json();
             if (userInfo.groups && userInfo.groups.length > 0) {
-                const groups = Array.isArray(userInfo.groups) 
-                    ? userInfo.groups 
-                    : (typeof userInfo.groups === 'string' ? userInfo.groups.split(',') : []);
+                const groups = Array.isArray(userInfo.groups)
+                    ? userInfo.groups
+                    : typeof userInfo.groups === 'string'
+                    ? userInfo.groups.split(',')
+                    : [];
                 if (groups.length > 0) {
-                    return groups.filter(g => g && g.trim());
+                    return groups.filter((g) => g && g.trim());
                 }
             }
         } else {
@@ -201,14 +206,14 @@ async function getUserGroups(token, keycloakUrl, realm, userId = null) {
                 const response = await fetch(userGroupsUrl, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
                 if (response.ok) {
                     const groups = await response.json();
-                    const groupNames = groups.map(g => g.name || g.path?.replace(/^\//, '') || '').filter(g => g && g.trim());
+                    const groupNames = groups.map((g) => g.name || g.path?.replace(/^\//, '') || '').filter((g) => g && g.trim());
                     if (groupNames.length > 0) {
                         return groupNames;
                     }
@@ -265,11 +270,13 @@ export async function getUsersByGroups(groupNames) {
 
             try {
                 // 1. 그룹 이름으로 그룹 검색하여 그룹 ID 찾기
-                const searchUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups?search=${encodeURIComponent(groupName.trim())}`;
+                const searchUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups?search=${encodeURIComponent(
+                    groupName.trim()
+                )}`;
                 const searchResponse = await fetch(searchUrl, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -277,15 +284,15 @@ export async function getUsersByGroups(groupNames) {
                 if (searchResponse.ok) {
                     const foundGroups = await searchResponse.json();
                     // 그룹 이름으로 정확히 일치하는 그룹 찾기
-                    const group = foundGroups.find(g => g.name === groupName.trim());
-                    
+                    const group = foundGroups.find((g) => g.name === groupName.trim());
+
                     if (group && group.id) {
                         // 2. 그룹 ID로 멤버 목록 가져오기
                         const membersUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups/${group.id}/members`;
                         const membersResponse = await fetch(membersUrl, {
                             method: 'GET',
                             headers: {
-                                'Authorization': `Bearer ${token}`,
+                                Authorization: `Bearer ${token}`,
                                 'Content-Type': 'application/json'
                             }
                         });
@@ -293,7 +300,7 @@ export async function getUsersByGroups(groupNames) {
                         if (membersResponse.ok) {
                             const members = await membersResponse.json();
                             // 중복 제거하면서 사용자 정보 추가
-                            members.forEach(user => {
+                            members.forEach((user) => {
                                 if (!processedUserIds.has(user.id)) {
                                     processedUserIds.add(user.id);
                                     allUsers.push({
@@ -403,24 +410,24 @@ export async function getUserGroupsOnly(options = {}) {
             const response = await fetch(userGroupsUrl, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
 
             if (response.ok) {
                 const userGroups = await response.json();
-                const userGroupNames = userGroups.map(g => g.name || g.path?.replace(/^\//, '') || '').filter(g => g && g.trim());
-                
+                const userGroupNames = userGroups.map((g) => g.name || g.path?.replace(/^\//, '') || '').filter((g) => g && g.trim());
+
                 // 전체 그룹 목록에서 사용자가 속한 그룹만 필터링
-                return allGroups.filter(groupName => userGroupNames.includes(groupName));
+                return allGroups.filter((groupName) => userGroupNames.includes(groupName));
             } else if (response.status === 403 || response.status === 401) {
                 console.warn('User groups Admin API access denied (403/401): userinfo 엔드포인트로 fallback');
                 // Admin API 실패 시 userinfo 엔드포인트로 fallback
                 const userGroups = await getUserGroups(token, keycloakUrl, realm, targetUserId);
                 if (userGroups && userGroups.length > 0) {
                     // 전체 그룹 목록에서 사용자가 속한 그룹만 필터링
-                    return allGroups.filter(groupName => userGroups.includes(groupName));
+                    return allGroups.filter((groupName) => userGroups.includes(groupName));
                 }
             }
         } catch (error) {
@@ -429,7 +436,7 @@ export async function getUserGroupsOnly(options = {}) {
             const userGroups = await getUserGroups(token, keycloakUrl, realm, targetUserId);
             if (userGroups && userGroups.length > 0) {
                 // 전체 그룹 목록에서 사용자가 속한 그룹만 필터링
-                return allGroups.filter(groupName => userGroups.includes(groupName));
+                return allGroups.filter((groupName) => userGroups.includes(groupName));
             }
         }
 
@@ -437,7 +444,7 @@ export async function getUserGroupsOnly(options = {}) {
         const userGroups = await getUserGroups(token, keycloakUrl, realm, targetUserId);
         if (userGroups && userGroups.length > 0) {
             // 전체 그룹 목록에서 사용자가 속한 그룹만 필터링
-            return allGroups.filter(groupName => userGroups.includes(groupName));
+            return allGroups.filter((groupName) => userGroups.includes(groupName));
         }
 
         return [];
@@ -457,11 +464,14 @@ export function getGroupsFromToken() {
         if (tokenParsed && tokenParsed.groups) {
             // groups가 배열인 경우
             if (Array.isArray(tokenParsed.groups)) {
-                return tokenParsed.groups.filter(g => g && g.trim());
+                return tokenParsed.groups.filter((g) => g && g.trim());
             }
             // groups가 문자열인 경우 (쉼표로 구분)
             if (typeof tokenParsed.groups === 'string') {
-                return tokenParsed.groups.split(',').map(g => g.trim()).filter(g => g);
+                return tokenParsed.groups
+                    .split(',')
+                    .map((g) => g.trim())
+                    .filter((g) => g);
             }
         }
         return [];
@@ -500,11 +510,11 @@ export async function getAllUsers(options = {}) {
         // Keycloak Admin API: GET /admin/realms/{realm}/users
         // 참고: https://www.keycloak.org/docs-api/latest/rest-api/index.html#_users_resource
         let usersUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/users?max=${Math.min(max, 100)}&first=${first}`;
-        
+
         if (search) {
             usersUrl += `&search=${encodeURIComponent(search)}`;
         }
-        
+
         if (briefRepresentation) {
             usersUrl += `&briefRepresentation=true`;
         }
@@ -512,7 +522,7 @@ export async function getAllUsers(options = {}) {
         const response = await fetch(usersUrl, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
@@ -543,9 +553,9 @@ export async function getAllUsers(options = {}) {
         }
 
         const users = await response.json();
-        
+
         // 사용자 객체를 표준 형식으로 변환
-        return users.map(user => ({
+        return users.map((user) => ({
             id: user.id,
             username: user.username || '',
             email: user.email || '',
@@ -555,7 +565,6 @@ export async function getAllUsers(options = {}) {
             createdTimestamp: user.createdTimestamp,
             emailVerified: user.emailVerified || false
         }));
-
     } catch (error) {
         console.error('Error fetching all users from Keycloak Admin API:', error);
         return [];
@@ -596,7 +605,7 @@ export async function getAllRoles(options = {}) {
         const response = await fetch(rolesUrl, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
@@ -628,14 +637,13 @@ export async function getAllRoles(options = {}) {
         }
 
         const roles = await response.json();
-        
+
         // 역할 객체를 표준 형식으로 변환
-        return roles.map(role => ({
+        return roles.map((role) => ({
             id: role.id,
             name: role.name || '',
             description: role.description || ''
         }));
-
     } catch (error) {
         console.error('Error fetching all roles:', error);
         return [];
@@ -671,26 +679,30 @@ export async function getAllDepartments(options = {}) {
         if (departmentGroupPath) {
             try {
                 // 부서 그룹 찾기
-                const groupsUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups?search=${encodeURIComponent(departmentGroupPath)}`;
+                const groupsUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups?search=${encodeURIComponent(
+                    departmentGroupPath
+                )}`;
                 const groupsResponse = await fetch(groupsUrl, {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
                 if (groupsResponse.ok) {
                     const groups = await groupsResponse.json();
-                    const departmentGroup = groups.find(g => g.path === departmentGroupPath);
-                    
+                    const departmentGroup = groups.find((g) => g.path === departmentGroupPath);
+
                     if (departmentGroup) {
                         // 부서 그룹의 하위 그룹 가져오기
-                        const subGroupsUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups/${departmentGroup.id}?populateHierarchy=true`;
+                        const subGroupsUrl = `${keycloakUrl.replace(/\/$/, '')}/admin/realms/${realm}/groups/${
+                            departmentGroup.id
+                        }?populateHierarchy=true`;
                         const subGroupsResponse = await fetch(subGroupsUrl, {
                             method: 'GET',
                             headers: {
-                                'Authorization': `Bearer ${token}`,
+                                Authorization: `Bearer ${token}`,
                                 'Content-Type': 'application/json'
                             }
                         });
@@ -698,7 +710,7 @@ export async function getAllDepartments(options = {}) {
                         if (subGroupsResponse.ok) {
                             const subGroup = await subGroupsResponse.json();
                             if (subGroup.subGroups && subGroup.subGroups.length > 0) {
-                                return subGroup.subGroups.map(dept => ({
+                                return subGroup.subGroups.map((dept) => ({
                                     id: dept.id,
                                     name: dept.name || '',
                                     path: dept.path || ''
@@ -724,7 +736,7 @@ export async function getAllDepartments(options = {}) {
         // 또는 전체 그룹 목록을 반환 (부서로 사용)
         try {
             const allGroups = await getAllGroups();
-            return allGroups.map(groupName => ({
+            return allGroups.map((groupName) => ({
                 id: groupName,
                 name: groupName,
                 path: `/${groupName}`
@@ -734,7 +746,6 @@ export async function getAllDepartments(options = {}) {
         }
 
         return [];
-
     } catch (error) {
         console.error('Error fetching all departments:', error);
         return [];
@@ -751,11 +762,10 @@ export async function getAllDepartments(options = {}) {
  */
 export async function getGroups(options = {}) {
     const { getAllGroups = true } = options;
-    
+
     if (getAllGroups) {
         return await getAllGroups();
     } else {
         return await getUserGroupsOnly(options);
     }
 }
-

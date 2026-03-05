@@ -48,7 +48,7 @@ export default {
     },
     mounted() {
         this.initializeModeler();
-        
+
         if (this.url) {
             this.fetchDiagram(this.url);
         } else if (this.dmn) {
@@ -125,7 +125,7 @@ export default {
             // import 완료 이벤트
             eventBus.on('import.done', (event) => {
                 const { error, warnings } = event;
-                
+
                 if (error) {
                     self.$emit('error', error);
                 } else {
@@ -141,7 +141,7 @@ export default {
                 // definitions emit
                 const definitions = self.dmnModeler.getDefinitions();
                 self.$emit('definition', definitions);
-                
+
                 // 팔레트에 중앙 복귀 버튼 추가
                 self.addCenterButtonToPalette();
             });
@@ -247,17 +247,17 @@ export default {
         addCenterButtonToPalette() {
             const container = this.$refs.container;
             if (!container) return;
-            
+
             const palette = container.querySelector('.djs-palette');
             if (!palette) return;
-            
+
             // 이미 버튼이 있으면 추가하지 않음
             if (palette.querySelector('.dmn-icon-center-viewport')) return;
-            
+
             // tools 그룹 찾기
             const toolsGroup = palette.querySelector('[data-group="tools"]');
             if (!toolsGroup) return;
-            
+
             // 중앙 복귀 버튼 생성
             const centerButton = document.createElement('div');
             centerButton.className = 'entry dmn-icon-center-viewport';
@@ -265,11 +265,11 @@ export default {
             centerButton.setAttribute('data-action', 'center-viewport');
             centerButton.setAttribute('title', 'Center viewport');
             centerButton.innerHTML = '<i class="mdi mdi-crosshairs-gps" style="font-size: 20px; color: #444;"></i>';
-            
+
             centerButton.addEventListener('click', () => {
                 this.resetViewportToCenter();
             });
-            
+
             // tools 그룹 내부에 버튼 추가
             toolsGroup.appendChild(centerButton);
         },
@@ -310,4 +310,3 @@ export default {
     display: block !important;
 }
 </style>
-

@@ -72,8 +72,8 @@ const sidebarItems = ref<SidebarItem[]>([
         icon: 'user-admin',
         to: '/admin',
         disable: false,
-        isVisible: isAdmin // Only visible if isAdmin is true
-    },
+        isVisible: isAdmin && !(window as any).$pal // 관리자만 표시, PAL 모드에서는 숨김
+    }
     // {
     //     title: 'headerMenu.calendar',
     //     icon: 'calendar-line-duotone',
@@ -85,8 +85,9 @@ const sidebarItems = ref<SidebarItem[]>([
 
 // 생명주기 훅 사용
 onBeforeMount(() => {
-    if (window.$mode === 'ProcessGPT') {
-        sidebarItems.value = sidebarItems.value.filter(item => item.to !== '/admin');
+    // ProcessGPT 모드 또는 PAL 모드에서는 관리자 페이지 메뉴 숨김
+    if (window.$mode === 'ProcessGPT' || (window as any).$pal) {
+        sidebarItems.value = sidebarItems.value.filter((item) => item.to !== '/admin');
     }
     window.addEventListener('scroll', handleScroll);
 });
@@ -94,7 +95,7 @@ onBeforeMount(() => {
 onMounted(() => {
     const handleResize = () => {
         const width = window.innerWidth;
-        sidebarItems.value.forEach(item => {
+        sidebarItems.value.forEach((item) => {
             if (item.isMobile !== undefined) {
                 item.isMobile = width > 1280;
             }
@@ -107,7 +108,7 @@ onMounted(() => {
     // 알림 뱃지 업데이트 이벤트 리스너 등록
     window.addEventListener('update-notification-badge', handleNotificationBadgeUpdate);
 
-    if(chatNotiCount.value > 0) {
+    if (chatNotiCount.value > 0) {
         emit('update-noti-count', chatNotiCount.value);
     }
 
@@ -148,7 +149,7 @@ function navigateTo(item: SidebarItem) {
     if (!item.disable) {
         const currentPath = router.currentRoute.value.path;
         const isSamePath = currentPath === item.to;
-        
+
         if (isSamePath) {
             // 같은 경로일 때는 모바일에서 사이드바만 닫기
             if (window.innerWidth <= 768) {
@@ -158,7 +159,7 @@ function navigateTo(item: SidebarItem) {
             // 다른 경로일 때만 라우터 이동
             router.push(item.to);
         }
-        
+
         // 할일 목록 페이지로 이동 시 워크아이템 뱃지 제거
         if (item.to === '/todolist') {
             workItemNotiBadge.value = false;
@@ -170,7 +171,7 @@ function navigateTo(item: SidebarItem) {
 // 새 알림 처리 함수
 function newNotification(type: string) {
     if (type === 'workitem_bpm' || type === 'workitem') {
-        if(window.location.pathname != '/todolist') {
+        if (window.location.pathname != '/todolist') {
             workItemNotiBadge.value = true;
             localStorage.setItem('notificationBadge_workitem', 'true');
         }
@@ -187,30 +188,32 @@ function handleNotificationBadgeUpdate(event: Event) {
     const customEvent = event as CustomEvent;
     const data = customEvent.detail;
     if (data.type === 'chat') {
-        if(data.value) {
-            if(!chatNotiIds.value.includes(data.id)) {
+        if (data.value) {
+            if (!chatNotiIds.value.includes(data.id)) {
                 chatNotiCount.value++;
                 chatNotiIds.value.push(data.id);
             }
         } else {
-            if(chatNotiIds.value.includes(data.id)) {
-                chatNotiIds.value = chatNotiIds.value.filter(id => id !== data.id);
+            if (chatNotiIds.value.includes(data.id)) {
+                chatNotiIds.value = chatNotiIds.value.filter((id) => id !== data.id);
                 chatNotiCount.value--;
             }
         }
-        
-        localStorage.setItem('chatNotiData', JSON.stringify({
-            count: chatNotiCount.value,
-            ids: chatNotiIds.value
-        }));
+
+        localStorage.setItem(
+            'chatNotiData',
+            JSON.stringify({
+                count: chatNotiCount.value,
+                ids: chatNotiIds.value
+            })
+        );
         emit('update-noti-count', chatNotiCount.value);
-    } 
+    }
     // else if (data.type === 'workitem') {
-        
+
     // }
 }
 </script>
-
 
 <template>
     <!-- 모바일 헤더 -->
@@ -228,13 +231,15 @@ function handleNotificationBadgeUpdate(event: Event) {
                 <v-row class="ma-0 mt-2">
                     <template v-for="item in sidebarItems" :key="item.title">
                         <div v-if="item.isVisible" class="mr-2">
-                            <v-btn @click="navigateTo(item)"
-                                class="mobile-nav-btn pr-2 pl-2"
-                                variant="text"
-                            >
+                            <v-btn @click="navigateTo(item)" class="mobile-nav-btn pr-2 pl-2" variant="text">
                                 <Icons :icon="item.icon" class="mr-2" />
                                 {{ $t(item.title) }}
-                                <v-badge v-if="item.to === '/chats' && chatNotiCount > 0" :content="chatNotiCount" color="error" inline></v-badge>
+                                <v-badge
+                                    v-if="item.to === '/chats' && chatNotiCount > 0"
+                                    :content="chatNotiCount"
+                                    color="error"
+                                    inline
+                                ></v-badge>
                             </v-btn>
                         </div>
                     </template>
@@ -247,13 +252,12 @@ function handleNotificationBadgeUpdate(event: Event) {
     <!-- PC 헤더 -->
     <div v-else class="container">
         <div class="maxWidth">
-            <v-app-bar elevation="0" :priority="priority" height="75"  id="top" :class="stickyHeader ? 'sticky' : ''">
+            <v-app-bar elevation="0" :priority="priority" height="75" id="top" :class="stickyHeader ? 'sticky' : ''">
                 <v-row class="ma-0 pa-0">
                     <v-tooltip :text="$t('headerMenu.sidebar')">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon
-                                @click.stop="handleSidebarToggle">
-                                <Icons :icon="'list-bold-duotone'"/>
+                            <v-btn v-bind="props" icon @click.stop="handleSidebarToggle">
+                                <Icons :icon="'list-bold-duotone'" />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -261,11 +265,12 @@ function handleNotificationBadgeUpdate(event: Event) {
                         <v-tooltip v-if="!item.isMobile && item.isVisible" :text="$t(item.title)">
                             <template v-slot:activator="{ props }">
                                 <v-btn icon v-bind="props" @click="navigateTo(item)" class="position-relative">
-                                    <Icons 
+                                    <Icons
                                         :icon="item.icon"
                                         :class="{
-                                            'icon-heartbit': (item.to === '/chats' && chatNotiCount > 0) || 
-                                                           (item.to === '/todolist' && workItemNotiBadge)
+                                            'icon-heartbit':
+                                                (item.to === '/chats' && chatNotiCount > 0) ||
+                                                (item.to === '/todolist' && workItemNotiBadge)
                                         }"
                                     />
                                 </v-btn>
@@ -274,9 +279,13 @@ function handleNotificationBadgeUpdate(event: Event) {
                     </template>
                     <v-tooltip :text="$t('headerMenu.layoutSetting')">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" class="customizer-btn" icon
-                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)">
-                                <Icons :icon="'dashboard'"/>
+                            <v-btn
+                                v-bind="props"
+                                class="customizer-btn"
+                                icon
+                                @click.stop="customizer.SET_CUSTOMIZER_DRAWER(!customizer.Customizer_drawer)"
+                            >
+                                <Icons :icon="'dashboard'" />
                             </v-btn>
                         </template>
                     </v-tooltip>
@@ -299,10 +308,10 @@ function handleNotificationBadgeUpdate(event: Event) {
     </div>
 </template>
 <style scoped>
-@media only screen and (max-width:600px) {  
+@media only screen and (max-width: 600px) {
     .header-logo {
         display: none;
-    }   
+    }
 }
 
 /* 모바일 헤더 스타일 */

@@ -2,68 +2,77 @@
     <div :style="containerStyle">
         <v-row style="height: 100%" class="ma-0">
             <v-col class="d-flex ma-0 pa-0" style="height: 100%">
-                <v-card style="border-radius: 0px !important; border: none; height: 100%; position: relative;" flat>
-                    <v-row v-if="isViewMode && isAdmin && !isMobile"
+                <v-card style="border-radius: 0px !important; border: none; height: 100%; position: relative" flat>
+                    <v-row
+                        v-if="isViewMode && isAdmin && !isMobile"
                         class="align-center"
-                        style="position: absolute;
-                        left: 24px;
-                        top: 24px;
-                        font-size: 11px;
-                        z-index: 1;
-                        background-color: white; opacity: 0.7;"
+                        style="
+                            position: absolute;
+                            left: 24px;
+                            top: 24px;
+                            font-size: 11px;
+                            z-index: 1;
+                            background-color: white;
+                            opacity: 0.7;
+                        "
                     >
                         <v-icon>mdi-alert-circle</v-icon>
                         <div class="ml-1">{{ $t('processDefinition.isReadOnlyMode') }}</div>
                     </v-row>
                     <div v-show="isBpmnLoading">
-                        <v-skeleton-loader
-                            type="image"
-                            class="mx-auto process-definition-skeleton-loader"
-                        ></v-skeleton-loader>
+                        <v-skeleton-loader type="image" class="mx-auto process-definition-skeleton-loader"></v-skeleton-loader>
                     </div>
                     <div v-if="isXmlMode" style="height: calc(100% - 50px); margin-top: 50px; overflow: auto; padding: 10px">
-                        <XmlViewer v-if="isViewMode" :xml="bpmn"/>
-                        <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn"/>
+                        <XmlViewer v-if="isViewMode" :xml="bpmn" />
+                        <XMLEditor v-else :xml="bpmn" @changeBpmn="changeBpmn" />
                     </div>
                     <template v-else>
                         <div v-show="!isBpmnLoading" style="height: 100%">
                             <BpmnuEngine
-                            ref="bpmnVue"
-                            :key="bpmnKey"
-                            :bpmn="bpmn"
-                            :options="options"
-                            :isViewMode="isViewMode"
-                            :isPreviewMode="isPreviewMode"
-                            :currentActivities="currentActivities"
-                            :generateFormTask="generateFormTask"
-                            :isPreviewPDFDialog="isPreviewPDFDialog"
-                            :isAIGenerated="isAIGenerated"
-                            :commentCounts="commentCounts"
-                            @closePDFDialog="closePDFDialog"
-                            v-on:error="handleError"
-                            v-on:shown="handleBpmnShown"
-                            v-on:openDefinition="(ele) => openSubProcess(ele)"
-                            v-on:loading="handleLoading"
-                            v-on:openPanel="(id) => openPanel(id)"
-                            v-on:addComment="(id) => openCommentPanelForElement(id)"
-                            v-on:update-xml="(val) => $emit('update-xml', val)"
-                            v-on:definition="(def) => (definitions = def)"
-                            v-on:add-shape="onAddShape"
-                            v-on:done="handleBpmnDone"
-                            @changeElement="changeElement"
-                            @update:isAIGenerated="updateIsAIGenerated"
-                            @multiSelect="onMultiSelect"
-                            :onLoadStart="onBpmnLoadStart"
-                            :onLoadEnd="onBpmnLoadEnd"
-                            @openProcessVariables="openProcessVariables"
-                            style="height: 100%"
+                                ref="bpmnVue"
+                                :key="bpmnKey"
+                                :bpmn="bpmn"
+                                :options="options"
+                                :isViewMode="isViewMode"
+                                :isPreviewMode="isPreviewMode"
+                                :currentActivities="currentActivities"
+                                :generateFormTask="generateFormTask"
+                                :isPreviewPDFDialog="isPreviewPDFDialog"
+                                :isAIGenerated="isAIGenerated"
+                                :commentCounts="commentCounts"
+                                @closePDFDialog="closePDFDialog"
+                                v-on:error="handleError"
+                                v-on:shown="handleBpmnShown"
+                                v-on:openDefinition="(ele) => openSubProcess(ele)"
+                                v-on:loading="handleLoading"
+                                v-on:openPanel="(id) => openPanel(id)"
+                                v-on:addComment="(id) => openCommentPanelForElement(id)"
+                                v-on:update-xml="(val) => $emit('update-xml', val)"
+                                v-on:definition="(def) => (definitions = def)"
+                                v-on:add-shape="onAddShape"
+                                v-on:done="handleBpmnDone"
+                                @changeElement="changeElement"
+                                @update:isAIGenerated="updateIsAIGenerated"
+                                @multiSelect="onMultiSelect"
+                                @selectedElement="onSelectedElement"
+                                :onLoadStart="onBpmnLoadStart"
+                                :onLoadEnd="onBpmnLoadEnd"
+                                @openProcessVariables="openProcessVariables"
+                                style="height: 100%"
                             >
                                 <!-- Extra controls in BpmnUengine toolbar -->
                                 <template #extra-controls>
                                     <!-- 프로세스 변수 추가 버튼 -->
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-icon v-bind="props" @click="openProcessVariables" style="color: #444; cursor: pointer;" size="small" class="cp-process-variables">mdi-variable</v-icon>
+                                            <v-icon
+                                                v-bind="props"
+                                                @click="openProcessVariables"
+                                                style="color: #444; cursor: pointer"
+                                                size="small"
+                                                class="cp-process-variables"
+                                                >mdi-variable</v-icon
+                                            >
                                         </template>
                                         <span>{{ $t('processDefinition.processVariables') }}</span>
                                     </v-tooltip>
@@ -73,10 +82,11 @@
                                             <v-icon
                                                 v-bind="props"
                                                 @click="showApprovalPanel = !showApprovalPanel"
-                                                style="cursor: pointer;"
-                                                :style="{ color: showApprovalPanel ? '#1976d2' : '#444' }"
+                                                style="cursor: pointer"
+                                                :color="showApprovalPanel ? 'primary' : ''"
                                                 size="small"
-                                            >mdi-clipboard-check-outline</v-icon>
+                                                >mdi-clipboard-check-outline</v-icon
+                                            >
                                         </template>
                                         <span>{{ $t('processDefinition.approvalState') }}</span>
                                     </v-tooltip>
@@ -94,20 +104,33 @@
                                                 <v-icon
                                                     v-bind="props"
                                                     @click="toggleCommentPanel"
-                                                    style="cursor: pointer;"
-                                                    :style="{ color: showCommentPanel ? '#1976d2' : '#444' }"
+                                                    style="cursor: pointer"
+                                                    :color="showCommentPanel ? 'primary' : ''"
                                                     size="small"
-                                                >mdi-comment-text-multiple-outline</v-icon>
+                                                    >mdi-comment-text-multiple-outline</v-icon
+                                                >
                                             </v-badge>
                                         </template>
                                         <span>{{ $t('processDefinition.comments') }}</span>
                                     </v-tooltip>
                                     <!-- 채팅창 열기/닫기 토글 버튼 -->
-                                    <v-tooltip location="bottom">
+                                    <v-tooltip v-if="!isMobile" location="bottom">
                                         <template v-slot:activator="{ props }">
-                                            <v-icon v-bind="props" @click="$globalState.methods.toggleChatHidden()" style="color: #444; cursor: pointer;" size="small">{{ $globalState.state.isChatHidden ? 'mdi-message-text' : 'mdi-message-text-outline' }}</v-icon>
+                                            <v-icon
+                                                v-bind="props"
+                                                @click="$globalState.methods.toggleChatHidden()"
+                                                style="color: #444; cursor: pointer"
+                                                size="small"
+                                                >{{
+                                                    $globalState.state.isChatHidden ? 'mdi-message-text' : 'mdi-message-text-outline'
+                                                }}</v-icon
+                                            >
                                         </template>
-                                        <span>{{ $globalState.state.isChatHidden ? $t('processDefinition.showChat') : $t('processDefinition.hideChat') }}</span>
+                                        <span>{{
+                                            $globalState.state.isChatHidden
+                                                ? $t('processDefinition.showChat')
+                                                : $t('processDefinition.hideChat')
+                                        }}</span>
                                     </v-tooltip>
                                 </template>
                             </BpmnuEngine>
@@ -119,11 +142,7 @@
                             class="task-catalog-floating-panel"
                         />
                         <!-- Save to Catalog Dialog -->
-                        <SaveToCatalogDialog
-                            v-model="saveToCatalogDialogOpen"
-                            :element="element"
-                            @saved="onSavedToCatalog"
-                        />
+                        <SaveToCatalogDialog v-model="saveToCatalogDialogOpen" :element="element" @saved="onSavedToCatalog" />
 
                         <!-- 승인 상태 패널 -->
                         <div v-if="showApprovalPanel" class="approval-state-floating-panel">
@@ -219,7 +238,20 @@
                     <!-- {{ definition }} -->
                 </v-card>
             </div>
-            <div v-else-if="panel && isPal && isViewMode" class="pal-view-mode-panel" style="position: fixed; z-index: 999; right: 0; top: 123px; width: 40vw; min-width: 360px; max-width: 560px; height: calc(100vh - 123px);">
+            <div
+                v-else-if="panel && isPal && isViewMode"
+                class="pal-view-mode-panel"
+                style="
+                    position: fixed;
+                    z-index: 999;
+                    right: 0;
+                    top: 123px;
+                    width: 40vw;
+                    min-width: 360px;
+                    max-width: 560px;
+                    height: calc(100vh - 123px);
+                "
+            >
                 <v-card elevation="1" class="pal-view-mode-panel-card">
                     <bpmn-property-panel
                         ref="bpmnPropertyPanel"
@@ -290,7 +322,14 @@
                                             <div class="d-flex align-center">
                                                 <v-tooltip :text="$t('processDefinition.edit')">
                                                     <template v-slot:activator="{ props }">
-                                                        <v-btn density="compact" icon flat @click="editItem(item)" v-bind="props" style="margin-right:5px;">
+                                                        <v-btn
+                                                            density="compact"
+                                                            icon
+                                                            flat
+                                                            @click="editItem(item)"
+                                                            v-bind="props"
+                                                            style="margin-right: 5px"
+                                                        >
                                                             <PencilIcon stroke-width="1.5" size="20" class="text-primary" />
                                                         </v-btn>
                                                     </template>
@@ -370,15 +409,15 @@ import ProcessVariable from './designer/bpmnModeling/bpmn/mapper/ProcessVariable
 import BpmnPropertyPanel from './designer/bpmnModeling/bpmn/panel/BpmnPropertyPanel.vue';
 // import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
-import XmlViewer from 'vue3-xml-viewer'
+import XmlViewer from 'vue3-xml-viewer';
 import XMLEditor from './ui/XMLEditor.vue';
 
-import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue'
-import TaskCatalogSection from '@/components/designer/TaskCatalogSection.vue'
-import SaveToCatalogDialog from '@/components/designer/SaveToCatalogDialog.vue'
-import BackendFactory from "@/components/api/BackendFactory";
+import InstanceNamePatternForm from '@/components/designer/InstanceNamePatternForm.vue';
+import TaskCatalogSection from '@/components/designer/TaskCatalogSection.vue';
+import SaveToCatalogDialog from '@/components/designer/SaveToCatalogDialog.vue';
+import BackendFactory from '@/components/api/BackendFactory';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
-import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
+import TestProcess from '@/components/apps/definition-map/TestProcess.vue';
 import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
 import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
 import ValidationConsolePanel from '@/components/ui/ValidationConsolePanel.vue';
@@ -423,7 +462,7 @@ export default {
         consoleValidationItems: {
             type: Array,
             default: () => []
-        },
+        }
     },
     data: () => ({
         panel: false,
@@ -446,9 +485,9 @@ export default {
         processVariables: [],
         instanceNamePattern: null,
         executeDialog: false,
-        isSimulate: "false",
+        isSimulate: 'false',
         record: false,
-        description: "",
+        description: '',
         processVariableHeaders: [
             { title: 'processDefinition.name', key: 'name' },
             { title: 'processDefinition.type', key: 'type' },
@@ -485,7 +524,7 @@ export default {
         showApprovalPanel: false,
 
         // Multi-select
-        multiSelectedElements: [],
+        multiSelectedElements: []
     }),
     computed: {
         // [4.4.7] 검증 에러 존재 여부 (Request Review 비활성화 연동)
@@ -533,8 +572,12 @@ export default {
             return window.innerWidth <= 768;
         },
         totalCommentCount() {
-            return Object.values(this.commentCounts).reduce((sum, item) => sum + (item.unresolved || 0), 0);
-        },
+            if (!this.commentCounts) {
+                return 0;
+            } else {
+                return Object.values(this.commentCounts).reduce((sum, item) => sum + (item.unresolved || 0), 0);
+            }
+        }
     },
     watch: {
         isViewMode(newVal, oldVal) {
@@ -550,7 +593,7 @@ export default {
             }
         },
         isSimulate(newVal) {
-            console.log(newVal)
+            console.log(newVal);
         },
         copyProcessDefinition: {
             deep: true,
@@ -637,7 +680,6 @@ export default {
         //     fullPath = fullPath.substring(1);
         // }
         // this.definitionPath = fullPath;
-        
     },
     mounted() {
         // Initial Data
@@ -686,13 +728,22 @@ export default {
         toggleCommentPanel() {
             this.showCommentPanel = !this.showCommentPanel;
             if (this.showCommentPanel && this.element) {
-                // Task 타입인 경우에만 선택된 요소로 설정
-                const elementType = this.element.$type || '';
+                // Task 타입인 경우에만 선택된 요소로 설정 (elementRegistry 사용 시 타입/이름이 댓글 패널과 일치)
+                let elementType = this.element.$type || '';
+                let name = this.element.businessObject?.name || this.element.name || this.element.id;
+                if (this.$refs.bpmnVue?.bpmnViewer) {
+                    const elementRegistry = this.$refs.bpmnVue.bpmnViewer.get('elementRegistry');
+                    const el = elementRegistry.get(this.element.id);
+                    if (el) {
+                        elementType = el.type || elementType;
+                        name = el.businessObject?.name || el.id;
+                    }
+                }
                 if (this.isTaskType(elementType)) {
                     this.selectedElementForComment = {
                         id: this.element.id,
                         type: elementType,
-                        name: this.element.businessObject?.name || this.element.name || this.element.id
+                        name: name
                     };
                 } else {
                     this.selectedElementForComment = null;
@@ -736,21 +787,27 @@ export default {
                 this.multiSelectedElements = [];
             }
         },
+        // BpmnUengine에서 엘리먼트 단일 클릭 선택 시 → ElementCommentPanel의 selected 상태 반영
+        onSelectedElement(payload) {
+            this.selectedElementForComment = payload;
+        },
         onApplyBatch({ elements, changes }) {
             if (!this.$refs.bpmnVue || !this.$refs.bpmnVue.bpmnViewer) return;
             const modeling = this.$refs.bpmnVue.bpmnViewer.get('modeling');
             const moddle = this.$refs.bpmnVue.bpmnViewer.get('moddle');
 
-            elements.forEach(el => {
+            elements.forEach((el) => {
                 try {
                     const bo = el.businessObject;
                     if (!bo.extensionElements) {
                         bo.extensionElements = moddle.create('bpmn:ExtensionElements', { values: [] });
                     }
-                    let propsExt = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                    let propsExt = bo.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
                     let propsObj = {};
                     if (propsExt && propsExt.text) {
-                        try { propsObj = JSON.parse(propsExt.text); } catch {}
+                        try {
+                            propsObj = JSON.parse(propsExt.text);
+                        } catch {}
                     }
                     Object.assign(propsObj, changes);
                     if (!propsExt) {
@@ -786,10 +843,10 @@ export default {
             this.isBpmnLoading = false;
         },
         applyAutoLayout() {
-            if (window.$pal && window.$mode === 'uEngine') return;
+            // PAL 모드에서도 엑셀→BPMN 로드 후 자동 레이아웃 허용
             const store = useBpmnStore();
             const modeler = store.getModeler;
-            
+
             if (modeler) {
                 try {
                     const paletteProvider = modeler.get('paletteProvider');
@@ -805,14 +862,14 @@ export default {
             if (window.$pal && window.$mode === 'uEngine') return;
             const store = useBpmnStore();
             const modeler = store.getModeler;
-            
+
             if (modeler) {
                 try {
                     const paletteProvider = modeler.get('paletteProvider');
                     const elementRegistry = modeler.get('elementRegistry');
-                    const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-                    
-                    participant.forEach(element => {
+                    const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+
+                    participant.forEach((element) => {
                         const horizontal = element.di.isHorizontal;
                         if (horizontal) {
                             paletteProvider.changeParticipantHorizontalToVertical(null, element);
@@ -825,9 +882,9 @@ export default {
                 }
             }
         },
-        updateCurrentStep(){
+        updateCurrentStep() {
             this.closePanel();
-            this.isPreviewMode = true
+            this.isPreviewMode = true;
             this.currentActivities = [this.stepIds[this.currentStepIndex]];
             this.openPanel(this.stepIds[this.currentStepIndex]);
         },
@@ -900,8 +957,7 @@ export default {
                 if (variable.json) {
                     obj = JSON.parse(variable.json);
                 }
-                obj.name= variable.$attrs.name,
-                obj.type= variable.$attrs.type
+                (obj.name = variable.$attrs.name), (obj.type = variable.$attrs.type);
                 // console.log(obj, variable)
                 if (self.processVariables.findIndex((val) => val.name == obj.name && val.type == obj.type) == -1) {
                     self.processVariables.push(obj);
@@ -912,7 +968,7 @@ export default {
                 }
             });
             // if (this.mode == 'uEngine') {
-                this.$emit('onLoaded');
+            this.$emit('onLoaded');
             // }
         },
 
@@ -961,11 +1017,10 @@ export default {
             this.stepId = [];
             this.currentStepIndex = 0;
 
-            const activityIds = this.processDefinition.sequences
-                .flatMap(seq => [seq.source, seq.target])
+            const activityIds = this.processDefinition.sequences.flatMap((seq) => [seq.source, seq.target]);
             this.stepIds = [...new Set(activityIds)];
             if (this.stepIds.length > 0) {
-                this.isPreviewMode = true
+                this.isPreviewMode = true;
                 this.currentActivities = [this.stepIds[this.currentStepIndex]];
                 this.openPanel(this.stepIds[0]);
             }
@@ -986,7 +1041,6 @@ export default {
                         me.$router.push(`/instancelist/${data.instanceId.replace(/\./g, '_DOT_')}`);
                     }
                     me.EventBus.emit('instances-updated');
-                    
                 },
                 successMsg: me.$t('successMsg.processExecutionCompleted')
             });
@@ -1193,7 +1247,7 @@ export default {
                     formDefId: val.defaultValue.id ? val.defaultValue.id : `${val.defaultValue}`,
                     filePath: val.defaultValue.path ? val.defaultValue.path : `${val.defaultValue}.form`
                 };
-                
+
                 val.defaultValue = defaultValue;
             }
 
@@ -1240,7 +1294,7 @@ export default {
                     this.$refs.bpmnPropertyPanel.save();
                     return;
                 }
-                
+
                 if (this.isViewMode && !this.isPal) {
                     this.$try({
                         action: async () => {
@@ -1251,7 +1305,7 @@ export default {
                 }
                 return;
             }
-            
+
             // 다른 요소 클릭 시 현재 패널이 열려있으면 저장 후 새 패널 열기
             if (this.panel && this.$refs.bpmnPropertyPanel) {
                 // 현재 패널 저장
@@ -1259,7 +1313,7 @@ export default {
                 // save() 메서드에서 이미 패널을 닫으므로 잠시 기다린 후 새 패널 열기
                 await this.$nextTick();
             }
-            
+
             this.element = this.findElement(this.definitions, 'id', id);
 
             if (this.element) {
@@ -1267,6 +1321,30 @@ export default {
                 businessObject.businessObject = this.element;
                 this.$refs.bpmnVue.extendUEngineProperties(businessObject);
                 this.panel = true;
+
+                // 댓글 패널이 열려 있으면 선택 요소와 동기화 (태스크 선택 시 댓글 UI 표시)
+                // elementRegistry의 diagram 요소를 사용하면 type/name이 댓글 패널과 일치함
+                if (this.showCommentPanel) {
+                    let elementType = (this.element.$type || '').toString();
+                    let name = this.element.businessObject?.name || this.element.name || this.element.id;
+                    if (this.$refs.bpmnVue?.bpmnViewer) {
+                        const elementRegistry = this.$refs.bpmnVue.bpmnViewer.get('elementRegistry');
+                        const el = elementRegistry.get(id);
+                        if (el) {
+                            elementType = (el.type || elementType).toString();
+                            name = el.businessObject?.name || el.id;
+                        }
+                    }
+                    if (this.isTaskType(elementType)) {
+                        this.selectedElementForComment = {
+                            id: this.element.id,
+                            type: elementType,
+                            name: name
+                        };
+                    } else {
+                        this.selectedElementForComment = null;
+                    }
+                }
             }
         },
         closePanel() {
@@ -1399,7 +1477,6 @@ export default {
     z-index: 1;
 }
 
-
 /* Task Catalog Floating Panel */
 .task-catalog-floating-panel {
     position: absolute;
@@ -1417,7 +1494,7 @@ export default {
     position: absolute;
     right: 12px;
     top: 50px;
-    width: 360px;
+    width: 350px;
     max-height: calc(100% - 100px);
     z-index: 99;
     background: white;
@@ -1431,7 +1508,7 @@ export default {
     position: absolute;
     right: 12px;
     top: 50px;
-    width: 380px;
+    width: 350px;
     z-index: 98;
     background: white;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
@@ -1510,7 +1587,7 @@ export default {
 }
 
 .btn-simulate {
-    margin-top:-3px;
+    margin-top: -3px;
 }
 
 @media only screen and (max-width: 550px) {

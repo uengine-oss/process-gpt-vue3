@@ -25,20 +25,9 @@
                 </v-tab>
             </v-tabs>
             <div>
-                <v-menu
-                    v-model="chatRoomSettingsMenu"
-                    location="bottom end"
-                    :close-on-content-click="true"
-                >
+                <v-menu v-model="chatRoomSettingsMenu" location="bottom end" :close-on-content-click="true">
                     <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            icon
-                            variant="text"
-                            size="small"
-                            class="settings-btn"
-                            :disabled="!tabs || tabs.length === 0"
-                        >
+                        <v-btn v-bind="props" icon variant="text" size="small" class="settings-btn" :disabled="!tabs || tabs.length === 0">
                             <v-icon>mdi-cog-outline</v-icon>
                         </v-btn>
                     </template>
@@ -77,14 +66,7 @@
                 </v-menu>
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            icon
-                            variant="text"
-                            size="small"
-                            class="add-tab-btn"
-                            @click="addNewRoom()"
-                        >
+                        <v-btn v-bind="props" icon variant="text" size="small" class="add-tab-btn" @click="addNewRoom()">
                             <v-icon>mdi-plus</v-icon>
                         </v-btn>
                     </template>
@@ -125,9 +107,7 @@
                 <v-row class="ma-0 pa-0">
                     <v-card-title class="pa-0">참가자 관리</v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="participantsDialog = false" icon variant="text" density="comfortable"
-                        style="margin-top:-8px;"
-                    >
+                    <v-btn @click="participantsDialog = false" icon variant="text" density="comfortable" style="margin-top: -8px">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-row>
@@ -138,42 +118,35 @@
                         chips
                         closable-chips
                         item-title="username"
-                        :item-value="item => item"
+                        :item-value="(item) => item"
                         multiple
                         label="참가자 선택"
                         small-chips
                         :loading="isLoadingUsers"
                     >
                         <template v-slot:chip="{ props, item }">
-                            <v-chip
-                                v-bind="props"
-                                :text="item.raw.username ? item.raw.username : item.raw.email"
-                            />
+                            <v-chip v-bind="props" :text="item.raw.username ? item.raw.username : item.raw.email" />
                         </template>
                         <template v-slot:item="{ props, item }">
                             <v-list-item
                                 v-bind="props"
                                 :title="item.raw.username ? item.raw.username : item.raw.email"
-                                :subtitle="item.raw.email || ('ID: ' + item.raw.id)"
+                                :subtitle="item.raw.email || 'ID: ' + item.raw.id"
                             />
                         </template>
                     </v-autocomplete>
-                    <div class="text-caption text-grey mt-2">
-                        - 내 계정은 항상 참가자로 유지됩니다.
-                    </div>
+                    <div class="text-caption text-grey mt-2">- 내 계정은 항상 참가자로 유지됩니다.</div>
                 </v-card-text>
                 <v-row class="ma-0 pa-0">
                     <v-spacer></v-spacer>
-                    <v-btn color="primary" rounded @click="saveParticipants" variant="flat">
-                        저장
-                    </v-btn>
+                    <v-btn color="primary" rounded @click="saveParticipants" variant="flat"> 저장 </v-btn>
                 </v-row>
             </v-card>
         </v-dialog>
 
         <!-- 채팅방 설정: 이름 변경 -->
         <v-dialog v-model="chatRoomRenameDialog" max-width="520" persistent>
-            <v-card class="pa-2" style="border-radius: 16px;">
+            <v-card class="pa-2" style="border-radius: 16px">
                 <v-card-title class="d-flex align-center pa-3 pb-1">
                     <div class="text-subtitle-1 font-weight-bold">
                         {{ $t('chatListing.chatRoomName') || '채팅방 이름' }}
@@ -192,9 +165,7 @@
                         hide-details
                         autofocus
                     />
-                    <div class="text-caption text-medium-emphasis mt-2">
-                        - 최대 50자까지 저장됩니다.
-                    </div>
+                    <div class="text-caption text-medium-emphasis mt-2">- 최대 50자까지 저장됩니다.</div>
                 </v-card-text>
                 <v-card-actions class="pa-3 pt-0">
                     <v-spacer></v-spacer>
@@ -208,7 +179,7 @@
 
         <!-- 채팅방 설정: 삭제 확인 -->
         <v-dialog v-model="chatRoomDeleteDialog" max-width="520" persistent>
-            <v-card class="pa-2" style="border-radius: 16px;">
+            <v-card class="pa-2" style="border-radius: 16px">
                 <v-card-title class="d-flex align-center pa-3 pb-1">
                     <div class="text-subtitle-1 font-weight-bold">
                         {{ $t('chatListing.deleteChatRoom') || '채팅방 삭제' }}
@@ -220,9 +191,7 @@
                 </v-card-title>
                 <v-card-text class="pa-3 pt-2">
                     "{{ getCurrentChatRoomName() }}" {{ $t('chatListing.confirmDeleteChatRoom') || '채팅방을 삭제하시겠습니까?' }}
-                    <div class="text-caption text-medium-emphasis mt-2">
-                        - 삭제하면 복구할 수 없습니다.
-                    </div>
+                    <div class="text-caption text-medium-emphasis mt-2">- 삭제하면 복구할 수 없습니다.</div>
                 </v-card-text>
                 <v-card-actions class="pa-3 pt-0">
                     <v-spacer></v-spacer>
@@ -280,7 +249,7 @@ export default {
             chatRoomSettingsMenu: false,
             chatRoomRenameDialog: false,
             chatRoomRenameDraft: '',
-            chatRoomDeleteDialog: false,
+            chatRoomDeleteDialog: false
         };
     },
     computed: {
@@ -288,13 +257,13 @@ export default {
             const parts = Array.isArray(this.currentChatRoom?.participants) ? this.currentChatRoom.participants : [];
             // 참가자 중 "agent" 타입만 대상으로 상태를 보여줌 (내 계정은 제외)
             const agents = parts
-                .map(p => this.normalizeParticipant(p))
-                .filter(p => p && (p.id || p.email))
-                .filter(p => p.agent_type === 'agent' || p.is_agent === true || p.isAgent === true);
+                .map((p) => this.normalizeParticipant(p))
+                .filter((p) => p && (p.id || p.email))
+                .filter((p) => p.agent_type === 'agent' || p.is_agent === true || p.isAgent === true);
 
             // 중복 제거(id 기준)
             const uniq = new Map();
-            agents.forEach(a => {
+            agents.forEach((a) => {
                 const key = a.id || a.email;
                 if (!uniq.has(key)) uniq.set(key, a);
             });
@@ -304,7 +273,7 @@ export default {
             return Array.from(uniq.values()).sort((a, b) => {
                 if (primaryId && a.id === primaryId) return -1;
                 if (primaryId && b.id === primaryId) return 1;
-                return (a.username || '').localeCompare((b.username || ''), 'ko');
+                return (a.username || '').localeCompare(b.username || '', 'ko');
             });
         },
         primaryAgentId() {
@@ -359,7 +328,7 @@ export default {
         },
         getCurrentTab() {
             const idx = this.currentTabIndex ?? 0;
-            return (Array.isArray(this.tabs) && this.tabs[idx]) ? this.tabs[idx] : null;
+            return Array.isArray(this.tabs) && this.tabs[idx] ? this.tabs[idx] : null;
         },
         getCurrentChatRoomName() {
             const tab = this.getCurrentTab();
@@ -374,7 +343,9 @@ export default {
         async confirmChatRoomRename() {
             const tab = this.getCurrentTab();
             const roomId = tab?.roomId || null;
-            const nextName = String(this.chatRoomRenameDraft || '').trim().substring(0, 50);
+            const nextName = String(this.chatRoomRenameDraft || '')
+                .trim()
+                .substring(0, 50);
             if (!nextName || !tab) {
                 this.chatRoomRenameDialog = false;
                 return;
@@ -435,8 +406,8 @@ export default {
                 } catch (e) {
                     // ignore
                 }
-                this.chatRooms = (this.chatRooms || []).filter(r => r.id !== roomId);
-                const tabIdx = this.tabs.findIndex(t => t.roomId === roomId);
+                this.chatRooms = (this.chatRooms || []).filter((r) => r.id !== roomId);
+                const tabIdx = this.tabs.findIndex((t) => t.roomId === roomId);
                 if (tabIdx !== -1) this.tabs.splice(tabIdx, 1);
             }
 
@@ -466,22 +437,32 @@ export default {
         },
         statusLabel(state) {
             switch (state) {
-                case 'warming': return '준비 중 (파드 생성/시작)';
-                case 'streaming': return '응답 생성 중';
-                case 'ready': return '연결됨';
-                case 'error': return '연결 오류';
+                case 'warming':
+                    return '준비 중 (파드 생성/시작)';
+                case 'streaming':
+                    return '응답 생성 중';
+                case 'ready':
+                    return '연결됨';
+                case 'error':
+                    return '연결 오류';
                 case 'unknown':
-                default: return '대기';
+                default:
+                    return '대기';
             }
         },
         statusColor(state) {
             switch (state) {
-                case 'warming': return 'warning';
-                case 'streaming': return 'primary';
-                case 'ready': return 'success';
-                case 'error': return 'error';
+                case 'warming':
+                    return 'warning';
+                case 'streaming':
+                    return 'primary';
+                case 'ready':
+                    return 'success';
+                case 'error':
+                    return 'error';
                 case 'unknown':
-                default: return 'grey';
+                default:
+                    return 'grey';
             }
         },
         getAgentStatus(agentId) {
@@ -508,9 +489,12 @@ export default {
             } catch (e) {}
             this.chatsWatchRef = null;
             if (!roomId) return;
-            this.chatsWatchRef = await backend.watchChats((payload) => {
-                this.handleRealtimeMessage(payload);
-            }, { filter: `id=eq.${roomId}` });
+            this.chatsWatchRef = await backend.watchChats(
+                (payload) => {
+                    this.handleRealtimeMessage(payload);
+                },
+                { filter: `id=eq.${roomId}` }
+            );
         },
         handleRealtimeMessage(payload) {
             try {
@@ -518,7 +502,7 @@ export default {
                 if (payload.eventType === 'DELETE') {
                     const oldUuid = payload.old?.uuid;
                     if (!oldUuid) return;
-                    const idx = this.messages.findIndex(m => m.uuid === oldUuid);
+                    const idx = this.messages.findIndex((m) => m.uuid === oldUuid);
                     if (idx !== -1) this.messages.splice(idx, 1);
                     return;
                 }
@@ -530,7 +514,7 @@ export default {
                 const uuid = payload.new.uuid || incoming.uuid;
                 if (!uuid) return;
 
-                const exists = this.messages.findIndex(m => m.uuid === uuid);
+                const exists = this.messages.findIndex((m) => m.uuid === uuid);
                 if (exists !== -1) {
                     this.messages[exists] = incoming;
                     return;
@@ -604,11 +588,9 @@ export default {
                 return;
             }
             // 참가자 중 agent 타입들 warmup (primary 포함)
-            const ids = this.agentParticipants
-                .map(p => p.id)
-                .filter(Boolean);
+            const ids = this.agentParticipants.map((p) => p.id).filter(Boolean);
             if (ids.length === 0 && primaryId) ids.push(primaryId);
-            ids.forEach(id => this.warmupAgent(id));
+            ids.forEach((id) => this.warmupAgent(id));
         },
 
         async ensureAgentReady(agentId) {
@@ -620,7 +602,7 @@ export default {
         async openRoomFromRoute(roomId) {
             if (!roomId) return;
             // 로드된 탭 중에 있으면 해당 탭 선택
-            const idx = this.tabs.findIndex(t => t.roomId === roomId);
+            const idx = this.tabs.findIndex((t) => t.roomId === roomId);
             if (idx !== -1) {
                 this.currentTabIndex = idx;
                 await this.selectRoomById(roomId);
@@ -629,12 +611,12 @@ export default {
             // 없으면 직접 로드 시도
             try {
                 const rooms = await backend.getChatRoomList('chat_rooms');
-                const found = (rooms || []).find(r => r.id === roomId);
+                const found = (rooms || []).find((r) => r.id === roomId);
                 if (found) {
                     // 내/에이전트 매칭되는 방이면 탭에 추가
                     const parts = Array.isArray(found.participants) ? found.participants : [];
-                    const hasMe = parts.some(p => this.participantMatches(p, this.userInfo));
-                    const hasAgent = parts.some(p => this.participantMatches(p, this.agentUser));
+                    const hasMe = parts.some((p) => this.participantMatches(p, this.userInfo));
+                    const hasAgent = parts.some((p) => this.participantMatches(p, this.agentUser));
                     if (hasMe && hasAgent) {
                         this.tabs.unshift({
                             id: found.id,
@@ -653,9 +635,9 @@ export default {
         },
 
         uuid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = (Math.random() * 16) | 0;
+                const v = c === 'x' ? r : (r & 0x3) | 0x8;
                 return v.toString(16);
             });
         },
@@ -737,7 +719,7 @@ export default {
                 this.tabs = filtered.map((r) => ({
                     id: r.id,
                     roomId: r.id,
-                    title: (r.name || '새 대화'),
+                    title: r.name || '새 대화',
                     participants: Array.isArray(r.participants) ? r.participants : []
                 }));
             } finally {
@@ -833,9 +815,7 @@ export default {
         openParticipantsDialog() {
             const tab = this.tabs[this.currentTabIndex];
             if (!tab) return;
-            const current = tab.roomId
-                ? (this.chatRooms.find((r) => r.id === tab.roomId)?.participants || [])
-                : (tab.participants || []);
+            const current = tab.roomId ? this.chatRooms.find((r) => r.id === tab.roomId)?.participants || [] : tab.participants || [];
             this.participantsDraft = [...current];
             this.participantsDialog = true;
         },
@@ -876,9 +856,8 @@ export default {
 
             const roomId = this.uuid();
             const now = Date.now();
-            const participants = Array.isArray(tab.participants) && tab.participants.length > 0
-                ? tab.participants
-                : this.defaultParticipants();
+            const participants =
+                Array.isArray(tab.participants) && tab.participants.length > 0 ? tab.participants : this.defaultParticipants();
 
             const room = {
                 id: roomId,
@@ -945,7 +924,7 @@ export default {
                         const preview =
                             (text || '').substring(0, 50) ||
                             (hasFile ? fileName.substring(0, 50) : '') ||
-                            (hasImages ? `이미지 ${((payload?.images || []).length || 0)}장` : '');
+                            (hasImages ? `이미지 ${(payload?.images || []).length || 0}장` : '');
                         return (preview || '').substring(0, 50);
                     })(),
                     type: 'text',
@@ -996,103 +975,115 @@ export default {
             // 후보 에이전트: 현재 방의 agentParticipants + primary(누락 시)
             const candidates = Array.isArray(this.agentParticipants) ? [...this.agentParticipants] : [];
             const primaryId = this.primaryAgentId;
-            if (primaryId && !candidates.some(p => p?.id === primaryId)) {
+            if (primaryId && !candidates.some((p) => p?.id === primaryId)) {
                 candidates.unshift({ id: primaryId, username: this.agentUser?.username || 'Agent', email: this.agentUser?.email || null });
             }
 
             const targets =
                 mentions.length > 0
                     ? candidates
-                        .filter(p => p?.id && [p?.username, p?.name, p?.email, p?.id].filter(Boolean).map(norm).some(k => mentions.map(norm).includes(k)))
-                        .map(p => ({ ...p, policy: 'must_reply' }))
-                    : candidates
-                        .filter(p => p?.id)
-                        .map(p => ({ ...p, policy: 'must_reply' }));
+                          .filter(
+                              (p) =>
+                                  p?.id &&
+                                  [p?.username, p?.name, p?.email, p?.id]
+                                      .filter(Boolean)
+                                      .map(norm)
+                                      .some((k) => mentions.map(norm).includes(k))
+                          )
+                          .map((p) => ({ ...p, policy: 'must_reply' }))
+                    : candidates.filter((p) => p?.id).map((p) => ({ ...p, policy: 'must_reply' }));
 
             if (!targets || targets.length === 0) return;
 
-            const userJwt = await getValidToken() || '';
+            const userJwt = (await getValidToken()) || '';
             const tenantId = window.$tenantName || localStorage.getItem('tenantId') || '';
 
-            await Promise.all(targets.map(async (t) => {
-                const agentId = t.id;
-                if (!agentId) return;
-                await this.ensureAgentReady(agentId);
+            await Promise.all(
+                targets.map(async (t) => {
+                    const agentId = t.id;
+                    if (!agentId) return;
+                    await this.ensureAgentReady(agentId);
 
-                const assistantUuid = this.uuid();
-                const assistantMsg = {
-                    uuid: assistantUuid,
-                    role: 'assistant',
-                    content: '...',
-                    contentType: 'markdown',
-                    isLoading: true,
-                    timeStamp: new Date().toISOString(),
-                    email: t.email || `agent:${agentId}`,
-                    name: t.username || t.name || t.email || agentId,
-                    userName: t.username || t.name || t.email || agentId,
-                    agentId
-                };
-                this.messages.push(assistantMsg);
-                const assistantIndex = this.messages.length - 1;
+                    const assistantUuid = this.uuid();
+                    const assistantMsg = {
+                        uuid: assistantUuid,
+                        role: 'assistant',
+                        content: '...',
+                        contentType: 'markdown',
+                        isLoading: true,
+                        timeStamp: new Date().toISOString(),
+                        email: t.email || `agent:${agentId}`,
+                        name: t.username || t.name || t.email || agentId,
+                        userName: t.username || t.name || t.email || agentId,
+                        agentId
+                    };
+                    this.messages.push(assistantMsg);
+                    const assistantIndex = this.messages.length - 1;
 
-                let full = '';
-                this.setAgentStatus(agentId, { state: 'streaming', message: '' });
-                await agentRouterService.sendMessageStream(
-                    agentId,
-                    {
-                        message: buildMessageForAgent(msg.content || '', t.policy),
-                        tenant_id: tenantId,
-                        user_uid: this.userInfo?.uid || this.userInfo?.id,
-                        user_email: this.userInfo?.email,
-                        user_name: this.userInfo?.name || this.userInfo?.username,
-                        user_jwt: userJwt,
-                        conversation_id: roomId
-                    },
-                    {
-                        onToken: (token) => {
-                            full += token;
-                            if (this.messages[assistantIndex]) {
-                                this.messages[assistantIndex].content = full;
-                            }
+                    let full = '';
+                    this.setAgentStatus(agentId, { state: 'streaming', message: '' });
+                    await agentRouterService.sendMessageStream(
+                        agentId,
+                        {
+                            message: buildMessageForAgent(msg.content || '', t.policy),
+                            tenant_id: tenantId,
+                            user_uid: this.userInfo?.uid || this.userInfo?.id,
+                            user_email: this.userInfo?.email,
+                            user_name: this.userInfo?.name || this.userInfo?.username,
+                            user_jwt: userJwt,
+                            conversation_id: roomId
                         },
-                        onDone: async (content) => {
-                            const finalContent = (content || full || '').toString().trim();
-                            const safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
+                        {
+                            onToken: (token) => {
+                                full += token;
+                                if (this.messages[assistantIndex]) {
+                                    this.messages[assistantIndex].content = full;
+                                }
+                            },
+                            onDone: async (content) => {
+                                const finalContent = (content || full || '').toString().trim();
+                                const safeFinal = finalContent === 'NO_RESPONSE' ? '' : finalContent;
 
-                            if (this.messages[assistantIndex]) {
-                                this.messages[assistantIndex].content = safeFinal || full || '';
-                                this.messages[assistantIndex].isLoading = false;
-                            }
-                            this.setAgentStatus(agentId, { state: 'ready', message: '' });
+                                if (this.messages[assistantIndex]) {
+                                    this.messages[assistantIndex].content = safeFinal || full || '';
+                                    this.messages[assistantIndex].isLoading = false;
+                                }
+                                this.setAgentStatus(agentId, { state: 'ready', message: '' });
 
-                            await this.putObject(`chats/${assistantUuid}`, {
-                                uuid: assistantUuid,
-                                id: roomId,
-                                messages: { ...(this.messages[assistantIndex] || assistantMsg), content: safeFinal || full || '', isLoading: false }
-                            });
+                                await this.putObject(`chats/${assistantUuid}`, {
+                                    uuid: assistantUuid,
+                                    id: roomId,
+                                    messages: {
+                                        ...(this.messages[assistantIndex] || assistantMsg),
+                                        content: safeFinal || full || '',
+                                        isLoading: false
+                                    }
+                                });
 
-                            const r = this.chatRooms.find((x) => x.id === roomId) || this.currentChatRoom;
-                            if (r) {
-                                r.message = {
-                                    msg: (safeFinal || '').substring(0, 50),
-                                    type: 'text',
-                                    createdAt: new Date().toISOString()
-                                };
-                                await this.putObject('chat_rooms', r);
-                            }
-                            this.EventBus.emit('chat-rooms-updated');
-                        },
-                        onError: async () => {
-                            this.setAgentStatus(agentId, { state: 'error', message: '응답 오류' });
-                            if (this.messages[assistantIndex]) {
-                                const current = (this.messages[assistantIndex].content || '').toString();
-                                this.messages[assistantIndex].content = current && current !== '...' ? current : '(에이전트 연결/응답 오류)';
-                                this.messages[assistantIndex].isLoading = false;
+                                const r = this.chatRooms.find((x) => x.id === roomId) || this.currentChatRoom;
+                                if (r) {
+                                    r.message = {
+                                        msg: (safeFinal || '').substring(0, 50),
+                                        type: 'text',
+                                        createdAt: new Date().toISOString()
+                                    };
+                                    await this.putObject('chat_rooms', r);
+                                }
+                                this.EventBus.emit('chat-rooms-updated');
+                            },
+                            onError: async () => {
+                                this.setAgentStatus(agentId, { state: 'error', message: '응답 오류' });
+                                if (this.messages[assistantIndex]) {
+                                    const current = (this.messages[assistantIndex].content || '').toString();
+                                    this.messages[assistantIndex].content =
+                                        current && current !== '...' ? current : '(에이전트 연결/응답 오류)';
+                                    this.messages[assistantIndex].isLoading = false;
+                                }
                             }
                         }
-                    }
-                );
-            }));
+                    );
+                })
+            );
         }
     }
 };

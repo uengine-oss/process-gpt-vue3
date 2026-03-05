@@ -104,10 +104,7 @@ export function useProcessArchitecture() {
     async function loadData() {
         loading.value = true;
         try {
-            const [pm, mm] = await Promise.all([
-                backend.getProcessDefinitionMap(),
-                backend.getMetricsMap()
-            ]);
+            const [pm, mm] = await Promise.all([backend.getProcessDefinitionMap(), backend.getMetricsMap()]);
             procMap.value = pm && pm.mega_proc_list ? pm : { mega_proc_list: [] };
             metricsMap.value = mm && mm.domains ? mm : { domains: [], mega_processes: [], processes: [] };
             await loadProcessStatuses();
@@ -208,8 +205,37 @@ export function useProcessArchitecture() {
         }
     }
 
+    // 도메인: metrics API 결과 우선, 없으면(예: uEngine 모드에서 getMetricsMap 실패/빈 응답) procMap에서 추출
     const domains = computed(() => {
-        return metricsMap.value?.domains || [];
+        const fromMetrics = metricsMap.value?.domains;
+        if (fromMetrics && Array.isArray(fromMetrics) && fromMetrics.length > 0) {
+            return fromMetrics;
+        }
+        // procMap에서 major.domain / major.domain_id로 고유 도메인 목록 추출 (uEngine 등 fallback)
+        const map = procMap.value;
+        if (!map?.mega_proc_list) return [];
+        const seen = new Set<string>();
+        const list: { id: string; name: string; color?: string }[] = [];
+        for (const mega of map.mega_proc_list) {
+            for (const major of mega.major_proc_list || []) {
+                const d = major.domain || major.domain_id;
+                if (d && typeof d === 'string' && !seen.has(d)) {
+                    seen.add(d);
+                    list.push({ id: d, name: d, color: (major as any).color });
+                }
+            }
+        }
+        // major에 domain이 하나도 없으면 mega 이름을 도메인으로 사용 (새 프로세스 시 도메인 선택 가능하도록)
+        if (list.length === 0) {
+            for (const mega of map.mega_proc_list) {
+                const name = mega.name || mega.id;
+                if (name && !seen.has(name)) {
+                    seen.add(name);
+                    list.push({ id: name, name, color: (mega as any).color });
+                }
+            }
+        }
+        return list;
     });
 
     // Compute the set of process IDs that match My Processes filter (OR logic)
@@ -222,7 +248,7 @@ export function useProcessArchitecture() {
 
         // Always include favorites when that option is on (from localStorage)
         if (f.favorites) {
-            favorites.value.forEach(id => matchedIds.add(id));
+            favorites.value.forEach((id) => matchedIds.add(id));
         }
 
         for (const def of allProcDefs.value) {
@@ -297,7 +323,7 @@ export function useProcessArchitecture() {
             }
             if (role === 'any' || role === 'co') {
                 const coOwners: string[] = sub.co_owners || [];
-                match = match || coOwners.some(o => af.owners.includes(o));
+                match = match || coOwners.some((o) => af.owners.includes(o));
             }
             if (role === 'any' || role === 'master') {
                 match = match || af.owners.includes(sub.master || '');
@@ -308,7 +334,7 @@ export function useProcessArchitecture() {
         // Tag filter
         if (af.tags.length > 0) {
             const subTags: string[] = sub.tags || [];
-            if (!af.tags.some(t => subTags.includes(t))) return false;
+            if (!af.tags.some((t) => subTags.includes(t))) return false;
         }
 
         // FTE range filter (compare sub.fte if set)
@@ -348,10 +374,15 @@ export function useProcessArchitecture() {
         const needFeedback = quickFilterNeedFeedback.value;
         const wil = quickFilterWIL.value;
         const af = advancedFilters.value;
-        const hasAdvanced = af.statuses.length > 0 || af.dateMode !== 'none' ||
-            af.owners.length > 0 || af.tags.length > 0 ||
-            af.fteRange[0] !== 0 || af.fteRange[1] !== 10 ||
-            af.leadTimeRange[0] !== 0 || af.leadTimeRange[1] !== 365 ||
+        const hasAdvanced =
+            af.statuses.length > 0 ||
+            af.dateMode !== 'none' ||
+            af.owners.length > 0 ||
+            af.tags.length > 0 ||
+            af.fteRange[0] !== 0 ||
+            af.fteRange[1] !== 10 ||
+            af.leadTimeRange[0] !== 0 ||
+            af.leadTimeRange[1] !== 365 ||
             af.systems.length > 0;
 
         const hasFilter = query || domain || multiDomains.length > 0 || myIds || needFeedback || wil || hasAdvanced;
@@ -380,8 +411,7 @@ export function useProcessArchitecture() {
                                 if (wil && !wilIds.value.has(sub.id)) return false;
                                 if (hasAdvanced && !passesAdvancedFilters(sub)) return false;
                                 if (!query) return true;
-                                return sub.name?.toLowerCase().includes(query) ||
-                                    sub.id?.toLowerCase().includes(query);
+                                return sub.name?.toLowerCase().includes(query) || sub.id?.toLowerCase().includes(query);
                             });
 
                             const hasSubFilter = query || myIds || needFeedback || wil || hasAdvanced;
@@ -428,9 +458,7 @@ export function useProcessArchitecture() {
         }
 
         if (query) {
-            filteredProcesses = filteredProcesses.filter((p: any) =>
-                p.name?.toLowerCase().includes(query)
-            );
+            filteredProcesses = filteredProcesses.filter((p: any) => p.name?.toLowerCase().includes(query));
         }
 
         if (myProcessIds.value) {
@@ -451,7 +479,7 @@ export function useProcessArchitecture() {
 
         if (map && map.mega_proc_list) {
             for (const mega of map.mega_proc_list) {
-                for (const major of (mega.major_proc_list || [])) {
+                for (const major of mega.major_proc_list || []) {
                     total++;
                     subTotal += (major.sub_proc_list || []).length;
                 }
@@ -562,7 +590,7 @@ export function useProcessArchitecture() {
     }
 
     function addToRecentlyViewed(id: string, name: string) {
-        const existing = recentlyViewed.value.filter(item => item.id !== id);
+        const existing = recentlyViewed.value.filter((item) => item.id !== id);
         const updated = [{ id, name, visitedAt: Date.now() }, ...existing].slice(0, MAX_RECENTLY_VIEWED);
         recentlyViewed.value = updated;
         saveRecentlyViewed(updated);
@@ -611,6 +639,17 @@ export function useProcessArchitecture() {
         }
     }
 
+    /** 메트릭스 맵(도메인 등) 저장 — 도메인 추가/수정 시 사용 */
+    async function saveMetricsMap(newMetricsMap: any): Promise<void> {
+        try {
+            await backend.putMetricsMap(newMetricsMap);
+            metricsMap.value = newMetricsMap;
+        } catch (e) {
+            console.error('[useProcessArchitecture] Failed to save metrics map:', e);
+            throw e;
+        }
+    }
+
     return {
         procMap,
         metricsMap,
@@ -645,6 +684,7 @@ export function useProcessArchitecture() {
         filterPresets,
         saveFilterPreset,
         loadFilterPreset,
-        deleteFilterPreset
+        deleteFilterPreset,
+        saveMetricsMap
     };
 }

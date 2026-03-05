@@ -1,6 +1,6 @@
 /**
  * Work Assistant Agent API Service
- * 
+ *
  * work-assistant-agent 서버와 통신하는 서비스
  * - ask_user 응답 감지: 에이전트가 추가 정보를 요청할 때 감지
  * - 에이전틱 메모리: 서버에서 벡터 검색으로 컨텍스트 관리
@@ -37,7 +37,7 @@ class WorkAssistantAgentService {
         const response = await fetch(`${this.baseUrl}/chat`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json; charset=utf-8',
+                'Content-Type': 'application/json; charset=utf-8'
             },
             body: JSON.stringify({
                 message: params.message,
@@ -79,7 +79,7 @@ class WorkAssistantAgentService {
             const response = await fetch(`${this.baseUrl}/chat/stream`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json; charset=utf-8',
+                    'Content-Type': 'application/json; charset=utf-8'
                 },
                 signal: options.signal,
                 body: JSON.stringify({
@@ -233,10 +233,10 @@ class WorkAssistantAgentService {
     /**
      * Human in the Loop: ask_user 응답 파싱
      * 에이전트가 사용자에게 추가 질문을 할 때 반환하는 형식을 감지합니다.
-     * 
+     *
      * @param {string} responseText - 에이전트 응답 텍스트
      * @returns {Object|null} ask_user 데이터 또는 null
-     * 
+     *
      * ask_user 응답 형식:
      * {
      *   "user_request_type": "ask_user",
@@ -256,9 +256,7 @@ class WorkAssistantAgentService {
             const jsonBlockMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
             if (jsonBlockMatch) {
                 const parsed = JSON.parse(jsonBlockMatch[1]);
-                if (parsed.user_request_type === 'ask_user' || 
-                    parsed.action === 'ask_user' ||
-                    parsed.waiting_for_user_input === true) {
+                if (parsed.user_request_type === 'ask_user' || parsed.action === 'ask_user' || parsed.waiting_for_user_input === true) {
                     return this._normalizeAskUserData(parsed);
                 }
             }
@@ -267,9 +265,7 @@ class WorkAssistantAgentService {
             if (responseText.trim().startsWith('{')) {
                 try {
                     const parsed = JSON.parse(responseText.trim());
-                    if (parsed.user_request_type === 'ask_user' || 
-                        parsed.action === 'ask_user' ||
-                        parsed.waiting_for_user_input === true) {
+                    if (parsed.user_request_type === 'ask_user' || parsed.action === 'ask_user' || parsed.waiting_for_user_input === true) {
                         return this._normalizeAskUserData(parsed);
                     }
                 } catch (e) {
@@ -339,4 +335,3 @@ const workAssistantAgentService = new WorkAssistantAgentService();
 
 export default workAssistantAgentService;
 export { WorkAssistantAgentService };
-

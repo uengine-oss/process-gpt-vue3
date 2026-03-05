@@ -2,12 +2,7 @@
     <div>
         <!-- Matrix Table -->
         <div elevation="3" class="overflow-x-auto">
-            <v-snackbar
-                v-model="snackbar.show"
-                :color="snackbar.color"
-                :timeout="snackbar.timeout"
-                location="top"
-            >
+            <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="snackbar.timeout" location="top">
                 {{ snackbar.text }}
                 <template v-slot:actions>
                     <v-btn variant="text" @click="snackbar.show = false">
@@ -19,31 +14,24 @@
             <v-table density="comfortable" class="metrics-table">
                 <thead>
                     <tr>
-                        <th class="mega-header text-center" style="min-width: 120px; width: 120px;">
+                        <th class="mega-header text-center" style="min-width: 120px; width: 120px">
                             <!-- {{ $t('metricsView.domain') }} -->
                         </th>
-                        <th 
-                            v-for="megaProc in filteredMegaProcesses" 
+                        <th
+                            v-for="megaProc in filteredMegaProcesses"
                             :key="megaProc.id"
                             class="mega-header text-center"
-                            style="min-width: 150px;"
+                            style="min-width: 150px"
                         >
                             <div class="d-flex align-center justify-center">
                                 <span class="mega-header-text">{{ megaProc.name }}</span>
-                                <v-btn 
-                                    v-if="enableEdit"
-                                    icon 
-                                    variant="text" 
-                                    size="x-small" 
-                                    class="ml-1"
-                                    @click="editMegaProcess(megaProc)"
-                                >
+                                <v-btn v-if="enableEdit" icon variant="text" size="x-small" class="ml-1" @click="editMegaProcess(megaProc)">
                                     <v-icon size="14">mdi-pencil</v-icon>
                                 </v-btn>
-                                <v-btn 
+                                <v-btn
                                     v-if="enableEdit"
-                                    icon 
-                                    variant="text" 
+                                    icon
+                                    variant="text"
                                     size="x-small"
                                     color="error"
                                     @click="deleteMegaProcess(megaProc)"
@@ -53,13 +41,8 @@
                             </div>
                         </th>
                         <!-- Add Mega Process column at the end -->
-                        <th v-if="enableEdit" class="add-column-header text-center" style="min-width: 100px;">
-                            <v-btn 
-                                variant="text" 
-                                size="small"
-                                color="primary"
-                                @click="addMegaProcess"
-                            >
+                        <th v-if="enableEdit" class="add-column-header text-center" style="min-width: 100px">
+                            <v-btn variant="text" size="small" color="primary" @click="addMegaProcess">
                                 <v-icon size="16" start>mdi-plus</v-icon>
                                 {{ $t('metricsView.addMegaProcess') }}
                             </v-btn>
@@ -71,81 +54,42 @@
                         <td class="domain-cell text-center" :style="getDomainCellStyle(domain)">
                             <div class="d-flex align-center justify-center">
                                 <span class="domain-cell-text">{{ domain.name }}</span>
-                                <v-btn
-                                    v-if="enableEdit"
-                                    icon
-                                    variant="text"
-                                    size="x-small"
-                                    class="ml-1"
-                                    @click="editDomain(domain)"
-                                >
+                                <v-btn v-if="enableEdit" icon variant="text" size="x-small" class="ml-1" @click="editDomain(domain)">
                                     <v-icon size="14">mdi-pencil</v-icon>
                                 </v-btn>
-                                <v-btn
-                                    v-if="enableEdit"
-                                    icon
-                                    variant="text"
-                                    size="x-small"
-                                    color="error"
-                                    @click="deleteDomain(domain)"
-                                >
+                                <v-btn v-if="enableEdit" icon variant="text" size="x-small" color="error" @click="deleteDomain(domain)">
                                     <v-icon size="14">mdi-delete</v-icon>
                                 </v-btn>
                             </div>
                         </td>
-                        <td 
-                            v-for="megaProc in filteredMegaProcesses" 
-                            :key="`${domain.id}-${megaProc.id}`"
-                            class="process-cell"
-                        >
+                        <td v-for="megaProc in filteredMegaProcesses" :key="`${domain.id}-${megaProc.id}`" class="process-cell">
                             <div class="process-list">
-                                <div 
-                                    v-for="proc in getProcesses(domain.id, megaProc.id)" 
-                                    :key="proc.id"
-                                    class="process-item mb-2"
-                                >
+                                <div v-for="proc in getProcesses(domain.id, megaProc.id)" :key="proc.id" class="process-item mb-2">
                                     <!-- Process Name (clickable to navigate) -->
                                     <div class="d-flex align-center">
-                                        <span 
-                                            class="process-name font-weight-medium cursor-pointer"
-                                            @click="goProcess(proc)"
-                                        >{{ proc.name }}</span>
+                                        <span class="process-name font-weight-medium cursor-pointer" @click="goProcess(proc)">{{
+                                            proc.name
+                                        }}</span>
                                         <div v-if="enableEdit" class="process-actions ml-2">
-                                            <v-btn 
-                                                icon 
-                                                variant="text" 
-                                                size="x-small"
-                                                @click="editProcess(proc)"
-                                            >
+                                            <v-btn icon variant="text" size="x-small" @click="editProcess(proc)">
                                                 <v-icon size="12">mdi-pencil</v-icon>
                                             </v-btn>
-                                            <v-btn 
-                                                icon 
-                                                variant="text" 
-                                                size="x-small"
-                                                color="error"
-                                                @click="removeProcess(proc)"
-                                            >
+                                            <v-btn icon variant="text" size="x-small" color="error" @click="removeProcess(proc)">
                                                 <v-icon size="12">mdi-delete</v-icon>
                                             </v-btn>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Sub Process List -->
                                     <div v-if="proc.sub_proc_list && proc.sub_proc_list.length > 0" class="sub-processes mt-1">
-                                        <div 
-                                            v-for="sub in proc.sub_proc_list" 
-                                            :key="sub.id"
-                                            class="sub-process-item d-flex align-center"
-                                        >
-                                            <span 
-                                                class="cursor-pointer text-caption text-grey-darken-1"
-                                                @click="goSubProcess(sub)"
-                                            >• {{ sub.name }}</span>
-                                            <v-btn 
+                                        <div v-for="sub in proc.sub_proc_list" :key="sub.id" class="sub-process-item d-flex align-center">
+                                            <span class="cursor-pointer text-caption text-grey-darken-1" @click="goSubProcess(sub)"
+                                                >• {{ sub.name }}</span
+                                            >
+                                            <v-btn
                                                 v-if="enableEdit"
-                                                icon 
-                                                variant="text" 
+                                                icon
+                                                variant="text"
                                                 size="x-small"
                                                 color="error"
                                                 @click="removeSubProcess(proc, sub)"
@@ -154,11 +98,11 @@
                                             </v-btn>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Add Sub Process Button -->
-                                    <v-btn 
+                                    <v-btn
                                         v-if="enableEdit"
-                                        variant="text" 
+                                        variant="text"
                                         size="x-small"
                                         color="secondary"
                                         @click="openSubProcessSelector(proc)"
@@ -168,9 +112,9 @@
                                         {{ $t('processDefinitionMap.addSub') }}
                                     </v-btn>
                                 </div>
-                                <v-btn 
+                                <v-btn
                                     v-if="enableEdit"
-                                    variant="text" 
+                                    variant="text"
                                     size="small"
                                     color="primary"
                                     @click="addProcess(domain.id, megaProc.id)"
@@ -187,12 +131,7 @@
                     <!-- Add Domain row at the bottom -->
                     <tr v-if="enableEdit" class="add-row">
                         <td class="add-domain-cell text-center" :colspan="value.mega_processes.length + 2">
-                            <v-btn 
-                                variant="text" 
-                                size="small"
-                                color="primary"
-                                @click="addDomain"
-                            >
+                            <v-btn variant="text" size="small" color="primary" @click="addDomain">
                                 <v-icon size="16" start>mdi-plus</v-icon>
                                 {{ $t('metricsView.addDomain') }}
                             </v-btn>
@@ -219,7 +158,7 @@
                     <!-- Domain 색상 선택 (Domain 타입일 때만) -->
                     <div v-if="dialog.type === 'domain'" class="mt-4">
                         <div class="text-subtitle-2 mb-2">{{ $t('processDefinitionMap.selectColor') || '색상 선택' }}</div>
-                        <div class="d-flex flex-wrap" style="gap: 8px;">
+                        <div class="d-flex flex-wrap" style="gap: 8px">
                             <div
                                 v-for="color in domainColors"
                                 :key="color"
@@ -229,13 +168,7 @@
                                 @click="dialog.color = color"
                             ></div>
                         </div>
-                        <v-btn
-                            v-if="dialog.color"
-                            variant="text"
-                            size="small"
-                            class="mt-2"
-                            @click="dialog.color = null"
-                        >
+                        <v-btn v-if="dialog.color" variant="text" size="small" class="mt-2" @click="dialog.color = null">
                             {{ $t('common.reset') || '초기화' }}
                         </v-btn>
                     </div>
@@ -254,7 +187,7 @@
 
         <!-- Sub Process Selector Dialog (select from saved processes or create new) -->
         <v-dialog v-model="subProcessDialog.show" max-width="500" persistent>
-            <v-card class="pa-4" style="border-radius: 12px;">
+            <v-card class="pa-4" style="border-radius: 12px">
                 <v-card-title class="px-0 pt-0 d-flex align-center">
                     {{ $t('processDefinitionMap.addSub') }}
                     <v-spacer></v-spacer>
@@ -387,7 +320,7 @@ export default {
         },
         filteredProcDefIds: {
             type: Array,
-            default: null  // null = no filter, [] = filter active but no matches
+            default: null // null = no filter, [] = filter active but no matches
         },
         enableEdit: {
             type: Boolean,
@@ -433,9 +366,18 @@ export default {
                 timeout: 3000
             },
             domainColors: [
-                '#E53935', '#D81B60', '#8E24AA', '#5E35B1',
-                '#3949AB', '#1E88E5', '#00ACC1', '#00897B',
-                '#43A047', '#7CB342', '#FB8C00', '#6D4C41',
+                '#E53935',
+                '#D81B60',
+                '#8E24AA',
+                '#5E35B1',
+                '#3949AB',
+                '#1E88E5',
+                '#00ACC1',
+                '#00897B',
+                '#43A047',
+                '#7CB342',
+                '#FB8C00',
+                '#6D4C41'
             ]
         };
     },
@@ -443,9 +385,11 @@ export default {
         isSubProcessSaveDisabled() {
             if (this.subProcessDialog.isNewDef) {
                 // Create new mode: need name and valid id
-                return !this.subProcessDialog.newProcessName ||
-                       !this.subProcessDialog.newProcessId ||
-                       !this.isValidId(this.subProcessDialog.newProcessId);
+                return (
+                    !this.subProcessDialog.newProcessName ||
+                    !this.subProcessDialog.newProcessId ||
+                    !this.isValidId(this.subProcessDialog.newProcessId)
+                );
             } else {
                 // Select existing mode: need id from selection
                 return !this.subProcessDialog.selectedProcess || !this.subProcessDialog.selectedProcess.id;
@@ -453,8 +397,9 @@ export default {
         },
         idRules() {
             return [
-                v => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
-                v => /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
+                (v) => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
+                (v) =>
+                    /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
             ];
         },
         filteredMegaProcesses() {
@@ -464,12 +409,12 @@ export default {
             const query = this.searchQuery.toLowerCase().trim();
             const processes = Array.isArray(this.value.processes) ? this.value.processes : [];
 
-            return this.value.mega_processes.filter(mega => {
+            return this.value.mega_processes.filter((mega) => {
                 const nameMatch = mega.name && mega.name.toLowerCase().includes(query);
-                const hasMatchingProcess = processes.some(proc => {
+                const hasMatchingProcess = processes.some((proc) => {
                     if (proc.mega_process_id !== mega.id) return false;
                     const procNameMatch = proc.name && proc.name.toLowerCase().includes(query);
-                    const subMatch = (proc.sub_proc_list || []).some(sub => sub.name && sub.name.toLowerCase().includes(query));
+                    const subMatch = (proc.sub_proc_list || []).some((sub) => sub.name && sub.name.toLowerCase().includes(query));
                     return procNameMatch || subMatch;
                 });
                 return nameMatch || hasMatchingProcess;
@@ -514,7 +459,7 @@ export default {
         },
         updateDomainColor(domain, color) {
             const newValue = JSON.parse(JSON.stringify(this.value));
-            const targetDomain = newValue.domains.find(d => d.id === domain.id);
+            const targetDomain = newValue.domains.find((d) => d.id === domain.id);
             if (targetDomain) {
                 targetDomain.color = color;
                 this.$emit('update:value', newValue);
@@ -523,37 +468,37 @@ export default {
         getProcesses(domainId, megaProcessId) {
             if (!this.value.processes) return [];
 
-            let processes = this.value.processes.filter(
-                proc => proc.domain_id === domainId && proc.mega_process_id === megaProcessId
-            );
+            let processes = this.value.processes.filter((proc) => proc.domain_id === domainId && proc.mega_process_id === megaProcessId);
 
             // Apply search query filter if active
             if (this.searchQuery && this.searchQuery.trim()) {
                 const query = this.searchQuery.toLowerCase().trim();
-                processes = processes.map(proc => {
-                    // Filter sub_proc_list by search query
-                    const filteredSubProcList = (proc.sub_proc_list || []).filter(
-                        sub => sub.name && sub.name.toLowerCase().includes(query)
-                    );
-                    return {
-                        ...proc,
-                        sub_proc_list: filteredSubProcList
-                    };
-                }).filter(proc => proc.sub_proc_list && proc.sub_proc_list.length > 0);
+                processes = processes
+                    .map((proc) => {
+                        // Filter sub_proc_list by search query
+                        const filteredSubProcList = (proc.sub_proc_list || []).filter(
+                            (sub) => sub.name && sub.name.toLowerCase().includes(query)
+                        );
+                        return {
+                            ...proc,
+                            sub_proc_list: filteredSubProcList
+                        };
+                    })
+                    .filter((proc) => proc.sub_proc_list && proc.sub_proc_list.length > 0);
             }
 
             // Apply organization filter if active
             if (this.filteredProcDefIds !== null) {
-                processes = processes.map(proc => {
-                    // Filter sub_proc_list by filteredProcDefIds
-                    const filteredSubProcList = (proc.sub_proc_list || []).filter(
-                        sub => this.filteredProcDefIds.includes(sub.id)
-                    );
-                    return {
-                        ...proc,
-                        sub_proc_list: filteredSubProcList
-                    };
-                }).filter(proc => proc.sub_proc_list && proc.sub_proc_list.length > 0);
+                processes = processes
+                    .map((proc) => {
+                        // Filter sub_proc_list by filteredProcDefIds
+                        const filteredSubProcList = (proc.sub_proc_list || []).filter((sub) => this.filteredProcDefIds.includes(sub.id));
+                        return {
+                            ...proc,
+                            sub_proc_list: filteredSubProcList
+                        };
+                    })
+                    .filter((proc) => proc.sub_proc_list && proc.sub_proc_list.length > 0);
             }
 
             return processes;
@@ -605,8 +550,8 @@ export default {
         deleteDomain(domain) {
             if (confirm(this.$t('metricsView.confirmDeleteDomain'))) {
                 const newValue = { ...this.value };
-                newValue.domains = newValue.domains.filter(d => d.id !== domain.id);
-                newValue.processes = newValue.processes.filter(p => p.domain_id !== domain.id);
+                newValue.domains = newValue.domains.filter((d) => d.id !== domain.id);
+                newValue.processes = newValue.processes.filter((p) => p.domain_id !== domain.id);
                 this.$emit('update:value', newValue);
             }
         },
@@ -639,8 +584,8 @@ export default {
         deleteMegaProcess(megaProc) {
             if (confirm(this.$t('metricsView.confirmDeleteMegaProcess'))) {
                 const newValue = { ...this.value };
-                newValue.mega_processes = newValue.mega_processes.filter(m => m.id !== megaProc.id);
-                newValue.processes = newValue.processes.filter(p => p.mega_process_id !== megaProc.id);
+                newValue.mega_processes = newValue.mega_processes.filter((m) => m.id !== megaProc.id);
+                newValue.processes = newValue.processes.filter((p) => p.mega_process_id !== megaProc.id);
                 this.$emit('update:value', newValue);
             }
         },
@@ -672,9 +617,14 @@ export default {
         },
         // Remove process from metrics matrix only (not deleting actual process)
         removeProcess(proc) {
-            if (confirm(this.$t('metricsView.confirmRemoveProcess') || '이 프로세스를 매트릭스에서 제거하시겠습니까? (실제 프로세스는 삭제되지 않습니다)')) {
+            if (
+                confirm(
+                    this.$t('metricsView.confirmRemoveProcess') ||
+                        '이 프로세스를 매트릭스에서 제거하시겠습니까? (실제 프로세스는 삭제되지 않습니다)'
+                )
+            ) {
                 const newValue = { ...this.value };
-                newValue.processes = newValue.processes.filter(p => p.id !== proc.id);
+                newValue.processes = newValue.processes.filter((p) => p.id !== proc.id);
                 this.$emit('update:value', newValue);
             }
         },
@@ -701,7 +651,7 @@ export default {
         },
         addSelectedSubProcess() {
             const newValue = JSON.parse(JSON.stringify(this.value));
-            const proc = newValue.processes.find(p => p.id === this.subProcessDialog.parentProcess.id);
+            const proc = newValue.processes.find((p) => p.id === this.subProcessDialog.parentProcess.id);
 
             if (!proc) {
                 this.closeSubProcessDialog();
@@ -722,9 +672,7 @@ export default {
                 }
 
                 // Check for duplicate ID
-                const isDuplicate = proc.sub_proc_list.some(
-                    s => s.id === this.subProcessDialog.newProcessId
-                );
+                const isDuplicate = proc.sub_proc_list.some((s) => s.id === this.subProcessDialog.newProcessId);
 
                 if (isDuplicate) {
                     this.snackbar.text = this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.';
@@ -745,9 +693,7 @@ export default {
                 }
 
                 // Check for duplicate
-                const isDuplicate = proc.sub_proc_list.some(
-                    s => s.id === this.subProcessDialog.selectedProcess.id
-                );
+                const isDuplicate = proc.sub_proc_list.some((s) => s.id === this.subProcessDialog.selectedProcess.id);
 
                 if (isDuplicate) {
                     this.snackbar.text = this.$t('processDefinitionMap.duplicateName') || '이미 추가된 프로세스입니다.';
@@ -783,7 +729,7 @@ export default {
             try {
                 this.idGenerator = new ProcessDefinitionIdGenerator(this, {
                     isStream: true,
-                    preferredLanguage: "Korean"
+                    preferredLanguage: 'Korean'
                 });
                 await this.idGenerator.generate();
             } catch (error) {
@@ -822,7 +768,8 @@ export default {
 
                 if (id) {
                     // Clean up the ID to ensure it's valid
-                    id = id.toLowerCase()
+                    id = id
+                        .toLowerCase()
                         .replace(/[^a-z0-9_]/g, '_')
                         .replace(/^[0-9_]+/, '')
                         .replace(/_+/g, '_')
@@ -848,9 +795,9 @@ export default {
         removeSubProcess(parentProcess, sub) {
             if (confirm(this.$t('metricsView.confirmRemoveProcess') || '이 프로세스를 매트릭스에서 제거하시겠습니까?')) {
                 const newValue = JSON.parse(JSON.stringify(this.value));
-                const proc = newValue.processes.find(p => p.id === parentProcess.id);
+                const proc = newValue.processes.find((p) => p.id === parentProcess.id);
                 if (proc && proc.sub_proc_list) {
-                    proc.sub_proc_list = proc.sub_proc_list.filter(s => s.id !== sub.id);
+                    proc.sub_proc_list = proc.sub_proc_list.filter((s) => s.id !== sub.id);
                 }
                 this.$emit('update:value', newValue);
             }
@@ -877,7 +824,7 @@ export default {
                         order: newOrder
                     });
                 } else {
-                    const domain = newValue.domains.find(d => d.id === this.dialog.editItem.id);
+                    const domain = newValue.domains.find((d) => d.id === this.dialog.editItem.id);
                     if (domain) {
                         domain.name = trimmedName;
                         domain.color = this.dialog.color;
@@ -892,7 +839,7 @@ export default {
                         order: newOrder
                     });
                 } else {
-                    const megaProc = newValue.mega_processes.find(m => m.id === this.dialog.editItem.id);
+                    const megaProc = newValue.mega_processes.find((m) => m.id === this.dialog.editItem.id);
                     if (megaProc) {
                         megaProc.name = trimmedName;
                     }
@@ -909,7 +856,7 @@ export default {
                         sub_proc_list: []
                     });
                 } else {
-                    const proc = newValue.processes.find(p => p.id === this.dialog.editItem.id);
+                    const proc = newValue.processes.find((p) => p.id === this.dialog.editItem.id);
                     if (proc) {
                         proc.name = trimmedName;
                     }

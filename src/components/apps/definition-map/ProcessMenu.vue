@@ -4,67 +4,49 @@
             <!-- Add button for mega/major types -->
             <v-tooltip v-if="(type === 'mega' || type === 'major') && (selectedDomain || isPal)" :text="addTooltipText">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click.stop="addProcess"
-                        icon v-bind="props"
-                        density="compact"
-                        size="small"
-                    >
+                    <v-btn @click.stop="addProcess" icon v-bind="props" density="compact" size="small">
                         <v-icon size="14">mdi-plus</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip v-if="canSetPermission" :text="$t('ProcessMenu.setPermission')">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click.stop="setPermission"
-                        icon v-bind="props"
-                        density="compact"
-                        size="small"
-                    >
-                        <Icons :icon="'user-lock'" :width="14" :height="14"  />
+                    <v-btn @click.stop="setPermission" icon v-bind="props" density="compact" size="small">
+                        <Icons :icon="'user-lock'" :width="14" :height="14" />
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip v-if="type != 'map' && type != 'sub'" :text="$t('ProcessMenu.edit')">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click.stop="openEditDialog('update')"
-                        icon v-bind="props"
-                        density="compact"
-                        size="small"
-                    >
+                    <v-btn @click.stop="openEditDialog('update')" icon v-bind="props" density="compact" size="small">
                         <Icons :icon="'pencil'" :width="12" :height="12" />
+                    </v-btn>
+                </template>
+            </v-tooltip>
+            <v-tooltip v-if="type === 'sub' && isPal" :text="$t('ProcessMenu.settings')">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="openSubprocessSettings" icon v-bind="props" density="compact" size="small">
+                        <v-icon size="12">mdi-cog</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip v-if="type === 'sub'" :text="$t('ProcessMenu.setOwner')">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click.stop="setOwner"
-                        icon v-bind="props"
-                        density="compact"
-                        size="small"
-                    >
+                    <v-btn @click.stop="setOwner" icon v-bind="props" density="compact" size="small">
                         <v-icon size="12">mdi-account-edit</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip v-if="type === 'sub'" :text="$t('ProcessMenu.duplicate')">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click.stop="duplicateProcess"
-                        icon v-bind="props"
-                        density="compact"
-                        size="small"
-                    >
+                    <v-btn @click.stop="duplicateProcess" icon v-bind="props" density="compact" size="small">
                         <v-icon size="12">mdi-content-copy</v-icon>
                     </v-btn>
                 </template>
             </v-tooltip>
             <v-tooltip v-if="type != 'map'" :text="$t('ProcessMenu.delete')">
                 <template v-slot:activator="{ props }">
-                    <v-btn @click.stop="deleteProcess"
-                        icon v-bind="props"
-                        density="compact"
-                        size="small"
-                        class="process-delete-btn"
-                    >
+                    <v-btn @click.stop="deleteProcess" icon v-bind="props" density="compact" size="small" class="process-delete-btn">
                         <Icons :icon="'trash'" :width="12" :height="12" />
                     </v-btn>
                 </template>
@@ -74,35 +56,35 @@
 </template>
 
 <script>
-import ProcessDialog from './ProcessDialog.vue'
+import ProcessDialog from './ProcessDialog.vue';
 
 export default {
     components: {
-        ProcessDialog,
+        ProcessDialog
     },
     props: {
         size: Number,
         type: String,
         process: Object,
         enableEdit: Boolean,
-        selectedDomain: [String, Number],
+        selectedDomain: [String, Number]
     },
     data: () => ({
         newProcess: {
-            id: "",
-            label: ""
+            id: '',
+            label: ''
         },
         processDialogStatus: false,
-        processType: "",
+        processType: ''
     }),
     computed: {
         addType() {
             if (this.type == 'map') {
-                return "mega";
+                return 'mega';
             } else if (this.type == 'mega') {
-                return "major";
+                return 'major';
             } else if (this.type == 'major') {
-                return "sub";
+                return 'sub';
             }
         },
         isPal() {
@@ -122,34 +104,35 @@ export default {
                 return this.$t('processDefinitionMap.addSub');
             }
             return '';
-        },
+        }
     },
-    watch: {
-    },
-    created() {
-    },
+    watch: {},
+    created() {},
     methods: {
         openEditDialog(processType) {
             this.$emit('editProcessdialog', processType);
         },
         deleteProcess() {
-            this.$emit("delete");
+            this.$emit('delete');
         },
         editProcess() {
-            this.$emit("modeling");
+            this.$emit('modeling');
         },
         setPermission() {
-            this.$emit("setPermission", this.process);
+            this.$emit('setPermission', this.process);
         },
         duplicateProcess() {
-            this.$emit("duplicate", this.process);
+            this.$emit('duplicate', this.process);
         },
         setOwner() {
-            this.$emit("setOwner", this.process);
+            this.$emit('setOwner', this.process);
+        },
+        openSubprocessSettings() {
+            this.$emit('openSubprocessSettings', this.process);
         },
         addProcess() {
-            this.$emit("add");
-        },
-    },
-}
+            this.$emit('add');
+        }
+    }
+};
 </script>

@@ -71,9 +71,9 @@ export default {
         };
     },
     watch: {
-        "selectVal.name": {
+        'selectVal.name': {
             handler(newVal) {
-                this.$emit("update:name", newVal)
+                this.$emit('update:name', newVal);
             }
         }
     },

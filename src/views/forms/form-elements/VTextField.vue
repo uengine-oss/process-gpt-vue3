@@ -35,7 +35,6 @@ const rules = ref({
 
 //  data of select
 const items = ref(['None', 'demo@company.com', 'Judiya@company.com', 'taju_diya@company.com']);
-
 </script>
 
 <template>

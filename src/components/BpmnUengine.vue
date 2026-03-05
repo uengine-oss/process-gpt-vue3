@@ -1,13 +1,24 @@
 <template>
-    <div id="canvas-container" ref="container" class="vue-bpmn-diagram-container" :class="{ 'view-mode': isViewMode, 'not-pal': !isPal, 'mini-preview': isPreviewMode }" v-hammer:pan="onPan" v-hammer:pinch="onPinch" :style="{ '--label-font-size': labelFontSize + 'px' }" @dragover.prevent="onDragOver" @drop.prevent="onDrop" @contextmenu.prevent="onContextMenu">
+    <div
+        id="canvas-container"
+        ref="container"
+        class="vue-bpmn-diagram-container"
+        :class="{ 'view-mode': isViewMode, 'not-pal': !isPal }"
+        v-hammer:pan="onPan"
+        v-hammer:pinch="onPinch"
+        :style="{ '--label-font-size': labelFontSize + 'px' }"
+        @dragover.prevent="onDragOver"
+        @drop.prevent="onDrop"
+        @contextmenu.prevent="onContextMenu"
+    >
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
-        <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
+        <div v-if="isViewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
-                <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
+                <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
                 <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
-                <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
-                <v-icon v-if="!isPalUengine" @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
+                <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
+                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer">mdi-crop-rotate</v-icon>
             </div>
         </div>
         <!-- Font size and zoom controls (edit mode only) -->
@@ -18,14 +29,18 @@
             <!-- Font size controls -->
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-decrease</v-icon>
+                    <v-icon v-bind="props" @click="decreaseFontSize" style="color: #444; cursor: pointer" size="small"
+                        >mdi-format-font-size-decrease</v-icon
+                    >
                 </template>
                 <span>{{ $t('BpmnUengine.decreaseFontSize') || 'Decrease Font Size' }}</span>
             </v-tooltip>
             <span class="font-size-value">{{ labelFontSize }}px</span>
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer;" size="small">mdi-format-font-size-increase</v-icon>
+                    <v-icon v-bind="props" @click="increaseFontSize" style="color: #444; cursor: pointer" size="small"
+                        >mdi-format-font-size-increase</v-icon
+                    >
                 </template>
                 <span>{{ $t('BpmnUengine.increaseFontSize') || 'Increase Font Size' }}</span>
             </v-tooltip>
@@ -33,7 +48,9 @@
             <!-- Color Ruleset button -->
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer;" size="small">mdi-palette</v-icon>
+                    <v-icon v-bind="props" @click="openColorRulesetDialog" style="color: #444; cursor: pointer" size="small"
+                        >mdi-palette</v-icon
+                    >
                 </template>
                 <span>Color Ruleset</span>
             </v-tooltip>
@@ -41,37 +58,33 @@
             <!-- Zoom controls -->
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer;" size="small">mdi-crosshairs-gps</v-icon>
+                    <v-icon v-bind="props" @click="resetZoom" style="color: #444; cursor: pointer" size="small">mdi-crosshairs-gps</v-icon>
                 </template>
                 <span>{{ $t('BpmnUengine.resetZoom') || 'Fit to Screen (Ctrl+0)' }}</span>
             </v-tooltip>
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="zoomOut" style="color: #444; cursor: pointer;" size="small">mdi-minus</v-icon>
+                    <v-icon v-bind="props" @click="zoomOut" style="color: #444; cursor: pointer" size="small">mdi-minus</v-icon>
                 </template>
                 <span>{{ $t('BpmnUengine.zoomOut') || 'Zoom Out (Ctrl+-)' }}</span>
             </v-tooltip>
             <span class="zoom-level-value">{{ currentZoomLevel }}%</span>
             <v-tooltip location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-icon v-bind="props" @click="zoomIn" style="color: #444; cursor: pointer;" size="small">mdi-plus</v-icon>
+                    <v-icon v-bind="props" @click="zoomIn" style="color: #444; cursor: pointer" size="small">mdi-plus</v-icon>
                 </template>
                 <span>{{ $t('BpmnUengine.zoomIn') || 'Zoom In (Ctrl++)' }}</span>
             </v-tooltip>
         </div>
     </div>
     <v-dialog v-model="isPreviewPDFDialog" max-width="1160px">
-        <v-card >
+        <v-card>
             <v-card-title class="headline">{{ $t('PDFPreviewer.title') }}</v-card-title>
-            <PDFPreviewer  :bpmnViewer="bpmnViewer" @closeDialog="closePDFDialog"/>
+            <PDFPreviewer :bpmnViewer="bpmnViewer" @closeDialog="closePDFDialog" />
         </v-card>
     </v-dialog>
     <!-- Color Ruleset Dialog -->
-    <ColorRulesetDialog
-        v-model="showColorRulesetDialog"
-        :initialRules="colorRules"
-        @save="onColorRulesSave"
-    />
+    <ColorRulesetDialog v-model="showColorRulesetDialog" :initialRules="colorRules" @save="onColorRulesSave" />
 </template>
 
 <script>
@@ -94,8 +107,7 @@ import paletteProvider from './customPalette/PaletteProvider';
 import customContextPadModule from './customContextPad';
 import customReplaceElement from './customReplaceElement';
 import customPopupMenu from './customPopupMenu';
-// skt 마이그레이션 요소 변경 비활성화
-// import customReplaceModule from './customReplace';
+import customReplaceModule from './customReplace';
 import phaseModdle from '@/assets/bpmn/phase-moddle.json';
 import PDFPreviewer from '@/components/BPMNPDFPreviewer.vue';
 import ColorRulesetDialog from '@/components/designer/bpmnModeling/bpmn/ColorRulesetDialog.vue';
@@ -105,12 +117,10 @@ import minimapModule from 'diagram-js-minimap';
 import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 
-
 const backend = BackendFactory.createBackend();
 
-const
-WARNING = 0,
-  ERROR = 1;
+const WARNING = 0,
+    ERROR = 1;
 
 export default {
     name: 'bpmn-uengine',
@@ -164,10 +174,6 @@ export default {
         isAIGenerated: {
             type: Boolean
         },
-        registerToStore: {
-            type: Boolean,
-            default: true
-        },
         commentCounts: {
             type: Object,
             default: () => ({})
@@ -175,15 +181,13 @@ export default {
         onLoadStart: {
             type: Function,
             default: () => {
-                return () => {
-                }
+                return () => {};
             }
         },
         onLoadEnd: {
             type: Function,
             default: () => {
-                return () => {
-                }
+                return () => {};
             }
         }
     },
@@ -208,19 +212,8 @@ export default {
             isHorizontal: false,
             labelFontSize: 12, // Default font size for task labels
             currentZoomLevel: 100, // Current zoom level percentage
-            // Playwright 테스트용 클래스 카운터
-            playwrightClassCounters: {
-                task: 0,
-                lane: 0,
-                gateway: 0,
-                event: 0,
-                sequenceflow: 0,
-                participant: 0
-            },
             showColorRulesetDialog: false,
-            colorRules: [], // Color rules loaded from BPMN XML
-            // compensate boundaryEvent ↔ 보상 task 연결 시 자동으로 compensateTask 채움
-            compensateAutoFillInstalled: false
+            colorRules: [] // Color rules loaded from BPMN XML
         };
     },
     computed: {
@@ -236,10 +229,7 @@ export default {
         },
         isPal() {
             return window.$pal;
-        },
-        isPalUengine() {
-            return !!(window.$pal && window.$mode === 'uEngine');
-        },
+        }
     },
     async mounted() {
         this.onLoadStart();
@@ -250,25 +240,22 @@ export default {
 
         this.initializeViewer();
         this.setDiagramEvent();
-        if (typeof this.bpmn === 'string' && this.bpmn.trim().length > 0) {
+        if (this.bpmn) {
             this.diagramXML = this.bpmn;
         } else {
-            const isGsDefinitionChat = !!window.$gs && this.$route?.path === '/definitions/chat';
-            if (isGsDefinitionChat) {
-                // GS 모드의 definitions/chat에서는 초기 기본값(BPMN)을 주입하지 않는다.
-                this.diagramXML = null;
-            } else {
-                let laneName = 'Lane 1';
-                try {
-                    const teamName = await getCurrentUserTeamName();
-                    if (teamName) {
-                        laneName = teamName;
-                    }
-                } catch (e) {
-                    console.warn('[BpmnUengine] 팀명 조회 실패, 기본값 사용:', e);
+            // 사용자 팀명 조회하여 Lane 이름에 사용
+            let laneName = 'Lane 1';
+            try {
+                const teamName = await getCurrentUserTeamName();
+                if (teamName) {
+                    laneName = teamName;
                 }
-                // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
-                this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
+            } catch (e) {
+                console.warn('[BpmnUengine] 팀명 조회 실패, 기본값 사용:', e);
+            }
+
+            // Default BPMN with Swimlane (Pool + Lane) and StartEvent -> ManualTask -> EndEvent
+            this.diagramXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0">
   <bpmn:collaboration id="Collaboration_1">
     <bpmn:participant id="Participant_1" name="Process" processRef="Process_1"/>
@@ -332,23 +319,9 @@ export default {
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
-            }
         }
-        Promise.resolve()
-            .then(() => {
-                if (!this.diagramXML) return;
-                return this.bpmnViewer.importXML(this.diagramXML);
-            })
-            .catch((e) => {
-                console.error('[BpmnUengine] 초기 import 실패:', e);
-                this.$emit('error', e);
-            })
-            .finally(() => {
-                try {
-                    this.onLoadEnd();
-                } catch (_) {
-                }
-            });
+        // if (this.mode == 'uEngine') {
+        this.bpmnViewer.importXML(this.diagramXML);
         this.initResizeObserver();
         // }
 
@@ -367,28 +340,6 @@ export default {
         }
     },
     watch: {
-       bpmn: {
-            async handler(newVal) {
-                if(this.registerToStore) {
-                    return;
-                }
-                try {
-                    if (typeof newVal !== 'string' || newVal.trim().length === 0) return;
-                    if (!this.bpmnViewer) return;
-                    this.onLoadStart();
-                    this.diagramXML = newVal;
-                    await this.bpmnViewer.importXML(newVal);
-                } catch (e) {
-                    console.error('[BpmnUengine] bpmn prop 변경시 import 실패:', e);
-                    this.$emit('error', e);
-                } finally {
-                    try {
-                        this.onLoadEnd();
-                    } catch (_) {
-                    }
-                }
-            }
-        },
         isViewMode(val) {
             this.initializeViewer();
         },
@@ -421,11 +372,11 @@ export default {
                     Object.keys(newVal).forEach((activityId) => {
                         const element = elementRegistry.get(activityId);
                         if (!element) return;
-                        
+
                         if (newVal[activityId] === 'generating') {
                             // 보라색 테두리 추가
                             canvas.addMarker(activityId, 'running');
-                            
+
                             // 화면 정중앙에 액티비티 배치
                             const viewbox = canvas.viewbox();
                             const elementMid = {
@@ -435,15 +386,15 @@ export default {
 
                             // 확대를 100% (zoom = 1.0)로 설정
                             const zoom = 1.0;
-                            
+
                             // viewbox를 element 중심으로 이동
                             canvas.viewbox({
-                                x: elementMid.x - (viewbox.outer.width / zoom / 2),
-                                y: elementMid.y - (viewbox.outer.height / zoom / 2),
+                                x: elementMid.x - viewbox.outer.width / zoom / 2,
+                                y: elementMid.y - viewbox.outer.height / zoom / 2,
                                 width: viewbox.outer.width / zoom,
                                 height: viewbox.outer.height / zoom
                             });
-                            
+
                             console.log(`📍 액티비티 "${activityId}" 포커싱 완료 (정중앙, 100% 줌)`);
                         } else if (newVal[activityId] === 'finished') {
                             canvas.addMarker(activityId, 'generated');
@@ -455,7 +406,7 @@ export default {
             deep: true
         },
         isPreviewPDFDialog(val) {
-            if(!val) {
+            if (!val) {
                 this.$emit('closePDFDialog');
             }
         },
@@ -464,7 +415,7 @@ export default {
                 this.renderCommentBadges(val);
             },
             deep: true
-        },
+        }
     },
     methods: {
         // 노드별 코멘트 배지 오버레이 렌더링
@@ -480,7 +431,7 @@ export default {
                 if (!commentCounts || Object.keys(commentCounts).length === 0) return;
 
                 Object.entries(commentCounts).forEach(([elementId, countObj]) => {
-                    const count = typeof countObj === 'object' ? (countObj.unresolved || 0) : (countObj || 0);
+                    const count = typeof countObj === 'object' ? countObj.unresolved || 0 : countObj || 0;
                     if (count === 0) return;
                     const element = elementRegistry.get(elementId);
                     if (!element) return;
@@ -508,7 +459,7 @@ export default {
                     badge.textContent = count > 99 ? '99+' : String(count);
 
                     const self = this;
-                    badge.addEventListener('click', function(e) {
+                    badge.addEventListener('click', function (e) {
                         e.stopPropagation();
                         self.$emit('addComment', elementId);
                     });
@@ -539,8 +490,8 @@ export default {
                 };
                 const zoom = 1.0;
                 canvas.viewbox({
-                    x: elementMid.x - (viewbox.outer.width / zoom / 2),
-                    y: elementMid.y - (viewbox.outer.height / zoom / 2),
+                    x: elementMid.x - viewbox.outer.width / zoom / 2,
+                    y: elementMid.y - viewbox.outer.height / zoom / 2,
                     width: viewbox.outer.width / zoom,
                     height: viewbox.outer.height / zoom
                 });
@@ -558,13 +509,13 @@ export default {
                 const elementRegistry = this.bpmnViewer.get('elementRegistry');
 
                 // Remove all existing validation markers
-                elementRegistry.getAll().forEach(el => {
+                elementRegistry.getAll().forEach((el) => {
                     canvas.removeMarker(el.id, 'validation-error');
                     canvas.removeMarker(el.id, 'validation-warning');
                 });
 
                 // Add markers per item
-                (items || []).forEach(item => {
+                (items || []).forEach((item) => {
                     if (!item.elementId) return;
                     const el = elementRegistry.get(item.elementId);
                     if (!el) return;
@@ -579,119 +530,6 @@ export default {
             }
         },
 
-        hasCompensateEventDefinition(element) {
-            const defs = element?.businessObject?.eventDefinitions || [];
-            return Array.isArray(defs) && defs.some((d) => d?.$type === 'bpmn:CompensateEventDefinition');
-        },
-        isCompensationHandlerTask(element) {
-            return element?.businessObject?.isForCompensation === true;
-        },
-        ensureUengineJsonOnElement(element) {
-            const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
-            const bo = element?.businessObject;
-            if (!bo) return { bo: null, uengineProps: null, jsonObj: {} };
-
-            if (!bo.extensionElements) {
-                bo.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
-            }
-            if (!bo.extensionElements.values) {
-                bo.extensionElements.values = [];
-            }
-            if (bo.extensionElements.values.length === 0) {
-                bo.extensionElements.values.push(
-                    bpmnFactory.create('uengine:Properties', {
-                        json: '{}',
-                        variables: []
-                    })
-                );
-            }
-
-            const uengineProps = bo.extensionElements.values[0];
-            if (typeof uengineProps.json !== 'string') uengineProps.json = '{}';
-
-            let jsonObj = {};
-            try {
-                jsonObj = JSON.parse(uengineProps.json || '{}');
-            } catch (e) {
-                jsonObj = {};
-            }
-
-            return { bo, uengineProps, jsonObj };
-        },
-        applyCompensateTaskAutoFillFromConnection(connection) {
-            if (!connection || connection?.businessObject?.$type !== 'bpmn:Association') return;
-
-            const a = connection.source;
-            const b = connection.target;
-
-            // 양방향 케이스 모두 지원
-            let boundary = null;
-            let handlerTask = null;
-
-            if (this.hasCompensateEventDefinition(a) && this.isCompensationHandlerTask(b)) {
-                boundary = a;
-                handlerTask = b;
-            } else if (this.hasCompensateEventDefinition(b) && this.isCompensationHandlerTask(a)) {
-                boundary = b;
-                handlerTask = a;
-            } else {
-                return;
-            }
-
-            const modeling = this.bpmnViewer.get('modeling');
-            const { bo, uengineProps, jsonObj } = this.ensureUengineJsonOnElement(boundary);
-            if (!bo || !uengineProps) return;
-
-            jsonObj.compensateTask = {
-                name: handlerTask?.businessObject?.name || '',
-                tracingTag: handlerTask?.businessObject?.id || handlerTask?.id || ''
-            };
-
-            uengineProps.json = JSON.stringify(jsonObj);
-
-            // 모델에 반영 (저장 시 XML에도 반영됨)
-            modeling.updateProperties(boundary, {
-                extensionElements: bo.extensionElements
-            });
-        },
-        clearCompensateTaskIfAssociationRemoved(connection) {
-            if (!connection || connection?.businessObject?.$type !== 'bpmn:Association') return;
-            const a = connection.source;
-            const b = connection.target;
-
-            // association이 제거될 때, source/target 중 compensate boundaryEvent가 있으면 compensateTask를 비움
-            const boundary = this.hasCompensateEventDefinition(a) ? a : this.hasCompensateEventDefinition(b) ? b : null;
-            if (!boundary) return;
-
-            const modeling = this.bpmnViewer.get('modeling');
-            const { bo, uengineProps, jsonObj } = this.ensureUengineJsonOnElement(boundary);
-            if (!bo || !uengineProps) return;
-
-            // 연결이 사라졌으니 초기화(기존 null 형태와 호환)
-            jsonObj.compensateTask = null;
-            uengineProps.json = JSON.stringify(jsonObj);
-            modeling.updateProperties(boundary, {
-                extensionElements: bo.extensionElements
-            });
-        },
-        setupCompensateAutoFillListeners() {
-            // 뷰어가 없거나 이미 설치했으면 스킵
-            if (!this.bpmnViewer || this.compensateAutoFillInstalled) return;
-            // 편집 모드에서만 자동 채움 (읽기모드에서는 불필요)
-            if (this.isViewMode) return;
-
-            const eventBus = this.bpmnViewer.get('eventBus');
-
-            const onConnCreate = (e) => this.applyCompensateTaskAutoFillFromConnection(e?.context?.connection);
-            const onReconnect = (e) => this.applyCompensateTaskAutoFillFromConnection(e?.context?.connection);
-            const onDelete = (e) => this.clearCompensateTaskIfAssociationRemoved(e?.context?.connection);
-
-            eventBus.on('commandStack.connection.create.executed', onConnCreate);
-            eventBus.on('commandStack.connection.reconnectEnd.executed', onReconnect);
-            eventBus.on('commandStack.connection.delete.executed', onDelete);
-
-            this.compensateAutoFillInstalled = true;
-        },
         async loadPaletteSettings() {
             try {
                 const catalogStore = useTaskCatalogStore();
@@ -712,12 +550,10 @@ export default {
             }
         },
         applyAutoLayout() {
-            if (window.$pal) return;
             const elementRegistry = this.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             const horizontal = participant[0].di.isHorizontal;
             window.BpmnAutoLayout.applyAutoLayout(this.bpmnViewer, { horizontal: horizontal });
-            this.EventBus.emit('autoLayout.complete');
         },
         revertAutoLayout() {
             if (!window.BpmnAutoLayout || !window.BpmnAutoLayout.hasLayoutSnapshot()) {
@@ -750,15 +586,15 @@ export default {
                 const elementRegistry = this.bpmnViewer.get('elementRegistry');
 
                 // Shape 요소와 Connection 요소 분리
-                const shapes = elements.filter(el => !el.waypoints);
-                const shapeIds = new Set(shapes.map(el => el.id));
+                const shapes = elements.filter((el) => !el.waypoints);
+                const shapeIds = new Set(shapes.map((el) => el.id));
 
                 // 선택된 Shape 간의 연결선 찾기
                 const connections = [];
-                shapes.forEach(shape => {
+                shapes.forEach((shape) => {
                     // outgoing connections
                     if (shape.outgoing) {
-                        shape.outgoing.forEach(conn => {
+                        shape.outgoing.forEach((conn) => {
                             if (conn.target && shapeIds.has(conn.target.id)) {
                                 connections.push({
                                     type: conn.type,
@@ -766,7 +602,7 @@ export default {
                                     sourceId: conn.source.id,
                                     targetId: conn.target.id,
                                     name: conn.businessObject?.name || '',
-                                    waypoints: conn.waypoints?.map(wp => ({ x: wp.x, y: wp.y })) || [],
+                                    waypoints: conn.waypoints?.map((wp) => ({ x: wp.x, y: wp.y })) || [],
                                     properties: this.extractElementProperties(conn)
                                 });
                             }
@@ -777,7 +613,7 @@ export default {
                 const clipboardData = {
                     processId: this.getCurrentProcessId(),
                     timestamp: Date.now(),
-                    elements: shapes.map(el => {
+                    elements: shapes.map((el) => {
                         const businessObject = el.businessObject;
                         return {
                             type: el.type,
@@ -810,7 +646,7 @@ export default {
             // uengine 확장 속성 추출
             const extensionElements = bo.extensionElements;
             if (extensionElements && extensionElements.values) {
-                const uengineProps = extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                const uengineProps = extensionElements.values.find((v) => v.$type === 'uengine:Properties');
                 if (uengineProps && uengineProps.json) {
                     try {
                         props.uengineJson = uengineProps.json;
@@ -853,8 +689,9 @@ export default {
                 const centerY = viewbox.y + viewbox.height / 2;
 
                 // 복사된 요소들의 바운딩 박스 계산
-                let minX = Infinity, minY = Infinity;
-                clipboardData.elements.forEach(el => {
+                let minX = Infinity,
+                    minY = Infinity;
+                clipboardData.elements.forEach((el) => {
                     if (el.x < minX) minX = el.x;
                     if (el.y < minY) minY = el.y;
                 });
@@ -862,7 +699,7 @@ export default {
                 // 부모 요소 찾기 (Pool 또는 Process)
                 const rootElement = canvas.getRootElement();
                 let parent = rootElement;
-                const participants = elementRegistry.filter(el => el.type === 'bpmn:Participant');
+                const participants = elementRegistry.filter((el) => el.type === 'bpmn:Participant');
                 if (participants.length > 0) {
                     parent = participants[0];
                 }
@@ -911,7 +748,7 @@ export default {
                         try {
                             let jsonStr = elData.properties.uengineJson;
                             // JSON 내 ID 참조 업데이트
-                            Object.keys(idMapping).forEach(oldId => {
+                            Object.keys(idMapping).forEach((oldId) => {
                                 const newId = idMapping[oldId];
                                 jsonStr = jsonStr.replace(new RegExp(oldId, 'g'), newId);
                             });
@@ -970,8 +807,13 @@ export default {
                 const selection = this.bpmnViewer.get('selection');
                 selection.select(createdElements);
 
-                console.log('프로세스 간 붙여넣기 완료:', createdElements.length, '개 요소,',
-                    (clipboardData.connections?.length || 0), '개 연결선');
+                console.log(
+                    '프로세스 간 붙여넣기 완료:',
+                    createdElements.length,
+                    '개 요소,',
+                    clipboardData.connections?.length || 0,
+                    '개 연결선'
+                );
             } catch (e) {
                 console.error('프로세스 간 붙여넣기 실패:', e);
             }
@@ -990,17 +832,17 @@ export default {
         },
         async validate() {
             let self = this;
-            if(!self.bpmnXML) return;
+            if (!self.bpmnXML) return;
             const validation = await backend.validate(self.bpmnXML);
             const store = useBpmnStore();
-            
+
             var canvas = store.getModeler.get('canvas');
-            
-            if(validation) {
+
+            if (validation) {
                 Object.keys(validation).forEach((task) => {
-                    if(task != "") {
+                    if (task != '') {
                         const validationList = validation[task];
-                        let errorLevel = -1; 
+                        let errorLevel = -1;
                         validationList.forEach((validation) => {
                             if (validation.errorLevel > errorLevel) {
                                 errorLevel = validation.errorLevel;
@@ -1009,9 +851,9 @@ export default {
                         canvas.removeMarker(task, 'error');
                         canvas.removeMarker(task, 'warning');
 
-                        if(errorLevel == WARNING) {
+                        if (errorLevel == WARNING) {
                             canvas.addMarker(task, 'warning');
-                        } else if(errorLevel == ERROR){
+                        } else if (errorLevel == ERROR) {
                             canvas.addMarker(task, 'error');
                         }
                     }
@@ -1019,89 +861,14 @@ export default {
             }
             self.$emit('changeElement', self.bpmnXML);
         },
-        addTestClassToElement(element, canvas) {
-            // 개별 요소에 Playwright 테스트 클래스 추가
-            const gfx = canvas.getGraphics(element);
-            if (!gfx) return;
-
-            let testClass = '';
-            let elementType = element.type;
-            let categoryType = '';
-
-            // 타입별 클래스 매핑
-            if (elementType.includes('Task') || elementType === 'bpmn:CallActivity') {
-                categoryType = 'task';
-                testClass = `playwright-task-${this.playwrightClassCounters.task}`;
-                this.playwrightClassCounters.task++;
-            } else if (elementType === 'bpmn:Lane') {
-                categoryType = 'lane';
-                testClass = `playwright-lane-${this.playwrightClassCounters.lane}`;
-                this.playwrightClassCounters.lane++;
-            } else if (elementType.includes('Gateway')) {
-                categoryType = 'gateway';
-                testClass = `playwright-gateway-${this.playwrightClassCounters.gateway}`;
-                this.playwrightClassCounters.gateway++;
-            } else if (elementType.includes('Event')) {
-                categoryType = 'event';
-                testClass = `playwright-event-${this.playwrightClassCounters.event}`;
-                this.playwrightClassCounters.event++;
-            } else if (elementType === 'bpmn:SequenceFlow') {
-                categoryType = 'sequenceflow';
-                testClass = `playwright-sequenceflow-${this.playwrightClassCounters.sequenceflow}`;
-                this.playwrightClassCounters.sequenceflow++;
-            } else if (elementType === 'bpmn:Participant') {
-                categoryType = 'participant';
-                testClass = `playwright-participant-${this.playwrightClassCounters.participant}`;
-                this.playwrightClassCounters.participant++;
-            }
-
-            if (testClass) {
-                // 메인 그래픽 요소에 클래스 추가
-                gfx.classList.add(testClass);
-                
-                // 레인과 참가자의 경우 모든 .djs-hit 영역에도 클래스 추가
-                if (categoryType === 'lane' || categoryType === 'participant') {
-                    const hitAreas = gfx.querySelectorAll('.djs-hit');
-                    hitAreas.forEach(hitArea => {
-                        hitArea.classList.add(testClass);
-                        if (element.businessObject && element.businessObject.name) {
-                            hitArea.setAttribute('data-test-name', element.businessObject.name);
-                        }
-                    });
-                }
-                
-                // 요소 이름이 있으면 data 속성으로도 추가
-                if (element.businessObject && element.businessObject.name) {
-                    gfx.setAttribute('data-test-name', element.businessObject.name);
-                }
-            }
-        },
-        addTestClassesToElements(canvas, elementRegistry) {
-            // 모든 요소에 Playwright 테스트 클래스 추가 (초기 로드 시)
-            // 카운터 초기화
-            this.playwrightClassCounters = {
-                task: 0,
-                lane: 0,
-                gateway: 0,
-                event: 0,
-                sequenceflow: 0,
-                participant: 0
-            };
-
-            const allElements = elementRegistry.getAll();
-            allElements.forEach(element => {
-                this.addTestClassToElement(element, canvas);
-            });
-        },
         changeOrientation() {
-            if (window.$pal && window.$mode === 'uEngine') return;
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-            participant.forEach(element => {
+            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+            participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
-                if(horizontal) {
+                if (horizontal) {
                     palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                     element.di.isHorizontal = false;
                 } else {
@@ -1114,17 +881,17 @@ export default {
         initDefaultOrientation(orientation = null) {
             let self = this;
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             let isHorizontal = false;
-            if(self.isMobile) {
+            if (self.isMobile) {
                 isHorizontal = false;
             } else {
                 isHorizontal = true;
             }
 
-            if(orientation) {
-                if(orientation === 'horizontal') {
+            if (orientation) {
+                if (orientation === 'horizontal') {
                     isHorizontal = true;
                 } else {
                     isHorizontal = false;
@@ -1132,17 +899,17 @@ export default {
             }
 
             this.isHorizontal = isHorizontal;
-            
-            participant.forEach(element => {
+
+            participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
-                if(isHorizontal && !horizontal) {
-                    if(element.width < element.height) {
+                if (isHorizontal && !horizontal) {
+                    if (element.width < element.height) {
                         palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
                         self.isHorizontal = true;
                         element.di.isHorizontal = true;
                     }
-                } else if(!isHorizontal && horizontal) {
-                    if(element.width > element.height) {
+                } else if (!isHorizontal && horizontal) {
+                    if (element.width > element.height) {
                         palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                         self.isHorizontal = false;
                         element.di.isHorizontal = false;
@@ -1174,7 +941,7 @@ export default {
                     });
                 });
 
-                if(self.bpmn) {
+                if (self.bpmn) {
                     self.$nextTick(async () => {
                         const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                         self.bpmnXML = xml;
@@ -1197,11 +964,7 @@ export default {
 
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
-                
-                // Playwright 테스트용 고유 클래스 추가
-                self.addTestClassesToElements(canvas, elementRegistry);
-                
-                var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+                var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
 
                 // 안전한 zoom 함수 - Pool을 화면 중앙에 정렬
                 const safeZoom = (retryCount = 0) => {
@@ -1222,8 +985,11 @@ export default {
                         let contentBBox;
                         if (allPools.length > 0) {
                             // Pool이 있으면 모든 Pool의 통합 bbox 계산
-                            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                            allPools.forEach(pool => {
+                            let minX = Infinity,
+                                minY = Infinity,
+                                maxX = -Infinity,
+                                maxY = -Infinity;
+                            allPools.forEach((pool) => {
                                 const bbox = canvas.getAbsoluteBBox(pool);
                                 if (bbox) {
                                     minX = Math.min(minX, bbox.x);
@@ -1278,11 +1044,15 @@ export default {
                     const elementRegistry = self.bpmnViewer.get('elementRegistry');
                     const overlays = self.bpmnViewer.get('overlays');
 
-                    const callActivities = elementRegistry.filter(element => element.type === 'bpmn:CallActivity');
-                    
-                    callActivities.forEach(element => {
+                    const callActivities = elementRegistry.filter((element) => element.type === 'bpmn:CallActivity');
+
+                    callActivities.forEach((element) => {
                         const businessObject = element.businessObject;
-                        if (businessObject.extensionElements && businessObject.extensionElements.values && businessObject.extensionElements.values.length > 0) {
+                        if (
+                            businessObject.extensionElements &&
+                            businessObject.extensionElements.values &&
+                            businessObject.extensionElements.values.length > 0
+                        ) {
                             const json = businessObject.extensionElements.values[0].json;
                             if (json) {
                                 try {
@@ -1290,10 +1060,12 @@ export default {
                                     if (properties.definitionId) {
                                         const html = document.createElement('div');
                                         html.className = 'call-activity-link-btn';
-                                        html.style.cssText = 'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
-                                        html.innerHTML = '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>';
-                                        
-                                        html.addEventListener('click', function(e) {
+                                        html.style.cssText =
+                                            'cursor: pointer; width: 20px; height: 20px; background: #fff; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+                                        html.innerHTML =
+                                            '<i class="v-icon notranslate mdi mdi-open-in-new theme--light" style="font-size: 14px; color: #333;"></i>';
+
+                                        html.addEventListener('click', function (e) {
                                             e.stopPropagation(); // Prevent element selection
                                             window.open(`/definitions/${properties.definitionId.replace('.bpmn', '')}`, '_blank');
                                         });
@@ -1325,7 +1097,11 @@ export default {
                             self.$emit('openDefinition', e.element.businessObject);
                         } else if (e.element.type.includes('Collaboration')) {
                             const businessObject = e.element.businessObject;
-                            if (businessObject.extensionElements && businessObject.extensionElements.values && businessObject.extensionElements.values.length > 0) {
+                            if (
+                                businessObject.extensionElements &&
+                                businessObject.extensionElements.values &&
+                                businessObject.extensionElements.values.length > 0
+                            ) {
                                 const json = businessObject.extensionElements.values[0].json;
                                 if (json) {
                                     try {
@@ -1345,7 +1121,7 @@ export default {
                     // Edit 모드: 우클릭 시 속성 패널 열기 (DOM 이벤트 사용)
                     const canvas = self.bpmnViewer.get('canvas');
                     const container = canvas.getContainer();
-                    container.addEventListener('contextmenu', function(event) {
+                    container.addEventListener('contextmenu', function (event) {
                         event.preventDefault();
                         event.stopPropagation();
 
@@ -1428,7 +1204,7 @@ export default {
 
                 eventBus.on('commandStack.changed', async function (evt) {
                     console.log('commandStack.changed');
-                    if(self.bpmn) {
+                    if (self.bpmn) {
                         const { xml } = await self.bpmnViewer.saveXML({ format: true, preamble: true });
                         self.bpmnXML = xml;
                         self.validate();
@@ -1436,18 +1212,18 @@ export default {
                 });
 
                 // Phase 4-2: Business ID auto-assignment on task creation
-                eventBus.on('shape.added', function(event) {
+                eventBus.on('shape.added', function (event) {
                     const element = event.element;
                     if (!element || !element.type || !element.type.includes('Task')) return;
                     // Only assign if no businessId already
                     const extEls = element.businessObject?.extensionElements;
                     if (extEls?.values) {
-                        const uProps = extEls.values.find(v => v.$type === 'uengine:Properties');
+                        const uProps = extEls.values.find((v) => v.$type === 'uengine:Properties');
                         if (uProps?.json) {
                             try {
                                 const parsed = JSON.parse(uProps.json);
                                 if (parsed.businessId) return; // Already has one
-                            } catch(e) {}
+                            } catch (e) {}
                         }
                     }
                     // Auto-assign via window.$bpmnHierarchyPath if set
@@ -1456,22 +1232,24 @@ export default {
                     // Collect existing businessIds
                     const registry = self.bpmnViewer.get('elementRegistry');
                     const existingIds = new Set();
-                    registry.filter(el => el.type && el.type.includes('Task')).forEach(el => {
-                        const ext = el.businessObject?.extensionElements;
-                        if (ext?.values) {
-                            const p = ext.values.find(v => v.$type === 'uengine:Properties');
-                            if (p?.json) {
-                                try {
-                                    const pj = JSON.parse(p.json);
-                                    if (pj.businessId) existingIds.add(pj.businessId);
-                                } catch(e) {}
+                    registry
+                        .filter((el) => el.type && el.type.includes('Task'))
+                        .forEach((el) => {
+                            const ext = el.businessObject?.extensionElements;
+                            if (ext?.values) {
+                                const p = ext.values.find((v) => v.$type === 'uengine:Properties');
+                                if (p?.json) {
+                                    try {
+                                        const pj = JSON.parse(p.json);
+                                        if (pj.businessId) existingIds.add(pj.businessId);
+                                    } catch (e) {}
+                                }
                             }
-                        }
-                    });
+                        });
                     // Generate new ID
                     const prefix = `${hierarchyPath}-T`;
                     let maxNum = 0;
-                    existingIds.forEach(id => {
+                    existingIds.forEach((id) => {
                         if (id.startsWith(prefix)) {
                             const n = parseInt(id.slice(prefix.length), 10);
                             if (!isNaN(n) && n > maxNum) maxNum = n;
@@ -1486,7 +1264,7 @@ export default {
                         if (!businessObject.extensionElements) {
                             businessObject.extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
                         }
-                        let uProp = businessObject.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                        let uProp = businessObject.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
                         if (!uProp) {
                             uProp = bpmnFactory.create('uengine:Properties', { json: '{}' });
                             businessObject.extensionElements.values.push(uProp);
@@ -1500,13 +1278,13 @@ export default {
                 });
 
                 // Phase 4-4: SSO Lane - block direct editing for Organization type
-                eventBus.on('directEditing.activate', function(event) {
+                eventBus.on('directEditing.activate', function (event) {
                     const element = event.active?.element;
                     if (!element || element.type !== 'bpmn:Lane') return;
                     // Check if lane has Organization type
                     const ext = element.businessObject?.extensionElements;
                     if (ext?.values) {
-                        const uProp = ext.values.find(v => v.$type === 'uengine:Properties');
+                        const uProp = ext.values.find((v) => v.$type === 'uengine:Properties');
                         if (uProp?.json) {
                             try {
                                 const parsed = JSON.parse(uProp.json);
@@ -1516,15 +1294,15 @@ export default {
                                     directEditing.cancel();
                                     self.$emit('openPanel', element.id);
                                 }
-                            } catch(e) {}
+                            } catch (e) {}
                         }
                     }
                 });
 
                 // Phase 2-7: Multi-select detection
-                eventBus.on('selection.changed', function(event) {
+                eventBus.on('selection.changed', function (event) {
                     const newSelection = event.newSelection || [];
-                    const tasks = newSelection.filter(el => el.type && el.type.includes('Task'));
+                    const tasks = newSelection.filter((el) => el.type && el.type.includes('Task'));
                     if (tasks.length >= 2) {
                         self.$emit('multiSelect', tasks);
                     } else {
@@ -1536,8 +1314,8 @@ export default {
                 // events.forEach(function (event) {
 
                 // });
-                if(self.isAIGenerated && !(window.$pal && window.$mode === 'uEngine')) {
-                    if(self._layoutTimeout) {
+                if (self.isAIGenerated) {
+                    if (self._layoutTimeout) {
                         clearTimeout(self._layoutTimeout);
                     }
                     self._layoutTimeout = setTimeout(() => {
@@ -1555,42 +1333,13 @@ export default {
 
                 let endTime = performance.now();
                 console.log(`initializeViewer Result Time :  ${endTime - startTime} ms`);
-                if (!(window.$pal && window.$mode === 'uEngine')) {
-                    self.applyAutoLayout();
-                }
-                self.resetZoom();
             });
-            
-            // 사용자가 수동으로 요소를 추가할 때 클래스 추가
-            eventBus.on('shape.added', function(event) {
-                const element = event.element;
-                const canvas = self.bpmnViewer.get('canvas');
-                
-                // 실시간으로 추가되는 요소에 클래스 추가
-                setTimeout(() => {
-                    self.addTestClassToElement(element, canvas);
-                }, 100);
-            });
-            
-            // 연결(시퀀스 플로우)이 추가될 때도 클래스 추가
-            eventBus.on('connection.added', function(event) {
-                const element = event.element;
-                const canvas = self.bpmnViewer.get('canvas');
-                
-                setTimeout(() => {
-                    self.addTestClassToElement(element, canvas);
-                }, 100);
-            });
-
-            // compensate boundaryEvent ↔ 보상 task 연결 시 compensateTask 자동 채움
-            // (association 연결 시 target의 name/id를 boundaryEvent uengine:json.compensateTask로 저장)
-            this.setupCompensateAutoFillListeners();
         },
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
             if (self.isViewMode) {
-                var Blocker = function(eventBus, elementRegistry, graphicsFactory) {
+                var Blocker = function (eventBus, elementRegistry, graphicsFactory) {
                     const ignoreEvent = (event) => {
                         event.preventDefault();
                     };
@@ -1618,14 +1367,14 @@ export default {
 
                     // Fix: Re-render selected elements to prevent text from disappearing
                     // when directEditing is blocked in view mode
-                    eventBus.on('selection.changed', function(event) {
+                    eventBus.on('selection.changed', function (event) {
                         const newSelection = event.newSelection || [];
                         const oldSelection = event.oldSelection || [];
 
                         // Re-render newly selected elements after a short delay
                         // to ensure the text is visible after directEditing is blocked
                         setTimeout(() => {
-                            newSelection.forEach(element => {
+                            newSelection.forEach((element) => {
                                 if (element && element.type && element.type.includes('Task')) {
                                     try {
                                         const gfx = elementRegistry.getGraphics(element);
@@ -1639,7 +1388,7 @@ export default {
                             });
                         }, 10);
                     });
-                }
+                };
 
                 Blocker.$inject = ['eventBus', 'elementRegistry', 'graphicsFactory'];
                 const blockEditingInteractions = {
@@ -1679,42 +1428,37 @@ export default {
                 );
                 self.bpmnViewer = markRaw(new BpmnModeler(viewerOptions));
             } else {
-                var _options = Object.assign(
-                    {
-                        container: container,
-                        keyboard: {
-                            bindTo: window
-                        },
-                        moddleExtensions: {
-                            uengine: uEngineModdleDescriptor,
-                            zeebe: zeebeModdleDescriptor,
-                            phase: phaseModdle
-                        },
-                        additionalModules: [
-                            customBpmnModule,
-                            {
-                                __init__: ['paletteProvider'],
-                                paletteProvider: ['type', paletteProvider],
-                                viewModeFlag: ['value', false]
-                            },
-                            customContextPadModule,
-                            customReplaceElement,
-                            customPopupMenu,
-                            // skt 마이그레이션 요소 변경 비활성화
-                            // customReplaceModule,
-                            ZoomScroll,
-                            MoveCanvas,
-                            minimapModule
-                        ]
+                var _options = Object.assign({
+                    container: container,
+                    keyboard: {
+                        bindTo: window
                     },
-                );
+                    moddleExtensions: {
+                        uengine: uEngineModdleDescriptor,
+                        zeebe: zeebeModdleDescriptor,
+                        phase: phaseModdle
+                    },
+                    additionalModules: [
+                        customBpmnModule,
+                        {
+                            __init__: ['paletteProvider'],
+                            paletteProvider: ['type', paletteProvider],
+                            viewModeFlag: ['value', false]
+                        },
+                        customContextPadModule,
+                        customReplaceElement,
+                        customPopupMenu,
+                        customReplaceModule,
+                        ZoomScroll,
+                        MoveCanvas,
+                        minimapModule
+                    ]
+                });
                 self.bpmnViewer = markRaw(new BpmnModeler(_options));
             }
-            
-            if (self.registerToStore) {
-                self.bpmnStore = useBpmnStore();
-                self.bpmnStore.setModeler(self.bpmnViewer);
-            }
+
+            self.bpmnStore = useBpmnStore();
+            self.bpmnStore.setModeler(self.bpmnViewer);
         },
         extendUEngineProperties(businessObject) {
             let self = this;
@@ -1901,7 +1645,8 @@ export default {
         },
         saveSVG() {
             // `bpmnViewer`를 통해 다이어그램을 SVG로 저장
-            this.bpmnViewer.saveSVG()
+            this.bpmnViewer
+                .saveSVG()
                 .then(({ svg }) => {
                     // Blob 객체를 생성하여 SVG 데이터를 파일 형태로 준비
                     const blob = new Blob([svg], { type: 'image/svg+xml' });
@@ -1949,9 +1694,11 @@ export default {
                 if (container && (container.clientWidth === 0 || container.clientHeight === 0)) {
                     return;
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) {
+                /* ignore */
+            }
 
-            var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
 
             try {
                 zoomScroll.reset();
@@ -1964,7 +1711,7 @@ export default {
             canvas.zoom('fit-viewport', 'auto');
 
             // ✅ 2) 줌 제한 핸들러
-            canvas._eventBus.on('zoom', function(event) {
+            canvas._eventBus.on('zoom', function (event) {
                 let zoomLevel = event.scale;
 
                 if (zoomLevel < 0.2) {
@@ -2047,7 +1794,7 @@ export default {
 
             // Handle internal labels (inside tasks, events, etc.)
             const internalTexts = container.querySelectorAll('.djs-element .djs-visual text');
-            internalTexts.forEach(textEl => {
+            internalTexts.forEach((textEl) => {
                 const parentGroup = textEl.closest('.djs-element');
                 if (!parentGroup) return;
 
@@ -2076,7 +1823,7 @@ export default {
 
                     // Update all tspan elements
                     const tspans = textEl.querySelectorAll('tspan');
-                    tspans.forEach(tspan => {
+                    tspans.forEach((tspan) => {
                         tspan.style.fontSize = this.labelFontSize + 'px';
                         tspan.setAttribute('x', centerX);
                     });
@@ -2085,12 +1832,12 @@ export default {
 
             // Handle external labels (sequence flow labels, etc.)
             const externalLabels = container.querySelectorAll('.djs-label text');
-            externalLabels.forEach(textEl => {
+            externalLabels.forEach((textEl) => {
                 // Just change font size for external labels, keep their position
                 textEl.style.fontSize = this.labelFontSize + 'px';
 
                 const tspans = textEl.querySelectorAll('tspan');
-                tspans.forEach(tspan => {
+                tspans.forEach((tspan) => {
                     tspan.style.fontSize = this.labelFontSize + 'px';
                 });
             });
@@ -2101,11 +1848,11 @@ export default {
             if (!container) return;
 
             this.resizeObserver = new ResizeObserver(() => {
-            if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+                if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
 
-            this.resizeTimeout = setTimeout(() => {
-                this.onContainerResizeFinished();
-            }, 200);
+                this.resizeTimeout = setTimeout(() => {
+                    this.onContainerResizeFinished();
+                }, 200);
             });
 
             this.resizeObserver.observe(container);
@@ -2117,7 +1864,7 @@ export default {
             const { width, height } = container.getBoundingClientRect();
 
             let isHorizontal = false;
-            if(width - 100 > height) {
+            if (width - 100 > height) {
                 this.initDefaultOrientation('horizontal');
                 isHorizontal = true;
             } else {
@@ -2127,7 +1874,6 @@ export default {
             this.EventBus.emit('orientation-changed', {
                 isHorizontal: isHorizontal
             });
-
         },
         onPan(ev) {
             const srcEvent = ev.srcEvent;
@@ -2136,22 +1882,22 @@ export default {
             }
 
             const canvas = this.bpmnViewer.get('canvas');
-            
+
             if (ev.type === 'panstart') {
-            const viewbox = canvas.viewbox();
-            this.panStart = { x: viewbox.x, y: viewbox.y };
+                const viewbox = canvas.viewbox();
+                this.panStart = { x: viewbox.x, y: viewbox.y };
             }
 
             if (ev.type === 'panmove') {
-            const viewbox = canvas.viewbox();
-            const scale = viewbox.scale || 1;
+                const viewbox = canvas.viewbox();
+                const scale = viewbox.scale || 1;
 
-            canvas.viewbox({
-                x: this.panStart.x - ev.deltaX / scale,
-                y: this.panStart.y - ev.deltaY / scale,
-                width: viewbox.width,
-                height: viewbox.height
-            });
+                canvas.viewbox({
+                    x: this.panStart.x - ev.deltaX / scale,
+                    y: this.panStart.y - ev.deltaY / scale,
+                    width: viewbox.width,
+                    height: viewbox.height
+                });
             }
 
             if (ev.type === 'panend') {
@@ -2184,9 +1930,8 @@ export default {
                     const selectedElements = selection.get();
                     if (selectedElements.length > 0) {
                         // Filter out root elements that shouldn't be deleted
-                        const deletableElements = selectedElements.filter(el =>
-                            el.type !== 'bpmn:Process' &&
-                            el.type !== 'bpmn:Collaboration'
+                        const deletableElements = selectedElements.filter(
+                            (el) => el.type !== 'bpmn:Process' && el.type !== 'bpmn:Collaboration'
                         );
                         if (deletableElements.length > 0) {
                             modeling.removeElements(deletableElements);
@@ -2201,20 +1946,30 @@ export default {
                     const selectedElements = selection.get();
                     if (selectedElements.length > 0) {
                         const step = event.shiftKey ? 10 : 1; // Shift: 10px step, Normal: 1px step
-                        let dx = 0, dy = 0;
+                        let dx = 0,
+                            dy = 0;
 
                         switch (event.key) {
-                            case 'ArrowUp': dy = -step; break;
-                            case 'ArrowDown': dy = step; break;
-                            case 'ArrowLeft': dx = -step; break;
-                            case 'ArrowRight': dx = step; break;
+                            case 'ArrowUp':
+                                dy = -step;
+                                break;
+                            case 'ArrowDown':
+                                dy = step;
+                                break;
+                            case 'ArrowLeft':
+                                dx = -step;
+                                break;
+                            case 'ArrowRight':
+                                dx = step;
+                                break;
                         }
 
                         // Move only shape elements (not connections)
-                        const shapeElements = selectedElements.filter(el =>
-                            el.waypoints === undefined && // Not a connection
-                            el.type !== 'bpmn:Process' &&
-                            el.type !== 'bpmn:Collaboration'
+                        const shapeElements = selectedElements.filter(
+                            (el) =>
+                                el.waypoints === undefined && // Not a connection
+                                el.type !== 'bpmn:Process' &&
+                                el.type !== 'bpmn:Collaboration'
                         );
 
                         if (shapeElements.length > 0) {
@@ -2306,12 +2061,12 @@ export default {
             const canvas = this.bpmnViewer.get('canvas');
 
             if (ev.type === 'pinchstart') {
-            this.pinchStartZoom = canvas.zoom();
+                this.pinchStartZoom = canvas.zoom();
             }
 
             if (ev.type === 'pinchmove') {
-            const newZoom = this.pinchStartZoom * ev.scale;
-            canvas.zoom(newZoom);
+                const newZoom = this.pinchStartZoom * ev.scale;
+                canvas.zoom(newZoom);
             }
 
             if (ev.type === 'pinchend') {
@@ -2375,14 +2130,16 @@ export default {
 
             // Find parent (process or participant)
             let parent = null;
-            const participants = elementRegistry.filter(e => e.type === 'bpmn:Participant');
+            const participants = elementRegistry.filter((e) => e.type === 'bpmn:Participant');
             if (participants.length > 0) {
                 // Find which participant contains the drop position
                 for (const participant of participants) {
-                    if (position.x >= participant.x &&
+                    if (
+                        position.x >= participant.x &&
                         position.x <= participant.x + participant.width &&
                         position.y >= participant.y &&
-                        position.y <= participant.y + participant.height) {
+                        position.y <= participant.y + participant.height
+                    ) {
                         parent = participant;
                         break;
                     }
@@ -2392,7 +2149,7 @@ export default {
                 }
             } else {
                 // No participant, find process
-                const processes = elementRegistry.filter(e => e.type === 'bpmn:Process');
+                const processes = elementRegistry.filter((e) => e.type === 'bpmn:Process');
                 if (processes.length > 0) {
                     parent = processes[0];
                 }
@@ -2467,7 +2224,7 @@ export default {
 
             try {
                 const elementRegistry = this.bpmnViewer.get('elementRegistry');
-                const collaboration = elementRegistry.filter(e => e.type === 'bpmn:Collaboration')[0];
+                const collaboration = elementRegistry.filter((e) => e.type === 'bpmn:Collaboration')[0];
 
                 console.log('[BpmnUengine] loadColorRulesFromBpmn: collaboration:', collaboration?.id);
 
@@ -2484,9 +2241,7 @@ export default {
                     return [];
                 }
 
-                const uengineProps = businessObject.extensionElements.values.find(
-                    v => v.$type === 'uengine:Properties'
-                );
+                const uengineProps = businessObject.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
 
                 console.log('[BpmnUengine] loadColorRulesFromBpmn: uengineProps:', uengineProps);
 
@@ -2522,7 +2277,7 @@ export default {
                 const modeling = this.bpmnViewer.get('modeling');
                 const bpmnFactory = this.bpmnViewer.get('bpmnFactory');
 
-                const collaboration = elementRegistry.filter(e => e.type === 'bpmn:Collaboration')[0];
+                const collaboration = elementRegistry.filter((e) => e.type === 'bpmn:Collaboration')[0];
 
                 if (!collaboration) {
                     console.warn('[BpmnUengine] saveColorRulesToBpmn: No Collaboration element found');
@@ -2542,9 +2297,7 @@ export default {
                 }
 
                 // Find or create uengine:Properties
-                let uengineProps = extensionElements.values?.find(
-                    v => v.$type === 'uengine:Properties'
-                );
+                let uengineProps = extensionElements.values?.find((v) => v.$type === 'uengine:Properties');
 
                 let existingProps = {};
                 if (uengineProps && uengineProps.json) {
@@ -2579,7 +2332,6 @@ export default {
 
                 // Store rules in window for renderer access
                 window.$bpmnColorRules = rules;
-
             } catch (e) {
                 console.error('Failed to save color rules to BPMN:', e);
             }
@@ -2597,18 +2349,15 @@ export default {
                 const graphicsFactory = this.bpmnViewer.get('graphicsFactory');
 
                 // Get all task elements
-                const tasks = elementRegistry.filter(e =>
-                    e.type && e.type.includes('Task')
-                );
+                const tasks = elementRegistry.filter((e) => e.type && e.type.includes('Task'));
 
                 // Re-render each task to apply new colors
-                tasks.forEach(task => {
+                tasks.forEach((task) => {
                     const gfx = elementRegistry.getGraphics(task);
                     if (gfx) {
                         graphicsFactory.update('shape', task, gfx);
                     }
                 });
-
             } catch (e) {
                 console.error('Failed to apply color rules:', e);
             }
@@ -2636,18 +2385,17 @@ export default {
 </script>
 
 <style>
-
 /* Phase 1-3: Validation markers */
 .djs-element.validation-error .djs-visual rect,
 .djs-element.validation-error .djs-visual circle,
 .djs-element.validation-error .djs-visual polygon {
-    stroke: #F44336 !important;
+    stroke: #f44336 !important;
     stroke-width: 2px !important;
 }
 .djs-element.validation-warning .djs-visual rect,
 .djs-element.validation-warning .djs-visual circle,
 .djs-element.validation-warning .djs-visual polygon {
-    stroke: #FF9800 !important;
+    stroke: #ff9800 !important;
     stroke-width: 2px !important;
 }
 
@@ -2666,119 +2414,101 @@ export default {
     z-index: 10;
 }
 .view-mode .djs-palette {
-  display: none !important;
+    display: none !important;
 }
 
 /* View 모드에서 요소 클릭 허용 (Property Panel 열기 위해) */
 #canvas-container.view-mode .djs-element,
 #canvas-container.view-mode .djs-element * {
-  pointer-events: auto !important;
+    pointer-events: auto !important;
 }
 
 /* Font size controls */
 .font-size-controls {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.97);
-  padding: 4px 10px;
-  border-radius: 6px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
-  z-index: 10;
-}
-
-.font-size-controls-mobile {
-    top: 12px;
-    flex-direction: column;
-    align-items: flex-end;
-}
-
-.controls-group {
-  display: flex;
-  align-items: center;
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.97);
+    padding: 4px 10px;
+    border-radius: 6px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+    z-index: 10;
 }
 
 .font-size-value {
-  font-size: 12px;
-  color: #666;
-  min-width: 36px;
-  text-align: center;
+    font-size: 12px;
+    color: #666;
+    min-width: 36px;
+    text-align: center;
 }
 
 .zoom-level-value {
-  font-size: 12px;
-  color: #666;
-  min-width: 40px;
-  text-align: center;
+    font-size: 12px;
+    color: #666;
+    min-width: 40px;
+    text-align: center;
 }
 
 .controls-divider {
-  color: #ccc;
-  margin: 0 4px;
-}
-
-.mini-preview .bjs-powered-by,
-.mini-preview .djs-palette,
-.mini-preview .djs-context-pad,
-.mini-preview .djs-overlay-container {
-  display: none !important;
+    color: #ccc;
+    margin: 0 4px;
 }
 
 /* Dynamic text color for dark backgrounds */
-.djs-element[data-dark-bg="true"] text,
-.djs-element[data-dark-bg="true"] text tspan {
-  fill: #ffffff !important;
+.djs-element[data-dark-bg='true'] text,
+.djs-element[data-dark-bg='true'] text tspan {
+    fill: #ffffff !important;
 }
 
-.djs-element[data-dark-bg="false"] text,
-.djs-element[data-dark-bg="false"] text tspan {
-  fill: #000000 !important;
+.djs-element[data-dark-bg='false'] text,
+.djs-element[data-dark-bg='false'] text tspan {
+    fill: #000000 !important;
 }
 
 /* Minimap styling - positioned above BPMN.io logo */
 .djs-minimap {
-  bottom: 40px !important;
-  top: auto !important;
-  right: 10px !important;
-  left: auto !important;
+    bottom: 40px !important;
+    top: auto !important;
+    right: 10px !important;
+    left: auto !important;
 }
 
 .djs-minimap .toggle {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .djs-minimap .toggle:hover {
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 /* Map icon */
 .djs-minimap .toggle::before {
-  content: '';
-  display: block;
-  width: 18px;
-  height: 18px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M15 5.1L9 3 3 5.02v16.2l6-2.33 6 2.1 6-2.02V2.77L15 5.1zm0 13.79-6-2.11V5.11l6 2.11v11.67z'/%3E%3C/svg%3E");
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+    content: '';
+    display: block;
+    width: 18px;
+    height: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='white' d='M15 5.1L9 3 3 5.02v16.2l6-2.33 6 2.1 6-2.02V2.77L15 5.1zm0 13.79-6-2.11V5.11l6 2.11v11.67z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .djs-minimap .map {
-  border: 1px solid #e8e8e8;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
 }
 </style>

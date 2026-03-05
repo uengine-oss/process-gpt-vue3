@@ -1,4 +1,3 @@
-
 type Datatables = {
     name: string;
     post: string;
@@ -13,8 +12,7 @@ type SelectedRowDatatable = {
     project: string;
     status: string;
     budget: string;
-    selectable:boolean
+    selectable: boolean;
 };
-
 
 export type { Datatables, SelectedRowDatatable };

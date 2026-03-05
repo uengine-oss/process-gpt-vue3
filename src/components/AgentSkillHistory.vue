@@ -2,9 +2,7 @@
     <div class="agent-skill-history">
         <div class="d-flex justify-start align-center pa-4">
             <h4 class="text-h5">스킬 변경 이력</h4>
-            <p class="text-body-1 text-medium-emphasis ml-4">
-                에이전트의 스킬 변경 내역을 확인할 수 있습니다.
-            </p>
+            <p class="text-body-1 text-medium-emphasis ml-4">에이전트의 스킬 변경 내역을 확인할 수 있습니다.</p>
         </div>
         <div>
             <div v-if="historyList.length === 0 && !isLoading" class="text-center py-8">
@@ -16,7 +14,7 @@
             <div v-else-if="historyList.length === 0 && isLoading">
                 <v-skeleton-loader type="card"></v-skeleton-loader>
             </div>
-            
+
             <div v-else class="agent-skill-history-table">
                 <v-data-table
                     :headers="headers"
@@ -40,11 +38,7 @@
 
                     <!-- 작업 컬럼 -->
                     <template v-slot:item.operation="{ item }">
-                        <v-chip 
-                            :color="getOperationColor(item.operation)" 
-                            size="small" 
-                            variant="flat"
-                        >
+                        <v-chip :color="getOperationColor(item.operation)" size="small" variant="flat">
                             {{ getOperationText(item.operation) }}
                         </v-chip>
                     </template>
@@ -68,9 +62,11 @@
                     <template v-slot:expanded-row="{ columns, item }">
                         <td :colspan="columns.length">
                             <v-card elevation="10" class="px-4 py-2 expanded-row-content">
-                                <div class="text-body-2 font-weight-medium mb-2">스킬명: {{ item.knowledge_name || item.knowledge_id }}</div>
+                                <div class="text-body-2 font-weight-medium mb-2">
+                                    스킬명: {{ item.knowledge_name || item.knowledge_id }}
+                                </div>
                                 <div class="text-body-2 font-weight-medium mb-2">변경사항</div>
-                                
+
                                 <!-- UPDATE 작업: JSON이면 파일별 접기/펼치기 diff, 아니면 기존 전체 diff -->
                                 <div v-if="item.operation === 'UPDATE' && item.previous_content && item.new_content" class="mt-2">
                                     <div class="d-flex align-center justify-space-between mb-2 flex-wrap ga-2">
@@ -146,7 +142,7 @@
                                         />
                                     </template>
                                 </div>
-                                
+
                                 <!-- CREATE 작업: JSON이면 파일별로 표시, 아니면 전체 내용 -->
                                 <div v-else-if="item.operation === 'CREATE' && item.new_content" class="mt-2">
                                     <!-- JSON 형식: 파일별 expansion panel -->
@@ -177,7 +173,7 @@
                                         </div>
                                     </template>
                                 </div>
-                                
+
                                 <!-- DELETE 작업: JSON이면 파일별로 표시, 아니면 전체 내용 -->
                                 <div v-else-if="item.operation === 'DELETE' && item.previous_content" class="mt-2">
                                     <!-- JSON 형식: 파일별 expansion panel -->
@@ -208,11 +204,9 @@
                                         </div>
                                     </template>
                                 </div>
-                                
+
                                 <!-- 내용이 없는 경우 -->
-                                <div v-else class="mt-2 text-body-2 text-medium-emphasis">
-                                    변경 내용이 없습니다.
-                                </div>
+                                <div v-else class="mt-2 text-body-2 text-medium-emphasis">변경 내용이 없습니다.</div>
                             </v-card>
                         </td>
                     </template>
@@ -272,7 +266,7 @@ export default {
                     this.loadHistory();
                 }
             }
-        },
+        }
     },
     created() {
         this.backend = BackendFactory.createBackend();
@@ -285,7 +279,7 @@ export default {
     methods: {
         async loadHistory() {
             if (!this.agentId || !this.backend) return;
-            
+
             this.isLoading = true;
             this.historyList = [];
 
@@ -302,18 +296,18 @@ export default {
 
         getOperationColor(operation) {
             const colors = {
-                'CREATE': 'success',
-                'UPDATE': 'info',
-                'DELETE': 'error'
+                CREATE: 'success',
+                UPDATE: 'info',
+                DELETE: 'error'
             };
             return colors[operation] || 'default';
         },
 
         getOperationText(operation) {
             const texts = {
-                'CREATE': '생성',
-                'UPDATE': '수정',
-                'DELETE': '삭제'
+                CREATE: '생성',
+                UPDATE: '수정',
+                DELETE: '삭제'
             };
             return texts[operation] || operation;
         },
@@ -425,7 +419,9 @@ export default {
             try {
                 const o = JSON.parse(str);
                 if (o != null && typeof o === 'object' && !Array.isArray(o)) return o;
-            } catch (_) { /* ignore */ }
+            } catch (_) {
+                /* ignore */
+            }
             return null;
         },
 
@@ -448,7 +444,16 @@ export default {
         getDiffLanguage(filePath) {
             if (!filePath || typeof filePath !== 'string') return 'plaintext';
             const ext = filePath.split('.').pop()?.toLowerCase() || '';
-            const map = { md: 'markdown', json: 'json', js: 'javascript', ts: 'typescript', tsx: 'typescript', css: 'css', xml: 'xml', py: 'plaintext' };
+            const map = {
+                md: 'markdown',
+                json: 'json',
+                js: 'javascript',
+                ts: 'typescript',
+                tsx: 'typescript',
+                css: 'css',
+                xml: 'xml',
+                py: 'plaintext'
+            };
             return map[ext] ?? 'plaintext';
         },
 
@@ -606,4 +611,3 @@ export default {
     margin: 0;
 }
 </style>
-

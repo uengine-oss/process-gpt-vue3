@@ -35,9 +35,9 @@ export interface PropertySchema {
     visible_by_default?: boolean;
     config?: Record<string, any>;
     // Layout properties
-    row_index?: number;      // Row position (0-based, properties with same row_index appear on same row)
-    col_span?: number;       // Column span (1-12, Vuetify grid system)
-    section_name?: string;   // Section header name (properties with same section are grouped)
+    row_index?: number; // Row position (0-based, properties with same row_index appear on same row)
+    col_span?: number; // Column span (1-12, Vuetify grid system)
+    section_name?: string; // Section header name (properties with same section are grouped)
 }
 
 export interface PaletteSettings {
@@ -81,7 +81,7 @@ export const APPLIES_TO_OPTIONS = [
     { value: 'both', label: 'Process + Task', labelKo: '프로세스 + Task' },
     { value: 'process', label: 'Process Only', labelKo: '프로세스만' },
     { value: 'task', label: 'All Tasks', labelKo: '모든 Task' },
-    ...AVAILABLE_TASK_TYPES.map(t => ({ value: t.value, label: t.label, labelKo: t.labelKo })),
+    ...AVAILABLE_TASK_TYPES.map((t) => ({ value: t.value, label: t.label, labelKo: t.labelKo }))
 ];
 
 // Built-in property keys that exist by default in ProcessHierarchyProperties
@@ -144,7 +144,7 @@ export const useTaskCatalogStore = defineStore({
             try {
                 const backend = BackendFactory.createBackend();
                 const saved = await backend.saveTaskSystem(system);
-                const index = this.systems.findIndex(s => s.id === saved.id);
+                const index = this.systems.findIndex((s) => s.id === saved.id);
                 if (index !== -1) {
                     this.systems[index] = saved;
                 } else {
@@ -166,7 +166,7 @@ export const useTaskCatalogStore = defineStore({
             try {
                 const backend = BackendFactory.createBackend();
                 await backend.deleteTaskSystem(id);
-                this.systems = this.systems.filter(s => s.id !== id);
+                this.systems = this.systems.filter((s) => s.id !== id);
             } catch (error: any) {
                 console.error('Failed to delete task system:', error);
                 this.error = error.message;
@@ -200,7 +200,7 @@ export const useTaskCatalogStore = defineStore({
             try {
                 const backend = BackendFactory.createBackend();
                 const saved = await backend.saveTaskCatalog(item);
-                const index = this.catalogItems.findIndex(c => c.id === saved.id);
+                const index = this.catalogItems.findIndex((c) => c.id === saved.id);
                 if (index !== -1) {
                     this.catalogItems[index] = saved;
                 } else {
@@ -222,7 +222,7 @@ export const useTaskCatalogStore = defineStore({
             try {
                 const backend = BackendFactory.createBackend();
                 await backend.deleteTaskCatalog(id);
-                this.catalogItems = this.catalogItems.filter(c => c.id !== id);
+                this.catalogItems = this.catalogItems.filter((c) => c.id !== id);
             } catch (error: any) {
                 console.error('Failed to delete catalog item:', error);
                 this.error = error.message;
@@ -256,7 +256,7 @@ export const useTaskCatalogStore = defineStore({
             try {
                 const backend = BackendFactory.createBackend();
                 const saved = await backend.savePropertySchema(schema);
-                const index = this.propertySchemas.findIndex(s => s.id === saved.id);
+                const index = this.propertySchemas.findIndex((s) => s.id === saved.id);
                 if (index !== -1) {
                     this.propertySchemas[index] = saved;
                 } else {
@@ -278,7 +278,7 @@ export const useTaskCatalogStore = defineStore({
             try {
                 const backend = BackendFactory.createBackend();
                 await backend.deletePropertySchema(id);
-                this.propertySchemas = this.propertySchemas.filter(s => s.id !== id);
+                this.propertySchemas = this.propertySchemas.filter((s) => s.id !== id);
             } catch (error: any) {
                 console.error('Failed to delete property schema:', error);
                 this.error = error.message;
@@ -353,7 +353,7 @@ export const useTaskCatalogStore = defineStore({
         },
 
         async togglePaletteTaskType(id: string) {
-            const taskType = this.paletteTaskTypes.find(t => t.id === id);
+            const taskType = this.paletteTaskTypes.find((t) => t.id === id);
             if (!taskType) return;
 
             this.loading = true;
@@ -399,25 +399,23 @@ export const useTaskCatalogStore = defineStore({
 
         // Get catalog items by task type
         catalogByTaskType: (state) => (taskType: string) => {
-            return state.catalogItems.filter(item => item.task_type === taskType);
+            return state.catalogItems.filter((item) => item.task_type === taskType);
         },
 
         // Get catalog items by system
         catalogBySystem: (state) => (systemName: string) => {
-            return state.catalogItems.filter(item => item.system_name === systemName);
+            return state.catalogItems.filter((item) => item.system_name === systemName);
         },
 
         // Get schemas by task type
         schemasByTaskType: (state) => (taskType: string) => {
-            return state.propertySchemas
-                .filter(s => s.task_type === taskType)
-                .sort((a, b) => a.display_order - b.display_order);
+            return state.propertySchemas.filter((s) => s.task_type === taskType).sort((a, b) => a.display_order - b.display_order);
         },
 
         // Get mandatory schemas by task type
         mandatorySchemasByTaskType: (state) => (taskType: string) => {
             return state.propertySchemas
-                .filter(s => s.task_type === taskType && s.is_mandatory)
+                .filter((s) => s.task_type === taskType && s.is_mandatory)
                 .sort((a, b) => a.display_order - b.display_order);
         },
 
@@ -425,7 +423,7 @@ export const useTaskCatalogStore = defineStore({
         // For task: optionally pass elementType (e.g., 'bpmn:ManualTask') to include type-specific schemas
         schemasByAppliesTo: (state) => (target: 'process' | 'task', elementType?: string) => {
             return state.propertySchemas
-                .filter(s => {
+                .filter((s) => {
                     const at = s.applies_to || 'both';
                     if (target === 'process') {
                         return at === 'process' || at === 'both';
@@ -438,7 +436,7 @@ export const useTaskCatalogStore = defineStore({
                     }
                     return false;
                 })
-                .filter(s => s.visible_by_default !== false)
+                .filter((s) => s.visible_by_default !== false)
                 .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         },
 
@@ -449,23 +447,24 @@ export const useTaskCatalogStore = defineStore({
 
         // Get enabled palette task types (new table-based)
         enabledPaletteTaskTypes: (state) => {
-            return state.paletteTaskTypes.filter(t => t.is_enabled);
+            return state.paletteTaskTypes.filter((t) => t.is_enabled);
         },
 
         // Check if task type is enabled (new table-based)
         isPaletteTaskTypeEnabled: (state) => (taskType: string) => {
-            const type = state.paletteTaskTypes.find(t => t.task_type === taskType);
+            const type = state.paletteTaskTypes.find((t) => t.task_type === taskType);
             return type ? type.is_enabled : false;
         },
 
         // Search catalog items
         searchCatalog: (state) => (query: string) => {
             const lowerQuery = query.toLowerCase();
-            return state.catalogItems.filter(item =>
-                item.display_name.toLowerCase().includes(lowerQuery) ||
-                item.name.toLowerCase().includes(lowerQuery) ||
-                item.system_name.toLowerCase().includes(lowerQuery) ||
-                (item.description && item.description.toLowerCase().includes(lowerQuery))
+            return state.catalogItems.filter(
+                (item) =>
+                    item.display_name.toLowerCase().includes(lowerQuery) ||
+                    item.name.toLowerCase().includes(lowerQuery) ||
+                    item.system_name.toLowerCase().includes(lowerQuery) ||
+                    (item.description && item.description.toLowerCase().includes(lowerQuery))
             );
         }
     }

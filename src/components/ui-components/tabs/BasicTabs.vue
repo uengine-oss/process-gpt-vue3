@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue';
 const tab = ref(null);
 </script>
 <template>
@@ -11,15 +11,9 @@ const tab = ref(null);
     <v-divider></v-divider>
     <v-card-text class="bg-lightsecondary mt-4 rounded-md">
         <v-window v-model="tab">
-            <v-window-item value="one">
-               Item One
-            </v-window-item>
-            <v-window-item value="two">
-                Item Two
-            </v-window-item>
-            <v-window-item value="three">
-                 Item Three
-            </v-window-item>
+            <v-window-item value="one"> Item One </v-window-item>
+            <v-window-item value="two"> Item Two </v-window-item>
+            <v-window-item value="three"> Item Three </v-window-item>
         </v-window>
     </v-card-text>
 </template>

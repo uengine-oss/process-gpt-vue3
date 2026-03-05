@@ -1,14 +1,17 @@
 <template>
     <div v-if="enableEdit" class="pa-1">
-        <v-card variant="outlined" class="pa-4" style="border: 2px solid rgba(var(--v-theme-primary), 0.3); border-radius: 12px; background-color: rgba(var(--v-theme-primary), 0.02);">
+        <v-card
+            variant="outlined"
+            class="pa-4"
+            style="
+                border: 2px solid rgba(var(--v-theme-primary), 0.3);
+                border-radius: 12px;
+                background-color: rgba(var(--v-theme-primary), 0.02);
+            "
+        >
             <v-row justify="end" class="ma-0 pa-0 mb-2">
                 <v-spacer></v-spacer>
-                <v-btn @click="closeDialog()"
-                    icon
-                    variant="text"
-                    density="compact"
-                    size="small"
-                >
+                <v-btn @click="closeDialog()" icon variant="text" density="compact" size="small">
                     <v-icon size="18">mdi-close</v-icon>
                 </v-btn>
             </v-row>
@@ -16,15 +19,7 @@
             <!-- Toggle for Sub Process: Select Existing vs Create New -->
             <v-row v-if="addType == 'sub' && processType === 'add'" class="ma-0 pa-0 mb-3">
                 <v-col cols="12" class="ma-0 pa-0">
-                    <v-btn-toggle
-                        v-model="isNewDef"
-                        mandatory
-                        density="compact"
-                        color="primary"
-                        variant="outlined"
-                        divided
-                        class="w-100"
-                    >
+                    <v-btn-toggle v-model="isNewDef" mandatory density="compact" color="primary" variant="outlined" divided class="w-100">
                         <v-btn :value="false" class="flex-grow-1" size="small">
                             <v-icon start size="16">mdi-file-search</v-icon>
                             {{ $t('processDialog.selectExisting') }}
@@ -60,11 +55,29 @@
                         variant="outlined"
                         color="primary"
                         density="comfortable"
-                        :label="$i18n.locale === 'ko' ? (processType === 'add' ? `${displayType.toUpperCase()} 프로세스 추가` : `${displayType.toUpperCase()} 프로세스 수정`) : (processType === 'add' ? `Add ${displayType.toUpperCase()} Process` : `Edit ${displayType.toUpperCase()} Process`)"
+                        :label="
+                            $i18n.locale === 'ko'
+                                ? processType === 'add'
+                                    ? `${displayType.toUpperCase()} 프로세스 추가`
+                                    : `${displayType.toUpperCase()} 프로세스 수정`
+                                : processType === 'add'
+                                ? `Add ${displayType.toUpperCase()} Process`
+                                : `Edit ${displayType.toUpperCase()} Process`
+                        "
                         autofocus
                         @keypress.enter="processType === 'add' ? addProcess() : updateProcess()"
                         @click.stop
                     ></v-text-field>
+
+                    <!-- PAL 전용: 서브프로세스 추가 시 공통 모듈 토글 -->
+                    <v-switch
+                        v-if="addType === 'sub' && processType === 'add' && isPal"
+                        v-model="newProcess.commonModule"
+                        :label="$t('ProcessMenu.commonModule') || '공통 모듈'"
+                        color="primary"
+                        hide-details
+                        class="mt-2"
+                    />
 
                     <!-- ID field for new subprocess creation -->
                     <v-text-field
@@ -126,8 +139,8 @@
 </template>
 
 <script>
-import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue'
-import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator'
+import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
+import ProcessDefinitionIdGenerator from '@/components/ai/ProcessDefinitionIdGenerator';
 
 export default {
     components: {
@@ -146,7 +159,8 @@ export default {
         newProcess: {
             id: '',
             name: '',
-            domain: ''
+            domain: '',
+            commonModule: false
         },
         isNewDef: false,
         isGeneratingId: false,
@@ -156,25 +170,25 @@ export default {
         idGenerator: null
     }),
     mounted() {
-            if(!this.processDialogStatus) return;
-            if(this.processType == 'update') {
-                this.newProcess.id = this.process.id;
-                this.newProcess.name = this.process.name;
-                this.newProcess.domain = this.process.domain;
-            }
+        if (!this.processDialogStatus) return;
+        if (this.processType == 'update') {
+            this.newProcess.id = this.process.id;
+            this.newProcess.name = this.process.name;
+            this.newProcess.domain = this.process.domain;
+        }
     },
     computed: {
         domainNames() {
             if (!this.domains) return [];
-            return this.domains.map(d => d.name);
+            return this.domains.map((d) => d.name);
         },
         addType() {
             if (this.type == 'map') {
-                return "mega";
+                return 'mega';
             } else if (this.type == 'mega') {
-                return "major";
+                return 'major';
             } else if (this.type == 'major') {
-                return "sub";
+                return 'sub';
             }
         },
         // For edit mode, use current type; for add mode, use child type
@@ -183,6 +197,9 @@ export default {
                 return this.type;
             }
             return this.addType;
+        },
+        isPal() {
+            return typeof window !== 'undefined' && window.$pal;
         },
         isSaveDisabled() {
             if (this.addType === 'sub') {
@@ -200,8 +217,9 @@ export default {
         },
         idRules() {
             return [
-                v => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
-                v => /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
+                (v) => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
+                (v) =>
+                    /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
             ];
         }
     },
@@ -211,24 +229,26 @@ export default {
             this.newProcess = {
                 id: '',
                 name: '',
-                domain: this.defaultDomain || ''
+                domain: this.defaultDomain || '',
+                commonModule: false
             };
             this.previousSuggestions = [];
             this.isGeneratingId = false;
         },
         processDialogStatus(val) {
-            if(!val) return
+            if (!val) return;
             if (this.processType == 'add') {
                 // Reset to default state
                 this.isNewDef = false;
                 this.newProcess = {
                     id: '',
                     name: '',
-                    domain: this.defaultDomain || ''
+                    domain: this.defaultDomain || '',
+                    commonModule: false
                 };
                 this.previousSuggestions = [];
                 this.isGeneratingId = false;
-            } else if(this.processType == 'update') {
+            } else if (this.processType == 'update') {
                 this.newProcess.id = this.process.id;
                 this.newProcess.name = this.process.name;
             }
@@ -248,22 +268,22 @@ export default {
                         const processData = {
                             id: this.newProcess.id,
                             name: this.newProcess.name,
-                            isNew: true  // Flag to indicate this is a newly created process
+                            isNew: true, // Flag to indicate this is a newly created process
+                            ...(this.isPal && { commonModule: !!this.newProcess.commonModule })
                         };
-                        this.$emit("add", processData);
+                        this.$emit('add', processData);
                         this.closeDialog();
                     }
                 } else {
                     // Select existing mode: use selected process
                     if (this.newProcess.id || this.newProcess.name) {
                         // Remove file extension from name if exists
-                        const name = this.newProcess.name ?
-                            this.newProcess.name.replace(/\.(bpmn|xml)$/i, '') :
-                            this.newProcess.id;
-                        this.$emit("add", {
+                        const name = this.newProcess.name ? this.newProcess.name.replace(/\.(bpmn|xml)$/i, '') : this.newProcess.id;
+                        this.$emit('add', {
                             id: this.newProcess.id || '',
                             name: name,
-                            isNew: false
+                            isNew: false,
+                            ...(this.isPal && { commonModule: !!this.newProcess.commonModule })
                         });
                         this.closeDialog();
                     }
@@ -275,14 +295,14 @@ export default {
                     if (this.addType === 'major' && this.defaultDomain) {
                         this.newProcess.domain = this.defaultDomain;
                     }
-                    this.$emit("add", this.newProcess);
+                    this.$emit('add', this.newProcess);
                     this.closeDialog();
                 }
             }
         },
         updateProcess() {
             if (this.newProcess.id != '') {
-                this.$emit("edit", this.newProcess);
+                this.$emit('edit', this.newProcess);
                 this.closeDialog();
             }
         },
@@ -299,7 +319,7 @@ export default {
             try {
                 this.idGenerator = new ProcessDefinitionIdGenerator(this, {
                     isStream: true,
-                    preferredLanguage: "Korean"
+                    preferredLanguage: 'Korean'
                 });
                 await this.idGenerator.generate();
             } catch (error) {
@@ -339,7 +359,8 @@ export default {
 
                 if (id) {
                     // Clean up the ID to ensure it's valid
-                    id = id.toLowerCase()
+                    id = id
+                        .toLowerCase()
                         .replace(/[^a-z0-9_]/g, '_')
                         .replace(/^[0-9_]+/, '')
                         .replace(/_+/g, '_')
@@ -361,6 +382,6 @@ export default {
                 this.isGeneratingId = false;
             }
         }
-    },
-}
+    }
+};
 </script>

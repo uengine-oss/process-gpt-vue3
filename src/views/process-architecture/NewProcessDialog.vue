@@ -13,13 +13,7 @@
 
             <!-- As-Is / To-Be Toggle -->
             <div class="d-flex align-center justify-center pa-3 pb-0">
-                <v-btn-toggle
-                    v-model="form.processMode"
-                    mandatory
-                    density="compact"
-                    color="primary"
-                    class="mode-toggle"
-                >
+                <v-btn-toggle v-model="form.processMode" mandatory density="compact" color="primary" class="mode-toggle">
                     <v-btn value="asis" size="small" min-width="120">
                         <v-icon start size="16">mdi-clock-outline</v-icon>
                         {{ $t('processArchitecture.newProcessDialog.asIs') }}
@@ -43,7 +37,7 @@
                         variant="outlined"
                         density="compact"
                         hide-details="auto"
-                        :rules="[v => !!v || $t('processArchitecture.newProcessDialog.nameRequired')]"
+                        :rules="[(v) => !!v || $t('processArchitecture.newProcessDialog.nameRequired')]"
                         @update:model-value="onNameInput"
                     />
                     <!-- Similar name warning -->
@@ -52,16 +46,8 @@
                             <v-icon size="14" color="orange-darken-2">mdi-alert-outline</v-icon>
                             {{ $t('processArchitecture.newProcessDialog.similarNameWarning') }}
                         </div>
-                        <div
-                            v-for="similar in similarProcesses.slice(0, 3)"
-                            :key="similar.id"
-                            class="text-caption mt-1"
-                        >
-                            <a
-                                href="#"
-                                class="text-primary"
-                                @click.prevent="navigateToSimilar(similar)"
-                            >{{ similar.name }}</a>
+                        <div v-for="similar in similarProcesses.slice(0, 3)" :key="similar.id" class="text-caption mt-1">
+                            <a href="#" class="text-primary" @click.prevent="navigateToSimilar(similar)">{{ similar.name }}</a>
                         </div>
                     </div>
                 </div>
@@ -89,12 +75,7 @@
                                 <strong>{{ aiSuggestion.megaName }}</strong> &rsaquo;
                                 <strong>{{ aiSuggestion.majorName }}</strong>
                             </span>
-                            <v-btn
-                                size="x-small"
-                                color="primary"
-                                variant="flat"
-                                @click="applySuggestion"
-                            >
+                            <v-btn size="x-small" color="primary" variant="flat" @click="applySuggestion">
                                 {{ $t('processArchitecture.newProcessDialog.applySuggestion') }}
                             </v-btn>
                         </div>
@@ -291,9 +272,11 @@
                             :items="existingProcesses"
                             item-title="name"
                             item-value="id"
-                            :label="form.creationType === 'template'
-                                ? $t('processArchitecture.newProcessDialog.selectTemplate')
-                                : $t('processArchitecture.newProcessDialog.selectCloneSource')"
+                            :label="
+                                form.creationType === 'template'
+                                    ? $t('processArchitecture.newProcessDialog.selectTemplate')
+                                    : $t('processArchitecture.newProcessDialog.selectCloneSource')
+                            "
                             variant="outlined"
                             density="compact"
                             hide-details
@@ -340,13 +323,7 @@
                 <v-btn variant="text" @click="close">
                     {{ $t('common.cancel') }}
                 </v-btn>
-                <v-btn
-                    color="primary"
-                    variant="flat"
-                    :disabled="!canCreate"
-                    :loading="creating"
-                    @click="createProcess"
-                >
+                <v-btn color="primary" variant="flat" :disabled="!canCreate" :loading="creating" @click="createProcess">
                     {{ $t('processArchitecture.newProcessDialog.createAndOpen') }}
                 </v-btn>
             </v-card-actions>
@@ -414,26 +391,59 @@ interface AiSuggestion {
 const aiSuggestion = ref<AiSuggestion | null>(null);
 const suggestionTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
-// Load existing processes and users when dialog opens
-watch(() => props.modelValue, async (open) => {
-    if (open) {
-        try {
-            const [defs, users] = await Promise.all([
-                backend.listDefinition('', { match: { isdeleted: false } }),
-                backend.listUsers ? backend.listUsers() : Promise.resolve([])
-            ]);
-            existingProcesses.value = (defs || []).map((d: any) => ({ id: d.id, name: d.name || d.id }));
-            if (users && Array.isArray(users)) {
-                userOptions.value = users.map((u: any) => ({
-                    email: u.email || u.id,
-                    label: u.username || u.name || u.email || u.id
-                }));
+/** 폴더는 제외하고, 하위까지 재귀 탐색해 .bpmn 파일만 수집 (id 기준 중복 제거) */
+async function collectBpmnDefinitionsOnly(basePath = ''): Promise<{ id: string; name: string }[]> {
+    const opts = basePath === '' ? { match: { isdeleted: false } } : undefined;
+    const list = await (backend as any).listDefinition(basePath, opts);
+    const result: { id: string; name: string }[] = [];
+    for (const item of list || []) {
+        if (item.directory) {
+            const subPath = item.path || item.name || item.id;
+            if (subPath) {
+                const children = await collectBpmnDefinitionsOnly(subPath);
+                result.push(...children);
             }
-        } catch (e) {
-            console.error('Failed to load data:', e);
+        } else {
+            const path = String(item.path || item.name || item.id || '');
+            if (path.toLowerCase().endsWith('.bpmn')) {
+                const id = (item.id || path.replace(/\.bpmn$/i, '')).toString().replace(/\.bpmn$/i, '');
+                const name = item.name || id;
+                result.push({ id, name });
+            }
         }
     }
-});
+    // 동일 id 중복 제거 (같은 프로세스가 여러 경로로 나올 수 있음)
+    const seen = new Set<string>();
+    return result.filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+    });
+}
+
+// Load existing processes and users when dialog opens
+watch(
+    () => props.modelValue,
+    async (open) => {
+        if (open) {
+            try {
+                const [bpmnDefs, users] = await Promise.all([
+                    collectBpmnDefinitionsOnly(''),
+                    backend.listUsers ? backend.listUsers() : Promise.resolve([])
+                ]);
+                existingProcesses.value = bpmnDefs;
+                if (users && Array.isArray(users)) {
+                    userOptions.value = users.map((u: any) => ({
+                        email: u.email || u.id,
+                        label: u.username || u.name || u.email || u.id
+                    }));
+                }
+            } catch (e) {
+                console.error('Failed to load data:', e);
+            }
+        }
+    }
+);
 
 const domainOptions = computed(() => props.domains || []);
 
@@ -451,9 +461,7 @@ const majorOptions = computed(() => {
 
 // Co-owner options: exclude primary owner and master
 const coOwnerOptions = computed(() => {
-    return userOptions.value.filter(u =>
-        u.email !== form.value.primaryOwner && u.email !== form.value.master
-    );
+    return userOptions.value.filter((u) => u.email !== form.value.primaryOwner && u.email !== form.value.master);
 });
 
 // Reset cascading selects when domain changes
@@ -463,9 +471,12 @@ function onDomainChange() {
 }
 
 // Reset major when mega changes
-watch(() => form.value.mega, () => {
-    form.value.major = null;
-});
+watch(
+    () => form.value.mega,
+    () => {
+        form.value.major = null;
+    }
+);
 
 // Debounced name similarity check + AI suggestion
 function onNameInput() {
@@ -487,7 +498,7 @@ function onNameInput() {
 function computeAiSuggestion(name: string) {
     if (!props.procMap?.mega_proc_list) return;
     const lowerName = name.toLowerCase();
-    const keywords = lowerName.split(/[\s\-_]+/).filter(k => k.length >= 2);
+    const keywords = lowerName.split(/[\s\-_]+/).filter((k) => k.length >= 2);
     if (keywords.length === 0) return;
 
     let bestScore = 0;
@@ -496,8 +507,8 @@ function computeAiSuggestion(name: string) {
     let bestDomainName = '';
 
     for (const mega of props.procMap.mega_proc_list) {
-        for (const major of (mega.major_proc_list || [])) {
-            for (const sub of (major.sub_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
+            for (const sub of major.sub_proc_list || []) {
                 const subName = (sub.name || '').toLowerCase();
                 const score = computeKeywordScore(keywords, subName);
                 if (score > bestScore) {
@@ -520,9 +531,7 @@ function computeAiSuggestion(name: string) {
 
     if (bestScore > 0 && bestMega && bestMajor) {
         // Find the actual domain name from domains prop
-        const domainObj = props.domains?.find((d: any) =>
-            d.name === bestDomainName || d.id === bestDomainName
-        );
+        const domainObj = props.domains?.find((d: any) => d.name === bestDomainName || d.id === bestDomainName);
         aiSuggestion.value = {
             domainName: domainObj?.name || bestDomainName,
             megaId: bestMega.id,
@@ -555,7 +564,7 @@ function applySuggestion() {
 
 function checkSimilarNames(name: string) {
     const lowerName = name.toLowerCase();
-    const matches = existingProcesses.value.filter(p => {
+    const matches = existingProcesses.value.filter((p) => {
         const pName = (p.name || '').toLowerCase();
         // Check substring match or close similarity
         if (pName.includes(lowerName) || lowerName.includes(pName)) return true;
@@ -574,15 +583,14 @@ function levenshteinSimilarity(a: string, b: string): number {
 }
 
 function levenshteinDistance(a: string, b: string): number {
-    const m = a.length, n = b.length;
+    const m = a.length,
+        n = b.length;
     const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
         Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
     );
     for (let i = 1; i <= m; i++) {
         for (let j = 1; j <= n; j++) {
-            dp[i][j] = a[i - 1] === b[j - 1]
-                ? dp[i - 1][j - 1]
-                : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+            dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
         }
     }
     return dp[m][n];
@@ -653,11 +661,8 @@ async function createProcess() {
         if (form.value.processMode === 'asis' && form.value.creationType !== 'scratch') {
             // Clone/Template: duplicate from source
             const sourceId = form.value.sourceProcessId;
-            const sourceDef = existingProcesses.value.find(p => p.id === sourceId);
-            const result = await backend.duplicateDefinition(
-                { id: sourceId, name, author_uid: sourceDef?.author_uid },
-                window.$tenantName
-            );
+            const sourceDef = existingProcesses.value.find((p) => p.id === sourceId);
+            const result = await backend.duplicateDefinition({ id: sourceId, name, author_uid: sourceDef?.author_uid }, window.$tenantName);
             newId = result?.newId || result?.id || result;
         } else {
             // Create new process: save empty BPMN definition
@@ -678,7 +683,11 @@ async function createProcess() {
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </definitions>`;
-            const defId = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            const defId = name
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
             const uniqueId = `${defId}-${Date.now()}`;
             await backend.putRawDefinition(emptyBpmn, uniqueId, {
                 name,
@@ -748,15 +757,16 @@ async function updateProcMap(newId: string, name: string) {
                 }
 
                 majorList[majorIndex].sub_proc_list.push({
-                    id: pid || newId,   // PID is the hierarchy ID; fallback to UID
-                    uid: newId,          // UID links to the actual proc_def record
+                    id: pid || newId, // PID is the hierarchy ID; fallback to UID
+                    uid: newId, // UID links to the actual proc_def record
                     name,
                     type: form.value.processMode === 'tobe' ? 'tobe' : 'asis',
                     ...(form.value.primaryOwner ? { owner: form.value.primaryOwner } : {}),
                     ...(form.value.master ? { master: form.value.master } : {}),
                     ...(form.value.coOwners.length > 0 ? { co_owners: form.value.coOwners } : {}),
                     ...(form.value.processMode === 'tobe' && form.value.sourceMappings.length > 0
-                        ? { source_mappings: form.value.sourceMappings } : {})
+                        ? { source_mappings: form.value.sourceMappings }
+                        : {})
                 });
                 megaList[megaIndex].major_proc_list = majorList;
                 map.mega_proc_list = megaList;

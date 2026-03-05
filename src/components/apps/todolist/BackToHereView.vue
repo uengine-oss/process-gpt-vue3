@@ -1,17 +1,9 @@
 <template>
-    <v-card elevation="10" class="pa-3" style="height: 100%; overflow: auto;">
+    <v-card elevation="10" class="pa-3" style="height: 100%; overflow: auto">
         <v-row class="ma-0 pa-0 align-center">
-            <v-card-title class="pa-0">
-                재작업 요청 (Back To Here)
-            </v-card-title>
+            <v-card-title class="pa-0"> 재작업 요청 (Back To Here) </v-card-title>
             <v-spacer></v-spacer>
-            <v-btn
-                variant="text"
-                density="compact"
-                :loading="isLoading"
-                :disabled="!resolvedInstId"
-                @click="loadTree"
-            >
+            <v-btn variant="text" density="compact" :loading="isLoading" :disabled="!resolvedInstId" @click="loadTree">
                 <v-icon class="mr-1">mdi-refresh</v-icon>
                 새로고침
             </v-btn>
@@ -19,14 +11,7 @@
 
         <v-divider class="my-3"></v-divider>
 
-        <v-alert
-            v-if="!resolvedInstId"
-            type="info"
-            variant="tonal"
-            density="compact"
-        >
-            인스턴스 정보가 없습니다.
-        </v-alert>
+        <v-alert v-if="!resolvedInstId" type="info" variant="tonal" density="compact"> 인스턴스 정보가 없습니다. </v-alert>
 
         <div v-else>
             <!-- 헤더(컬럼) -->
@@ -42,18 +27,10 @@
                 class="mt-2"
             ></v-skeleton-loader>
 
-            <v-treeview
-                v-else-if="Object.keys(nodes).length > 0"
-                :config="config"
-                :nodes="nodes"
-                class="bth-tree mt-2"
-            >
+            <v-treeview v-else-if="Object.keys(nodes).length > 0" :config="config" :nodes="nodes" class="bth-tree mt-2">
                 <!-- ID 컬럼 -->
                 <template #before-input="{ node }">
-                    <div
-                        class="bth-col-id bth-cell"
-                        @click="handleNodeClick(node)"
-                    >
+                    <div class="bth-col-id bth-cell" @click="handleNodeClick(node)">
                         <span v-if="node.data?.type === 'task'">{{ node.data.taskId }}</span>
                         <span v-else class="text-grey-darken-1">-</span>
                     </div>
@@ -65,9 +42,9 @@
                         class="bth-col-name bth-cell"
                         :class="{ 'bth-selected': selectedNodeId === node.id }"
                         @click="handleNodeClick(node)"
-                        style="width: 70% !important;"
+                        style="width: 70% !important"
                     >
-                        <span class="text-truncate" style="display: inline-block; width: 80% !important;">
+                        <span class="text-truncate" style="display: inline-block; width: 80% !important">
                             {{ node.text }}
                         </span>
                         <v-tooltip activator="parent" location="bottom">
@@ -78,15 +55,8 @@
 
                 <!-- 상태 컬럼 -->
                 <template #after-input="{ node }">
-                    <div
-                        class="bth-col-status bth-cell"
-                        @click="handleNodeClick(node)"
-                    >
-                        <v-chip
-                            v-if="node.data?.type === 'task'"
-                            size="x-small"
-                            variant="outlined"
-                        >
+                    <div class="bth-col-status bth-cell" @click="handleNodeClick(node)">
+                        <v-chip v-if="node.data?.type === 'task'" size="x-small" variant="outlined">
                             {{ node.data.status || '-' }}
                         </v-chip>
                         <span v-else class="text-grey-darken-1">-</span>
@@ -94,15 +64,7 @@
                 </template>
             </v-treeview>
 
-            <v-alert
-                v-else
-                type="info"
-                variant="tonal"
-                density="compact"
-                class="mt-2"
-            >
-                표시할 태스크가 없습니다.
-            </v-alert>
+            <v-alert v-else type="info" variant="tonal" density="compact" class="mt-2"> 표시할 태스크가 없습니다. </v-alert>
 
             <!-- 목록 하단 액션 버튼 (조건부 표시) -->
             <div v-if="shouldShowActionButton" class="d-flex justify-end mt-4">
@@ -131,25 +93,25 @@ const backend = BackendFactory.createBackend();
 export default {
     name: 'BackToHereView',
     components: {
-        VTreeview,
+        VTreeview
     },
     props: {
         instance: {
             type: Object,
             required: false,
-            default: null,
-        },
+            default: null
+        }
     },
     data: () => ({
         isLoading: false,
         nodes: {},
         config: {
-            roots: [],
+            roots: []
         },
         selectedNodeId: null,
         // 안전장치(무한/과도한 조회 방지)
         maxFetchParents: 200,
-        maxTotalTasks: 2000,
+        maxTotalTasks: 2000
     }),
     computed: {
         resolvedInstId() {
@@ -168,7 +130,7 @@ export default {
             if (!node) return null;
             if (node.data?.type !== 'task') return null;
             return node;
-        },
+        }
     },
     watch: {
         instance: {
@@ -183,8 +145,8 @@ export default {
                 if (!newId) {
                     this.resetTree();
                 }
-            },
-        },
+            }
+        }
     },
     methods: {
         resetTree() {
@@ -245,9 +207,7 @@ export default {
 
                 // 2) completedList가 taskId 배열(string/number)인 경우:
                 //    - 각 taskId를 개별 조회하여 화면에 필요한 필드를 구성한다.
-                const ids = completedList
-                    .map((v) => (typeof v === 'number' || typeof v === 'string' ? String(v) : null))
-                    .filter(Boolean);
+                const ids = completedList.map((v) => (typeof v === 'number' || typeof v === 'string' ? String(v) : null)).filter(Boolean);
 
                 const tasks = [];
                 // 과도한 호출 방지 (UI 목적상 상한선)
@@ -263,7 +223,7 @@ export default {
                             title: wi.worklist.title || wi.activity?.name || '',
                             tracingTag: wi.activity?.tracingTag || wi.worklist.tracingTag || wi.worklist.trcTag || null,
                             instId: wi.worklist.instId,
-                            task: wi.worklist,
+                            task: wi.worklist
                         });
                     } catch (e) {
                         // ignore single item failure
@@ -294,7 +254,7 @@ export default {
                     text: this.resolvedInstName ? `${this.resolvedInstName} (인스턴스)` : `인스턴스 ${instId}`,
                     children: [],
                     state: { opened: true }, // 트리 기본 펼침
-                    data: { type: 'instance', instId },
+                    data: { type: 'instance', instId }
                 };
 
                 const visitedParents = new Set();
@@ -328,8 +288,8 @@ export default {
                                     taskId,
                                     status: this.getTaskStatus(task),
                                     tracingTag: this.getTracingTag(task),
-                                    raw: task,
-                                },
+                                    raw: task
+                                }
                             };
                         }
                         this.nodes[parentNodeId].children.push(nodeId);
@@ -370,7 +330,7 @@ export default {
                     name: node.text,
                     status: node.data.status,
                     tracingTag: node.data.tracingTag,
-                    raw: node.data.raw,
+                    raw: node.data.raw
                 });
             }
         },
@@ -386,10 +346,10 @@ export default {
                 tracingTag: node.data.tracingTag,
                 name: node.text,
                 status: node.data.status,
-                raw: node.data.raw,
+                raw: node.data.raw
             });
-        },
-    },
+        }
+    }
 };
 </script>
 
@@ -420,7 +380,7 @@ export default {
 }
 
 .bth-selected {
-    background: rgba(25, 118, 210, 0.10);
+    background: rgba(25, 118, 210, 0.1);
 }
 
 .bth-col-id {

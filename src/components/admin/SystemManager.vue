@@ -16,14 +16,14 @@
             </v-btn>
         </div>
 
-        <!-- Table -->
-        <v-card class="pa-0" variant="outlined">
+        <!-- Desktop: [BLOCK:table.simple.v1] -->
+        <v-card v-if="!isMobile" class="pa-0" variant="outlined">
             <v-table density="comfortable">
                 <thead>
                     <tr>
                         <th>{{ $t('taskCatalog.systemName') }}</th>
                         <th>{{ $t('taskCatalog.description') }}</th>
-                        <th style="width: 100px;">{{ $t('taskCatalog.actions') }}</th>
+                        <th style="width: 100px">{{ $t('taskCatalog.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,6 +58,34 @@
             </v-table>
         </v-card>
 
+        <!-- Mobile: Card Layout -->
+        <div v-else>
+            <div v-if="loading" class="text-center pa-8">
+                <v-progress-circular indeterminate size="32" color="primary" />
+            </div>
+            <div v-else-if="sortedSystems.length === 0" class="text-center pa-8 text-medium-emphasis">
+                {{ $t('taskCatalog.noSystems') }}
+            </div>
+            <div v-else class="d-flex flex-column ga-3">
+                <v-card v-for="item in sortedSystems" :key="item.id" variant="outlined" class="pa-4">
+                    <div class="d-flex align-center">
+                        <v-icon size="16" class="mr-2" color="grey">mdi-server</v-icon>
+                        <div class="text-subtitle-2 font-weight-bold">{{ item.name }}</div>
+                    </div>
+                    <div class="text-caption text-medium-emphasis mt-1">{{ item.description || '-' }}</div>
+                    <div class="d-flex justify-end ga-2 mt-3">
+                        <!-- [BLOCK:button.secondary.v1] -->
+                        <v-btn color="gray" rounded="pill" variant="flat" size="small" @click="openDialog(item)">
+                            {{ $t('taskCatalog.edit') }}
+                        </v-btn>
+                        <v-btn color="error" rounded="pill" variant="flat" size="small" @click="confirmDelete(item)">
+                            {{ $t('taskCatalog.delete') }}
+                        </v-btn>
+                    </div>
+                </v-card>
+            </div>
+        </div>
+
         <!-- Add/Edit Dialog -->
         <v-dialog v-model="dialogOpen" max-width="500" persistent>
             <v-card>
@@ -75,35 +103,20 @@
                         <v-text-field
                             v-model="formData.name"
                             :label="$t('taskCatalog.systemName')"
-                            :rules="[v => !!v || $t('taskCatalog.required')]"
+                            :rules="[(v) => !!v || $t('taskCatalog.required')]"
                             variant="outlined"
                             required
                         />
 
-                        <v-textarea
-                            v-model="formData.description"
-                            :label="$t('taskCatalog.description')"
-                            variant="outlined"
-                            rows="3"
-                        />
+                        <v-textarea v-model="formData.description" :label="$t('taskCatalog.description')" variant="outlined" rows="3" />
                     </v-form>
                 </v-card-text>
 
                 <v-card-actions class="d-flex justify-end align-center pa-4">
-                    <v-btn
-                        variant="text"
-                        @click="dialogOpen = false"
-                    >
+                    <v-btn variant="text" @click="dialogOpen = false">
                         {{ $t('taskCatalog.cancel') }}
                     </v-btn>
-                    <v-btn
-                        color="primary"
-                        rounded
-                        variant="flat"
-                        :loading="loading"
-                        :disabled="!formValid"
-                        @click="saveSystem"
-                    >
+                    <v-btn color="primary" rounded variant="flat" :loading="loading" :disabled="!formValid" @click="saveSystem">
                         {{ $t('taskCatalog.save') }}
                     </v-btn>
                 </v-card-actions>
@@ -127,19 +140,7 @@
                 </v-card-text>
 
                 <v-card-actions class="d-flex justify-end align-center pa-4">
-                    <v-btn
-                        variant="text"
-                        @click="deleteDialogOpen = false"
-                    >
-                        {{ $t('taskCatalog.cancel') }}
-                    </v-btn>
-                    <v-btn
-                        color="error"
-                        rounded
-                        variant="flat"
-                        :loading="loading"
-                        @click="deleteSystem"
-                    >
+                    <v-btn color="error" rounded variant="flat" :loading="loading" @click="deleteSystem">
                         {{ $t('taskCatalog.delete') }}
                     </v-btn>
                 </v-card-actions>
@@ -159,7 +160,9 @@ export default defineComponent({
         const t = (key) => proxy.$t(key);
         const store = useTaskCatalogStore();
 
+        const isMobile = computed(() => window.innerWidth <= 768);
         const loading = computed(() => store?.loading || false);
+
         const sortedSystems = computed(() => store?.sortedSystems || []);
 
         const dialogOpen = ref(false);
@@ -218,6 +221,7 @@ export default defineComponent({
 
         return {
             store,
+            isMobile,
             loading,
             sortedSystems,
             headers,
@@ -237,5 +241,4 @@ export default defineComponent({
 });
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

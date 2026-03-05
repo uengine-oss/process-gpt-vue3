@@ -11,26 +11,28 @@
                             :label="$t('ProfitExpanse.startDate')"
                             type="date"
                             outlined
-                            style="margin-right:10px;"
+                            style="margin-right: 10px"
                         ></v-text-field>
-                        <v-text-field
-                            v-model="endDate"
-                            :label="$t('ProfitExpanse.endDate')"
-                            type="date"
-                            outlined
-                        ></v-text-field>
+                        <v-text-field v-model="endDate" :label="$t('ProfitExpanse.endDate')" type="date" outlined></v-text-field>
                     </v-row>
                 </div>
             </div>
 
             <v-row>
                 <v-col cols="12" sm="9" class="pt-7">
-                    <apexchart v-if="chartOptions" type="bar" class="profit-expense" height="300" :options="chartOptions"
-                        :series="chartOptions.series"> </apexchart>
+                    <apexchart
+                        v-if="chartOptions"
+                        type="bar"
+                        class="profit-expense"
+                        height="300"
+                        :options="chartOptions"
+                        :series="chartOptions.series"
+                    >
+                    </apexchart>
                 </v-col>
                 <v-col cols="12" sm="3" class="mt-8 pb-6">
                     <div class="d-flex align-center gap-4 mb-3 pb-6">
-                        <v-avatar style="background-color:#FFF0B4;">
+                        <v-avatar style="background-color: #fff0b4">
                             <Icons :icon="'todo-list'" :color="'#FFB933'" />
                         </v-avatar>
                         <div>
@@ -56,8 +58,8 @@
                             <h6 class="text-subtitle-1 text-grey100">{{ $t('ProfitExpanse.done') }}</h6>
                         </div>
                     </div>
-                    <div class="d-flex align-center gap-4  mb-3 pb-3">
-                        <v-avatar class=" bg-lightsecondary">
+                    <div class="d-flex align-center gap-4 mb-3 pb-3">
+                        <v-avatar class="bg-lightsecondary">
                             <Icons :icon="'total'" :color="'grey'" />
                         </v-avatar>
                         <div>
@@ -75,8 +77,7 @@
 import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
-    components: {
-    },
+    components: {},
     data() {
         const now = new Date();
         // 이번달의 첫째 날
@@ -90,12 +91,12 @@ export default {
                 total: 0,
                 inProcess: 0,
                 done: 0,
-                todo: 0,
+                todo: 0
             },
             startDate: firstDayOfMonth,
             endDate: lastDayOfMonth,
             userStatusMap: {},
-            workList: [],
+            workList: []
         };
     },
     created() {
@@ -103,86 +104,86 @@ export default {
     },
     watch: {
         startDate: 'initSummary',
-        endDate: 'initSummary',
+        endDate: 'initSummary'
     },
     computed: {
         chartOptions() {
             // "완료됨" 개수에 따라 내림차순으로 정렬
             const sortedTopUsers = [...this.topUsers].sort((a, b) => b.DONE - a.DONE);
 
-            const userNames = sortedTopUsers.map(user => user.name);
-            const todoData = sortedTopUsers.map(user => Math.floor(user.TODO));
-            const inProcessData = sortedTopUsers.map(user => Math.floor(user.IN_PROCESS));
-            const doneData = sortedTopUsers.map(user => Math.floor(user.DONE));
+            const userNames = sortedTopUsers.map((user) => user.name);
+            const todoData = sortedTopUsers.map((user) => Math.floor(user.TODO));
+            const inProcessData = sortedTopUsers.map((user) => Math.floor(user.IN_PROCESS));
+            const doneData = sortedTopUsers.map((user) => Math.floor(user.DONE));
 
             return {
                 series: [
                     {
-                        name: "완료 됨",
-                        data: doneData,
+                        name: '완료 됨',
+                        data: doneData
                     },
                     {
-                        name: "진행 중",
-                        data: inProcessData,
+                        name: '진행 중',
+                        data: inProcessData
                     },
                     {
-                        name: "예정업무",
-                        data: todoData,
-                    },
+                        name: '예정업무',
+                        data: todoData
+                    }
                 ],
                 //  #2995DC(완료 됨), #fb977d(진행 중), ##FFF0B4(할 일)
-                colors: [ "#2995DC", "#fb977d", "#FFF0B4"],
+                colors: ['#2995DC', '#fb977d', '#FFF0B4'],
                 chart: {
-                    type: "bar",
+                    type: 'bar',
                     fontFamily: `inherit`,
-                    foreColor: "#adb0bb",
-                    width: "100%",
+                    foreColor: '#adb0bb',
+                    width: '100%',
                     height: 300,
                     stacked: true,
                     toolbar: {
-                        show: false,
-                    },
+                        show: false
+                    }
                 },
                 plotOptions: {
                     bar: {
                         horizontal: false,
-                        columnWidth: "27%",
-                        borderRadius: 6,
-                    },
+                        columnWidth: '27%',
+                        borderRadius: 6
+                    }
                 },
                 dataLabels: {
-                    enabled: false,
+                    enabled: false
                 },
                 grid: {
                     borderColor: 'grey',
-                    padding: { top: 0, bottom: -8, left: 20, right: 20 },
+                    padding: { top: 0, bottom: -8, left: 20, right: 20 }
                 },
                 xaxis: {
                     categories: userNames,
                     axisBorder: {
-                        show: false,
+                        show: false
                     },
                     axisTicks: {
-                        show: false,
+                        show: false
                     },
                     labels: {
                         style: {
-                            colors: 'grey',
+                            colors: 'grey'
                         }
-                    },
+                    }
                 },
                 yaxis: {
                     labels: {
                         style: {
-                            colors: 'grey',
+                            colors: 'grey'
                         }
-                    },
+                    }
                 },
                 legend: {
-                    show: false,
-                },
+                    show: false
+                }
             };
-        },
+        }
     },
     methods: {
         async init() {
@@ -193,29 +194,30 @@ export default {
             var me = this;
             me.userStatusMap = {};
             const backend = BackendFactory.createBackend();
-            await backend.getWorkListAll().then(workList => {
-                workList.forEach(item =>    {
+            await backend.getWorkListAll().then((workList) => {
+                workList.forEach((item) => {
                     me.workList.push({
                         name: item.endpoint,
                         dueDate: item.dueDate,
                         instId: item.instId,
                         status: item.status,
-                        trcTag: item.trcTag,
+                        trcTag: item.trcTag
                     });
                 });
             });
         },
         initSummary() {
             var me = this;
-            
+
             const start = new Date(me.startDate);
             const end = new Date(me.endDate);
 
             me.userStatusMap = {};
 
-            me.workList.forEach(item => {
+            me.workList.forEach((item) => {
                 const dueDate = new Date(item.dueDate);
-                if( start > dueDate || dueDate > end) {//날짜 필터링
+                if (start > dueDate || dueDate > end) {
+                    //날짜 필터링
                     return;
                 }
 
@@ -229,7 +231,7 @@ export default {
                         },
                         TODO: 0,
                         IN_PROCESS: 0,
-                        DONE: 0,
+                        DONE: 0
                     };
                 }
                 if (item.status === 'NEW' || item.status === 'TODO') {
@@ -244,7 +246,6 @@ export default {
                 }
             });
 
-
             let topUsersInfo = Object.values(me.userStatusMap);
             // DONE 상태의 end_date를 기준으로 내림차순 정렬
             topUsersInfo.sort((a, b) => new Date(b.end_dates.DONE) - new Date(a.end_dates.DONE));
@@ -255,7 +256,6 @@ export default {
             me.summary.done = me.topUsers.reduce((acc, user) => acc + user.DONE, 0);
         }
     }
-
 };
 </script>
 

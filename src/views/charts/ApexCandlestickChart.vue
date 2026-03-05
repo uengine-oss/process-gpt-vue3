@@ -19,7 +19,7 @@ const breadcrumbs = ref([
         disabled: true,
         href: '#'
     }
-])
+]);
 const chartOptions = computed(() => {
     return {
         chart: {
@@ -39,31 +39,31 @@ const chartOptions = computed(() => {
             width: 2,
             curve: 'smooth'
         },
-         xaxis: {
-              type: 'datetime'
-            },
+        xaxis: {
+            type: 'datetime'
+        },
         title: {
             style: {
                 fontSize: '16px',
                 color: '#666'
             }
         },
-       yaxis: {
-              tooltip: {
+        yaxis: {
+            tooltip: {
                 enabled: true
-              }
-            },
-      plotOptions: {
-      candlestick: {
-        colors: {
-          upward: "#5D87FF",
-          downward: "#49BEFF",
+            }
         },
-        wick: {
-          useFillColor: true,
-        },
-      },
-    },
+        plotOptions: {
+            candlestick: {
+                colors: {
+                    upward: '#5D87FF',
+                    downward: '#49BEFF'
+                },
+                wick: {
+                    useFillColor: true
+                }
+            }
+        }
     };
 });
 

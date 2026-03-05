@@ -1,4 +1,18 @@
-import type { cardsType, followCard, musicCards, productsCards, socialiconCards, profileCard, upcommingLists, userCard, paymentGateway, recentTrans, backIcon,imgCard,topCards } from '@/types/components/widget/card';
+import type {
+    cardsType,
+    followCard,
+    musicCards,
+    productsCards,
+    socialiconCards,
+    profileCard,
+    upcommingLists,
+    userCard,
+    paymentGateway,
+    recentTrans,
+    backIcon,
+    imgCard,
+    topCards
+} from '@/types/components/widget/card';
 /*import tabler icons*/
 import {
     BrandFacebookIcon,
@@ -31,18 +45,18 @@ import proimg2 from '@/assets/images/products/s5.jpg';
 import proimg3 from '@/assets/images/products/s4.jpg';
 import proimg4 from '@/assets/images/products/s11.jpg';
 /*--Payment gateways--*/
-import icon1 from "@/assets/images/svgs/paypal2.svg";
-import icon2 from "@/assets/images/svgs/wallet.svg";
-import icon3 from "@/assets/images/svgs/credit-card.svg";
-import icon4 from "@/assets/images/svgs/bank-transfer.svg";
-import icon5 from "@/assets/images/svgs/refund.svg";
+import icon1 from '@/assets/images/svgs/paypal2.svg';
+import icon2 from '@/assets/images/svgs/wallet.svg';
+import icon3 from '@/assets/images/svgs/credit-card.svg';
+import icon4 from '@/assets/images/svgs/bank-transfer.svg';
+import icon5 from '@/assets/images/svgs/refund.svg';
 /*--Top cards--*/
-import card_icon1 from "@/assets/images/svgs/icon-user-male.svg"
-import card_icon2 from "@/assets/images/svgs/icon-briefcase.svg"
-import card_icon3 from "@/assets/images/svgs/icon-mailbox.svg"
-import card_icon4 from "@/assets/images/svgs/icon-favorites.svg"
-import card_icon5 from "@/assets/images/svgs/icon-speech-bubble.svg"
-import card_icon6 from "@/assets/images/svgs/icon-connect.svg"
+import card_icon1 from '@/assets/images/svgs/icon-user-male.svg';
+import card_icon2 from '@/assets/images/svgs/icon-briefcase.svg';
+import card_icon3 from '@/assets/images/svgs/icon-mailbox.svg';
+import card_icon4 from '@/assets/images/svgs/icon-favorites.svg';
+import card_icon5 from '@/assets/images/svgs/icon-speech-bubble.svg';
+import card_icon6 from '@/assets/images/svgs/icon-connect.svg';
 
 /*--Blog Cards--*/
 const blogCard: cardsType[] = [
@@ -256,7 +270,7 @@ const userCards: userCard[] = [
             {
                 icon: user3
             }
-        ],
+        ]
     },
     {
         title: 'Leo Pratt',
@@ -272,7 +286,7 @@ const userCards: userCard[] = [
             {
                 icon: user3
             }
-        ],
+        ]
     },
     {
         title: 'Charles Nunez',
@@ -288,7 +302,7 @@ const userCards: userCard[] = [
             {
                 icon: user3
             }
-        ],
+        ]
     },
     {
         title: 'Lora Powers',
@@ -304,9 +318,9 @@ const userCards: userCard[] = [
             {
                 icon: user3
             }
-        ],
-    },
-]
+        ]
+    }
+];
 
 /*--Payment gateways--*/
 const paymentGateways: paymentGateway[] = [
@@ -316,7 +330,7 @@ const paymentGateways: paymentGateway[] = [
         subtitle: 'Big Brands',
         rank: '+$6,235',
         disable: '',
-        bgcolor: "primary",
+        bgcolor: 'primary'
     },
     {
         img: icon2,
@@ -324,7 +338,7 @@ const paymentGateways: paymentGateway[] = [
         subtitle: 'Bill payment',
         rank: '+$345',
         disable: '',
-        bgcolor: "error",
+        bgcolor: 'error'
     },
     {
         img: icon3,
@@ -332,7 +346,7 @@ const paymentGateways: paymentGateway[] = [
         subtitle: 'Money reversed',
         rank: '+$2,235',
         disable: '',
-        bgcolor: "indigo",
+        bgcolor: 'indigo'
     },
     {
         img: icon4,
@@ -340,7 +354,7 @@ const paymentGateways: paymentGateway[] = [
         subtitle: 'Money added',
         rank: '-$320',
         disable: '',
-        bgcolor: "success",
+        bgcolor: 'success'
     },
     {
         img: icon5,
@@ -348,8 +362,8 @@ const paymentGateways: paymentGateway[] = [
         subtitle: 'Bill Payment',
         rank: '-$32',
         disable: '',
-        bgcolor: "warning",
-    },
+        bgcolor: 'warning'
+    }
 ];
 
 /*--Recent Transaction--*/
@@ -407,113 +421,127 @@ const recentTransaction: recentTrans[] = [
         line: false,
         link: '',
         url: ''
-    },
-]
+    }
+];
 
 const backIconData: backIcon[] = [
     {
-        color: "bg-secondary",
+        color: 'bg-secondary',
         icon: LayoutGridIcon,
-        title: "460",
-        subtitle: "New Products",
+        title: '460',
+        subtitle: 'New Products'
     },
     {
-        color: "bg-error",
+        color: 'bg-error',
         icon: ArchiveIcon,
-        title: "50",
-        subtitle: "Pending Apps",
+        title: '50',
+        subtitle: 'Pending Apps'
     },
     {
-        color: "bg-primary",
+        color: 'bg-primary',
         icon: UserIcon,
-        title: "80",
-        subtitle: "Customers",
+        title: '80',
+        subtitle: 'Customers'
     },
     {
-        color: "bg-success",
+        color: 'bg-success',
         icon: GiftIcon,
-        title: "15",
-        subtitle: "Birthday Gifts",
+        title: '15',
+        subtitle: 'Birthday Gifts'
     },
     {
-        color: "bg-warning",
+        color: 'bg-warning',
         icon: CardboardsIcon,
-        title: "1800",
-        subtitle: "Total Budgets",
+        title: '1800',
+        subtitle: 'Total Budgets'
     },
     {
-        color: "bg-info",
+        color: 'bg-info',
         icon: GitBranchIcon,
-        title: "90",
-        subtitle: "Best Designers",
-    },
-]
+        title: '90',
+        subtitle: 'Best Designers'
+    }
+];
 
 const imgCardData: imgCard[] = [
     {
         image: proimg1,
-        color: "secondary",
-      },
-      {
+        color: 'secondary'
+    },
+    {
         image: proimg2,
-        color: "error",
-      },
-      {
+        color: 'error'
+    },
+    {
         image: proimg4,
-        color: "primary",
-      },
-]
+        color: 'primary'
+    }
+];
 
 /*--Top Cards --*/
 const topCardsData: topCards[] = [
     {
-        link: "/apps/user/profileone",
+        link: '/apps/user/profileone',
         img: card_icon1,
-        title: "profile",
-        number: "3,685",
-        bgcolor: "lightprimary",
-        textcolor: "primary"
+        title: 'profile',
+        number: '3,685',
+        bgcolor: 'lightprimary',
+        textcolor: 'primary'
     },
     {
-        link: "/apps/blog/posts",
+        link: '/apps/blog/posts',
         img: card_icon2,
-        title: "Blog",
-        number: "256",
-        bgcolor: "lightwarning",
-        textcolor: "warning"
+        title: 'Blog',
+        number: '256',
+        bgcolor: 'lightwarning',
+        textcolor: 'warning'
     },
     {
-        link: "/apps/calendar",
+        link: '/apps/calendar',
         img: card_icon3,
-        title: "Calender",
-        number: "932",
-        bgcolor: "lightinfo",
-        textcolor: "info"
+        title: 'Calender',
+        number: '932',
+        bgcolor: 'lightinfo',
+        textcolor: 'info'
     },
     {
-        link: "/apps/email",
+        link: '/apps/email',
         img: card_icon4,
-        title: "Email",
-        number: "$348K",
-        bgcolor: "lighterror",
-        textcolor: "error"
+        title: 'Email',
+        number: '$348K',
+        bgcolor: 'lighterror',
+        textcolor: 'error'
     },
     {
-        link: "/apps/chats",
+        link: '/apps/chats',
         img: card_icon5,
-        title: "Chats",
-        number: "96",
-        bgcolor: "lightsuccess",
-        textcolor: "success"
+        title: 'Chats',
+        number: '96',
+        bgcolor: 'lightsuccess',
+        textcolor: 'success'
     },
     {
-        link: "/apps/contacts",
+        link: '/apps/contacts',
         img: card_icon6,
-        title: "Contacts",
-        number: "48",
-        bgcolor: "lightinfo",
-        textcolor: "info"
+        title: 'Contacts',
+        number: '48',
+        bgcolor: 'lightinfo',
+        textcolor: 'info'
     }
-]
+];
 
-export { blogCard, followerCard, musicCard, productsCard, socialiconCard, profileCards, upcommingCards, userCards, paymentGateways, recentTransaction, backIconData,imgCardData,topCardsData }
+export {
+    blogCard,
+    followerCard,
+    musicCard,
+    productsCard,
+    socialiconCard,
+    profileCards,
+    upcommingCards,
+    userCards,
+    paymentGateways,
+    recentTransaction,
+    backIconData,
+    imgCardData,
+    topCardsData
+};

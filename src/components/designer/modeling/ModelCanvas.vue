@@ -429,7 +429,7 @@ export default {
             modelCanvasChannel: null
         };
     },
-    beforeDestroy: function () {
+    beforeUnmount: function () {
         this.executeBeforeDestroy();
     },
     computed: {

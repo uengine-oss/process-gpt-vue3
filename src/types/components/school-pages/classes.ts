@@ -1,8 +1,8 @@
 export type ClassesType = {
-    id?:string | number | undefined;
+    id?: string | number | undefined;
     img?: string;
     chip?: string;
-    chipbg?:string;
+    chipbg?: string;
     caption?: string;
     title?: string;
     lesson?: string;
@@ -10,4 +10,3 @@ export type ClassesType = {
     profileimg?: string;
     name?: string;
 };
-

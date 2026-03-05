@@ -50,25 +50,19 @@
                                 color="error"
                                 variant="text"
                                 class="text-medium-emphasis"
-                                style="margin-top: -4px;"
+                                style="margin-top: -4px"
                                 @click="removeRow(index)"
-                                >
-                                <TrashIcon size="20"/>
+                            >
+                                <TrashIcon size="20" />
                             </v-btn>
                         </td>
                     </tr>
                 </tbody>
             </v-table>
         </div>
-        
+
         <div class="d-flex justify-center mt-3">
-            <v-btn
-                color="secondary"
-                variant="outlined"
-                class="rounded-pill"
-                prepend-icon="mdi-plus"
-                @click="addNewRow"
-            >
+            <v-btn color="secondary" variant="outlined" class="rounded-pill" prepend-icon="mdi-plus" @click="addNewRow">
                 {{ $t('ExampleTable.addNewExample') }}
             </v-btn>
         </div>
@@ -77,16 +71,9 @@
         <v-dialog v-model="dateTimeDialog" max-width="400px">
             <v-card>
                 <v-row class="ma-0 pa-4 pb-0 align-center">
-                    <v-card-title class="pa-0"
-                    >{{ $t('ExampleTable.validPeriodSetting') }}
-                    </v-card-title>
+                    <v-card-title class="pa-0">{{ $t('ExampleTable.validPeriodSetting') }} </v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="closeDateTimeDialog"
-                        class="ml-auto" 
-                        variant="text" 
-                        density="compact"
-                        icon
-                    >
+                    <v-btn @click="closeDateTimeDialog" class="ml-auto" variant="text" density="compact" icon>
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-row>
@@ -110,11 +97,8 @@
                 </v-card-text>
                 <v-row class="ma-0 pa-4 pt-0">
                     <v-spacer></v-spacer>
-                    <v-btn @click="saveDateTimeSettings"
-                        color="primary"
-                        variant="flat" 
-                        class="rounded-pill"
-                    >{{ $t('ExampleTable.save') }}
+                    <v-btn @click="saveDateTimeSettings" color="primary" variant="flat" class="rounded-pill"
+                        >{{ $t('ExampleTable.save') }}
                     </v-btn>
                 </v-row>
             </v-card>
@@ -198,7 +182,7 @@ export default {
                 this.updateExample(this.editingIndex, 'invalid_at', this.editingExample.invalid_at);
             }
             this.closeDateTimeDialog();
-        },
+        }
     }
 };
 </script>

@@ -1,52 +1,52 @@
 <template>
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="logo">
-          <img src="@/assets/images/mainPages/uengine_logo_img.png" alt="Process GPT 로고" />
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="logo">
+                    <img src="@/assets/images/mainPages/uengine_logo_img.png" alt="Process GPT 로고" />
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; {{ new Date().getFullYear() }} Process GPT. All rights reserved.</p>
+                <p style="margin-bottom: 20px">uEngine has registered trademarks and uses trademarks.</p>
+                <p>E-Mail: help@uengine.org</p>
+            </div>
         </div>
-      </div>
-      <div class="footer-bottom">
-        <p>&copy; {{ new Date().getFullYear() }} Process GPT. All rights reserved.</p>
-        <p style="margin-bottom: 20px;">uEngine has registered trademarks and uses trademarks.</p>
-        <p>E-Mail: help@uengine.org</p>
-      </div>
-    </div>
-  </footer>
+    </footer>
 </template>
 
 <script>
 export default {
-  name: 'Footer'
-}
+    name: 'Footer'
+};
 </script>
 
 <style scoped>
 .footer {
-  background-color: var(--bg-color-secondary);
-  padding: 40px 0 30px;
-  /* margin-top: 60px; */
+    background-color: var(--bg-color-secondary);
+    padding: 40px 0 30px;
+    /* margin-top: 60px; */
 }
 /* 
  */
 
 .footer-content {
-  /* display: flex;
+    /* display: flex;
   justify-content: space-between;
   flex-wrap: wrap; */
-  margin-bottom: 30px;
+    margin-bottom: 30px;
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .logo img {
-  width: auto;
-  height: 40px;
-  margin-right: 10px;
+    width: auto;
+    height: 40px;
+    margin-right: 10px;
 }
 
 /* .footer-logo p {
@@ -85,34 +85,36 @@ export default {
 } */
 
 .footer-bottom {
-  /* border-top: 1px solid var(--border-color);
+    /* border-top: 1px solid var(--border-color);
   padding-top: 20px; */
-  text-align: center;
+    text-align: center;
 }
 
 .footer-bottom p {
-  margin: 0;
-  color: var(--text-color-light);
-  font-size: 0.9rem;
+    margin: 0;
+    color: var(--text-color-light);
+    font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
-  .footer-content {
-    flex-direction: column;
-  }
-  
-  .footer-logo, .footer-links, .footer-contact {
-    margin-bottom: 20px;
-    text-align: center;
-    width: 100%;
-  }
-  
-  .footer-logo {
-    align-items: center;
-  }
-  
-  .footer-links ul {
-    justify-content: center;
-  }
+    .footer-content {
+        flex-direction: column;
+    }
+
+    .footer-logo,
+    .footer-links,
+    .footer-contact {
+        margin-bottom: 20px;
+        text-align: center;
+        width: 100%;
+    }
+
+    .footer-logo {
+        align-items: center;
+    }
+
+    .footer-links ul {
+        justify-content: center;
+    }
 }
 </style>

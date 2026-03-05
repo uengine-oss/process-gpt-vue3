@@ -9,8 +9,8 @@ import {
     LayoutDistributeVerticalIcon,
     LayoutNavbarIcon,
     LayoutSidebarLeftCollapseIcon,
-TextDirectionLtrIcon,
-TextDirectionRtlIcon
+    TextDirectionLtrIcon,
+    TextDirectionRtlIcon
 } from 'vue-tabler-icons';
 
 import { Icon } from '@iconify/vue';
@@ -33,8 +33,8 @@ const activeCustomColor = ref('');
 function lightenColor(hex: string, percent: number): string {
     const num = parseInt(hex.replace('#', ''), 16);
     const r = Math.min(255, Math.floor((num >> 16) + (255 - (num >> 16)) * percent));
-    const g = Math.min(255, Math.floor(((num >> 8) & 0x00FF) + (255 - ((num >> 8) & 0x00FF)) * percent));
-    const b = Math.min(255, Math.floor((num & 0x0000FF) + (255 - (num & 0x0000FF)) * percent));
+    const g = Math.min(255, Math.floor(((num >> 8) & 0x00ff) + (255 - ((num >> 8) & 0x00ff)) * percent));
+    const b = Math.min(255, Math.floor((num & 0x0000ff) + (255 - (num & 0x0000ff)) * percent));
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
@@ -53,7 +53,7 @@ function applyCustomPrimaryColor(color: string) {
 
 function onPresetThemeSelect(themeName: string) {
     activeCustomColor.value = '';
-    const preset = themeColors.value.find(t => t.name === themeName);
+    const preset = themeColors.value.find((t) => t.name === themeName);
     if (preset) {
         theme.themes.value[themeName].colors.primary = preset.colorCode;
         theme.themes.value[themeName].colors.lightprimary = lightenColor(preset.colorCode, 0.85);
@@ -64,7 +64,7 @@ function onPresetThemeSelect(themeName: string) {
 }
 
 function saveSettings(customColor?: string) {
-    const selectedTheme = themeColors.value.find(t => t.name === customizer.actTheme);
+    const selectedTheme = themeColors.value.find((t) => t.name === customizer.actTheme);
     const themeColorCode = customColor || (selectedTheme ? selectedTheme.colorCode : '#0085DB');
     const userSettings = {
         boxed: false,
@@ -99,15 +99,12 @@ watch(pickerColor, (newColor) => {
     }
 });
 
-watch(
-  [() => customizer.mini_sidebar, () => customizer.actTheme], 
-  ([newMiniSidebar, newActTheme], [oldMiniSidebar, oldActTheme]) => {
+watch([() => customizer.mini_sidebar, () => customizer.actTheme], ([newMiniSidebar, newActTheme], [oldMiniSidebar, oldActTheme]) => {
     if (oldActTheme && newActTheme !== oldActTheme) {
         onPresetThemeSelect(newActTheme);
     }
     saveSettings(activeCustomColor.value || undefined);
-  }
-);
+});
 </script>
 
 <!------------------------------------->
@@ -138,14 +135,7 @@ watch(
                 </v-col>
             </v-item-group>
 
-            <v-color-picker
-                v-model="pickerColor"
-                class="mt-4"
-                mode="hex"
-                :modes="['hex']"
-                elevation="0"
-                width="100%"
-            ></v-color-picker>
+            <v-color-picker v-model="pickerColor" class="mt-4" mode="hex" :modes="['hex']" elevation="0" width="100%"></v-color-picker>
             <!---  불필요하게 작아지는 사이드바 영역 타입을 설정하는 부분 --->
             <!-- <v-sheet v-if="customizer.setHorizontalLayout != true">
                 <h6 class="text-h6 mt-11 mb-2">Sidebar Type</h6>

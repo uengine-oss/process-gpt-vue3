@@ -10,4 +10,3 @@ export const processGptAgent = {
     is_agent: true,
     alias: 'processgpt'
 };
-

@@ -1,22 +1,22 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class WorkAssistantGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
 
         this.contexts = null;
         // this.model = "gpt-4"
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
 
         var date = new Date();
         this.timeStamp = date.toString();
-        
+
         // const organizationChart = JSON.stringify(client.organizationChart);
 
-        this.previousMessages = [{
-            role: 'system', 
-            content: `너는 업무 지시자의 업무 지시 내용을 보고 업무 지시 내용을 SMART 기법에 맞게 초안을 작성하는 역할을 해야해.
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `너는 업무 지시자의 업무 지시 내용을 보고 업무 지시 내용을 SMART 기법에 맞게 초안을 작성하는 역할을 해야해.
             SMART 기법은 목표 설정과 달성을 돕기 위한 방법론으로, 구체적(Specific), 측정 가능(Measurable), 달성 가능(Attainable), 관련성(Relevant), 시간 제약(Time-bound)이라는 다섯 가지 원칙을 따라서 초안을 생성해야해.
 
             SMART 기법의 각 단계에 맞는 초안을 생성해야해. 업무 지시자의 업무 지시 내용을 최대한 존중하여 초안을 생성하여야하고 업무 지시 내용중 정보가 불충분한 경우 임의로 최대한 일반적이게 초안을 생성해야해.
@@ -52,7 +52,8 @@ export default class WorkAssistantGenerator extends AIGenerator {
                 ]
             }
 `
-        }];
+            }
+        ];
     }
 
     setContexts(contexts) {}
@@ -64,5 +65,4 @@ export default class WorkAssistantGenerator extends AIGenerator {
     setWorkList() {}
 
     createPrompt() {}
-
 }

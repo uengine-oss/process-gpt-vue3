@@ -328,9 +328,7 @@ async function handleBulkApprove() {
     const ids = Array.from(selectedRows.value);
     if (ids.length === 0) return;
 
-    const confirmed = window.confirm(
-        `선택된 ${ids.length}건을 일괄 승인하시겠습니까?\n(HQ 승인 및 Field 승인이 순차 처리됩니다)`
-    );
+    const confirmed = window.confirm(`선택된 ${ids.length}건을 일괄 승인하시겠습니까?\n(HQ 승인 및 Field 승인이 순차 처리됩니다)`);
     if (!confirmed) return;
 
     let successCount = 0;
@@ -363,9 +361,7 @@ async function handleBulkReject() {
     const ids = Array.from(selectedRows.value);
     if (ids.length === 0) return;
 
-    const reason = window.prompt(
-        `선택된 ${ids.length}건을 일괄 반려합니다.\n반려 사유를 입력하세요 (필수):`
-    );
+    const reason = window.prompt(`선택된 ${ids.length}건을 일괄 반려합니다.\n반려 사유를 입력하세요 (필수):`);
     if (reason === null) return; // cancelled
     if (!reason.trim()) {
         showGlobalToast('반려 사유를 입력해야 합니다.', 'error');
@@ -402,9 +398,7 @@ async function handleBulkPublish() {
     const ids = Array.from(selectedRows.value);
     if (ids.length === 0) return;
 
-    const confirmed = window.confirm(
-        `선택된 ${ids.length}건을 최종 배포(Publish)하시겠습니까?\n배포 후에는 되돌릴 수 없습니다.`
-    );
+    const confirmed = window.confirm(`선택된 ${ids.length}건을 최종 배포(Publish)하시겠습니까?\n배포 후에는 되돌릴 수 없습니다.`);
     if (!confirmed) return;
 
     let successCount = 0;
@@ -691,19 +685,40 @@ onBeforeUnmount(cleanupRealtime);
                                 </td>
                                 <td class="td-reviewer">
                                     <div class="reviewer-badges">
-                                        <v-chip v-if="item.hq_reviewer_name" size="x-small"
-                                            :color="item.hq_status === 'approved' ? 'success' : item.hq_status === 'rejected' ? 'error' : '#2196f3'"
-                                            variant="tonal" class="mr-1">
+                                        <v-chip
+                                            v-if="item.hq_reviewer_name"
+                                            size="x-small"
+                                            :color="
+                                                item.hq_status === 'approved'
+                                                    ? 'success'
+                                                    : item.hq_status === 'rejected'
+                                                    ? 'error'
+                                                    : '#2196f3'
+                                            "
+                                            variant="tonal"
+                                            class="mr-1"
+                                        >
                                             <v-icon start size="10">mdi-domain</v-icon>
                                             {{ item.hq_reviewer_name }}
                                         </v-chip>
-                                        <v-chip v-if="item.field_reviewer_name" size="x-small"
-                                            :color="item.field_status === 'approved' ? 'success' : item.field_status === 'rejected' ? 'error' : '#4caf50'"
-                                            variant="tonal">
+                                        <v-chip
+                                            v-if="item.field_reviewer_name"
+                                            size="x-small"
+                                            :color="
+                                                item.field_status === 'approved'
+                                                    ? 'success'
+                                                    : item.field_status === 'rejected'
+                                                    ? 'error'
+                                                    : '#4caf50'
+                                            "
+                                            variant="tonal"
+                                        >
                                             <v-icon start size="10">mdi-account-hard-hat</v-icon>
                                             {{ item.field_reviewer_name }}
                                         </v-chip>
-                                        <span v-if="!item.hq_reviewer_name && !item.field_reviewer_name" class="text-caption text-disabled">-</span>
+                                        <span v-if="!item.hq_reviewer_name && !item.field_reviewer_name" class="text-caption text-disabled"
+                                            >-</span
+                                        >
                                     </div>
                                 </td>
                                 <td class="td-state">
@@ -891,7 +906,6 @@ onBeforeUnmount(cleanupRealtime);
 </template>
 
 <style scoped>
-
 /* ── Page Header ── */
 .page-header {
     display: flex;

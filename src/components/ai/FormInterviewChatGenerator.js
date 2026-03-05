@@ -1,4 +1,4 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class FormInterviewChatGenerator extends AIGenerator {
     constructor(client, options) {
@@ -8,9 +8,9 @@ export default class FormInterviewChatGenerator extends AIGenerator {
 
         this.previousMessages = [
             {
-                role: "system",
-                content: systemInstructions,
-            },
+                role: 'system',
+                content: systemInstructions
+            }
         ];
     }
 
@@ -18,18 +18,17 @@ export default class FormInterviewChatGenerator extends AIGenerator {
         return this.client.newMessage;
     }
 
-
     buildSystemInstructions() {
         const workItem = this.client.workItem || {};
         const processDefinition = this.client.processDefinition || {};
         const formData = this.client.formData || {};
-        
+
         // 현재 폼 데이터 상태 분석
-        const filledFields = Object.keys(formData).filter(key => 
-            formData[key] !== undefined && formData[key] !== null && formData[key] !== ''
+        const filledFields = Object.keys(formData).filter(
+            (key) => formData[key] !== undefined && formData[key] !== null && formData[key] !== ''
         );
-        const emptyFields = Object.keys(formData).filter(key => 
-            formData[key] === undefined || formData[key] === null || formData[key] === ''
+        const emptyFields = Object.keys(formData).filter(
+            (key) => formData[key] === undefined || formData[key] === null || formData[key] === ''
         );
 
         return `당신은 폼 입력을 도와주는 AI 어시스턴트입니다. 사용자가 폼을 작성할 때 필요한 정보를 인터뷰를 통해 수집하고, 적절한 값을 제안해주세요.
@@ -40,13 +39,21 @@ export default class FormInterviewChatGenerator extends AIGenerator {
 **작업 설명**: ${workItem.activity?.description || '설명 없음'}
 
 ## 폼 데이터 현황
-${filledFields.length > 0 ? `**이미 입력된 항목들**:
-${filledFields.map(field => `- ${field}: ${formData[field]}`).join('\n')}
+${
+    filledFields.length > 0
+        ? `**이미 입력된 항목들**:
+${filledFields.map((field) => `- ${field}: ${formData[field]}`).join('\n')}
 
-` : ''}${emptyFields.length > 0 ? `**아직 입력되지 않은 항목들**:
-${emptyFields.map(field => `- ${field}`).join('\n')}
+`
+        : ''
+}${
+            emptyFields.length > 0
+                ? `**아직 입력되지 않은 항목들**:
+${emptyFields.map((field) => `- ${field}`).join('\n')}
 
-` : ''}## 당신의 역할
+`
+                : ''
+        }## 당신의 역할
 1. **인터뷰 진행**: 사용자에게 폼 작성에 필요한 정보를 하나씩 질문하세요
 2. **맥락 파악**: 작업 항목과 프로세스의 성격을 고려하여 적절한 질문을 하세요
 3. **값 제안**: 사용자의 답변을 바탕으로 구체적인 폼 값을 제안하세요

@@ -5,25 +5,9 @@
             <div class="toolbar-left">
                 <template v-if="processName">
                     <span class="process-name font-weight-bold">{{ processName }}</span>
-                    <ProgressBadge
-                        v-if="currentStatus"
-                        type="status"
-                        :status="currentStatus"
-                        size="x-small"
-                        class="ml-2"
-                    />
-                    <span v-if="currentVersion" class="text-caption text-medium-emphasis ml-2">
-                        v{{ currentVersion }}
-                    </span>
-                    <v-chip
-                        v-if="toBeMode"
-                        color="purple"
-                        variant="flat"
-                        size="small"
-                        class="ml-3"
-                    >
-                        To-Be Mode
-                    </v-chip>
+                    <ProgressBadge v-if="currentStatus" type="status" :status="currentStatus" size="x-small" class="ml-2" />
+                    <span v-if="currentVersion" class="text-caption text-medium-emphasis ml-2"> v{{ currentVersion }} </span>
+                    <v-chip v-if="toBeMode" color="purple" variant="flat" size="small" class="ml-3"> To-Be Mode </v-chip>
                 </template>
                 <span v-else class="text-medium-emphasis">
                     {{ $t('processHierarchy.selectProcess') || '왼쪽 트리에서 프로세스를 선택하세요' }}
@@ -31,38 +15,16 @@
             </div>
             <div class="toolbar-right">
                 <!-- As-Is / To-Be Mode Toggle -->
-                <v-btn-toggle
-                    v-model="activeMode"
-                    mandatory
-                    density="compact"
-                    variant="outlined"
-                    divided
-                    color="purple"
-                    class="mr-2"
-                >
-                    <v-btn value="as-is" size="small" :disabled="!processName">
-                        As-Is
-                    </v-btn>
-                    <v-btn value="to-be" size="small" :disabled="!processName">
-                        To-Be
-                    </v-btn>
+                <v-btn-toggle v-model="activeMode" mandatory density="compact" variant="outlined" divided color="purple" class="mr-2">
+                    <v-btn value="as-is" size="small" :disabled="!processName"> As-Is </v-btn>
+                    <v-btn value="to-be" size="small" :disabled="!processName"> To-Be </v-btn>
                 </v-btn-toggle>
                 <v-divider vertical class="mx-1" />
-                <v-btn
-                    variant="text"
-                    size="small"
-                    :disabled="!processName"
-                    @click="$emit('save')"
-                >
+                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('save')">
                     <v-icon start size="16">mdi-content-save</v-icon>
                     {{ $t('processHierarchy.save') || 'Save' }}
                 </v-btn>
-                <v-btn
-                    variant="text"
-                    size="small"
-                    :disabled="!processName"
-                    @click="handleValidate"
-                >
+                <v-btn variant="text" size="small" :disabled="!processName" @click="handleValidate">
                     <v-icon start size="16">mdi-check-circle-outline</v-icon>
                     {{ $t('processHierarchy.validate') || 'Validate' }}
                 </v-btn>
@@ -75,24 +37,14 @@
                     @click="$emit('toggleWip')"
                 >
                     <v-icon start size="16">{{ isWip ? 'mdi-progress-wrench' : 'mdi-progress-wrench' }}</v-icon>
-                    {{ isWip ? ($t('processHierarchy.wipOn') || 'WIP 해제') : ($t('processHierarchy.wipOff') || 'WIP 설정') }}
+                    {{ isWip ? $t('processHierarchy.wipOn') || 'WIP 해제' : $t('processHierarchy.wipOff') || 'WIP 설정' }}
                 </v-btn>
                 <v-divider vertical class="mx-1" />
-                <v-btn
-                    variant="text"
-                    size="small"
-                    :disabled="!processName"
-                    @click="$emit('clone')"
-                >
+                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('clone')">
                     <v-icon start size="16">mdi-content-copy</v-icon>
                     {{ $t('processHierarchy.clone') || 'Clone Process' }}
                 </v-btn>
-                <v-btn
-                    variant="text"
-                    size="small"
-                    :disabled="!processName"
-                    @click="$emit('versionHistory')"
-                >
+                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('versionHistory')">
                     <v-icon start size="16">mdi-history</v-icon>
                     {{ $t('processHierarchy.versionHistory') || 'Version History' }}
                 </v-btn>
@@ -107,7 +59,7 @@
             density="compact"
             closable
             class="mx-2 mt-1 mb-0"
-            style="flex-shrink: 0;"
+            style="flex-shrink: 0"
             @click:close="$emit('dismissBackup')"
         >
             <div class="d-flex align-center justify-space-between">
@@ -117,9 +69,7 @@
                         ({{ new Date(recoveryBackup.timestamp).toLocaleString() }})
                     </span>
                 </span>
-                <v-btn size="small" variant="flat" color="warning" class="ml-3" @click="$emit('recoverBackup')">
-                    복구
-                </v-btn>
+                <v-btn size="small" variant="flat" color="warning" class="ml-3" @click="$emit('recoverBackup')"> 복구 </v-btn>
             </div>
         </v-alert>
 
@@ -147,20 +97,9 @@
             <div v-if="toBeMode && !hasToBeBlueprint" class="tobe-overlay">
                 <div class="tobe-overlay-card">
                     <v-icon size="48" color="purple">mdi-creation</v-icon>
-                    <div class="tobe-overlay-title mt-4">
-                        아직 기획된 To-Be 청사진이 없습니다.
-                    </div>
-                    <div class="tobe-overlay-subtitle mt-2">
-                        현재 프로세스를 바탕으로 새로운 개선안 설계를 시작해 보세요.
-                    </div>
-                    <v-btn
-                        color="purple"
-                        variant="flat"
-                        size="large"
-                        rounded="lg"
-                        class="mt-6 tobe-cta-btn"
-                        @click="createToBeBlueprint"
-                    >
+                    <div class="tobe-overlay-title mt-4">아직 기획된 To-Be 청사진이 없습니다.</div>
+                    <div class="tobe-overlay-subtitle mt-2">현재 프로세스를 바탕으로 새로운 개선안 설계를 시작해 보세요.</div>
+                    <v-btn color="purple" variant="flat" size="large" rounded="lg" class="mt-6 tobe-cta-btn" @click="createToBeBlueprint">
                         + 차기 청사진(Blueprint) 생성하기
                     </v-btn>
                 </div>
@@ -239,9 +178,20 @@ export default {
         definitionPath: { type: String, default: '' },
         definitionList: { type: Array, default: () => [] },
         loading: { type: Boolean, default: false },
-        recoveryBackup: { type: Object, default: null },
+        recoveryBackup: { type: Object, default: null }
     },
-    emits: ['openPanel', 'updateXml', 'save', 'clone', 'versionHistory', 'definition', 'toggleWip', 'validationDone', 'dismissBackup', 'recoverBackup'],
+    emits: [
+        'openPanel',
+        'updateXml',
+        'save',
+        'clone',
+        'versionHistory',
+        'definition',
+        'toggleWip',
+        'validationDone',
+        'dismissBackup',
+        'recoverBackup'
+    ],
     beforeUnmount() {
         // 전역 상태 정리 — 다른 페이지에 영향 방지
         window.$bpmnTimeTravel = null;
@@ -255,7 +205,9 @@ export default {
                     const canvas = modeler.get('canvas');
                     canvas.off('viewbox.changed', this._viewboxHandler);
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) {
+                /* ignore */
+            }
             this._viewboxHandler = null;
         }
     },
@@ -268,12 +220,12 @@ export default {
             validationMarkerIds: [],
             activeMode: 'as-is',
             toBeBlueprintXml: '',
-            asIsXmlSnapshot: '',   // As-Is XML 스냅샷 (To-Be 전환 시 현재 상태 보존)
-            switchingMode: false,  // 모드 전환 중 플래그
+            asIsXmlSnapshot: '', // As-Is XML 스냅샷 (To-Be 전환 시 현재 상태 보존)
+            switchingMode: false, // 모드 전환 중 플래그
             viewboxInfo: null,
             _viewboxHandler: null,
             canvasMinHeight: 0,
-            _expandDebounceTimer: null,
+            _expandDebounceTimer: null
         };
     },
     computed: {
@@ -286,31 +238,23 @@ export default {
         /** 캔버스에 로드할 실제 XML */
         activeBpmn() {
             if (this.switchingMode) return null; // 전환 중 무시
-            return this.toBeMode && this.hasToBeBlueprint
-                ? this.toBeBlueprintXml
-                : this.bpmn;
+            return this.toBeMode && this.hasToBeBlueprint ? this.toBeBlueprintXml : this.bpmn;
         },
         currentStatus() {
             if (!this.definitionPath || !this.definitionList) return '';
-            const def = this.definitionList.find(
-                d => (d.file_name || d.id) === this.definitionPath
-            );
+            const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.approval_state || def?.status || '';
         },
         currentVersion() {
             if (!this.definitionPath || !this.definitionList) return '';
-            const def = this.definitionList.find(
-                d => (d.file_name || d.id) === this.definitionPath
-            );
+            const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.version || def?.version_tag || '';
         },
         isWip() {
             if (!this.definitionPath || !this.definitionList) return false;
-            const def = this.definitionList.find(
-                d => (d.file_name || d.id) === this.definitionPath
-            );
+            const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.approval_state === 'wip' || def?.status === 'wip';
-        },
+        }
     },
     watch: {
         async bpmn(newVal, oldVal) {
@@ -367,7 +311,7 @@ export default {
                     this.switchingMode = false;
                 });
             }
-        },
+        }
     },
     methods: {
         /** 현재 modeler에서 최신 XML 추출 */
@@ -391,10 +335,7 @@ export default {
                 if (!supabase) return;
                 const currentDef = this.processDefinition?.definition || {};
                 const updatedDef = { ...currentDef, tobe_bpmn: xml };
-                await supabase
-                    .from('proc_def')
-                    .update({ definition: updatedDef })
-                    .eq('id', this.definitionPath);
+                await supabase.from('proc_def').update({ definition: updatedDef }).eq('id', this.definitionPath);
                 // 로컬 동기화
                 if (this.processDefinition) {
                     this.processDefinition.definition = updatedDef;
@@ -448,14 +389,18 @@ export default {
                                 this.viewboxInfo = {
                                     x: Math.round(vb.x),
                                     y: Math.round(vb.y),
-                                    zoom: Math.round((vb.scale || 1) * 100),
+                                    zoom: Math.round((vb.scale || 1) * 100)
                                 };
-                            } catch (e) { /* ignore */ }
+                            } catch (e) {
+                                /* ignore */
+                            }
                         };
                         canvas2.on('viewbox.changed', this._viewboxHandler);
                         // Initial read
                         this._viewboxHandler();
-                    } catch (e) { /* ignore */ }
+                    } catch (e) {
+                        /* ignore */
+                    }
 
                     // [2.3.1] Canvas auto-expand on content overflow
                     try {
@@ -467,7 +412,9 @@ export default {
                             }, 300);
                         };
                         eventBus.on('commandStack.changed', checkCanvasExpand);
-                    } catch (e) { /* ignore */ }
+                    } catch (e) {
+                        /* ignore */
+                    }
                 }
             });
         },
@@ -481,7 +428,7 @@ export default {
                 const allElements = elementRegistry.getAll();
 
                 let maxY = 0;
-                allElements.forEach(el => {
+                allElements.forEach((el) => {
                     if (el.y !== undefined && el.height !== undefined) {
                         const bottom = el.y + el.height;
                         if (bottom > maxY) maxY = bottom;
@@ -514,12 +461,24 @@ export default {
                 const elementRegistry = modeler.get('elementRegistry');
 
                 // 타입 기반으로 모든 validation 오버레이 일괄 제거 (ID 추적 실패 방지)
-                try { overlays.remove({ type: 'validation-error' }); } catch (e) { /* ignore */ }
+                try {
+                    overlays.remove({ type: 'validation-error' });
+                } catch (e) {
+                    /* ignore */
+                }
 
                 // 모든 요소에서 validation 마커 제거
-                elementRegistry.getAll().forEach(el => {
-                    try { canvas.removeMarker(el.id, 'validation-error-element'); } catch (e) { /* ignore */ }
-                    try { canvas.removeMarker(el.id, 'validation-blink-error'); } catch (e) { /* ignore */ }
+                elementRegistry.getAll().forEach((el) => {
+                    try {
+                        canvas.removeMarker(el.id, 'validation-error-element');
+                    } catch (e) {
+                        /* ignore */
+                    }
+                    try {
+                        canvas.removeMarker(el.id, 'validation-blink-error');
+                    } catch (e) {
+                        /* ignore */
+                    }
                 });
 
                 this.validationOverlayIds = [];
@@ -594,7 +553,7 @@ export default {
             content.appendChild(title);
 
             // 각 에러 메시지 표시
-            errors.forEach(err => {
+            errors.forEach((err) => {
                 const msg = document.createElement('div');
                 msg.style.cssText = 'font-size: 11px; color: #666; line-height: 1.4;';
                 msg.textContent = err.shortMessage || err.message;
@@ -620,26 +579,24 @@ export default {
                 const overlays = modeler.get('overlays');
                 const canvas = modeler.get('canvas');
                 // label 요소와 root 요소를 필터링하여 중복 오버레이 방지
-                const allElements = elementRegistry.getAll().filter(el =>
-                    el.type !== 'label' && !el.labelTarget
-                );
+                const allElements = elementRegistry.getAll().filter((el) => el.type !== 'label' && !el.labelTarget);
 
                 let hasStartEvent = false;
                 let hasEndEvent = false;
 
                 // connections map 생성
                 const connections = new Map();
-                allElements.forEach(el => {
+                allElements.forEach((el) => {
                     if (el.id) {
                         connections.set(el.id, {
-                            incoming: (el.incoming || []).map(c => c.source?.id).filter(Boolean),
-                            outgoing: (el.outgoing || []).map(c => c.target?.id).filter(Boolean)
+                            incoming: (el.incoming || []).map((c) => c.source?.id).filter(Boolean),
+                            outgoing: (el.outgoing || []).map((c) => c.target?.id).filter(Boolean)
                         });
                     }
                 });
 
                 const processedIds = new Set();
-                allElements.forEach(element => {
+                allElements.forEach((element) => {
                     // 같은 ID 중복 처리 방지
                     if (processedIds.has(element.id)) return;
                     processedIds.add(element.id);
@@ -656,7 +613,7 @@ export default {
                             elementErrors.push({
                                 level: 'error',
                                 message: this.$t('validation.isolatedNode') || 'Isolated node: no connections at all.',
-                                shortMessage: this.$t('validation.isolated') || 'Isolated',
+                                shortMessage: this.$t('validation.isolated') || 'Isolated'
                             });
                         }
                     }
@@ -668,7 +625,7 @@ export default {
                             elementErrors.push({
                                 level: 'error',
                                 message: this.$t('validation.danglingFlow') || 'Dangling flow: missing source or target.',
-                                shortMessage: this.$t('validation.dangling') || 'Dangling Flow',
+                                shortMessage: this.$t('validation.dangling') || 'Dangling Flow'
                             });
                         }
                     }
@@ -680,7 +637,7 @@ export default {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.unnamedTask') || 'Task has no name.',
-                                shortMessage: this.$t('validation.nameRequired') || 'Name Required',
+                                shortMessage: this.$t('validation.nameRequired') || 'Name Required'
                             });
                         }
                     }
@@ -692,7 +649,7 @@ export default {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.noIncomingConnection') || 'No incoming connection.',
-                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing',
+                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing'
                             });
                         }
                     }
@@ -704,7 +661,7 @@ export default {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.noOutgoingConnection') || 'No outgoing connection.',
-                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing',
+                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing'
                             });
                         }
                     }
@@ -719,7 +676,7 @@ export default {
                                 elementErrors.push({
                                     level: 'warning',
                                     message: this.$t('validation.gatewayNeedsBranches') || 'Gateway needs at least 2 branches.',
-                                    shortMessage: this.$t('validation.branchingRequired') || 'Branching Required',
+                                    shortMessage: this.$t('validation.branchingRequired') || 'Branching Required'
                                 });
                             }
                         }
@@ -732,7 +689,7 @@ export default {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.noLaneAssignee') || 'Lane has no assignee.',
-                                shortMessage: this.$t('validation.assigneeRequired') || 'Assignee Required',
+                                shortMessage: this.$t('validation.assigneeRequired') || 'Assignee Required'
                             });
                         }
                     }
@@ -748,7 +705,7 @@ export default {
                                     elementErrors.push({
                                         level: 'warning',
                                         message: this.$t('validation.missingCondition') || 'Condition expression is missing.',
-                                        shortMessage: this.$t('validation.conditionMissing') || 'Condition Missing',
+                                        shortMessage: this.$t('validation.conditionMissing') || 'Condition Missing'
                                     });
                                     // [4.4.5] Gateway 자체에 ⚠️ 뱃지 오버레이
                                     if (source && !processedIds.has('gateway-badge-' + source.id)) {
@@ -764,7 +721,9 @@ export default {
                                                 html: badgeHtml
                                             });
                                             this.validationOverlayIds.push(badgeId);
-                                        } catch (e) { /* ignore */ }
+                                        } catch (e) {
+                                            /* ignore */
+                                        }
                                     }
                                 }
                             }
@@ -777,7 +736,9 @@ export default {
                         try {
                             canvas.addMarker(element.id, 'validation-error-element');
                             this.validationMarkerIds.push(element.id);
-                        } catch (e) { /* ignore */ }
+                        } catch (e) {
+                            /* ignore */
+                        }
 
                         // 오버레이 추가 (에러 메시지 말풍선)
                         try {
@@ -795,11 +756,11 @@ export default {
                         }
 
                         // 결과 목록에 추가
-                        elementErrors.forEach(err => {
+                        elementErrors.forEach((err) => {
                             results.push({
                                 ...err,
                                 elementName: element.businessObject?.name || element.id,
-                                elementId: element.id,
+                                elementId: element.id
                             });
                         });
                     }
@@ -808,34 +769,36 @@ export default {
                 // [4.4.4] 프로세스 레벨 에러 → Pool/Lane 붉은 점멸
                 if (!hasStartEvent || !hasEndEvent) {
                     // Pool/Participant 요소에 점멸 마커 적용
-                    const poolElements = allElements.filter(el =>
-                        el.type === 'bpmn:Participant' || el.type === 'bpmn:Process'
-                    );
-                    poolElements.forEach(pool => {
+                    const poolElements = allElements.filter((el) => el.type === 'bpmn:Participant' || el.type === 'bpmn:Process');
+                    poolElements.forEach((pool) => {
                         try {
                             canvas.addMarker(pool.id, 'validation-blink-error');
                             this.validationMarkerIds.push(pool.id);
-                        } catch (e) { /* ignore */ }
+                        } catch (e) {
+                            /* ignore */
+                        }
                     });
                     // Lane 요소에도 점멸 마커 적용
-                    const laneElements = allElements.filter(el => el.type === 'bpmn:Lane');
-                    laneElements.forEach(lane => {
+                    const laneElements = allElements.filter((el) => el.type === 'bpmn:Lane');
+                    laneElements.forEach((lane) => {
                         try {
                             canvas.addMarker(lane.id, 'validation-blink-error');
                             this.validationMarkerIds.push(lane.id);
-                        } catch (e) { /* ignore */ }
+                        } catch (e) {
+                            /* ignore */
+                        }
                     });
                 }
                 if (!hasStartEvent) {
                     results.push({
                         level: 'error',
-                        message: this.$t('validation.noStartEvent') || 'No start event found.',
+                        message: this.$t('validation.noStartEvent') || 'No start event found.'
                     });
                 }
                 if (!hasEndEvent) {
                     results.push({
                         level: 'error',
-                        message: this.$t('validation.noEndEvent') || 'No end event found.',
+                        message: this.$t('validation.noEndEvent') || 'No end event found.'
                     });
                 }
             } catch (e) {
@@ -853,8 +816,8 @@ export default {
                     this.$toast.success(this.$t('processHierarchy.validationPassed') || '검증 통과');
                 }
             }
-        },
-    },
+        }
+    }
 };
 </script>
 
@@ -983,7 +946,7 @@ export default {
     color: #666;
     z-index: 5;
     pointer-events: none;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 </style>
 
@@ -1001,8 +964,15 @@ export default {
 
 /* [4.4.4] Pool/Lane 붉은 점멸 애니메이션 */
 @keyframes validation-blink {
-    0%, 100% { stroke: #f44336; stroke-opacity: 1; }
-    50% { stroke: #f44336; stroke-opacity: 0.2; }
+    0%,
+    100% {
+        stroke: #f44336;
+        stroke-opacity: 1;
+    }
+    50% {
+        stroke: #f44336;
+        stroke-opacity: 0.2;
+    }
 }
 .validation-blink-error .djs-visual > :nth-child(1) {
     animation: validation-blink 1.2s ease-in-out infinite !important;

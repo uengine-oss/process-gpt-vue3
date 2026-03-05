@@ -6,9 +6,9 @@
     >
         <v-card v-if="isConsultingMode">
             <div :key="chatRenderKey">
-                <div style="display: none;">
+                <div style="display: none">
                     <process-definition
-                        ref="definitionComponent"    
+                        ref="definitionComponent"
                         class="process-definition-resize"
                         :bpmn="bpmn"
                         :isViewMode="true"
@@ -42,11 +42,9 @@
                 </div>
             </div>
         </v-card>
-        <AppBaseCard v-else
-             :customMenuName="$t('processDefinition.title')"
-        >
+        <AppBaseCard v-else :customMenuName="$t('processDefinition.title')">
             <template v-slot:leftpart>
-                <h5 v-if="!canEdit" class="text-h5 font-weight-semibold pa-3" style="background-color: white;">
+                <h5 v-if="!canEdit" class="text-h5 font-weight-semibold pa-3" style="background-color: white">
                     {{ projectName }}
                 </h5>
                 <!-- 프로세스 정의 내부에 있는 ProcessDefinition.vue 컴포넌트 -->
@@ -86,16 +84,21 @@
                     @close="toggleVersionDialog"
                     @save="beforeSaveDefinition"
                 ></process-definition-version-dialog>
-                <ProcessDefinitionVersionManager
-                    :process="processDefinition"
-                    :open="verMangerDialog"
-                    :type="'bpmn'"
-                    :bpmn="bpmn"
-                    :definitionId="fullPath"
-                    :isSimulate="isSimulate"
-                    @close="toggleVerMangerDialog"
-                    @changeXML="changeXML"
-                ></ProcessDefinitionVersionManager>
+                <v-dialog
+                    v-model="verMangerDialog"
+                    fullscreen
+                    persistent
+                    transition="dialog-bottom-transition"
+                    class="version-comparison-dialog"
+                >
+                    <VersionComparison
+                        v-if="verMangerDialog"
+                        :dialogMode="true"
+                        :initialProcessId="fullPath"
+                        @close="toggleVerMangerDialog(false)"
+                        @rollbackDone="onVersionRollbackDone"
+                    />
+                </v-dialog>
                 <v-dialog v-model="deleteDialog" max-width="500">
                     <v-card class="pa-0">
                         <v-row class="ma-0 pa-4 pb-0 align-center">
@@ -103,22 +106,13 @@
                                 {{ $t('processDefinition.deleteProcessMessage') }}
                             </v-card-title>
                             <v-spacer></v-spacer>
-                            <v-btn @click="deleteDialog = false"
-                                class="ml-auto" 
-                                variant="text" 
-                                density="compact"
-                                icon
-                            >
+                            <v-btn @click="deleteDialog = false" class="ml-auto" variant="text" density="compact" icon>
                                 <v-icon>mdi-close</v-icon>
                             </v-btn>
                         </v-row>
                         <v-row class="ma-0 pa-4">
                             <v-spacer></v-spacer>
-                            <v-btn @click="deleteProcess"
-                                color="error" 
-                                rounded 
-                                variant="flat" 
-                            >
+                            <v-btn @click="deleteProcess" color="error" rounded variant="flat">
                                 {{ $t('processDefinition.delete') }}
                             </v-btn>
                         </v-row>
@@ -127,19 +121,19 @@
                 <v-dialog v-model="restoreDialog" max-width="500">
                     <v-card class="pa-4">
                         <v-row class="ma-0 pa-0 mb-8">
-                            <v-card-text class="ma-0 pa-0" style="font-size:24px;">
+                            <v-card-text class="ma-0 pa-0" style="font-size: 24px">
                                 {{ $t('processDefinition.restoreProcessMessage') }}
                             </v-card-text>
                             <v-spacer></v-spacer>
-                            <v-btn @click="restoreDialog = false" icon variant="text" density="comfortable"
-                                style="margin-top:-8px;"
-                            >
+                            <v-btn @click="restoreDialog = false" icon variant="text" density="comfortable" style="margin-top: -8px">
                                 <Icons :icon="'close'" :size="16" />
                             </v-btn>
                         </v-row>
                         <v-row class="ma-0 pa-0">
                             <v-spacer></v-spacer>
-                            <v-btn color="error" rounded variant="flat" @click="restoreProcess">{{ $t('processDefinition.restore') }}</v-btn>
+                            <v-btn color="error" rounded variant="flat" @click="restoreProcess">{{
+                                $t('processDefinition.restore')
+                            }}</v-btn>
                         </v-row>
                     </v-card>
                 </v-dialog>
@@ -155,12 +149,25 @@
                         </v-card-text>
                         <v-card-actions class="px-4 pb-4">
                             <v-spacer />
-                            <v-btn variant="text" size="small"
-                                @click="showApprovalResetWarning = false; resetWarningResolver && resetWarningResolver(false)">
+                            <v-btn
+                                variant="text"
+                                size="small"
+                                @click="
+                                    showApprovalResetWarning = false;
+                                    resetWarningResolver && resetWarningResolver(false);
+                                "
+                            >
                                 {{ $t('approvalState.cancel') || '취소' }}
                             </v-btn>
-                            <v-btn color="warning" variant="flat" size="small"
-                                @click="showApprovalResetWarning = false; resetWarningResolver && resetWarningResolver(true)">
+                            <v-btn
+                                color="warning"
+                                variant="flat"
+                                size="small"
+                                @click="
+                                    showApprovalResetWarning = false;
+                                    resetWarningResolver && resetWarningResolver(true);
+                                "
+                            >
                                 {{ $t('approvalState.confirm') || '확인' }}
                             </v-btn>
                         </v-card-actions>
@@ -180,13 +187,7 @@
                             prepend-inner-icon="mdi-link"
                             @keyup.enter="fetchAiCopilotUrl"
                         />
-                        <v-btn
-                            size="small"
-                            color="primary"
-                            variant="tonal"
-                            :disabled="!aiCopilotUrl.trim()"
-                            @click="fetchAiCopilotUrl"
-                        >
+                        <v-btn size="small" color="primary" variant="tonal" :disabled="!aiCopilotUrl.trim()" @click="fetchAiCopilotUrl">
                             {{ $t('aiCopilot.fetch') }}
                         </v-btn>
                         <v-btn icon variant="text" size="x-small" @click="showUrlInput = false">
@@ -198,7 +199,9 @@
                 <div v-if="reviewMode" class="pdc-review-panel no-scrollbar">
                     <div class="pdc-review-panel__header">
                         <v-icon size="18" class="mr-1">mdi-clipboard-check-multiple-outline</v-icon>
-                        <span class="text-subtitle-2 font-weight-medium">{{ $t('reviewMode.governancePanel') || 'Governance Review' }}</span>
+                        <span class="text-subtitle-2 font-weight-medium">{{
+                            $t('reviewMode.governancePanel') || 'Governance Review'
+                        }}</span>
                         <v-spacer />
                         <v-btn icon variant="text" size="x-small" @click="reviewMode = false">
                             <v-icon size="16">mdi-close</v-icon>
@@ -216,11 +219,7 @@
                     </v-tabs>
                     <v-window v-model="reviewActiveTab" class="pdc-review-window">
                         <v-window-item value="approval">
-                            <ApprovalStatePanel
-                                v-if="fullPath"
-                                :procDefId="fullPath"
-                                @stateChanged="() => {}"
-                            />
+                            <ApprovalStatePanel v-if="fullPath" :procDefId="fullPath" @stateChanged="() => {}" />
                         </v-window-item>
                         <v-window-item value="comments">
                             <ElementCommentPanel
@@ -252,20 +251,37 @@
                         @addTeamMembers="addTeamMembers"
                     >
                         <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath"
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode"
+                            <ProcessDefinitionChatHeader
+                                v-model="projectName"
+                                :bpmn="bpmn"
+                                :fullPath="fullPath"
+                                :lock="lock"
+                                :editUser="editUser"
+                                :userInfo="userInfo"
+                                :isXmlMode="isXmlMode"
                                 :isEditable="isEditable"
                                 :chatMode="chatMode"
                                 :isDeleted="isDefinitionDeleted"
                                 :breadcrumbs="breadcrumbPath"
                                 :lastSavedTime="lastSavedTime"
                                 :approvalState="currentApprovalState"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog"
-                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @beforeRestore="beforeRestore" @savePDF="savePDF" @capturePng="capturePng"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess"
-                                @validateBpmn="runStandaloneValidation" @timeTravelChanged="onTimeTravelChanged" @toggleUrlInput="showUrlInput = !showUrlInput" />
+                                @handleFileChange="handleFileChange"
+                                @toggleVerMangerDialog="toggleVerMangerDialog"
+                                @executeProcess="executeProcess"
+                                @executeSimulate="executeSimulate"
+                                @toggleLock="toggleLock"
+                                @showXmlMode="showXmlMode"
+                                @beforeDelete="beforeDelete"
+                                @beforeRestore="beforeRestore"
+                                @savePDF="savePDF"
+                                @capturePng="capturePng"
+                                @createFormUrl="createFormUrl"
+                                @toggleMarketplaceDialog="toggleMarketplaceDialog"
+                                @duplicateProcess="duplicateProcess"
+                                @validateBpmn="runStandaloneValidation"
+                                @timeTravelChanged="onTimeTravelChanged"
+                                @toggleUrlInput="showUrlInput = !showUrlInput"
+                            />
                         </template>
                     </Chat>
                 </div>
@@ -291,42 +307,67 @@
                         @addTeamMembers="addTeamMembers"
                     >
                         <template v-slot:custom-title>
-                            <ProcessDefinitionChatHeader v-model="projectName" :bpmn="bpmn" :fullPath="fullPath"
-                                :lock="lock" :editUser="editUser" :userInfo="userInfo" :isXmlMode="isXmlMode"
+                            <ProcessDefinitionChatHeader
+                                v-model="projectName"
+                                :bpmn="bpmn"
+                                :fullPath="fullPath"
+                                :lock="lock"
+                                :editUser="editUser"
+                                :userInfo="userInfo"
+                                :isXmlMode="isXmlMode"
                                 :isEditable="isEditable"
                                 :chatMode="chatMode"
                                 :breadcrumbs="breadcrumbPath"
                                 :lastSavedTime="lastSavedTime"
                                 :approvalState="currentApprovalState"
-                                @handleFileChange="handleFileChange" @toggleVerMangerDialog="toggleVerMangerDialog"
-                                @executeProcess="executeProcess" @executeSimulate="executeSimulate"
-                                @toggleLock="toggleLock" @showXmlMode="showXmlMode" @beforeDelete="beforeDelete"
-                                @savePDF="savePDF" @capturePng="capturePng"
-                                @createFormUrl="createFormUrl" @toggleMarketplaceDialog="toggleMarketplaceDialog" @duplicateProcess="duplicateProcess"
-                                @validateBpmn="runStandaloneValidation" @timeTravelChanged="onTimeTravelChanged" @toggleUrlInput="showUrlInput = !showUrlInput" />
+                                @handleFileChange="handleFileChange"
+                                @toggleVerMangerDialog="toggleVerMangerDialog"
+                                @executeProcess="executeProcess"
+                                @executeSimulate="executeSimulate"
+                                @toggleLock="toggleLock"
+                                @showXmlMode="showXmlMode"
+                                @beforeDelete="beforeDelete"
+                                @savePDF="savePDF"
+                                @capturePng="capturePng"
+                                @createFormUrl="createFormUrl"
+                                @toggleMarketplaceDialog="toggleMarketplaceDialog"
+                                @duplicateProcess="duplicateProcess"
+                                @validateBpmn="runStandaloneValidation"
+                                @timeTravelChanged="onTimeTravelChanged"
+                                @toggleUrlInput="showUrlInput = !showUrlInput"
+                            />
                         </template>
                     </Chat>
                 </div>
             </template>
         </AppBaseCard>
-        <v-dialog v-model="executeDialog"
-            persistent
-            fullscreen
-        >
+        <v-dialog v-model="executeDialog" persistent fullscreen>
             <div v-if="!pal && mode === 'ProcessGPT'">
-                <process-gpt-execute :isSimulate="isSimulate" :processDefinition="processDefinition" :bpmn="bpmn" :definitionId="fullPath" @close="executeDialog = false"></process-gpt-execute>
+                <process-gpt-execute
+                    :isSimulate="isSimulate"
+                    :processDefinition="processDefinition"
+                    :bpmn="bpmn"
+                    :definitionId="fullPath"
+                    @close="executeDialog = false"
+                ></process-gpt-execute>
             </div>
             <div v-else>
-                <test-process v-if="isSimulate == 'true'" :executeDialog="executeDialog" :definitionId="fullPath" @close="executeDialog = false" />
+                <test-process
+                    v-if="isSimulate == 'true'"
+                    :executeDialog="executeDialog"
+                    :definitionId="fullPath"
+                    @close="executeDialog = false"
+                />
                 <dry-run-process v-else :is-simulate="isSimulate" :definitionId="fullPath" @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
 
-        <v-dialog v-model="marketplaceDialog" max-width="400" persistent
-            :fullscreen="isMobile"
-        >
-            <process-definition-market-place-dialog :processDefinition="processDefinition"
-                :bpmn="bpmn" @toggleMarketplaceDialog="toggleMarketplaceDialog" />
+        <v-dialog v-model="marketplaceDialog" max-width="400" persistent :fullscreen="isMobile">
+            <process-definition-market-place-dialog
+                :processDefinition="processDefinition"
+                :bpmn="bpmn"
+                @toggleMarketplaceDialog="toggleMarketplaceDialog"
+            />
         </v-dialog>
 
         <!-- BPMN Validation Dialog -->
@@ -345,10 +386,7 @@
                             :class="item.level === 'error' ? 'text-error' : 'text-warning'"
                         >
                             <template v-slot:prepend>
-                                <v-icon
-                                    :color="item.level === 'error' ? 'error' : 'warning'"
-                                    size="small"
-                                >
+                                <v-icon :color="item.level === 'error' ? 'error' : 'warning'" size="small">
                                     {{ item.level === 'error' ? 'mdi-close-circle' : 'mdi-alert' }}
                                 </v-icon>
                             </template>
@@ -364,18 +402,12 @@
                     <v-btn variant="text" @click="validationDialog = false">
                         {{ $t('common.cancel') }}
                     </v-btn>
-                    <v-btn
-                        color="warning"
-                        variant="flat"
-                        @click="saveIgnoringValidation"
-                        :disabled="hasValidationErrors"
-                    >
+                    <v-btn color="warning" variant="flat" @click="saveIgnoringValidation" :disabled="hasValidationErrors">
                         {{ $t('validation.saveAnyway') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
-
     </v-card>
 </template>
 <script>
@@ -384,8 +416,8 @@ import xml2js from 'xml2js';
 
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
-import ProcessDefinitionVersionManager from '@/components/ProcessDefinitionVersionManager.vue';
 import ProcessDefinitionChatHeader from '@/components/ProcessDefinitionChatHeader.vue';
+import VersionComparison from '@/views/process-hierarchy/VersionComparison.vue';
 import ProcessDefinitionConvertModule from '@/components/ProcessDefinitionConvertModule.vue';
 import ProcessExecuteDialog from './apps/definition-map/ProcessExecuteDialog.vue';
 import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
@@ -398,8 +430,8 @@ import * as jsondiff from 'jsondiffpatch';
 import ChatModule from './ChatModule.vue';
 import ProcessDefinitionModule from './ProcessDefinitionModule.vue';
 import ChatGenerator from './ai/ProcessDefinitionGenerator';
-import ConsultingGenerator from "@/components/ai/ProcessConsultingGenerator.js";
-import ConsultingMentoGenerator from "@/components/ai/ProcessConsultingMentoGenerator.js";
+import ConsultingGenerator from '@/components/ai/ProcessConsultingGenerator.js';
+import ConsultingMentoGenerator from '@/components/ai/ProcessConsultingMentoGenerator.js';
 import Chat from './ui/Chat.vue';
 
 import FormGenerator from './ai/FormDesignGenerator';
@@ -407,7 +439,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
-import TestProcess from "@/components/apps/definition-map/TestProcess.vue"
+import TestProcess from '@/components/apps/definition-map/TestProcess.vue';
 import ProcessDefinitionMarketPlaceDialog from '@/components/ProcessDefinitionMarketPlaceDialog.vue';
 import ApprovalStatePanel from '@/components/ui/ApprovalStatePanel.vue';
 import ElementCommentPanel from '@/components/ui/ElementCommentPanel.vue';
@@ -437,8 +469,8 @@ export default {
         // BpmnModelingCanvas,
         ChatGenerator,
         ProcessDefinitionVersionDialog,
-        ProcessDefinitionVersionManager,
         ProcessDefinitionChatHeader,
+        VersionComparison,
         ProcessDefinitionConvertModule,
         FormGenerator,
         ProcessExecuteDialog,
@@ -452,12 +484,12 @@ export default {
     props: {
         chatMode: {
             type: String,
-            default: ""
+            default: ''
         },
         definitionId: {
             type: String,
-            default: ""
-        },
+            default: ''
+        }
     },
     data: () => ({
         allUserList: [],
@@ -528,25 +560,25 @@ export default {
         resetWarningResolver: null,
         // Phase 4-5: AI Copilot URL input
         showUrlInput: false,
-        aiCopilotUrl: '',
+        aiCopilotUrl: ''
     }),
     async created() {
         $try(async () => {
             // Issue: init Methods가 종료되기전에, ChatGenerator를 생성하면서 this로 넘겨주는 Client 정보가 누락되는 현상 발생.
-            if(this.chatMode == 'consulting'){
-                this.isConsultingMode = true
+            if (this.chatMode == 'consulting') {
+                this.isConsultingMode = true;
                 this.isEditable = true;
-            } 
-            if(this.isConsultingMode){
+            }
+            if (this.isConsultingMode) {
                 this.userInfo = await this.backend.getUserInfo();
 
                 this.processDefinitionMap = await backend.getProcessDefinitionMap();
 
                 this.messages.push({
-                    "role": "system",
-                    "content": this.$t('ProcessDefinitionChat.greetingMessage', { name: this.userInfo.name }),                    
-                    "timeStamp": Date.now(),
-                })
+                    role: 'system',
+                    content: this.$t('ProcessDefinitionChat.greetingMessage', { name: this.userInfo.name }),
+                    timeStamp: Date.now()
+                });
 
                 // CrewAI 서비스 사용 여부에 따라 분기
                 if (this.useCrewAI) {
@@ -555,25 +587,24 @@ export default {
                 } else {
                     this.generator = new ConsultingGenerator(this, {
                         isStream: true,
-                        preferredLanguage: "Korean"
+                        preferredLanguage: 'Korean'
                     });
                 }
 
                 this.EventBus.on('messages-updated', () => {
                     this.chatRenderKey++;
                 });
-
             } else {
                 await this.init();
 
                 const isUseDataSource = localStorage.getItem('isUseDataSource');
-                if(isUseDataSource == 'true') {
+                if (isUseDataSource == 'true') {
                     this.$try({
                         context: this,
                         action: async () => {
                             const schema = await backend.extractDatasourceSchema();
                             this.datasourceSchema = Array.isArray(schema) ? schema : [];
-                            this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+                            this.datasourceURL = this.datasourceSchema.map((item) => item.endpoint);
                         },
                         errorMsg: '데이터소스 스키마 연동 실패'
                     });
@@ -595,7 +626,7 @@ export default {
                     ${messagesString}.`;
                     this.$store.commit('clearMessages');
                 }
-    
+
                 if (this.fullPath && this.fullPath != '') {
                     this.chatRoomId = this.fullPath;
                 }
@@ -633,21 +664,21 @@ export default {
             }
         },
         executeDialog(newVal) {
-            if(newVal == false){
-                if(this.isSimulate == 'true'){
-                    this.isSimulate = 'false'
-                    this.processDefinition.activities.forEach(activity => {
-                        activity.inputFormData = null
-                    })
-                    this.$emit('closeExecuteDialog')
+            if (newVal == false) {
+                if (this.isSimulate == 'true') {
+                    this.isSimulate = 'false';
+                    this.processDefinition.activities.forEach((activity) => {
+                        activity.inputFormData = null;
+                    });
+                    this.$emit('closeExecuteDialog');
                 }
             }
         }
     },
     computed: {
         fullPath() {
-            let path
-            if(this.$route.params.pathMatch){
+            let path;
+            if (this.$route.params.pathMatch) {
                 path = this.$route.params.pathMatch.join('/');
                 if (path.startsWith('/')) {
                     path = fullPath.substring(1);
@@ -667,10 +698,10 @@ export default {
         canEdit() {
             return this.isAdmin || this.hasWritePermission;
         },
-        mode(){
+        mode() {
             return window.$mode;
         },
-        pal(){
+        pal() {
             return window.$pal;
         },
         isMobile() {
@@ -681,8 +712,8 @@ export default {
             if (!this.processDefinitionMap || !this.processDefinitionMap.mega_proc_list || !this.fullPath) return [];
             const crumbs = [];
             for (const mega of this.processDefinitionMap.mega_proc_list) {
-                for (const major of (mega.major_proc_list || [])) {
-                    for (const sub of (major.sub_proc_list || [])) {
+                for (const major of mega.major_proc_list || []) {
+                    for (const sub of major.sub_proc_list || []) {
                         if (sub.id === this.fullPath || sub.name === this.projectName) {
                             if (major.domain) crumbs.push(major.domain);
                             crumbs.push(mega.name);
@@ -699,8 +730,8 @@ export default {
             return this.isConsultingMode ? 10 : 3;
         },
         hasValidationErrors() {
-            return this.validationResults.some(item => item.level === 'error');
-        },
+            return this.validationResults.some((item) => item.level === 'error');
+        }
     },
     async beforeRouteUpdate(to, from, next) {
         await this.handleRouteChangeConfirmation(to, from, next, 'update');
@@ -741,45 +772,46 @@ export default {
                 next();
             }
         },
-        async addTeamMembers(teamMemberData){
+        async addTeamMembers(teamMemberData) {
             const selectedTeamInfo = teamMemberData.selectedTeamInfo;
             const selectedTeamMembers = teamMemberData.selectedTeamMembers;
 
-            const team = this.organizationChart.children.find(team => team.data.id === selectedTeamInfo.endpoint);
+            const team = this.organizationChart.children.find((team) => team.data.id === selectedTeamInfo.endpoint);
             if (team) {
                 team.children = [];
-                team.children.push(...selectedTeamMembers.map(member => ({
-                    data: {
-                        email: member.email,
+                team.children.push(
+                    ...selectedTeamMembers.map((member) => ({
+                        data: {
+                            email: member.email,
+                            id: member.id,
+                            img: member.profile,
+                            name: member.username,
+                            pid: selectedTeamInfo.endpoint,
+                            role: member.role
+                        },
                         id: member.id,
-                        img: member.profile,
-                        name: member.username,
-                        pid: selectedTeamInfo.endpoint,
-                        role: member.role
-                    },
-                    id: member.id,
-                    name: member.username
-                })));
+                        name: member.username
+                    }))
+                );
             }
 
-            var putObj =  {
+            var putObj = {
                 key: 'organization',
                 value: {
-                    chart: this.organizationChart,
+                    chart: this.organizationChart
                 }
             };
             if (this.organizationChartId) {
                 putObj.uuid = this.organizationChartId;
             }
-            await this.putObject("configuration", putObj, { onConflict: 'key,tenant_id' });
-
+            await this.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
         },
-        async addTeam(newTeamData){
+        async addTeam(newTeamData) {
             try {
                 let teamInfo = newTeamData.teamInfo;
                 let index = newTeamData.index;
                 this.messages[index].adding = true;
-    
+
                 const newTeam = {
                     id: teamInfo.endpoint,
                     data: {
@@ -789,14 +821,14 @@ export default {
                         img: '/images/chat-icon.png'
                     },
                     children: []
-                }
-    
+                };
+
                 this.organizationChart.children.push(newTeam);
-    
-                var putObj =  {
+
+                var putObj = {
                     key: 'organization',
                     value: {
-                        chart: this.organizationChart,
+                        chart: this.organizationChart
                     }
                 };
                 if (this.organizationChartId) {
@@ -808,13 +840,13 @@ export default {
                 this.messages[index].adding = false;
 
                 this.allUserList = await backend.getUserList();
-            } catch(e) {
+            } catch (e) {
                 console.log(e);
                 this.messages[index].added = false;
                 this.messages[index].adding = false;
             }
         },
-        setProcessDefinitionPrompt(){
+        setProcessDefinitionPrompt() {
             if (this.processDefinitionMap) {
                 this.generator.setProcessDefinitionMap(this.processDefinitionMap);
             }
@@ -839,39 +871,39 @@ export default {
 
                 // 모든 노드의 등장 횟수를 카운트
                 const nodeCount = new Map();
-                
+
                 // source와 target에서의 등장 횟수를 각각 카운트
-                jsonData.sequences.forEach(seq => {
+                jsonData.sequences.forEach((seq) => {
                     nodeCount.set(seq.source, (nodeCount.get(seq.source) || 0) + 1);
                     nodeCount.set(seq.target, (nodeCount.get(seq.target) || 0) + 1);
                 });
 
                 // source에만 한 번 등장하는 노드를 찾음 (시작점)
                 let startNode = null;
-                jsonData.sequences.forEach(seq => {
+                jsonData.sequences.forEach((seq) => {
                     const sourceCount = nodeCount.get(seq.source) || 0;
-                    if (sourceCount === 1 && !jsonData.sequences.some(s => s.target === seq.source)) {
+                    if (sourceCount === 1 && !jsonData.sequences.some((s) => s.target === seq.source)) {
                         startNode = seq.source;
                     }
                 });
 
                 if (!startNode) {
-                    console.warn("시작점을 찾을 수 없습니다.");
+                    console.warn('시작점을 찾을 수 없습니다.');
                     return jsonData;
                 }
 
                 // 시작점부터 순서대로 노드를 따라가며 activities 순서 결정
                 const orderedNodes = [];
                 const visited = new Set();
-                
+
                 function traverseNodes(currentNode) {
                     if (visited.has(currentNode)) return;
                     visited.add(currentNode);
                     orderedNodes.push(currentNode);
 
                     // 현재 노드에서 시작하는 모든 시퀀스를 찾아서 순서대로 처리
-                    const nextSequences = jsonData.sequences.filter(seq => seq.source === currentNode);
-                    nextSequences.forEach(seq => {
+                    const nextSequences = jsonData.sequences.filter((seq) => seq.source === currentNode);
+                    nextSequences.forEach((seq) => {
                         traverseNodes(seq.target);
                     });
                 }
@@ -879,26 +911,25 @@ export default {
                 traverseNodes(startNode);
 
                 // activities 배열 재정렬
-                const activityMap = new Map(jsonData.activities.map(act => [act.id, act]));
+                const activityMap = new Map(jsonData.activities.map((act) => [act.id, act]));
                 const reorderedActivities = [];
 
                 // 순서가 결정된 노드들 중 activity인 것들만 순서대로 추가
-                orderedNodes.forEach(nodeId => {
+                orderedNodes.forEach((nodeId) => {
                     if (activityMap.has(nodeId)) {
                         reorderedActivities.push(activityMap.get(nodeId));
                     }
                 });
 
                 // 혹시 순서가 결정되지 않은 activity가 있다면 마지막에 추가
-                jsonData.activities.forEach(activity => {
-                    if (!reorderedActivities.some(act => act.id === activity.id)) {
+                jsonData.activities.forEach((activity) => {
+                    if (!reorderedActivities.some((act) => act.id === activity.id)) {
                         reorderedActivities.push(activity);
                     }
                 });
 
                 jsonData.activities = reorderedActivities;
                 return jsonData;
-                
             } catch (error) {
                 console.error('Error reordering activities:', error);
                 return jsonData;
@@ -937,7 +968,7 @@ export default {
                 if (result.success) {
                     // Navigate to the new process (without BPMN in URL)
                     this.$router.push({
-                        path: `/definitions/${result.newId}`,
+                        path: `/definitions/${result.newId}`
                     });
 
                     this.$toast.success(this.$t('ProcessMenu.duplicateSuccess') || '프로세스가 복사되었습니다.');
@@ -950,16 +981,16 @@ export default {
             }
         },
         executeProcess() {
-            this.isSimulate = 'false'
+            this.isSimulate = 'false';
             this.executeDialog = !this.executeDialog;
         },
         executeSimulate() {
-            console.log("simulate")
-            this.isSimulate = 'true'
+            console.log('simulate');
+            this.isSimulate = 'true';
             this.executeDialog = !this.executeDialog;
-            this.$emit('executeSimulate')
+            this.$emit('executeSimulate');
         },
-        beforeStartGenerate(){
+        beforeStartGenerate() {
             let chatMsgs = [];
             if (this.messages && this.messages.length > 0) {
                 this.messages.forEach((msg) => {
@@ -972,26 +1003,26 @@ export default {
                 });
             }
 
-            if(this.generator){
-                this.generator.model = "gpt-4o";
+            if (this.generator) {
+                this.generator.model = 'gpt-4o';
             }
             this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
 
-            if(!this.isConsultingMode){
+            if (!this.isConsultingMode) {
                 this.setProcessDefinitionPrompt();
             }
 
             this.startGenerate();
         },
-        async beforeSaveDefinition(info){
-            if(this.chatMode == 'consulting'){
-                await this.$emit("createdBPMN", this.processDefinition)
-                info.skipSaveProcMap = true
+        async beforeSaveDefinition(info) {
+            if (this.chatMode == 'consulting') {
+                await this.$emit('createdBPMN', this.processDefinition);
+                info.skipSaveProcMap = true;
             }
             if (this.useOptimize) {
                 this.optimizeDefinition(info.definition);
             }
-            if(window.$pal){
+            if (window.$pal) {
                 await this.beforeSavePALUserTasks(info);
             }
 
@@ -1034,7 +1065,6 @@ export default {
                 }
             }
 
-
             // Run BPMN validation before save
             const validationResults = await this.validateBpmn();
             if (validationResults.length > 0) {
@@ -1064,7 +1094,7 @@ export default {
                 const tasks = [];
 
                 // Analyze elements
-                elements.forEach(element => {
+                elements.forEach((element) => {
                     const type = element.type;
 
                     if (type === 'bpmn:StartEvent') {
@@ -1082,12 +1112,12 @@ export default {
 
                     // Track connected elements
                     if (element.incoming) {
-                        element.incoming.forEach(conn => {
+                        element.incoming.forEach((conn) => {
                             if (conn.source) connectedElements.add(conn.source.id);
                         });
                     }
                     if (element.outgoing) {
-                        element.outgoing.forEach(conn => {
+                        element.outgoing.forEach((conn) => {
                             if (conn.target) connectedElements.add(conn.target.id);
                         });
                     }
@@ -1112,7 +1142,7 @@ export default {
                 }
 
                 // Check for unconnected tasks
-                tasks.forEach(task => {
+                tasks.forEach((task) => {
                     const hasIncoming = task.incoming && task.incoming.length > 0;
                     const hasOutgoing = task.outgoing && task.outgoing.length > 0;
 
@@ -1141,7 +1171,7 @@ export default {
                 });
 
                 // Check gateways
-                gateways.forEach(gateway => {
+                gateways.forEach((gateway) => {
                     const outgoing = gateway.outgoing || [];
                     const incoming = gateway.incoming || [];
 
@@ -1163,7 +1193,6 @@ export default {
                         });
                     }
                 });
-
             } catch (error) {
                 console.error('Validation error:', error);
             }
@@ -1182,7 +1211,7 @@ export default {
             if (!this.aiCopilotUrl.trim()) return;
             this.messages.push({
                 role: 'assistant',
-                content: `🔗 **${this.aiCopilotUrl}**\n\n${this.$t('aiCopilot.urlScrapePlaceholder')}`,
+                content: `🔗 **${this.aiCopilotUrl}**\n\n${this.$t('aiCopilot.urlScrapePlaceholder')}`
             });
             this.aiCopilotUrl = '';
             this.showUrlInput = false;
@@ -1196,10 +1225,12 @@ export default {
                 try {
                     const elementRegistry = bpmnVue.bpmnViewer.get('elementRegistry');
                     const graphicsFactory = bpmnVue.bpmnViewer.get('graphicsFactory');
-                    elementRegistry.filter(el => el.type && el.type.includes('Task')).forEach(el => {
-                        const gfx = elementRegistry.getGraphics(el);
-                        if (gfx) graphicsFactory.update('shape', el, gfx);
-                    });
+                    elementRegistry
+                        .filter((el) => el.type && el.type.includes('Task'))
+                        .forEach((el) => {
+                            const gfx = elementRegistry.getGraphics(el);
+                            if (gfx) graphicsFactory.update('shape', el, gfx);
+                        });
                 } catch (e) {
                     console.warn('Time-travel re-render failed:', e);
                 }
@@ -1209,7 +1240,7 @@ export default {
         async runStandaloneValidation() {
             const results = await this.validateBpmn();
             // Add elementId to results for focusElement
-            this.consoleValidationItems = results.map(r => ({
+            this.consoleValidationItems = results.map((r) => ({
                 ...r,
                 elementId: r.elementId || null
             }));
@@ -1323,7 +1354,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    const path = me.fullPath + ".bpmn";
+                    const path = me.fullPath + '.bpmn';
                     await backend.deleteDefinition(path);
                     me.deleteDialog = false;
                     // me.isDeleted = true;
@@ -1339,7 +1370,7 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    const path = me.fullPath + ".bpmn";
+                    const path = me.fullPath + '.bpmn';
                     await backend.restoreDefinition(path);
                     me.restoreDialog = false;
                     me.EventBus.emit('definitions-updated');
@@ -1348,22 +1379,41 @@ export default {
                 }
             });
         },
-        handleFileChange(event) {
+        async handleExcelFileUpload(file) {
+            const me = this;
+            try {
+                const { excelFileToBpmnXml } = await import('@/utils/excelToBpmn.js');
+                const processName = (file.name || '').replace(/\.[^.]+$/, '').trim() || '엑셀 프로세스';
+                const bpmnXml = await excelFileToBpmnXml(file, processName);
+                me.loadBPMN(bpmnXml);
+                me.isAIGenerated = true;
+                me.definitionChangeCount++;
+            } catch (err) {
+                console.error('엑셀 → BPMN 변환 실패:', err);
+                alert(err?.message || '엑셀 파일 변환 중 오류가 발생했습니다. 엑셀 형식(5행 헤더, 6행부터 데이터)을 확인해 주세요.');
+            }
+        },
+        handleFileChange(event, options) {
             let me = this;
             const file = event.target.files[0];
             if (!file) {
                 return;
             }
 
+            if (options?.source === 'excel') {
+                me.handleExcelFileUpload(file);
+                return;
+            }
+
             // Phase 4-5: PDF/Word file handling (UI placeholder)
             const lowerName = file.name.toLowerCase();
-            if (lowerName.endsWith('.pdf') || lowerName.endsWith('.docx') || lowerName.endsWith('.doc')) {
+            if (lowerName.endsWith('.pdf') || lowerName.endsWith('.docx') || lowerName.endsWith('.doc') || lowerName.endsWith('.hwpx')) {
                 // Show placeholder message for unsupported formats
                 this.messages.push({
                     role: 'assistant',
-                    content: `📎 **${file.name}**\n\n${this.$t('aiCopilot.fileUploadPlaceholder')}`,
+                    content: `📎 **${file.name}**\n\n${this.$t('aiCopilot.fileUploadPlaceholder')}`
                 });
-                event.target.value = ''; // reset input
+                event.target.value = '';
                 return;
             }
 
@@ -1374,19 +1424,18 @@ export default {
                 let jsonContent = content;
                 let convertedBpmn = jsonContent;
 
-                if(file.name.indexOf('.jsonold') != -1) {
+                if (file.name.indexOf('.jsonold') != -1) {
                     jsonContent = me.convertOldJson(JSON.parse(content));
                     convertedBpmn = me.createBpmnXml(jsonContent);
                 }
-                if(file.name.indexOf('.csv') != -1 || file.name.indexOf('.xlsx') != -1) {
+                if (file.name.indexOf('.csv') != -1) {
                     jsonContent = me.convertCSVToJSON(content);
-                    console.log("convertCSVToJSON", jsonContent);
-                    if(jsonContent) {
+                    if (jsonContent) {
                         convertedBpmn = me.createBpmnXml(jsonContent);
                     }
                 }
 
-                if(convertedBpmn) {
+                if (convertedBpmn) {
                     me.loadBPMN(convertedBpmn);
                 } else {
                     alert('BPMN 파일 변환 중 오류가 발생했습니다.');
@@ -1473,9 +1522,8 @@ export default {
             });
         },
         toggleVerMangerDialog(open) {
-            // Version Manager Dialog
+            // 버전 비교 다이얼로그 (VersionComparison)
             if (open) {
-                // 다이얼로그를 열 때는 먼저 false로 설정한 후 true로 설정하여 watch가 트리거되도록 함
                 this.verMangerDialog = false;
                 this.$nextTick(() => {
                     this.verMangerDialog = true;
@@ -1484,9 +1532,19 @@ export default {
                 this.verMangerDialog = false;
             }
         },
+        async onVersionRollbackDone() {
+            // 되돌리기 성공 시 현재 화면 BPMN 갱신
+            if (!this.fullPath) return;
+            try {
+                const bpmn = await backend.getRawDefinition(this.fullPath, { type: 'bpmn' });
+                if (bpmn) this.loadBPMN(bpmn);
+            } catch (e) {
+                console.warn('Failed to reload BPMN after rollback:', e);
+            }
+        },
         async changeXML(info) {
             var me = this;
-            if(me.mode == 'ProcessGPT') {
+            if (me.mode == 'ProcessGPT') {
                 if (!info) return;
                 if (!info.id) return;
                 if (!info.xml) return;
@@ -1500,9 +1558,8 @@ export default {
                     definition: me.processDefinition
                 });
             } else {
-                
             }
-            
+
             me.bpmn = info.xml;
             me.definitionChangeCount++;
             me.toggleVerMangerDialog(false);
@@ -1549,7 +1606,7 @@ export default {
         },
         async loadData(path) {
             const me = this;
-            
+
             try {
                 const externalSystems = await backend.getSystemList();
                 if (externalSystems) {
@@ -1558,16 +1615,17 @@ export default {
                         me.externalSystems.push(system);
                     });
                 }
-            me.isDeleted = false;
-            let fullPath = me.fullPath;
-            let lastPath = me.$route.params.pathMatch ? me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1] : null;
+                me.isDeleted = false;
+                let fullPath = me.fullPath;
+                let lastPath = me.$route.params.pathMatch ? me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1] : null;
                 if (fullPath && fullPath != 'definitions-tree' && lastPath != 'chat') {
                     let bpmn = await backend.getRawDefinition(fullPath, { type: 'bpmn' });
-                    me.bpmn = bpmn;             
+                    me.bpmn = bpmn;
                     me.definitionChangeCount++;
-                    let isDeleted = await backend.getRawDefinition(fullPath, { type: 'deleted' }); 
+                    let isDeleted = await backend.getRawDefinition(fullPath, { type: 'deleted' });
                     me.isDefinitionDeleted = isDeleted;
-                    if (me.useLock) { // ProcessGPT 모드
+                    if (me.useLock) {
+                        // ProcessGPT 모드
                         const value = await backend.getRawDefinition(fullPath);
                         if (value) {
                             me.processDefinition = value.definition;
@@ -1601,7 +1659,6 @@ export default {
                         // uEngine 모드
                         me.isEditable = true;
                     }
-
                 } else if (lastPath == 'chat') {
                     // me.processDefinition = null;
                     me.projectName = null;
@@ -1655,9 +1712,9 @@ export default {
                 alert(e);
             }
         },
-        async afterLoadBpmn(){
-            if(!this.pal) return;
-            if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
+        async afterLoadBpmn() {
+            if (!this.pal) return;
+            if (this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
                 Object.keys(this.processDefinition.activities).forEach(async (actId) => {
                     const activity = this.processDefinition.activities[actId];
 
@@ -1688,9 +1745,9 @@ export default {
             this.setOrientation();
             let fullPath = me.fullPath;
             let lastPath = me.$route.params.pathMatch ? me.$route.params.pathMatch[me.$route.params.pathMatch.length - 1] : null;
-            if(fullPath == 'chat' && lastPath == 'chat') return;
+            if (fullPath == 'chat' && lastPath == 'chat') return;
             definitions = modeler.getDefinitions();
-            if(definitions) {
+            if (definitions) {
                 if (!me.useLock) {
                     me.processDefinition = await me.convertXMLToJSON(me.bpmn);
                     me.processDefinition.processDefinitionId = fullPath;
@@ -1706,41 +1763,41 @@ export default {
             const canvas = modeler.get('canvas');
             const container = canvas.getContainer();
             const elementRegistry = modeler.get('elementRegistry');
-            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             let isMobile = false;
-            
+
             const { width, height } = container.getBoundingClientRect();
-            if(width - 100 > height) {
+            if (width - 100 > height) {
                 isMobile = false;
             } else {
                 isMobile = true;
             }
 
-            participant.forEach(element => {
+            participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
-                if(!isMobile && !horizontal) {
-                    if(element.width < element.height) {
+                if (!isMobile && !horizontal) {
+                    if (element.width < element.height) {
                         me.isHorizontal = true;
                     }
-                } else if(isMobile && horizontal) {
-                    if(element.width > element.height) {
+                } else if (isMobile && horizontal) {
+                    if (element.width > element.height) {
                         me.isHorizontal = false;
                     }
                 }
             });
         },
         beforeSendMessage(newMessage) {
-            this.waitForCustomer = false
+            this.waitForCustomer = false;
             // 새로운 메시지를 보낼 때 재시도가 아니라면 retryCount 초기화
-            if(!this.isRetry) {
+            if (!this.isRetry) {
                 this.retryCount = 0;
             }
-            if(!this.isConsultingMode){
+            if (!this.isConsultingMode) {
                 this.generator = new ChatGenerator(this, {
                     isStream: true,
                     preferredLanguage: 'Korean'
                 });
-                this.generator.client.genType = 'proc_def'
+                this.generator.client.genType = 'proc_def';
                 this.setProcessDefinitionPrompt();
                 this.sendMessage(newMessage);
             } else {
@@ -1761,18 +1818,18 @@ export default {
                 if (typeof response === 'string') {
                     try {
                         jsonProcess = JSON.parse(response);
-                    } catch(e){
+                    } catch (e) {
                         try {
                             jsonProcess = partialParse(response);
-                            if(!jsonProcess || Object.keys(jsonProcess).length === 0){
+                            if (!jsonProcess || Object.keys(jsonProcess).length === 0) {
                                 jsonProcess = partialParse(response + '"');
                             }
-                        } catch(e){
+                        } catch (e) {
                             jsonProcess = this.extractJSON(response);
                             try {
                                 jsonProcess = JSON.parse(jsonProcess);
-                            } catch(e){
-                                jsonProcess = partialParse(jsonProcess)
+                            } catch (e) {
+                                jsonProcess = partialParse(jsonProcess);
                             }
                         }
                     }
@@ -1784,30 +1841,30 @@ export default {
                 if (jsonProcess) {
                     // let unknown = partialParse(jsonProcess);
                     let unknown = jsonProcess;
-                    if(this.isConsultingMode){
-                        if(unknown){
-                            this.messages[this.messages.length - 1].disableMsg = true
-                            if(unknown.validity && unknown.validity == "Suitable"){
-                                this.messages[this.messages.length - 2].disableMsg = false
+                    if (this.isConsultingMode) {
+                        if (unknown) {
+                            this.messages[this.messages.length - 1].disableMsg = true;
+                            if (unknown.validity && unknown.validity == 'Suitable') {
+                                this.messages[this.messages.length - 2].disableMsg = false;
                             }
-                            if(unknown.answerType && unknown.answerType == 'consulting'){
-                                this.messages[this.messages.length - 1].disableMsg = false
+                            if (unknown.answerType && unknown.answerType == 'consulting') {
+                                this.messages[this.messages.length - 1].disableMsg = false;
                             }
                         }
                     } else {
                         if (unknown.processDefinitionId) {
                             this.processDefinition = unknown;
-                            if(!this.processDefinition) this.processDefinition = {};
+                            if (!this.processDefinition) this.processDefinition = {};
                             // this.bpmn = this.createBpmnXml(this.processDefinition);
                             this.bpmn = this.createBpmnXml(unknown, this.isHorizontal);
                             this.processDefinition['processDefinitionId'] = unknown.processDefinitionId;
                             this.processDefinition['processDefinitionName'] = unknown.processDefinitionName;
-                            this.projectName = unknown.processDefinitionName
+                            this.projectName = unknown.processDefinitionName;
                             this.oldProcDefId = unknown.processDefinitionId;
                             this.definitionChangeCount++;
                         }
                     }
-                } 
+                }
             } catch (error) {
                 console.log(jsonProcess);
                 console.log(error);
@@ -1815,40 +1872,40 @@ export default {
         },
 
         parseJsonProcess(response) {
-            if(response != ""){
-                if(this.retryCount < this.maxRetryCount) {
+            if (response != '') {
+                if (this.retryCount < this.maxRetryCount) {
                     this.retryCount++;
                     this.isRetry = true;
                     this.messages.push({
-                        "role": "system",
-                        "content": `프로세스 생성 시도중 오류 발생하여 다시 시도합니다. (${this.retryCount}/${this.maxRetryCount})`,
-                        "timeStamp": Date.now()
-                    })
+                        role: 'system',
+                        content: `프로세스 생성 시도중 오류 발생하여 다시 시도합니다. (${this.retryCount}/${this.maxRetryCount})`,
+                        timeStamp: Date.now()
+                    });
                     const newMessage = {
-                        "images": [],
-                        "text": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다. 올바른 json 형식으로 다시 생성해주세요.",
-                        "mentionedUsers": []
-                    }
-                    this.beforeSendMessage(newMessage)
+                        images: [],
+                        text: '프로세스 생성 시도중 오류 발생하여 다시 시도합니다. 올바른 json 형식으로 다시 생성해주세요.',
+                        mentionedUsers: []
+                    };
+                    this.beforeSendMessage(newMessage);
                 } else {
                     this.isRetry = false;
                     this.retryCount = 0;
                     this.messages.push({
-                        "role": "system",
-                        "content": `프로세스 생성 시도중 오류 발생하였습니다. 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 잠시 후 다시 시도해주세요.`,
-                        "timeStamp": Date.now()
-                    })
+                        role: 'system',
+                        content: `프로세스 생성 시도중 오류 발생하였습니다. 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 잠시 후 다시 시도해주세요.`,
+                        timeStamp: Date.now()
+                    });
                 }
             } else {
                 return new Promise((resolve, reject) => {
                     try {
                         const jsonProcess = JSON.parse(response);
                         resolve(jsonProcess);
-                    } catch(error) {
+                    } catch (error) {
                         console.log(error);
                         const maxRetries = 3;
                         let retryCount = 0;
-    
+
                         const retry = async () => {
                             if (retryCount < maxRetries) {
                                 console.log('retrying parse json process');
@@ -1858,163 +1915,163 @@ export default {
                                 reject(error);
                             }
                         };
-    
+
                         retry();
                     }
-                })
+                });
             }
         },
         async convertOldFormatToElements(oldObj) {
-            oldObj.elements = []
+            oldObj.elements = [];
             // Type mapping to convert from old activity types to new element types
             const typeMapping = {
-                'startEvent': 'StartEvent',
-                'endEvent': 'EndEvent',
-                'userTask': 'UserActivity',
-                'serviceTask': 'ServiceActivity',
-                'scriptTask': 'ScriptActivity',
-                'sendTask': 'EmailActivity',
-                'exclusiveGateway': 'ExclusiveGateway',
-                'parallelGateway': 'ParallelGateway',
-                'task': 'Activity'
+                startEvent: 'StartEvent',
+                endEvent: 'EndEvent',
+                userTask: 'UserActivity',
+                serviceTask: 'ServiceActivity',
+                scriptTask: 'ScriptActivity',
+                sendTask: 'EmailActivity',
+                exclusiveGateway: 'ExclusiveGateway',
+                parallelGateway: 'ParallelGateway',
+                task: 'Activity'
             };
-            
+
             // Convert old activities to elements format
             if (oldObj.activities && Array.isArray(oldObj.activities)) {
-                oldObj.activities.forEach(activity => {
-                const elementType = activity.type === 'userTask' ? 'Activity' : 'Activity';
-                const type = typeMapping[activity.type] || 'Activity';
-                
-                // Parse properties if they exist
-                let checkpoints = [];
-                let duration = activity.duration || "5";
-                try {
-                    if (activity.properties) {
-                    const props = JSON.parse(activity.properties);
-                    if (props.checkpoints) {
-                        checkpoints = props.checkpoints;
+                oldObj.activities.forEach((activity) => {
+                    const elementType = activity.type === 'userTask' ? 'Activity' : 'Activity';
+                    const type = typeMapping[activity.type] || 'Activity';
+
+                    // Parse properties if they exist
+                    let checkpoints = [];
+                    let duration = activity.duration || '5';
+                    try {
+                        if (activity.properties) {
+                            const props = JSON.parse(activity.properties);
+                            if (props.checkpoints) {
+                                checkpoints = props.checkpoints;
+                            }
+                            if (props.duration) {
+                                duration = props.duration;
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error parsing properties:', e);
                     }
-                    if (props.duration) {
-                        duration = props.duration;
-                    }
-                    }
-                } catch (e) {
-                    console.error("Error parsing properties:", e);
-                }
-                
-                const newElement = {
-                    elementType: elementType,
-                    id: activity.id,
-                    name: activity.name,
-                    type: type,
-                    source: "", // This will be filled from sequences
-                    description: activity.description || "",
-                    instruction: activity.instruction || "",
-                    role: activity.role || "",
-                    inputData: activity.inputData || [],
-                    outputData: activity.outputData || [],
-                    checkpoints: checkpoints,
-                    duration: duration
-                };
-                
-                oldObj.elements.push(newElement);
+
+                    const newElement = {
+                        elementType: elementType,
+                        id: activity.id,
+                        name: activity.name,
+                        type: type,
+                        source: '', // This will be filled from sequences
+                        description: activity.description || '',
+                        instruction: activity.instruction || '',
+                        role: activity.role || '',
+                        inputData: activity.inputData || [],
+                        outputData: activity.outputData || [],
+                        checkpoints: checkpoints,
+                        duration: duration
+                    };
+
+                    oldObj.elements.push(newElement);
                 });
             }
-            
+
             // Convert old events to elements format
             if (oldObj.events && Array.isArray(oldObj.events)) {
-                oldObj.events.forEach(event => {
-                const elementType = "Event";
-                const type = typeMapping[event.type] || event.type;
-                
-                const newElement = {
-                    elementType: elementType,
-                    id: event.id,
-                    name: event.name,
-                    role: event.role || "",
-                    source: "",
-                    type: type,
-                    description: event.description || "",
-                    trigger: event.type === "startEvent" ? "프로세스 시작" : "프로세스 종료"
-                };
-                
-                oldObj.elements.push(newElement);
+                oldObj.events.forEach((event) => {
+                    const elementType = 'Event';
+                    const type = typeMapping[event.type] || event.type;
+
+                    const newElement = {
+                        elementType: elementType,
+                        id: event.id,
+                        name: event.name,
+                        role: event.role || '',
+                        source: '',
+                        type: type,
+                        description: event.description || '',
+                        trigger: event.type === 'startEvent' ? '프로세스 시작' : '프로세스 종료'
+                    };
+
+                    oldObj.elements.push(newElement);
                 });
             }
-            
+
             // Convert old gateways to elements format
             if (oldObj.gateways && Array.isArray(oldObj.gateways)) {
-                oldObj.gateways.forEach(gateway => {
-                const elementType = "Gateway";
-                const type = typeMapping[gateway.type] || "ExclusiveGateway";
-                
-                const newElement = {
-                    elementType: elementType,
-                    id: gateway.id,
-                    name: gateway.name || "Gateway",
-                    role: gateway.role || "",
-                    source: "",
-                    type: type,
-                    description: gateway.description || "분기점"
-                };
-                
-                oldObj.elements.push(newElement);
+                oldObj.gateways.forEach((gateway) => {
+                    const elementType = 'Gateway';
+                    const type = typeMapping[gateway.type] || 'ExclusiveGateway';
+
+                    const newElement = {
+                        elementType: elementType,
+                        id: gateway.id,
+                        name: gateway.name || 'Gateway',
+                        role: gateway.role || '',
+                        source: '',
+                        type: type,
+                        description: gateway.description || '분기점'
+                    };
+
+                    oldObj.elements.push(newElement);
                 });
             }
-            
+
             // Convert old sequences to elements format and set source properties
             if (oldObj.sequences && Array.isArray(oldObj.sequences)) {
                 // First, create a mapping of target IDs to source IDs
                 const targetToSourceMap = {};
-                oldObj.sequences.forEach(sequence => {
-                if (!targetToSourceMap[sequence.target]) {
-                    targetToSourceMap[sequence.target] = [];
-                }
-                targetToSourceMap[sequence.target].push(sequence.source);
+                oldObj.sequences.forEach((sequence) => {
+                    if (!targetToSourceMap[sequence.target]) {
+                        targetToSourceMap[sequence.target] = [];
+                    }
+                    targetToSourceMap[sequence.target].push(sequence.source);
                 });
-                
+
                 // Update source properties in existing elements
-                oldObj.elements.forEach(element => {
-                if (targetToSourceMap[element.id] && targetToSourceMap[element.id].length > 0) {
-                    element.source = targetToSourceMap[element.id][0]; // Take the first source
-                }
+                oldObj.elements.forEach((element) => {
+                    if (targetToSourceMap[element.id] && targetToSourceMap[element.id].length > 0) {
+                        element.source = targetToSourceMap[element.id][0]; // Take the first source
+                    }
                 });
-                
+
                 // Now convert sequences to elements
-                oldObj.sequences.forEach(sequence => {
-                let condition = null;
-                try {
-                    if (sequence.condition && sequence.condition !== "") {
-                    // Try to parse condition if it exists
-                    if (typeof sequence.condition === 'string' && sequence.condition.startsWith('{')) {
-                        const condObj = JSON.parse(sequence.condition);
-                        condition = {
-                        key: condObj.key || "",
-                        condition: condObj.operator || "==",
-                        value: condObj.value || ""
-                        };
+                oldObj.sequences.forEach((sequence) => {
+                    let condition = null;
+                    try {
+                        if (sequence.condition && sequence.condition !== '') {
+                            // Try to parse condition if it exists
+                            if (typeof sequence.condition === 'string' && sequence.condition.startsWith('{')) {
+                                const condObj = JSON.parse(sequence.condition);
+                                condition = {
+                                    key: condObj.key || '',
+                                    condition: condObj.operator || '==',
+                                    value: condObj.value || ''
+                                };
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error parsing condition:', e);
                     }
+
+                    const newElement = {
+                        elementType: 'Sequence',
+                        id: sequence.id,
+                        name: sequence.id.replace('SequenceFlow_', '').replace(/_/g, ' '),
+                        source: sequence.source,
+                        target: sequence.target
+                    };
+
+                    if (condition) {
+                        newElement.condition = condition;
                     }
-                } catch (e) {
-                    console.error("Error parsing condition:", e);
-                }
-                
-                const newElement = {
-                    elementType: "Sequence",
-                    id: sequence.id,
-                    name: sequence.id.replace("SequenceFlow_", "").replace(/_/g, " "),
-                    source: sequence.source,
-                    target: sequence.target
-                };
-                
-                if (condition) {
-                    newElement.condition = condition;
-                }
-                
-                oldObj.elements.push(newElement);
+
+                    oldObj.elements.push(newElement);
                 });
             }
-            
+
             return oldObj;
         },
         async afterGenerationFinished(response) {
@@ -2022,43 +2079,43 @@ export default {
             if (typeof response === 'string') {
                 try {
                     jsonProcess = await this.parseJsonProcess(response);
-                } catch(e){
+                } catch (e) {
                     try {
                         jsonProcess = await this.parseJsonProcess(response);
-                        if(jsonProcess && Object.keys(jsonProcess).length !== 0){
+                        if (jsonProcess && Object.keys(jsonProcess).length !== 0) {
                             jsonProcess = await this.parseJsonProcess(response + '"');
                         }
-                    } catch(e){
+                    } catch (e) {
                         jsonProcess = this.extractJSON(response);
                         try {
                             jsonProcess = JSON.parse(jsonProcess);
-                        } catch(e){
+                        } catch (e) {
                             try {
-                                jsonProcess = partialParse(jsonProcess)
-                            } catch(e){
+                                jsonProcess = partialParse(jsonProcess);
+                            } catch (e) {
                                 // 재시도
-                                if(this.retryCount < this.maxRetryCount) {
+                                if (this.retryCount < this.maxRetryCount) {
                                     this.retryCount++;
                                     this.isRetry = true;
                                     this.messages.push({
-                                        "role": "system",
-                                        "content": `프로세스 생성 시도중 오류 발생하여 다시 시도합니다. (${this.retryCount}/${this.maxRetryCount})`,
-                                        "timeStamp": Date.now()
-                                    })
+                                        role: 'system',
+                                        content: `프로세스 생성 시도중 오류 발생하여 다시 시도합니다. (${this.retryCount}/${this.maxRetryCount})`,
+                                        timeStamp: Date.now()
+                                    });
                                     const newMessage = {
-                                        "images": [],
-                                        "text": "프로세스 생성 시도중 오류 발생하여 다시 시도합니다. 올바른 json 형식으로 다시 생성해주세요.",
-                                        "mentionedUsers": []
-                                    }
-                                    this.beforeSendMessage(newMessage)
+                                        images: [],
+                                        text: '프로세스 생성 시도중 오류 발생하여 다시 시도합니다. 올바른 json 형식으로 다시 생성해주세요.',
+                                        mentionedUsers: []
+                                    };
+                                    this.beforeSendMessage(newMessage);
                                 } else {
                                     this.isRetry = false;
                                     this.retryCount = 0;
                                     this.messages.push({
-                                        "role": "system",
-                                        "content": `프로세스 생성 시도중 오류 발생하였습니다. 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 잠시 후 다시 시도해주세요.`,
-                                        "timeStamp": Date.now()
-                                    })
+                                        role: 'system',
+                                        content: `프로세스 생성 시도중 오류 발생하였습니다. 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 잠시 후 다시 시도해주세요.`,
+                                        timeStamp: Date.now()
+                                    });
                                 }
                             }
                         }
@@ -2071,23 +2128,23 @@ export default {
             if (jsonProcess) {
                 let unknown = jsonProcess;
 
-                if(this.isConsultingMode){
-                    let content
-                    if(unknown){
-                        content = unknown.content
-                        this.messages[this.messages.length - 1].content = content
+                if (this.isConsultingMode) {
+                    let content;
+                    if (unknown) {
+                        content = unknown.content;
+                        this.messages[this.messages.length - 1].content = content;
 
-                        if(unknown.validity && unknown.validity == "Suitable"){
+                        if (unknown.validity && unknown.validity == 'Suitable') {
                             // 적절한 답변이 생성되었으므로 재시도 카운트 초기화
                             this.retryCount = 0;
                             this.isRetry = false;
                             this.generator = new ConsultingGenerator(this, {
                                 isStream: true,
-                                preferredLanguage: "Korean"
+                                preferredLanguage: 'Korean'
                             });
-                        } else if(unknown.validity && unknown.validity == "Unsuitable"){
+                        } else if (unknown.validity && unknown.validity == 'Unsuitable') {
                             // 부적절한 답변이므로 재시도 카운트 증가
-                            if(this.retryCount < this.maxRetryCount) {
+                            if (this.retryCount < this.maxRetryCount) {
                                 this.retryCount++;
                                 console.log(`컨설팅 답변 재생성 중... (${this.retryCount}/${this.maxRetryCount})`);
                             } else {
@@ -2095,18 +2152,18 @@ export default {
                                 this.retryCount = 0;
                                 this.isRetry = false;
                                 this.messages.push({
-                                    "role": "system",
-                                    "content": `적절한 답변 생성을 위한 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 다른 질문을 해주시거나 잠시 후 다시 시도해주세요.`,
-                                    "timeStamp": Date.now()
+                                    role: 'system',
+                                    content: `적절한 답변 생성을 위한 최대 재시도 횟수(${this.maxRetryCount}회)를 초과했습니다. 다른 질문을 해주시거나 잠시 후 다시 시도해주세요.`,
+                                    timeStamp: Date.now()
                                 });
                                 return; // 재시도 중단
                             }
                             this.generator = new ConsultingGenerator(this, {
                                 isStream: true,
-                                preferredLanguage: "Korean"
+                                preferredLanguage: 'Korean'
                             });
                         } else {
-                            if(unknown.answerType && unknown.answerType == 'generateProcessDef'){
+                            if (unknown.answerType && unknown.answerType == 'generateProcessDef') {
                                 // 프로세스 생성 모드로 전환 시 재시도 카운트 초기화
                                 this.retryCount = 0;
                                 this.isRetry = false;
@@ -2114,27 +2171,29 @@ export default {
                                     isStream: true,
                                     preferredLanguage: 'Korean'
                                 });
-                                this.isConsultingMode = false
-                                this.waitForCustomer = true
-                                this.$emit("openProcessPreview")
-                            } 
+                                this.isConsultingMode = false;
+                                this.waitForCustomer = true;
+                                this.$emit('openProcessPreview');
+                            }
                         }
-                        if(!unknown.answerType || unknown.answerType != 'consulting'){
-                            this.beforeStartGenerate()
+                        if (!unknown.answerType || unknown.answerType != 'consulting') {
+                            this.beforeStartGenerate();
                         }
                     }
-                } 
+                }
 
-                if(!this.isConsultingMode) {
-                    if(unknown.answerType && unknown.answerType == 'askProcessDef'){
-                        this.messages[this.messages.length - 1].content = unknown.content
+                if (!this.isConsultingMode) {
+                    if (unknown.answerType && unknown.answerType == 'askProcessDef') {
+                        this.messages[this.messages.length - 1].content = unknown.content;
                         isAskProcessDef = true;
                     } else {
-                        if(unknown.processDefinitionName){
-                            this.projectName = unknown.processDefinitionName
+                        if (unknown.processDefinitionName) {
+                            this.projectName = unknown.processDefinitionName;
                         }
                         if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
-                            if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
+                            if (
+                                !this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)
+                            ) {
                                 this.processDefinitionMap.mega_proc_list.push({
                                     name: unknown.megaProcessId,
                                     id: unknown.megaProcessId,
@@ -2155,7 +2214,9 @@ export default {
                             if (unknown.majorProcessId) {
                                 this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
                                     if (megaProcess.name == unknown.megaProcessId) {
-                                        if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == unknown.majorProcessId)) {
+                                        if (
+                                            megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == unknown.majorProcessId)
+                                        ) {
                                             const idx = megaProcess.major_proc_list.findIndex(
                                                 (majorProcess) => majorProcess.name == unknown.majorProcessId
                                             );
@@ -2188,18 +2249,25 @@ export default {
                         const store = useBpmnStore();
                         const modeler = store.getModeler;
                         if (unknown.modifications) {
-                            if(!this.processDefinition['elements']) this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
+                            if (!this.processDefinition['elements'])
+                                this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                             // unknown.modifications.forEach(async (modification) => {
                             for (let modification of unknown.modifications) {
-                                let targetJsonPath = modification.targetJsonPath.includes('[') ? modification.targetJsonPath.split('[')[0].replace('$.', ''):modification.targetJsonPath.replace('$.', '')
+                                let targetJsonPath = modification.targetJsonPath.includes('[')
+                                    ? modification.targetJsonPath.split('[')[0].replace('$.', '')
+                                    : modification.targetJsonPath.replace('$.', '');
                                 if (modification.action == 'replace') {
-                                    if(this.processDefinition[targetJsonPath]) {
+                                    if (this.processDefinition[targetJsonPath]) {
                                         this.jsonPathReplace(this.processDefinition, modification.targetJsonPath, modification.value);
                                     } else {
-                                        this.jsonPathReplace(this.processDefinition, modification.targetJsonPath.replace(targetJsonPath, 'elements'), modification.value);
+                                        this.jsonPathReplace(
+                                            this.processDefinition,
+                                            modification.targetJsonPath.replace(targetJsonPath, 'elements'),
+                                            modification.value
+                                        );
                                     }
                                 } else if (modification.action == 'add') {
-                                    if(this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
+                                    if (this.processDefinition[modification.targetJsonPath.replace('$.', '')]) {
                                         this.processDefinition[modification.targetJsonPath.replace('$.', '')].push(modification.value);
                                     } else {
                                         this.processDefinition['elements'].push(modification.value);
@@ -2213,35 +2281,35 @@ export default {
                                 } else if (modification.action == 'delete') {
                                     const elementToDelete = modification.value;
                                     const elementId = elementToDelete.id;
-                                    
+
                                     // 1. 먼저 sequences에서 해당 요소와 관련된 모든 연결 제거
                                     if (this.processDefinition.sequences) {
-                                        this.processDefinition.sequences = this.processDefinition.sequences.filter(seq => 
-                                            seq.source !== elementId && seq.target !== elementId
+                                        this.processDefinition.sequences = this.processDefinition.sequences.filter(
+                                            (seq) => seq.source !== elementId && seq.target !== elementId
                                         );
                                     }
-                                    
+
                                     // 2. elements 배열에서 sequence 요소들 제거
                                     if (this.processDefinition.elements) {
-                                        this.processDefinition.elements = this.processDefinition.elements.filter(element => {
+                                        this.processDefinition.elements = this.processDefinition.elements.filter((element) => {
                                             if (element.elementType === 'Sequence') {
                                                 return element.source !== elementId && element.target !== elementId;
                                             }
                                             return element.id !== elementId;
                                         });
                                     }
-                                    
+
                                     // 3. 타겟 경로에서 요소 제거
                                     if (this.processDefinition[targetJsonPath]) {
                                         this.processDefinition[targetJsonPath] = this.processDefinition[targetJsonPath].filter(
-                                            item => item.id !== elementId
+                                            (item) => item.id !== elementId
                                         );
                                     }
-                                    
+
                                     // 4. 다른 요소들의 참조 정리
                                     const cleanupReferences = (items) => {
                                         if (!items) return;
-                                        items.forEach(item => {
+                                        items.forEach((item) => {
                                             if (item.source === elementId) {
                                                 item.source = '';
                                             }
@@ -2250,15 +2318,15 @@ export default {
                                             }
                                         });
                                     };
-                                    
+
                                     cleanupReferences(this.processDefinition.elements);
                                     cleanupReferences(this.processDefinition.sequences);
-                                    
+
                                     // 5. 프로세스 정의 정리 및 변환
                                     if (this.processDefinition.activities && this.processDefinition.sequences) {
                                         this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                                     }
-                                    
+
                                     // 6. BPMN XML 재생성
                                     try {
                                         this.bpmn = this.createBpmnXml(this.processDefinition, this.isHorizontal);
@@ -2266,11 +2334,12 @@ export default {
                                         console.error('Error creating BPMN XML:', error);
                                         // 오류 발생 시 기본 BPMN 구조 유지
                                         if (!this.bpmn) {
-                                            this.bpmn = '<?xml version="1.0" encoding="UTF-8"?>\n<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"></bpmn:definitions>';
+                                            this.bpmn =
+                                                '<?xml version="1.0" encoding="UTF-8"?>\n<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"></bpmn:definitions>';
                                         }
                                     }
                                 }
-                                if(this.processDefinition['activities'] && this.processDefinition['sequences']) {
+                                if (this.processDefinition['activities'] && this.processDefinition['sequences']) {
                                     this.processDefinition = await this.convertOldFormatToElements(this.processDefinition);
                                 }
                                 this.bpmn = this.createBpmnXml(this.processDefinition, this.isHorizontal);
@@ -2278,91 +2347,92 @@ export default {
                             this.oldProcDefId = unknown.processDefinitionId;
                             this.definitionChangeCount++;
                         }
-    
-                        if(!jsonProcess.answerType){
+
+                        if (!jsonProcess.answerType) {
                             const addTeamMessage = (team) => {
                                 this.messages.push({
-                                    "role": "system",
-                                    "content": `${team.name} 팀이 새로 추가되었습니다. 해당 팀을 조직도에 추가하시겠습니까?`,
-                                    "timeStamp": Date.now(),
-                                    "type": "add_team",
-                                    "newTeamInfo": team
-                                })
-                            }
-                            if(jsonProcess.modifications){
+                                    role: 'system',
+                                    content: `${team.name} 팀이 새로 추가되었습니다. 해당 팀을 조직도에 추가하시겠습니까?`,
+                                    timeStamp: Date.now(),
+                                    type: 'add_team',
+                                    newTeamInfo: team
+                                });
+                            };
+                            if (jsonProcess.modifications) {
                                 // 수정이 성공적으로 완료되었으므로 재시도 카운트 초기화
                                 this.retryCount = 0;
                                 this.isRetry = false;
                                 this.messages.push({
-                                    "role": "system",
-                                    "content": `요청하신 내용에 따라 수정을 완료하였습니다.`,
-                                    "timeStamp": Date.now()
+                                    role: 'system',
+                                    content: `요청하신 내용에 따라 수정을 완료하였습니다.`,
+                                    timeStamp: Date.now()
                                 });
-                                jsonProcess.modifications.forEach(modification => {
-                                    if(modification.action == 'add' 
-                                    && modification.value 
-                                    && modification.value.origin 
-                                    && modification.value.origin == 'created'){
-                                        addTeamMessage(modification.value)
+                                jsonProcess.modifications.forEach((modification) => {
+                                    if (
+                                        modification.action == 'add' &&
+                                        modification.value &&
+                                        modification.value.origin &&
+                                        modification.value.origin == 'created'
+                                    ) {
+                                        addTeamMessage(modification.value);
                                     }
-                                })
+                                });
                             } else {
                                 await this.checkedFormData();
                                 // 성공적으로 생성되었으므로 재시도 카운트 초기화
                                 this.retryCount = 0;
                                 this.isRetry = false;
                                 this.messages.push({
-                                    "role": "system",
-                                    "content": `요청하신 프로세스 생성을 모두 완료하였습니다. 🎉🎉`,
-                                    "timeStamp": Date.now()
+                                    role: 'system',
+                                    content: `요청하신 프로세스 생성을 모두 완료하였습니다. 🎉🎉`,
+                                    timeStamp: Date.now()
                                 });
                                 this.messages.push({
-                                    "role": "system",
-                                    "content": `생성된 프로세스의 실제 실행화면을 시뮬레이션 기능을 통해 확인 및 수정이 가능합니다.`,
-                                    "timeStamp": Date.now()
+                                    role: 'system',
+                                    content: `생성된 프로세스의 실제 실행화면을 시뮬레이션 기능을 통해 확인 및 수정이 가능합니다.`,
+                                    timeStamp: Date.now()
                                 });
-            
-                                if(this.chatMode == 'consulting'){
+
+                                if (this.chatMode == 'consulting') {
                                     this.messages.push({
-                                        "role": "system",
-                                        "content": `생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.`,
-                                        "timeStamp": Date.now()
+                                        role: 'system',
+                                        content: `생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.`,
+                                        timeStamp: Date.now()
                                     });
                                 }
-    
-                                if(jsonProcess.roles) {
-                                    jsonProcess.roles.forEach(role => {
-                                        if(role.origin == 'created'){
-                                            addTeamMessage(role)
+
+                                if (jsonProcess.roles) {
+                                    jsonProcess.roles.forEach((role) => {
+                                        if (role.origin == 'created') {
+                                            addTeamMessage(role);
                                         }
-                                    })
+                                    });
                                 }
-            
+
                                 this.$try({
                                     context: this,
-                                    action: () => {
-                                    },
+                                    action: () => {},
                                     successMsg: this.$t('successMsg.processGenerationCompleted')
-                                })
+                                });
                             }
                         }
-            
+
                         this.isChanged = true;
                     }
                 }
             } else {
-                if(this.isConsultingMode){
-                    if(this.messages[this.messages.length - 1].role == 'system'){
-                        this.messages.pop()
+                if (this.isConsultingMode) {
+                    if (this.messages[this.messages.length - 1].role == 'system') {
+                        this.messages.pop();
                     }
                     this.generator = new ConsultingGenerator(this, {
                         isStream: true,
-                        preferredLanguage: "Korean"
+                        preferredLanguage: 'Korean'
                     });
-                    this.beforeStartGenerate()
+                    this.beforeStartGenerate();
                 }
             }
-            if(!isAskProcessDef){
+            if (!isAskProcessDef) {
                 this.isAIGenerated = true;
                 this.definitionChangeCount++;
             }
@@ -2414,7 +2484,7 @@ export default {
             const options = {
                 proc_def_id: id,
                 user_id: uid
-            }
+            };
             const permissions = await backend.getUserPermissions(options);
             if (permissions && permissions.length > 0) {
                 return permissions[0];
@@ -2431,7 +2501,7 @@ export default {
             let processDefinition = await this.convertXMLToJSON(this.bpmn);
             if (processDefinition.roles) {
                 processDefinition.roles.forEach((role) => {
-                    if(role.endpoint == 'external_customer'){
+                    if (role.endpoint == 'external_customer') {
                         hasExternalCustomerRole = true;
                         roleName = role.name;
                     }
@@ -2458,11 +2528,10 @@ export default {
                     window.open(url, '_blank');
                 }
             }
-
         },
 
         // ====== CrewAI 서비스 연동 메서드들 ======
-        
+
         async initCrewAISession() {
             try {
                 console.log('🤖 CrewAI 세션 초기화 중...');
@@ -2475,7 +2544,7 @@ export default {
                 this.useCrewAI = false;
                 this.generator = new ConsultingGenerator(this, {
                     isStream: true,
-                    preferredLanguage: "Korean"
+                    preferredLanguage: 'Korean'
                 });
             }
         },
@@ -2483,8 +2552,8 @@ export default {
         getChatHistory() {
             // 현재 메시지들을 CrewAI 형식으로 변환
             return this.messages
-                .filter(msg => msg.role !== 'system' && !msg.isLoading) // 시스템 메시지와 로딩 중인 메시지 제외
-                .map(msg => ({
+                .filter((msg) => msg.role !== 'system' && !msg.isLoading) // 시스템 메시지와 로딩 중인 메시지 제외
+                .map((msg) => ({
                     role: msg.role,
                     content: msg.content,
                     timestamp: msg.timeStamp || Date.now()
@@ -2494,7 +2563,7 @@ export default {
         async sendMessageToCrewAI(newMessage) {
             try {
                 console.log('🚀 CrewAI로 스트리밍 메시지 전송:', newMessage);
-                
+
                 // 메시지가 객체인 경우 텍스트만 추출
                 let messageText = newMessage;
                 if (typeof newMessage === 'object' && newMessage.text) {
@@ -2502,10 +2571,10 @@ export default {
                 } else if (typeof newMessage === 'object' && newMessage.content) {
                     messageText = newMessage.content;
                 }
-                
+
                 // 사용자 메시지를 채팅에 추가
                 this.messages.push({
-                    role: "user",
+                    role: 'user',
                     content: messageText,
                     timeStamp: Date.now()
                 });
@@ -2513,8 +2582,8 @@ export default {
                 // AI 응답을 위한 임시 메시지 추가
                 const aiMessageIndex = this.messages.length;
                 this.messages.push({
-                    role: "assistant",
-                    content: "생각하는 중...",
+                    role: 'assistant',
+                    content: '생각하는 중...',
                     timeStamp: Date.now(),
                     isLoading: true,
                     isStreaming: true
@@ -2522,14 +2591,13 @@ export default {
 
                 // SSE를 사용한 스트리밍 호출
                 await this.callCrewAIStreamingService(newMessage, aiMessageIndex);
-
             } catch (error) {
                 console.error('❌ CrewAI 스트리밍 메시지 전송 실패:', error);
-                
+
                 // 에러 메시지 표시
                 if (this.messages[this.messages.length - 1].isLoading) {
                     this.messages[this.messages.length - 1] = {
-                        role: "assistant",
+                        role: 'assistant',
                         content: `오류가 발생했습니다: ${error.message}`,
                         timeStamp: Date.now(),
                         isLoading: false,
@@ -2569,83 +2637,85 @@ export default {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'text/plain'
+                        Accept: 'text/plain'
                     },
                     body: JSON.stringify(requestData)
                 })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    let accumulatedResponse = '';
-                    
-                    const readStream = () => {
-                        reader.read().then(({ done, value }) => {
-                            if (done) {
-                                console.log('✅ 스트리밍 완료');
-                                this.chatRenderKey++;
-                                resolve();
-                                return;
-                            }
-                            
-                            const chunk = decoder.decode(value, { stream: true });
-                            const lines = chunk.split('\n');
-                            
-                            for (const line of lines) {
-                                if (line.startsWith('data: ')) {
-                                    try {
-                                        const data = JSON.parse(line.slice(6));
-                                        this.handleSSEEvent(data, aiMessageIndex, accumulatedResponse);
-                                        
-                                        if (data.type === 'response_chunk') {
-                                            accumulatedResponse += data.content;
-                                        }
-                                        
-                                    } catch (e) {
-                                        console.warn('SSE 파싱 오류:', e, line);
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder();
+                        let accumulatedResponse = '';
+
+                        const readStream = () => {
+                            reader
+                                .read()
+                                .then(({ done, value }) => {
+                                    if (done) {
+                                        console.log('✅ 스트리밍 완료');
+                                        this.chatRenderKey++;
+                                        resolve();
+                                        return;
                                     }
-                                }
-                            }
-                            
-                            readStream();
-                        }).catch(error => {
-                            console.error('스트림 읽기 오류:', error);
-                            reject(error);
-                        });
-                    };
-                    
-                    readStream();
-                })
-                .catch(error => {
-                    console.error('스트리밍 요청 오류:', error);
-                    reject(error);
-                });
+
+                                    const chunk = decoder.decode(value, { stream: true });
+                                    const lines = chunk.split('\n');
+
+                                    for (const line of lines) {
+                                        if (line.startsWith('data: ')) {
+                                            try {
+                                                const data = JSON.parse(line.slice(6));
+                                                this.handleSSEEvent(data, aiMessageIndex, accumulatedResponse);
+
+                                                if (data.type === 'response_chunk') {
+                                                    accumulatedResponse += data.content;
+                                                }
+                                            } catch (e) {
+                                                console.warn('SSE 파싱 오류:', e, line);
+                                            }
+                                        }
+                                    }
+
+                                    readStream();
+                                })
+                                .catch((error) => {
+                                    console.error('스트림 읽기 오류:', error);
+                                    reject(error);
+                                });
+                        };
+
+                        readStream();
+                    })
+                    .catch((error) => {
+                        console.error('스트리밍 요청 오류:', error);
+                        reject(error);
+                    });
             });
         },
 
         handleSSEEvent(data, aiMessageIndex, accumulatedResponse) {
             console.log('📡 SSE 이벤트:', data);
-            
+
             switch (data.type) {
                 case 'response_start':
                     // 응답 시작
                     this.messages[aiMessageIndex] = {
-                        role: "assistant", 
-                        content: "",
+                        role: 'assistant',
+                        content: '',
                         timeStamp: Date.now(),
                         isLoading: false,
                         isStreaming: true
                     };
                     this.chatRenderKey++;
                     break;
-                    
+
                 case 'loading_update':
                     // 로딩 상태 업데이트 (생각하는 중..., 프로세스 생성 중...)
                     this.messages[aiMessageIndex] = {
-                        role: "assistant",
+                        role: 'assistant',
                         content: data.content,
                         timeStamp: Date.now(),
                         isLoading: true,
@@ -2653,74 +2723,74 @@ export default {
                     };
                     this.chatRenderKey++;
                     break;
-                    
+
                 case 'response_chunk':
                     // 일반 응답 텍스트 점진적 추가
                     this.messages[aiMessageIndex].content += data.content;
                     this.messages[aiMessageIndex].isLoading = false;
                     this.chatRenderKey++;
                     break;
-                    
+
                 case 'process_start':
                     // 🚀 프로세스 생성 시작 - 즉시 화면 전환!
                     this.messages[aiMessageIndex].content += data.content;
                     this.messages[aiMessageIndex].isLoading = false;
-                    
+
                     // 즉시 컨설팅 모드에서 프로세스 생성 모드로 전환
                     console.log('🎯 프로세스 생성 모드로 즉시 전환');
                     this.isConsultingMode = false;
                     this.waitForCustomer = true;
-                    this.$emit("openProcessPreview");
-                    
+                    this.$emit('openProcessPreview');
+
                     // 누적 JSON 초기화
                     this.accumulatedJSON = '';
-                    
+
                     this.chatRenderKey++;
                     break;
-                    
+
                 case 'json_start':
                     // JSON 스트리밍 시작
                     this.messages[aiMessageIndex].content += data.content;
                     this.accumulatedJSON = ''; // JSON 누적 시작
                     this.chatRenderKey++;
                     break;
-                    
+
                 case 'json_chunk':
                     // 🔥 실시간 JSON 파싱 및 점진적 BPMN 그리기
                     this.messages[aiMessageIndex].content += data.content;
                     this.accumulatedJSON += data.content;
-                    
+
                     // 실시간 JSON 파싱 시도
                     this.tryParseAndUpdateBPMN(this.accumulatedJSON);
-                    
+
                     this.chatRenderKey++;
                     break;
-                    
+
                 case 'json_end':
                     // JSON 스트리밍 끝
                     this.messages[aiMessageIndex].content += data.content;
-                    
+
                     // 최종 JSON 파싱 시도
                     this.tryParseAndUpdateBPMN(this.accumulatedJSON, true);
-                    
+
                     this.chatRenderKey++;
                     break;
-                    
+
                 case 'process_generated':
                     // 프로세스 정의 생성 완료 - 최종 BPMN 생성
                     console.log('✅ 최종 프로세스 정의 수신');
                     this.messages[aiMessageIndex].isStreaming = false;
-                    
+
                     // 최종 프로세스 정의로 BPMN 완성
                     if (data.process_definition) {
                         this.handleCrewAIProcessDefinition(data.process_definition);
                     }
                     break;
-                    
+
                 case 'consulting_response':
                     // 컨설팅 응답만 있는 경우
                     this.messages[aiMessageIndex] = {
-                        role: "assistant",
+                        role: 'assistant',
                         content: data.response.content,
                         timeStamp: Date.now(),
                         isLoading: false,
@@ -2728,17 +2798,17 @@ export default {
                     };
                     this.chatRenderKey++;
                     break;
-                    
+
                 case 'complete':
                     // 완료
                     this.messages[aiMessageIndex].isStreaming = false;
                     console.log('✅ 컨설팅 완료:', data.message);
                     break;
-                    
+
                 case 'error':
                     // 오류 처리
                     this.messages[aiMessageIndex] = {
-                        role: "assistant",
+                        role: 'assistant',
                         content: data.message,
                         timeStamp: Date.now(),
                         isLoading: false,
@@ -2752,7 +2822,7 @@ export default {
 
         async callCrewAIFullService(message) {
             console.log('🚀 원본 메시지:', message, typeof message);
-            
+
             // 메시지가 객체인 경우 텍스트만 추출
             let userMessage = message;
             if (typeof message === 'object' && message !== null) {
@@ -2764,7 +2834,7 @@ export default {
                     userMessage = JSON.stringify(message); // 최후의 방법
                 }
             }
-            
+
             console.log('📝 추출된 텍스트:', userMessage, typeof userMessage);
 
             const requestData = {
@@ -2782,7 +2852,7 @@ export default {
             const response = await fetch(`${this.crewAIBaseURL}/api/consulting/full-service`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(requestData)
             });
@@ -2799,22 +2869,22 @@ export default {
         async handleCrewAIProcessDefinition(processDefinition) {
             try {
                 console.log('🎯 프로세스 정의 처리:', processDefinition);
-                
+
                 // 기존 컨설팅 로직과 동일하게 처리
                 if (processDefinition.processDefinitionId) {
                     // 프로세스 정의를 현재 컴포넌트에 설정
                     this.processDefinition = processDefinition;
                     if (!this.processDefinition) this.processDefinition = {};
-                    
+
                     // BPMN XML 생성
                     this.bpmn = this.createBpmnXml(processDefinition, this.isHorizontal);
-                    
+
                     // 프로젝트 정보 설정
                     this.processDefinition['processDefinitionId'] = processDefinition.processDefinitionId;
                     this.processDefinition['processDefinitionName'] = processDefinition.processDefinitionName;
                     this.projectName = processDefinition.processDefinitionName;
                     this.oldProcDefId = processDefinition.processDefinitionId;
-                    
+
                     // 정의 변경 카운트 증가 (UI 업데이트 트리거)
                     this.definitionChangeCount++;
                     this.isAIGenerated = true;
@@ -2823,37 +2893,37 @@ export default {
                     // 컨설팅 모드에서 프로세스 생성 모드로 전환 (기존 로직과 동일)
                     this.isConsultingMode = false;
                     this.waitForCustomer = true;
-                    
+
                     // 프로세스 정의 체계도 업데이트 (기존 로직과 동일)
                     await this.updateProcessDefinitionMap(processDefinition);
-                    
+
                     // 프로세스 미리보기 열기
-                    this.$emit("openProcessPreview");
+                    this.$emit('openProcessPreview');
 
                     // 성공 메시지들 추가 (기존 로직과 동일)
                     this.messages.push({
-                        role: "system",
-                        content: "🎉 프로세스 정의 생성이 완료되었습니다!",
+                        role: 'system',
+                        content: '🎉 프로세스 정의 생성이 완료되었습니다!',
                         timeStamp: Date.now()
                     });
 
                     this.messages.push({
-                        role: "system",
-                        content: "생성된 프로세스의 실제 실행화면을 시뮬레이션 기능을 통해 확인 및 수정이 가능합니다.",
+                        role: 'system',
+                        content: '생성된 프로세스의 실제 실행화면을 시뮬레이션 기능을 통해 확인 및 수정이 가능합니다.',
                         timeStamp: Date.now()
                     });
 
                     if (this.chatMode == 'consulting') {
                         this.messages.push({
-                            role: "system",
-                            content: "생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.",
+                            role: 'system',
+                            content: '생성된 프로세스 정의에 대하여 추가적인 요청사항이 있으시다면 말씀해주세요.',
                             timeStamp: Date.now()
                         });
                     }
 
                     // 새로운 팀 추가 메시지 처리 (기존 로직과 동일)
                     if (processDefinition.roles) {
-                        processDefinition.roles.forEach(role => {
+                        processDefinition.roles.forEach((role) => {
                             if (role.origin == 'created') {
                                 this.addTeamMessage(role);
                             }
@@ -2862,13 +2932,12 @@ export default {
 
                     console.log('✅ 프로세스 정의 처리 완료 - 컨설팅 모드에서 프로세스 모드로 전환');
                 }
-
             } catch (error) {
                 console.error('❌ 프로세스 정의 처리 실패:', error);
-                
+
                 this.messages.push({
-                    role: "system",
-                    content: "프로세스 정의 생성 중 오류가 발생했습니다.",
+                    role: 'system',
+                    content: '프로세스 정의 생성 중 오류가 발생했습니다.',
                     timeStamp: Date.now(),
                     isError: true
                 });
@@ -2896,7 +2965,9 @@ export default {
         async updateProcessDefinitionMap(processDefinition) {
             try {
                 if (processDefinition.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
-                    if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == processDefinition.megaProcessId)) {
+                    if (
+                        !this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == processDefinition.megaProcessId)
+                    ) {
                         this.processDefinitionMap.mega_proc_list.push({
                             name: processDefinition.megaProcessId,
                             id: processDefinition.megaProcessId,
@@ -2917,7 +2988,11 @@ export default {
                     if (processDefinition.majorProcessId) {
                         this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
                             if (megaProcess.name == processDefinition.megaProcessId) {
-                                if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == processDefinition.majorProcessId)) {
+                                if (
+                                    megaProcess.major_proc_list.some(
+                                        (majorProcess) => majorProcess.name == processDefinition.majorProcessId
+                                    )
+                                ) {
                                     const idx = megaProcess.major_proc_list.findIndex(
                                         (majorProcess) => majorProcess.name == processDefinition.majorProcessId
                                     );
@@ -2955,11 +3030,11 @@ export default {
         // 팀 추가 메시지 생성 (기존 로직에서 추출)
         addTeamMessage(team) {
             this.messages.push({
-                "role": "system",
-                "content": `${team.name} 팀이 새로 추가되었습니다. 해당 팀을 조직도에 추가하시겠습니까?`,
-                "timeStamp": Date.now(),
-                "type": "add_team",
-                "newTeamInfo": team
+                role: 'system',
+                content: `${team.name} 팀이 새로 추가되었습니다. 해당 팀을 조직도에 추가하시겠습니까?`,
+                timeStamp: Date.now(),
+                type: 'add_team',
+                newTeamInfo: team
             });
         },
 
@@ -2967,9 +3042,9 @@ export default {
         tryParseAndUpdateBPMN(jsonString, isFinal = false) {
             try {
                 console.log('🧪 JSON 파싱 시도:', jsonString.substring(0, 100) + '...');
-                
+
                 let processDefinition;
-                
+
                 // **기존 로직과 동일한 파싱 순서**
                 jsonString = this.extractJSON(jsonString);
                 try {
@@ -2977,31 +3052,30 @@ export default {
                 } catch (e) {
                     processDefinition = partialParse(jsonString + '"');
                 }
-                
+
                 // 파싱된 JSON이 이전과 동일하면 스킵
                 if (JSON.stringify(processDefinition) === JSON.stringify(this.lastParsedJSON)) {
                     return;
                 }
 
-                
                 this.bpmn = this.createBpmnXml(processDefinition, this.isHorizontal);
-                
+
                 this.lastParsedJSON = processDefinition;
-                
+
                 // 유효한 프로세스 정의인지 확인
                 if (processDefinition && (processDefinition.processDefinitionName || processDefinition.elements)) {
                     console.log('🎯 점진적 BPMN 업데이트:', processDefinition.processDefinitionName);
-                    
+
                     // 시퀀스 정보를 활용하여 activities 순서 재정렬
                     const reorderedProcess = this.reorderActivitiesBySequence(processDefinition);
-                    
+
                     // 프로세스 정의 설정
                     this.processDefinition = reorderedProcess;
-                    
+
                     // BPMN XML 생성
                     if (reorderedProcess.elements && reorderedProcess.elements.length > 0) {
                         this.bpmn = this.createBpmnXml(reorderedProcess, this.isHorizontal);
-                        
+
                         // 프로젝트 정보 설정
                         if (reorderedProcess.processDefinitionName) {
                             this.projectName = reorderedProcess.processDefinitionName;
@@ -3009,16 +3083,15 @@ export default {
                         if (reorderedProcess.processDefinitionId) {
                             this.oldProcDefId = reorderedProcess.processDefinitionId;
                         }
-                        
+
                         // UI 업데이트 트리거
                         this.definitionChangeCount++;
                         this.isAIGenerated = true;
                         this.isChanged = true;
-                        
+
                         console.log('🔄 점진적 BPMN 업데이트 완료');
                     }
                 }
-                
             } catch (error) {
                 console.warn('⚠️ 실시간 JSON 파싱 오류:', error);
             }
@@ -3037,7 +3110,7 @@ export default {
             try {
                 const store = useBpmnStore();
                 let modeler = store.getModeler;
-                
+
                 if (!modeler) {
                     console.error('Modeler를 찾을 수 없습니다.');
                     return;
@@ -3049,20 +3122,22 @@ export default {
 
                 // 모든 엘리먼트 검색
                 const allElements = elementRegistry.getAll();
-                
+
                 // 액티비티 이름과 일치하는 엘리먼트 찾기
-                const matchedElement = allElements.find(element => {
-                    return element.businessObject && 
-                           element.businessObject.name && 
-                           element.businessObject.name.toLowerCase().includes(activityName.toLowerCase());
+                const matchedElement = allElements.find((element) => {
+                    return (
+                        element.businessObject &&
+                        element.businessObject.name &&
+                        element.businessObject.name.toLowerCase().includes(activityName.toLowerCase())
+                    );
                 });
 
                 if (matchedElement) {
                     console.log('✅ 액티비티를 찾았습니다:', matchedElement.businessObject.name);
-                    
+
                     // 엘리먼트 선택
                     selection.select(matchedElement);
-                    
+
                     // 화면 정중앙에 액티비티 배치
                     const viewbox = canvas.viewbox();
                     const elementMid = {
@@ -3072,11 +3147,11 @@ export default {
 
                     // 적절한 줌 레벨 설정 (1.0 = 100%)
                     const zoom = 1.0;
-                    
+
                     // viewbox를 element 중심으로 이동
                     canvas.viewbox({
-                        x: elementMid.x - (viewbox.outer.width / zoom / 2),
-                        y: elementMid.y - (viewbox.outer.height / zoom / 2),
+                        x: elementMid.x - viewbox.outer.width / zoom / 2,
+                        y: elementMid.y - viewbox.outer.height / zoom / 2,
                         width: viewbox.outer.width / zoom,
                         height: viewbox.outer.height / zoom
                     });
@@ -3090,7 +3165,7 @@ export default {
                 console.error('❌ 액티비티 검색 중 오류:', error);
                 return false;
             }
-        },
+        }
     }
 };
 </script>

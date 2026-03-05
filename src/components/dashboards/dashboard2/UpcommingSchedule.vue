@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { profileImgData } from '@/_mockApis/components/dashboards/dashboard2'
-const items = ref([
-    { title: "Action" },
-    { title: "Another action" },
-    { title: "Something else here" },
-]);
+import { ref } from 'vue';
+import { profileImgData } from '@/_mockApis/components/dashboards/dashboard2';
+const items = ref([{ title: 'Action' }, { title: 'Another action' }, { title: 'Something else here' }]);
 /*tab*/
 const tab = ref(null);
 </script>
 <template>
     <VCard elevation="10">
         <v-card-text>
-            <div class="d-flex align-center  justify-space-between">
+            <div class="d-flex align-center justify-space-between">
                 <div>
                     <h5 class="text-h5 mb-1 font-weight-semibold">Upcoming Scheduls</h5>
                 </div>
@@ -36,12 +32,11 @@ const tab = ref(null);
                 <v-col cols="12" md="12">
                     <v-card elevation="0" rounded="md">
                         <v-tabs v-model="tab" bg-color="transparent" min-height="40" height="40" grow>
-                            <v-tab value="Account" color="white" class="text-h6 " rounded="pill">1 to 3</v-tab>
+                            <v-tab value="Account" color="white" class="text-h6" rounded="pill">1 to 3</v-tab>
                             <v-tab value="Notification" color="white" class="text-h6" rounded="pill">4 to 7</v-tab>
                             <v-tab value="Bills" color="white" class="text-h6" rounded="pill">8 to 10</v-tab>
                         </v-tabs>
                         <v-divider class="mt-1"></v-divider>
-
                     </v-card>
 
                     <v-window v-model="tab">
@@ -89,7 +84,7 @@ const tab = ref(null);
                                         </ul>
                                     </div>
                                     <div class="flex-grow-1 flex-shrink-0 mx-4">
-                                        <v-card elevation="10" class="border-left-indigo mt-7 " rounded="md">
+                                        <v-card elevation="10" class="border-left-indigo mt-7" rounded="md">
                                             <div class="pa-4">
                                                 <h6 class="text-h6 font-weight-semibold">Marketing Meeting</h6>
                                                 <div class="d-flex align-center mt-2">
@@ -98,12 +93,11 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center mt-12 gap-3">
                                                     <div>
-                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                            class="mr-n1">
-                                                            <img :src="item.img" alt="profile" height="32" width="32">
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
                                                         </v-avatar>
                                                     </div>
-                                                    <p class="text-subtitle-1 text-grey100 ">+18</p>
+                                                    <p class="text-subtitle-1 text-grey100">+18</p>
                                                 </div>
                                             </div>
                                         </v-card>
@@ -117,12 +111,11 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center mt-12 gap-3">
                                                     <div>
-                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                            class="mr-n1">
-                                                            <img :src="item.img" alt="profile" height="32" width="32">
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
                                                         </v-avatar>
                                                     </div>
-                                                    <p class="text-subtitle-1 text-grey100 ">+18</p>
+                                                    <p class="text-subtitle-1 text-grey100">+18</p>
                                                 </div>
                                             </div>
                                         </v-card>
@@ -136,16 +129,14 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center mt-12 gap-3">
                                                     <div>
-                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                            class="mr-n1">
-                                                            <img :src="item.img" alt="profile" height="32" width="32">
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
                                                         </v-avatar>
                                                     </div>
                                                     <p class="text-subtitle-1 text-grey100">+18</p>
                                                 </div>
                                             </div>
                                         </v-card>
-
                                     </div>
                                 </div>
                             </perfect-scrollbar>
@@ -203,9 +194,8 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center gap-3 mt-12">
                                                     <div>
-                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                            class="mr-n1">
-                                                            <img :src="item.img" alt="profile" height="32" width="32">
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
                                                         </v-avatar>
                                                     </div>
                                                     <p class="text-subtitle-1 text-grey100">+18</p>
@@ -222,12 +212,11 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center gap-3 mt-12">
                                                     <div>
-                                                    <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                        class="mr-n1">
-                                                        <img :src="item.img" alt="profile" height="32" width="32">
-                                                    </v-avatar>
-                                                </div>
-                                                    <p class="text-subtitle-1 text-grey100 ">+18</p>
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
+                                                        </v-avatar>
+                                                    </div>
+                                                    <p class="text-subtitle-1 text-grey100">+18</p>
                                                 </div>
                                             </div>
                                         </v-card>
@@ -241,22 +230,20 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center gap-3 mt-12">
                                                     <div>
-                                                    <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                        class="mr-n1">
-                                                        <img :src="item.img" alt="profile" height="32" width="32">
-                                                    </v-avatar>
-                                                </div>
-                                                    <p class="text-subtitle-1 text-grey100 ">+18</p>
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
+                                                        </v-avatar>
+                                                    </div>
+                                                    <p class="text-subtitle-1 text-grey100">+18</p>
                                                 </div>
                                             </div>
                                         </v-card>
-
                                     </div>
                                 </div>
                             </perfect-scrollbar>
                         </v-window-item>
                         <v-window-item value="Bills">
-                            <perfect-scrollbar style="height: 360px;" class="mt-6 pt-4">
+                            <perfect-scrollbar style="height: 360px" class="mt-6 pt-4">
                                 <div class="d-flex">
                                     <div>
                                         <ul>
@@ -308,10 +295,9 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center gap-3 mt-12">
                                                     <div>
-                                                    <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                        class="mr-n1">
-                                                        <img :src="item.img" alt="profile" height="32" width="32">
-                                                    </v-avatar>
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
+                                                        </v-avatar>
                                                     </div>
                                                     <p class="text-subtitle-1 text-grey100">+18</p>
                                                 </div>
@@ -327,11 +313,10 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center gap-3 mt-12">
                                                     <div>
-                                                    <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                        class="mr-n1">
-                                                        <img :src="item.img" alt="profile" height="32" width="32">
-                                                    </v-avatar>
-                                                </div>
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
+                                                        </v-avatar>
+                                                    </div>
                                                     <p class="text-subtitle-1 text-grey100">+18</p>
                                                 </div>
                                             </div>
@@ -346,16 +331,14 @@ const tab = ref(null);
                                                 </div>
                                                 <div class="d-flex align-center gap-3 mt-12">
                                                     <div>
-                                                    <v-avatar v-for="item in profileImgData" :key="item.img" size="32"
-                                                        class="mr-n1">
-                                                        <img :src="item.img" alt="profile" height="32" width="32">
-                                                    </v-avatar>
-                                                </div>
+                                                        <v-avatar v-for="item in profileImgData" :key="item.img" size="32" class="mr-n1">
+                                                            <img :src="item.img" alt="profile" height="32" width="32" />
+                                                        </v-avatar>
+                                                    </div>
                                                     <p class="text-subtitle-1 text-grey100">+18</p>
                                                 </div>
                                             </div>
                                         </v-card>
-
                                     </div>
                                 </div>
                             </perfect-scrollbar>

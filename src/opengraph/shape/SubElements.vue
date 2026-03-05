@@ -1,41 +1,26 @@
 <template>
-  <div>
-    <slot>
-    </slot>
-  </div>
+    <div>
+        <slot> </slot>
+    </div>
 </template>
 
 <script>
-  export default {
+export default {
     name: 'sub-elements',
     props: {},
     computed: {
-      opengraphRole: function () {
-        return 'sub-elements';
-      },
-
-
+        opengraphRole: function () {
+            return 'sub-elements';
+        }
     },
-    created(){
-
-    },
+    created() {},
     data: function () {
-      return {}
+        return {};
     },
-    watch: {
-
-    },
-    mounted: function () {
-
-
-    },
-    methods: {
-    }
-  }
+    watch: {},
+    mounted: function () {},
+    methods: {}
+};
 </script>
 
-
-<style scoped lang="scss" rel="stylesheet/scss">
-
-</style>
-
+<style scoped lang="scss" rel="stylesheet/scss"></style>

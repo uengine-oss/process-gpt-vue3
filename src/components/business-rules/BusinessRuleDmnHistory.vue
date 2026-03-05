@@ -16,7 +16,7 @@
             <div v-else-if="historyList.length === 0 && isLoading">
                 <v-skeleton-loader type="card"></v-skeleton-loader>
             </div>
-            
+
             <div v-else class="business-rule-dmn-history-table">
                 <v-data-table
                     :headers="headers"
@@ -40,11 +40,7 @@
 
                     <!-- 작업 컬럼 -->
                     <template v-slot:item.operation="{ item }">
-                        <v-chip 
-                            :color="getOperationColor(item.operation)" 
-                            size="small" 
-                            variant="flat"
-                        >
+                        <v-chip :color="getOperationColor(item.operation)" size="small" variant="flat">
                             {{ getOperationText(item.operation) }}
                         </v-chip>
                     </template>
@@ -55,7 +51,11 @@
                             <div v-if="item.previous_content || item.new_content || item.feedback_content" class="d-flex flex-column ga-1">
                                 <div v-if="item.previous_content" class="text-truncate" :title="item.previous_content">
                                     <span class="text-caption text-medium-emphasis">{{ $t('businessRuleDmnHistory.previous') }} </span>
-                                    {{ item.previous_content.length > 50 ? item.previous_content.substring(0, 50) + '...' : item.previous_content }}
+                                    {{
+                                        item.previous_content.length > 50
+                                            ? item.previous_content.substring(0, 50) + '...'
+                                            : item.previous_content
+                                    }}
                                 </div>
                                 <div v-if="item.new_content" class="text-truncate" :title="item.new_content">
                                     <span class="text-caption text-medium-emphasis">{{ $t('businessRuleDmnHistory.new') }} </span>
@@ -93,14 +93,18 @@
                                 <div v-if="item.operation === 'UPDATE' && item.previous_content && item.new_content">
                                     <!-- 사용자 친화적인 DMN 변경사항 표시 -->
                                     <div v-if="parseDmnXml(item.previous_content) && parseDmnXml(item.new_content)">
-                                        <dmn-diff-view 
-                                            :previous="parseDmnXml(item.previous_content)" 
+                                        <dmn-diff-view
+                                            :previous="parseDmnXml(item.previous_content)"
                                             :current="parseDmnXml(item.new_content)"
                                         />
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
-                                        <v-tabs :model-value="getXmlViewTab(item)" @update:model-value="setXmlViewTab(item, $event)" class="mb-2">
+                                        <v-tabs
+                                            :model-value="getXmlViewTab(item)"
+                                            @update:model-value="setXmlViewTab(item, $event)"
+                                            class="mb-2"
+                                        >
                                             <v-tab value="structured">{{ $t('businessRuleDmnHistory.structuredChanges') }}</v-tab>
                                             <v-tab value="raw">{{ $t('businessRuleDmnHistory.rawXml') }}</v-tab>
                                         </v-tabs>
@@ -113,13 +117,17 @@
                                             <v-window-item value="raw">
                                                 <v-row class="ma-0">
                                                     <v-col cols="6" class="pa-2">
-                                                        <div class="text-caption text-medium-emphasis mb-1">{{ $t('businessRuleDmnHistory.previousContent') }}</div>
+                                                        <div class="text-caption text-medium-emphasis mb-1">
+                                                            {{ $t('businessRuleDmnHistory.previousContent') }}
+                                                        </div>
                                                         <div class="change-content-box">
                                                             <pre class="change-content-text">{{ item.previous_content }}</pre>
                                                         </div>
                                                     </v-col>
                                                     <v-col cols="6" class="pa-2">
-                                                        <div class="text-caption text-medium-emphasis mb-1">{{ $t('businessRuleDmnHistory.newContent') }}</div>
+                                                        <div class="text-caption text-medium-emphasis mb-1">
+                                                            {{ $t('businessRuleDmnHistory.newContent') }}
+                                                        </div>
                                                         <div class="change-content-box">
                                                             <pre class="change-content-text">{{ item.new_content }}</pre>
                                                         </div>
@@ -129,7 +137,7 @@
                                         </v-window>
                                     </div>
                                 </div>
-                                
+
                                 <!-- CREATE 작업: 새 내용만 표시 -->
                                 <div v-else-if="item.operation === 'CREATE' && item.new_content">
                                     <!-- 사용자 친화적인 DMN 표시 -->
@@ -138,13 +146,15 @@
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
-                                        <div class="text-caption text-medium-emphasis mb-1">{{ $t('businessRuleDmnHistory.newContent') }}</div>
+                                        <div class="text-caption text-medium-emphasis mb-1">
+                                            {{ $t('businessRuleDmnHistory.newContent') }}
+                                        </div>
                                         <div class="change-content-box">
                                             <pre class="change-content-text">{{ item.new_content }}</pre>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- DELETE 작업: 이전 내용만 표시 -->
                                 <div v-else-if="item.operation === 'DELETE' && item.previous_content">
                                     <!-- 사용자 친화적인 DMN 표시 -->
@@ -153,13 +163,15 @@
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
-                                        <div class="text-caption text-medium-emphasis mb-1">{{ $t('businessRuleDmnHistory.previousContent') }}</div>
+                                        <div class="text-caption text-medium-emphasis mb-1">
+                                            {{ $t('businessRuleDmnHistory.previousContent') }}
+                                        </div>
                                         <div class="change-content-box">
                                             <pre class="change-content-text">{{ item.previous_content }}</pre>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- 내용이 없는 경우 -->
                                 <div v-else class="mt-2 text-body-2 text-medium-emphasis">
                                     {{ $t('businessRuleDmnHistory.noChangeContent') }}
@@ -223,7 +235,7 @@ export default {
                     this.loadHistory();
                 }
             }
-        },
+        }
     },
     created() {
         this.backend = BackendFactory.createBackend();
@@ -236,7 +248,7 @@ export default {
     methods: {
         async loadHistory() {
             if (!this.ruleId || !this.backend) return;
-            
+
             this.isLoading = true;
             this.historyList = [];
 
@@ -254,20 +266,20 @@ export default {
 
         getOperationColor(operation) {
             const colors = {
-                'CREATE': 'success',
-                'UPDATE': 'info',
-                'DELETE': 'error',
-                'MOVE': 'warning'
+                CREATE: 'success',
+                UPDATE: 'info',
+                DELETE: 'error',
+                MOVE: 'warning'
             };
             return colors[operation] || 'default';
         },
 
         getOperationText(operation) {
             const texts = {
-                'CREATE': this.$t('businessRuleDmnHistory.operationCreate'),
-                'UPDATE': this.$t('businessRuleDmnHistory.operationUpdate'),
-                'DELETE': this.$t('businessRuleDmnHistory.operationDelete'),
-                'MOVE': this.$t('businessRuleDmnHistory.operationMove')
+                CREATE: this.$t('businessRuleDmnHistory.operationCreate'),
+                UPDATE: this.$t('businessRuleDmnHistory.operationUpdate'),
+                DELETE: this.$t('businessRuleDmnHistory.operationDelete'),
+                MOVE: this.$t('businessRuleDmnHistory.operationMove')
             };
             return texts[operation] || operation;
         },
@@ -317,7 +329,6 @@ export default {
         parseDmnXml(xmlString) {
             return parseDmnXml(xmlString);
         }
-
     }
 };
 </script>

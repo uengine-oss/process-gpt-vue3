@@ -1,13 +1,17 @@
 <template>
     <v-dialog v-model="recordingMode" fullscreen>
         <div class="record-container">
-            <v-btn class="record-close-btn" icon density="comfortable" @click="closeRecording"
+            <v-btn
+                class="record-close-btn"
+                icon
+                density="comfortable"
+                @click="closeRecording"
                 :style="!$globalState.state.isRightZoomed ? '' : 'top:10px; z-index: 9999;'"
             >
                 <v-icon>mdi-close</v-icon>
             </v-btn>
-            <div style="position: relative;">
-               <!-- <div style="color: white;">{{ isAudioPlaying }}</div>  -->
+            <div style="position: relative">
+                <!-- <div style="color: white;">{{ isAudioPlaying }}</div>  -->
                 <!-- WebGL 지원 여부에 따른 조건부 렌더링 webglSupported -> 3D // !webglSupported -> 2D -->
                 <!-- <ThreeWaveAnimation 
                     v-if="webglSupported"
@@ -19,7 +23,7 @@
                     :threshold="threshold"
                 /> -->
                 <PaintWaveAnimation
-                    :size="circleSize" 
+                    :size="circleSize"
                     :isActive="isLoading"
                     :isAudioPlaying="isAudioPlaying"
                     :audioBars="audioBars"
@@ -54,15 +58,15 @@
             </div> -->
             <div class="controls d-flex align-center">
                 <v-btn v-if="!isRecording && !isAudioPlaying && !isLoading" @click="toggleRecording()" icon density="comfortable">
-                    <Icons :icon="'sharp-mic'"  />
+                    <Icons :icon="'sharp-mic'" />
                 </v-btn>
                 <v-btn v-else-if="!sendRecordingStatus" @click="sendRecording()" icon density="comfortable">
-                    <Icons :icon="'stop'"  />
+                    <Icons :icon="'stop'" />
                 </v-btn>
                 <v-btn v-else @click="stopAudioStream()" icon density="comfortable">
-                    <Icons :icon="'stop'"  />
+                    <Icons :icon="'stop'" />
                 </v-btn>
-                <div style="color: white;">
+                <div style="color: white">
                     <div v-if="isPCResponding">음성답변 진행중</div>
                     <div v-else-if="isUserSpeaking">음성 인식 진행중....</div>
                     <div v-else-if="isRecording">음성 감지중</div>
@@ -86,7 +90,7 @@ export default {
         Icon,
         AudioStream,
         PaintWaveAnimation,
-        ThreeWaveAnimation,
+        ThreeWaveAnimation
     },
     props: {
         recordingMode: Boolean,
@@ -106,7 +110,7 @@ export default {
             volume: 0,
             threshold: 15,
             webglSupported: false, // WebGL 지원 여부
-            isUserSpeaking: false, // 사용자 음성 감지 상태
+            isUserSpeaking: false // 사용자 음성 감지 상태
         };
     },
 
@@ -119,7 +123,7 @@ export default {
                 const canvas = document.createElement('canvas');
                 let gl = canvas.getContext('webgl2');
                 let version = '';
-                
+
                 if (gl) {
                     version = 'WebGL 2.0';
                 } else {
@@ -128,17 +132,17 @@ export default {
                         version = 'WebGL 1.0';
                     }
                 }
-                
+
                 if (gl) {
                     // 추가 검증: 실제로 렌더링이 가능한지 확인
                     const supported = gl.getParameter(gl.VERSION);
-                    
+
                     // GPU 정보도 출력
                     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
                     if (debugInfo) {
                         const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
                     }
-                    
+
                     this.webglSupported = true;
                 } else {
                     this.webglSupported = false;
@@ -147,7 +151,7 @@ export default {
                 this.webglSupported = false;
             }
         },
-        
+
         updateAudioBars(dataArray) {
             this.audioBars = dataArray;
             if (dataArray && dataArray.length > 0) {
@@ -199,7 +203,7 @@ export default {
         },
         onUserSpeaking(isUserSpeaking) {
             this.isUserSpeaking = isUserSpeaking;
-        },
+        }
     },
     computed: {
         circleSize() {
@@ -218,39 +222,43 @@ export default {
 <style scoped>
 /* ===== GPT 답변 애니메이션 시작 */
 @keyframes increaseHeight1 {
-  0%, 100% {
-    height: 30px;
-  }
-  50% {
-    height: 60px;
-  }
+    0%,
+    100% {
+        height: 30px;
+    }
+    50% {
+        height: 60px;
+    }
 }
 
 @keyframes increaseHeight2 {
-  0%, 100% {
-    height: 30px;
-  }
-  50% {
-    height: 80px;
-  }
+    0%,
+    100% {
+        height: 30px;
+    }
+    50% {
+        height: 80px;
+    }
 }
 
 @keyframes increaseHeight3 {
-  0%, 100% {
-    height: 30px;
-  }
-  50% {
-    height: 100px;
-  }
+    0%,
+    100% {
+        height: 30px;
+    }
+    50% {
+        height: 100px;
+    }
 }
 
 @keyframes increaseHeight4 {
-  0%, 100% {
-    height: 30px;
-  }
-  50% {
-    height: 120px;
-  }
+    0%,
+    100% {
+        height: 30px;
+    }
+    50% {
+        height: 120px;
+    }
 }
 
 .audio-bar-box {
@@ -286,18 +294,17 @@ export default {
     animation: increaseHeight4 0.7s infinite ease-in-out;
 }
 
-
 /* ===== GPT 답변 애니메이션 끝 */
 
-
 @keyframes breathe {
-    0%, 100% {
-        transform: scale(0.97);  /* 기본 크기 */
-        opacity: 1;  /* 약간 투명 */
+    0%,
+    100% {
+        transform: scale(0.97); /* 기본 크기 */
+        opacity: 1; /* 약간 투명 */
     }
     50% {
-        transform: scale(1.1);  /* 20% 더 크게 */
-        opacity: 0.9;  /* 완전 불투명 */
+        transform: scale(1.1); /* 20% 더 크게 */
+        opacity: 0.9; /* 완전 불투명 */
     }
 }
 
@@ -311,7 +318,8 @@ export default {
 }
 
 @keyframes move-position {
-    0%, 100% {
+    0%,
+    100% {
         top: 120px;
     }
     25% {
@@ -326,7 +334,8 @@ export default {
 }
 
 @keyframes move-child {
-    0%, 100% {
+    0%,
+    100% {
         top: 0px;
         left: 30px;
     }
@@ -350,33 +359,32 @@ export default {
 }
 
 .child-circle {
-  position: absolute;
-  width: 155px;
-  height: 155px;
-  background-color: white;
-  border-radius: 50%;
+    position: absolute;
+    width: 155px;
+    height: 155px;
+    background-color: white;
+    border-radius: 50%;
 }
 
 .child-circle:nth-child(1) {
-  transform: rotate(0deg) translate(68px) rotate(0deg);
+    transform: rotate(0deg) translate(68px) rotate(0deg);
 }
 
 .child-circle:nth-child(2) {
-  transform: rotate(72deg) translate(70px) rotate(-72deg);
+    transform: rotate(72deg) translate(70px) rotate(-72deg);
 }
 
 .child-circle:nth-child(3) {
-  transform: rotate(144deg) translate(65px) rotate(-144deg);
+    transform: rotate(144deg) translate(65px) rotate(-144deg);
 }
 
 .child-circle:nth-child(4) {
-  transform: rotate(216deg) translate(75px) rotate(-216deg);
+    transform: rotate(216deg) translate(75px) rotate(-216deg);
 }
 
 .child-circle:nth-child(5) {
-  transform: rotate(288deg) translate(72px) rotate(-288deg);
+    transform: rotate(288deg) translate(72px) rotate(-288deg);
 }
-
 
 /* =============== */
 .record-close-btn {
@@ -404,46 +412,46 @@ export default {
     border-radius: 50%;
     background-color: white;
     position: absolute;
-    top:120px;
+    top: 120px;
     animation: breathe 2s infinite ease-in-out;
 }
 
 .controls {
-  display: flex;
-  align-items: flex-end;
-  gap: 20px;
-  position: absolute;
-  bottom: 30px;
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    position: absolute;
+    bottom: 30px;
 }
 
 .bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 5px;
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
 }
 
 .bar {
-  width: 20px;
-  background-color: white;
-  margin: 0 0 10px 0;
-  align-self: flex-end;
-  border-radius: 10px;
+    width: 20px;
+    background-color: white;
+    margin: 0 0 10px 0;
+    align-self: flex-end;
+    border-radius: 10px;
 }
 
 @media only screen and (max-width: 1279px) {
-  .record-close-btn {
-    position: absolute;
-    top: 50px !important;
-    right: 30px;
-  }
+    .record-close-btn {
+        position: absolute;
+        top: 50px !important;
+        right: 30px;
+    }
 }
 
 @media only screen and (max-width: 768px) {
-  .record-close-btn {
-    position: absolute;
-    top: 10px !important;
-    right:10px;
-  }
+    .record-close-btn {
+        position: absolute;
+        top: 10px !important;
+        right: 10px;
+    }
 }
 
 .chatgpt-waveform {

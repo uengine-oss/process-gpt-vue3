@@ -2,19 +2,19 @@
     <div class="w-100">
         <slot name="contents">
             <div>
-                <InstanceHistory/>
+                <InstanceHistory />
             </div>
             <div v-for="(message, index) in filterMessages" :key="index" class="w-100 pa-4">
                 <slot name="messageProfile">
-                    <v-row class="ma-0 pa-0" style="margin-bottom:10px !important;">
+                    <v-row class="ma-0 pa-0" style="margin-bottom: 10px !important">
                         <v-avatar class="pr-2" size="40">
-                            <img v-if="!message.profile" :src="defaultProfile" alt="pro" width="50">
-                            <img v-else :src="message.profile" alt="pro" width="50">
+                            <img v-if="!message.profile" :src="defaultProfile" alt="pro" width="50" />
+                            <img v-else :src="message.profile" alt="pro" width="50" />
                         </v-avatar>
-                        <div v-if="message.timeStamp" style="font-size:12px; padding-top:20px;">
-                            {{ message.roleName }} 
+                        <div v-if="message.timeStamp" style="font-size: 12px; padding-top: 20px">
+                            {{ message.roleName }}
                             {{ formatTime(message.timeStamp) }}
-                        </div>     
+                        </div>
                     </v-row>
                 </slot>
                 <slot name="messageContent">
@@ -23,20 +23,22 @@
                             <v-row class="pa-0 ma-0">
                                 <div v-html="message.content" @click="clickContent(message)"></div>
                                 <v-spacer></v-spacer>
-                                <Icons v-if="filterMessages[index].open"
+                                <Icons
+                                    v-if="filterMessages[index].open"
                                     @click="openDescription(index)"
-                                    :icon="'arrow-up-2'" 
-                                    style="cursor: pointer;"
+                                    :icon="'arrow-up-2'"
+                                    style="cursor: pointer"
                                 />
-                                <Icons v-else
-                                    @click="openDescription(index)"
-                                    :icon="'arrow-down-2'" 
-                                    style="cursor: pointer;"
-                                />
+                                <Icons v-else @click="openDescription(index)" :icon="'arrow-down-2'" style="cursor: pointer" />
                             </v-row>
-                            <div v-if="message.open" style="margin-top: 20px;">
+                            <div v-if="message.open" style="margin-top: 20px">
                                 <div v-if="toolFormat(message).includes('formHandler')">
-                                    <DynamicForm class="message-layout-dyna" v-if="message.open" :formHTML="message.html" v-model="message.formData"></DynamicForm>
+                                    <DynamicForm
+                                        class="message-layout-dyna"
+                                        v-if="message.open"
+                                        :formHTML="message.html"
+                                        v-model="message.formData"
+                                    ></DynamicForm>
                                 </div>
                                 <div v-else-if="toolFormat(message) == 'defaultHandler'">
                                     <DefaultForm :inputItems="message.formData"></DefaultForm>
@@ -60,7 +62,7 @@ import DynamicForm from '@/components/designer/DynamicForm.vue';
 import DefaultForm from '@/components/designer/DefaultForm.vue';
 import InstanceHistory from '@/components/ui/InstanceHistory.vue';
 
-const backend = BackendFactory.createBackend()
+const backend = BackendFactory.createBackend();
 export default {
     props: {
         messages: Array,
@@ -69,7 +71,7 @@ export default {
             type: Boolean,
             default: false
         },
-        instance: Object,
+        instance: Object
     },
     data() {
         return {
@@ -82,74 +84,77 @@ export default {
         DefaultForm,
         InstanceHistory
     },
-    created(){
-        this.init()
+    created() {
+        this.init();
     },
     methods: {
-         init(){
-            this.filterMessages = this.messages.map(message => {
+        init() {
+            this.filterMessages = this.messages.map((message) => {
                 // default Value
-                message.open = false
-                message.html = null
-                message.formData = null
+                message.open = false;
+                message.html = null;
+                message.formData = null;
 
-                return message
-            })
+                return message;
+            });
         },
-        toolFormat(message){
-            if(!message._item) return null;
+        toolFormat(message) {
+            if (!message._item) return null;
 
-            if(message._item.tool.includes('formHandler')){
-                return 'formHandler'
+            if (message._item.tool.includes('formHandler')) {
+                return 'formHandler';
             }
-            return message._item.tool 
+            return message._item.tool;
         },
-        async openDescription(index){
-            var me = this
+        async openDescription(index) {
+            var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    const workHistory = me.filterMessages[index]._item 
-                    if(me.filterMessages[index].open) { me.filterMessages[index].open = false; return; } // only close
-                   
-                    if(workHistory.tool.includes('formHandler')){
-                        if(me.filterMessages[index].html && me.filterMessages[index].formData) { me.filterMessages[index].open = true; return; } // only open
+                    const workHistory = me.filterMessages[index]._item;
+                    if (me.filterMessages[index].open) {
+                        me.filterMessages[index].open = false;
+                        return;
+                    } // only close
+
+                    if (workHistory.tool.includes('formHandler')) {
+                        if (me.filterMessages[index].html && me.filterMessages[index].formData) {
+                            me.filterMessages[index].open = true;
+                            return;
+                        } // only open
 
                         // FormHandler
                         const workItem = await backend.getWorkItem(workHistory.taskId);
-                        let varName = workItem.activity.variableForHtmlFormContext.name 
-                        
+                        let varName = workItem.activity.variableForHtmlFormContext.name;
+
                         // get form html
                         let formName = workHistory.tool.split(':')[1];
-                        me.filterMessages[index].html = await backend.getRawDefinition(formName, {'type': 'form'});   
+                        me.filterMessages[index].html = await backend.getRawDefinition(formName, { type: 'form' });
 
                         // get variable
-                        let variable = await backend.getVariable(workHistory.instId, varName) 
-                        me.filterMessages[index].formData = variable ? variable.valueMap : {}
-                        
+                        let variable = await backend.getVariable(workHistory.instId, varName);
+                        me.filterMessages[index].formData = variable ? variable.valueMap : {};
                     } else {
                         // DefaultHandler
                         const workItem = await backend.getWorkItem(workHistory.taskId);
-                        let result = []
+                        let result = [];
 
-                        if(workItem.activity.parameters) {
+                        if (workItem.activity.parameters) {
                             for (const item of workItem.activity.parameters) {
                                 let variable = await backend.getVariable(workHistory.instId, item.variable.name);
                                 result.push({ name: item.variable.name, value: variable });
                             }
                         }
-                        me.filterMessages[index].formData = result
-
+                        me.filterMessages[index].formData = result;
                     }
-                   
+
                     // open
-                    me.filterMessages[index].open = true
+                    me.filterMessages[index].open = true;
                 }
-            })
-           
+            });
         },
-        clickContent(message){
-            this.$emit('clickMessage', message)
+        clickContent(message) {
+            this.$emit('clickMessage', message);
         },
         formatTime(timeStamp) {
             var date = new Date(timeStamp);

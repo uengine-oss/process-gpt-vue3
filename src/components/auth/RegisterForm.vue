@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form } from 'vee-validate';
-import { ref, getCurrentInstance, defineProps } from 'vue';
+import { ref, computed, getCurrentInstance, defineProps } from 'vue';
 
 import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
@@ -18,25 +18,33 @@ const showConfirmPassword = ref(false);
 const email = ref('');
 const passwordRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterPassword'),
-    (v: string) => v.length >= 8 || proxy.$t('createAccount.passwordMinLength'),
-    (v: string) => /[a-zA-Z]/.test(v) || proxy.$t('createAccount.passwordNeedLetter'),
-    (v: string) => /[0-9]/.test(v) || proxy.$t('createAccount.passwordNeedNumber'),
-    (v: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v) || proxy.$t('createAccount.passwordNeedSpecial'),
+    (v: string) =>
+        (v.length >= 8 && /[a-zA-Z]/.test(v) && /[0-9]/.test(v) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v)) ||
+        proxy.$t('createAccount.passwordRequirement')
 ]);
 const emailRules = ref([
-    (v: string) => !!v || proxy.$t('createAccount.enterEmail'), 
+    (v: string) => !!v || proxy.$t('createAccount.enterEmail'),
     (v: string) => /.+@.+\..+/.test(v) || proxy.$t('createAccount.invalidEmailFormat')
 ]);
 const username = ref('');
-const usernameRules = ref([
-    (v: string) => !!v || proxy.$t('createAccount.enterName'),
-]);
+const usernameRules = ref([(v: string) => !!v || proxy.$t('createAccount.enterName')]);
 
 // 비밀번호 일치 여부 검증 함수
 const confirmPasswordRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterConfirmPassword'),
     (v: string) => v === password.value || proxy.$t('createAccount.passwordMismatch')
 ]);
+
+const isRegisterFormValid = computed(() => {
+    if (!username.value) return false;
+    if (!email.value || !/.+@.+\..+/.test(email.value)) return false;
+    if (!password.value || password.value.length < 8) return false;
+    if (!/[a-zA-Z]/.test(password.value)) return false;
+    if (!/[0-9]/.test(password.value)) return false;
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value)) return false;
+    if (!confirmPassword.value || confirmPassword.value !== password.value) return false;
+    return true;
+});
 
 function validate(values: any, { setErrors }: any) {
     // 필수 입력값 및 이메일 형식 검증
@@ -51,6 +59,14 @@ function validate(values: any, { setErrors }: any) {
     }
     if (!password.value) {
         setErrors({ password: proxy.$t('createAccount.enterPassword') });
+        hasError = true;
+    } else if (
+        password.value.length < 8 ||
+        !/[a-zA-Z]/.test(password.value) ||
+        !/[0-9]/.test(password.value) ||
+        !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value)
+    ) {
+        setErrors({ password: proxy.$t('createAccount.passwordRequirement') });
         hasError = true;
     }
     if (!confirmPassword.value || password.value !== confirmPassword.value) {
@@ -93,17 +109,9 @@ function validate(values: any, { setErrors }: any) {
         <v-divider class="mb-4" />
 
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
-        <VTextField 
-            v-model="username" 
-            :rules="usernameRules" 
-            required 
-        ></VTextField>
+        <VTextField v-model="username" :rules="usernameRules" required></VTextField>
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.email') }}</v-label>
-        <VTextField 
-            v-model="email" 
-            :rules="emailRules" 
-            required 
-        ></VTextField>
+        <VTextField v-model="email" :rules="emailRules" required></VTextField>
         <!-- 암호 확인 부분 -->
         <div>
             <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.password') }}</v-label>
@@ -130,15 +138,17 @@ function validate(values: any, { setErrors }: any) {
                 @click:append-inner="showConfirmPassword = !showConfirmPassword"
             ></VTextField>
         </div>
-        
-        <v-btn 
-            size="large" 
-            class="mt-2" 
-            color="primary" 
-            block 
+
+        <v-btn
+            size="large"
+            class="mt-2"
+            color="primary"
+            block
             rounded="pill"
             :loading="isSubmitting"
+            :disabled="!isRegisterFormValid"
             type="submit"
-        >{{ $t('createAccount.signUp') }}</v-btn>
+            >{{ $t('createAccount.signUp') }}</v-btn
+        >
     </Form>
 </template>

@@ -1,69 +1,64 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { computed } from 'vue';
-import { getPrimary, getLight100,getWarning,getError } from '@/utils/UpdateColors';
+import { getPrimary, getLight100, getWarning, getError } from '@/utils/UpdateColors';
 import { CircleIcon, DotsVerticalIcon } from 'vue-tabler-icons';
-const items = ref([
-    { title: "Action" },
-    { title: "Another action" },
-    { title: "Something else here" },
-]);
+const items = ref([{ title: 'Action' }, { title: 'Another action' }, { title: 'Something else here' }]);
 
 /* Chart */
 const chartOptions = computed(() => {
     return {
         series: [5368, 3319, 3500, 4106],
-        labels: ["5368", "Direct Traffic", "Refferal Traffic", "Oragnic Traffic"],
+        labels: ['5368', 'Direct Traffic', 'Refferal Traffic', 'Oragnic Traffic'],
         chart: {
             height: 280,
-            type: "donut",
+            type: 'donut',
             fontFamily: `inherit`,
-            foreColor: "#c6d1e9",
-            offsetX: -15,
+            foreColor: '#c6d1e9',
+            offsetX: -15
         },
 
         tooltip: {
-            theme: "dark",
-            fillSeriesColor: false,
+            theme: 'dark',
+            fillSeriesColor: false
         },
 
         colors: [getLight100.value, getWarning.value, getError.value, getPrimary.value],
         dataLabels: {
-            enabled: false,
+            enabled: false
         },
 
         legend: {
-            show: false,
+            show: false
         },
 
         stroke: {
-            show: false,
+            show: false
         },
 
         plotOptions: {
             pie: {
                 donut: {
-                    size: "75%",
-                    background: "none",
+                    size: '75%',
+                    background: 'none',
                     labels: {
                         show: true,
                         name: {
                             show: true,
-                            fontSize: "18px",
+                            fontSize: '18px',
                             color: undefined,
-                            offsetY: 5,
+                            offsetY: 5
                         },
                         value: {
                             show: false,
-                            color: "#98aab4",
-                        },
-                    },
-                },
-            },
-        },
+                            color: '#98aab4'
+                        }
+                    }
+                }
+            }
+        }
     };
 });
-
 </script>
 <template>
     <v-card elevation="10">
@@ -94,24 +89,25 @@ const chartOptions = computed(() => {
                 </v-col>
                 <v-col cols="12" lg="5" md="7">
                     <div class="d-flex mb-6 pb-3">
-                        <CircleIcon  stroke-width="1.5" size="18" class="text-primary"/>
+                        <CircleIcon stroke-width="1.5" size="18" class="text-primary" />
                         <div class="ml-2 mt-n1">
-                            <h5 class="text-h5 d-flex font-weight-semibold">4,106<span
-                                    class="text-subtitle-2 text-success ml-1 pt-2">+23%</span></h5>
+                            <h5 class="text-h5 d-flex font-weight-semibold">
+                                4,106<span class="text-subtitle-2 text-success ml-1 pt-2">+23%</span>
+                            </h5>
                             <h6 class="text-subtitle-1 text-grey100">Oragnic Traffic</h6>
                         </div>
                     </div>
                     <div class="d-flex mb-6 pb-3">
-                        <CircleIcon  stroke-width="1.5" size="18" class="text-error"/>
+                        <CircleIcon stroke-width="1.5" size="18" class="text-error" />
                         <div class="ml-2 mt-n1">
                             <h5 class="text-h5 font-weight-semibold">3,500</h5>
                             <h6 class="text-subtitle-1 text-grey100">Refferal Traffic</h6>
                         </div>
                     </div>
                     <div class="d-flex">
-                        <CircleIcon  stroke-width="1.5" size="18" class="text-warning"/>
+                        <CircleIcon stroke-width="1.5" size="18" class="text-warning" />
                         <div class="ml-2 mt-n1">
-                            <h5 class="text-h5 font-weight-semibold">3,319</h5> 
+                            <h5 class="text-h5 font-weight-semibold">3,319</h5>
                             <h6 class="text-subtitle-1 text-grey100">Direct Traffic</h6>
                         </div>
                     </div>

@@ -6,14 +6,9 @@
                     <v-row class="ma-0 pa-0 mb-4">
                         <h5 class="text-h5">{{ $t('MCPEnvSecret.mcpEnvironments') }}</h5>
                         <v-spacer></v-spacer>
-                        <v-btn 
-                            color="primary" 
-                            variant="flat"
-                            rounded
-                            @click="openDialog('environment')"
-                        >
+                        <v-btn color="primary" variant="flat" rounded @click="openDialog('environment')">
                             <v-row class="pa-0 ma-0 align-center">
-                                <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
+                                <v-icon class="mr-2" style="padding-top: 3px">mdi-plus</v-icon>
                                 <div>{{ $t('accountTab.addEnvironment') }}</div>
                             </v-row>
                         </v-btn>
@@ -40,14 +35,9 @@
                     <v-row class="ma-0 pa-0 mb-4">
                         <h5 class="text-h5">{{ $t('MCPEnvSecret.mcpSecrets') }}</h5>
                         <v-spacer></v-spacer>
-                        <v-btn
-                            color="primary" 
-                            variant="flat"
-                            rounded
-                            @click="openDialog('secret')"
-                        >
+                        <v-btn color="primary" variant="flat" rounded @click="openDialog('secret')">
                             <v-row class="pa-0 ma-0 align-center">
-                                <v-icon class="mr-2" style="padding-top: 3px;">mdi-plus</v-icon>
+                                <v-icon class="mr-2" style="padding-top: 3px">mdi-plus</v-icon>
                                 <div>{{ $t('accountTab.addSecret') }}</div>
                             </v-row>
                         </v-btn>
@@ -74,14 +64,9 @@
                     <v-row class="ma-0 pa-0 mb-4">
                         <h5 class="text-h5">{{ $t('MCPEnvSecret.browserUseSecrets') }}</h5>
                         <v-spacer></v-spacer>
-                        <v-btn
-                            color="primary" 
-                            variant="flat"
-                            rounded
-                            @click="openBrowserUseEditor()"
-                        >
+                        <v-btn color="primary" variant="flat" rounded @click="openBrowserUseEditor()">
                             <v-row class="pa-0 ma-0 align-center">
-                                <v-icon class="mr-2" style="padding-top: 3px;">mdi-pencil</v-icon>
+                                <v-icon class="mr-2" style="padding-top: 3px">mdi-pencil</v-icon>
                                 <div>{{ $t('accountTab.editBrowserUseSecret') }}</div>
                             </v-row>
                         </v-btn>
@@ -100,51 +85,65 @@
     </v-row>
 
     <!-- Unified Dialog -->
-    <v-dialog v-model="dialog"
-        max-width="800px"
-        persistent
-        :fullscreen="isMobile"
-    >
+    <v-dialog v-model="dialog" max-width="800px" persistent :fullscreen="isMobile">
         <v-card class="pa-4">
             <v-row class="ma-0 pa-0 align-center">
                 <v-card-title class="pa-0"
-                >{{ editing ? (currentType === 'environment' ? $t('accountTab.editEnvironment') : currentType === 'secret' ? $t('accountTab.editSecret') : $t('accountTab.editBrowserUseSecret')) : (currentType === 'environment' ? $t('accountTab.addEnvironment') : currentType === 'secret' ? $t('accountTab.addSecret') : $t('accountTab.addBrowserUseSecret')) }}
+                    >{{
+                        editing
+                            ? currentType === 'environment'
+                                ? $t('accountTab.editEnvironment')
+                                : currentType === 'secret'
+                                ? $t('accountTab.editSecret')
+                                : $t('accountTab.editBrowserUseSecret')
+                            : currentType === 'environment'
+                            ? $t('accountTab.addEnvironment')
+                            : currentType === 'secret'
+                            ? $t('accountTab.addSecret')
+                            : $t('accountTab.addBrowserUseSecret')
+                    }}
                 </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn @click="closeDialog"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="closeDialog" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
             <v-card-text class="ma-0 pa-0 pt-4">
                 <v-container class="ma-0 pa-0">
                     <v-row class="ma-0 pa-0">
-                        <v-col v-if="!editing"
-                            cols="12"
-                            class="pa-0"
-                        >
-                            <v-select v-model="currentType" :items="typeOptions" :label="$t('MCPEnvSecret.type') + '*'" required :disabled="editing"></v-select>
+                        <v-col v-if="!editing" cols="12" class="pa-0">
+                            <v-select
+                                v-model="currentType"
+                                :items="typeOptions"
+                                :label="$t('MCPEnvSecret.type') + '*'"
+                                required
+                                :disabled="editing"
+                            ></v-select>
                         </v-col>
-                        <v-col cols="12"
-                            class="pa-0"
-                        >
+                        <v-col cols="12" class="pa-0">
                             <v-text-field
                                 v-model="form.name"
-                                :label="`${currentType === 'environment' ? $t('MCPEnvSecret.environmentName') : currentType === 'secret' ? $t('MCPEnvSecret.secretName') : $t('MCPEnvSecret.browserUseSecretName')}*`"
+                                :label="`${
+                                    currentType === 'environment'
+                                        ? $t('MCPEnvSecret.environmentName')
+                                        : currentType === 'secret'
+                                        ? $t('MCPEnvSecret.secretName')
+                                        : $t('MCPEnvSecret.browserUseSecretName')
+                                }*`"
                                 required
                                 :rules="[(v) => !!v || $t('MCPEnvSecret.nameRequired')]"
                             ></v-text-field>
                         </v-col>
                         <h6 class="text-h6 pa-0 pt-2">{{ $t('accountTab.indicatesRequiredField') }}</h6>
-                        <v-col cols="12"
-                            class="pa-0 pt-4"
-                        >
+                        <v-col cols="12" class="pa-0 pt-4">
                             <vue-monaco-editor
-                                :class="currentType === 'environment' ? 'mcp-environment-monaco-editor' : currentType === 'secret' ? 'mcp-secret-monaco-editor' : 'mcp-browser-use-monaco-editor'"
+                                :class="
+                                    currentType === 'environment'
+                                        ? 'mcp-environment-monaco-editor'
+                                        : currentType === 'secret'
+                                        ? 'mcp-secret-monaco-editor'
+                                        : 'mcp-browser-use-monaco-editor'
+                                "
                                 v-model:value="form.data"
                                 language="json"
                                 :options="MONACO_EDITOR_OPTIONS"
@@ -168,34 +167,20 @@
 
             <v-row class="ma-0 pa-0 mt-4">
                 <v-spacer></v-spacer>
-                <v-btn @click="saveItem"
-                    :loading="saving"
-                    :disabled="!form.data || !form.name" 
-                    color="primary" 
-                    variant="flat" 
-                    rounded 
-                >{{ $t('accountTab.save') }}</v-btn>
+                <v-btn @click="saveItem" :loading="saving" :disabled="!form.data || !form.name" color="primary" variant="flat" rounded>{{
+                    $t('accountTab.save')
+                }}</v-btn>
             </v-row>
         </v-card>
-        
     </v-dialog>
 
     <!-- Browser Use JSON Editor Dialog -->
-    <v-dialog v-model="browserUseDialog"
-        max-width="1000px"
-        persistent
-        :fullscreen="isMobile"
-    >
+    <v-dialog v-model="browserUseDialog" max-width="1000px" persistent :fullscreen="isMobile">
         <v-card class="pa-4">
             <v-row class="ma-0 pa-0 align-center">
                 <v-card-title class="pa-0">{{ $t('accountTab.editBrowserUseSecret') }}</v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn @click="closeBrowserUseDialog"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="closeBrowserUseDialog" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
@@ -216,12 +201,9 @@
             </v-card-text>
             <v-row class="ma-0 pa-0 mt-4">
                 <v-spacer></v-spacer>
-                <v-btn @click="saveBrowserUseConfig"
-                    :loading="saving"
-                    color="primary" 
-                    variant="flat" 
-                    rounded 
-                >{{ $t('accountTab.save') }}</v-btn>
+                <v-btn @click="saveBrowserUseConfig" :loading="saving" color="primary" variant="flat" rounded>{{
+                    $t('accountTab.save')
+                }}</v-btn>
             </v-row>
         </v-card>
     </v-dialog>
@@ -316,7 +298,7 @@ export default {
                 if (res) {
                     this.browserUseConfig = JSON.parse(res.value);
                 } else {
-                    this.browserUseConfig = "{}";
+                    this.browserUseConfig = '{}';
                 }
             } catch (error) {
                 console.error('Error loading browser use config:', error);
@@ -390,16 +372,29 @@ export default {
 
                 this.$emit('snackbar', {
                     show: true,
-                    text: this.editing 
-                        ? (this.currentType === 'environment' ? this.$t('MCPEnvSecret.environmentUpdated') : this.currentType === 'secret' ? this.$t('MCPEnvSecret.secretUpdated') : this.$t('MCPEnvSecret.browserUseSecretUpdated'))
-                        : (this.currentType === 'environment' ? this.$t('MCPEnvSecret.environmentCreated') : this.currentType === 'secret' ? this.$t('MCPEnvSecret.secretCreated') : this.$t('MCPEnvSecret.browserUseSecretCreated')),
+                    text: this.editing
+                        ? this.currentType === 'environment'
+                            ? this.$t('MCPEnvSecret.environmentUpdated')
+                            : this.currentType === 'secret'
+                            ? this.$t('MCPEnvSecret.secretUpdated')
+                            : this.$t('MCPEnvSecret.browserUseSecretUpdated')
+                        : this.currentType === 'environment'
+                        ? this.$t('MCPEnvSecret.environmentCreated')
+                        : this.currentType === 'secret'
+                        ? this.$t('MCPEnvSecret.secretCreated')
+                        : this.$t('MCPEnvSecret.browserUseSecretCreated'),
                     color: 'success'
                 });
             } catch (error) {
                 console.error(`Error saving ${this.currentType}:`, error);
                 this.$emit('snackbar', {
                     show: true,
-                    text: this.currentType === 'environment' ? this.$t('MCPEnvSecret.errorSavingEnvironment') : this.currentType === 'secret' ? this.$t('MCPEnvSecret.errorSavingSecret') : this.$t('MCPEnvSecret.errorSavingBrowserUseSecret'),
+                    text:
+                        this.currentType === 'environment'
+                            ? this.$t('MCPEnvSecret.errorSavingEnvironment')
+                            : this.currentType === 'secret'
+                            ? this.$t('MCPEnvSecret.errorSavingSecret')
+                            : this.$t('MCPEnvSecret.errorSavingBrowserUseSecret'),
                     color: 'error'
                 });
             } finally {
@@ -408,11 +403,12 @@ export default {
         },
 
         async deleteItem(item, type) {
-            const confirmMessage = type === 'environment' 
-                ? this.$t('MCPEnvSecret.confirmDeleteEnvironment', { name: item.name })
-                : type === 'secret' 
-                ? this.$t('MCPEnvSecret.confirmDeleteSecret', { name: item.name })
-                : this.$t('MCPEnvSecret.confirmDeleteBrowserUseSecret', { name: item.name });
+            const confirmMessage =
+                type === 'environment'
+                    ? this.$t('MCPEnvSecret.confirmDeleteEnvironment', { name: item.name })
+                    : type === 'secret'
+                    ? this.$t('MCPEnvSecret.confirmDeleteSecret', { name: item.name })
+                    : this.$t('MCPEnvSecret.confirmDeleteBrowserUseSecret', { name: item.name });
             if (confirm(confirmMessage)) {
                 try {
                     if (type === 'environment') {
@@ -428,14 +424,24 @@ export default {
 
                     this.$emit('snackbar', {
                         show: true,
-                        text: type === 'environment' ? this.$t('MCPEnvSecret.environmentDeleted') : type === 'secret' ? this.$t('MCPEnvSecret.secretDeleted') : this.$t('MCPEnvSecret.browserUseSecretDeleted'),
+                        text:
+                            type === 'environment'
+                                ? this.$t('MCPEnvSecret.environmentDeleted')
+                                : type === 'secret'
+                                ? this.$t('MCPEnvSecret.secretDeleted')
+                                : this.$t('MCPEnvSecret.browserUseSecretDeleted'),
                         color: 'success'
                     });
                 } catch (error) {
                     console.error(`Error deleting ${type}:`, error);
                     this.$emit('snackbar', {
                         show: true,
-                        text: type === 'environment' ? this.$t('MCPEnvSecret.errorDeletingEnvironment') : type === 'secret' ? this.$t('MCPEnvSecret.errorDeletingSecret') : this.$t('MCPEnvSecret.errorDeletingBrowserUseSecret'),
+                        text:
+                            type === 'environment'
+                                ? this.$t('MCPEnvSecret.errorDeletingEnvironment')
+                                : type === 'secret'
+                                ? this.$t('MCPEnvSecret.errorDeletingSecret')
+                                : this.$t('MCPEnvSecret.errorDeletingBrowserUseSecret'),
                         color: 'error'
                     });
                 }

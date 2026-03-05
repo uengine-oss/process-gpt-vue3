@@ -1,15 +1,34 @@
 <template>
     <div class="canvas-panel">
-        <opengraph focus-canvas-on-select wheelScalable :dragPageMovable="dragPageMovable" :enableContextmenu="false"
-            :enableRootContextmenu="false" :enableHotkeyCtrlC="false" :enableHotkeyCtrlV="false"
-            :enableHotkeyDelete="false" :slider="false" :movable="!monitor" :resizable="!monitor" :selectable="!monitor"
-            :connectable="!monitor" :width="100000" :imageBase="imageBase" :height="100000" v-if="modelValue"
-            v-on:canvasReady="bindEvents" v-on:connectShape="onConnectShape" v-on:divideLane="onDivideLane">
+        <opengraph
+            focus-canvas-on-select
+            wheelScalable
+            :dragPageMovable="dragPageMovable"
+            :enableContextmenu="false"
+            :enableRootContextmenu="false"
+            :enableHotkeyCtrlC="false"
+            :enableHotkeyCtrlV="false"
+            :enableHotkeyDelete="false"
+            :slider="false"
+            :movable="!monitor"
+            :resizable="!monitor"
+            :selectable="!monitor"
+            :connectable="!monitor"
+            :width="100000"
+            :imageBase="imageBase"
+            :height="100000"
+            v-if="modelValue"
+            v-on:canvasReady="bindEvents"
+            v-on:connectShape="onConnectShape"
+            v-on:divideLane="onDivideLane"
+        >
             <!--롤은 Lane 형식의 큰 틀-->
             <div v-for="roleId in Object.keys(value.elements)" :key="'role' + roleId">
                 <bpmn-role
                     v-if="roleId && value.elements[roleId] && value.elements[roleId]._type == 'org.uengine.kernel.Role'"
-                    :value="value.elements[roleId]" :ref="roleId"></bpmn-role>
+                    :value="value.elements[roleId]"
+                    :ref="roleId"
+                ></bpmn-role>
             </div>
 
             <!--액티비티는 각 활동 요소-->
@@ -20,17 +39,25 @@
                 <!--ex) :status="???"-->
                 <!--그러기 위해서는 SvgGraph(데이터 불러오는 부분) 에서, definition 가져온 이후에, definition 안에 있는 childActivities 를 까서-->
                 <!--그 안에 tracingTag 가 동일한 것들에 대해 status 를 매핑시켜주어야 한다.-->
-                <component v-if="elementId && value.elements[elementId] != null"
-                    :is="getComponentByClassName(value.elements[elementId]._type)" :value="value.elements[elementId]"
-                    :definition="value" :ref="elementId"
-                    :status="value.elements[elementId].status ? value.elements[elementId].status : null"></component>
+                <component
+                    v-if="elementId && value.elements[elementId] != null"
+                    :is="getComponentByClassName(value.elements[elementId]._type)"
+                    :value="value.elements[elementId]"
+                    :definition="value"
+                    :ref="elementId"
+                    :status="value.elements[elementId].status ? value.elements[elementId].status : null"
+                ></component>
             </div>
 
             <!--릴레이션은 액티비티간 연결선(흐름)-->
             <div v-for="relationId in Object.keys(value.relations)" :key="relationId">
-                <component v-if="relationId && value.relations[relationId] != null"
+                <component
+                    v-if="relationId && value.relations[relationId] != null"
                     :is="getComponentByClassName(value.relations[relationId]._type)"
-                    :value="value.relations[relationId]" :definition="value" :ref="relationId"></component>
+                    :value="value.relations[relationId]"
+                    :definition="value"
+                    :ref="relationId"
+                ></component>
                 <!-- <bpmn-message-flow
                     v-if="
                         relationId &&
@@ -188,15 +215,28 @@
             <v-card v-if="!monitor" variant="outlined" style="background-color: white">
                 <v-tooltip location="top">
                     <template v-slot:activator="{ props }">
-                        <span class="bpmn-icon-hand-tool hands" _width="30" _height="30" v-bind:style="handsStyle"
-                            v-bind="props" @click="changeMultiple"></span>
+                        <span
+                            class="bpmn-icon-hand-tool hands"
+                            _width="30"
+                            _height="30"
+                            v-bind:style="handsStyle"
+                            v-bind="props"
+                            @click="changeMultiple"
+                        ></span>
                     </template>
                     <span>Drag On/Off</span>
                 </v-tooltip>
                 <v-tooltip location="top" v-for="(item, idx) in dragItems" :key="idx">
                     <template v-slot:activator="{ props }">
-                        <span class="icons draggable" align="center" :class="item.icon" :_component="item.component"
-                            :_width="item.width" :_height="item.height" v-bind="props"></span>
+                        <span
+                            class="icons draggable"
+                            align="center"
+                            :class="item.icon"
+                            :_component="item.component"
+                            :_width="item.width"
+                            :_height="item.height"
+                            v-bind="props"
+                        ></span>
                     </template>
                     <span>{{ item.label }}</span>
                 </v-tooltip>

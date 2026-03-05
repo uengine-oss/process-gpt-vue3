@@ -1,14 +1,14 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class WorkItemAgentGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
 
-        this.previousMessages = [{
-            role: 'user', 
-            content: `너는 주어진 답변 양식에 알맞는 답변 예시를 생성해주는 llm 이야.
+        this.previousMessages = [
+            {
+                role: 'user',
+                content: `너는 주어진 답변 양식에 알맞는 답변 예시를 생성해주는 llm 이야.
             제공해준 "이전 작업 리스트" 정보를 참고하여 "생성해야할 답변 형식"에 맞는 적절한 예시값을 답변으로 생성해야한다. 이전의 예시값들과 생성할 예시값의 내용이 무관하지 않고 연관 되도록 제공받은 "이전 작업 리스트" 내용 중 "inputFormData" 내용을 참고하여 예시값을 생성해야한다.
             만약 "이전 작업 리스트" 가 존재하지 않는다면 "생성해야할 답변 형식" 에 적절한 예시값을 채워둔 형식으로 생성한다. 
             또한 초안 생성에 참고할만한 정보가 없다면, 제공받은 정보들의 전체적인 맥락을 파악하고 "", "null" 이 아닌 "생성해야할 답변 형식"에 맞는 가장 적절한 예시를 생성해야한다. 
@@ -57,6 +57,7 @@ export default class WorkItemAgentGenerator extends AIGenerator {
             
             마지막으로 한번 강조하지만 제공받은 정보들의 전체적인 맥락을 파악하고 "", "null" 이 아닌 "생성해야할 답변 형식"에 맞는 가장 적절한 예시를 생성해야한다.
             `
-        }];
+            }
+        ];
     }
 }

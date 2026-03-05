@@ -21,10 +21,24 @@
  * (c) 2018-2022 Ewout Stortenbeker <http://appy.one>
  * Released under MIT license
  */
-export { AceBaseClient, } from './acebase-client.js';
+export { AceBaseClient } from './acebase-client.js';
 export { AceBaseClientAuth } from './auth.js';
 export { AceBaseUser } from './user.js';
 export { ServerDate } from './server-date.js';
 export { CachedValueUnavailableError } from './errors.js';
-export { DataReference, DataSnapshot, DataSnapshotsArray, DataReferencesArray, EventStream, EventSubscription, PathReference, TypeMappings, ObjectCollection, ID, proxyAccess, PartialArray, Transport, } from 'acebase-core';
+export {
+    DataReference,
+    DataSnapshot,
+    DataSnapshotsArray,
+    DataReferencesArray,
+    EventStream,
+    EventSubscription,
+    PathReference,
+    TypeMappings,
+    ObjectCollection,
+    ID,
+    proxyAccess,
+    PartialArray,
+    Transport
+} from 'acebase-core';
 //# sourceMappingURL=index.js.map

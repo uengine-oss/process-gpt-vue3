@@ -1173,12 +1173,6 @@ hr {
     height: calc(100vh - 131px);
 }
 
-.mobile-side-bar-btn {
-    position: fixed;
-    left: 16px;
-    bottom: 48px;
-    z-index: 999;
-}
 .todolist-card-box {
     padding: 4px !important;
     height: calc(100vh - 130px);

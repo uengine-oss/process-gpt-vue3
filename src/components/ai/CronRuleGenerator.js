@@ -1,4 +1,4 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 /**
  * CronRuleGenerator
@@ -20,32 +20,31 @@ import AIGenerator from "./AIGenerator";
  *   }
  */
 export default class CronRuleGenerator extends AIGenerator {
+    constructor(client, options) {
+        super(client, options);
 
-  constructor(client, options) {
-    super(client, options);
+        this.model = 'gpt-4o';
+        this.options = options ?? {};
 
-    this.model = "gpt-4o";
-    this.options = options ?? {};
+        // ---- 입력 파라미터 직렬화 ----
+        const name = typeof this.options.name === 'string' ? this.options.name : '';
+        const format = this.options.format === 'quartz' ? 'quartz' : 'default';
+        const previousExpr = typeof this.options.previousExpr === 'string' ? this.options.previousExpr : '';
+        const timezone = typeof this.options.timezone === 'string' ? this.options.timezone : '';
 
-    // ---- 입력 파라미터 직렬화 ----
-    const name         = typeof this.options.name === "string" ? this.options.name : "";
-    const format       = this.options.format === "quartz" ? "quartz" : "default";
-    const previousExpr = typeof this.options.previousExpr === "string" ? this.options.previousExpr : "";
-    const timezone     = typeof this.options.timezone === "string" ? this.options.timezone : "";
-
-    /**
-     * 기본 규칙:
-     * - default(UNIX) 5필드: mm HH dd MM ddd
-     *   - minute (0-59), hour (0-23), day-of-month (1-31), month (1-12), day-of-week (0-6; 0=Sunday)
-     * - quartz 6필드: ss mm HH dd MM ddd
-     *   - second (0-59), minute (0-59), hour (0-23), day-of-month (1-31), month (1-12 or JAN-DEC), day-of-week (1-7 or SUN-SAT; 1=Sunday)
-     *   - 필요 시 day-of-month/day-of-week 중 하나는 '?' 사용 가능
-     * - 특수 토큰(@daily, @hourly 등) 금지. 반드시 숫자/리스트(,)/범위(-)/스텝(/)/와일드카드(*)만 사용.
-     */
-    this.previousMessages = [
-      {
-        role: "system",
-        content: `You are a precise cron expression generator.
+        /**
+         * 기본 규칙:
+         * - default(UNIX) 5필드: mm HH dd MM ddd
+         *   - minute (0-59), hour (0-23), day-of-month (1-31), month (1-12), day-of-week (0-6; 0=Sunday)
+         * - quartz 6필드: ss mm HH dd MM ddd
+         *   - second (0-59), minute (0-59), hour (0-23), day-of-month (1-31), month (1-12 or JAN-DEC), day-of-week (1-7 or SUN-SAT; 1=Sunday)
+         *   - 필요 시 day-of-month/day-of-week 중 하나는 '?' 사용 가능
+         * - 특수 토큰(@daily, @hourly 등) 금지. 반드시 숫자/리스트(,)/범위(-)/스텝(/)/와일드카드(*)만 사용.
+         */
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `You are a precise cron expression generator.
 
 GOAL
 - Convert the given natural-language schedule into a valid cron expression.
@@ -88,9 +87,7 @@ OUTPUT (STRICT; return ONLY this JSON object)
   "cron_expr": "string",
   "format": "default" | "quartz"
 }`
-      }
-    ];
-  }
+            }
+        ];
+    }
 }
-
-

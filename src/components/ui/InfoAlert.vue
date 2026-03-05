@@ -1,9 +1,7 @@
 <template>
     <v-col v-if="infoDetail">
         <v-alert color="#2196F3" variant="outlined">
-            <small style="white-space: pre-line; font-size:14px; line-height: 32px;"
-            >{{ infoDetail }}
-            </small>
+            <small style="white-space: pre-line; font-size: 14px; line-height: 32px">{{ infoDetail }} </small>
         </v-alert>
     </v-col>
 </template>
@@ -25,8 +23,8 @@ export default {
         infoDetail() {
             // howToUseInfo 우선, 없으면 chatInfo 사용
             const info = this.howToUseInfo || this.chatInfo;
-            
-            if(info && info.text){
+
+            if (info && info.text) {
                 const text = info.text;
                 // 국제화 키가 존재하는지 확인
                 const translated = this.$t(text);
@@ -36,5 +34,5 @@ export default {
             return '';
         }
     }
-}
+};
 </script>

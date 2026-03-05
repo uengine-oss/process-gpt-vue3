@@ -1,11 +1,11 @@
-import type { TablerIconComponent } from "vue-tabler-icons";
+import type { TablerIconComponent } from 'vue-tabler-icons';
 
 /*Basic table 1 types*/
-type teamGroupType={
+type teamGroupType = {
     id: string;
     color: string;
     text: string;
-}
+};
 type basicTable1 = {
     avatar: string;
     name: string;
@@ -18,7 +18,7 @@ type basicTable1 = {
 };
 
 /*Basic table 2 types*/
-type userGroupType={
+type userGroupType = {
     id: string;
     icon: string;
 };
@@ -32,11 +32,11 @@ type basicTable2 = {
 };
 
 /*Basic table 3 types*/
-type teamsGType={
+type teamsGType = {
     status: string;
     statuscolor: string;
 };
-type basicTable3 ={
+type basicTable3 = {
     avatar: string;
     name: string;
     handle: string;
@@ -44,7 +44,7 @@ type basicTable3 ={
     statusoffline: boolean;
     statuscolor: string;
     email: string;
-    teams:teamsGType[]; 
+    teams: teamsGType[];
 };
 
 /*Basic table 4 types*/
@@ -60,41 +60,41 @@ type basicTable4 = {
 };
 
 /*Basic table 5 types*/
-type coursesType={
+type coursesType = {
     status: string;
     statuscolor: string;
 };
-type basicTable5 ={
+type basicTable5 = {
     avatar: string;
     name: string;
     handle: string;
     users: string;
-    courses:coursesType[]; 
+    courses: coursesType[];
 };
 
 /*Dark table types*/
-type darkTeamsType={
+type darkTeamsType = {
     id: string;
     color: string;
     text: string;
 };
-type tableDark ={
+type tableDark = {
     avatar: string;
     name: string;
     post: string;
     pname: string;
     status: string;
     statuscolor: string;
-    teams:darkTeamsType[]; 
+    teams: darkTeamsType[];
     budget: string;
 };
 
 /*Density table types*/
-type densUserType={
+type densUserType = {
     id: string;
     icon: string;
 };
-type tableDensity= {
+type tableDensity = {
     avatar: string;
     name: string;
     post: string;
@@ -104,11 +104,11 @@ type tableDensity= {
 };
 
 /*FixedHeader table types*/
-type fixedTeamType={
+type fixedTeamType = {
     status: string;
     statuscolor: string;
 };
-type tableFixedHeader ={
+type tableFixedHeader = {
     avatar: string;
     name: string;
     handle: string;
@@ -116,21 +116,21 @@ type tableFixedHeader ={
     statusoffline: boolean;
     statuscolor: string;
     email: string;
-    teams:fixedTeamType[]; 
+    teams: fixedTeamType[];
 };
 
 /*Height table types*/
-type heightCourseType={
+type heightCourseType = {
     status: string;
     statuscolor: string;
-}
-type heightTable ={
+};
+type heightTable = {
     avatar: string;
     name: string;
     handle: string;
     users: string;
     email: string;
-    courses:heightCourseType[]; 
+    courses: heightCourseType[];
 };
 
 /*Table Action*/
@@ -139,4 +139,15 @@ type tableAction = {
     listtitle: string;
 };
 
-export type { basicTable1, basicTable2, basicTable3, basicTable4, basicTable5, tableDark, tableDensity,tableFixedHeader, heightTable, tableAction };
+export type {
+    basicTable1,
+    basicTable2,
+    basicTable3,
+    basicTable4,
+    basicTable5,
+    tableDark,
+    tableDensity,
+    tableFixedHeader,
+    heightTable,
+    tableAction
+};

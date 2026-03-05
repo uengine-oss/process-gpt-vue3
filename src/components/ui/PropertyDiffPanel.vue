@@ -12,10 +12,7 @@
         </v-card-text>
 
         <v-expansion-panels v-else variant="accordion" class="pa-2">
-            <v-expansion-panel
-                v-for="diff in diffs"
-                :key="diff.elementId"
-            >
+            <v-expansion-panel v-for="diff in diffs" :key="diff.elementId">
                 <v-expansion-panel-title class="py-2">
                     <div class="d-flex align-center gap-2">
                         <v-icon size="16" color="primary">mdi-shape-outline</v-icon>
@@ -32,7 +29,7 @@
                                 <th class="text-caption">{{ $t('propertyDiff.property') }}</th>
                                 <th class="text-caption">{{ $t('propertyDiff.oldValue') }}</th>
                                 <th class="text-caption">{{ $t('propertyDiff.newValue') }}</th>
-                                <th class="text-caption" style="width: 60px;"></th>
+                                <th class="text-caption" style="width: 60px"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -96,14 +93,14 @@ export default defineComponent({
 
         const diffs = computed((): PropertyDiff[] => {
             const oldMap = new Map<string, any>();
-            (props.oldActivities as any[]).forEach(a => {
+            (props.oldActivities as any[]).forEach((a) => {
                 const key = a.tracingTag || a.id;
                 if (key) oldMap.set(key, a);
             });
 
             const result: PropertyDiff[] = [];
 
-            (props.newActivities as any[]).forEach(newAct => {
+            (props.newActivities as any[]).forEach((newAct) => {
                 const key = newAct.tracingTag || newAct.id;
                 if (!key) return;
                 const oldAct = oldMap.get(key);
@@ -112,7 +109,7 @@ export default defineComponent({
                 const changes: PropertyChange[] = [];
                 const allKeys = new Set([...Object.keys(oldAct), ...Object.keys(newAct)]);
 
-                allKeys.forEach(k => {
+                allKeys.forEach((k) => {
                     if (IGNORE_KEYS.includes(k)) return;
                     const oldVal = oldAct[k];
                     const newVal = newAct[k];

@@ -1,26 +1,23 @@
 <template>
-    <v-dialog
-        v-model="localOpen"
-        :scrim="false"
-        persistent
-        width="auto"
-    >
+    <v-dialog v-model="localOpen" :scrim="false" persistent width="auto">
         <div class="ai-chat-overlay">
-            <v-card
-                ref="dialogCard"
-                class="ai-chat-card"
-                :style="dialogStyle"
-                :elevation="10"
-                @mousedown.stop
-            >
+            <v-card ref="dialogCard" class="ai-chat-card" :style="dialogStyle" :elevation="10" @mousedown.stop>
                 <div class="ai-chat-header" @mousedown="startDrag" @touchstart="startDragTouch">
                     <div class="ai-chat-title">
                         {{ $t('FormRealtimeAssistant.title') }}
-                        <v-chip v-if="connected" size="x-small" color="success" variant="tonal">{{ $t('FormRealtimeAssistant.connected') }}</v-chip>
-                        <v-chip v-else-if="connecting" size="x-small" color="warning" variant="tonal">{{ $t('FormRealtimeAssistant.connecting') }}</v-chip>
+                        <v-chip v-if="connected" size="x-small" color="success" variant="tonal">{{
+                            $t('FormRealtimeAssistant.connected')
+                        }}</v-chip>
+                        <v-chip v-else-if="connecting" size="x-small" color="warning" variant="tonal">{{
+                            $t('FormRealtimeAssistant.connecting')
+                        }}</v-chip>
                         <v-chip v-else size="x-small" color="error" variant="tonal">{{ $t('FormRealtimeAssistant.disconnected') }}</v-chip>
-                        <v-chip v-if="assistantStreaming" size="x-small" color="info" variant="tonal">{{ $t('FormRealtimeAssistant.responding') }}</v-chip>
-                        <v-chip v-if="isMicOn" size="x-small" color="primary" variant="tonal">{{ $t('FormRealtimeAssistant.micOn') }}</v-chip>
+                        <v-chip v-if="assistantStreaming" size="x-small" color="info" variant="tonal">{{
+                            $t('FormRealtimeAssistant.responding')
+                        }}</v-chip>
+                        <v-chip v-if="isMicOn" size="x-small" color="primary" variant="tonal">{{
+                            $t('FormRealtimeAssistant.micOn')
+                        }}</v-chip>
                     </div>
                     <v-btn icon density="comfortable" variant="text" @click="closeDialog">
                         <v-icon>mdi-close</v-icon>
@@ -101,48 +98,48 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 const props = defineProps({
     modelValue: {
         type: Boolean,
-        default: false,
+        default: false
     },
     formSchema: {
         type: Array,
-        default: () => [],
+        default: () => []
     },
     formDataSnapshot: {
         type: Object,
-        default: () => ({}),
+        default: () => ({})
     },
     currentUserName: {
         type: String,
-        default: '',
+        default: ''
     },
     currentUserEmail: {
         type: String,
-        default: '',
+        default: ''
     },
     currentUserUid: {
         type: String,
-        default: '',
+        default: ''
     },
     wsUrl: {
         type: String,
-        default: '',
+        default: ''
     },
     processName: {
         type: String,
-        default: '',
+        default: ''
     },
     activityName: {
         type: String,
-        default: '',
+        default: ''
     },
     activityInstruction: {
         type: String,
-        default: '',
+        default: ''
     },
     referenceForms: {
         type: Array,
-        default: () => [],
-    },
+        default: () => []
+    }
 });
 
 const emit = defineEmits(['update:modelValue', 'apply', 'submit']);
@@ -171,7 +168,7 @@ const dialogStyle = computed(() => ({
     position: 'fixed',
     left: '50%',
     top: '50%',
-    transform: `translate(calc(-50% + ${dragDelta.value.x}px), calc(-50% + ${dragDelta.value.y}px))`,
+    transform: `translate(calc(-50% + ${dragDelta.value.x}px), calc(-50% + ${dragDelta.value.y}px))`
 }));
 
 let messageSeq = 0;
@@ -268,7 +265,7 @@ onBeforeUnmount(() => {
 });
 
 const pushMessage = (role, text) => {
-    messages.value = [...messages.value, { id: messageSeq += 1, role, text }];
+    messages.value = [...messages.value, { id: (messageSeq += 1), role, text }];
 };
 
 const sendUserInfo = (socket) => {
@@ -280,7 +277,7 @@ const sendUserInfo = (socket) => {
         user_uid: props.currentUserUid || '',
         process_name: props.processName || '',
         activity_name: props.activityName || '',
-        tenant_id: window.$tenantName || '',
+        tenant_id: window.$tenantName || ''
     };
     try {
         socket.send(JSON.stringify(payload));
@@ -329,7 +326,7 @@ const parseRawItemsToOptions = (rawItems) => {
         // items="[{'python':'파이썬'},{'vibecoding':'바이브코딩'}]" 형태를 파싱
         const parsed = JSON.parse(rawItems.replace(/'/g, '"'));
         if (Array.isArray(parsed)) {
-            return parsed.map(item => {
+            return parsed.map((item) => {
                 const key = Object.keys(item)[0];
                 const value = Object.values(item)[0];
                 return { label: value, value: key };
@@ -344,7 +341,7 @@ const parseRawItemsToOptions = (rawItems) => {
 // formSchema에서 rawItems를 options로 변환한 스키마 생성
 const enrichFormSchema = (schema) => {
     if (!Array.isArray(schema)) return [];
-    return schema.map(field => {
+    return schema.map((field) => {
         // options가 없고 rawItems가 있으면 파싱하여 options로 변환
         if ((!field.options || field.options.length === 0) && field.rawItems) {
             const parsedOptions = parseRawItemsToOptions(field.rawItems);
@@ -369,7 +366,7 @@ const bootstrapSession = (socket) => {
     const localTime = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     const refFormsForPrompt = (props.referenceForms || []).map((item) => ({
         name: item?.name || '',
-        values: item?.formData || {},
+        values: item?.formData || {}
     }));
     const activityInstruction = props.activityInstruction || '';
     // rawItems를 options로 변환한 스키마 사용
@@ -386,7 +383,7 @@ const bootstrapSession = (socket) => {
             ? `사용자 정보: ${[
                   props.currentUserName ? `이름=${props.currentUserName}` : null,
                   props.currentUserEmail ? `이메일=${props.currentUserEmail}` : null,
-                  props.currentUserUid ? `uid=${props.currentUserUid}` : null,
+                  props.currentUserUid ? `uid=${props.currentUserUid}` : null
               ]
                   .filter(Boolean)
                   .join(', ')}`
@@ -395,7 +392,7 @@ const bootstrapSession = (socket) => {
         '제출 규칙: 사용자가 "제출", "완료", "등록" 등 명시적으로 제출을 요청한 경우에만 submit_form을 호출한다.',
         `폼 스키마(JSON): ${JSON.stringify(enrichedSchema)}`,
         `현재 값(JSON): ${JSON.stringify(props.formDataSnapshot || {})}`,
-        `참조 폼 데이터(JSON): ${JSON.stringify(refFormsForPrompt)}`,
+        `참조 폼 데이터(JSON): ${JSON.stringify(refFormsForPrompt)}`
     ].join('\n');
 
     const sessionUpdate = {
@@ -407,8 +404,8 @@ const bootstrapSession = (socket) => {
             voice: 'alloy',
             modalities: ['text', 'audio'],
             tools: buildToolsFromSchema(enrichedSchema),
-            tool_choice: 'auto',
-        },
+            tool_choice: 'auto'
+        }
     };
     socket.send(JSON.stringify(sessionUpdate));
     // intro는 session.updated 수신 후 전송
@@ -506,8 +503,8 @@ const sendUserMessage = () => {
                 item: {
                     type: 'message',
                     role: 'user',
-                    content: [{ type: 'input_text', text }],
-                },
+                    content: [{ type: 'input_text', text }]
+                }
             })
         );
         ws.value.send(JSON.stringify({ type: 'response.create' }));
@@ -594,8 +591,8 @@ const sendInitialPrompt = () => {
             item: {
                 type: 'message',
                 role: 'user',
-                content: [{ type: 'input_text', text: intro }],
-            },
+                content: [{ type: 'input_text', text: intro }]
+            }
         })
     );
     ws.value.send(JSON.stringify({ type: 'response.create' }));
@@ -606,10 +603,7 @@ const sendInitialPrompt = () => {
 const ensureAssistantStreamingMessage = () => {
     const last = messages.value[messages.value.length - 1];
     if (!last || last.role !== 'assistant' || !last.isStreaming) {
-        messages.value = [
-            ...messages.value,
-            { id: messageSeq += 1, role: 'assistant', text: '', isStreaming: true },
-        ];
+        messages.value = [...messages.value, { id: (messageSeq += 1), role: 'assistant', text: '', isStreaming: true }];
     }
 };
 
@@ -618,20 +612,13 @@ const updateAssistantStreamingMessage = (text) => {
     if (idx < 0) return;
     const last = messages.value[idx];
     if (last.role !== 'assistant') return;
-    messages.value = [
-        ...messages.value.slice(0, idx),
-        { ...last, text, isStreaming: true },
-    ];
+    messages.value = [...messages.value.slice(0, idx), { ...last, text, isStreaming: true }];
 };
 
 const finalizeAssistantMessage = (text) => {
     // Prevent double-finalize when both content_part.done and output_text.done arrive
     const last = messages.value[messages.value.length - 1];
-    const alreadyFinal =
-        !assistantStreaming.value &&
-        last &&
-        last.role === 'assistant' &&
-        last.isStreaming === false;
+    const alreadyFinal = !assistantStreaming.value && last && last.role === 'assistant' && last.isStreaming === false;
     if (alreadyFinal) {
         assistantBuffer = '';
         return;
@@ -645,15 +632,9 @@ const finalizeAssistantMessage = (text) => {
     }
     const idx = messages.value.length - 1;
     if (idx >= 0 && messages.value[idx].role === 'assistant' && messages.value[idx].isStreaming) {
-        messages.value = [
-            ...messages.value.slice(0, idx),
-            { ...messages.value[idx], text: trimmed, isStreaming: false },
-        ];
+        messages.value = [...messages.value.slice(0, idx), { ...messages.value[idx], text: trimmed, isStreaming: false }];
     } else {
-        messages.value = [
-            ...messages.value,
-            { id: messageSeq += 1, role: 'assistant', text: trimmed, isStreaming: false },
-        ];
+        messages.value = [...messages.value, { id: (messageSeq += 1), role: 'assistant', text: trimmed, isStreaming: false }];
     }
     // 자동 패치 적용 (function call 없이 텍스트로 패치 제안 시)
     autoApplyFromText(trimmed);
@@ -690,8 +671,7 @@ const buildToolsFromSchema = (schema) => {
         {
             type: 'function',
             name: 'update_form_fields',
-            description:
-                '현재 화면의 폼 필드를 채운다. 스키마에 없는 name은 금지. 문자열 외 타입은 문자열로 직렬화.',
+            description: '현재 화면의 폼 필드를 채운다. 스키마에 없는 name은 금지. 문자열 외 타입은 문자열로 직렬화.',
             parameters: {
                 type: 'object',
                 properties: {
@@ -703,17 +683,17 @@ const buildToolsFromSchema = (schema) => {
                                 name: {
                                     type: 'string',
                                     enum: fieldNames.length ? fieldNames : undefined,
-                                    description: '스키마에 존재하는 필드 name',
+                                    description: '스키마에 존재하는 필드 name'
                                 },
                                 value: { type: 'string', description: '채울 값 (문자열로 전달)' },
-                                reason: { type: 'string', description: '선택: 값 제안 이유' },
+                                reason: { type: 'string', description: '선택: 값 제안 이유' }
                             },
-                            required: ['name', 'value'],
-                        },
-                    },
+                            required: ['name', 'value']
+                        }
+                    }
                 },
-                required: ['fields'],
-            },
+                required: ['fields']
+            }
         },
         {
             type: 'function',
@@ -725,16 +705,16 @@ const buildToolsFromSchema = (schema) => {
                 properties: {
                     confirm: {
                         type: 'boolean',
-                        description: '제출 진행 여부(반드시 true로 명시)',
+                        description: '제출 진행 여부(반드시 true로 명시)'
                     },
                     note: {
                         type: 'string',
-                        description: '제출 사유나 코멘트(선택)',
-                    },
+                        description: '제출 사유나 코멘트(선택)'
+                    }
                 },
-                required: ['confirm'],
-            },
-        },
+                required: ['confirm']
+            }
+        }
     ];
 };
 
@@ -795,8 +775,8 @@ const sendFunctionCallOutput = (callId, payload) => {
             item: {
                 type: 'function_call_output',
                 call_id: callId,
-                output: JSON.stringify(output),
-            },
+                output: JSON.stringify(output)
+            }
         })
     );
     ws.value.send(JSON.stringify({ type: 'response.create' }));
@@ -864,7 +844,7 @@ const clampDragDelta = (deltaX, deltaY) => {
     const maxY = window.innerHeight - 16 - height / 2 - baseY;
     return {
         x: Math.min(Math.max(deltaX, minX), maxX),
-        y: Math.min(Math.max(deltaY, minY), maxY),
+        y: Math.min(Math.max(deltaY, minY), maxY)
     };
 };
 
@@ -889,7 +869,7 @@ const toggleMic = async () => {
 const startMic = async () => {
     if (processor.value) return;
     mediaStream.value = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     });
     audioContext.value = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
     const source = audioContext.value.createMediaStreamSource(mediaStream.value);
@@ -905,7 +885,7 @@ const startMic = async () => {
         ws.value.send(
             JSON.stringify({
                 type: 'input_audio_buffer.append',
-                audio: arrayBufferToBase64(pcm.buffer),
+                audio: arrayBufferToBase64(pcm.buffer)
             })
         );
     };

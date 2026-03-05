@@ -65,8 +65,7 @@ let posts: Post[] = [
                         time: '5 mins ago '
                     },
                     data: {
-                        comment:
-                        chance.paragraph({ sentences: 1 }),
+                        comment: chance.paragraph({ sentences: 1 }),
                         likes: {
                             like: false,
                             value: 68
@@ -146,8 +145,7 @@ let posts: Post[] = [
                         time: '15 min ago '
                     },
                     data: {
-                        comment:
-                        chance.paragraph({ sentences: 1 }),
+                        comment: chance.paragraph({ sentences: 1 }),
                         likes: {
                             like: true,
                             value: 65

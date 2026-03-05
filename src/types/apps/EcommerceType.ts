@@ -9,7 +9,7 @@ export type Products = {
     salePrice?: number;
     offerPrice?: number;
     gender?: string;
-    price?:string;
+    price?: string;
     categories?: string[];
     colors?: string[];
     popularity?: number;
@@ -18,9 +18,8 @@ export type Products = {
     isStock?: boolean;
     new?: number;
     qty?: number;
-    rank?:number;
+    rank?: number;
 };
-
 
 // checkout-cart billing address
 export type Address = {
@@ -55,7 +54,7 @@ export type ProductsFilter = {
     gender: string[];
     categories: string[];
     colors: string[];
-    price:string[];
+    price: string[];
     rating: number;
 };
 
@@ -90,17 +89,14 @@ export interface ProductStateProps {
     relatedProducts?: Products[];
     reviews?: Reviews[];
     addresses?: Address[];
-    sortBy?: String;
-    gender?: object | [] | String;
-    category?: object | [] | String;
-    price?: object | [] | String;
+    sortBy?: string;
+    gender?: object | [] | string;
+    category?: object | [] | string;
+    price?: object | [] | string;
     error?: object | string | null;
     subTotal?: any;
     total?: number;
     discount?: any;
     color?: string;
-    rank?:number;
+    rank?: number;
 }
-
-
-

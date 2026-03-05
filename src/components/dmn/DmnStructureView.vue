@@ -40,25 +40,47 @@
                     <v-expansion-panel-text>
                         <!-- DecisionTable -->
                         <div v-if="decision.decisionTable" class="mb-2">
-                            <div class="text-caption text-medium-emphasis mb-1">정책: {{ decision.decisionTable.hitPolicy || 'UNIQUE' }}</div>
+                            <div class="text-caption text-medium-emphasis mb-1">
+                                정책: {{ decision.decisionTable.hitPolicy || 'UNIQUE' }}
+                            </div>
                             <div class="dmn-table-container">
                                 <v-table density="compact" class="dmn-decision-table">
                                     <thead>
                                         <tr>
-                                            <th v-for="(input, idx) in decision.decisionTable.inputs" :key="'input-' + decision.id + '-' + idx" class="dmn-input-header">
+                                            <th
+                                                v-for="(input, idx) in decision.decisionTable.inputs"
+                                                :key="'input-' + decision.id + '-' + idx"
+                                                class="dmn-input-header"
+                                            >
                                                 {{ input.label || input.expression || `조건${idx + 1}` }}
                                             </th>
-                                            <th v-for="(output, idx) in decision.decisionTable.outputs" :key="'output-' + decision.id + '-' + idx" class="dmn-output-header">
+                                            <th
+                                                v-for="(output, idx) in decision.decisionTable.outputs"
+                                                :key="'output-' + decision.id + '-' + idx"
+                                                class="dmn-output-header"
+                                            >
                                                 {{ output.label || output.name || `결과${idx + 1}` }}
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="(rule, ruleIdx) in decision.decisionTable.rules" :key="'rule-' + decision.id + '-' + ruleIdx" class="dmn-rule-row">
-                                            <td v-for="(input, inputIdx) in decision.decisionTable.inputs" :key="'cell-' + decision.id + '-' + ruleIdx + '-' + inputIdx" class="dmn-input-cell">
+                                        <tr
+                                            v-for="(rule, ruleIdx) in decision.decisionTable.rules"
+                                            :key="'rule-' + decision.id + '-' + ruleIdx"
+                                            class="dmn-rule-row"
+                                        >
+                                            <td
+                                                v-for="(input, inputIdx) in decision.decisionTable.inputs"
+                                                :key="'cell-' + decision.id + '-' + ruleIdx + '-' + inputIdx"
+                                                class="dmn-input-cell"
+                                            >
                                                 {{ getRuleInputValue(rule, inputIdx) }}
                                             </td>
-                                            <td v-for="(output, outputIdx) in decision.decisionTable.outputs" :key="'outcell-' + decision.id + '-' + ruleIdx + '-' + outputIdx" class="dmn-output-cell">
+                                            <td
+                                                v-for="(output, outputIdx) in decision.decisionTable.outputs"
+                                                :key="'outcell-' + decision.id + '-' + ruleIdx + '-' + outputIdx"
+                                                class="dmn-output-cell"
+                                            >
                                                 {{ getRuleOutputValue(rule, outputIdx) }}
                                             </td>
                                         </tr>
@@ -222,4 +244,3 @@ export default {
     font-size: 12px;
 }
 </style>
-

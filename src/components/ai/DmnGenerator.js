@@ -1,4 +1,4 @@
-import AIGenerator from "@/components/ai/AIGenerator";
+import AIGenerator from '@/components/ai/AIGenerator';
 import BackendFactory from '@/components/api/BackendFactory';
 
 const backend = BackendFactory.createBackend();
@@ -171,9 +171,7 @@ When comparing inputs to DMN rules:
                 }
             ];
         } else {
-            this.previousMessages = [
-                ...this.previousMessageFormats
-            ];
+            this.previousMessages = [...this.previousMessageFormats];
         }
     }
 
@@ -188,7 +186,7 @@ When comparing inputs to DMN rules:
         // 이미지가 있는 경우 Vision API 형식으로 변환
         if (message.images && message.images.length > 0) {
             const content = [];
-            
+
             // 텍스트 추가
             if (message.text) {
                 content.push({
@@ -196,9 +194,9 @@ When comparing inputs to DMN rules:
                     text: message.text
                 });
             }
-            
+
             // 이미지들 추가
-            message.images.forEach(image => {
+            message.images.forEach((image) => {
                 content.push({
                     type: 'image_url',
                     image_url: {
@@ -206,17 +204,17 @@ When comparing inputs to DMN rules:
                     }
                 });
             });
-            
+
             return content;
         }
-        
+
         // 이미지가 없으면 텍스트만 반환
         return message.text || '';
     }
 
     sendMessage(message) {
         const content = this.createMessageContent(message);
-        
+
         this.previousMessages = [
             ...this.previousMessageFormats,
             {
@@ -224,7 +222,7 @@ When comparing inputs to DMN rules:
                 content: content
             }
         ];
-        
+
         return super.generate(message);
     }
 
@@ -252,9 +250,9 @@ Please provide modifications to the existing DMN or create a new one based on th
                     text: textPrompt
                 }
             ];
-            
+
             // 이미지들 추가
-            message.images.forEach(image => {
+            message.images.forEach((image) => {
                 content.push({
                     type: 'image_url',
                     image_url: {
@@ -283,7 +281,7 @@ Please provide modifications to the existing DMN or create a new one based on th
      */
     sendInferenceMessage(message) {
         this.isInferenceMode = true;
-        
+
         const textPrompt = `
 # MODE: Inference/Analysis (상세 추론)
 
@@ -315,7 +313,7 @@ Return a comprehensive, well-structured Markdown document.
             text: textPrompt,
             images: message.images
         });
-        
+
         this.previousMessages = [
             ...this.previousMessageFormats,
             {
@@ -323,7 +321,7 @@ Return a comprehensive, well-structured Markdown document.
                 content: content
             }
         ];
-        
+
         return super.generate(message);
     }
 
@@ -333,30 +331,30 @@ Return a comprehensive, well-structured Markdown document.
     async createMessagesAsync() {
         // 원본을 변경하지 않도록 깊은 복사
         let messages = JSON.parse(JSON.stringify(this.previousMessages));
-        
+
         // 추론 모드이고 DMN XML 리스트가 있으면 컨텍스트에 추가
         if (this.isInferenceMode && this.dmnXmlList && this.dmnXmlList.length > 0 && messages.length > 0) {
             // 첫 번째 시스템 메시지 찾기
-            const systemMsgIndex = messages.findIndex(msg => msg.role === 'system');
-            
+            const systemMsgIndex = messages.findIndex((msg) => msg.role === 'system');
+
             if (systemMsgIndex !== -1) {
                 // 이미 DMN 컨텍스트가 추가되어 있는지 확인
                 if (!messages[systemMsgIndex].content.includes('Available Business Rules')) {
                     let dmnContext = '\n\n# Available Business Rules (DMN Models)\n';
-                    
+
                     this.dmnXmlList.forEach((dmn, index) => {
                         const modelName = dmn.name || 'Model_' + (index + 1);
                         dmnContext += '## DMN Model ' + (index + 1) + ': ' + modelName + '\n';
                         dmnContext += '```xml\n' + dmn.xml + '\n```\n\n';
                     });
-                    
+
                     messages[systemMsgIndex].content += dmnContext;
                 }
             }
         }
-        
+
         // role이 'agent'인 경우 'system'으로 변환
-        messages = messages.map(msg => {
+        messages = messages.map((msg) => {
             if (msg.role === 'agent') {
                 return {
                     ...msg,
@@ -365,20 +363,20 @@ Return a comprehensive, well-structured Markdown document.
             }
             return msg;
         });
-        
+
         // 연속된 동일 role의 시스템 메시지 병합
         messages = this._mergeConsecutiveSystemMessages(messages);
-        
+
         return messages;
     }
-    
+
     /**
      * 연속된 시스템 메시지를 병합하여 중복 제거
      */
     _mergeConsecutiveSystemMessages(messages) {
         const merged = [];
         let lastSystemMsg = null;
-        
+
         for (const msg of messages) {
             if (msg.role === 'system') {
                 if (lastSystemMsg) {
@@ -395,8 +393,7 @@ Return a comprehensive, well-structured Markdown document.
                 merged.push(msg);
             }
         }
-        
+
         return merged;
     }
 }
-

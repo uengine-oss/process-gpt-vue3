@@ -24,17 +24,16 @@ export const useAuthStore = defineStore({
         },
         async signInWithKeycloak() {
             try {
-                
-                    var result: any = await storage?.signInWithKeycloak();
+                const result: any = await storage?.signInWithKeycloak();
 
-                    if (!result.error) {
-                        router.push('/definition-map');
-                    } else {
-                        await (window as any).$app_.try({
-                            action: () => Promise.reject(new Error()),
-                            errorMsg: result.errorMsg
-                        });
-                    }
+                if (!result.error) {
+                    router.push('/definition-map');
+                } else {
+                    await (window as any).$app_.try({
+                        action: () => Promise.reject(new Error()),
+                        errorMsg: result.errorMsg
+                    });
+                }
             } catch (e) {
                 console.log(e);
             }
@@ -46,8 +45,8 @@ export const useAuthStore = defineStore({
                         email: email,
                         password: password
                     };
-                    var result: any = await storage?.signIn(userInfo);
-                    
+                    const result: any = await storage?.signIn(userInfo);
+
                     if (result.error) {
                         await (window as any).$app_.try({
                             action: () => Promise.reject(new Error()),
@@ -56,7 +55,7 @@ export const useAuthStore = defineStore({
                     } else {
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);
-                        router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map')
+                        router.push(window.$isTenantServer ? '/tenant/manage' : '/definition-map');
                     }
                 }
             } catch (e) {
@@ -71,10 +70,10 @@ export const useAuthStore = defineStore({
                         email: email,
                         password: password
                     };
-                    var result: any = await storage?.signUp(userInfo);
-        
+                    const result: any = await storage?.signUp(userInfo);
+
                     if (result.error) {
-                        if(result.errorMsg === 'Email rate limit exceeded'){
+                        if (result.errorMsg === 'Email rate limit exceeded') {
                             await (window as any).$app_.try({
                                 action: () => Promise.reject(new Error(proxy.$t('auth.emailRateLimitExceeded'))),
                                 errorMsg: proxy.$t('auth.emailRateLimitExceeded')
@@ -93,7 +92,7 @@ export const useAuthStore = defineStore({
                     } else {
                         const tenantId = window.$tenantName;
                         await backend.setTenant(tenantId);
-                        if (result["isNewUser"]) {
+                        if (result['isNewUser']) {
                             await (window as any).$app_.try({
                                 action: () => Promise.resolve(),
                                 successMsg: proxy.$t('auth.verificationEmailSent')
@@ -114,7 +113,7 @@ export const useAuthStore = defineStore({
         },
         async resetPassword(email: string, proxy: any) {
             try {
-                var result: any = await storage?.resetPassword(email);
+                const result: any = await storage?.resetPassword(email);
                 if (!result.error) {
                     await (window as any).$app_.try({
                         action: () => Promise.resolve(),
@@ -128,7 +127,7 @@ export const useAuthStore = defineStore({
         },
         async updatePassword(password: string, proxy: any) {
             try {
-                var result: any = await backend?.updateUser({ password: password });
+                const result: any = await backend?.updateUser({ password: password });
                 if (!result.error) {
                     await (window as any).$app_.try({
                         action: () => Promise.resolve(),

@@ -1,13 +1,15 @@
 <template>
     <div class="form-user-select-field">
-        <v-autocomplete v-model="localModelValue" 
-            :items="usersToSelect" 
-            :label="(localAlias && localAlias.length > 0) ? localAlias : localName" 
+        <v-autocomplete
+            v-model="localModelValue"
+            :items="usersToSelect"
+            :label="localAlias && localAlias.length > 0 ? localAlias : localName"
             :disabled="localDisabled"
-            item-title="username" 
-            :item-value="itemValue" 
+            item-title="username"
+            :item-value="itemValue"
             :return-object="returnObject"
-            chips small-chips
+            chips
+            small-chips
             :multiple="useMultiple"
             :closable-chips="!localReadonly"
             :readonly="localReadonly"
@@ -41,16 +43,16 @@
 </template>
 
 <script>
-import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import { commonSettingInfos } from './CommonSettingInfos.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 
 import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
-    name: "UserSelectField",
+    name: 'UserSelectField',
 
     props: {
-        // UI 관련 설정 props 시작 
+        // UI 관련 설정 props 시작
         hideDetails: {
             type: Boolean,
             default: false
@@ -109,45 +111,45 @@ export default {
         return {
             localModelValue: this.useMultiple ? [] : null,
 
-            localName: "",
-            localAlias: "",
+            localName: '',
+            localAlias: '',
             localDisabled: false,
             localReadonly: false,
 
             settingInfos: [
-                commonSettingInfos["localName"],
-                commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"],
-                commonSettingInfos["localReadonly"]
+                commonSettingInfos['localName'],
+                commonSettingInfos['localAlias'],
+                commonSettingInfos['localDisabled'],
+                commonSettingInfos['localReadonly']
             ],
 
             usersToSelect: [],
             userList: [],
 
-            backend: null,
+            backend: null
         };
     },
 
     watch: {
         modelValue: {
             handler() {
-                if(JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return
-                if(this.isProcessGPT) {
+                if (JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return;
+                if (this.isProcessGPT) {
                     if (this.useMultiple) {
-                        this.localModelValue = (this.modelValue && this.modelValue.length > 0) ? this.modelValue : []
+                        this.localModelValue = this.modelValue && this.modelValue.length > 0 ? this.modelValue : [];
                     } else {
-                        this.localModelValue = this.modelValue || null
+                        this.localModelValue = this.modelValue || null;
                     }
                 } else {
-                    if(!this.modelValue) {
-                        this.localModelValue = this.useMultiple ? [] : null
-                    } else if(Object.keys(this.modelValue).includes('values')) {
-                        this.localModelValue = this.modelValue.values
+                    if (!this.modelValue) {
+                        this.localModelValue = this.useMultiple ? [] : null;
+                    } else if (Object.keys(this.modelValue).includes('values')) {
+                        this.localModelValue = this.modelValue.values;
                     } else {
                         if (this.useMultiple) {
-                            this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue : [this.modelValue]
+                            this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue : [this.modelValue];
                         } else {
-                            this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue[0] : this.modelValue
+                            this.localModelValue = Array.isArray(this.modelValue) ? this.modelValue[0] : this.modelValue;
                         }
                     }
                 }
@@ -158,42 +160,42 @@ export default {
 
         localModelValue: {
             handler() {
-                if(JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return
-                this.$emit('update:modelValue', this.localModelValue)
+                if (JSON.stringify(this.localModelValue) === JSON.stringify(this.modelValue)) return;
+                this.$emit('update:modelValue', this.localModelValue);
             },
             deep: true,
             immediate: true
         }
     },
     created() {
-        this.localModelValue = this.modelValue ?? (this.useMultiple ? [] : null)
-        
-        this.localName = this.name ?? "name"
-        this.localAlias = this.alias ?? ""
-        this.localDisabled = this.disabled === "true"
-        this.localReadonly = this.readonly === "true"
+        this.localModelValue = this.modelValue ?? (this.useMultiple ? [] : null);
+
+        this.localName = this.name ?? 'name';
+        this.localAlias = this.alias ?? '';
+        this.localDisabled = this.disabled === 'true';
+        this.localReadonly = this.readonly === 'true';
     },
     async mounted() {
         this.backend = BackendFactory.createBackend();
         this.userList = await this.backend.getUserList();
 
-        if(this.useAgent) {
+        if (this.useAgent) {
             // 기본 에이전트 목록 추가
             const defaultSetting = useDefaultSetting();
             const defaultAgentList = defaultSetting.getAgentList;
             this.userList = [...defaultAgentList, ...this.userList];
 
             if (this.onlyAgent) {
-                const agentList = this.userList.filter(member => member.is_agent);
+                const agentList = this.userList.filter((member) => member.is_agent);
                 this.userList = agentList;
-                this.userList = this.userList.filter(member => member.alias !== 'default');
+                this.userList = this.userList.filter((member) => member.alias !== 'default');
             }
         } else {
-            const normalUserList = this.userList.filter(member => !member.is_agent)
+            const normalUserList = this.userList.filter((member) => !member.is_agent);
             this.userList = normalUserList;
         }
 
-        this.usersToSelect = this.userList.map(member => {
+        this.usersToSelect = this.userList.map((member) => {
             return {
                 id: member.id,
                 username: member.username,
@@ -202,7 +204,7 @@ export default {
                 description: member.description,
                 isAgent: member.is_agent,
                 agentType: member.agent_type,
-                alias: member.alias,
+                alias: member.alias
             };
         });
     },
@@ -214,7 +216,7 @@ export default {
             }
 
             const getUserData = (user) => {
-                return this.returnObject ? user : this.usersToSelect.find(u => u[this.itemValue] === user);
+                return this.returnObject ? user : this.usersToSelect.find((u) => u[this.itemValue] === user);
             };
 
             // newValue를 순서대로 처리
@@ -230,7 +232,7 @@ export default {
                 // isAgent가 false인 유저: 1개만 선택 가능
                 if (!userData.isAgent) {
                     // 기존 일반 유저 제거하고 현재 것만 유지
-                    const existingIndex = result.findIndex(r => {
+                    const existingIndex = result.findIndex((r) => {
                         const rData = getUserData(r);
                         return rData && !rData.isAgent;
                     });
@@ -243,7 +245,7 @@ export default {
                 else if (userData.agentType === 'agent') {
                     // 다른 agentType이 이미 선택되어 있으면 제거
                     if (lastOtherAgentType) {
-                        const index = result.findIndex(r => {
+                        const index = result.findIndex((r) => {
                             const rData = getUserData(r);
                             return rData && rData.isAgent && rData.agentType === lastOtherAgentType;
                         });
@@ -260,15 +262,19 @@ export default {
                 else if (userData.agentType) {
                     // agentType이 'agent'인 것이 이미 선택되어 있으면 제거
                     if (hasAgentTypeAgent) {
-                        result.splice(0, result.length, ...result.filter(r => {
-                            const rData = getUserData(r);
-                            return !rData || !rData.isAgent || rData.agentType !== 'agent';
-                        }));
+                        result.splice(
+                            0,
+                            result.length,
+                            ...result.filter((r) => {
+                                const rData = getUserData(r);
+                                return !rData || !rData.isAgent || rData.agentType !== 'agent';
+                            })
+                        );
                         hasAgentTypeAgent = false;
                     }
                     // 다른 agentType이 이미 선택되어 있으면 제거
                     if (lastOtherAgentType && lastOtherAgentType !== userData.agentType) {
-                        const index = result.findIndex(r => {
+                        const index = result.findIndex((r) => {
                             const rData = getUserData(r);
                             return rData && rData.isAgent && rData.agentType === lastOtherAgentType;
                         });
@@ -278,7 +284,7 @@ export default {
                     }
                     // 같은 agentType 내에서도 1개만
                     if (lastOtherAgentType === userData.agentType) {
-                        const index = result.findIndex(r => {
+                        const index = result.findIndex((r) => {
                             const rData = getUserData(r);
                             return rData && rData.isAgent && rData.agentType === userData.agentType;
                         });

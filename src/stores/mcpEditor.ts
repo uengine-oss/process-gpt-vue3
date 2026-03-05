@@ -32,4 +32,3 @@ export const useMcpEditorStore = defineStore('mcpEditor', {
         }
     }
 });
-

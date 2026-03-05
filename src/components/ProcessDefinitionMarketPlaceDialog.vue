@@ -2,21 +2,13 @@
     <v-card>
         <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
             <div class="d-flex align-center">{{ $t('ProcessDefinitionMarketPlaceDialog.title') }}</div>
-            <v-btn @click="close"
-                variant="text" 
-                density="compact"
-                icon
-            >
+            <v-btn @click="close" variant="text" density="compact" icon>
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-card-title>
         <v-card-text class="add-marketplace-dialog-input-box pa-4 pb-0">
-            <v-text-field v-model="newDefinition.id" :label="$t('ProcessDefinitionMarketPlaceDialog.processId')"
-                disabled
-            />
-            <v-text-field v-model="newDefinition.name" :label="$t('ProcessDefinitionMarketPlaceDialog.processName')" 
-                disabled
-            />
+            <v-text-field v-model="newDefinition.id" :label="$t('ProcessDefinitionMarketPlaceDialog.processId')" disabled />
+            <v-text-field v-model="newDefinition.name" :label="$t('ProcessDefinitionMarketPlaceDialog.processName')" disabled />
             <v-textarea v-model="newDefinition.description" :label="$t('ProcessDefinitionMarketPlaceDialog.description')" rows="3" />
             <div class="d-flex justify-space-between">
                 <v-text-field v-model="megaCategory" :label="$t('ProcessDefinitionMarketPlaceDialog.category1') + ' *'" class="mr-1" />
@@ -33,41 +25,39 @@
                 :items="availableTags"
                 hide-details="auto"
             />
-            
+
             <!-- 이미지 미리보기 및 컨트롤 섹션 -->
             <div class="mt-4">
                 <div class="text-subtitle-1 mb-2">프로세스 대표 이미지</div>
                 <div class="image-preview-container d-flex flex-column align-center">
-                    <div v-if="imagePreview" 
-                         class="image-preview mb-2 clickable" 
-                         :class="{ 'drag-over': isDragOver }"
-                         @click="handleImageUpload"
-                         @dragover.prevent="handleDragOver"
-                         @dragleave.prevent="handleDragLeave"
-                         @drop.prevent="handleDrop">
-                        <img :src="imagePreview" alt="프로세스 이미지" class="preview-image"/>
+                    <div
+                        v-if="imagePreview"
+                        class="image-preview mb-2 clickable"
+                        :class="{ 'drag-over': isDragOver }"
+                        @click="handleImageUpload"
+                        @dragover.prevent="handleDragOver"
+                        @dragleave.prevent="handleDragLeave"
+                        @drop.prevent="handleDrop"
+                    >
+                        <img :src="imagePreview" alt="프로세스 이미지" class="preview-image" />
                         <div class="image-overlay">
                             <v-icon size="24" color="white">mdi-image-edit</v-icon>
                             <span class="overlay-text">클릭 또는 드래그하여 변경</span>
                         </div>
                     </div>
-                    <div v-else 
-                         class="no-image-placeholder d-flex flex-column align-center justify-center clickable" 
-                         :class="{ 'drag-over': isDragOver }"
-                         @click="handleImageUpload"
-                         @dragover.prevent="handleDragOver"
-                         @dragleave.prevent="handleDragLeave"
-                         @drop.prevent="handleDrop">
+                    <div
+                        v-else
+                        class="no-image-placeholder d-flex flex-column align-center justify-center clickable"
+                        :class="{ 'drag-over': isDragOver }"
+                        @click="handleImageUpload"
+                        @dragover.prevent="handleDragOver"
+                        @dragleave.prevent="handleDragLeave"
+                        @drop.prevent="handleDrop"
+                    >
                         <v-icon size="48" color="primary" class="mb-2">mdi-image-plus</v-icon>
                         <span class="text-medium-emphasis">클릭 또는 드래그하여 이미지 추가</span>
                     </div>
-                    <input
-                        type="file"
-                        ref="fileInput"
-                        accept="image/*"
-                        style="display: none"
-                        @change="onFileSelected"
-                    />
+                    <input type="file" ref="fileInput" accept="image/*" style="display: none" @change="onFileSelected" />
                 </div>
             </div>
         </v-card-text>
@@ -91,7 +81,7 @@ const backend = BackendFactory.createBackend();
 export default {
     props: {
         processDefinition: Object,
-        bpmn: String,
+        bpmn: String
     },
     data: () => ({
         newDefinition: {
@@ -102,7 +92,7 @@ export default {
             tags: '',
             author_name: '',
             author_email: '',
-            image: null,
+            image: null
         },
         // category
         megaCategory: '',
@@ -116,7 +106,7 @@ export default {
         generator: null,
         isDragOver: false,
         // 중복 체크
-        isDuplicateId: false,
+        isDuplicateId: false
     }),
     computed: {
         isFormValid() {
@@ -135,11 +125,11 @@ export default {
                 tags: '',
                 author_name: '',
                 author_email: '',
-                image: null,
+                image: null
             };
             this.megaCategory = '';
             this.majorCategory = '';
-            
+
             // 중복 ID 체크
             await this.checkDuplicateId();
         }
@@ -149,18 +139,18 @@ export default {
         });
     },
     watch: {
-        'tagsArray': {
+        tagsArray: {
             deep: true,
             handler(newVal) {
                 this.newDefinition.tags = newVal ? newVal.join(',') : '';
             }
         },
-        'megaCategory': {
+        megaCategory: {
             handler() {
                 this.newDefinition.category = `${this.megaCategory}/${this.majorCategory}`;
             }
         },
-        'majorCategory': {
+        majorCategory: {
             handler() {
                 this.newDefinition.category = `${this.megaCategory}/${this.majorCategory}`;
             }
@@ -169,7 +159,7 @@ export default {
     methods: {
         filterDefinition(definition) {
             if (definition.roles && definition.roles.length > 0) {
-                definition.roles.map(role => {
+                definition.roles.map((role) => {
                     if (role.default) {
                         role.default = '';
                     }
@@ -181,13 +171,13 @@ export default {
         },
         async checkDuplicateId() {
             if (!this.newDefinition.id) return;
-            
+
             try {
                 const { data: existingItems } = await window.$supabase
                     .from('proc_def_marketplace')
                     .select('id')
                     .eq('id', this.newDefinition.id);
-                
+
                 this.isDuplicateId = existingItems && existingItems.length > 0;
             } catch (error) {
                 console.error('중복 ID 체크 중 오류:', error);
@@ -198,7 +188,7 @@ export default {
             const definition = this.newDefinition.definition;
             const filteredDef = this.filterDefinition(definition);
             this.newDefinition.definition = filteredDef;
-            
+
             this.$try({
                 context: this,
                 action: async () => {
@@ -250,7 +240,7 @@ export default {
         },
         async generateImage() {
             if (this.isGeneratingImage) return;
-            
+
             this.isGeneratingImage = true;
             try {
                 this.generator.setProcessInfo(JSON.stringify(this.processDefinition));
@@ -276,7 +266,8 @@ export default {
     margin: 0 auto;
 }
 
-.image-preview, .no-image-placeholder {
+.image-preview,
+.no-image-placeholder {
     width: 100%;
     height: 150px;
     border: 2px dashed #ccc;
@@ -287,7 +278,8 @@ export default {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.image-preview:hover, .no-image-placeholder:hover {
+.image-preview:hover,
+.no-image-placeholder:hover {
     border-color: rgb(var(--v-theme-primary));
     box-shadow: 0 4px 16px rgba(var(--v-theme-primary), 0.2);
     transform: translateY(-2px);
@@ -302,7 +294,7 @@ export default {
 }
 
 .drag-over {
-    border-color: #4CAF50 !important;
+    border-color: #4caf50 !important;
     background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%) !important;
     box-shadow: 0 4px 16px rgba(76, 175, 80, 0.3);
 }

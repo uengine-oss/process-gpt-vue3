@@ -1,0 +1,161 @@
+rules:
+  # Source: Python 시큐어코딩 가이드(2023년 개정본)
+  # Scope: 구현단계 자동 탐지 가능한 항목 중심
+
+  - id: kisa.py.code-injection.no-eval-exec
+    message: "[KISA Python Guide] 코드 삽입: eval/exec 사용 금지"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > 코드 삽입"
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+
+  - id: kisa.py.command-injection.no-os-system
+    message: "[KISA Python Guide] 운영체제 명령어 삽입: os.system 사용 지양"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > 운영체제 명령어 삽입"
+    pattern: os.system(...)
+
+  - id: kisa.py.command-injection.no-subprocess-shell-true
+    message: "[KISA Python Guide] 운영체제 명령어 삽입: subprocess(..., shell=True) 금지"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > 운영체제 명령어 삽입"
+    patterns:
+      - pattern-either:
+          - pattern: subprocess.run(..., shell=True, ...)
+          - pattern: subprocess.Popen(..., shell=True, ...)
+          - pattern: subprocess.call(..., shell=True, ...)
+          - pattern: subprocess.check_output(..., shell=True, ...)
+
+  - id: kisa.py.sql-injection.dynamic-query
+    message: "[KISA Python Guide] SQL 삽입: 동적 문자열 SQL 실행 지양(인자화 쿼리 사용)"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > SQL 삽입"
+    pattern-either:
+      - pattern: $CUR.execute(f"...{...}...")
+      - pattern: $CUR.execute("..." + ...)
+      - pattern: $CUR.execute('...' + ...)
+      - pattern: $CUR.execute("...%..." % ...)
+      - pattern: $CUR.execute('...%...' % ...)
+      - pattern: $CUR.execute($Q.format(...))
+
+  - id: kisa.py.open-redirect.untrusted-url
+    message: "[KISA Python Guide] 신뢰되지 않은 URL 자동접속 연결(오픈 리다이렉트) 가능성"
+    severity: WARNING
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > 신뢰되지 않은 URL주소로 자동접속 연결"
+    pattern-either:
+      - pattern: redirect(request.$FIELD.get(...))
+      - pattern: redirect(request.args.get(...))
+      - pattern: redirect(request.GET.get(...))
+      - pattern: HttpResponseRedirect(request.$FIELD.get(...))
+
+  - id: kisa.py.deserialization.untrusted-pickle-loads
+    message: "[KISA Python Guide] 신뢰할 수 없는 데이터 역직렬화: pickle.loads 사용 주의"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "코드오류 > 신뢰할 수 없는 데이터의 역직렬화"
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: dill.loads(...)
+      - pattern: joblib.load(...)
+
+  - id: kisa.py.xml.xxe-resolve-entities
+    message: "[KISA Python Guide] 부적절한 XML 외부 개체 참조(XXE) 가능 설정"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > 부적절한 XML 외부 개체 참조"
+    pattern-either:
+      - pattern: lxml.etree.XMLParser(resolve_entities=True, ...)
+      - pattern: etree.XMLParser(resolve_entities=True, ...)
+
+  - id: kisa.py.crypto.no-md5-sha1
+    message: "[KISA Python Guide] 취약한 암호화 알고리즘(MD5/SHA1) 사용 금지"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 취약한 암호화 알고리즘 사용"
+    pattern-either:
+      - pattern: hashlib.md5(...)
+      - pattern: hashlib.sha1(...)
+
+  - id: kisa.py.random.no-random-for-security
+    message: "[KISA Python Guide] 적절하지 않은 난수 값: 보안값 생성 시 random 사용 금지"
+    severity: WARNING
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 적절하지 않은 난수 값 사용"
+    patterns:
+      - pattern-either:
+          - pattern: $X = random.random(...)
+          - pattern: $X = random.randrange(...)
+          - pattern: $X = random.choice(...)
+          - pattern: $X = random.randint(...)
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i).*(token|secret|password|passwd|otp|nonce|session|sid).*
+
+  - id: kisa.py.secrets.no-hardcoded-secrets
+    message: "[KISA Python Guide] 하드코드된 중요정보 탐지"
+    severity: WARNING
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 하드코드된 중요정보"
+    patterns:
+      - pattern-either:
+          - pattern: $K = "$V"
+          - pattern: $K = '$V'
+      - metavariable-regex:
+          metavariable: $K
+          regex: (?i).*(password|passwd|pwd|secret|token|apikey|api_key|access[_-]?key|private[_-]?key).*
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^(?!\s*$)(?!changeme$)(?!example$)(?!test$).+
+
+  - id: kisa.py.tls.no-insecure-cert-verification
+    message: "[KISA Python Guide] 부적절한 인증서 유효성 검증: verify=False/CERT_NONE 금지"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 부적절한 인증서 유효성 검증"
+    pattern-either:
+      - pattern: requests.get(..., verify=False, ...)
+      - pattern: requests.post(..., verify=False, ...)
+      - pattern: requests.put(..., verify=False, ...)
+      - pattern: requests.delete(..., verify=False, ...)
+      - pattern: ssl._create_unverified_context(...)
+      - pattern: $CTX.verify_mode = ssl.CERT_NONE
+      - pattern: $CTX.check_hostname = False
+
+  - id: kisa.py.integrity.no-download-without-hash-check
+    message: "[KISA Python Guide] 무결성 검사 없는 코드 다운로드 가능성"
+    severity: WARNING
+    languages: [python]
+    metadata:
+      guide: "Python_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 무결성 검사없는 코드 다운로드"
+    pattern-either:
+      - pattern: urllib.request.urlretrieve(...)
+      - pattern: wget.download(...)

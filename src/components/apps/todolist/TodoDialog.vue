@@ -34,25 +34,18 @@
             </v-card-actions>
         </v-card>
 
-        <v-card v-else 
-            class="isMobile-add-todo-dialog-box"
-        >
+        <v-card v-else class="isMobile-add-todo-dialog-box">
             <v-row class="ma-0 pa-4 pb-0 align-center">
                 <div v-if="type && type == 'edit'" class="d-flex">
-                    <v-card-title  class="pa-0">{{ $t('TodoDialog.editTask') }}</v-card-title>
+                    <v-card-title class="pa-0">{{ $t('TodoDialog.editTask') }}</v-card-title>
                     <v-icon @click="type = 'view'">mdi-arrow-left</v-icon>
                 </div>
 
                 <v-card-title v-else class="pa-0 pb-0">
-                    <v-card-title  class="pa-0">{{ $t('TodoDialog.addTask') }}</v-card-title>
+                    <v-card-title class="pa-0">{{ $t('TodoDialog.addTask') }}</v-card-title>
                 </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn @click="close"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="close" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
@@ -64,29 +57,30 @@
                 <v-autocomplete
                     v-model="formDefId"
                     :items="formList"
-                    :label="$t('UserTaskPanel.form')" 
+                    :label="$t('UserTaskPanel.form')"
                     variant="outlined"
                     hide-details
                     class="align-center"
                     @focus="loadForms"
-                    style="margin-bottom: 10px;"
+                    style="margin-bottom: 10px"
                 ></v-autocomplete>
                 <!-- <v-select v-model="newTask.status" :items="statusList" item-title="text" item-value="value" label="진행 상태" variant="outlined"></v-select> -->
                 <v-textarea v-model="newTask.description" :label="$t('TodoDialog.description')" outlined></v-textarea>
-               
             </v-card-text>
 
             <!-- 버튼을 라운드 스타일로 변경 -->
             <!-- 오른쪽 정렬을 위해 justify-end로 변경 -->
             <v-card-actions class="justify-end pa-4 pt-0">
-                <v-btn :disabled="newTask.name == ''" color="primary" variant="flat" @click="save" rounded>{{ $t('TodoDialog.save') }}</v-btn>
+                <v-btn :disabled="newTask.name == ''" color="primary" variant="flat" @click="save" rounded>{{
+                    $t('TodoDialog.save')
+                }}</v-btn>
             </v-card-actions>
         </v-card>
     </div>
 </template>
 
 <script>
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     props: {
@@ -95,7 +89,7 @@ export default {
         todolist: Array,
         isOpen: Boolean,
         instId: { type: String, default: '' },
-        defId: { type: String, default: '' },
+        defId: { type: String, default: '' }
     },
     data: () => ({
         newTask: {
@@ -108,16 +102,16 @@ export default {
             endDate: null,
             dueDate: null,
             instId: '',
-            defId: '',
+            defId: ''
         },
         statusList: [
             { text: '할 일', value: 'TODO' },
             { text: '진행 중', value: 'IN_PROGRESS' },
             { text: '보류 중', value: 'PENDING' },
-            { text: '완료됨', value: 'DONE' },
+            { text: '완료됨', value: 'DONE' }
         ],
         formDefId: null,
-        formList: [],
+        formList: []
     }),
     async created() {
         if (this.task && this.task.taskId) {
@@ -135,7 +129,7 @@ export default {
                 instId: this.instId || '',
                 defId: this.defId || '',
                 adhoc: true,
-                tool: 'formHandler:defaultform',
+                tool: 'formHandler:defaultform'
             };
         }
 
@@ -144,11 +138,11 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
-        },
+        }
     },
     methods: {
         close() {
-            this.$emit('close')
+            this.$emit('close');
         },
         async save() {
             const backend = BackendFactory.createBackend();
@@ -161,12 +155,12 @@ export default {
                 this.newTask.endpoint = uid;
             }
             if (this.todolist && this.todolist.length > 0) {
-                const statusIndex = this.todolist.findIndex(t => t.id === this.newTask.status);
+                const statusIndex = this.todolist.findIndex((t) => t.id === this.newTask.status);
                 if (statusIndex !== -1) {
                     this.todolist[statusIndex].tasks.push(this.newTask);
                 }
             }
-            if(!this.formDefId) this.formDefId = 'defaultform';
+            if (!this.formDefId) this.formDefId = 'defaultform';
             this.newTask.tool = `formHandler:${this.formDefId}`;
 
             await backend.putWorklist(this.newTask.taskId, this.newTask);
@@ -185,14 +179,14 @@ export default {
             const backend = BackendFactory.createBackend();
             try {
                 const forms = await backend.listDefinition('form_def');
-                this.formList = forms.map(form => ({
+                this.formList = forms.map((form) => ({
                     title: form.name,
                     value: form.id
                 }));
             } catch (error) {
                 console.error('폼 목록을 가져오는데 실패했습니다:', error);
             }
-        },
-    },
-}
+        }
+    }
+};
 </script>

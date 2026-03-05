@@ -1,40 +1,15 @@
 <template>
     <div>
-        <v-text-field
-            v-if="mode == 'text'"
-            v-model="condition"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-        >
+        <v-text-field v-if="mode == 'text'" v-model="condition" variant="outlined" density="comfortable" hide-details>
             <template #prepend-inner>
-                <v-btn
-                    variant="text"
-                    density="compact"
-                    class="ma-0 pa-0"
-                    icon="mdi-comment-text-outline"
-                    @click="modeChange('function')"
-                />
+                <v-btn variant="text" density="compact" class="ma-0 pa-0" icon="mdi-comment-text-outline" @click="modeChange('function')" />
             </template>
         </v-text-field>
-        <v-text-field
-            v-if="mode == 'function'"
-            v-model="conditionFunctionLocal"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-        >
+        <v-text-field v-if="mode == 'function'" v-model="conditionFunctionLocal" variant="outlined" density="comfortable" hide-details>
             <template #prepend-inner>
-                <v-btn
-                    variant="text"
-                    density="compact"
-                    class="ma-0 pa-0"
-                    icon="mdi-function"
-                    @click="modeChange('text')"
-                />
+                <v-btn variant="text" density="compact" class="ma-0 pa-0" icon="mdi-function" @click="modeChange('text')" />
             </template>
         </v-text-field>
-        
     </div>
 </template>
 

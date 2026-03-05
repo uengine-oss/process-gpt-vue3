@@ -5,6 +5,7 @@
         v-show="!$globalState.state.isMobileDrawerOpen"
         @click.stop="customizer.SET_SIDEBAR_DRAWER"
         class="mobile-side-bar-btn"
+        :style="mobileSideBarBtnStyle"
         size="40"
         color="primary"
     >
@@ -14,6 +15,7 @@
         v-if="notiCount > 0"
         v-show="!$globalState.state.isMobileDrawerOpen"
         class="mobile-side-bar-btn"
+        :style="mobileSideBarBtnStyle"
         :content="notiCount"
         :model-value="notiCount > 0"
         color="error"
@@ -35,12 +37,15 @@
         @mouseenter="isRailHovered = true"
         @mouseleave="isRailHovered = false"
     >
-        <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc" >
-            <Logo :style="logoPadding"/>
+        <div class="d-flex align-center pa-4 pb-2 ma-0 is-sidebar-pc">
+            <Logo :style="logoPadding" />
             <v-spacer></v-spacer>
             <v-tooltip v-if="!pal" :text="$t('processDefinitionMap.title')" location="bottom">
                 <template v-slot:activator="{ props }">
-                    <v-btn icon variant="text" density="comfortable"
+                    <v-btn
+                        icon
+                        variant="text"
+                        density="comfortable"
                         v-bind="props"
                         class="text-medium-emphasis"
                         :to="'/definition-map'"
@@ -51,9 +56,7 @@
                 </template>
             </v-tooltip>
         </div>
-        <div class="pa-4 is-sidebar-mobile"
-            :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }"
-        >
+        <div class="pa-4 is-sidebar-mobile" :class="{ 'mobile-no-padding-bottom': globalIsMobile.value }">
             <v-row class="ma-0 pa-0" align="center">
                 <Logo />
                 <v-spacer></v-spacer>
@@ -242,16 +245,11 @@
                 <!-- 유저 목록 -->
                 <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
                     <div class="d-flex align-center ml-2">
-                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0">
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
                         </div>
                         <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
-                            <Icons
-                                :icon="'search'"
-                                :size="14"
-                                :color="'#808080'"
-                                style="width: 14px; height: 14px;"
-                            />
+                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
                         </div>
                     </div>
                     <v-col class="pa-0">
@@ -262,7 +260,7 @@
                 <!-- 스킬 타이틀 + 목록 -->
                 <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
-                        <div style="font-size:14px;" class="text-medium-emphasis cp-menu mt-0 ml-2">
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.skills') }}
                         </div>
                         <v-tooltip location="bottom" :text="$t('VerticalSidebar.addSkill')">
@@ -274,7 +272,7 @@
                         </v-tooltip>
                     </v-row>
                     <v-col class="pa-0">
-                        <SkillList/>
+                        <SkillList />
                     </v-col>
                 </div>
 
@@ -317,6 +315,7 @@
                     </template>
                 </div>
 
+<<<<<<< HEAD
                 <!-- Admin 관리 메뉴 (PAL mode + Admin only) -->
                 <div v-if="adminItem.length > 0" class="mb-4">
                     <!-- Rail mode: icons -->
@@ -335,7 +334,6 @@
                         </v-tooltip>
                     </template>
                     <!-- Expanded mode: full -->
-                    <template v-else>
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">Admin</div>
                         <v-col class="pa-0">
                             <v-list-item
@@ -368,15 +366,17 @@
                         <div>
                             <div class="font-weight-bold text-body-2">{{ $t('definitionManagement.title') || '프로세스 정의 관리' }}</div>
                             <div class="text-caption" style="opacity:0.85;">BPMN 프로세스 정의를 생성하고 편집합니다.</div>
-                        </div>
-                    </v-tooltip>
-                    <!-- Expanded mode: full -->
-                    <template v-if="!isRailCollapsed">
-                        <template v-for="(item, index) in definitionItem" :key="item.title">
-                            <div v-if="item.header && index === 0" style="font-size: 14px" class="text-medium-emphasis cp-menu mt-3 ml-2">
+=======
+                <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
+                <v-col class="pa-0">
+                    <!-- definition menu item -->
+                    <template v-for="(item, index) in definitionItem" :key="item.title">
+                        <!-- Item Sub Header -->
+                        <div v-if="item.header && !item.disable" class="d-flex align-center mt-3 ml-2">
+                            <div v-if="index === 0" style="font-size: 14px" class="text-medium-emphasis cp-menu flex-shrink-0 mr-1">
                                 {{ $t(item.header) }}
                             </div>
-                            <v-row v-if="item.header && !item.disable" class="pa-0 ma-0">
+                            <v-row class="pa-0 ma-0 flex-nowrap">
                                 <template v-for="subItem in definitionItem" :key="subItem.title">
                                     <v-tooltip v-if="subItem.title" location="bottom" :text="$t(subItem.title)">
                                         <template v-slot:activator="{ props }">
@@ -385,8 +385,6 @@
                                                 @click="navigateTo(subItem.to)"
                                                 v-bind="props"
                                                 icon
-                                                variant="text"
-                                                class="text-medium-emphasis cp-menu"
                                                 density="comfortable"
                                             >
                                                 <Icons :icon="subItem.icon" :size="subItem.size ? subItem.size : 20" />
@@ -399,6 +397,7 @@
                         </template>
                     </template>
                 </v-col>
+<<<<<<< HEAD
                 <v-col v-if="!pal" class="pa-0">
                     <template v-if="!isRailCollapsed">
                         <ExpandableList
@@ -421,6 +420,74 @@
                             </template>
                         </ExpandableList>
                     </template>
+=======
+                <!-- 프로세스 섹션: 프로세스 정의 + 옆 작은 버튼 클릭 시 업로드/내보내기 드롭다운 -->
+                <v-col v-if="processSectionListItems.length > 0" class="pa-0">
+                    <v-list-item
+                        v-for="item in processSectionListItems"
+                        :key="item.title"
+                        :to="item.to"
+                        density="compact"
+                        class="leftPadding"
+                    >
+                        <template v-slot:prepend>
+                            <Icons v-if="item.icon" :icon="item.icon" :size="20" class="mr-2" />
+                        </template>
+                        <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        <template v-slot:append v-if="processSectionDropdownItems.length > 0">
+                            <div @click.stop.prevent>
+                                <v-menu location="end" :close-on-content-click="true">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            size="small"
+                                            density="comfortable"
+                                            class="mr-1 process-section-dropdown-btn"
+                                            @click.stop.prevent
+                                        >
+                                            <v-icon icon="mdi-dots-vertical" size="20" />
+                                        </v-btn>
+                                    </template>
+                                    <v-list density="compact" min-width="160">
+                                        <v-list-item
+                                            v-for="dropItem in processSectionDropdownItems"
+                                            :key="dropItem.title"
+                                            @click="handleProcessSectionClick(dropItem)"
+                                        >
+                                            <template v-slot:prepend>
+                                                <Icons :icon="dropItem.icon" :size="18" class="mr-2" />
+                                            </template>
+                                            <v-list-item-title>{{ $t(dropItem.title) }}</v-list-item-title>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-menu>
+                            </div>
+                        </template>
+                    </v-list-item>
+                </v-col>
+                <v-col class="pa-0">
+                    <ExpandableList
+                        v-if="definitionList && definitionList.children"
+                        :items="definitionList.children"
+                        :limit="10"
+                        @expanded="onDefinitionsExpanded"
+                        @collapsed="onDefinitionsCollapsed"
+                    >
+                        <template #items="{ displayedItems }">
+                            <NavCollapse
+                                v-for="(definition, i) in displayedItems"
+                                :key="i"
+                                :item="definition"
+                                class="leftPadding"
+                                @update:item="(def) => (displayedItems[i] = def)"
+                                :level="0"
+                                :type="'definition-list'"
+                            />
+                        </template>
+                    </ExpandableList>
+>>>>>>> origin/main
                 </v-col>
             </v-list>
             <Footer class="mt-2" />
@@ -504,6 +571,8 @@ export default {
         definitionItem: [],
         definitionList: null,
         processItem: [],
+        processSectionListItems: [],
+        processSectionDropdownItems: [],
         analyticsItem: [],
         adminItem: [],
         logoPadding: '',
@@ -522,6 +591,10 @@ export default {
         isRailHovered: false
     }),
     computed: {
+        mobileSideBarBtnStyle() {
+            const isDefinitionsChat = this.$route?.path?.includes('definitions/chat');
+            return isDefinitionsChat ? { bottom: '48px' } : {};
+        },
         JMS() {
             return window.$jms;
         },
@@ -601,13 +674,7 @@ export default {
                         header: 'definitionManagement.title',
                         disable: false
                     },
-                    {
-                        title: 'processDefinition.title',
-                        icon: 'sidebarProcess',
-                        BgColor: 'primary',
-                        to: '/definitions/chat',
-                        disable: false
-                    },
+                    // 프로세스 정의, 정의 업로드/내보내기는 processSectionListItems로 아래에 아이콘 없이 표시
                     ...(isUEngineMode && !this.pal
                         ? [
                               {
@@ -648,31 +715,6 @@ export default {
                         disable: true,
                         to: '/ui-definitions/defaultform',
                         size: 24
-                    },
-                    {
-                        title: 'definitionManagement.upload',
-                        icon: 'upload',
-                        BgColor: 'primary',
-                        to: function () {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = '.zip';
-                            input.onchange = (event) => {
-                                const file = event.target.files[0];
-                                if (file) {
-                                    backend.uploadDefinition(file);
-                                }
-                            };
-                            input.click();
-                        },
-                        disable: true
-                    },
-                    {
-                        title: 'definitionManagement.release',
-                        icon: 'download',
-                        BgColor: 'primary',
-                        disable: true,
-                        to: this.openDialog
                     }
                 ];
 
@@ -686,10 +728,11 @@ export default {
                     );
                 }
                 if (this.pal) {
-                    this.definitionItem = this.definitionItem.filter((item) => 
-                        item.title !== 'uiDefinition.title' && 
-                        item.title !== 'definitionManagement.defaultForm' &&
-                        item.title !== 'systemDefinition.title'
+                    this.definitionItem = this.definitionItem.filter(
+                        (item) =>
+                            item.title !== 'uiDefinition.title' &&
+                            item.title !== 'definitionManagement.defaultForm' &&
+                            item.title !== 'systemDefinition.title'
                     );
                 }
                 this.getDefinitionList();
@@ -719,8 +762,14 @@ export default {
                 ];
             }
 
+<<<<<<< HEAD
             // 프로세스 관리 메뉴 (PAL mode only)
             this.processItem = window.$pal ? [
+=======
+            // 프로세스 관리 메뉴 (프로세스 정의/업로드/내보내기는 아래 프로세스 섹션에 표시)
+            // PAL 모드에서는 프로세스 리뷰보드·내 수신함 숨김
+            this.processItem = [
+>>>>>>> origin/main
                 {
                     title: 'processArchitecture.title',
                     icon: 'sitemap',
@@ -742,6 +791,7 @@ export default {
                     to: '/version-comparison',
                     disable: false
                 },
+<<<<<<< HEAD
                 {
                     title: 'reviewBoard.title',
                     icon: 'submit-document',
@@ -778,6 +828,42 @@ export default {
 
             // Analytics 메뉴 (PAL mode only)
             this.analyticsItem = window.$pal ? [
+=======
+                ...(this.pal
+                    ? []
+                    : [
+                          {
+                              title: 'reviewBoard.title',
+                              icon: 'submit-document',
+                              BgColor: 'primary',
+                              to: '/review-board',
+                              disable: false
+                          },
+                          {
+                              title: 'reviewBoard.myInbox',
+                              icon: 'submit-document',
+                              BgColor: 'primary',
+                              to: '/my-inbox',
+                              disable: false
+                          }
+                      ])
+            ];
+
+            // 프로세스 섹션: 프로세스 정의(메인 행) + 옆 작은 버튼으로 드롭다운
+            this.processSectionListItems = [
+                { title: 'definitionManagement.processDefinition', icon: 'flowchart', to: '/definitions/chat' }
+            ];
+            this.processSectionDropdownItems =
+                this.mode !== 'ProcessGPT'
+                    ? [
+                          { title: 'definitionManagement.upload', icon: 'upload', action: 'upload' },
+                          { title: 'definitionManagement.release', icon: 'download', action: 'openDownloadDialog' }
+                      ]
+                    : [];
+
+            // Analytics 메뉴
+            this.analyticsItem = [
+>>>>>>> origin/main
                 {
                     title: 'analytics.dashboard',
                     icon: 'dashboard',
@@ -805,8 +891,43 @@ export default {
                     BgColor: 'primary',
                     to: '/analysis-dashboard',
                     disable: false
+<<<<<<< HEAD
                 }
             ] : [];
+=======
+                },
+                {
+                    title: 'analytics.performance',
+                    icon: 'graph-up-linear',
+                    BgColor: 'primary',
+                    to: '/analytics/performance',
+                    disable: false
+                },
+                {
+                    title: 'analytics.query',
+                    icon: 'chat-round-line-linear',
+                    BgColor: 'primary',
+                    to: '/analytics/query',
+                    disable: false
+                },
+                ...(this.pal
+                    ? []
+                    : [
+                          {
+                              title: 'analytics.heatmap',
+                              icon: 'ibm-process-mining',
+                              BgColor: 'primary',
+                              to: '/analytics/heatmap',
+                              disable: false
+                          }
+                      ])
+            ];
+>>>>>>> origin/main
+
+            // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
+            if (this.pal) {
+                this.analyticsItem = [];
+            }
 
             if (!this.JMS) {
                 this.definitionItem.forEach((item) => {
@@ -869,6 +990,20 @@ export default {
         openDialog() {
             this.isOpen = true;
         },
+        handleProcessSectionClick(item) {
+            if (item.action === 'upload') {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.zip';
+                input.onchange = (event) => {
+                    const file = event.target.files[0];
+                    if (file) backend.uploadDefinition(file);
+                };
+                input.click();
+            } else if (item.action === 'openDownloadDialog') {
+                this.openDialog();
+            }
+        },
         closeDownloadDefinitionList() {
             this.isOpen = false;
         },
@@ -899,7 +1034,9 @@ export default {
                             obj.to = `/ui-definitions/${el.path.split('.')[0]}`;
                         } else if (el.name.split('.')[1] == 'rule') {
                             // rule은 path에 prefix(ex: businessRules/<id>.rule)가 붙을 수 있어 마지막 파일명 기준으로 ruleId만 사용
-                            const fileBase = String(el.path || '').split('/').pop();
+                            const fileBase = String(el.path || '')
+                                .split('/')
+                                .pop();
                             const ruleId = String(fileBase || '').split('.')[0];
                             obj.to = `/business-rule/${ruleId}`;
                         } else {
@@ -955,7 +1092,9 @@ export default {
                                 };
                                 menu.children.push(obj);
                             } else if (item.path && item.path.includes('.rule')) {
-                                const fileBase = String(item.path || '').split('/').pop();
+                                const fileBase = String(item.path || '')
+                                    .split('/')
+                                    .pop();
                                 const ruleId = String(fileBase || '').split('.')[0];
                                 obj = {
                                     title: item.name,
@@ -1015,7 +1154,9 @@ export default {
                                 };
                                 deletedMenu.children.push(obj);
                             } else if (item.path && item.path.includes('.rule')) {
-                                const fileBase = String(item.path || '').split('/').pop();
+                                const fileBase = String(item.path || '')
+                                    .split('/')
+                                    .pop();
                                 const ruleId = String(fileBase || '').split('.')[0];
                                 obj = {
                                     title: item.name,
@@ -1147,5 +1288,18 @@ export default {
 .bpmn-sidebar-icon:before {
     margin-left: 0 !important;
     margin-right: 0 !important;
+}
+
+.mobile-side-bar-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 58px;
+    z-index: 999;
+}
+
+/* 프로세스 정의 옆 점 세 개 버튼 클릭 영역 확대 */
+.process-section-dropdown-btn {
+    min-width: 36px !important;
+    min-height: 36px !important;
 }
 </style>

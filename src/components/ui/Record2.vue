@@ -41,7 +41,7 @@ export default {
     methods: {
         async getMicrophoneInput() {
             if (!navigator.mediaDevices) {
-                alert("브라우저가 마이크 입력을 지원하지 않습니다.");
+                alert('브라우저가 마이크 입력을 지원하지 않습니다.');
                 return;
             }
             this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -81,10 +81,10 @@ export default {
             await this.getMicrophoneInput();
             const CHUNKS = [];
             this.recorder = new MediaRecorder(this.stream);
-            this.recorder.ondataavailable = event => {
+            this.recorder.ondataavailable = (event) => {
                 CHUNKS.push(event.data);
                 if (this.recorder && this.recorder.state === 'inactive') {
-                    const AUDIO_BLOB = new Blob(CHUNKS, { type: "audio/mp3" });
+                    const AUDIO_BLOB = new Blob(CHUNKS, { type: 'audio/mp3' });
                     this.$refs.audio.src = window.URL.createObjectURL(AUDIO_BLOB);
                     this.$refs.audio.style.display = 'block';
                 }
@@ -99,7 +99,7 @@ export default {
                 this.recorder = null;
             }
             if (this.stream) {
-                this.stream.getTracks().forEach(track => track.stop());
+                this.stream.getTracks().forEach((track) => track.stop());
                 this.stream = null;
             }
             if (this.audioContext) {
@@ -119,7 +119,7 @@ export default {
                     if (this.volume > this.threshold) {
                         gsap.to(this.bars, {
                             duration: this.CONFIG.duration,
-                            height: index => {
+                            height: (index) => {
                                 return 10 + gsap.utils.mapRange(0, 255, 0, 150)(this.dataArray[index]);
                             }
                         });
@@ -143,7 +143,7 @@ export default {
         updateBars() {
             gsap.to(this.bars, {
                 duration: this.CONFIG.duration,
-                height: index => {
+                height: (index) => {
                     const newHeight = this.dataArray[index] / 255;
                     return 10 + gsap.utils.mapRange(0, 1, 0, 250)(newHeight); // 바의 높이 범위를 증가시켜 더 잘 보이도록 설정
                 }
@@ -160,7 +160,7 @@ export default {
             const radius = 10; // 바의 라운드 반지름
             const BAR_POINT_X = x - width / 2;
             const BAR_POINT_Y = y - height;
-            
+
             // 둥근 사각형 그리기
             ctx.beginPath();
             ctx.moveTo(BAR_POINT_X + radius, BAR_POINT_Y);
@@ -264,12 +264,12 @@ canvas {
     fill: hsl(0, 0%, 6%);
 }
 
-.reveal[aria-pressed="true"] svg:nth-of-type(1),
+.reveal[aria-pressed='true'] svg:nth-of-type(1),
 .reveal svg:nth-of-type(2) {
     display: none;
 }
 
-.reveal[aria-pressed="true"] svg:nth-of-type(2) {
+.reveal[aria-pressed='true'] svg:nth-of-type(2) {
     display: block;
 }
 </style>

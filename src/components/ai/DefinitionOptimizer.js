@@ -1,19 +1,18 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class DefinitionOptimizer extends AIGenerator {
-
     constructor(client, options) {
         super(client, options);
 
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
         this.options = options;
         const process_definition_json = JSON.stringify(this.options.processDefinition, null, 2);
         const form_definitions_json = JSON.stringify(this.options.formFields, null, 2);
 
         this.previousMessages = [
-          {
-            role: "system",
-            content: `Analyze process definition and extract field dependencies.
+            {
+                role: 'system',
+                content: `Analyze process definition and extract field dependencies.
 
 GOAL
 Return a JSON that lists, for every activity (including those inside subprocesses), which fields from earlier steps are required as inputs. Also include gateways' condition fields if any exist.
@@ -84,7 +83,7 @@ DATA
 - Forms: ${form_definitions_json}
 
 Return JSON only.`
-          }
+            }
         ];
 
         // console.log(this.previousMessages[0].content);

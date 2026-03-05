@@ -7,11 +7,11 @@
 <script>
 export default {
     props: {
-        modelValue: String,
+        modelValue: String
     },
     data() {
         return {
-            description: this.modelValue ? JSON.parse(JSON.stringify(this.modelValue)) : '',            
+            description: this.modelValue ? JSON.parse(JSON.stringify(this.modelValue)) : ''
         };
     },
 
@@ -23,7 +23,6 @@ export default {
             }
         }
     },
-    methods: {
-    }
+    methods: {}
 };
 </script>

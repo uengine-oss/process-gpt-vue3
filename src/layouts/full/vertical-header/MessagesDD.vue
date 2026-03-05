@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {notifications} from '@/_mockApis/headerData';
+import { notifications } from '@/_mockApis/headerData';
 import { InboxIcon } from 'vue-tabler-icons';
 </script>
 <template>
@@ -10,9 +10,9 @@ import { InboxIcon } from 'vue-tabler-icons';
         <template v-slot:activator="{ props }">
             <v-btn icon class="bg-lightinfo mr-sm-3 mr-2" flat v-bind="props" size="small">
                 <v-badge color="info" content="3" offset-x="-5" offset-y="-8">
-                        <InboxIcon stroke-width="2" size="20" class="text-info"/>
-                    </v-badge>
-                </v-btn>
+                    <InboxIcon stroke-width="2" size="20" class="text-info" />
+                </v-badge>
+            </v-btn>
         </template>
         <v-sheet rounded="lg" width="385" elevation="10" class="mt-5 dropdown-box">
             <div class="px-8 pb-4 pt-6">

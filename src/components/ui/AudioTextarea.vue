@@ -7,16 +7,22 @@
                         <Icons :icon="'round-headset'"  />
                     </div> -->
                     <div @click="onClickMic" class="pb-4">
-                        <Icons v-if="!isMicRecording && !isMicRecorderLoading" :icon="'sharp-mic'"  />
-                        <Icons v-else-if="!isMicRecorderLoading" :icon="'stop'" :size="'20'"  />
-                        <Icons v-else-if="isMicRecorderLoading" :icon="'bubble-loading'"  />
+                        <Icons v-if="!isMicRecording && !isMicRecorderLoading" :icon="'sharp-mic'" />
+                        <Icons v-else-if="!isMicRecorderLoading" :icon="'stop'" :size="'20'" />
+                        <Icons v-else-if="isMicRecorderLoading" :icon="'bubble-loading'" />
                     </div>
                 </div>
             </template>
         </v-textarea>
 
-        <Record @close="onChangeRecordingDialog" @start="startRecording" @stop="stopRecording"
-            :audioResponse="newMessage" :chatRoomId="chatRoomId" :recordingMode="recordingDialog" />
+        <Record
+            @close="onChangeRecordingDialog"
+            @start="startRecording"
+            @stop="stopRecording"
+            :audioResponse="newMessage"
+            :chatRoomId="chatRoomId"
+            :recordingMode="recordingDialog"
+        />
     </div>
 </template>
 
@@ -55,8 +61,8 @@ export default {
             isMicRecording: false,
             micRecorder: null,
             micAudioChunks: [],
-            isMicRecorderLoading: false,
-        }
+            isMicRecorderLoading: false
+        };
     },
     watch: {
         modelValue(newVal) {
@@ -69,7 +75,7 @@ export default {
     created() {
         this.newMessage = this.modelValue;
         if (this.workItem) {
-            if(this.workItem.worklist && this.workItem.worklist.instId) {
+            if (this.workItem.worklist && this.workItem.worklist.instId) {
                 this.chatRoomId = this.workItem.worklist.instId;
             } else if (this.workItem.worklist && !this.workItem.worklist.instId) {
                 const uuid = this.uuid();
@@ -90,7 +96,7 @@ export default {
         onChangeRecordingDialog() {
             this.recordingDialog = !this.recordingDialog;
             if (!this.recordingDialog) {
-                this.$emit("close");
+                this.$emit('close');
             }
         },
         async startRecording() {
@@ -103,7 +109,7 @@ export default {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.mediaRecorder = new MediaRecorder(stream);
             this.audioChunks = [];
-            this.mediaRecorder.ondataavailable = e => {
+            this.mediaRecorder.ondataavailable = (e) => {
                 this.audioChunks.push(e.data);
             };
             this.mediaRecorder.start();
@@ -136,7 +142,7 @@ export default {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.micRecorder = new MediaRecorder(stream);
             this.micAudioChunks = [];
-            this.micRecorder.ondataavailable = e => {
+            this.micRecorder.ondataavailable = (e) => {
                 this.micAudioChunks.push(e.data);
             };
             this.micRecorder.start();
@@ -147,8 +153,8 @@ export default {
             if (this.micRecorder && this.micRecorder.state === 'recording') {
                 this.micRecorder.stop();
                 this.micRecorder.onstop = async () => {
-                const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
-                await this.uploadAudio(audioBlob);
+                    const audioBlob = new Blob(this.micAudioChunks, { type: 'audio/wav' });
+                    await this.uploadAudio(audioBlob);
                 };
             }
         },
@@ -167,7 +173,7 @@ export default {
             } finally {
                 this.isMicRecorderLoading = false; // 로딩 상태 종료
             }
-        },
+        }
     }
-}
+};
 </script>

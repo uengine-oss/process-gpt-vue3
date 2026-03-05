@@ -2,16 +2,9 @@
     <v-card>
         <!-- 닫기 버튼을 우측 끝에 배치 -->
         <v-row class="ma-0 pa-4 pb-0 align-center">
-            <v-card-title class="pa-0"
-            >{{ $t('processDefinitionMap.marketplace') }}
-            </v-card-title>
+            <v-card-title class="pa-0">{{ $t('processDefinitionMap.marketplace') }} </v-card-title>
             <v-spacer></v-spacer>
-            <v-btn @click="close"
-                class="ml-auto" 
-                variant="text" 
-                density="compact"
-                icon
-            >
+            <v-btn @click="close" class="ml-auto" variant="text" density="compact" icon>
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-row>
@@ -24,12 +17,14 @@
                 <v-col cols="12" class="pa-0">
                     <div class="d-flex align-center flex-fill border border-borderColor rounded-pill px-5 w-100">
                         <Icons :icon="'magnifer-linear'" :size="22" />
-                        <v-text-field v-model="searchKeyword"
+                        <v-text-field
+                            v-model="searchKeyword"
                             variant="plain"
                             density="compact"
                             class="position-relative pt-0 ml-3 custom-placeholer-color"
                             :placeholder="$t('ProcessDefinitionMarketPlace.searchPlaceholder')"
-                            single-line hide-details
+                            single-line
+                            hide-details
                             @keyup.enter="onSearchChange"
                         ></v-text-field>
                     </div>
@@ -37,7 +32,8 @@
             </v-row>
             <v-card-text class="pa-0 ma-0">
                 <!-- 태그 필터 칩 그룹 (탭 상단에 위치) -->
-                <v-chip-group v-if="!isSearchMode"
+                <v-chip-group
+                    v-if="!isSearchMode"
                     v-model="selectedTag"
                     selected-class="tag-selected"
                     column
@@ -68,16 +64,16 @@
                         {{ tag }}
                     </v-chip>
                 </v-chip-group>
-                
+
                 <!-- 통합된 디스플레이 영역 -->
                 <v-card-title class="text-h5 pl-4 pr-4" :class="isSearchMode ? 'mt-4' : 'pt-4'">
                     {{ currentDisplayTitle }}
                     <span v-if="showResultCount"> ({{ currentDisplayList.length }}{{ $t('ProcessDefinitionMarketPlace.countUnit') }})</span>
                 </v-card-title>
-                
+
                 <!-- 로딩 중 스켈레톤 카드 -->
                 <v-row v-if="currentLoadingState" dense class="pa-0 ma-0 pl-2 pr-2">
-                    <v-col v-for="n in (isSearchMode ? 12 : limit)" :key="'skeleton-' + n" cols="12" sm="6" md="4" class="mb-4 pa-2">
+                    <v-col v-for="n in isSearchMode ? 12 : limit" :key="'skeleton-' + n" cols="12" sm="6" md="4" class="mb-4 pa-2">
                         <v-card variant="outlined" class="skeleton-card">
                             <v-skeleton-loader type="image"></v-skeleton-loader>
                             <div class="pa-2">
@@ -85,7 +81,7 @@
                                 <v-skeleton-loader type="text" class="mb-4"></v-skeleton-loader>
                                 <v-divider class="my-4"></v-divider>
                                 <div class="d-flex align-center">
-                                    <v-skeleton-loader type="text" style="width: 100px;"></v-skeleton-loader>
+                                    <v-skeleton-loader type="text" style="width: 100px"></v-skeleton-loader>
                                     <v-spacer></v-spacer>
                                     <v-skeleton-loader type="button" class="skeleton-button-rounded"></v-skeleton-loader>
                                 </div>
@@ -93,10 +89,17 @@
                         </v-card>
                     </v-col>
                 </v-row>
-                
+
                 <!-- 실제 데이터 -->
                 <v-row dense class="pa-0 ma-0 pl-2 pr-2" v-else>
-                    <v-col v-for="definition in currentDisplayList" :key="definition.id" cols="12" sm="6" md="4" :class="isSearchMode || selectedTag !== 'all' ? 'mb-0 pa-2 pl-4' : 'mb-4 pa-2'">
+                    <v-col
+                        v-for="definition in currentDisplayList"
+                        :key="definition.id"
+                        cols="12"
+                        sm="6"
+                        md="4"
+                        :class="isSearchMode || selectedTag !== 'all' ? 'mb-0 pa-2 pl-4' : 'mb-4 pa-2'"
+                    >
                         <div class="category-label">
                             {{ getCategoryLabel(definition) }}
                         </div>
@@ -132,9 +135,9 @@
                                 <v-row class="ma-0 pa-0 align-center">
                                     <div class="text-body-1">{{ definition.author_name }}</div>
                                     <v-spacer></v-spacer>
-                                    <v-btn 
-                                        @click="previewDefinition(definition)" 
-                                        color="grey" 
+                                    <v-btn
+                                        @click="previewDefinition(definition)"
+                                        color="grey"
                                         density="compact"
                                         variant="flat"
                                         class="mr-2"
@@ -142,10 +145,10 @@
                                     >
                                         {{ $t('ProcessDefinitionMarketPlace.previewButton') }}
                                     </v-btn>
-                                    <v-btn 
+                                    <v-btn
                                         v-if="definition.author_uid === currentUserUid"
-                                        @click="deleteDefinition(definition)" 
-                                        color="error" 
+                                        @click="deleteDefinition(definition)"
+                                        color="error"
                                         variant="flat"
                                         density="compact"
                                         class="mr-2"
@@ -153,22 +156,26 @@
                                     >
                                         {{ $t('ProcessDefinitionMarketPlace.deleteButton') }}
                                     </v-btn>
-                                    <v-btn 
+                                    <v-btn
                                         :disabled="definition.isImported"
-                                        @click="importDefinition(definition)" 
-                                        :color="definition.isImported ? 'grey' : 'primary'" 
+                                        @click="importDefinition(definition)"
+                                        :color="definition.isImported ? 'grey' : 'primary'"
                                         variant="flat"
                                         density="compact"
                                         rounded="xl"
                                     >
-                                        {{ definition.isImported ? $t('ProcessDefinitionMarketPlace.addedButton') : $t('ProcessDefinitionMarketPlace.addButton') }}
+                                        {{
+                                            definition.isImported
+                                                ? $t('ProcessDefinitionMarketPlace.addedButton')
+                                                : $t('ProcessDefinitionMarketPlace.addButton')
+                                        }}
                                     </v-btn>
                                 </v-row>
                             </div>
                         </v-card>
                     </v-col>
                 </v-row>
-                
+
                 <!-- 추가 로딩 중 스켈레톤 카드 (전체 탭에서 무한 스크롤 로딩 시) -->
                 <v-row v-if="loadingMore && selectedTag === 'all'" dense class="pa-0 ma-0 pl-2 pr-2">
                     <v-col v-for="n in limit" :key="'skeleton-more-' + n" cols="12" sm="6" md="4" class="mb-4 pa-2">
@@ -179,7 +186,7 @@
                                 <v-skeleton-loader type="text" class="mb-4"></v-skeleton-loader>
                                 <v-divider class="my-4"></v-divider>
                                 <div class="d-flex align-center">
-                                    <v-skeleton-loader type="text" style="width: 100px;"></v-skeleton-loader>
+                                    <v-skeleton-loader type="text" style="width: 100px"></v-skeleton-loader>
                                     <v-spacer></v-spacer>
                                     <v-skeleton-loader type="button" class="skeleton-button-rounded"></v-skeleton-loader>
                                 </div>
@@ -189,7 +196,7 @@
                 </v-row>
             </v-card-text>
         </div>
-        
+
         <!-- 삭제 확인 다이얼로그 -->
         <v-dialog v-model="deleteDialog" max-width="500">
             <v-card>
@@ -198,18 +205,15 @@
                         {{ $t('ProcessDefinitionMarketPlace.deleteDialogTitle') }}
                     </v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="cancelDelete"
-                        class="ml-auto" 
-                        variant="text" 
-                        density="compact"
-                        icon
-                    >
+                    <v-btn @click="cancelDelete" class="ml-auto" variant="text" density="compact" icon>
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-row>
                 <v-card-text class="pa-4">
                     <div class="mb-4">
-                        <p class="text-body-1 mb-2">{{ $t('ProcessDefinitionMarketPlace.deleteDialogMessage', { name: definitionToDelete?.name }) }}</p>
+                        <p class="text-body-1 mb-2">
+                            {{ $t('ProcessDefinitionMarketPlace.deleteDialogMessage', { name: definitionToDelete?.name }) }}
+                        </p>
                         <p class="text-body-2 text-error">{{ $t('ProcessDefinitionMarketPlace.deleteDialogWarning') }}</p>
                     </div>
                     <div class="mb-2">
@@ -226,12 +230,13 @@
                 </v-card-text>
                 <v-row class="ma-0 pa-4 pr-2 pt-0">
                     <v-spacer></v-spacer>
-                    <v-btn @click="confirmDelete" 
+                    <v-btn
+                        @click="confirmDelete"
                         color="error"
                         variant="flat"
                         class="rounded-pill"
                         :disabled="deleteConfirmName !== definitionToDelete?.name"
-                    >{{ $t('ProcessDefinitionMarketPlace.deleteButton') }}
+                        >{{ $t('ProcessDefinitionMarketPlace.deleteButton') }}
                     </v-btn>
                 </v-row>
             </v-card>
@@ -245,26 +250,19 @@
                         {{ $t('ProcessDefinitionMarketPlace.previewDialogTitle') }}: {{ previewName }}
                     </v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="closePreview"
-                        class="ml-auto" 
-                        variant="text" 
-                        density="compact"
-                        icon
-                    >
+                    <v-btn @click="closePreview" class="ml-auto" variant="text" density="compact" icon>
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
                 <v-card-text class="pa-4">
                     <!-- 로딩 중일 때 스켈레톤 로더 -->
-                    <v-skeleton-loader v-if="previewLoading"
+                    <v-skeleton-loader
+                        v-if="previewLoading"
                         class="marketplace-bpmn-preview-skeleton-loader"
                         type="image"
                     ></v-skeleton-loader>
                     <!-- 로딩 완료 후 BPMN 뷰어 -->
-                    <BpmnUengineViewer 
-                        v-else-if="previewBpmn"
-                        :bpmn="previewBpmn"
-                    />
+                    <BpmnUengineViewer v-else-if="previewBpmn" :bpmn="previewBpmn" />
                 </v-card-text>
             </v-card>
         </v-dialog>
@@ -311,11 +309,8 @@ export default {
         // 현재 로그인한 사용자 UID 가져오기
         const userInfo = await backend.getUserInfo();
         this.currentUserUid = userInfo?.uid;
-        
-        await Promise.all([
-            this.getDefinitionList(),
-            this.loadAllTags()
-        ]);
+
+        await Promise.all([this.getDefinitionList(), this.loadAllTags()]);
         // 데이터 로딩 완료 후 첫 번째 탭 선택
         this.$nextTick(() => {
             if (this.categories.length > 0) {
@@ -326,7 +321,7 @@ export default {
     computed: {
         categories() {
             const uniqueCategories = new Set();
-            this.definitionList.forEach(definition => {
+            this.definitionList.forEach((definition) => {
                 if (definition.category && definition.category.includes('/')) {
                     uniqueCategories.add(definition.category.split('/')[0]);
                 } else {
@@ -376,9 +371,9 @@ export default {
                     .select('id')
                     .like('id', `${definition.id}%`)
                     .eq('tenant_id', window.$tenantName);
-                
+
                 if (data && data.length > 0) {
-                    isImported = data.some(item => {
+                    isImported = data.some((item) => {
                         if (item.id === definition.id) return true;
                         return item.id.startsWith(`${definition.id}_`) && item.id.includes('-');
                     });
@@ -386,11 +381,11 @@ export default {
             } catch (err) {
                 console.error('마켓플레이스 항목 체크 중 오류:', err.message);
             }
-            
+
             let tags = [];
             if (definition.tags) {
                 const tagSet = new Set();
-                definition.tags.split(',').forEach(tag => {
+                definition.tags.split(',').forEach((tag) => {
                     const trimmedTag = tag.trim();
                     if (trimmedTag) {
                         tagSet.add(trimmedTag);
@@ -398,7 +393,7 @@ export default {
                 });
                 tags = Array.from(tagSet);
             }
-            
+
             return {
                 ...definition,
                 tags: tags,
@@ -407,7 +402,7 @@ export default {
         },
         async loadData(type, param = null, reset = true) {
             const searchId = type === 'search' ? Date.now() : null;
-            
+
             if (type === 'all') {
                 if (reset) {
                     this.isLoading = true;
@@ -424,10 +419,10 @@ export default {
                 this.searchResults = [];
                 this.currentSearchId = searchId;
             }
-            
+
             try {
                 let rawData;
-                
+
                 if (type === 'all') {
                     rawData = await backend.listMarketplaceDefinition(undefined, false, this.limit, this.offset);
                 } else if (type === 'tag') {
@@ -436,17 +431,17 @@ export default {
                     rawData = await backend.listMarketplaceDefinition(param, true);
                     if (this.currentSearchId !== searchId) return;
                 }
-                
+
                 if (!Array.isArray(rawData)) {
                     console.error('데이터를 가져오는 중 오류 발생: 배열이 아닙니다');
                     return;
                 }
-                
+
                 const processedData = await Promise.all(
-                    rawData.map(definition => definition ? this.processDefinition(definition) : null)
+                    rawData.map((definition) => (definition ? this.processDefinition(definition) : null))
                 );
-                const filteredData = processedData.filter(item => item !== null);
-                
+                const filteredData = processedData.filter((item) => item !== null);
+
                 if (type === 'all') {
                     if (rawData.length < this.limit) {
                         this.hasMore = false;
@@ -489,7 +484,7 @@ export default {
         handleScroll(event) {
             const element = event.target;
             const scrollBottom = element.scrollHeight - element.scrollTop - element.clientHeight;
-            
+
             if (scrollBottom === 0 && !this.loadingMore && this.hasMore && !this.isLoading && this.selectedTag === 'all') {
                 this.loadMoreDefinitions();
             }
@@ -519,15 +514,15 @@ export default {
         async confirmDelete() {
             const definition = this.definitionToDelete;
             this.deleteDialog = false;
-            
+
             this.$try({
                 action: async () => {
                     await backend.deleteMarketplaceDefinition(definition.id);
                     // 목록에서 제거
-                    this.definitionList = this.definitionList.filter(d => d.id !== definition.id);
-                    this.searchResults = this.searchResults.filter(d => d.id !== definition.id);
-                    this.filteredDefinitions = this.filteredDefinitions.filter(d => d.id !== definition.id);
-                    
+                    this.definitionList = this.definitionList.filter((d) => d.id !== definition.id);
+                    this.searchResults = this.searchResults.filter((d) => d.id !== definition.id);
+                    this.filteredDefinitions = this.filteredDefinitions.filter((d) => d.id !== definition.id);
+
                     // 초기화
                     this.definitionToDelete = null;
                     this.deleteConfirmName = '';
@@ -540,30 +535,27 @@ export default {
         },
         getDefinitionsByCategory(category) {
             if (category === this.$t('ProcessDefinitionMarketPlace.otherCategory')) {
-                return this.definitionList.filter(definition => 
-                    !definition.category || !definition.category.includes('/'));
+                return this.definitionList.filter((definition) => !definition.category || !definition.category.includes('/'));
             }
-            return this.definitionList.filter(definition => 
-                definition.category && 
-                definition.category.includes('/') && 
-                definition.category.split('/')[0] === category);
+            return this.definitionList.filter(
+                (definition) => definition.category && definition.category.includes('/') && definition.category.split('/')[0] === category
+            );
         },
         getCategoryTitle(category) {
             // 기타 카테고리는 제목 없음
             if (category === this.$t('ProcessDefinitionMarketPlace.otherCategory')) {
                 return '';
             }
-            
+
             // 해당 카테고리의 첫 번째 아이템에서 제목 추출
-            const firstItem = this.definitionList.find(definition => 
-                definition.category && 
-                definition.category.includes('/') && 
-                definition.category.split('/')[0] === category);
-                
+            const firstItem = this.definitionList.find(
+                (definition) => definition.category && definition.category.includes('/') && definition.category.split('/')[0] === category
+            );
+
             if (firstItem && firstItem.category.includes('/')) {
                 return firstItem.category.split('/')[1];
             }
-            
+
             return '';
         },
         getAllAvailableTags() {
@@ -587,7 +579,7 @@ export default {
         },
         async onTagChange(tag) {
             this.selectedTag = tag;
-            
+
             if (tag === 'all') {
                 await this.loadData('all');
             } else {
@@ -596,14 +588,14 @@ export default {
         },
         async onSearchChange() {
             const keyword = this.searchKeyword;
-            
+
             if (!keyword || keyword.trim() === '') {
                 this.searchResults = [];
                 this.lastSearchedKeyword = '';
                 this.currentSearchId = null;
                 return;
             }
-            
+
             this.lastSearchedKeyword = keyword;
             await this.loadData('search', keyword);
         },
@@ -611,9 +603,7 @@ export default {
         hexToBase64(hexString) {
             try {
                 // \x 형식의 이스케이프된 16진수 문자열을 실제 문자로 변환
-                const decoded = hexString.replace(/\\x([0-9A-Fa-f]{2})/g, 
-                    (match, p1) => String.fromCharCode(parseInt(p1, 16))
-                );
+                const decoded = hexString.replace(/\\x([0-9A-Fa-f]{2})/g, (match, p1) => String.fromCharCode(parseInt(p1, 16)));
                 return decoded;
             } catch (error) {
                 console.error('이미지 디코딩 중 오류 발생:', error);
@@ -625,20 +615,20 @@ export default {
             this.previewDialog = true;
             this.previewLoading = true;
             this.previewBpmn = null;
-            
+
             this.$try({
                 context: this,
                 action: async () => {
                     if (!definition.uuid) {
                         throw new Error('프로세스 UUID가 없습니다.');
                     }
-                    
+
                     const bpmn = await backend.getMarketplaceDefinitionBpmn(definition.uuid);
-                    
+
                     if (!bpmn) {
                         throw new Error('프로세스 BPMN 데이터가 존재하지 않습니다.');
                     }
-                    
+
                     this.previewBpmn = bpmn;
                     this.previewLoading = false;
                 },

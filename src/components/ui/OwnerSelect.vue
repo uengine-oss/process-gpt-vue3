@@ -56,10 +56,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, computed, watch, onMounted } from 'vue';
-import {
-    getOrganizationProvider,
-    type OrganizationMember
-} from '@/providers/organization';
+import { getOrganizationProvider, type OrganizationMember } from '@/providers/organization';
 
 export default defineComponent({
     name: 'OwnerSelect',
@@ -126,7 +123,7 @@ export default defineComponent({
 
         // 멤버 목록을 아이템 형식으로 변환
         const memberItems = computed(() => {
-            return members.value.map(m => ({
+            return members.value.map((m) => ({
                 id: m.id,
                 name: m.name,
                 email: m.email,
@@ -161,7 +158,7 @@ export default defineComponent({
                 }
 
                 // 선택된 값이 있는데 목록에 없으면 해당 멤버 추가
-                if (selectedOwner.value && !members.value.find(m => m.id === selectedOwner.value)) {
+                if (selectedOwner.value && !members.value.find((m) => m.id === selectedOwner.value)) {
                     const selectedMember = await provider.getMember(selectedOwner.value);
                     if (selectedMember) {
                         members.value = [selectedMember, ...members.value];
@@ -197,28 +194,31 @@ export default defineComponent({
         const onSelect = (value: string | null) => {
             emit('update:modelValue', value || '');
 
-            const selectedMember = members.value.find(m => m.id === value);
+            const selectedMember = members.value.find((m) => m.id === value);
             emit('select', selectedMember || null);
         };
 
         // modelValue 변경 감지
-        watch(() => props.modelValue, async (newVal) => {
-            selectedOwner.value = newVal;
-            // 새 값이 목록에 없으면 해당 멤버 로드
-            if (newVal && !members.value.find(m => m.id === newVal)) {
-                try {
-                    if (provider.initialize) {
-                        await provider.initialize();
+        watch(
+            () => props.modelValue,
+            async (newVal) => {
+                selectedOwner.value = newVal;
+                // 새 값이 목록에 없으면 해당 멤버 로드
+                if (newVal && !members.value.find((m) => m.id === newVal)) {
+                    try {
+                        if (provider.initialize) {
+                            await provider.initialize();
+                        }
+                        const member = await provider.getMember(newVal);
+                        if (member) {
+                            members.value = [member, ...members.value];
+                        }
+                    } catch (error) {
+                        console.warn('[OwnerSelect] 멤버 로드 실패:', error);
                     }
-                    const member = await provider.getMember(newVal);
-                    if (member) {
-                        members.value = [member, ...members.value];
-                    }
-                } catch (error) {
-                    console.warn('[OwnerSelect] 멤버 로드 실패:', error);
                 }
             }
-        });
+        );
 
         // 초기 로드
         onMounted(() => {

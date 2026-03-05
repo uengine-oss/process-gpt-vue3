@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import {pricing} from '@/_mockApis/components/pages/pricingData';
+import { pricing } from '@/_mockApis/components/pages/pricingData';
 // common components
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 /* Switch monthly/yearly pricing */
@@ -25,8 +25,8 @@ const breadcrumbs = ref([
 <template>
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs"></BaseBreadcrumb>
     <h2 class="text-h2 font-weight-bold text-center pt-10">
-        Flexible Plans Tailored to Fit Your<br /> Community's 
-        Unique Needs!
+        Flexible Plans Tailored to Fit Your<br />
+        Community's Unique Needs!
     </h2>
     <v-row class="justify-center mt-1 mb-sm-10 mb-5">
         <v-col cols="auto">
@@ -39,12 +39,12 @@ const breadcrumbs = ref([
     </v-row>
     <v-row class="d-flex justify-center">
         <v-col cols="12" md="4" sm="6" v-for="card in pricing" :key="card.caption">
-            <v-card elevation="10" class=" pa-sm-8 pa-4">
+            <v-card elevation="10" class="pa-sm-8 pa-4">
                 <div class="d-flex justify-space-between">
                     <h4 class="text-body-2 text-grey100 font-weight-semibold text-uppercase mb-6" v-text="card.caption"></h4>
                     <v-chip v-if="card.tagtext" size="small" class="mt-sm-n4 font-weight-bold" color="warning">POPULAR</v-chip>
                 </div>
-                <img :src="card.image" height="70"  alt="icon" />
+                <img :src="card.image" height="70" alt="icon" />
                 <div v-if="card.free" class="d-flex align-center mt-4">
                     <h2 class="display-1">Free</h2>
                 </div>
@@ -57,15 +57,14 @@ const breadcrumbs = ref([
                 </div>
                 <v-list class="mb-0 pl-0 bg-transparent pt-5">
                     <v-list-item class="px-0" v-for="desc in card.list" :key="desc.listtitle">
-                        <v-list-item-title v-if="desc.status"
+                        <v-list-item-title
+                            v-if="desc.status"
                             class="text-body-1 d-flex align-center font-weight-medium text-medium-emphasis"
                         >
                             <component :is="desc.icon" :class="'text-' + desc.iconcolor" stroke-width="2" size="18" class="mr-4" />
                             {{ desc.listtitle }}
                         </v-list-item-title>
-                        <v-list-item-title  v-else
-                            class="text-body-1 d-flex align-center font-weight-medium "
-                        >
+                        <v-list-item-title v-else class="text-body-1 d-flex align-center font-weight-medium">
                             <component :is="desc.icon" :class="'text-' + desc.iconcolor" stroke-width="2" size="18" class="mr-4" />
                             {{ desc.listtitle }}
                         </v-list-item-title>

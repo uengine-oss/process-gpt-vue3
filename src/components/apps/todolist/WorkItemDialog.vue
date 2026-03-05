@@ -18,13 +18,13 @@
 import DefaultForm from '@/components/designer/DefaultForm.vue';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
     components: {
         DefaultForm,
-        DynamicForm,
+        DynamicForm
     },
     props: {
         taskId: String,
@@ -38,7 +38,7 @@ export default {
         formHtml: null,
         formData: {},
         inputItems: null,
-        isDefaultForm: null,
+        isDefaultForm: null
     }),
     mounted() {
         this.init();
@@ -46,21 +46,26 @@ export default {
     methods: {
         async init() {
             var me = this;
-            if ( me.workItem.activity && me.workItem.activity.variableForHtmlFormContext  && me.workItem.activity.variableForHtmlFormContext.name ) {
+            if (
+                me.workItem.activity &&
+                me.workItem.activity.variableForHtmlFormContext &&
+                me.workItem.activity.variableForHtmlFormContext.name
+            ) {
                 me.isDefaultForm = false;
                 let formName = me.workItem.worklist.tool.split(':')[1];
                 me.formHtml = await backend.getRawDefinition(formName, { type: 'form' });
                 await me.loadForm();
-            } else if (me.workItem.activity && me.workItem.activity.parameters && me.workItem.activity.parameters.length > 0 ) {
+            } else if (me.workItem.activity && me.workItem.activity.parameters && me.workItem.activity.parameters.length > 0) {
                 me.isDefaultForm = true;
-                me.inputItems = me.workItem.activity.parameters.filter((item) => item.direction.includes('OUT'))
+                me.inputItems = me.workItem.activity.parameters
+                    .filter((item) => item.direction.includes('OUT'))
                     .map((item) => ({ name: item.variable.name, key: item.argument.text, value: item.variable.defaultValue }));
             }
         },
         async loadForm() {
             var me = this;
 
-            if(!me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
+            if (!me.workItem.activity || !me.workItem.activity.variableForHtmlFormContext) return;
 
             let varName = me.workItem.activity.variableForHtmlFormContext.name;
             let variable = await backend.getVariableWithTaskId(me.workItem.worklist.instId, me.taskId, varName);
@@ -74,9 +79,9 @@ export default {
             var me = this;
             me.$try({
                 action: async () => {
-                    let inputValue
+                    let inputValue;
                     if (me.isDefaultForm) {
-                        inputValue = me.inputItems
+                        inputValue = me.inputItems;
                     } else {
                         me.workItem.parameterValues = me.formData;
                         inputValue = me.workItem;
@@ -91,7 +96,7 @@ export default {
         },
         closeDialog(isUpdated) {
             this.$emit('closeDialog', isUpdated);
-        },
+        }
     }
-}
+};
 </script>

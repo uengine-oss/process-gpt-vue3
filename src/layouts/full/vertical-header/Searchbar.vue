@@ -6,12 +6,16 @@
         <template v-slot:activator="{ props }">
             <div v-bind="props">
                 <div>
-                    <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5 ">
+                    <div class="d-flex align-center flex-fill border border-borderColor header-search rounded-pill px-5">
                         <Icons :icon="'magnifer-linear'" :size="22" />
-                        <v-text-field v-model="searchKeyword" variant="plain" density="compact"
-                            class="position-relative pt-0 ml-3 custom-placeholer-color" 
+                        <v-text-field
+                            v-model="searchKeyword"
+                            variant="plain"
+                            density="compact"
+                            class="position-relative pt-0 ml-3 custom-placeholer-color"
                             :placeholder="$t('headerMenu.search')"
-                            single-line hide-details
+                            single-line
+                            hide-details
                             @keyup.enter="search"
                         ></v-text-field>
                     </div>
@@ -22,7 +26,7 @@
         <!-- Search Result -->
         <v-sheet class="main-search-box" elevation="10" rounded="md">
             <h5 class="text-h5 pa-4">{{ $t('headerMenu.searchResult') }}</h5>
-            <div style="max-height: 500px; overflow: auto;">
+            <div style="max-height: 500px; overflow: auto">
                 <v-list v-if="searching" class="pt-0 pb-5" lines="two">
                     <v-list-subheader class="d-flex align-center">
                         {{ $t('headerMenu.searching') }}
@@ -30,7 +34,10 @@
                     </v-list-subheader>
                 </v-list>
                 <v-list v-else-if="!hasSearched" class="pt-0 pb-5" lines="two">
-                    <div class="px-4 py-2 text-caption text-medium-emphasis" style="white-space: normal; word-wrap: break-word; line-height: 1.4;">
+                    <div
+                        class="px-4 py-2 text-caption text-medium-emphasis"
+                        style="white-space: normal; word-wrap: break-word; line-height: 1.4"
+                    >
                         {{ $t('headerMenu.searchKeyword') }}
                     </div>
                 </v-list>
@@ -40,7 +47,13 @@
                         <v-list-subheader class="text-caption">
                             {{ category.header.includes('.') ? $t(category.header) : category.header }}
                         </v-list-subheader>
-                        <v-list-item v-for="(item, index) in category.list" :key="index" :to="item.href" class="px-5 py-2" @click="searchMenuOpen = false">
+                        <v-list-item
+                            v-for="(item, index) in category.list"
+                            :key="index"
+                            :to="item.href"
+                            class="px-5 py-2"
+                            @click="searchMenuOpen = false"
+                        >
                             <template v-if="item.img" v-slot:prepend>
                                 <v-avatar size="32" class="mr-3">
                                     <v-img :src="item.img" :alt="item.title" cover></v-img>
@@ -69,7 +82,7 @@ const backend = BackendFactory.createBackend();
 
 export default {
     data: () => ({
-        searchKeyword: "",
+        searchKeyword: '',
         searchResult: [],
         searching: false,
         searchMenuOpen: false,
@@ -125,7 +138,6 @@ export default {
             }
             return '';
         }
-    },
-}
+    }
+};
 </script>
-

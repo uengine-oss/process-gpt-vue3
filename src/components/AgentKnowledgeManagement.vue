@@ -16,10 +16,8 @@
             <div v-else-if="knowledges.length === 0 && isLoading">
                 <v-skeleton-loader type="card"></v-skeleton-loader>
             </div>
-            
-            <div v-else
-                class="knowledge-management-table"
-            >
+
+            <div v-else class="knowledge-management-table">
                 <!-- 테이블 -->
                 <v-data-table
                     :headers="headers"
@@ -35,19 +33,15 @@
                 >
                     <!-- 데이터 컬럼 -->
                     <template v-slot:item.metadata.data="{ item }">
-                        <div class="text-truncate"
-                            style="max-width: 400px;"
-                            :title="item.metadata.data"
-
-                        >
+                        <div class="text-truncate" style="max-width: 400px" :title="item.metadata.data">
                             {{ item.metadata.data }}
                         </div>
                     </template>
-                    
+
                     <template v-slot:item.metadata.created_at="{ item }">
                         {{ formatDate(item.metadata.created_at) }}
                     </template>
-                    
+
                     <!-- 액션 컬럼 -->
                     <template v-slot:item.actions="{ item }">
                         <v-btn
@@ -59,7 +53,7 @@
                             title="삭제"
                         ></v-btn>
                     </template>
-                    
+
                     <!-- Expand 영역 -->
                     <template v-slot:expanded-row="{ columns, item }">
                         <td :colspan="columns.length">
@@ -69,44 +63,46 @@
                                     <v-tab value="metadata">Metadata</v-tab>
                                     <v-tab value="raw">Raw JSON</v-tab>
                                 </v-tabs>
-                                
+
                                 <!-- 탭 내용 -->
-                                 <div v-if="item.activeTab === 'metadata'">
-                                     <v-list class="knowledge-expanded-row-list">
+                                <div v-if="item.activeTab === 'metadata'">
+                                    <v-list class="knowledge-expanded-row-list">
                                         <v-list-item>
                                             <v-list-item-title class="text-caption text-medium-emphasis">내용</v-list-item-title>
-                                            <div style="white-space: pre-wrap; word-break: break-word;">{{ item.metadata.data }}</div>
+                                            <div style="white-space: pre-wrap; word-break: break-word">{{ item.metadata.data }}</div>
                                         </v-list-item>
-                                        
+
                                         <v-list-item>
                                             <v-list-item-title class="text-caption text-medium-emphasis">해시</v-list-item-title>
                                             <div class="font-family-monospace">{{ item.metadata.hash }}</div>
                                         </v-list-item>
-                                        
+
                                         <v-list-item>
                                             <v-list-item-title class="text-caption text-medium-emphasis">역할</v-list-item-title>
                                             <div>{{ item.metadata.role }}</div>
                                         </v-list-item>
-                                        
+
                                         <v-list-item>
                                             <v-list-item-title class="text-caption text-medium-emphasis">타입</v-list-item-title>
                                             <div>{{ item.metadata.type }}</div>
                                         </v-list-item>
-                                        
+
                                         <v-list-item>
                                             <v-list-item-title class="text-caption text-medium-emphasis">에이전트 ID</v-list-item-title>
                                             <div class="font-family-monospace">{{ item.metadata.agent_id }}</div>
                                         </v-list-item>
-                                        
+
                                         <v-list-item>
                                             <v-list-item-title class="text-caption text-medium-emphasis">생성일</v-list-item-title>
                                             <div>{{ formatDate(item.metadata.created_at) }}</div>
                                         </v-list-item>
-                                     </v-list>
-                                 </div>
-                                
+                                    </v-list>
+                                </div>
+
                                 <div v-else-if="item.activeTab === 'raw'">
-                                    <pre class="text-body-2" style="white-space: pre-wrap; word-break: break-word;">{{ JSON.stringify(item, null, 2) }}</pre>
+                                    <pre class="text-body-2" style="white-space: pre-wrap; word-break: break-word">{{
+                                        JSON.stringify(item, null, 2)
+                                    }}</pre>
                                 </div>
                             </v-card>
                         </td>
@@ -119,33 +115,21 @@
         <v-dialog v-model="deleteDialog" max-width="40vw">
             <v-card>
                 <v-row class="ma-0 pa-4 pb-0 align-center">
-                    <v-card-title class="pa-0"
-                    >{{ $t('AgentKnowledgeManagement.deleteDialogTitle') }}
-                    </v-card-title>
+                    <v-card-title class="pa-0">{{ $t('AgentKnowledgeManagement.deleteDialogTitle') }} </v-card-title>
                     <v-spacer></v-spacer>
-                    <v-btn @click="deleteDialog = false"
-                        class="ml-auto" 
-                        variant="text" 
-                        density="compact"
-                        icon
-                    >
+                    <v-btn @click="deleteDialog = false" class="ml-auto" variant="text" density="compact" icon>
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-row>
                 <v-card-text class="ma-0 pa-4">
-                    <div class="agent-knowledge-management-dialog-preview-text"
-                        style="margin-top: 8px;"
-                    >
+                    <div class="agent-knowledge-management-dialog-preview-text" style="margin-top: 8px">
                         {{ selectedKnowledge?.metadata.data }}
                     </div>
                 </v-card-text>
                 <v-row class="ma-0 pa-4 pt-0">
                     <v-spacer></v-spacer>
-                    <v-btn @click="confirmDelete"
-                        color="error"
-                        variant="flat" 
-                        class="rounded-pill"
-                    >{{ $t('AgentKnowledgeManagement.deleteButton') }}
+                    <v-btn @click="confirmDelete" color="error" variant="flat" class="rounded-pill"
+                        >{{ $t('AgentKnowledgeManagement.deleteButton') }}
                     </v-btn>
                 </v-row>
             </v-card>
@@ -176,11 +160,11 @@ export default {
                 { title: '생성일', key: 'metadata.created_at', sortable: true, width: '150px' },
                 { title: '액션', key: 'actions', sortable: false, width: '80px' }
             ]
-        }
+        };
     },
     mounted() {
         if (this.knowledges.length > 0) {
-            this.knowledges.forEach(knowledge => {
+            this.knowledges.forEach((knowledge) => {
                 if (!knowledge.activeTab) {
                     knowledge.activeTab = 'metadata';
                 }
@@ -212,7 +196,7 @@ export default {
             this.selectedKnowledge = null;
         }
     }
-}
+};
 </script>
 
 <style scoped>

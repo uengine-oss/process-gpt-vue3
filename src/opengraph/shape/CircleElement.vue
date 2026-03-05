@@ -1,34 +1,28 @@
 <template>
-  <div>
-    <slot>
-    </slot>
-  </div>
+    <div>
+        <slot> </slot>
+    </div>
 </template>
 
 <script>
-  import OpengraphElement from './OpengraphElement.vue'
-  export default {
+import OpengraphElement from './OpengraphElement.vue';
+export default {
     mixins: [OpengraphElement],
     name: 'circle-element',
     props: {},
     computed: {},
     data: function () {
-      return {}
+        return {};
     },
     watch: {},
-    mounted: function () {
-
-    },
+    mounted: function () {},
     methods: {
-      generateShape: function () {
-        var me = this;
-        return new OG.shape.CircleShape(me.label);
-      }
+        generateShape: function () {
+            var me = this;
+            return new OG.shape.CircleShape(me.label);
+        }
     }
-  }
+};
 </script>
 
-
-<style scoped lang="scss" rel="stylesheet/scss">
-
-</style>
+<style scoped lang="scss" rel="stylesheet/scss"></style>

@@ -14,7 +14,7 @@
 
             <v-divider />
 
-            <v-card-text style="max-height: 70vh; overflow-y: auto;">
+            <v-card-text style="max-height: 70vh; overflow-y: auto">
                 <v-container fluid class="pa-4">
                     <!-- 입력값 입력 폼 -->
                     <div v-if="rule && rule.inputs && rule.inputs.length > 0" class="mb-6">
@@ -23,12 +23,7 @@
                             <div class="text-h6">입력값</div>
                         </div>
                         <v-row>
-                            <v-col
-                                v-for="input in rule.inputs"
-                                :key="input.key || input.item"
-                                cols="12"
-                                :md="6"
-                            >
+                            <v-col v-for="input in rule.inputs" :key="input.key || input.item" cols="12" :md="6">
                                 <v-text-field
                                     v-if="input.inputMode === 'number'"
                                     v-model.number="testInputs[input.key || input.item]"
@@ -92,9 +87,7 @@
                         </v-row>
                     </div>
 
-                    <div v-else class="text-medium-emphasis mb-6">
-                        이 룰에는 입력 항목이 정의되어 있지 않습니다.
-                    </div>
+                    <div v-else class="text-medium-emphasis mb-6">이 룰에는 입력 항목이 정의되어 있지 않습니다.</div>
 
                     <!-- 결과 표시 영역 -->
                     <v-divider class="my-6" />
@@ -108,12 +101,7 @@
                             <v-row class="mb-3">
                                 <v-col cols="12" md="6">
                                     <div class="text-caption text-medium-emphasis mb-2">결과</div>
-                                    <v-chip
-                                        :color="getOutcomeColor(executionResult.outcome)"
-                                        variant="tonal"
-                                        size="large"
-                                        class="text-h6"
-                                    >
+                                    <v-chip :color="getOutcomeColor(executionResult.outcome)" variant="tonal" size="large" class="text-h6">
                                         <v-icon start size="small">{{ getOutcomeIcon(executionResult.outcome) }}</v-icon>
                                         {{ getOutcomeLabel(executionResult.outcome) }}
                                     </v-chip>
@@ -136,18 +124,17 @@
                                     <v-card variant="tonal" :color="getOutcomeColor(executionResult.outcome)" class="pa-3" elevation="0">
                                         <div class="d-flex align-center mb-2">
                                             <v-icon class="mr-2" size="small">mdi-filter</v-icon>
-                                            <span class="text-subtitle-2 font-weight-bold">규칙 #{{ executionResult.matchedRuleIndex + 1 }}</span>
+                                            <span class="text-subtitle-2 font-weight-bold"
+                                                >규칙 #{{ executionResult.matchedRuleIndex + 1 }}</span
+                                            >
                                         </div>
                                         <div v-if="matchedRule.conditions && matchedRule.conditions.length > 0" class="mb-2">
                                             <div class="text-caption text-medium-emphasis mb-1">조건</div>
                                             <div class="text-body-2">
-                                                <span
-                                                    v-for="(condition, idx) in matchedRule.conditions"
-                                                    :key="idx"
-                                                    class="mr-2"
-                                                >
+                                                <span v-for="(condition, idx) in matchedRule.conditions" :key="idx" class="mr-2">
                                                     <v-chip size="small" variant="outlined" class="mr-1 mb-1">
-                                                        {{ getInputLabel(condition.key) }} {{ getOperatorLabel(condition.operator) }} {{ formatConditionValue(condition.value) }}
+                                                        {{ getInputLabel(condition.key) }} {{ getOperatorLabel(condition.operator) }}
+                                                        {{ formatConditionValue(condition.value) }}
                                                     </v-chip>
                                                 </span>
                                             </div>
@@ -155,10 +142,17 @@
                                         <div v-if="matchedRule.result">
                                             <div class="text-caption text-medium-emphasis mb-1">결과</div>
                                             <div class="text-body-2">
-                                                <v-chip size="small" :color="getOutcomeColor(matchedRule.result.outcome)" variant="tonal" class="mr-1">
+                                                <v-chip
+                                                    size="small"
+                                                    :color="getOutcomeColor(matchedRule.result.outcome)"
+                                                    variant="tonal"
+                                                    class="mr-1"
+                                                >
                                                     {{ getOutcomeLabel(matchedRule.result.outcome) }}
                                                 </v-chip>
-                                                <span v-if="matchedRule.result.note" class="text-medium-emphasis">{{ matchedRule.result.note }}</span>
+                                                <span v-if="matchedRule.result.note" class="text-medium-emphasis">{{
+                                                    matchedRule.result.note
+                                                }}</span>
                                             </div>
                                         </div>
                                     </v-card>
@@ -185,22 +179,13 @@
                             <v-icon class="mr-2" color="primary" size="20">mdi-bookmark-outline</v-icon>
                             <div class="text-h6">저장된 테스트 케이스</div>
                             <v-spacer />
-                            <v-btn
-                                variant="outlined"
-                                size="small"
-                                color="primary"
-                                @click="showSaveTestCaseDialog = true"
-                            >
+                            <v-btn variant="outlined" size="small" color="primary" @click="showSaveTestCaseDialog = true">
                                 <v-icon start size="small">mdi-content-save</v-icon>
                                 저장
                             </v-btn>
                         </div>
                         <v-list v-if="testCases.length > 0" variant="outlined" rounded>
-                            <v-list-item
-                                v-for="testCase in testCases"
-                                :key="testCase.id"
-                                @click="loadTestCase(testCase)"
-                            >
+                            <v-list-item v-for="testCase in testCases" :key="testCase.id" @click="loadTestCase(testCase)">
                                 <template #prepend>
                                     <v-icon>mdi-file-document-outline</v-icon>
                                 </template>
@@ -209,20 +194,13 @@
                                     {{ formatDate(testCase.updatedAt || testCase.createdAt) }}
                                 </v-list-item-subtitle>
                                 <template #append>
-                                    <v-btn
-                                        icon
-                                        variant="text"
-                                        size="small"
-                                        @click.stop="deleteTestCase(testCase.id)"
-                                    >
+                                    <v-btn icon variant="text" size="small" @click.stop="deleteTestCase(testCase.id)">
                                         <v-icon size="small">mdi-delete-outline</v-icon>
                                     </v-btn>
                                 </template>
                             </v-list-item>
                         </v-list>
-                        <div v-else class="text-medium-emphasis text-center py-4">
-                            저장된 테스트 케이스가 없습니다.
-                        </div>
+                        <div v-else class="text-medium-emphasis text-center py-4">저장된 테스트 케이스가 없습니다.</div>
                     </div>
                 </v-container>
             </v-card-text>
@@ -232,13 +210,7 @@
             <v-card-actions>
                 <v-spacer />
                 <v-btn variant="text" @click="closeDialog">닫기</v-btn>
-                <v-btn
-                    color="primary"
-                    variant="flat"
-                    :disabled="!canExecute || isExecuting"
-                    :loading="isExecuting"
-                    @click="executeRule"
-                >
+                <v-btn color="primary" variant="flat" :disabled="!canExecute || isExecuting" :loading="isExecuting" @click="executeRule">
                     <v-icon start>mdi-play</v-icon>
                     실행
                 </v-btn>
@@ -261,15 +233,16 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="showSaveTestCaseDialog = false; newTestCaseName = ''">
+                    <v-btn
+                        variant="text"
+                        @click="
+                            showSaveTestCaseDialog = false;
+                            newTestCaseName = '';
+                        "
+                    >
                         취소
                     </v-btn>
-                    <v-btn
-                        color="primary"
-                        variant="flat"
-                        :disabled="!newTestCaseName || !newTestCaseName.trim()"
-                        @click="saveTestCase"
-                    >
+                    <v-btn color="primary" variant="flat" :disabled="!newTestCaseName || !newTestCaseName.trim()" @click="saveTestCase">
                         저장
                     </v-btn>
                 </v-card-actions>
@@ -370,7 +343,7 @@ export default {
     methods: {
         async loadRule() {
             if (!this.ruleId) return;
-            
+
             try {
                 this.rule = await this.backend.getBusinessRule(this.ruleId);
                 if (this.rule && this.rule.inputs) {
@@ -394,10 +367,10 @@ export default {
         },
         async executeRule() {
             if (!this.canExecute || this.isExecuting) return;
-            
+
             this.isExecuting = true;
             this.executionResult = null;
-            
+
             try {
                 const result = await this.backend.executeBusinessRule(this.ruleId, this.testInputs);
                 this.executionResult = result;
@@ -412,7 +385,7 @@ export default {
         },
         async loadTestCases() {
             if (!this.ruleId) return;
-            
+
             try {
                 this.testCases = await this.backend.getRuleTestCases(this.ruleId);
             } catch (error) {
@@ -426,7 +399,7 @@ export default {
         async saveTestCase() {
             if (!this.newTestCaseName || !this.newTestCaseName.trim()) return;
             if (!this.ruleId) return;
-            
+
             try {
                 const testCase = {
                     name: this.newTestCaseName.trim(),
@@ -434,7 +407,7 @@ export default {
                     expectedOutcome: this.executionResult && this.executionResult.outcome,
                     expectedNote: this.executionResult && this.executionResult.note
                 };
-                
+
                 await this.backend.saveRuleTestCase(this.ruleId, testCase);
                 this.showSaveTestCaseDialog = false;
                 this.newTestCaseName = '';
@@ -449,7 +422,7 @@ export default {
         async deleteTestCase(testCaseId) {
             if (!this.ruleId || !testCaseId) return;
             if (!confirm('이 테스트 케이스를 삭제하시겠습니까?')) return;
-            
+
             try {
                 await this.backend.deleteRuleTestCase(this.ruleId, testCaseId);
                 await this.loadTestCases();
@@ -499,20 +472,20 @@ export default {
         getInputLabel(key) {
             if (!this.rule || !this.rule.inputs) return key;
             const input = this.rule.inputs.find((i) => (i.key || i.item) === key);
-            return input ? (input.label || input.key || input.item || key) : key;
+            return input ? input.label || input.key || input.item || key : key;
         },
         getOperatorLabel(operator) {
             const operators = {
-                'eq': '=',
-                'ne': '≠',
-                'gt': '>',
-                'gte': '≥',
-                'lt': '<',
-                'lte': '≤',
-                'contains': '포함',
-                'notContains': '미포함',
-                'startsWith': '시작',
-                'endsWith': '종료'
+                eq: '=',
+                ne: '≠',
+                gt: '>',
+                gte: '≥',
+                lt: '<',
+                lte: '≤',
+                contains: '포함',
+                notContains: '미포함',
+                startsWith: '시작',
+                endsWith: '종료'
             };
             return operators[operator] || operator;
         },

@@ -26,7 +26,6 @@ const breadcrumbs = ref([
         href: '#'
     }
 ]);
-
 </script>
 
 <template>
@@ -36,40 +35,40 @@ const breadcrumbs = ref([
             <UiParentCard title="Accordian">
                 <v-row>
                     <!-- Basic -->
-                    <v-col cols="12" >
+                    <v-col cols="12">
                         <UiChildCard title="Basic">
-                            <Basic/>
+                            <Basic />
                         </UiChildCard>
                     </v-col>
                     <!-- Default Expand -->
                     <v-col cols="12" lg="12">
                         <UiChildCard title="Default Expand">
-                            <DefaultExpand/>
+                            <DefaultExpand />
                         </UiChildCard>
                     </v-col>
                     <!-- Inset -->
                     <v-col cols="12" lg="12">
                         <UiChildCard title="Inset">
-                            <Inset/>
+                            <Inset />
                         </UiChildCard>
                     </v-col>
                     <!-- Popout -->
                     <v-col cols="12" lg="12">
                         <UiChildCard title="Popout">
-                            <Popout/>
+                            <Popout />
                         </UiChildCard>
                     </v-col>
                     <!-- Advance -->
                     <v-col cols="12" lg="12">
                         <UiChildCard title="Advance">
-                            <Advance/>
+                            <Advance />
                         </UiChildCard>
                     </v-col>
-                    
+
                     <!-- Customized Icon -->
                     <v-col cols="12">
                         <UiChildCard title="Customized Icon">
-                            <CustomizedIcon/>
+                            <CustomizedIcon />
                         </UiChildCard>
                     </v-col>
                 </v-row>

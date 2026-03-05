@@ -1,5 +1,3 @@
-
-
 export interface menu {
     header?: string;
     title?: string;
@@ -17,18 +15,17 @@ export interface menu {
     subCaption?: string;
 }
 
-const isGsMode = (window as any)._env_?.VITE_GS_MODE === 'true'
-    || import.meta.env.VITE_GS_MODE === 'true';
+const isGsMode = (window as any)._env_?.VITE_GS_MODE === 'true' || import.meta.env.VITE_GS_MODE === 'true';
 
 const gsHiddenTitles = ['Chats', 'Proposals', 'Dashboard', 'Heatmap'];
 const gsHiddenHeaders = ['Analytics'];
 
 const allSidebarItems: menu[] = [
     {
-        title: "TodoList",
+        title: 'TodoList',
         icon: 'server-line-duotone',
         BgColor: 'primary',
-        to: "/todolist",
+        to: '/todolist'
     },
     // {
     //     title: 'Calendar',
@@ -37,108 +34,102 @@ const allSidebarItems: menu[] = [
     //     to: '/calendar'
     // },
     {
-        title: "Chats",
+        title: 'Chats',
         icon: 'chat-round-unread-line-duotone',
         BgColor: 'primary',
-        to: "/chats",
+        to: '/chats'
     },
     {
-        title: "Proposals",
+        title: 'Proposals',
         icon: 'chat-round-unread-line-duotone',
         BgColor: 'primary',
-        to: "/proposals",
+        to: '/proposals'
     },
     {
         header: '인스턴스'
     },
     {
-        title: "프로세스 실행",
+        title: '프로세스 실행',
         icon: 'chat-dots-linear',
         BgColor: 'primary',
-        to: '/instances/chat',
+        to: '/instances/chat'
     },
     {
         header: '정의 관리'
     },
     {
-        title: "조직도 정의",
+        title: '조직도 정의',
         icon: 'users-group-rounded-line-duotone',
         BgColor: 'primary',
-        to: "/organization",
+        to: '/organization'
     },
-     {
-        title: "시스템 정의",
+    {
+        title: '시스템 정의',
         icon: 'server-line-duotone',
         BgColor: 'primary',
-        to: "/system",
+        to: '/system'
     },
     {
-        title: "프로세스 정의",
+        title: '화면 정의',
         icon: 'chat-dots-linear',
         BgColor: 'primary',
-        to: "/definitions/chat",
+        to: '/ui-definitions/chat'
     },
     {
-        title: "화면 정의",
-        icon: 'chat-dots-linear',
-        BgColor: 'primary',
-        to: "/ui-definitions/chat",
-    },
-    {
-        title: "정의 목록",
+        title: '정의 목록',
         icon: 'list-outline',
         BgColor: 'primary',
-        to: "/definitions",
+        to: '/definitions',
         children: []
     },
     {
-        title: "정의 목록",
+        title: '정의 목록',
         icon: 'list-outline',
         BgColor: 'primary',
-        to: "/definitions",
+        to: '/definitions',
         children: []
     },
     {
-        title: "프로세스 체계도",
+        title: '프로세스 체계도',
         icon: 'sitemap',
         BgColor: 'primary',
-        to: "/process-architecture",
+        to: '/process-architecture'
     },
     {
-        title: "프로세스 계층",
+        title: '프로세스 계층',
         icon: 'file-tree',
         BgColor: 'primary',
-        to: "/process-hierarchy",
+        to: '/process-hierarchy'
     },
     {
         header: 'Analytics'
     },
     {
-        title: "Dashboard",
+        title: 'Dashboard',
         icon: 'dashboard',
         BgColor: 'primary',
-        to: "/analytics",
+        to: '/analytics'
     },
     {
-        title: "Heatmap",
+        title: 'Heatmap',
         icon: 'ibm-process-mining',
         BgColor: 'primary',
-        to: "/analytics/heatmap",
+        to: '/analytics/heatmap'
     },
     {
-        title: "피벗 테이블",
+        title: '피벗 테이블',
         icon: 'tuning-square-2-linear',
         BgColor: 'primary',
-        to: "/analytics/heatmap",
-    },
+        to: '/analytics/heatmap'
+    }
 ];
 
 const sidebarItem: menu[] = isGsMode
-    ? allSidebarItems.filter(item => {
-        if (item.header && gsHiddenHeaders.includes(item.header)) return false;
-        if (item.title && gsHiddenTitles.includes(item.title)) return false;
-        return true;
-    })
+    ? allSidebarItems.filter((item) => {
+          if (item.header && gsHiddenHeaders.includes(item.header)) return false;
+          if (item.title && gsHiddenTitles.includes(item.title)) return false;
+          return true;
+      })
     : allSidebarItems;
 
 export default sidebarItem;

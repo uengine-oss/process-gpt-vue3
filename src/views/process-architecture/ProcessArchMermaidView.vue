@@ -3,7 +3,9 @@
         <!-- Controls -->
         <div class="d-flex align-center justify-space-between mb-3 flex-wrap ga-2">
             <div class="d-flex align-center ga-2">
-                <span class="text-body-2 text-grey-darken-1">{{ $t('processArchitecture.mermaid.zoomLevel') }}: {{ Math.round(zoomLevel * 100) }}%</span>
+                <span class="text-body-2 text-grey-darken-1"
+                    >{{ $t('processArchitecture.mermaid.zoomLevel') }}: {{ Math.round(zoomLevel * 100) }}%</span
+                >
             </div>
             <div class="d-flex align-center ga-1">
                 <v-btn variant="text" size="small" icon @click="zoomIn">
@@ -15,7 +17,7 @@
                 <v-btn variant="text" size="small" icon @click="resetZoom">
                     <v-icon size="18">mdi-fit-to-screen-outline</v-icon>
                 </v-btn>
-                <v-divider vertical class="mx-1" style="height: 20px;" />
+                <v-divider vertical class="mx-1" style="height: 20px" />
                 <v-btn variant="text" size="small" prepend-icon="mdi-unfold-more-horizontal" @click="expandAll">
                     {{ $t('processArchitecture.hierarchy.expandAll') }}
                 </v-btn>
@@ -31,13 +33,7 @@
         </div>
 
         <!-- Mermaid diagram area -->
-        <div
-            v-else
-            class="mermaid-wrapper"
-            ref="wrapperRef"
-            @mousedown="onPanStart"
-            @wheel.prevent="onWheel"
-        >
+        <div v-else class="mermaid-wrapper" ref="wrapperRef" @mousedown="onPanStart" @wheel.prevent="onWheel">
             <div
                 class="mermaid-canvas"
                 :style="{
@@ -46,19 +42,12 @@
                 }"
             >
                 <!-- Render each domain as a separate Mermaid diagram -->
-                <div
-                    v-for="domain in visibleDomains"
-                    :key="domain.id"
-                    class="domain-diagram-block mb-6"
-                >
+                <div v-for="domain in visibleDomains" :key="domain.id" class="domain-diagram-block mb-6">
                     <div class="domain-label mb-2" :style="{ color: domain.color || '#555' }">
                         <v-icon size="16" :color="domain.color || 'grey'" class="mr-1">mdi-domain</v-icon>
                         <strong>{{ domain.name }}</strong>
                     </div>
-                    <div
-                        :ref="el => setDiagramRef(el, domain.id)"
-                        class="mermaid-diagram"
-                    ></div>
+                    <div :ref="(el) => setDiagramRef(el, domain.id)" class="mermaid-diagram"></div>
                 </div>
             </div>
         </div>
@@ -66,18 +55,18 @@
         <!-- Legend -->
         <div class="mermaid-legend d-flex align-center ga-4 mt-4 pa-3 flex-wrap">
             <div class="d-flex align-center ga-2">
-                <div class="legend-box" style="background: #E65100;"></div>
+                <div class="legend-box" style="background: #e65100"></div>
                 <span class="text-caption">Mega Process</span>
             </div>
             <div class="d-flex align-center ga-2">
-                <div class="legend-box" style="background: #2E7D32;"></div>
+                <div class="legend-box" style="background: #2e7d32"></div>
                 <span class="text-caption">Major Process</span>
             </div>
             <div class="d-flex align-center ga-2">
-                <div class="legend-box" style="background: #E3F2FD; border: 1px solid #1976D2;"></div>
+                <div class="legend-box" style="background: #e3f2fd; border: 1px solid #1976d2"></div>
                 <span class="text-caption">Sub Process (click to open)</span>
             </div>
-            <v-divider vertical class="mx-2" style="height: 16px;" />
+            <v-divider vertical class="mx-2" style="height: 16px" />
             <span class="text-caption text-grey">{{ $t('processArchitecture.mermaid.panHint') }}</span>
         </div>
     </div>
@@ -130,15 +119,15 @@ mermaid.initialize({
         primaryBorderColor: '#1976D2',
         lineColor: '#78909C',
         secondaryColor: '#FFF3E0',
-        tertiaryColor: '#E8F5E9',
+        tertiaryColor: '#E8F5E9'
     },
     flowchart: {
         curve: 'basis',
         nodeSpacing: 50,
         rankSpacing: 60,
-        useMaxWidth: true,
+        useMaxWidth: true
     },
-    securityLevel: 'loose', // Allow click callbacks
+    securityLevel: 'loose' // Allow click callbacks
 });
 
 const visibleDomains = computed(() => {
@@ -179,13 +168,13 @@ function sanitizeLabel(str: string): string {
     // Escape characters that conflict with Mermaid syntax
     return str
         .replace(/"/g, "'")
-        .replace(/\(/g, "（")
-        .replace(/\)/g, "）")
-        .replace(/\[/g, "［")
-        .replace(/\]/g, "］")
-        .replace(/\{/g, "｛")
-        .replace(/\}/g, "｝")
-        .replace(/[<>]/g, " ");
+        .replace(/\(/g, '（')
+        .replace(/\)/g, '）')
+        .replace(/\[/g, '［')
+        .replace(/\]/g, '］')
+        .replace(/\{/g, '｛')
+        .replace(/\}/g, '｝')
+        .replace(/[<>]/g, ' ');
 }
 
 function buildMermaidDef(domain: any): string {

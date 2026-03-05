@@ -69,7 +69,10 @@
                 <v-text-field v-model="copyUengineProperties.inputPayloadTemplate" :label="$t('ManualTaskPanel.inputData')"></v-text-field>
             </v-row>
             <v-row class="ma-0 pa-0">
-                <v-text-field v-model="copyUengineProperties.dataInput.name" :label="$t('ManualTaskPanel.resultInputVariable')"></v-text-field>
+                <v-text-field
+                    v-model="copyUengineProperties.dataInput.name"
+                    :label="$t('ManualTaskPanel.resultInputVariable')"
+                ></v-text-field>
             </v-row>
         </div>
 
@@ -171,19 +174,12 @@
 
         <!-- Manual Links (Phase 4-1) -->
         <div class="mt-4">
-            <ManualLinkField
-                v-model="copyUengineProperties.manualLinks"
-                :disabled="isViewMode"
-            />
+            <ManualLinkField v-model="copyUengineProperties.manualLinks" :disabled="isViewMode" />
         </div>
 
         <!-- Lead Time -->
         <div class="mt-4">
-            <LeadTimeInput
-                v-model="copyUengineProperties.leadTime"
-                :label="$t('leadTime.title') || 'Lead Time'"
-                :disabled="isViewMode"
-            />
+            <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
 
         <!-- Future Status (Phase 2-2) -->
@@ -232,7 +228,6 @@
             </div>
         </div>
 
-
         <!-- Schema-based Properties -->
         <div class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.schemaProperties') || '일반 속성' }}</div>
@@ -261,7 +256,10 @@
                 <v-btn
                     v-for="color in presetColors"
                     :key="color.value"
-                    :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }"
+                    :style="{
+                        backgroundColor: color.value,
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                    }"
                     size="small"
                     icon
                     :disabled="isViewMode"
@@ -273,29 +271,15 @@
 
             <!-- Custom Color Picker -->
             <v-row class="ma-0 pa-0 align-center">
-                <v-menu
-                    v-model="showColorPicker"
-                    :close-on-content-click="false"
-                    location="bottom"
-                >
+                <v-menu v-model="showColorPicker" :close-on-content-click="false" location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            :disabled="isViewMode"
-                            variant="outlined"
-                            size="small"
-                            class="mr-2"
-                        >
+                        <v-btn v-bind="props" :disabled="isViewMode" variant="outlined" size="small" class="mr-2">
                             <v-icon start size="small">mdi-palette</v-icon>
                             {{ $t('BpmnPropertyPanel.customColor') || '사용자 정의 색상' }}
                         </v-btn>
                     </template>
                     <v-card min-width="300">
-                        <v-color-picker
-                            v-model="customColor"
-                            mode="hexa"
-                            hide-inputs
-                        ></v-color-picker>
+                        <v-color-picker v-model="customColor" mode="hexa" hide-inputs></v-color-picker>
                         <v-card-actions>
                             <v-btn size="small" @click="showColorPicker = false">{{ $t('common.cancel') || '취소' }}</v-btn>
                             <v-btn size="small" color="primary" @click="applyCustomColor">{{ $t('common.confirm') || '적용' }}</v-btn>
@@ -319,7 +303,13 @@
             <!-- Current Color Preview -->
             <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
                 <div
-                    :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }"
+                    :style="{
+                        backgroundColor: copyUengineProperties.taskColor,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc'
+                    }"
                     class="mr-2"
                 ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
@@ -358,13 +348,13 @@ export default {
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
-        if(!this.copyUengineProperties.schemaProperties) this.copyUengineProperties.schemaProperties = {};
-        if(!this.copyUengineProperties.systemName) this.copyUengineProperties.systemName = '';
-        if(!this.copyUengineProperties.menuName) this.copyUengineProperties.menuName = '';
-        if(!this.copyUengineProperties.futureStatus) this.copyUengineProperties.futureStatus = null;
-        if(!this.copyUengineProperties.costType) this.copyUengineProperties.costType = 'FTE';
-        if(!this.copyUengineProperties.manualLinks) this.copyUengineProperties.manualLinks = [];
+        if (!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
+        if (!this.copyUengineProperties.schemaProperties) this.copyUengineProperties.schemaProperties = {};
+        if (!this.copyUengineProperties.systemName) this.copyUengineProperties.systemName = '';
+        if (!this.copyUengineProperties.menuName) this.copyUengineProperties.menuName = '';
+        if (!this.copyUengineProperties.futureStatus) this.copyUengineProperties.futureStatus = null;
+        if (!this.copyUengineProperties.costType) this.copyUengineProperties.costType = 'FTE';
+        if (!this.copyUengineProperties.manualLinks) this.copyUengineProperties.manualLinks = [];
     },
     data() {
         return {
@@ -494,7 +484,7 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uengineProperties', this.copyUengineProperties);
@@ -582,7 +572,7 @@ export default {
     color: #6366f1 !important;
 }
 
-:deep(.v-chip--variant-outlined[color="primary"]) {
+:deep(.v-chip--variant-outlined[color='primary']) {
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%) !important;
     border-color: rgba(99, 102, 241, 0.3) !important;
     color: #6366f1 !important;
@@ -638,11 +628,11 @@ export default {
 }
 
 /* Section dividers */
-div[style*="margin-bottom: 20px"] {
+div[style*='margin-bottom: 20px'] {
     margin-bottom: 24px !important;
 }
 
-div[style*="margin-bottom: -8px"] {
+div[style*='margin-bottom: -8px'] {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     font-size: 0.6875rem !important;
     font-weight: 700;

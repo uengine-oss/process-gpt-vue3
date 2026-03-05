@@ -2,28 +2,24 @@
     <v-card flat class="pa-4">
         <v-row class="ma-0 pa-0">
             <!-- 검색 -->
-            <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff;">
+            <v-row class="ma-0 pa-0 align-center border header-search rounded-pill px-5" style="background-color: #fff">
                 <Icons :icon="'magnifer-linear'" :size="22" />
-                <v-text-field 
-                v-model="searchInput" 
-                @keyup.enter="handleSearch"
-                variant="plain" 
-                density="compact"
-                class="position-relative pt-0 ml-3 custom-placeholer-color" 
-                :placeholder="$t('accountTab.search')"
-                single-line 
-                hide-details
-                dense
+                <v-text-field
+                    v-model="searchInput"
+                    @keyup.enter="handleSearch"
+                    variant="plain"
+                    density="compact"
+                    class="position-relative pt-0 ml-3 custom-placeholer-color"
+                    :placeholder="$t('accountTab.search')"
+                    single-line
+                    hide-details
+                    dense
                 ></v-text-field>
             </v-row>
             <!-- <v-text-field v-model="search" label="Search User" hide-details prepend-inner-icon="mdi-magnify"></v-text-field> -->
             <v-spacer></v-spacer>
-            <v-btn @click="openInviteUserCard = true"
-                color="primary"
-                variant="flat"
-                rounded
-            >
-                <v-icon style="padding-top: 3px;">mdi-account-plus</v-icon>
+            <v-btn @click="openInviteUserCard = true" color="primary" variant="flat" rounded>
+                <v-icon style="padding-top: 3px">mdi-account-plus</v-icon>
                 <span class="ml-2">{{ $t('accountTab.addUser') }}</span>
             </v-btn>
         </v-row>
@@ -33,16 +29,13 @@
             <div v-if="searchQuery && filteredUsers.length === 0" class="text-left pa-8">
                 <p class="text-subtitle-1 text-medium-emphasis">{{ $t('accountTab.noSearchResults') }}</p>
             </div>
-            
+
             <v-data-table v-else :items="users" :search="searchQuery" :filter-keys="searchKey" :headers="headers" items-per-page="5">
                 <template v-slot:default="{ items }">
-                    <div v-for="item in items" :key="item.id" 
-                        class="d-flex align-center justify-space-between pa-4 pr-0 pl-0 user-row"
-                    >
+                    <div v-for="item in items" :key="item.id" class="d-flex align-center justify-space-between pa-4 pr-0 pl-0 user-row">
                         <div class="d-flex align-center">
                             <div>
-                                <v-img v-if="item.profile" :src="item.profile" width="45px" 
-                                    class="rounded-circle img-fluid" />
+                                <v-img v-if="item.profile" :src="item.profile" width="45px" class="rounded-circle img-fluid" />
                                 <v-avatar v-else>
                                     <Icons :icon="'user-circle-bold'" :size="50" />
                                 </v-avatar>
@@ -56,17 +49,17 @@
                             </div>
                         </div>
                         <div class="d-flex align-center">
-                            <v-chip 
+                            <v-chip
                                 v-if="editable"
                                 variant="elevated"
                                 :color="item.is_admin ? 'primary' : 'gray'"
                                 class="chip-select-wrapper"
                                 size="x-small"
                             >
-                                <v-select 
-                                    v-model="item.is_admin" 
-                                    :items="adminItem" 
-                                    item-title="name" 
+                                <v-select
+                                    v-model="item.is_admin"
+                                    :items="adminItem"
+                                    item-title="name"
                                     item-value="value"
                                     @update:model-value="updateUser(item)"
                                     variant="plain"
@@ -79,14 +72,7 @@
                                     </template>
                                 </v-select>
                             </v-chip>
-                            <v-btn 
-                                v-if="isAdmin"
-                                @click="openDeleteDialog(item)" 
-                                icon
-                                variant="text"
-                                size="small"
-                                class="ml-2"
-                            >
+                            <v-btn v-if="isAdmin" @click="openDeleteDialog(item)" icon variant="text" size="small" class="ml-2">
                                 <v-icon color="error">mdi-delete</v-icon>
                             </v-btn>
                         </div>
@@ -96,24 +82,12 @@
         </div>
     </v-card>
 
-    <v-dialog
-        v-model="openInviteUserCard"
-        max-width="800px"
-        persistent
-        :fullscreen="isMobile"
-    >
+    <v-dialog v-model="openInviteUserCard" max-width="800px" persistent :fullscreen="isMobile">
         <v-card class="pa-4">
             <v-row class="ma-0 pa-0 align-center">
-                <v-card-title class="pa-0"
-                >{{ $t('accountTab.inviteUser') }}
-                </v-card-title>
+                <v-card-title class="pa-0">{{ $t('accountTab.inviteUser') }} </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn @click="openInviteUserCard = false"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="openInviteUserCard = false" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
@@ -121,7 +95,7 @@
                 <p class="text-subtitle-1 text-grey-darken-1">{{ $t('accountTab.inviteUserMessage') }}</p>
                 <p class="text-caption text-grey-darken-1">{{ $t('accountTab.inviteUserMessage2') }}</p>
             </v-card-title>
-            <v-card-text class="pa-0" max-height="500" style="overflow-y: auto;">
+            <v-card-text class="pa-0" max-height="500" style="overflow-y: auto">
                 <InviteUserCard @close="closeInviteUserCard" type="manageAccess" :userList="users" />
             </v-card-text>
         </v-card>
@@ -130,16 +104,9 @@
     <v-dialog v-model="deleteDialog" max-width="500px">
         <v-card>
             <v-row class="ma-0 pa-4 pb-0 align-center">
-                <v-card-title class="pa-0"
-                >{{ $t('accountTab.confirmDeleteTitle') }}
-                </v-card-title>
+                <v-card-title class="pa-0">{{ $t('accountTab.confirmDeleteTitle') }} </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn @click="closeDeleteDialog"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="closeDeleteDialog" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
@@ -162,12 +129,8 @@
 
             <v-row class="ma-0 pa-4 pr-2">
                 <v-spacer></v-spacer>
-                <v-btn @click="confirmDelete"
-                    :disabled="!isDeleteEnabled"
-                    color="error"
-                    variant="flat"
-                    class="rounded-pill"
-                >{{ $t('accountTab.delete') }}
+                <v-btn @click="confirmDelete" :disabled="!isDeleteEnabled" color="error" variant="flat" class="rounded-pill"
+                    >{{ $t('accountTab.delete') }}
                 </v-btn>
             </v-row>
         </v-card>
@@ -212,7 +175,7 @@ export default {
         deleteDialog: false,
         deleteTargetUser: null,
         confirmName: '',
-        organizationChart: null,
+        organizationChart: null
     }),
     computed: {
         isAdmin() {
@@ -227,8 +190,8 @@ export default {
                 return this.users;
             }
             const query = this.searchQuery.toLowerCase();
-            return this.users.filter(user => {
-                return this.searchKey.some(key => {
+            return this.users.filter((user) => {
+                return this.searchKey.some((key) => {
                     const value = user[key];
                     return value && value.toString().toLowerCase().includes(query);
                 });
@@ -239,7 +202,7 @@ export default {
         this.checkIfMobile();
         window.addEventListener('resize', this.checkIfMobile);
     },
-    beforeDestroy() {
+    beforeUnmount() {
         window.removeEventListener('resize', this.checkIfMobile);
     },
     created() {
@@ -264,30 +227,30 @@ export default {
         findUserTeamInOrganization(userId, node = null, teamName = null) {
             const searchNode = node || this.organizationChart;
             if (!searchNode) return null;
-            
+
             if (searchNode.data && searchNode.data.isTeam) {
                 teamName = searchNode.data.name;
             }
-            
+
             if (searchNode.children && searchNode.children.length > 0) {
                 for (const child of searchNode.children) {
                     if (child.id === userId || (child.data && child.data.id === userId)) {
                         return teamName;
                     }
-                    
+
                     const foundTeam = this.findUserTeamInOrganization(userId, child, teamName);
                     if (foundTeam) {
                         return foundTeam;
                     }
                 }
             }
-            
+
             return null;
         },
         updateUserTeamInfo() {
             if (!this.organizationChart) return;
-            
-            this.users = this.users.map(user => {
+
+            this.users = this.users.map((user) => {
                 const teamName = this.findUserTeamInOrganization(user.id);
                 return {
                     ...user,
@@ -296,7 +259,7 @@ export default {
             });
         },
         async getUserList() {
-            this.users  = await backend.getUserList({
+            this.users = await backend.getUserList({
                 orderBy: 'username',
                 sort: 'asc',
                 match: {
@@ -304,7 +267,7 @@ export default {
                     tenant_id: window.$tenantName
                 }
             });
-            this.users = this.users.map(user => {
+            this.users = this.users.map((user) => {
                 return {
                     id: user.id,
                     profile: user.profile,
@@ -313,7 +276,7 @@ export default {
                     is_admin: user.is_admin
                 };
             });
-            
+
             if (this.organizationChart) {
                 this.updateUserTeamInfo();
             }
@@ -322,17 +285,17 @@ export default {
             const userInfo = {
                 id: user.id,
                 is_admin: user.is_admin
-            }
+            };
             await backend.updateUserInfo({ type: 'update', user: userInfo });
         },
         async deleteUserFromOrganization(userId) {
             const orgData = await backend.getData('configuration', { match: { key: 'organization' } });
-            
+
             if (orgData && orgData.value && orgData.value.chart) {
                 const deleteNode = (children) => {
                     if (!children) return children;
-                    
-                    return children.filter(item => {
+
+                    return children.filter((item) => {
                         if (item.id === userId) {
                             return false;
                         }
@@ -342,15 +305,15 @@ export default {
                         return true;
                     });
                 };
-                
+
                 orgData.value.chart.children = deleteNode(orgData.value.chart.children);
-                
+
                 const putObj = {
                     key: 'organization',
                     value: orgData.value,
                     uuid: orgData.uuid
                 };
-                
+
                 await backend.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
                 this.EventBus.emit('user-deleted', userId);
             }
@@ -359,7 +322,7 @@ export default {
             await this.$try({
                 action: async () => {
                     await backend.updateUserInfo({ type: 'delete', user: user });
-                    this.users = this.users.filter(u => u.id !== user.id);
+                    this.users = this.users.filter((u) => u.id !== user.id);
                     await this.deleteUserFromOrganization(user.id);
                 },
                 successMsg: this.$t('accountTab.deleteUserSuccess', { name: user.name }),
@@ -461,6 +424,4 @@ export default {
         min-width: 160px !important;
     }
 }
-
-
 </style>

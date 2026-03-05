@@ -4,26 +4,22 @@
             <!-- 데스크톱: 기존 탭 -->
             <div v-if="!isMobile">
                 <v-tabs v-model="tab" color="primary">
-                    <v-tab
-                        v-for="item in tabItems"
-                        :key="item.value"
-                        :value="item.value"
-                    >
+                    <v-tab v-for="item in tabItems" :key="item.value" :value="item.value">
                         {{ $t(item.label) }}
                     </v-tab>
-                    <v-btn 
-                        variant="flat" 
-                        color="primary" 
-                        size="small" 
-                        @click="openPDM()" 
+                    <v-btn
+                        variant="flat"
+                        color="primary"
+                        size="small"
+                        @click="openPDM()"
                         class="ml-3 rounded-pill"
-                        style="align-self: center;"
+                        style="align-self: center"
                     >
                         {{ $t('ProjectCard.executeProcess') }}
                     </v-btn>
                 </v-tabs>
             </div>
-            
+
             <!-- 모바일: 버튼 형태 -->
             <div v-else class="pa-2">
                 <div class="d-flex flex-wrap ga-2 align-center">
@@ -38,28 +34,20 @@
                     >
                         {{ $t(item.label) }}
                     </v-btn>
-                    <v-btn 
-                        variant="flat" 
-                        color="primary" 
-                        size="small" 
-                        @click="openPDM()" 
-                        style="margin-left: auto;"
-                    >
+                    <v-btn variant="flat" color="primary" size="small" @click="openPDM()" style="margin-left: auto">
                         {{ $t('ProjectCard.executeProcess') }}
                     </v-btn>
                 </div>
             </div>
-            
-            <v-window v-model="tab"
-                :touch="false"
-            >
+
+            <v-window v-model="tab" :touch="false">
                 <v-window-item value="managment" class="h-100">
                     <div class="project-card-gantt-area" v-if="!isLoading">
-                        <GanttChart 
+                        <GanttChart
                             :tasks="tasks"
                             :dependencies="dependencies"
-                            :users="userList" 
-                            @task-updated="handleTaskUpdated" 
+                            :users="userList"
+                            @task-updated="handleTaskUpdated"
                             @task-added="handleTaskAdded"
                             @task-clicked="handleTaskClicked"
                             @link-event="handleLinkEvent"
@@ -68,10 +56,7 @@
                 </v-window-item>
                 <v-window-item value="kanbanBoard">
                     <div class="project-card-kanban-board">
-                        <KanbanBoard 
-                            :columns="columns"
-                            :users="userList"
-                        />
+                        <KanbanBoard :columns="columns" :users="userList" />
                     </div>
                 </v-window-item>
                 <v-window-item value="instanceList">
@@ -80,15 +65,30 @@
                         <div class="pa-5 pb-0">
                             <div v-if="project">
                                 <div class="d-flex align-center mb-3">
-                                    <span style="font-size:18px; font-weight:bold;">{{ $t('ProjectCard.projectInfo') }}</span>
-                                    <v-chip class="ml-3" size="small" :color="getStatusColor(project.status)" variant="outlined" density="comfortable">
+                                    <span style="font-size: 18px; font-weight: bold">{{ $t('ProjectCard.projectInfo') }}</span>
+                                    <v-chip
+                                        class="ml-3"
+                                        size="small"
+                                        :color="getStatusColor(project.status)"
+                                        variant="outlined"
+                                        density="comfortable"
+                                    >
                                         {{ getStatusText(project.status) }}
                                     </v-chip>
                                 </div>
-                                <div style="font-size: 16px; margin-bottom: 4px;">{{ $t('ProjectCard.projectId') }}: {{ project.projectId }}</div>
-                                <div style="font-size: 16px; margin-bottom: 4px;">{{ $t('ProjectCard.projectName') }}: {{ project.name }}</div>
-                                <div style="font-size: 16px; margin-bottom: 4px;">{{ $t('ProjectCard.expectedPeriod') }}: {{ formatDate(project.startDate) }} ~ {{ formatDate(project.endDate) }}</div>
-                                <div style="font-size: 16px;">{{ $t('ProjectCard.projectCreatedDate') }}: {{ formatDate(project.createdDate) }}</div>
+                                <div style="font-size: 16px; margin-bottom: 4px">
+                                    {{ $t('ProjectCard.projectId') }}: {{ project.projectId }}
+                                </div>
+                                <div style="font-size: 16px; margin-bottom: 4px">
+                                    {{ $t('ProjectCard.projectName') }}: {{ project.name }}
+                                </div>
+                                <div style="font-size: 16px; margin-bottom: 4px">
+                                    {{ $t('ProjectCard.expectedPeriod') }}: {{ formatDate(project.startDate) }} ~
+                                    {{ formatDate(project.endDate) }}
+                                </div>
+                                <div style="font-size: 16px">
+                                    {{ $t('ProjectCard.projectCreatedDate') }}: {{ formatDate(project.createdDate) }}
+                                </div>
                             </div>
                             <div v-else>
                                 {{ $t('ProjectCard.noProjectInfo') }}
@@ -96,8 +96,9 @@
                         </div>
                         <div class="pa-4 pt-2 pb-2">
                             <!-- 인스턴스 카드 리스트 -->
-                            <v-card v-for="item in instanceList" 
-                                :key="item.name" 
+                            <v-card
+                                v-for="item in instanceList"
+                                :key="item.name"
                                 @click="onItemClick(item)"
                                 class="cursor-pointer"
                                 elevation="2"
@@ -105,14 +106,25 @@
                             >
                                 <v-card-text class="pa-4 text-left">
                                     <div class="d-flex align-center mb-2">
-                                        <div class="font-weight-bold text-h6 text-left" style="text-align: left !important;">{{ item.name }}</div>
-                                        <v-chip class="ml-3" size="small" :color="getStatusColor(item.status)" variant="outlined" density="comfortable">
+                                        <div class="font-weight-bold text-h6 text-left" style="text-align: left !important">
+                                            {{ item.name }}
+                                        </div>
+                                        <v-chip
+                                            class="ml-3"
+                                            size="small"
+                                            :color="getStatusColor(item.status)"
+                                            variant="outlined"
+                                            density="comfortable"
+                                        >
                                             {{ getStatusText(item.status) }}
                                         </v-chip>
                                     </div>
                                     <div class="text-body-2 text-medium-emphasis text-left">
                                         <div class="text-left">ID: {{ item.instId }}</div>
-                                        <div class="text-left">{{ $t('ProjectCard.period') }}: {{ formatDate(item.startDate) }} ~ {{ formatDate(item.endDate) }}</div>
+                                        <div class="text-left">
+                                            {{ $t('ProjectCard.period') }}: {{ formatDate(item.startDate) }} ~
+                                            {{ formatDate(item.endDate) }}
+                                        </div>
                                     </div>
                                 </v-card-text>
                             </v-card>
@@ -122,20 +134,24 @@
             </v-window>
         </v-card>
 
-        <v-dialog v-model="isPDMOpen"
-            style="width: 100%; height: 100%;"
-            persistent
-            fullscreen
-        >
+        <v-dialog v-model="isPDMOpen" style="width: 100%; height: 100%" persistent fullscreen>
             <div v-if="!isShowProcess">
-                <ProcessDefinitionMap :isViewMode="true" :isExecutionByProject="true" @clickPlayBtn="clickPlayBtn" @closePDM="closePDM()"/>
+                <ProcessDefinitionMap :isViewMode="true" :isExecutionByProject="true" @clickPlayBtn="clickPlayBtn" @closePDM="closePDM()" />
             </div>
             <div v-else>
-                <process-gpt-execute v-if="mode === 'ProcessGPT'" :isExecutionByProject="true" :processDefinition="processDefinitionData" :definitionId="processDefinition.id" @close="closePDM()" :isSimulate="'false'" @createInstance="createInstance"></process-gpt-execute>
+                <process-gpt-execute
+                    v-if="mode === 'ProcessGPT'"
+                    :isExecutionByProject="true"
+                    :processDefinition="processDefinitionData"
+                    :definitionId="processDefinition.id"
+                    @close="closePDM()"
+                    :isSimulate="'false'"
+                    @createInstance="createInstance"
+                ></process-gpt-execute>
             </div>
         </v-dialog>
     </div>
-  </template>
+</template>
 
 <script>
 import KanbanBoard from './KanbanBoard.vue';
@@ -157,7 +173,7 @@ export default {
         'dry-run-process': DryRunProcess,
         'process-gpt-execute': ProcessGPTExecute
     },
-    data: () => ({  
+    data: () => ({
         tab: 'managment', // 탭 인덱스
         project: null, // 프로젝트 정보
         instanceList: [], // 인스턴스 리스트
@@ -185,7 +201,7 @@ export default {
                     await this.init();
                 }
             }
-        },
+        }
     },
     computed: {
         projectId() {
@@ -193,7 +209,7 @@ export default {
         },
         isMobile() {
             return this.$vuetify.display.width <= 768;
-        },
+        }
     },
     methods: {
         init() {
@@ -206,29 +222,29 @@ export default {
 
                     me.project = await backend.getProjectById(this.projectId);
                     me.instanceList = await backend.getInstanceByProjectId(this.projectId);
-                    let allWorkItems = me.instanceList.map(item => ({
+                    let allWorkItems = me.instanceList.map((item) => ({
                         ...item,
-                        parent: 0, // 인스턴스
+                        parent: 0 // 인스턴스
                     }));
 
-                    const worklists = await backend.getWorkList({projectId: this.projectId});
-                    const updatedWorklist = worklists.map(item => ({
+                    const worklists = await backend.getWorkList({ projectId: this.projectId });
+                    const updatedWorklist = worklists.map((item) => ({
                         ...item,
-                        parent: item.instId, // 인스턴스가 부모
+                        parent: item.instId // 인스턴스가 부모
                     }));
 
                     allWorkItems = allWorkItems.concat(updatedWorklist);
                     me.tasks = allWorkItems;
-                    me.dependencies = await backend.getTaskDependencyByProjectId(this.projectId)
+                    me.dependencies = await backend.getTaskDependencyByProjectId(this.projectId);
                     me.loadKanbanBoard();
                     me.isLoading = false;
                 }
             });
         },
-        loadKanbanBoard(){
-            var me = this
-            me.columns.forEach(column => {
-                column.tasks = me.tasks.filter(task => {
+        loadKanbanBoard() {
+            var me = this;
+            me.columns.forEach((column) => {
+                column.tasks = me.tasks.filter((task) => {
                     if ((task.status === 'PENDING' || task.status === 'CANCELLED') && column.id === 'PENDING') {
                         return true;
                     } else if ((task.status === 'IN_PROGRESS' || task.status === 'SUBMITTED') && column.id === 'IN_PROGRESS') {
@@ -239,70 +255,69 @@ export default {
                 });
             });
         },
-        openPDM(){
-            this.isShowProcess = false
-            this.isPDMOpen = true
+        openPDM() {
+            this.isShowProcess = false;
+            this.isPDMOpen = true;
         },
-        closePDM(){
-            this.processInfo = null
-            this.isPDMOpen = false
+        closePDM() {
+            this.processInfo = null;
+            this.isPDMOpen = false;
         },
-        clickPlayBtn(obj){
-            var me = this
+        clickPlayBtn(obj) {
+            var me = this;
             me.$try({
                 action: async () => {
                     me.processDefinition = obj;
-                    
+
                     const value = await backend.getRawDefinition(me.processDefinition.id);
-                    if (value)  me.processDefinitionData = value.definition;
-                    
-                    this.isShowProcess = true
+                    if (value) me.processDefinitionData = value.definition;
+
+                    this.isShowProcess = true;
                 }
-            })
+            });
         },
-        createInstance(value){
-            var me = this
+        createInstance(value) {
+            var me = this;
             me.$try({
                 action: async () => {
-                    if(!value.project_id) value['project_id'] = me.projectId;
+                    if (!value.project_id) value['project_id'] = me.projectId;
                     await backend.start(value);
 
-                    this.isShowProcess = false
+                    this.isShowProcess = false;
                     me.closePDM();
                 },
                 successMsg: me.$t('successMsg.processExecutionCompleted')
-            })
-
+            });
         },
-        async handleTaskUpdated(task){
-            if(task.parent == 0){
-                await backend.putInstance(task.instId, task)
+        async handleTaskUpdated(task) {
+            if (task.parent == 0) {
+                await backend.putInstance(task.instId, task);
             } else {
-                await backend.putWorklist(task.taskId, task)
+                await backend.putWorklist(task.taskId, task);
             }
         },
-        async handleTaskAdded(task){
-            if(!task.projectId) task.projectId = this.project.projectId;
-            if(task.parent == 0){
+        async handleTaskAdded(task) {
+            if (!task.projectId) task.projectId = this.project.projectId;
+            if (task.parent == 0) {
                 await backend.putInstance(null, task);
             } else {
                 await backend.putWorklist(null, task);
             }
         },
-        async handleTaskClicked(task){
+        async handleTaskClicked(task) {
             console.log(task);
         },
-        async handleLinkEvent(event){
+        async handleLinkEvent(event) {
             let link = event.link;
-            if(event.type == 'add') {
+            if (event.type == 'add') {
                 await backend.putTaskDependency({
                     id: link.id,
                     task_id: link.target,
                     depends_id: link.source,
                     type: link.type
-                })
-            } else if(event.type == 'delete') {
-                await backend.deleteTaskDependency(link.id)
+                });
+            } else if (event.type == 'delete') {
+                await backend.deleteTaskDependency(link.id);
             }
         },
         onItemClick(item) {
@@ -310,23 +325,23 @@ export default {
         },
         formatDate(dateString) {
             if (!dateString) return '';
-            
+
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return dateString; // 유효하지 않은 날짜인 경우 원본 반환
-            
+
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
-            
+
             return `${year}.${month}.${day} / ${hours}:${minutes}`;
         },
         getStatusColor(status) {
             if (!status) return 'grey';
-            
+
             const statusUpper = status.toUpperCase();
-            
+
             // INSTANCE 상태
             if (statusUpper === 'NEW') {
                 return 'info';
@@ -350,9 +365,9 @@ export default {
         },
         getStatusText(status) {
             if (!status) return '';
-            
+
             const statusUpper = status.toUpperCase();
-            
+
             // INSTANCE 상태
             if (statusUpper === 'NEW') {
                 return this.$t('ProjectCard.statusNew');
@@ -379,21 +394,21 @@ export default {
             } else {
                 return status; // 알 수 없는 상태는 원본 반환
             }
-        },
+        }
     }
 };
 </script>
 
 <style>
 .top-section {
-  flex: 3;
-  margin-bottom: 16px;
+    flex: 3;
+    margin-bottom: 16px;
 }
 .bottom-section {
-  flex: 7;
+    flex: 7;
 }
 .list-card {
-  width: 100%;
-  height: 100%;
+    width: 100%;
+    height: 100%;
 }
 </style>

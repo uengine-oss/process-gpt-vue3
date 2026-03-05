@@ -1,4 +1,3 @@
-
 type ProgressReport = {
     code: string;
     sub: string;
@@ -7,7 +6,6 @@ type ProgressReport = {
     remarks: string;
     statuscolor: string;
     remarkcolor: string;
-    
 };
 
 type TeacherSkill = {
@@ -26,7 +24,6 @@ type StudentProgressReport = {
     remarks: string;
     statuscolor: string;
     remarkcolor: string;
-    
 };
 
-export type { ProgressReport,TeacherSkill,StudentProgressReport};
+export type { ProgressReport, TeacherSkill, StudentProgressReport };

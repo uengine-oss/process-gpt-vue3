@@ -27,14 +27,15 @@
                             :is-view-mode="isViewMode"
                             :parameter-contexts="copyUengineProperties.variableBindings"
                         ></bpmn-parameter-contexts> -->
-                        <DetailComponent class="ml-2"
+                        <DetailComponent
+                            class="ml-2"
                             :title="$t('SubProcessPanel.forEachRoleDescriptionTitle')"
                             :details="forEachRoleDescription"
                             :iconSize="24"
                         />
                     </v-row>
                 </div>
-                <div v-else> 
+                <div v-else>
                     <v-row class="ma-0 pa-0 align-center">
                         <v-autocomplete
                             v-if="mode == 'uEngine'"
@@ -54,7 +55,8 @@
                             :is-view-mode="isViewMode"
                             :parameter-contexts="copyUengineProperties.variableBindings"
                         ></bpmn-parameter-contexts> -->
-                        <DetailComponent class="ml-2"
+                        <DetailComponent
+                            class="ml-2"
                             :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
                             :details="SubProcessDescription"
                             :detailUrl="'https://www.youtube.com/watch?v=nhQCDfYa6Gk'"
@@ -77,7 +79,12 @@
                 <div class="mt-2 d-flex justify-end">
                     <v-btn @click="generateFinalizeRule" color="primary" density="compact" variant="flat" rounded>
                         <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
-                            <span v-for="(char, index) in $t('SubProcessPanel.ruleGenerating')" :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
+                            <span
+                                v-for="(char, index) in $t('SubProcessPanel.ruleGenerating')"
+                                :key="index"
+                                :style="{ animationDelay: `${index * 0.1}s` }"
+                                class="thinking-char"
+                            >
                                 {{ char === ' ' ? '\u00A0' : char }}
                             </span>
                         </span>
@@ -94,22 +101,32 @@
                 </v-row>
             </div>
 
-            
-
             <!-- 결정론적 규칙화 결과 다이얼로그 -->
             <v-dialog v-model="finalizeGenerationDialog" max-width="960" persistent>
                 <v-card>
                     <v-card-title class="d-flex align-center">
                         <span>{{ $t('SubProcessPanel.generatedRulePreview') }}</span>
                         <v-spacer></v-spacer>
-                        <v-btn color="primary" density="compact" variant="flat" rounded @click="generateFinalizeRule" :disabled="isFinalizeRuleGenerating">
+                        <v-btn
+                            color="primary"
+                            density="compact"
+                            variant="flat"
+                            rounded
+                            @click="generateFinalizeRule"
+                            :disabled="isFinalizeRuleGenerating"
+                        >
                             <span v-if="isFinalizeRuleGenerating" class="thinking-wave-text">
-                                <span v-for="(char, index) in $t('SubProcessPanel.ruleGenerating') " :key="index" :style="{ animationDelay: (index * 0.1) + 's' }" class="thinking-char">
+                                <span
+                                    v-for="(char, index) in $t('SubProcessPanel.ruleGenerating')"
+                                    :key="index"
+                                    :style="{ animationDelay: index * 0.1 + 's' }"
+                                    class="thinking-char"
+                                >
                                     {{ char === ' ' ? '\u00A0' : char }}
                                 </span>
                             </span>
                             <span v-else>
-                                {{  $t('SubProcessPanel.regenerate') }}
+                                {{ $t('SubProcessPanel.regenerate') }}
                             </span>
                         </v-btn>
                     </v-card-title>
@@ -138,7 +155,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="(ex, idx) in copyUengineProperties.finalize_io_examples" :key="'fio-'+idx">
+                                    <tr v-for="(ex, idx) in copyUengineProperties.finalize_io_examples" :key="'fio-' + idx">
                                         <td>
                                             <div class="one-line-json">{{ formatJsonOneLine(ex.input) }}</div>
                                         </td>
@@ -150,7 +167,7 @@
                                                 density="compact"
                                                 hide-details
                                                 :model-value="!!ex.mismatch"
-                                                @update:modelValue="val => updateFinalizeMismatchItem(ex, val)"
+                                                @update:modelValue="(val) => updateFinalizeMismatchItem(ex, val)"
                                             />
                                         </td>
                                     </tr>
@@ -159,8 +176,12 @@
                         </div>
                     </v-card-text>
                     <v-card-actions class="justify-end">
-                        <v-btn color="grey" variant="flat" rounded @click="cancelFinalizeGeneration">{{ $t('SubProcessPanel.cancel') }}</v-btn>
-                        <v-btn color="primary" variant="flat" rounded @click="applyGeneratedFinalizeRule">{{ $t('SubProcessPanel.confirm') }}</v-btn>
+                        <v-btn color="grey" variant="flat" rounded @click="cancelFinalizeGeneration">{{
+                            $t('SubProcessPanel.cancel')
+                        }}</v-btn>
+                        <v-btn color="primary" variant="flat" rounded @click="applyGeneratedFinalizeRule">{{
+                            $t('SubProcessPanel.confirm')
+                        }}</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
@@ -170,7 +191,18 @@
         <div class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
             <div class="d-flex flex-wrap gap-2 mb-3">
-                <v-btn v-for="color in presetColors" :key="color.value" :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }" size="small" icon :disabled="isViewMode" @click="setTaskColor(color.value)">
+                <v-btn
+                    v-for="color in presetColors"
+                    :key="color.value"
+                    :style="{
+                        backgroundColor: color.value,
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                    }"
+                    size="small"
+                    icon
+                    :disabled="isViewMode"
+                    @click="setTaskColor(color.value)"
+                >
                     <v-icon v-if="copyUengineProperties.taskColor === color.value" size="small" color="white">mdi-check</v-icon>
                 </v-btn>
             </div>
@@ -189,12 +221,28 @@
                         </v-card-actions>
                     </v-card>
                 </v-menu>
-                <v-btn v-if="copyUengineProperties.taskColor" variant="text" size="small" color="error" :disabled="isViewMode" @click="resetTaskColor">
+                <v-btn
+                    v-if="copyUengineProperties.taskColor"
+                    variant="text"
+                    size="small"
+                    color="error"
+                    :disabled="isViewMode"
+                    @click="resetTaskColor"
+                >
                     <v-icon size="small">mdi-close</v-icon>{{ $t('BpmnPropertyPanel.resetColor') || '초기화' }}
                 </v-btn>
             </v-row>
             <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
-                <div :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }" class="mr-2"></div>
+                <div
+                    :style="{
+                        backgroundColor: copyUengineProperties.taskColor,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc'
+                    }"
+                    class="mr-2"
+                ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
             </div>
         </div>
@@ -261,19 +309,19 @@ export default {
             selectedVariable: null,
             pattern: '',
             SubProcessDescription: [
-                {   
-                    title: "SubProcessPanel.forEachVariableDescriptionSubTitle1",
-                    image: "CreateMultidataForm.gif"
+                {
+                    title: 'SubProcessPanel.forEachVariableDescriptionSubTitle1',
+                    image: 'CreateMultidataForm.gif'
                 },
                 {
-                    title: "SubProcessPanel.forEachVariableDescriptionSubTitle2",
-                    image: "typeFormMapping.gif"
+                    title: 'SubProcessPanel.forEachVariableDescriptionSubTitle2',
+                    image: 'typeFormMapping.gif'
                 }
             ],
             forEachRoleDescription: [
                 {
-                    title: "SubProcessPanel.forEachRoleDescriptionSubTitle1",
-                    image: "forEachRoleDescriptionSubTitle1.png"
+                    title: 'SubProcessPanel.forEachRoleDescriptionSubTitle1',
+                    image: 'forEachRoleDescriptionSubTitle1.png'
                 }
             ],
             // 결정론적 규칙화 관련 상태
@@ -351,9 +399,9 @@ export default {
                     name: item.name,
                     fields: item.fields_json,
                     html: item.html
-                }
+                };
             });
-        } catch(e) {
+        } catch (e) {
             console.warn('Failed to load formDefs for finalize rule generation', e);
         }
 
@@ -365,7 +413,7 @@ export default {
     computed: {
         mode() {
             return window.$mode;
-        },
+        }
         // inputData() {
         //     let params = this.copyUengineProperties.variableBindings;
         //     let result = [];
@@ -500,7 +548,7 @@ export default {
             this.copyUengineProperties.variableBindings.push({ key: this.paramKey, value: this.paramValue });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
@@ -526,10 +574,10 @@ export default {
                     if (jsonData && jsonData.includes('{')) {
                         try {
                             jsonData = JSON.parse(jsonData);
-                        } catch(e) {
+                        } catch (e) {
                             try {
                                 jsonData = partialParse(jsonData);
-                            } catch(e) {
+                            } catch (e) {
                                 console.log(e);
                             }
                         }
@@ -539,21 +587,30 @@ export default {
 
                     if (jsonData) {
                         // Client-side fallback similar to SequenceFlowPanel
-                        if (!this.lastIsInitialFinalize && this.lastHasMismatchFinalize && this.lastSingleFieldTargetFinalize && Array.isArray(this.lastSingleFieldTargetFinalize.trueValues) && this.lastSingleFieldTargetFinalize.trueValues.length > 0) {
+                        if (
+                            !this.lastIsInitialFinalize &&
+                            this.lastHasMismatchFinalize &&
+                            this.lastSingleFieldTargetFinalize &&
+                            Array.isArray(this.lastSingleFieldTargetFinalize.trueValues) &&
+                            this.lastSingleFieldTargetFinalize.trueValues.length > 0
+                        ) {
                             const { fieldKey, trueValues } = this.lastSingleFieldTargetFinalize;
-                            const encoded = trueValues.map(v => JSON.stringify(v));
-                            const expr = encoded.length === 1
-                                ? `${fieldKey} == ${encoded[0]}`
-                                : `${fieldKey} in (${encoded.join(',')})`;
+                            const encoded = trueValues.map((v) => JSON.stringify(v));
+                            const expr = encoded.length === 1 ? `${fieldKey} == ${encoded[0]}` : `${fieldKey} in (${encoded.join(',')})`;
                             jsonData.python_expr = expr;
-                            const expected = Array.isArray(this.copyUengineProperties.finalize_io_examples) ? this.copyUengineProperties.finalize_io_examples : [];
-                            jsonData.io_examples = expected.map(ex => ({ input: ex.input, output: ex.mismatch ? !ex.output : ex.output }));
+                            const expected = Array.isArray(this.copyUengineProperties.finalize_io_examples)
+                                ? this.copyUengineProperties.finalize_io_examples
+                                : [];
+                            jsonData.io_examples = expected.map((ex) => ({
+                                input: ex.input,
+                                output: ex.mismatch ? !ex.output : ex.output
+                            }));
                         }
                         this.copyUengineProperties.determinationCode = jsonData.python_expr;
                         const raw = Array.isArray(jsonData.io_examples) ? jsonData.io_examples : [];
                         this.copyUengineProperties.finalize_io_examples = raw;
-                        this.finalizeIoExamplesGood = raw.filter(ex => (typeof ex.output === 'number') && ex.output > 0);
-                        this.finalizeIoExamplesBad = raw.filter(ex => (typeof ex.output === 'number') && ex.output === 0);
+                        this.finalizeIoExamplesGood = raw.filter((ex) => typeof ex.output === 'number' && ex.output > 0);
+                        this.finalizeIoExamplesBad = raw.filter((ex) => typeof ex.output === 'number' && ex.output === 0);
                         this.$emit('update:uengineProperties', this.copyUengineProperties);
                         this.finalizeGenerationDialog = true;
                     }
@@ -565,17 +622,19 @@ export default {
             // Build single-field target hint (with mismatch inversion) from finalize_io_examples
             const buildSingleFieldTarget = (examples) => {
                 if (!Array.isArray(examples) || examples.length === 0) return null;
-                const inputs = examples.map(e => e?.input || {});
-                const allKeys = Array.from(new Set(inputs.flatMap(obj => Object.keys(obj))));
+                const inputs = examples.map((e) => e?.input || {});
+                const allKeys = Array.from(new Set(inputs.flatMap((obj) => Object.keys(obj))));
                 if (allKeys.length !== 1) return null;
                 const key = allKeys[0];
-                const allScalar = inputs.every(i => i && (typeof i[key] === 'string' || typeof i[key] === 'number' || typeof i[key] === 'boolean'));
+                const allScalar = inputs.every(
+                    (i) => i && (typeof i[key] === 'string' || typeof i[key] === 'number' || typeof i[key] === 'boolean')
+                );
                 if (!allScalar) return null;
-                const targets = examples.map(e => ({
+                const targets = examples.map((e) => ({
                     value: e.input[key],
                     target: e.mismatch ? !e.output : e.output
                 }));
-                const trueValues = Array.from(new Set(targets.filter(t => t.target === true).map(t => t.value)));
+                const trueValues = Array.from(new Set(targets.filter((t) => t.target === true).map((t) => t.value)));
                 return { fieldKey: key, trueValues };
             };
 
@@ -592,10 +651,14 @@ export default {
             };
             if (!isInitial) {
                 generatorOptions.expectedIoExamples = Array.isArray(this.copyUengineProperties.finalize_io_examples)
-                    ? this.copyUengineProperties.finalize_io_examples.map(ex => ({ input: ex.input, output: ex.output, mismatch: !!ex.mismatch }))
+                    ? this.copyUengineProperties.finalize_io_examples.map((ex) => ({
+                          input: ex.input,
+                          output: ex.output,
+                          mismatch: !!ex.mismatch
+                      }))
                     : [];
                 generatorOptions.singleFieldTarget = singleFieldTarget;
-                const hasAnyMismatch = (this.copyUengineProperties.finalize_io_examples || []).some(ex => !!ex.mismatch);
+                const hasAnyMismatch = (this.copyUengineProperties.finalize_io_examples || []).some((ex) => !!ex.mismatch);
                 if (!hasAnyMismatch) {
                     generatorOptions.previousExpr = this.copyUengineProperties.determinationCode || '';
                 }
@@ -645,7 +708,7 @@ export default {
             }
 
             let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
-            
+
             let match = inputString.match(regex);
             if (match) {
                 if (checkFunction)
@@ -656,7 +719,7 @@ export default {
                     });
                 else return match[1];
             } else {
-                regex = /\{[\s\S]*\}/
+                regex = /\{[\s\S]*\}/;
                 match = inputString.match(regex);
                 return match && match[0] ? match[0] : null;
             }
@@ -698,9 +761,13 @@ export default {
                     const element = elementRegistry.get(this.element?.id);
                     if (element) {
                         const gfx = elementRegistry.getGraphics(element);
-                        if (gfx) { graphicsFactory.update('shape', element, gfx); }
+                        if (gfx) {
+                            graphicsFactory.update('shape', element, gfx);
+                        }
                     }
-                } catch (e) { console.warn('Could not refresh task visual:', e); }
+                } catch (e) {
+                    console.warn('Could not refresh task visual:', e);
+                }
             }
         }
     }

@@ -4,35 +4,29 @@
         <v-card elevation="10">
             <v-row class="ma-0 pa-4 pb-0 align-center">
                 <v-card-title class="pa-0">
-                   {{ $t('DelegateTask.title') }}
+                    {{ $t('DelegateTask.title') }}
                 </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn @click="close()"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="close()" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
-            <v-card-text class="pa-4 pb-0"
+            <v-card-text
+                class="pa-4 pb-0"
                 :style="isMobile ? 'height: calc(100vh - 100px);' : 'height: calc(100vh - 150px);'"
-                style="overflow: auto;"
+                style="overflow: auto"
             >
-                <v-card  elevation="10">
+                <v-card elevation="10">
                     <v-card-title>
-                        <v-row style="margin: 0px; place-content: space-between;">
+                        <v-row style="margin: 0px; place-content: space-between">
                             <div>
-                                {{name}}
-                                <StatusChip :status="status" size="x-small" type="task"/>
+                                {{ name }}
+                                <StatusChip :status="status" size="x-small" type="task" />
                             </div>
                             <div>
-                                <v-chip v-if="!adhoc && defId"
-                                    color="primary"
-                                    size="small" variant="outlined"
-                                    density="comfortable"
-                                >BPM</v-chip>
+                                <v-chip v-if="!adhoc && defId" color="primary" size="small" variant="outlined" density="comfortable"
+                                    >BPM</v-chip
+                                >
                             </div>
                         </v-row>
                     </v-card-title>
@@ -46,72 +40,76 @@
                         </div>
                         <div v-else>
                             <v-divider class="my-2"></v-divider>
-                            <v-row
-                                :class="isMobile ? 'ma-0 pa-0 flex-column align-center' : 'ma-0 pa-0 align-center'"
-                            >
+                            <v-row :class="isMobile ? 'ma-0 pa-0 flex-column align-center' : 'ma-0 pa-0 align-center'">
                                 <!-- 현 담당자 표시 부분 -->
                                 <div v-if="!assigneeUserInfo || assigneeUserInfo.length == 0" class="text-subtitle-2 text-medium-emphasis">
                                     {{ $t('DelegateTask.noAssignee') }}
                                 </div>
-                                <div v-else v-for="user in assigneeUserInfo" :key="user?.id || user?.email || Math.random()" :class="isMobile ? 'mb-3' : ''">
+                                <div
+                                    v-else
+                                    v-for="user in assigneeUserInfo"
+                                    :key="user?.id || user?.email || Math.random()"
+                                    :class="isMobile ? 'mb-3' : ''"
+                                >
                                     <div v-if="user" class="d-flex align-center">
                                         <div>
                                             <v-avatar v-if="user.profile">
-                                                <v-img :src="user.profile" width="45px" 
+                                                <v-img
+                                                    :src="user.profile"
+                                                    width="45px"
                                                     class="rounded-circle img-fluid"
                                                     @error="user.profile = null"
                                                 />
                                             </v-avatar>
                                             <v-avatar v-else>
-                                                <v-img src="/images/defaultUser.png" width="45px" 
-                                                    class="rounded-circle img-fluid"
-                                                />
+                                                <v-img src="/images/defaultUser.png" width="45px" class="rounded-circle img-fluid" />
                                             </v-avatar>
                                         </div>
                                         <div class="ml-5">
-                                            <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ user.username || user.name || user.email }}</h4>
+                                            <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">
+                                                {{ user.username || user.name || user.email }}
+                                            </h4>
                                             <div class="d-flex align-center">
                                                 <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ user.email }}</div>
-                                                <v-chip v-if="user.id === currentUserUid" 
+                                                <v-chip
+                                                    v-if="user.id === currentUserUid"
                                                     color="primary"
-                                                    size="small" variant="outlined"
+                                                    size="small"
+                                                    variant="outlined"
                                                     density="comfortable"
-                                                >나</v-chip>
+                                                    >나</v-chip
+                                                >
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <v-icon v-if="delegateUser"
-                                    size="48"
-                                    :class="isMobile ? 'my-2' : 'ml-4 mr-4'"
-                                >{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}
+                                <v-icon v-if="delegateUser" size="48" :class="isMobile ? 'my-2' : 'ml-4 mr-4'"
+                                    >{{ isMobile ? 'mdi-arrow-down-bold' : 'mdi-arrow-right-bold' }}
                                 </v-icon>
 
                                 <!-- 위임 대상자 표시 부분 -->
                                 <div v-if="delegateUser" elevation="10" class="pa-0 ma-0">
-                                    <v-card-text 
-                                        class="ma-0 pa-0"
-                                    >
+                                    <v-card-text class="ma-0 pa-0">
                                         <div class="d-flex align-center">
                                             <div class="mr-2">
                                                 <v-avatar v-if="delegateUser.profile && delegateUser.profile.trim() !== ''">
-                                                    <v-img :src="delegateUser.profile" 
-                                                        width="45px" 
+                                                    <v-img
+                                                        :src="delegateUser.profile"
+                                                        width="45px"
                                                         class="rounded-circle img-fluid"
                                                         :key="delegateUser.id || delegateUser.email"
                                                         @error="delegateUser.profile = ''"
                                                     />
                                                 </v-avatar>
                                                 <v-avatar v-else>
-                                                    <v-img src="/images/defaultUser.png" 
-                                                        width="45px" 
-                                                        class="rounded-circle img-fluid"
-                                                    />
+                                                    <v-img src="/images/defaultUser.png" width="45px" class="rounded-circle img-fluid" />
                                                 </v-avatar>
                                             </div>
                                             <div>
-                                                <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">{{ delegateUser.username || delegateUser.name || delegateUser.email }}</h4> 
+                                                <h4 class="text-subtitle-1 font-weight-semibold text-no-wrap">
+                                                    {{ delegateUser.username || delegateUser.name || delegateUser.email }}
+                                                </h4>
                                                 <div class="text-subtitle-1 textSecondary text-no-wrap mt-1">{{ delegateUser.email }}</div>
                                             </div>
                                         </div>
@@ -134,23 +132,23 @@
                             :items-per-page-options="[5, 10, 25]"
                             @click:row="handleUserRowClick"
                             class="elevation-1 delegate-task-form-table"
-                            style="border-radius: 20px;"
+                            style="border-radius: 20px"
                             fixed-header
                         >
                             <template v-slot:top>
                                 <div class="d-flex align-center justify-end pa-3 pb-0">
-                                    <div class="d-flex align-center border border-borderColor rounded-pill px-3"
-                                        style="width: 100%;"
-                                    >
+                                    <div class="d-flex align-center border border-borderColor rounded-pill px-3" style="width: 100%">
                                         <Icons :icon="'magnifer-linear'" :size="18" />
-                                        <v-text-field v-model="searchText"
+                                        <v-text-field
+                                            v-model="searchText"
                                             @keyup.enter="searchUsers"
                                             @click:clear="handleClearSearch"
                                             variant="plain"
                                             density="compact"
                                             class="position-relative pt-0 ml-2 custom-placeholer-color delegate-task-form-search"
                                             :placeholder="$t('DelegateTask.searchUser')"
-                                            single-line hide-details
+                                            single-line
+                                            hide-details
                                         ></v-text-field>
                                     </div>
                                 </div>
@@ -160,11 +158,19 @@
                                     <td class="text-center">
                                         <div class="d-flex justify-center align-center">
                                             <v-avatar size="32">
-                                                <v-img v-if="item.profile" :src="item.profile" width="32px" height="32px" 
+                                                <v-img
+                                                    v-if="item.profile"
+                                                    :src="item.profile"
+                                                    width="32px"
+                                                    height="32px"
                                                     class="rounded-circle img-fluid"
                                                     @error="item.profile = null"
                                                 />
-                                                <v-img v-else src="/images/defaultUser.png" width="32px" height="32px"
+                                                <v-img
+                                                    v-else
+                                                    src="/images/defaultUser.png"
+                                                    width="32px"
+                                                    height="32px"
                                                     class="rounded-circle img-fluid"
                                                 />
                                             </v-avatar>
@@ -175,20 +181,21 @@
                                         <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
                                     </td>
                                     <td class="text-center">
-                                        <v-btn v-if="item.id === currentUserUid"
+                                        <v-btn
+                                            v-if="item.id === currentUserUid"
                                             @click.stop="selectMyself(item)"
-                                            variant="elevated" 
+                                            variant="elevated"
                                             class="rounded-pill default-gray-btn"
                                             density="compact"
                                             prepend-icon="mdi-account"
-                                        >{{ $t('DelegateTask.delegateToMyself') }}
+                                            >{{ $t('DelegateTask.delegateToMyself') }}
                                         </v-btn>
                                     </td>
                                 </tr>
                             </template>
                         </v-data-table>
                     </div>
-                    
+
                     <!-- 모바일 버전: 기존 UserListPage -->
                     <!-- <div v-else>
                         <UserListPage :config="{itemsPerPage: 1, height: 200}" @selected-user="selectedUser"></UserListPage>
@@ -197,21 +204,23 @@
             </v-card-text>
             <v-row class="ma-0 pa-4 pr-2 align-center">
                 <v-spacer></v-spacer>
-                <div v-if="message" style="margin-right: 7px; font-size: small;">{{message}}</div>
-                <v-btn @click="delegate()"
+                <div v-if="message" style="margin-right: 7px; font-size: small">{{ message }}</div>
+                <v-btn
+                    @click="delegate()"
                     color="primary"
-                    variant="elevated" 
+                    variant="elevated"
                     class="rounded-pill"
                     density="compact"
                     :disabled="isDisabled"
-                >{{ $t('DelegateTask.delegate') }}</v-btn>
+                    >{{ $t('DelegateTask.delegate') }}</v-btn
+                >
             </v-row>
         </v-card>
     </div>
 </template>
 <script>
-import StatusChip from '@/components/ui/common/StatusChip.vue'
-import UserListPage from '@/components/ui/list-pages/UserListPage.vue'
+import StatusChip from '@/components/ui/common/StatusChip.vue';
+import UserListPage from '@/components/ui/list-pages/UserListPage.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
@@ -221,7 +230,7 @@ export default {
         StatusChip,
         UserListPage
     },
-    props:{
+    props: {
         task: Object
     },
     data() {
@@ -236,51 +245,51 @@ export default {
             tableHeaders: [
                 { title: this.$t('DelegateTask.profile'), key: 'profile', align: 'center', sortable: false, minWidth: '80px' },
                 { title: this.$t('DelegateTask.userInfo'), key: 'userInfo', align: 'start' },
-                { title: '', key: 'action', align: 'center', sortable: false, width: '120px' },
-            ],
-        }
+                { title: '', key: 'action', align: 'center', sortable: false, width: '120px' }
+            ]
+        };
     },
     computed: {
-        name(){
-            if(!this.task) return '';
+        name() {
+            if (!this.task) return '';
             return this.task.activity.name;
         },
-        description(){
-            if(!this.task) return '';
+        description() {
+            if (!this.task) return '';
             return this.task.worklist.description;
         },
-        status(){
-            if(!this.task) return '';
+        status() {
+            if (!this.task) return '';
             return this.task.worklist.status;
         },
-        adhoc(){
-            if(!this.task) return '';
+        adhoc() {
+            if (!this.task) return '';
             return this.task.worklist.adhoc;
         },
-        endpoint(){
-            if(!this.task) return '';
+        endpoint() {
+            if (!this.task) return '';
             return this.task.worklist.endpoint;
         },
-        startDate(){
-            if(!this.task) return '';
+        startDate() {
+            if (!this.task) return '';
             return this.formatDateTime(this.task.worklist.startDate);
         },
-        dueDate(){
-            if(!this.task) return '';
+        dueDate() {
+            if (!this.task) return '';
             return this.formatDateTime(this.task.worklist.dueDate);
         },
-        defId(){
-            if(!this.task) return '';
-            return this.task.worklist.defId
+        defId() {
+            if (!this.task) return '';
+            return this.task.worklist.defId;
         },
-        isDisabled(){
+        isDisabled() {
             return !this.delegateUser;
         },
-        message(){
-            if(!this.delegateUser) {
-                return this.$t('DelegateTask.selectAssignee')
+        message() {
+            if (!this.delegateUser) {
+                return this.$t('DelegateTask.selectAssignee');
             }
-            return null
+            return null;
         },
         isMobile() {
             return window.innerWidth <= 768;
@@ -289,27 +298,27 @@ export default {
             if (!this.userList) {
                 return [];
             }
-            
+
             let filteredList = [];
-            
+
             // 현재 담당자를 제외한 사용자 목록
             if (this.currentEndpoint) {
-                filteredList = this.userList.filter(user => user.id !== this.currentEndpoint);
+                filteredList = this.userList.filter((user) => user.id !== this.currentEndpoint);
             } else {
                 filteredList = [...this.userList];
             }
-            
+
             // 현재 로그인한 사용자를 최상단으로 이동
             const currentUserUid = localStorage.getItem('uid');
             if (currentUserUid) {
-                const currentUserIndex = filteredList.findIndex(user => user.id === currentUserUid);
+                const currentUserIndex = filteredList.findIndex((user) => user.id === currentUserUid);
                 if (currentUserIndex > 0) {
                     // 현재 사용자를 찾아서 맨 앞으로 이동
                     const currentUser = filteredList.splice(currentUserIndex, 1)[0];
                     filteredList.unshift(currentUser);
                 }
             }
-            
+
             return filteredList;
         },
         currentUserEmail() {
@@ -317,7 +326,7 @@ export default {
         },
         currentUserUid() {
             return localStorage.getItem('uid');
-        },
+        }
     },
     created() {
         this.loadAssigneeInfo();
@@ -343,36 +352,39 @@ export default {
             return `${year}-${month}-${day} / ${hours}:${minutes}`;
         },
         async loadAssigneeInfo() {
-            var me = this
+            var me = this;
             me.$try({
                 action: async () => {
-                    me.isLoading = true
-                    
+                    me.isLoading = true;
+
                     // 현재 할당된 사용자 정보를 최신으로 다시 로딩
-                    if(me.task && me.task.worklist && me.task.worklist.taskId){
+                    if (me.task && me.task.worklist && me.task.worklist.taskId) {
                         // taskId로 최신 워크아이템 정보를 가져와서 현재 담당자 확인
                         const latestWorkItem = await backend.getWorkItem(me.task.worklist.taskId);
-                        
-                        if(latestWorkItem && latestWorkItem.worklist.endpoint){
+
+                        if (latestWorkItem && latestWorkItem.worklist.endpoint) {
                             me.currentEndpoint = latestWorkItem.worklist.endpoint; // 현재 실제 담당자 저장
-                            
+
                             try {
                                 // endpoint가 쉼표로 구분된 여러 사용자일 수 있음
-                                const endpoints = latestWorkItem.worklist.endpoint.includes(',') 
-                                    ? latestWorkItem.worklist.endpoint.split(',').map(e => e.trim()).filter(e => e)
+                                const endpoints = latestWorkItem.worklist.endpoint.includes(',')
+                                    ? latestWorkItem.worklist.endpoint
+                                          .split(',')
+                                          .map((e) => e.trim())
+                                          .filter((e) => e)
                                     : [latestWorkItem.worklist.endpoint];
-                                
+
                                 const userInfoList = [];
-                                
+
                                 for (const endpoint of endpoints) {
                                     if (!endpoint) continue;
-                                    
+
                                     try {
                                         let user = null;
-                                        
+
                                         // UUID 형식인지 체크 (8-4-4-4-12 형태)
                                         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(endpoint);
-                                        
+
                                         if (isUUID) {
                                             try {
                                                 user = await backend.getUserById(endpoint);
@@ -380,7 +392,7 @@ export default {
                                                 user = null;
                                             }
                                         }
-                                        
+
                                         // id로 못 찾았거나 UUID가 아닌 경우 email로 검색
                                         if (!user) {
                                             const isEmail = endpoint.includes('@');
@@ -395,7 +407,7 @@ export default {
                                                 }
                                             }
                                         }
-                                        
+
                                         if (user && user.id) {
                                             userInfoList.push(user);
                                         } else {
@@ -420,7 +432,7 @@ export default {
                                         });
                                     }
                                 }
-                                
+
                                 me.assigneeUserInfo = userInfoList.length > 0 ? userInfoList : [];
                             } catch (error) {
                                 console.error('담당자 정보 로딩 실패:', error);
@@ -431,73 +443,79 @@ export default {
                             me.assigneeUserInfo = [];
                         }
                     }
-                    
-                    me.isLoading = false
-                    
+
+                    me.isLoading = false;
+
                     // 위임 가능한 사용자 목록 로딩
-                    me.loadInitialUsers()
+                    me.loadInitialUsers();
                 }
-            })  
+            });
         },
-        selectedUser(user){
-            this.delegateUser = user
+        selectedUser(user) {
+            this.delegateUser = user;
         },
-        delegate(){
+        delegate() {
             this.$emit('delegate', this.delegateUser, this.assigneeUserInfo);
         },
-        close(){
+        close() {
             this.$emit('close');
         },
         async searchUsers() {
-             var me = this
-             me.$try({
-                 action: async () => {
-                     me.isUserLoading = true;
+            var me = this;
+            me.$try({
+                action: async () => {
+                    me.isUserLoading = true;
 
-                     if(me.searchText && me.searchText.trim().length > 0){
-                         // 이메일로 검색
-                         const emailResults = await backend.getUserList({
-                             orderBy: 'email', 
-                             like: {key: 'email', value: `%${me.searchText.trim()}%`},
-                         });
-                         
-                         // 사용자명으로 검색
-                         const usernameResults = await backend.getUserList({
-                             orderBy: 'username', 
-                             like: {key: 'username', value: `%${me.searchText.trim()}%`},
-                         });
-                         
-                         // 두 결과를 합치고 중복 제거 (이메일 기준)
-                         const allResults = [...(emailResults || []), ...(usernameResults || [])];
-                         const uniqueResults = allResults.filter((user, index, self) => 
-                             index === self.findIndex(u => u.email === user.email)
-                         );
-                         me.userList = uniqueResults;
-                     } else {
-                         me.loadInitialUsers();
-                     }
-                     me.isUserLoading = false;
-                 }
-             });
-         },
-         handleUserRowClick(event) {
-             const user = this.filteredUserList.find(u => u.id === event.id);
-             if (user) {
-                 // Vue 반응성을 위해 완전히 새로운 객체 생성
-                 this.delegateUser = Object.assign({}, {
-                     ...user,
-                     uid: user.id, // id를 uid로 사용
-                     profile: user.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
-                 });
-             }
-         },
+                    if (me.searchText && me.searchText.trim().length > 0) {
+                        // 이메일로 검색
+                        const emailResults = await backend.getUserList({
+                            orderBy: 'email',
+                            like: { key: 'email', value: `%${me.searchText.trim()}%` }
+                        });
+
+                        // 사용자명으로 검색
+                        const usernameResults = await backend.getUserList({
+                            orderBy: 'username',
+                            like: { key: 'username', value: `%${me.searchText.trim()}%` }
+                        });
+
+                        // 두 결과를 합치고 중복 제거 (이메일 기준)
+                        const allResults = [...(emailResults || []), ...(usernameResults || [])];
+                        const uniqueResults = allResults.filter(
+                            (user, index, self) => index === self.findIndex((u) => u.email === user.email)
+                        );
+                        me.userList = uniqueResults;
+                    } else {
+                        me.loadInitialUsers();
+                    }
+                    me.isUserLoading = false;
+                }
+            });
+        },
+        handleUserRowClick(event) {
+            const user = this.filteredUserList.find((u) => u.id === event.id);
+            if (user) {
+                // Vue 반응성을 위해 완전히 새로운 객체 생성
+                this.delegateUser = Object.assign(
+                    {},
+                    {
+                        ...user,
+                        uid: user.id, // id를 uid로 사용
+                        profile: user.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
+                    }
+                );
+            }
+        },
         selectUserFromTable(item) {
             // Vue 반응성을 위해 완전히 새로운 객체 생성
-            this.delegateUser = Object.assign({}, {
-                ...item,
-                uid: item.id, // id를 uid로 사용
-                profile: item.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
-            });
+            this.delegateUser = Object.assign(
+                {},
+                {
+                    ...item,
+                    uid: item.id, // id를 uid로 사용
+                    profile: item.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
+                }
+            );
         },
         async loadInitialUsers() {
             this.isUserLoading = true;
@@ -521,17 +539,20 @@ export default {
         selectMyself(item) {
             // 나에게로 위임 기능 - 바로 위임 실행
             // Vue 반응성을 위해 완전히 새로운 객체 생성
-            this.delegateUser = Object.assign({}, {
-                uid: item.id, // id를 uid로 사용
-                username: item.username,
-                profile: item.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
-            });
-            
+            this.delegateUser = Object.assign(
+                {},
+                {
+                    uid: item.id, // id를 uid로 사용
+                    username: item.username,
+                    profile: item.profile || '' // profile이 undefined일 경우 빈 문자열로 설정
+                }
+            );
+
             // 바로 위임 실행
             this.delegate();
         }
     }
-}
+};
 </script>
 
 <style scoped>

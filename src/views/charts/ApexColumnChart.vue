@@ -30,8 +30,8 @@ const chartOptions = computed(() => {
             height: 350,
             fontFamily: `inherit`,
             toolbar: {
-              show: false,
-            },
+                show: false
+            }
         },
         colors: ['#6ac3fd', '#0b70fb', '#f64e60'],
         plotOptions: {
@@ -42,7 +42,7 @@ const chartOptions = computed(() => {
             }
         },
         dataLabels: {
-            enabled: false,
+            enabled: false
         },
         stroke: {
             show: true,
@@ -59,11 +59,10 @@ const chartOptions = computed(() => {
             }
         },
         yaxis: {
-          title: {
-            text: '$ (thousands)',
-            
-          },
-          labels: {
+            title: {
+                text: '$ (thousands)'
+            },
+            labels: {
                 style: {
                     colors: '#adb0bb'
                 }
@@ -72,26 +71,25 @@ const chartOptions = computed(() => {
         fill: {
             opacity: 1
         },
-       
+
         tooltip: {
             theme: 'dark',
             y: {
-              formatter(val:any) {
-                return `$ ${val} thousands`;
-              },
-            },
+                formatter(val: any) {
+                    return `$ ${val} thousands`;
+                }
+            }
         },
         grid: {
-          show: false,
+            show: false
         },
         legend: {
-          show: true,
-          position: 'bottom',
-          width: '50px',
-          labels: {
-          colors: 'adb0bb',
-
-            },
+            show: true,
+            position: 'bottom',
+            width: '50px',
+            labels: {
+                colors: 'adb0bb'
+            }
         },
         responsive: [
             {

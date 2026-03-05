@@ -7,11 +7,11 @@
             connectable
             deletable
             :id="value.sourceRef + '-' + value.targetRef"
-            :vertices.sync="vertices"
-            :from.sync="value.sourceRef"
-            :to.sync="value.targetRef"
-            :_style.sync="style"
-            :label.sync="namePanel"
+            v-model:vertices="vertices"
+            v-model:from="value.sourceRef"
+            v-model:to="value.targetRef"
+            v-model:_style="style"
+            v-model:label="namePanel"
             :customMoveActionExist="canvas.isCustomMoveExist"
             v-on:customRelationMoveAction="delayedRelationMove"
             v-on:dblclick="showProperty"

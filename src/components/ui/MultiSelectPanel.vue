@@ -54,13 +54,7 @@
                 clearable
             ></v-select>
 
-            <v-btn
-                color="primary"
-                variant="flat"
-                size="small"
-                block
-                @click="confirmApply"
-            >
+            <v-btn color="primary" variant="flat" size="small" block @click="confirmApply">
                 {{ $t('multiSelect.applyChanges') }}
             </v-btn>
         </div>
@@ -138,7 +132,7 @@ export default {
     methods: {
         hasMixedValues(field) {
             if (!this.selectedElements.length) return false;
-            const values = this.selectedElements.map(el => {
+            const values = this.selectedElements.map((el) => {
                 const props = this.getUengineProperties(el);
                 return props?.[field] || null;
             });
@@ -149,7 +143,7 @@ export default {
             try {
                 const bo = element.businessObject;
                 if (!bo?.extensionElements?.values) return {};
-                const ext = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                const ext = bo.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
                 if (ext?.text) return JSON.parse(ext.text);
                 return {};
             } catch {
@@ -160,9 +154,9 @@ export default {
             this.editValues = { duration: null, futureStatus: null, costType: null };
             if (!this.selectedElements.length) return;
 
-            const allProps = this.selectedElements.map(el => this.getUengineProperties(el));
-            ['duration', 'futureStatus', 'costType'].forEach(field => {
-                const values = allProps.map(p => p[field] || null);
+            const allProps = this.selectedElements.map((el) => this.getUengineProperties(el));
+            ['duration', 'futureStatus', 'costType'].forEach((field) => {
+                const values = allProps.map((p) => p[field] || null);
                 const unique = [...new Set(values)];
                 if (unique.length === 1) {
                     this.editValues[field] = unique[0];

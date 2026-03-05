@@ -1,24 +1,23 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class ConditionRuleGenerator extends AIGenerator {
+    constructor(client, options) {
+        super(client, options);
 
-  constructor(client, options) {
-    super(client, options);
+        this.model = 'gpt-4o';
+        this.options = options;
+        const condition = this.options.condition ?? '';
+        const conditionExample = JSON.stringify(this.options.conditionExample, null, 2);
+        const formDefs = JSON.stringify(this.options.formDefs, null, 2);
+        const expectedIoExamples = JSON.stringify(this.options.expectedIoExamples || [], null, 2);
+        const singleFieldTarget = JSON.stringify(this.options.singleFieldTarget || null, null, 2);
+        const previousExpr = typeof this.options.previousExpr === 'string' ? this.options.previousExpr : '';
+        const targetFormKey = JSON.stringify(this.options.targetFormKey || null, null, 2);
 
-    this.model = "gpt-4o";
-    this.options = options;
-    const condition = this.options.condition ?? '';
-    const conditionExample = JSON.stringify(this.options.conditionExample, null, 2);
-    const formDefs = JSON.stringify(this.options.formDefs, null, 2);
-    const expectedIoExamples = JSON.stringify(this.options.expectedIoExamples || [], null, 2);
-    const singleFieldTarget = JSON.stringify(this.options.singleFieldTarget || null, null, 2);
-    const previousExpr = typeof this.options.previousExpr === 'string' ? this.options.previousExpr : '';
-    const targetFormKey = JSON.stringify(this.options.targetFormKey || null, null, 2);
-
-    this.previousMessages = [
-      {
-        role: "system",
-        content: `You are a precise rule-to-code compiler.
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `You are a precise rule-to-code compiler.
  
 GOAL
 - Convert the given natural-language condition into a SINGLE Python boolean expression (no statements) that can be evaluated with eval.
@@ -136,7 +135,7 @@ IO EXAMPLES
  
 OUTPUT
 - Return ONLY the JSON object, no markdown, no extra prose.`
-      }
-    ];
-  }
+            }
+        ];
+    }
 }

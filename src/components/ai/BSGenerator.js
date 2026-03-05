@@ -1,7 +1,6 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class BSGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
         const jsonData = this.client.jsonData;
@@ -10,14 +9,14 @@ export default class BSGenerator extends AIGenerator {
         this.model = 'gpt-4o';
 
         this.initPreviousMessages();
-        
     }
 
     initPreviousMessages() {
-      const jsonData = this.client.jsonData;
-      this.previousMessages = [{
-        "role": "system",
-        "content": `
+        const jsonData = this.client.jsonData;
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `
       당신은 Balanced Scorecard 기반의 전략맵 생성 도우미입니다.
       
       다음 4가지 관점이 있으며, 나열 순서에 따라 상위 → 하위 관계입니다:
@@ -122,19 +121,18 @@ export default class BSGenerator extends AIGenerator {
       
       사용자의 전략 서술 또는 요청을 기반으로, 위 규칙에 따라 strategies JSON을 생성 또는 수정하세요.
       `
-    }];
+            }
+        ];
     }
 
     createPrompt() {
-      const newMessage = this.client.newMessage;
-      const message = `
+        const newMessage = this.client.newMessage;
+        const message = `
             - 사용자의 입력:
             ${newMessage}
             - 기존 전략맵: 
             ${JSON.stringify(jsonData)}
             `;
-      return message;
+        return message;
     }
-      
-
 }

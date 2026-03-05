@@ -1,38 +1,38 @@
 <template>
-    <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available;" persistent
-        :fullscreen="isMobile"
-    >
+    <v-dialog v-model="isOpen" max-width="100%" style="height: -webkit-fill-available" persistent :fullscreen="isMobile">
         <v-card flat>
             <v-card-title class="d-flex pa-4 pb-0">
                 <h5 class="text-h5" :class="{ 'text-truncate': isMobile }" :style="{ maxWidth: isMobile ? '280px' : 'none' }">
                     {{ $t('businessRuleVersionManager.title', { name: currentRuleName }) }}
                 </h5>
-                <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate
-                    style="margin-left: 5px;"
-                ></v-progress-circular>
+                <v-progress-circular v-if="loading" color="primary" :size="25" indeterminate style="margin-left: 5px"></v-progress-circular>
                 <v-btn icon class="ml-auto" variant="text" @click="close" density="compact">
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-card-title>
-            <div class="d-flex pa-4 pt-2 align-center"
-                :class="showXML ? '' : 'pb-0'"
-            >
+            <div class="d-flex pa-4 pt-2 align-center" :class="showXML ? '' : 'pb-0'">
                 <div class="mx-2">
                     <v-tooltip location="bottom">
                         <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                density="comfortable" @click="showXML = !showXML">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                type="file"
+                                class="text-medium-emphasis"
+                                density="comfortable"
+                                @click="showXML = !showXML"
+                            >
                                 <v-icon :color="showXML ? '#1976D2' : '#666666'">mdi-code-tags</v-icon>
                             </v-btn>
                         </template>
-                        <span>{{ showXML ? $t('businessRuleVersionManager.dmnStructureView') : $t('businessRuleVersionManager.xmlView') }}</span>
+                        <span>{{
+                            showXML ? $t('businessRuleVersionManager.dmnStructureView') : $t('businessRuleVersionManager.xmlView')
+                        }}</span>
                     </v-tooltip>
                 </div>
-                <v-btn @click="downloadXML"
-                    color="gray"
-                    variant="flat"
-                    class="rounded-pill mr-2"
-                >{{ $t('businessRuleVersionManager.xmlDownload', { version: currentSelectedVersion }) }}
+                <v-btn @click="downloadXML" color="gray" variant="flat" class="rounded-pill mr-2"
+                    >{{ $t('businessRuleVersionManager.xmlDownload', { version: currentSelectedVersion }) }}
                 </v-btn>
                 <v-btn
                     v-if="!viewerMode"
@@ -41,78 +41,83 @@
                     color="primary"
                     variant="flat"
                     class="rounded-pill"
-                >{{ $t('businessRuleVersionManager.changeToVersion', { version: currentSelectedVersion || '' }) }}
+                    >{{ $t('businessRuleVersionManager.changeToVersion', { version: currentSelectedVersion || '' }) }}
                 </v-btn>
             </div>
 
-            <v-card-text :class="showXML ? 'pa-4 pt-6 pb-0' : 'pa-4'"
-                :style="showXML ? 'height: calc(100vh - 280px);' : 'height: 100vh;'"
-            >
+            <v-card-text :class="showXML ? 'pa-4 pt-6 pb-0' : 'pa-4'" :style="showXML ? 'height: calc(100vh - 280px);' : 'height: 100vh;'">
                 <div class="version-layout" :class="{ 'version-layout-column': isMobile }">
                     <!-- DMN / XML 뷰어 -->
                     <div class="version-main version-main-gutter">
-                        <div v-if="showXML" style="height: 100%; position: relative;">
-                            <div class="version-manager-version-number" style="left: 0px; top: -32px;">
+                        <div v-if="showXML" style="height: 100%; position: relative">
+                            <div class="version-manager-version-number" style="left: 0px; top: -32px">
                                 {{ $t('businessRuleVersionManager.version', { version: currentSelectedVersion || '' }) }}
                             </div>
-                            <div class="version-manager-version-number" style="left: 50%; top: -32px;">
+                            <div class="version-manager-version-number" style="left: 50%; top: -32px">
                                 {{ $t('businessRuleVersionManager.version', { version: rightVersion || '' }) }}
                             </div>
-                            <vuediff :prev="currentSelectedXML || ''" :current="rightXML || ''" mode="split" theme="light"
+                            <vuediff
+                                :prev="currentSelectedXML || ''"
+                                :current="rightXML || ''"
+                                mode="split"
+                                theme="light"
                                 class="version-manager-vuediff-box"
                                 language="xml"
-                                style="height: 100%;"
+                                style="height: 100%"
                             />
                         </div>
-                        <div v-else style="height: 100%; position: relative;">
-                            <v-card outlined
-                                style="width: 100%; height: 100%; position: relative;"
-                                elevation="10"
-                            >
+                        <div v-else style="height: 100%; position: relative">
+                            <v-card outlined style="width: 100%; height: 100%; position: relative" elevation="10">
                                 <!-- 왼쪽: 선택한 버전 -->
-                                <div class="version-manager-version-header" style="left: 16px; top: 16px;">
+                                <div class="version-manager-version-header" style="left: 16px; top: 16px">
                                     <div class="version-manager-version-pill">
                                         {{ $t('businessRuleVersionManager.version', { version: currentSelectedVersion || '' }) }}
                                     </div>
                                 </div>
-                                <div v-if="currentVersionMessage" 
+                                <div
+                                    v-if="currentVersionMessage"
                                     class="version-manager-description"
-                                    :class="{ 'expanded': leftDescExpanded }"
+                                    :class="{ expanded: leftDescExpanded }"
                                     @click="leftDescExpanded = !leftDescExpanded"
-                                    style="left: 16px; top: 44px;"
+                                    style="left: 16px; top: 44px"
                                 >
                                     <span class="desc-text">{{ currentVersionMessage }}</span>
-                                    <v-icon size="14" class="desc-icon">{{ leftDescExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                    <v-icon size="14" class="desc-icon">{{
+                                        leftDescExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'
+                                    }}</v-icon>
                                 </div>
-                                
+
                                 <!-- 오른쪽: 최신 버전 -->
-                                <div class="version-manager-version-header" style="right: 16px; left: auto; top: 16px;">
+                                <div class="version-manager-version-header" style="right: 16px; left: auto; top: 16px">
                                     <div class="version-manager-version-pill">
                                         {{ $t('businessRuleVersionManager.version', { version: rightVersion || '' }) }}
                                     </div>
-                                    <div class="version-manager-production-label" style="margin-left: 8px;">
+                                    <div class="version-manager-production-label" style="margin-left: 8px">
                                         {{ $t('businessRuleVersionManager.latestVersion') }}
                                     </div>
                                 </div>
-                                <div v-if="rightVersionMessage" 
+                                <div
+                                    v-if="rightVersionMessage"
                                     class="version-manager-description"
-                                    :class="{ 'expanded': rightDescExpanded }"
+                                    :class="{ expanded: rightDescExpanded }"
                                     @click="rightDescExpanded = !rightDescExpanded"
-                                    style="right: 16px; left: auto; top: 44px; max-width: calc(50% - 100px);"
+                                    style="right: 16px; left: auto; top: 44px; max-width: calc(50% - 100px)"
                                 >
                                     <span class="desc-text">{{ rightVersionMessage }}</span>
-                                    <v-icon size="14" class="desc-icon">{{ rightDescExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                    <v-icon size="14" class="desc-icon">{{
+                                        rightDescExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'
+                                    }}</v-icon>
                                 </div>
-                                
-                                <div style="height: 100%; overflow-y: auto; padding: 16px; padding-top: 80px;">
+
+                                <div style="height: 100%; overflow-y: auto; padding: 16px; padding-top: 80px">
                                     <!-- 버전이 하나만 있는 경우 -->
                                     <div v-if="lists.length === 1" class="text-medium-emphasis pa-4 text-center">
                                         {{ $t('businessRuleVersionManager.noOtherVersions', { version: rightVersion || '' }) }}
                                     </div>
                                     <!-- 두 버전이 모두 있으면 비교 뷰 표시 (동일한 버전이어도 표시) -->
-                                    <dmn-diff-view 
+                                    <dmn-diff-view
                                         v-else-if="currentSelectedDmn && rightDmn"
-                                        :previous="currentSelectedDmn" 
+                                        :previous="currentSelectedDmn"
                                         :current="rightDmn"
                                     />
                                     <!-- DMN 데이터가 없는 경우 -->
@@ -139,10 +144,7 @@
                                         {{ $t('businessRuleVersionManager.versionList', { count: filteredLists.length }) }}
                                     </span>
                                 </div>
-                                <v-list
-                                    density="compact"
-                                    class="version-list"
-                                >
+                                <v-list density="compact" class="version-list">
                                     <v-list-item
                                         v-for="(item, index) in filteredLists"
                                         :key="item.version || index"
@@ -170,11 +172,7 @@
                             </div>
                             <v-tooltip :text="$t('businessRuleVersionManager.versionListTooltip')" location="right">
                                 <template #activator="{ props }">
-                                    <div
-                                        v-bind="props"
-                                        class="version-toggle-bar"
-                                        @click="versionListExpanded = false"
-                                    >
+                                    <div v-bind="props" class="version-toggle-bar" @click="versionListExpanded = false">
                                         <v-icon size="24" class="mb-1">mdi-chevron-left</v-icon>
                                     </div>
                                 </template>
@@ -185,11 +183,7 @@
                     <!-- 접혔을 때 화면 왼쪽에만 얇은 바 형태로 보이는 토글 -->
                     <v-tooltip v-else :text="$t('businessRuleVersionManager.versionListTooltip')" location="right">
                         <template #activator="{ props }">
-                            <div
-                                v-bind="props"
-                                class="version-toggle-bar version-toggle-bar-collapsed"
-                                @click="versionListExpanded = true"
-                            >
+                            <div v-bind="props" class="version-toggle-bar version-toggle-bar-collapsed" @click="versionListExpanded = true">
                                 <v-icon size="24" class="mb-1">mdi-menu</v-icon>
                                 <span class="version-toggle-label">
                                     {{ $t('businessRuleVersionManager.versionListTooltip') }}
@@ -220,8 +214,8 @@ export default {
         ruleName: String,
         viewerMode: {
             type: Boolean,
-            default: false,
-        },
+            default: false
+        }
     },
     data() {
         return {
@@ -275,7 +269,7 @@ export default {
             this.load();
         }
     },
-    beforeDestroy() {
+    beforeUnmount() {
         window.removeEventListener('resize', this.checkIfMobile);
     },
     methods: {
@@ -287,35 +281,35 @@ export default {
         },
         async load() {
             if (!this.ruleId || !this.backend) return;
-            
+
             this.loading = true;
             this.currentRuleName = this.ruleName || this.$t('businessRuleVersionManager.businessRule');
-            
+
             try {
                 // 버전 목록 조회
                 const versions = await this.backend.getBusinessRuleVersions(this.ruleId);
                 console.log('[BusinessRuleVersionManager] 조회된 버전 목록:', versions);
                 if (versions && versions.length > 0) {
-                    this.lists = versions.map(v => ({
+                    this.lists = versions.map((v) => ({
                         ...v,
                         xml: null,
                         dmn: null
                     }));
                     console.log('[BusinessRuleVersionManager] lists 설정 완료:', this.lists);
-                    
+
                     // 최신 버전 인덱스
                     const latestIndex = this.lists.length - 1;
                     this.currentIndex = latestIndex;
-                    
+
                     // 최신 버전 XML 로드
                     await this.loadVersionXML(latestIndex);
-                    
+
                     // 오른쪽 버전(최신) 설정
                     this.rightVersion = this.lists[latestIndex]?.version;
                     this.rightXML = this.lists[latestIndex]?.xml;
                     this.rightDmn = this.lists[latestIndex]?.dmn;
                     this.rightVersionMessage = this.lists[latestIndex]?.description || '';
-                    
+
                     // 초기 선택 버전 설정 (비교 가능하도록 이전 버전 선택)
                     if (this.lists.length > 1) {
                         // 이전 버전이 있으면 이전 버전 선택
@@ -326,7 +320,7 @@ export default {
                         // 버전이 하나만 있으면 최신 버전 선택
                         await this.handleBeforeChange(latestIndex);
                     }
-                    
+
                     this.isOpen = true;
                 } else {
                     this.$try({
@@ -346,7 +340,7 @@ export default {
         },
         async loadVersionXML(index) {
             if (!this.lists[index]) return;
-            
+
             const version = this.lists[index].version;
             try {
                 // 버전별 DMN XML 로드
@@ -359,7 +353,9 @@ export default {
                         this.lists[index].dmn = parseDmnXml(rule.dmnXml);
                     } else {
                         // dmnXml이 없으면 raw definition에서 직접 로드
-                        const raw = await this.backend.getRawDefinition(`businessRules/${encodeURIComponent(this.ruleId)}`, { type: 'rule' });
+                        const raw = await this.backend.getRawDefinition(`businessRules/${encodeURIComponent(this.ruleId)}`, {
+                            type: 'rule'
+                        });
                         if (raw) {
                             const dto = typeof raw === 'string' ? JSON.parse(raw) : raw;
                             if (dto.ruleJson?.dmnXml) {
@@ -372,7 +368,7 @@ export default {
                     // 이전 버전: versions 폴더에서 로드
                     const versionPath = `businessRules/${encodeURIComponent(this.ruleId)}/versions/${version}`;
                     const versionRaw = await this.backend.getRawDefinition(versionPath, { type: 'rule' });
-                    
+
                     // 파일이 실제로 존재하는지 확인
                     if (!versionRaw) {
                         console.warn(`[loadVersionXML] 버전 파일이 존재하지 않음: ${version}`);
@@ -380,11 +376,9 @@ export default {
                         this.lists.splice(index, 1);
                         return;
                     }
-                    
-                    const versionDto = typeof versionRaw === 'string' 
-                        ? (versionRaw.trim() ? JSON.parse(versionRaw) : null)
-                        : versionRaw;
-                    
+
+                    const versionDto = typeof versionRaw === 'string' ? (versionRaw.trim() ? JSON.parse(versionRaw) : null) : versionRaw;
+
                     if (versionDto && versionDto.ruleJson?.dmnXml) {
                         this.lists[index].xml = versionDto.ruleJson.dmnXml;
                         this.lists[index].dmn = parseDmnXml(versionDto.ruleJson.dmnXml);
@@ -405,16 +399,16 @@ export default {
         async handleBeforeChange(index) {
             this.loading = true;
             if (!this.lists[index]) return;
-            
+
             if (!this.lists[index].xml) {
                 await this.loadVersionXML(index);
             }
-            
+
             this.currentSelectedVersion = this.lists[index].version;
             this.currentSelectedXML = this.lists[index].xml;
             this.currentSelectedDmn = this.lists[index].dmn;
             this.currentVersionMessage = this.lists[index].description || '';
-            
+
             this.loading = false;
             this.key++;
         },
@@ -425,12 +419,12 @@ export default {
         },
         async changeVersion() {
             if (!this.currentSelectedVersion || !this.currentSelectedXML) return;
-            
+
             try {
                 // 선택한 버전의 전체 룰 데이터를 로드
                 const versionPath = `businessRules/${encodeURIComponent(this.ruleId)}/versions/${this.currentSelectedVersion}`;
                 const versionRaw = await this.backend.getRawDefinition(versionPath, { type: 'rule' });
-                
+
                 if (!versionRaw) {
                     this.$try({
                         action: async () => {},
@@ -438,17 +432,17 @@ export default {
                     });
                     return;
                 }
-                
+
                 // 버전 파일에서 받은 JSON을 그대로 가져오기
                 const versionDto = typeof versionRaw === 'string' ? JSON.parse(versionRaw) : versionRaw;
-                
+
                 // 부모 컴포넌트에 버전 파일의 전체 JSON 전달 (현재 룰 파일로 덮어쓰기)
                 this.$emit('versionChanged', {
                     versionDto,
                     ruleId: this.ruleId,
                     version: this.currentSelectedVersion
                 });
-                
+
                 // 다이얼로그 닫기
                 this.isOpen = false;
             } catch (e) {

@@ -1,7 +1,6 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class OrganizationAgentGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
 
@@ -10,11 +9,11 @@ export default class OrganizationAgentGenerator extends AIGenerator {
     }
 
     createPrompt() {
-        const userInput = this.client.userInput
-        const teamName = this.client.teamInfo.data.name
-        const type = this.client.type
-        const mcpTools = this.client.mcpTools || {}
-        const mcpToolsText = JSON.stringify(mcpTools)
+        const userInput = this.client.userInput;
+        const teamName = this.client.teamInfo.data.name;
+        const type = this.client.type;
+        const mcpTools = this.client.mcpTools || {};
+        const mcpToolsText = JSON.stringify(mcpTools);
 
         let systemPrompt = `당신은 조직에서 사용할 AI 에이전트의 정보를 생성하는 전문가입니다.
 사용자가 입력한 요구사항을 바탕으로 "${teamName}" 팀에 적합한 에이전트의 상세 정보를 JSON 형식으로 생성해주세요.
@@ -42,7 +41,6 @@ export default class OrganizationAgentGenerator extends AIGenerator {
 도구 목록:
 ${mcpToolsText}
 `;
-
         } else if (type === 'a2a') {
             systemPrompt += `다음 형식에 맞춰 응답해주세요:
 
@@ -72,5 +70,4 @@ ${mcpToolsText}
 
         return systemPrompt;
     }
-
 }

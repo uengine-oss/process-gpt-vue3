@@ -21,7 +21,6 @@ const breadcrumbs = ref([
     }
 ]);
 
-
 const chartOptions = computed(() => {
     return {
         chart: {
@@ -68,7 +67,7 @@ const chartOptions = computed(() => {
                 '5/11/2001',
                 '6/11/2001'
             ]
-        },  
+        },
         fill: {
             type: 'gradient',
             gradient: {
@@ -97,7 +96,7 @@ const chartOptions = computed(() => {
             max: 40
         },
         grid: {
-            show: false,
+            show: false
         },
         tooltip: {
             theme: 'light'
@@ -119,7 +118,7 @@ const gredientChart = {
     <!-- ---------------------------------------------------- -->
     <!-- Gredient Chart -->
     <!-- ---------------------------------------------------- -->
-    
+
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs"></BaseBreadcrumb>
     <v-row>
         <v-col cols="12">

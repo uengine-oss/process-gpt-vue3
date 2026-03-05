@@ -17,7 +17,7 @@ export const useEcomStore = defineStore({
         discount: 5,
         total: 0,
         addresses: [],
-        color: 'All',
+        color: 'All'
     }),
     getters: {},
     actions: {
@@ -116,8 +116,6 @@ export const useEcomStore = defineStore({
         },
 
         //Reset Filter
-        filterReset(){}
-
-
+        filterReset() {}
     }
 });

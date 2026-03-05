@@ -1,28 +1,28 @@
 <template>
-    
-    <div style="height: 100%; position: relative;" 
-        ref="container" class="vue-bpmn-diagram-container" 
-        :class="{ 'view-mode': isViewMode, 'vue-bpmn-diagram-container-view-mode': isViewMode, 'not-pal': !isPal }" 
-        v-hammer:pan="onPan" 
+    <div
+        style="height: 100%; position: relative"
+        ref="container"
+        class="vue-bpmn-diagram-container"
+        :class="{ 'view-mode': isViewMode, 'vue-bpmn-diagram-container-view-mode': isViewMode, 'not-pal': !isPal }"
+        v-hammer:pan="onPan"
         v-hammer:pinch="onPinch"
     >
-        <div :class="isMobile ? 'mobile-position' : 'desktop-position'"
-            :style="laneAssignments.length > 0 ? 'top: 38px;' : ''"
-        >
+        <div :class="isMobile ? 'mobile-position' : 'desktop-position'" :style="laneAssignments.length > 0 ? 'top: 38px;' : ''">
             <div class="pa-1" :class="isMobile ? 'mobile-style' : 'desktop-style'">
-                <v-icon @click="resetZoom" style="color: #444; cursor: pointer;">mdi-crosshairs-gps</v-icon>
-                <v-icon @click="zoomIn" style="color: #444; cursor: pointer;">mdi-plus</v-icon>
-                <v-icon @click="zoomOut" style="color: #444; cursor: pointer;">mdi-minus</v-icon>
-                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer;">mdi-crop-rotate</v-icon>
-                <v-icon @click="capturePng" style="color: #444; cursor: pointer;">mdi-download</v-icon>
+                <v-icon @click="resetZoom" style="color: #444; cursor: pointer">mdi-crosshairs-gps</v-icon>
+                <v-icon @click="zoomIn" style="color: #444; cursor: pointer">mdi-plus</v-icon>
+                <v-icon @click="zoomOut" style="color: #444; cursor: pointer">mdi-minus</v-icon>
+                <v-icon @click="changeOrientation" style="color: #444; cursor: pointer">mdi-crop-rotate</v-icon>
+                <v-icon @click="capturePng" style="color: #444; cursor: pointer">mdi-download</v-icon>
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
                         <v-icon
                             v-bind="props"
                             @click="showExpandedProcessView"
-                            style="color: #444; cursor: pointer;"
+                            style="color: #444; cursor: pointer"
                             :class="{ 'text-primary': showExpandedView }"
-                        >mdi-sitemap</v-icon>
+                            >mdi-sitemap</v-icon
+                        >
                     </template>
                     <span>{{ $t('BpmnUengineViewer.expandedView') }}</span>
                 </v-tooltip>
@@ -30,54 +30,38 @@
         </div>
         <!-- 참여자 보기 툴팁 -->
         <div v-if="laneAssignments.length > 0" class="participants-tooltip-wrapper">
-            <v-menu
-                open-on-hover
-                :open-delay="200"
-                :close-delay="200"
-                location="bottom"
-                max-width="400"
-            >
+            <v-menu open-on-hover :open-delay="200" :close-delay="200" location="bottom" max-width="400">
                 <template v-slot:activator="{ props }">
-                    <v-btn
-                        v-bind="props"
-                        icon
-                        size="x-small"
-                        variant="text"
-                        class="detail-info-button"
-                    >
+                    <v-btn v-bind="props" icon size="x-small" variant="text" class="detail-info-button">
                         <v-icon>mdi-account-group</v-icon>
                     </v-btn>
                 </template>
 
                 <v-card class="participants-popup-card">
                     <v-card-title class="pa-4 pb-2 d-flex align-center">
-                        <v-icon class="mr-2" style="flex-shrink: 0;">mdi-account-group</v-icon>
+                        <v-icon class="mr-2" style="flex-shrink: 0">mdi-account-group</v-icon>
                         <span class="participants-title-text">{{ $t('BpmnUengineViewer.viewParticipants') }}</span>
                     </v-card-title>
 
                     <v-divider class="my-1"></v-divider>
 
-                    <v-card-text class="pa-0" style="max-height: 400px; overflow-y: auto;">
+                    <v-card-text class="pa-0" style="max-height: 400px; overflow-y: auto">
                         <div v-for="assignment in laneAssignments" :key="assignment.laneId" class="participant-item pa-2">
                             <div class="d-flex align-center">
                                 <v-avatar size="32" class="mr-3">
-                                    <v-img 
-                                        :src="assignment.profileImage" 
-                                        :alt="assignment.assignee"
-                                        cover
-                                    >
+                                    <v-img :src="assignment.profileImage" :alt="assignment.assignee" cover>
                                         <template v-slot:error>
                                             <v-img src="/images/defaultUser.png" cover>
                                                 <template v-slot:error>
-                                                    <v-icon size="small" style="color: #666;">mdi-account</v-icon>
+                                                    <v-icon size="small" style="color: #666">mdi-account</v-icon>
                                                 </template>
                                             </v-img>
                                         </template>
                                     </v-img>
                                 </v-avatar>
                                 <div class="flex-grow-1">
-                                    <div class="text-body-2 font-weight-medium" style="color: #444;">{{ assignment.laneName }}</div>
-                                    <div class="text-caption" style="color: #666;">{{ assignment.assignee }}</div>
+                                    <div class="text-body-2 font-weight-medium" style="color: #444">{{ assignment.laneName }}</div>
+                                    <div class="text-caption" style="color: #666">{{ assignment.assignee }}</div>
                                 </div>
                             </div>
                         </div>
@@ -85,21 +69,17 @@
                 </v-card>
             </v-menu>
         </div>
-        <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10;">
+        <div v-if="previewersXMLLists.length > 0" style="position: absolute; top: 0px; left: 20px; pointer-events: auto; z-index: 10">
             <v-row class="ma-0 pa-0">
                 <div v-for="(previewer, index) in previewersXMLLists" :key="index">
-                    <h6 @click="goToPreviewer(index)" 
-                        class="text-h6 cursor-pointer"
-                        style="color: #444;"
-                    >{{ previewer.name }}</h6>
-                    <v-icon v-if="index < previewersXMLLists.length - 1"
-                    >mdi-chevron-right
-                    </v-icon>
+                    <h6 @click="goToPreviewer(index)" class="text-h6 cursor-pointer" style="color: #444">{{ previewer.name }}</h6>
+                    <v-icon v-if="index < previewersXMLLists.length - 1">mdi-chevron-right </v-icon>
                 </div>
                 <div class="ma-0 pa-0 d-flex">
                     <v-icon>mdi-chevron-right</v-icon>
-                    <h6 class="text-h6 font-weight-semibold"
-                    >{{ bpmnViewer._definitions.name.slice(bpmnViewer._definitions.name.indexOf('/') + 1) }}</h6>
+                    <h6 class="text-h6 font-weight-semibold">
+                        {{ bpmnViewer._definitions.name.slice(bpmnViewer._definitions.name.indexOf('/') + 1) }}
+                    </h6>
                 </div>
             </v-row>
         </div>
@@ -128,8 +108,11 @@
                         <v-list-item
                             v-for="(item, index) in expandedProcessList"
                             :key="index"
-                            :style="{ paddingLeft: (item.depth * 16 + 16) + 'px' }"
-                            @click="navigateToProcess(item.childDefId); showExpandedView = false;"
+                            :style="{ paddingLeft: item.depth * 16 + 16 + 'px' }"
+                            @click="
+                                navigateToProcess(item.childDefId);
+                                showExpandedView = false;
+                            "
                         >
                             <template #prepend>
                                 <v-icon size="18" color="primary">
@@ -148,7 +131,6 @@
                 </v-card-text>
             </v-card>
         </v-dialog>
-
     </div>
 </template>
 
@@ -213,15 +195,13 @@ export default {
         onLoadStart: {
             type: Function,
             default: () => {
-                return () => {
-                }
+                return () => {};
             }
         },
         onLoadEnd: {
             type: Function,
             default: () => {
-                return () => {
-                }
+                return () => {};
             }
         }
     },
@@ -259,7 +239,7 @@ export default {
         },
         isPal() {
             return window.$pal;
-        },
+        }
     },
     mounted() {
         this.onLoadStart();
@@ -311,7 +291,7 @@ export default {
             if (newVal && Object.keys(newVal).length > 0) {
                 const canvas = this.bpmnViewer.get('canvas');
                 const elementRegistry = this.bpmnViewer.get('elementRegistry');
-                Object.keys(newVal).forEach(activityId => {
+                Object.keys(newVal).forEach((activityId) => {
                     try {
                         const el = elementRegistry.get(activityId);
                         if (!el) return;
@@ -344,38 +324,36 @@ export default {
             const allUsers = await backend.getUserList({});
 
             // 모든 레인 찾기
-            const lanes = elementRegistry.filter(el => el.type === 'bpmn:Lane');
+            const lanes = elementRegistry.filter((el) => el.type === 'bpmn:Lane');
 
             // workList의 각 작업에 대해 BPMN 요소를 찾아서 담당자 정보 수집
-            workList.forEach(workItem => {
+            workList.forEach((workItem) => {
                 // tracingTag를 통해 해당하는 BPMN 요소 찾기
                 const bpmnElement = elementRegistry.get(workItem.tracingTag);
-                
+
                 if (bpmnElement && bpmnElement.businessObject) {
                     // 현재 요소가 레인(Lane)인지 확인
-                    const associatedLane = lanes.find(lane => {
+                    const associatedLane = lanes.find((lane) => {
                         // 레인에 속한 활동들 중에 현재 활동이 있는지 확인
-                        return lane.businessObject.flowNodeRef && 
-                               lane.businessObject.flowNodeRef.some(ref => ref.id === workItem.tracingTag);
+                        return (
+                            lane.businessObject.flowNodeRef && lane.businessObject.flowNodeRef.some((ref) => ref.id === workItem.tracingTag)
+                        );
                     });
-                    
+
                     if (associatedLane) {
                         const laneId = associatedLane.id;
                         const laneName = associatedLane.businessObject.name || '역할';
                         const displayName = workItem.username || workItem.endpoint || '미지정';
-                        
+
                         // 사용자 정보에서 프로필 이미지 찾기
-                        const userInfo = allUsers.find(user => 
-                            user.username === workItem.username || 
-                            user.id === workItem.endpoint
-                        );
-                        
+                        const userInfo = allUsers.find((user) => user.username === workItem.username || user.id === workItem.endpoint);
+
                         // 프로필 이미지 경로 처리
                         let profileImage = '/images/defaultUser.png';
                         if (userInfo?.profile) {
                             profileImage = userInfo.profile;
                         }
-                        
+
                         // 중복 방지를 위해 Map 사용
                         if (!assignmentMap.has(laneId)) {
                             assignmentMap.set(laneId, {
@@ -396,7 +374,7 @@ export default {
                 const bNum = parseInt(b.laneId.replace('Lane_', ''));
                 return aNum - bNum;
             });
-            
+
             // Map을 배열로 변환하여 laneAssignments에 저장
             self.laneAssignments = sortedAssignments;
         },
@@ -407,19 +385,21 @@ export default {
         async openCallActivity(element) {
             const self = this;
             const callJsonText = element.businessObject?.extensionElements?.values[0]?.$children[0]?.$body;
-            if(callJsonText) {
+            if (callJsonText) {
                 const callJson = JSON.parse(callJsonText);
                 const callId = callJson.definitionId;
-                const callDefinition = await backend.getRawDefinition(callId.replace('.bpmn', ''), { type: 'bpmn', version: callJson.version });
+                const callDefinition = await backend.getRawDefinition(callId.replace('.bpmn', ''), {
+                    type: 'bpmn',
+                    version: callJson.version
+                });
                 const previewerXML = await self.bpmnViewer.saveXML({ format: true, preamble: true });
-
 
                 const previewerObject = {
                     xml: previewerXML.xml,
                     name: self.bpmnViewer._definitions.name.slice(self.bpmnViewer._definitions.name.indexOf('/') + 1),
                     activityStatus: self.activityStatus,
                     instanceId: self.currentInstanceId
-                }
+                };
                 self.previewersXMLLists.push(previewerObject);
                 self.diagramXML = callDefinition;
             }
@@ -455,9 +435,7 @@ export default {
                     const tempRegistry = tempViewer.get('elementRegistry');
 
                     // CallActivity 및 SubProcess 요소 찾기
-                    const callActivities = tempRegistry.filter(el =>
-                        el.type === 'bpmn:CallActivity' || el.type === 'bpmn:SubProcess'
-                    );
+                    const callActivities = tempRegistry.filter((el) => el.type === 'bpmn:CallActivity' || el.type === 'bpmn:SubProcess');
 
                     for (const activity of callActivities) {
                         const callJsonText = activity.businessObject?.extensionElements?.values?.[0]?.$children?.[0]?.$body;
@@ -534,14 +512,14 @@ export default {
             }
         },
         async setSubProcessInstance(instanceId) {
-            if(instanceId) {
+            if (instanceId) {
                 const variables = await this.getVariables(instanceId);
                 this.subProcessInstances = {};
 
                 for (let key in variables) {
                     if (key.startsWith('Activity') && key.indexOf('instanceIdOfSubProcess') > 0) {
                         let activityKey = key.split(':')[0];
-                        let instanceIds = variables[key].split(',').map(id => id.trim());
+                        let instanceIds = variables[key].split(',').map((id) => id.trim());
                         this.subProcessInstances[activityKey] = instanceIds;
                     }
                 }
@@ -579,7 +557,7 @@ export default {
                     return;
                 }
 
-                var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+                var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
 
                 zoomScroll.reset();
 
@@ -587,8 +565,11 @@ export default {
                 let contentBBox;
                 if (allPools.length > 0) {
                     // Pool이 있으면 모든 Pool의 통합 bbox 계산
-                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                    allPools.forEach(pool => {
+                    let minX = Infinity,
+                        minY = Infinity,
+                        maxX = -Infinity,
+                        maxY = -Infinity;
+                    allPools.forEach((pool) => {
                         const bbox = canvas.getAbsoluteBBox(pool);
                         if (bbox) {
                             minX = Math.min(minX, bbox.x);
@@ -630,18 +611,18 @@ export default {
                 }
 
                 // ✅ 줌 제한 핸들러
-                canvas._eventBus.on('zoom', function(event) {
+                canvas._eventBus.on('zoom', function (event) {
                     let zoomLevel = event.scale;
 
                     if (zoomLevel < 0.2) {
-                    zoomLevel = 0.2;
+                        zoomLevel = 0.2;
                     } else if (zoomLevel > 2) {
-                    zoomLevel = 2;
+                        zoomLevel = 2;
                     }
 
                     canvas.zoom(zoomLevel, {
-                    x: canvas._cachedViewbox.inner.width / 2,
-                    y: canvas._cachedViewbox.inner.height / 2
+                        x: canvas._cachedViewbox.inner.width / 2,
+                        y: canvas._cachedViewbox.inner.height / 2
                     });
                 });
 
@@ -693,7 +674,8 @@ export default {
             const container = this.$refs.container;
             if (!container) return;
 
-            domtoimage.toPng(container, { bgcolor: 'white' })
+            domtoimage
+                .toPng(container, { bgcolor: 'white' })
                 .then((dataUrl) => {
                     const link = document.createElement('a');
                     link.href = dataUrl;
@@ -720,8 +702,8 @@ export default {
 
                 var canvas = self.bpmnViewer.get('canvas');
                 var elementRegistry = self.bpmnViewer.get('elementRegistry');
-                var allPools = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-                
+                var allPools = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+
                 self.resetZoom();
 
                 var overlays = self.bpmnViewer.get('overlays');
@@ -782,7 +764,8 @@ export default {
                                             });
                                             idx = idx + 1;
                                         } else if (
-                                            self.selectedExecutionScope.parent == self.executionScopeActivities[activity][executionScope].parent
+                                            self.selectedExecutionScope.parent ==
+                                            self.executionScopeActivities[activity][executionScope].parent
                                         ) {
                                             let list = `<button class="v-btn v-btn--block v-btn--elevated v-theme--light rounded-xl  v-btn--variant-elevated">${executionScope}</buton>\n`;
                                             let overlayHtml = $(`<div >${list}</div>`);
@@ -824,14 +807,12 @@ export default {
                                 }
                             });
                         });
-                    } 
-                    
-                
+                    }
                 }
 
                 // 차이점 시각화 처리 추가
                 if (self.diffActivities && Object.keys(self.diffActivities).length > 0) {
-                    Object.keys(self.diffActivities).forEach(activityId => {
+                    Object.keys(self.diffActivities).forEach((activityId) => {
                         try {
                             const changeType = self.diffActivities[activityId];
                             if (activityId && changeType) {
@@ -848,12 +829,12 @@ export default {
                 }
 
                 await self.setSubProcessInstance(self.currentInstanceId);
-                if(self.subProcessInstances && Object.keys(self.subProcessInstances).length > 0) {
+                if (self.subProcessInstances && Object.keys(self.subProcessInstances).length > 0) {
                     Object.keys(self.subProcessInstances).forEach((key) => {
                         const element = elementRegistry.get(key);
                         if (element) {
                             let dropdownHtml = `<select class="instance-select-box">`;
-                                dropdownHtml += `<option value=""hidden style="text-align: center;">인스턴스 선택 ▼</option>\n`; // 기본값으로 아무것도 선택되지 않음
+                            dropdownHtml += `<option value=""hidden style="text-align: center;">인스턴스 선택 ▼</option>\n`; // 기본값으로 아무것도 선택되지 않음
                             self.subProcessInstances[key].forEach((subProcessId, idx) => {
                                 dropdownHtml += `<option class="instance-select-list" value="${subProcessId}">${subProcessId}</option>\n`;
                             });
@@ -886,12 +867,12 @@ export default {
                         }
                     }
                 });
-                
-                if(!self.activityStatus) {
+
+                if (!self.activityStatus) {
                     self.activityStatus = self.taskStatus;
                 }
                 self.setTaskStatus(self.activityStatus);
-                
+
                 self.setRoleMapping();
 
                 let endTime = performance.now();
@@ -903,7 +884,7 @@ export default {
         initializeViewer() {
             var container = this.$refs.container;
             var self = this;
-            var Blocker = function(eventBus) {
+            var Blocker = function (eventBus) {
                 const ignoreEvent = (event) => {
                     event.preventDefault();
                 };
@@ -928,43 +909,41 @@ export default {
                 eventBus.on('directEditing.activate', ignoreEvent);
                 eventBus.on('directEditing.deactivate', ignoreEvent);
                 eventBus.on('directEditing.cancel', ignoreEvent);
-            }
+            };
 
             Blocker.$inject = ['eventBus'];
             const blockEditingInteractions = {
-                    __init__: ['blocker'],
-                    blocker: ['type', Blocker]
-                };
+                __init__: ['blocker'],
+                blocker: ['type', Blocker]
+            };
 
-                var viewerOptions = Object.assign(
+            var viewerOptions = Object.assign({
+                container: container,
+                keyboard: {
+                    bindTo: window
+                },
+                additionalModules: [
+                    customBpmnModule,
                     {
-                        container: container,
-                        keyboard: {
-                            bindTo: window
-                        },
-                        additionalModules: [
-                            customBpmnModule,
-                            {
-                                __init__: ['paletteProvider'],
-                                paletteProvider: ['type', paletteProvider],
-                                viewModeFlag: ['value', true] 
-                            },
-                            {
-                                __init__: ['contextPadProvider'],
-                                contextPadProvider: ['value', {}]
-                            },
-                            blockEditingInteractions,
-                            ZoomScroll,
-                            MoveCanvas
-                        ],
-                        moddleExtensions: {
-                            uengine: uEngineModdleDescriptor,
-                            zeebe: zeebeModdleDescriptor,
-                            phase: phaseModdle
-                        },
-                        propertiesPanel: {}
-                    }
-                );
+                        __init__: ['paletteProvider'],
+                        paletteProvider: ['type', paletteProvider],
+                        viewModeFlag: ['value', true]
+                    },
+                    {
+                        __init__: ['contextPadProvider'],
+                        contextPadProvider: ['value', {}]
+                    },
+                    blockEditingInteractions,
+                    ZoomScroll,
+                    MoveCanvas
+                ],
+                moddleExtensions: {
+                    uengine: uEngineModdleDescriptor,
+                    zeebe: zeebeModdleDescriptor,
+                    phase: phaseModdle
+                },
+                propertiesPanel: {}
+            });
 
             self.bpmnViewer = new BpmnModeler(viewerOptions);
         },
@@ -972,8 +951,8 @@ export default {
             let self = this;
             var canvas = self.bpmnViewer.get('canvas');
             var elementRegistry = self.bpmnViewer.get('elementRegistry');
-            
-            if(val) {
+
+            if (val) {
                 try {
                     // 포커싱 대상이 될 태스크 ID들을 임시로 수집
                     const focusIds = [];
@@ -981,7 +960,7 @@ export default {
                     // 현재 러닝 상태인 태스크들을 먼저 파악
                     const currentRunningTasks = [];
                     Object.keys(val).forEach((task) => {
-                        if(val[task] === 'Running') {
+                        if (val[task] === 'Running') {
                             currentRunningTasks.push(task);
                         }
                     });
@@ -1004,18 +983,18 @@ export default {
                     // 태스크 상태별 처리 및 포커싱 대상 수집
                     Object.keys(val).forEach((task) => {
                         let taskStatus = val[task];
-                        
+
                         try {
-                            if(taskStatus == 'Completed') {
+                            if (taskStatus == 'Completed') {
                                 canvas.addMarker(task, 'completed');
-                            } else if(taskStatus == 'Running') {
+                            } else if (taskStatus == 'Running') {
                                 canvas.addMarker(task, 'running');
                                 focusIds.push(task);
-                                
+
                                 const taskElement = elementRegistry.get(task);
 
                                 // 러닝 상태인 태스크에서 나가는 연결선에 애니메이션 적용
-                                if (taskElement && taskElement.businessObject.outgoing  && this.lineAnimation) {
+                                if (taskElement && taskElement.businessObject.outgoing && this.lineAnimation) {
                                     taskElement.businessObject.outgoing.forEach((flow) => {
                                         try {
                                             const flowElement = elementRegistry.get(flow.id);
@@ -1026,12 +1005,12 @@ export default {
                                                     if (!flowGfx.classList.contains('djs-connection')) {
                                                         connectionElement = flowGfx.closest('.djs-connection') || flowGfx;
                                                     }
-                                                    
+
                                                     if (connectionElement) {
                                                         connectionElement.classList.add('running-task-line');
                                                     }
                                                 }
-                                                
+
                                                 // 연결선의 목적지 태스크에도 running 마커 적용
                                                 const targetRef = flow.targetRef;
                                                 if (targetRef && targetRef.id) {
@@ -1046,7 +1025,11 @@ export default {
                                 }
 
                                 // 러닝 상태인 태스크로 들어오는 이전 Completed 태스크도 포커싱 목록에 포함
-                                if (taskElement && taskElement.businessObject.incoming && Array.isArray(taskElement.businessObject.incoming)) {
+                                if (
+                                    taskElement &&
+                                    taskElement.businessObject.incoming &&
+                                    Array.isArray(taskElement.businessObject.incoming)
+                                ) {
                                     taskElement.businessObject.incoming.forEach((flow) => {
                                         try {
                                             const sourceRef = flow.sourceRef;
@@ -1058,13 +1041,13 @@ export default {
                                         }
                                     });
                                 }
-                            } else if(taskStatus == 'Skipped' || taskStatus == 'SKIPPED') {
+                            } else if (taskStatus == 'Skipped' || taskStatus == 'SKIPPED') {
                                 canvas.addMarker(task, 'skipped');
-                            } else if(taskStatus == 'Stopped') {
+                            } else if (taskStatus == 'Stopped') {
                                 canvas.addMarker(task, 'stopped');
-                            } else if(taskStatus == 'Cancelled') {
+                            } else if (taskStatus == 'Cancelled') {
                                 canvas.addMarker(task, 'cancelled');
-                            } else if(taskStatus == 'Failed') {
+                            } else if (taskStatus == 'Failed') {
                                 canvas.addMarker(task, 'failed');
                             }
                         } catch (e) {
@@ -1093,14 +1076,17 @@ export default {
                 if (!canvas || !elementRegistry) return;
 
                 const elements = taskIds
-                    .map(id => elementRegistry.get(id))
-                    .filter(el => el && el.x != null && el.y != null && el.width != null && el.height != null);
+                    .map((id) => elementRegistry.get(id))
+                    .filter((el) => el && el.x != null && el.y != null && el.width != null && el.height != null);
 
                 if (elements.length === 0) return;
 
                 // 모든 대상 태스크들의 bounding box 중심 (다이어그램 좌표)
-                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-                elements.forEach(el => {
+                let minX = Infinity,
+                    minY = Infinity,
+                    maxX = -Infinity,
+                    maxY = -Infinity;
+                elements.forEach((el) => {
                     const x1 = el.x;
                     const y1 = el.y;
                     const x2 = el.x + el.width;
@@ -1160,10 +1146,10 @@ export default {
             var self = this;
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
-            participant.forEach(element => {
+            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
+            participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
-                if(horizontal) {
+                if (horizontal) {
                     palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                     element.di.isHorizontal = false;
                 } else {
@@ -1175,33 +1161,33 @@ export default {
         initDefaultOrientation(orientation = null) {
             let self = this;
             const elementRegistry = self.bpmnViewer.get('elementRegistry');
-            const participant = elementRegistry.filter(element => element.type === 'bpmn:Participant');
+            const participant = elementRegistry.filter((element) => element.type === 'bpmn:Participant');
             const palleteProvider = self.bpmnViewer.get('paletteProvider');
             let isHorizontal = false;
-            if(self.isMobile) {
+            if (self.isMobile) {
                 isHorizontal = false;
             } else {
                 isHorizontal = true;
             }
 
-            if(orientation) {
-                if(orientation === 'horizontal') {
+            if (orientation) {
+                if (orientation === 'horizontal') {
                     isHorizontal = true;
                 } else {
                     isHorizontal = false;
                 }
             }
-            
-            participant.forEach(element => {
+
+            participant.forEach((element) => {
                 const horizontal = element.di.isHorizontal;
-                if(isHorizontal && !horizontal) {
-                    if(element.width < element.height) {
+                if (isHorizontal && !horizontal) {
+                    if (element.width < element.height) {
                         palleteProvider.changeParticipantVerticalToHorizontal(event, element, self.onLoadStart, self.onLoadEnd);
                         self.isHorizontal = true;
                         element.di.isHorizontal = true;
                     }
-                } else if(!isHorizontal && horizontal) {
-                    if(element.width > element.height) {
+                } else if (!isHorizontal && horizontal) {
+                    if (element.width > element.height) {
                         palleteProvider.changeParticipantHorizontalToVertical(event, element, self.onLoadStart, self.onLoadEnd);
                         self.isHorizontal = false;
                         element.di.isHorizontal = false;
@@ -1217,11 +1203,11 @@ export default {
             if (!container) return;
 
             this.resizeObserver = new ResizeObserver(() => {
-            if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
+                if (this.resizeTimeout) clearTimeout(this.resizeTimeout);
 
-            this.resizeTimeout = setTimeout(() => {
-                this.onContainerResizeFinished();
-            }, 200);
+                this.resizeTimeout = setTimeout(() => {
+                    this.onContainerResizeFinished();
+                }, 200);
             });
 
             this.resizeObserver.observe(container);
@@ -1237,7 +1223,7 @@ export default {
 
             const { width, height } = container.getBoundingClientRect();
 
-            if(width - 100 > height) {
+            if (width - 100 > height) {
                 this.initDefaultOrientation('horizontal');
             } else {
                 this.initDefaultOrientation('vertical');
@@ -1250,27 +1236,27 @@ export default {
             }
 
             const canvas = this.bpmnViewer.get('canvas');
-            
+
             if (ev.type === 'panstart') {
-            const viewbox = canvas.viewbox();
-            this.panStart = { x: viewbox.x, y: viewbox.y };
+                const viewbox = canvas.viewbox();
+                this.panStart = { x: viewbox.x, y: viewbox.y };
             }
 
             if (ev.type === 'panmove') {
-            const viewbox = canvas.viewbox();
-            const scale = viewbox.scale || 1;
+                const viewbox = canvas.viewbox();
+                const scale = viewbox.scale || 1;
 
-            canvas.viewbox({
-                x: this.panStart.x - ev.deltaX / scale,
-                y: this.panStart.y - ev.deltaY / scale,
-                width: viewbox.width,
-                height: viewbox.height
-            });
+                canvas.viewbox({
+                    x: this.panStart.x - ev.deltaX / scale,
+                    y: this.panStart.y - ev.deltaY / scale,
+                    width: viewbox.width,
+                    height: viewbox.height
+                });
             }
 
             if (ev.type === 'panend') {
             }
-            
+
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
         },
@@ -1283,17 +1269,17 @@ export default {
             const canvas = this.bpmnViewer.get('canvas');
 
             if (ev.type === 'pinchstart') {
-            this.pinchStartZoom = canvas.zoom();
+                this.pinchStartZoom = canvas.zoom();
             }
 
             if (ev.type === 'pinchmove') {
-            const newZoom = this.pinchStartZoom * ev.scale;
-            canvas.zoom(newZoom);
+                const newZoom = this.pinchStartZoom * ev.scale;
+                canvas.zoom(newZoom);
             }
 
             if (ev.type === 'pinchend') {
             }
-            
+
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
         }
@@ -1353,82 +1339,82 @@ export default {
 }
 
 /* 연결선(Sequence Flow)만을 위한 스타일 */
-[data-element-id*="SequenceFlow"].bpmn-diff-added .djs-visual > path {
+[data-element-id*='SequenceFlow'].bpmn-diff-added .djs-visual > path {
     stroke: #2ecc71 !important; /* 초록색 - 추가된 연결선 */
     stroke-width: 3px !important;
 }
 
-[data-element-id*="SequenceFlow"].bpmn-diff-deleted .djs-visual > path {
+[data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual > path {
     stroke: #e74c3c !important; /* 빨간색 - 삭제된 연결선 */
     stroke-width: 3px !important;
 }
 
-[data-element-id*="SequenceFlow"].bpmn-diff-modified .djs-visual > path {
+[data-element-id*='SequenceFlow'].bpmn-diff-modified .djs-visual > path {
     stroke: #f39c12 !important; /* 주황색 - 수정된 연결선 */
     stroke-width: 3px !important;
 }
 
 /* 연결선의 화살표 마커 - 추가/삭제만 */
-[data-element-id*="SequenceFlow"].bpmn-diff-added .djs-visual > path[marker-end] {
+[data-element-id*='SequenceFlow'].bpmn-diff-added .djs-visual > path[marker-end] {
     stroke: #2ecc71 !important;
     stroke-width: 3px !important;
 }
 
-[data-element-id*="SequenceFlow"].bpmn-diff-deleted .djs-visual > path[marker-end] {
+[data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual > path[marker-end] {
     stroke: #e74c3c !important;
     stroke-width: 3px !important;
 }
 
 /* 화살표 마커 자체에 대한 스타일 */
-[data-element-id*="SequenceFlow"].bpmn-diff-added .djs-visual marker path {
+[data-element-id*='SequenceFlow'].bpmn-diff-added .djs-visual marker path {
     fill: #2ecc71 !important;
     stroke: #2ecc71 !important;
 }
 
-[data-element-id*="SequenceFlow"].bpmn-diff-deleted .djs-visual marker path {
+[data-element-id*='SequenceFlow'].bpmn-diff-deleted .djs-visual marker path {
     fill: #e74c3c !important;
     stroke: #e74c3c !important;
 }
 
 /* SVG 마커 정의에 대한 글로벌 스타일 */
-svg defs marker[id*="sequenceflow-end"] path {
+svg defs marker[id*='sequenceflow-end'] path {
     transition: fill 0.2s, stroke 0.2s;
 }
 
-.bpmn-diff-added ~ svg defs marker[id*="sequenceflow-end"] path,
-svg .bpmn-diff-added marker[id*="sequenceflow-end"] path {
+.bpmn-diff-added ~ svg defs marker[id*='sequenceflow-end'] path,
+svg .bpmn-diff-added marker[id*='sequenceflow-end'] path {
     fill: #2ecc71 !important;
     stroke: #2ecc71 !important;
 }
 
-.bpmn-diff-deleted ~ svg defs marker[id*="sequenceflow-end"] path,
-svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
+.bpmn-diff-deleted ~ svg defs marker[id*='sequenceflow-end'] path,
+svg .bpmn-diff-deleted marker[id*='sequenceflow-end'] path {
     fill: #e74c3c !important;
     stroke: #e74c3c !important;
 }
 
 .view-mode .djs-palette {
-  display: none !important;
+    display: none !important;
 }
 
 /* 읽기모드에서 텍스트 편집 비활성화 */
 .view-mode .djs-direct-editing-content {
-  display: none !important;
+    display: none !important;
 }
 
 .view-mode .djs-direct-editing-parent {
-  pointer-events: none !important;
+    pointer-events: none !important;
 }
 
 /* 읽기모드에서 인라인 텍스트 편집 차단 */
 .view-mode .djs-element .djs-label {
-  pointer-events: none !important;
-  user-select: none !important;
+    pointer-events: none !important;
+    user-select: none !important;
 }
 
 .view-mode.not-pal .djs-element,
 .view-mode.not-pal .djs-element * {
-  pointer-events: auto !important;
+    pointer-events: auto !important;
 }
 
 /* 참여자 툴팁 스타일 */
@@ -1463,7 +1449,6 @@ svg .bpmn-diff-deleted marker[id*="sequenceflow-end"] path {
 .participant-item:hover {
     background-color: rgba(0, 0, 0, 0.03);
 }
-
 
 @media (max-width: 768px) {
 }

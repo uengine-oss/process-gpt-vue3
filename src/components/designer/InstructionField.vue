@@ -1,10 +1,6 @@
 <template>
     <div class="instruction-field">
-        <v-menu
-            v-model="showMentionMenu"
-            :close-on-content-click="false"
-            location="bottom"
-        >
+        <v-menu v-model="showMentionMenu" :close-on-content-click="false" location="bottom">
             <template v-slot:activator="{ props }">
                 <v-textarea
                     v-bind="props"
@@ -22,16 +18,8 @@
             </template>
 
             <v-card max-height="300" class="py-1 instruction-mention-menu">
-                <v-list
-                    v-if="isMentionActive && filteredMentionCandidates.length > 0"
-                    density="compact"
-                    class="instruction-mention-list"
-                >
-                    <v-list-item
-                        v-for="item in filteredMentionCandidates"
-                        :key="item.type + ':' + item.id"
-                        @click="selectMention(item)"
-                    >
+                <v-list v-if="isMentionActive && filteredMentionCandidates.length > 0" density="compact" class="instruction-mention-list">
+                    <v-list-item v-for="item in filteredMentionCandidates" :key="item.type + ':' + item.id" @click="selectMention(item)">
                         <template v-slot:prepend>
                             <v-icon :color="getMentionTypeMeta(item.type).color">
                                 {{ getMentionTypeMeta(item.type).icon }}
@@ -39,9 +27,7 @@
                         </template>
                         <v-list-item-title>
                             <span class="font-weight-medium">{{ item.label }}</span>
-                            <span class="text-caption text-grey-darken-1 ml-1">
-                                ({{ $t(getMentionTypeMeta(item.type).labelKey) }})
-                            </span>
+                            <span class="text-caption text-grey-darken-1 ml-1"> ({{ $t(getMentionTypeMeta(item.type).labelKey) }}) </span>
                         </v-list-item-title>
                         <v-list-item-subtitle v-if="item.description">
                             {{ item.description }}
@@ -54,13 +40,8 @@
             </v-card>
         </v-menu>
 
-        <div
-            v-if="parsedSegments.length > 0"
-            class="mt-2 instruction-preview d-flex flex-wrap align-center"
-        >
-            <span class="text-caption text-medium-emphasis mr-1">
-                {{ $t('BpmnPropertyPanel.instructionPreview') || '미리보기' }}:
-            </span>
+        <div v-if="parsedSegments.length > 0" class="mt-2 instruction-preview d-flex flex-wrap align-center">
+            <span class="text-caption text-medium-emphasis mr-1"> {{ $t('BpmnPropertyPanel.instructionPreview') || '미리보기' }}: </span>
 
             <template v-for="(segment, index) in parsedSegments" :key="index">
                 <v-chip
@@ -93,9 +74,7 @@ export default {
     },
     data() {
         return {
-            instruction: this.normalizeInstructionValue(
-                this.modelValue ? JSON.parse(JSON.stringify(this.modelValue)) : ''
-            ),
+            instruction: this.normalizeInstructionValue(this.modelValue ? JSON.parse(JSON.stringify(this.modelValue)) : ''),
             showMentionMenu: false,
             mentionStartIndex: null,
             mentionQuery: '',
@@ -113,8 +92,8 @@ export default {
             if (!query) {
                 return list;
             }
-            return list.filter(item => {
-                const label = (item && item.label != null) ? item.label.toString() : '';
+            return list.filter((item) => {
+                const label = item && item.label != null ? item.label.toString() : '';
                 return label.toLowerCase().includes(query);
             });
         },
@@ -152,9 +131,7 @@ export default {
         modelValue: {
             immediate: true,
             handler(newVal) {
-                const value = this.normalizeInstructionValue(
-                    newVal ? JSON.parse(JSON.stringify(newVal)) : ''
-                );
+                const value = this.normalizeInstructionValue(newVal ? JSON.parse(JSON.stringify(newVal)) : '');
                 if (value !== this.instruction) {
                     this.instruction = value;
                 }
@@ -163,16 +140,12 @@ export default {
     },
     methods: {
         onInput(event) {
-            const text = typeof event === 'string'
-                ? event
-                : (event && event.target && event.target.value) || this.instruction || '';
+            const text = typeof event === 'string' ? event : (event && event.target && event.target.value) || this.instruction || '';
 
             this.instruction = text;
 
             const textarea = this.getTextareaEl(event);
-            const caretPos = (textarea && Number.isFinite(textarea.selectionStart))
-                ? textarea.selectionStart
-                : text.length;
+            const caretPos = textarea && Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : text.length;
 
             this.cursorPosition = caretPos;
             this.updateMentionMenuState(text, caretPos);
@@ -184,9 +157,7 @@ export default {
             if (!textarea) {
                 return;
             }
-            const caretPos = (textarea && Number.isFinite(textarea.selectionStart))
-                ? textarea.selectionStart
-                : text.length;
+            const caretPos = textarea && Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : text.length;
 
             this.cursorPosition = caretPos;
             this.updateMentionMenuState(text, caretPos);
@@ -199,9 +170,7 @@ export default {
             if (!textarea) {
                 return;
             }
-            const caretPos = (textarea && Number.isFinite(textarea.selectionStart))
-                ? textarea.selectionStart
-                : text.length;
+            const caretPos = textarea && Number.isFinite(textarea.selectionStart) ? textarea.selectionStart : text.length;
 
             const ctx = this.getMentionContext(text, caretPos);
             if (!ctx) {
@@ -226,7 +195,7 @@ export default {
             if (ctx) {
                 this.mentionStartIndex = ctx.startIndex;
                 // 저장된 포맷(@type:id)처럼 ':'가 포함된 경우에는 전체 목록을 보여주기 위해 필터를 비운다.
-                this.mentionQuery = (ctx.query && ctx.query.includes(':')) ? '' : ctx.query;
+                this.mentionQuery = ctx.query && ctx.query.includes(':') ? '' : ctx.query;
                 this.showMentionMenu = true;
             } else {
                 this.mentionStartIndex = null;
@@ -298,8 +267,8 @@ export default {
             });
         },
         buildMentionToken(item) {
-            const type = (item && item.type) ? String(item.type) : 'agent';
-            const id = (item && item.id != null) ? String(item.id) : '';
+            const type = item && item.type ? String(item.type) : 'agent';
+            const id = item && item.id != null ? String(item.id) : '';
             // 토큰은 "@type:id" 형태로 저장한다. (예: @agent:123)
             return `@${type}:${id}`;
         },
@@ -346,24 +315,24 @@ export default {
                     type = rawType;
 
                     // 1순위: type + id 매칭
-                    let candidate = candidateList.find(c => {
-                        const cType = (c && c.type != null) ? String(c.type) : '';
-                        const cId = (c && c.id != null) ? String(c.id) : '';
+                    let candidate = candidateList.find((c) => {
+                        const cType = c && c.type != null ? String(c.type) : '';
+                        const cId = c && c.id != null ? String(c.id) : '';
                         return cType === rawType && cId === rawKey;
                     });
 
                     // 2순위: type + label 매칭 (혹시 id 대신 name을 저장했을 경우)
                     if (!candidate) {
-                        candidate = candidateList.find(c => {
-                            const cType = (c && c.type != null) ? String(c.type) : '';
-                            const cLabel = (c && c.label != null) ? String(c.label) : '';
+                        candidate = candidateList.find((c) => {
+                            const cType = c && c.type != null ? String(c.type) : '';
+                            const cLabel = c && c.label != null ? String(c.label) : '';
                             return cType === rawType && cLabel === rawKey;
                         });
                     }
 
                     if (candidate) {
                         id = candidate.id != null ? String(candidate.id) : rawKey;
-                        label = (candidate.label != null) ? String(candidate.label) : rawKey;
+                        label = candidate.label != null ? String(candidate.label) : rawKey;
                     } else {
                         // 후보 목록에 없어도 최소한 type/id는 유지
                         id = rawKey;
@@ -372,15 +341,16 @@ export default {
                 } else {
                     // 구버전 포맷: @label
                     const tokenLabel = token;
-                    const candidate = candidateList.find(c => {
-                        const cLabel = (c && c.label != null) ? String(c.label) : '';
-                        return cLabel === tokenLabel;
-                    }) || null;
+                    const candidate =
+                        candidateList.find((c) => {
+                            const cLabel = c && c.label != null ? String(c.label) : '';
+                            return cLabel === tokenLabel;
+                        }) || null;
 
                     if (candidate) {
                         type = candidate.type != null ? String(candidate.type) : 'agent';
                         id = candidate.id != null ? String(candidate.id) : null;
-                        label = (candidate.label != null) ? String(candidate.label) : tokenLabel;
+                        label = candidate.label != null ? String(candidate.label) : tokenLabel;
                     } else {
                         // type 정보를 알 수 없으면 기본값(agent) + label만 유지
                         type = 'agent';

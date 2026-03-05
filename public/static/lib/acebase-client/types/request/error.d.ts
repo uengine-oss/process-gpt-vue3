@@ -6,5 +6,5 @@ export declare class AceBaseRequestError extends Error {
     get isNetworkError(): boolean;
     constructor(request: any, response: any, code?: string | number | undefined, message?: string);
 }
-export declare const NOT_CONNECTED_ERROR_MESSAGE = "remote database is not connected";
+export declare const NOT_CONNECTED_ERROR_MESSAGE = 'remote database is not connected';
 //# sourceMappingURL=error.d.ts.map

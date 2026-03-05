@@ -43,7 +43,11 @@ export interface Backend {
      * - 백엔드에서 검증 후 실제 처리(상태 변경/로그 기록 등)
      */
     skipTask(taskId: string, payload: any): Promise<any>;
-    advanceToActivity?(instanceId: string, tracingTag: string, body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }): Promise<any>;
+    advanceToActivity?(
+        instanceId: string,
+        tracingTag: string,
+        body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }
+    ): Promise<any>;
     startFromActivity?(instanceId: string, tracingTag: string, body?: { variables?: Record<string, any> }): Promise<any>;
     getProcessVariables(instanceId: string): Promise<any>;
     getVariable(instId: string, varName: string): Promise<any>;
@@ -74,7 +78,7 @@ export interface Backend {
     getSystemList(): Promise<any>;
     putSystem(system: any): Promise<any>;
     deleteSystem(system: any): Promise<any>;
-    getSystem(systemId: String): Promise<any>;
+    getSystem(systemId: string): Promise<any>;
     getCurrentWorkItemByCorrKey(corrKey: number): Promise<any>;
     deleteInstance(instanceId: string): Promise<any>;
     setNotifications(value: any): Promise<any>;
@@ -87,7 +91,7 @@ export interface Backend {
     releaseVersion(releaseName: string): Promise<any>;
     uploadDefinition(file: File, path: string): Promise<any>;
     getCompletedTaskId(instId: string): Promise<any>;
-    getActivitiesStatus(instId: string, executionScope: String): Promise<any>;
+    getActivitiesStatus(instId: string, executionScope: string): Promise<any>;
     deleteTest(path: string, tracingTag: string, index: number): Promise<any>;
     deleteRecordTest(path: string, index: number): Promise<any>;
     checkDBConnection(): Promise<any>;
@@ -190,11 +194,22 @@ export interface Backend {
     }): Promise<any[]>;
 
     // Agent Knowledge API
-    setupAgentKnowledge(params: {
-        agent_id: string;
-        goal?: string | null;
-        persona?: string | null;
+    setupAgentKnowledge(params: { agent_id: string; goal?: string | null; persona?: string | null }): Promise<any>;
+
+    // 프로세스 정의 요소별 댓글 API (ElementCommentPanel)
+    getElementComments(procDefId: string, elementId?: string): Promise<any[]>;
+    getElementCommentCounts(procDefId: string): Promise<Record<string, { total: number; unresolved: number }>>;
+    addElementComment(comment: {
+        procDefId: string;
+        elementId: string;
+        elementType?: string;
+        elementName?: string;
+        content: string;
+        parentCommentId?: string;
     }): Promise<any>;
+    updateElementComment(commentId: string, content: string): Promise<any>;
+    deleteElementComment(commentId: string): Promise<void>;
+    resolveElementComment(commentId: string, resolved?: boolean, resolveActionText?: string): Promise<any>;
 }
 
 // export type { Backend }

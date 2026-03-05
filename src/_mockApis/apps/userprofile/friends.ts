@@ -2,14 +2,12 @@
 import mock from '../../mockAdapter';
 import { Chance } from 'chance';
 
-
 import user1 from '@/assets/images/profile/user1.jpg';
 import user2 from '@/assets/images/profile/user2.jpg';
 import user3 from '@/assets/images/profile/user3.jpg';
 import user4 from '@/assets/images/profile/user4.jpg';
 import user5 from '@/assets/images/profile/user5.jpg';
 import user6 from '@/assets/images/profile/user6.jpg';
-
 
 const chance = new Chance();
 

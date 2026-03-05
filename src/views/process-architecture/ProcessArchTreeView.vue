@@ -26,37 +26,20 @@
                 @drop.prevent="onDrop($event, row)"
             >
                 <!-- Expand/Collapse -->
-                <v-btn
-                    v-if="row.hasChildren"
-                    icon
-                    variant="text"
-                    size="x-small"
-                    class="mr-1"
-                    @click.stop="toggleExpand(row.key)"
-                >
+                <v-btn v-if="row.hasChildren" icon variant="text" size="x-small" class="mr-1" @click.stop="toggleExpand(row.key)">
                     <v-icon size="16">
                         {{ expanded.has(row.key) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}
                     </v-icon>
                 </v-btn>
-                <div v-else style="width: 28px;" class="mr-1"></div>
+                <div v-else style="width: 28px" class="mr-1"></div>
 
                 <!-- Drag handle (only for sub-processes) -->
-                <v-icon
-                    v-if="row.type === 'sub'"
-                    size="14"
-                    color="grey-lighten-1"
-                    class="drag-handle mr-1"
-                    title="Drag to move"
-                >
+                <v-icon v-if="row.type === 'sub'" size="14" color="grey-lighten-1" class="drag-handle mr-1" title="Drag to move">
                     mdi-drag-vertical
                 </v-icon>
 
                 <!-- Type Icon -->
-                <v-icon
-                    :size="row.type === 'domain' ? 18 : row.type === 'sub' ? 14 : 16"
-                    :color="getIconColor(row.type)"
-                    class="mr-2"
-                >
+                <v-icon :size="row.type === 'domain' ? 18 : row.type === 'sub' ? 14 : 16" :color="getIconColor(row.type)" class="mr-2">
                     {{ getIcon(row.type) }}
                 </v-icon>
 
@@ -74,13 +57,7 @@
                 </span>
 
                 <!-- Domain Badge (for domain rows) -->
-                <v-chip
-                    v-if="row.type === 'domain' && row.color"
-                    :color="row.color"
-                    size="x-small"
-                    variant="flat"
-                    class="ml-2"
-                >
+                <v-chip v-if="row.type === 'domain' && row.color" :color="row.color" size="x-small" variant="flat" class="ml-2">
                     {{ row.name }}
                 </v-chip>
 
@@ -100,10 +77,7 @@
                         :class="['fav-btn', { 'is-fav': favorites?.has(row.id) }]"
                         @click.stop="emit('toggleFavorite', row.id)"
                     >
-                        <v-icon
-                            size="14"
-                            :color="favorites?.has(row.id) ? 'amber' : 'grey-lighten-1'"
-                        >
+                        <v-icon size="14" :color="favorites?.has(row.id) ? 'amber' : 'grey-lighten-1'">
                             {{ favorites?.has(row.id) ? 'mdi-star' : 'mdi-star-outline' }}
                         </v-icon>
                     </v-btn>
@@ -119,9 +93,7 @@
                     />
 
                     <!-- Version -->
-                    <span v-if="row.type === 'sub' && row.status?.version" class="text-caption text-grey">
-                        v{{ row.status.version }}
-                    </span>
+                    <span v-if="row.type === 'sub' && row.status?.version" class="text-caption text-grey"> v{{ row.status.version }} </span>
                 </div>
             </div>
         </div>
@@ -135,11 +107,13 @@
                 </v-card-title>
                 <v-card-text class="pa-4">
                     <p class="text-body-2 mb-3">
-                        {{ $t('processArchitecture.tree.moveWarningDesc', {
-                            processName: pendingMove?.subName,
-                            fromMajor: pendingMove?.fromMajorName,
-                            toMajor: pendingMove?.toMajorName
-                        }) }}
+                        {{
+                            $t('processArchitecture.tree.moveWarningDesc', {
+                                processName: pendingMove?.subName,
+                                fromMajor: pendingMove?.fromMajorName,
+                                toMajor: pendingMove?.toMajorName
+                            })
+                        }}
                     </p>
                     <v-alert type="warning" variant="tonal" density="compact" class="mb-2">
                         <strong>{{ $t('processArchitecture.tree.idRenumberAlert') }}</strong>
@@ -236,7 +210,7 @@ const rows = computed<TreeRow[]>(() => {
             let domainCount = 0;
             if (map.mega_proc_list) {
                 for (const mega of map.mega_proc_list) {
-                    for (const major of (mega.major_proc_list || [])) {
+                    for (const major of mega.major_proc_list || []) {
                         const majorDomain = major.domain || major.domain_id;
                         if (majorDomain === domain.name || majorDomain === domain.id) {
                             domainCount += (major.sub_proc_list || []).length;
@@ -288,7 +262,7 @@ const rows = computed<TreeRow[]>(() => {
         // Also show majors without domain
         const orphanMajors: any[] = [];
         for (const mega of map.mega_proc_list) {
-            for (const major of (mega.major_proc_list || [])) {
+            for (const major of mega.major_proc_list || []) {
                 const d = major.domain || major.domain_id;
                 if (!d || !props.domains.find((dom: any) => dom.name === d || dom.id === d)) {
                     orphanMajors.push({ mega, major });
@@ -351,7 +325,7 @@ const rows = computed<TreeRow[]>(() => {
 
             if (!expanded.value.has(megaKey)) continue;
 
-            for (const major of (mega.major_proc_list || [])) {
+            for (const major of mega.major_proc_list || []) {
                 addMajorRows(result, major, 1, megaKey, mega.id);
             }
         }
@@ -599,24 +573,29 @@ async function confirmMove() {
 }
 
 .dnd-over {
-    background-color: #E8F5E9 !important;
-    border: 2px dashed #4CAF50 !important;
+    background-color: #e8f5e9 !important;
+    border: 2px dashed #4caf50 !important;
     border-radius: 4px;
 }
 
 /* To-Be view styles */
 @keyframes wip-pulse {
-    0%, 100% { background-color: transparent; }
-    50% { background-color: rgba(123, 31, 162, 0.08); }
+    0%,
+    100% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(123, 31, 162, 0.08);
+    }
 }
 
 .wip-row {
     animation: wip-pulse 2s ease-in-out infinite;
-    border-left: 3px solid #7B1FA2 !important;
+    border-left: 3px solid #7b1fa2 !important;
 }
 
 .sunset-row {
     opacity: 0.7;
-    border-left: 3px solid #C62828 !important;
+    border-left: 3px solid #c62828 !important;
 }
 </style>

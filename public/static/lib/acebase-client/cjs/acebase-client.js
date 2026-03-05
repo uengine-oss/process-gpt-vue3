@@ -1,10 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
 exports.AceBaseClient = exports.ConnectionSettings = void 0;
-const acebase_core_1 = require("acebase-core");
-const api_web_1 = require("./api-web");
-const auth_1 = require("./auth");
-const server_date_1 = require("./server-date");
+const acebase_core_1 = require('acebase-core');
+const api_web_1 = require('./api-web');
+const auth_1 = require('./auth');
+const server_date_1 = require('./server-date');
 /**
  * Settings to connect to a remote AceBase server
  * @internal (for internal use only)
@@ -49,22 +49,50 @@ class ConnectionSettings {
         this.sponsor = typeof settings.sponsor === 'boolean' ? settings.sponsor : false;
         // Set cache settings
         this.cache = {
-            enabled: typeof ((_a = settings.cache) === null || _a === void 0 ? void 0 : _a.db) !== 'object' ? false : typeof ((_b = settings.cache) === null || _b === void 0 ? void 0 : _b.enabled) === 'boolean' ? settings.cache.enabled : true,
+            enabled:
+                typeof ((_a = settings.cache) === null || _a === void 0 ? void 0 : _a.db) !== 'object'
+                    ? false
+                    : typeof ((_b = settings.cache) === null || _b === void 0 ? void 0 : _b.enabled) === 'boolean'
+                    ? settings.cache.enabled
+                    : true,
             db: typeof ((_c = settings.cache) === null || _c === void 0 ? void 0 : _c.db) === 'object' ? settings.cache.db : null,
-            priority: typeof ((_d = settings.cache) === null || _d === void 0 ? void 0 : _d.priority) === 'string' && ['server', 'cache'].includes(settings.cache.priority) ? settings.cache.priority : 'server',
+            priority:
+                typeof ((_d = settings.cache) === null || _d === void 0 ? void 0 : _d.priority) === 'string' &&
+                ['server', 'cache'].includes(settings.cache.priority)
+                    ? settings.cache.priority
+                    : 'server'
         };
         // Set sync settings
         this.sync = {
-            timing: typeof ((_e = settings.sync) === null || _e === void 0 ? void 0 : _e.timing) === 'string' && ['connect', 'signin', 'auto', 'manual'].includes(settings.sync.timing) ? settings.sync.timing : 'auto',
-            useCursor: typeof ((_f = settings.sync) === null || _f === void 0 ? void 0 : _f.useCursor) === 'boolean' ? settings.sync.useCursor : true,
+            timing:
+                typeof ((_e = settings.sync) === null || _e === void 0 ? void 0 : _e.timing) === 'string' &&
+                ['connect', 'signin', 'auto', 'manual'].includes(settings.sync.timing)
+                    ? settings.sync.timing
+                    : 'auto',
+            useCursor:
+                typeof ((_f = settings.sync) === null || _f === void 0 ? void 0 : _f.useCursor) === 'boolean'
+                    ? settings.sync.useCursor
+                    : true
         };
         // Set network settings
-        const realtime = typeof ((_g = settings.network) === null || _g === void 0 ? void 0 : _g.realtime) === 'boolean' ? settings.network.realtime : true;
+        const realtime =
+            typeof ((_g = settings.network) === null || _g === void 0 ? void 0 : _g.realtime) === 'boolean'
+                ? settings.network.realtime
+                : true;
         this.network = {
-            transports: ((_h = settings.network) === null || _h === void 0 ? void 0 : _h.transports) instanceof Array ? settings.network.transports : ['websocket'],
+            transports:
+                ((_h = settings.network) === null || _h === void 0 ? void 0 : _h.transports) instanceof Array
+                    ? settings.network.transports
+                    : ['websocket'],
             realtime,
-            monitor: typeof ((_j = settings.network) === null || _j === void 0 ? void 0 : _j.monitor) === 'boolean' ? settings.network.monitor : !realtime,
-            interval: typeof ((_k = settings.network) === null || _k === void 0 ? void 0 : _k.interval) === 'number' ? settings.network.interval : 60,
+            monitor:
+                typeof ((_j = settings.network) === null || _j === void 0 ? void 0 : _j.monitor) === 'boolean'
+                    ? settings.network.monitor
+                    : !realtime,
+            interval:
+                typeof ((_k = settings.network) === null || _k === void 0 ? void 0 : _k.interval) === 'number'
+                    ? settings.network.interval
+                    : 60
         };
     }
 }
@@ -92,17 +120,19 @@ class AceBaseClient extends acebase_core_1.AceBaseBase {
         const cacheDb = (_a = settings.cache) === null || _a === void 0 ? void 0 : _a.db;
         const cacheReadyPromise = cacheDb ? cacheDb.ready() : Promise.resolve();
         let ready = false;
-        this.on('ready', () => { ready = true; });
+        this.on('ready', () => {
+            ready = true;
+        });
         this.debug = new acebase_core_1.DebugLogger(settings.logLevel, `[${settings.dbname}]`.colorize(acebase_core_1.ColorStyle.blue)); // `[ ${settings.dbname} ]`
         const synchronizeClocks = async () => {
             // Synchronize date/time
             // const start = Date.now(); // performance.now();
             const info = await this.api.getServerInfo();
-            const now = Date.now(), 
-            // roundtrip = now - start, //performance.now() - start,
-            // expectedTime = now - Math.floor(roundtrip / 2),
-            // bias = info.time - expectedTime;
-            bias = info.time - now;
+            const now = Date.now(),
+                // roundtrip = now - start, //performance.now() - start,
+                // expectedTime = now - Math.floor(roundtrip / 2),
+                // bias = info.time - expectedTime;
+                bias = info.time - now;
             (0, server_date_1.setServerBias)(bias);
         };
         this.on('connect', () => {
@@ -122,7 +152,8 @@ class AceBaseClient extends acebase_core_1.AceBaseBase {
             const result = await syncPendingChanges(true);
             return result;
         };
-        let syncRunning = false, firstSync = true;
+        let syncRunning = false,
+            firstSync = true;
         const syncPendingChanges = async (throwErrors = false) => {
             if (syncRunning) {
                 // Already syncing
@@ -151,19 +182,16 @@ class AceBaseClient extends acebase_core_1.AceBaseBase {
                     eventCallback: (eventName, args) => {
                         this.debug.log(eventName, args || '');
                         this.emit(eventName, args); // this.emit('cache_sync_event', { name: eventName, args });
-                    },
+                    }
                 });
-            }
-            catch (err) {
+            } catch (err) {
                 // Sync failed for some reason
                 if (throwErrors) {
                     throw err;
-                }
-                else {
+                } else {
                     console.error(`Failed to synchronize:`, err);
                 }
-            }
-            finally {
+            } finally {
                 syncRunning = false;
                 firstSync = false;
             }
@@ -172,8 +200,7 @@ class AceBaseClient extends acebase_core_1.AceBaseBase {
         this.on('connect', () => {
             if (settings.sync.timing === 'connect' || (settings.sync.timing === 'signin' && this.auth.accessToken)) {
                 syncPendingChanges();
-            }
-            else if (settings.sync.timing === 'auto') {
+            } else if (settings.sync.timing === 'auto') {
                 syncTimeout && clearTimeout(syncTimeout);
                 syncTimeout = setTimeout(syncPendingChanges, 2500); // Start sync with a short delay to allow client to sign in first
             }
@@ -201,33 +228,36 @@ class AceBaseClient extends acebase_core_1.AceBaseBase {
                 }
             });
         }
-        this.api = new api_web_1.WebApi(settings.dbname, {
-            network: settings.network,
-            sync: settings.sync,
-            logLevel: settings.logLevel,
-            autoConnect: settings.autoConnect,
-            autoConnectDelay: settings.autoConnectDelay,
-            cache: settings.cache,
-            debug: this.debug,
-            url: `http${settings.https ? 's' : ''}://${settings.host}:${settings.port}`,
-            rootPath: settings.rootPath,
-        }, (evt, data) => {
-            if (evt === 'connect') {
-                this.emit('connect');
-                if (!ready) {
-                    emitClientReady();
+        this.api = new api_web_1.WebApi(
+            settings.dbname,
+            {
+                network: settings.network,
+                sync: settings.sync,
+                logLevel: settings.logLevel,
+                autoConnect: settings.autoConnect,
+                autoConnectDelay: settings.autoConnectDelay,
+                cache: settings.cache,
+                debug: this.debug,
+                url: `http${settings.https ? 's' : ''}://${settings.host}:${settings.port}`,
+                rootPath: settings.rootPath
+            },
+            (evt, data) => {
+                if (evt === 'connect') {
+                    this.emit('connect');
+                    if (!ready) {
+                        emitClientReady();
+                    }
+                } else if (evt === 'connect_error') {
+                    this.emit('connect_error', data);
+                    if (!ready && cacheDb) {
+                        // If cache db is used, we can work without connection
+                        emitClientReady();
+                    }
+                } else if (evt === 'disconnect') {
+                    this.emit('disconnect');
                 }
             }
-            else if (evt === 'connect_error') {
-                this.emit('connect_error', data);
-                if (!ready && cacheDb) { // If cache db is used, we can work without connection
-                    emitClientReady();
-                }
-            }
-            else if (evt === 'disconnect') {
-                this.emit('disconnect');
-            }
-        });
+        );
         this.auth = new auth_1.AceBaseClientAuth(this, (event, arg) => {
             this.emit(event, arg);
         });

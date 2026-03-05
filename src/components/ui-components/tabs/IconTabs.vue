@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { HeartIcon, PhoneIcon, UserIcon } from "vue-tabler-icons";
+import { ref } from 'vue';
+import { HeartIcon, PhoneIcon, UserIcon } from 'vue-tabler-icons';
 const tab3 = ref(null);
 </script>
 <template>
@@ -18,15 +18,9 @@ const tab3 = ref(null);
     <v-divider></v-divider>
     <v-card-text class="bg-lightsecondary mt-4 rounded-md">
         <v-window v-model="tab3">
-            <v-window-item value="111">
-                Item One
-            </v-window-item>
-            <v-window-item value="222">
-               Item two
-            </v-window-item>
-            <v-window-item value="444">
-                Item three
-            </v-window-item>
+            <v-window-item value="111"> Item One </v-window-item>
+            <v-window-item value="222"> Item two </v-window-item>
+            <v-window-item value="444"> Item three </v-window-item>
         </v-window>
     </v-card-text>
 </template>

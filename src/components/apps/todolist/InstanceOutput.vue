@@ -1,25 +1,21 @@
 <template>
     <div class="w-100 instance-card-tab-height">
-        <v-row v-if="outputList.length > 0" 
-            class="ma-0 pa-0" 
-        >
-            <v-col v-for="(item, index) in outputList" 
-                :key="index" cols="12" 
-                :lg="isInWorkItem ? 12 : 6" 
-                :md="isInWorkItem ? 12 : 6" 
+        <v-row v-if="outputList.length > 0" class="ma-0 pa-0">
+            <v-col
+                v-for="(item, index) in outputList"
+                :key="index"
+                cols="12"
+                :lg="isInWorkItem ? 12 : 6"
+                :md="isInWorkItem ? 12 : 6"
                 sm="12"
                 class="pa-2"
             >
-                <v-card elevation="2"
-                    class="pa-4"
-                >
+                <v-card elevation="2" class="pa-4">
                     <v-card-title class="pa-0 pb-4">{{ item.name }}</v-card-title>
                     <!-- output URL -->
                     <v-tooltip v-if="item.outputURL" location="bottom">
                         <template v-slot:activator="{ props }">
-                            <v-icon class="ml-1" v-bind="props" size="16" @click="openOutputURL(item.outputURL)">
-                                mdi-link-variant
-                            </v-icon>
+                            <v-icon class="ml-1" v-bind="props" size="16" @click="openOutputURL(item.outputURL)"> mdi-link-variant </v-icon>
                         </template>
                         {{ item.outputURL }}
                     </v-tooltip>
@@ -41,7 +37,7 @@
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import SummaryButton from '@/components/ui/SummaryButton.vue';
 
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -57,7 +53,7 @@ export default {
         }
     },
     data: () => ({
-        outputList: [],
+        outputList: []
     }),
     mounted() {
         this.init();
@@ -69,7 +65,7 @@ export default {
             } else {
                 return null;
             }
-        },        
+        }
     },
     watch: {
         $route: {
@@ -80,19 +76,19 @@ export default {
                     this.init();
                 }
             }
-        },
+        }
     },
     methods: {
         async init() {
             this.outputList = [];
-            
+
             const formOptions = {
                 match: {
-                    proc_def_id: this.instance.defId, 
+                    proc_def_id: this.instance.defId
                 }
-            }
+            };
             const formList = await backend.listDefinition('form_def', formOptions);
-            
+
             const taskList = await backend.getAllWorkListByInstId(this.instance.instId);
             const sortedTaskList = taskList.sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
 
@@ -110,7 +106,7 @@ export default {
                     });
                 }
                 const formId = item.tool.replace('formHandler:', '');
-                const form = formList.find(form => form.id === formId);
+                const form = formList.find((form) => form.id === formId);
                 if (form) {
                     if (item.task.output && item.task.output[formId]) {
                         outputList.push({
@@ -122,10 +118,10 @@ export default {
                             outputURL: item.task.output_url || null
                         });
                     } else {
-                        let formData = {}
-                        form.fields_json.map(field => {
+                        let formData = {};
+                        form.fields_json.map((field) => {
                             formData[field.key] = field.type == 'text' || field.type == 'textarea' ? '' : null;
-                        })
+                        });
                         outputList.push({
                             id: formId,
                             type: 'form',
@@ -136,14 +132,12 @@ export default {
                         });
                     }
                 }
-            })
+            });
             this.outputList = outputList;
         },
         openOutputURL(url) {
             window.open(url, '_blank');
-        },
-    },
-}
+        }
+    }
+};
 </script>
-
-

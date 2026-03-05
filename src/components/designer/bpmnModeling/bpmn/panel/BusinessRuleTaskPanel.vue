@@ -2,32 +2,22 @@
     <div>
         <!-- Lead Time -->
         <div class="mt-4">
-            <LeadTimeInput
-                v-model="copyUengineProperties.leadTime"
-                :label="$t('leadTime.title') || 'Lead Time'"
-                :disabled="isViewMode"
-            />
+            <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
-
 
         <div class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
                 :readonly="isViewMode"
-                />
+            />
         </div>
         <!-- (A) 룰 선택 -->
         <div class="mb-4">
             <v-row class="ma-0 pa-0 align-center mb-2">
-                <div style="font-weight: 700;">{{ $t('businessRuleTaskPanel.ruleSelectTitle') }}</div>
+                <div style="font-weight: 700">{{ $t('businessRuleTaskPanel.ruleSelectTitle') }}</div>
                 <v-spacer />
-                <v-btn
-                    variant="text"
-                    density="comfortable"
-                    :disabled="isRuleListLoading || isViewMode"
-                    @click="refreshRuleList"
-                >
+                <v-btn variant="text" density="comfortable" :disabled="isRuleListLoading || isViewMode" @click="refreshRuleList">
                     <v-icon size="18" class="mr-1">mdi-refresh</v-icon>
                     {{ $t('businessRuleTaskPanel.refreshRuleList') }}
                 </v-btn>
@@ -50,18 +40,14 @@
                 @update:model-value="onRuleSelected"
             />
 
-            <div v-if="selectedRuleId && selectedRuleName" class="mt-2 text-medium-emphasis" style="font-size: 13px;">
-                {{ $t('businessRuleTaskPanel.selectedRulePrefix') }} <span style="font-weight: 600;">{{ selectedRuleName }}</span>
+            <div v-if="selectedRuleId && selectedRuleName" class="mt-2 text-medium-emphasis" style="font-size: 13px">
+                {{ $t('businessRuleTaskPanel.selectedRulePrefix') }} <span style="font-weight: 600">{{ selectedRuleName }}</span>
             </div>
 
             <!-- 선택된 룰의 판단 기준 미리보기(사람용, JSON/기술용어 노출 금지) -->
-            <v-card
-                v-if="selectedRuleId || loadedRule"
-                variant="outlined"
-                class="mt-3 pa-3"
-            >
+            <v-card v-if="selectedRuleId || loadedRule" variant="outlined" class="mt-3 pa-3">
                 <div class="d-flex align-center mb-2">
-                    <div style="font-weight: 700;">{{ $t('businessRuleTaskPanel.conditionCriteria') }}</div>
+                    <div style="font-weight: 700">{{ $t('businessRuleTaskPanel.conditionCriteria') }}</div>
                     <v-spacer />
                     <v-btn
                         size="small"
@@ -76,18 +62,18 @@
                     </v-btn>
                 </div>
 
-                <div v-if="isRuleLoading" class="text-medium-emphasis" style="font-size: 13px;">
+                <div v-if="isRuleLoading" class="text-medium-emphasis" style="font-size: 13px">
                     {{ $t('businessRuleTaskPanel.loading') }}
                 </div>
 
                 <div v-else-if="loadedRule">
                     <template v-if="isAdvancedPreview && loadedRule.dmnXml">
-                        <div class="text-medium-emphasis mb-2" style="font-size: 13px;">
+                        <div class="text-medium-emphasis mb-2" style="font-size: 13px">
                             {{ $t('businessRuleTaskPanel.dmnPreviewDescription') }}
                         </div>
                         <v-card variant="outlined" class="br-advanced-preview pa-2">
                             <DmnStructureView v-if="dmnPreview" :dmn="dmnPreview" :key="dmnPreviewKey" />
-                            <div v-else class="text-medium-emphasis pa-3" style="font-size: 13px;">
+                            <div v-else class="text-medium-emphasis pa-3" style="font-size: 13px">
                                 {{ $t('businessRuleTaskPanel.dmnPreviewFailed') }}
                             </div>
                         </v-card>
@@ -101,23 +87,25 @@
                             class="br-preview-rule-card pa-2 mb-2"
                         >
                             <div class="d-flex align-center mb-1">
-                                <div style="font-weight: 700;">{{ $t('businessRuleTaskPanel.ruleNumber', { n: r.index }) }}</div>
+                                <div style="font-weight: 700">{{ $t('businessRuleTaskPanel.ruleNumber', { n: r.index }) }}</div>
                                 <v-spacer />
-                                <div class="text-medium-emphasis br-preview-rule-hint">{{ $t('businessRuleTaskPanel.rulePriorityHint') }}</div>
+                                <div class="text-medium-emphasis br-preview-rule-hint">
+                                    {{ $t('businessRuleTaskPanel.rulePriorityHint') }}
+                                </div>
                             </div>
 
                             <v-table density="compact" class="rule-preview-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 56px;">#</th>
-                                        <th style="min-width: 160px;">항목</th>
-                                        <th style="width: 160px;">비교</th>
-                                        <th style="min-width: 160px;">값</th>
+                                        <th style="width: 56px">#</th>
+                                        <th style="min-width: 160px">항목</th>
+                                        <th style="width: 160px">비교</th>
+                                        <th style="min-width: 160px">값</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="(c, idx) in r.conditions" :key="`c_${r.index}_${idx}`">
-                                        <td class="text-medium-emphasis" style="font-size: 12px;">{{ idx + 1 }}</td>
+                                        <td class="text-medium-emphasis" style="font-size: 12px">{{ idx + 1 }}</td>
                                         <td>{{ c.item }}</td>
                                         <td>{{ c.operatorText }}</td>
                                         <td>{{ c.value }}</td>
@@ -125,42 +113,34 @@
                                 </tbody>
                             </v-table>
 
-                            <div v-if="r.conditions.length === 0" class="text-medium-emphasis mt-2" style="font-size: 13px;">
+                            <div v-if="r.conditions.length === 0" class="text-medium-emphasis mt-2" style="font-size: 13px">
                                 {{ $t('businessRuleTaskPanel.noConditionsRegistered') }}
                             </div>
 
-                            <div v-if="r.outcomeText" class="text-medium-emphasis mt-2" style="font-size: 13px;">
-                                결과: <span style="font-weight: 600;">{{ r.outcomeText }}</span>
+                            <div v-if="r.outcomeText" class="text-medium-emphasis mt-2" style="font-size: 13px">
+                                결과: <span style="font-weight: 600">{{ r.outcomeText }}</span>
                                 <span v-if="r.noteText"> - {{ r.noteText }}</span>
                             </div>
                         </v-card>
 
-                        <div v-if="previewRules.length === 0" class="text-medium-emphasis mt-2" style="font-size: 13px;">
+                        <div v-if="previewRules.length === 0" class="text-medium-emphasis mt-2" style="font-size: 13px">
                             {{ $t('businessRuleTaskPanel.noRulesRegistered') }}
                         </div>
                     </template>
                 </div>
 
-                <div v-else class="text-medium-emphasis" style="font-size: 13px;">
+                <div v-else class="text-medium-emphasis" style="font-size: 13px">
                     {{ $t('businessRuleTaskPanel.selectRuleFirstMessage') }}
                 </div>
             </v-card>
         </div>
 
         <!-- (B) 데이터 매핑 (기존 Task와 동일한 Mapper 버튼 UI/동작) -->
-        <v-btn
-            block
-            text
-            rounded
-            color="primary"
-            class="my-3"
-            :disabled="!selectedRuleId"
-            @click="openMapperDialog"
-        >
+        <v-btn block text rounded color="primary" class="my-3" :disabled="!selectedRuleId" @click="openMapperDialog">
             {{ $t('EventSynchronizationForm.dataMapping') }}
         </v-btn>
 
-        <div v-if="!selectedRuleId" class="text-medium-emphasis" style="font-size: 13px;">
+        <div v-if="!selectedRuleId" class="text-medium-emphasis" style="font-size: 13px">
             {{ $t('businessRuleTaskPanel.selectRuleFirst') }}
         </div>
 
@@ -199,7 +179,9 @@ export default {
     name: 'business-rule-task-panel',
     components: {
         Mapper,
-        DmnStructureView
+        DmnStructureView,
+        KeyValueField,
+        LeadTimeInput
     },
     props: {
         uengineProperties: Object,
@@ -212,18 +194,13 @@ export default {
         definition: Object,
         name: String
     },
-    components: {
-        KeyValueField,
-        LeadTimeInput
-    },
     created() {
         if (this.uengineProperties) {
             this.copyUengineProperties = JSON.parse(JSON.stringify(this.uengineProperties));
         } else {
             this.copyUengineProperties = {};
         }
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
-        
+        if (!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
     },
     emits: ['update:uengineProperties'],
     data() {
@@ -768,7 +745,7 @@ export default {
             const compact = { eventSynchronization, businessRuleId, _type };
 
             this.copyUengineProperties = compact;
-        },
+        }
     }
 };
 </script>

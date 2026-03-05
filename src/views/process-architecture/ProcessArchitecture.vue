@@ -29,13 +29,7 @@
                                 <p class="text-caption text-grey font-weight-bold mb-1 text-uppercase">
                                     {{ $t('processArchitecture.exportMenu.scope') }}
                                 </p>
-                                <v-btn-toggle
-                                    v-model="exportScope"
-                                    mandatory
-                                    density="compact"
-                                    color="primary"
-                                    class="w-100"
-                                >
+                                <v-btn-toggle v-model="exportScope" mandatory density="compact" color="primary" class="w-100">
                                     <v-btn value="visible" size="x-small" class="flex-grow-1">
                                         {{ $t('processArchitecture.exportMenu.visibleOnly') }}
                                     </v-btn>
@@ -85,13 +79,7 @@
                             </div>
                         </v-card>
                     </v-menu>
-                    <v-btn
-                        v-if="isAdmin"
-                        color="primary"
-                        size="small"
-                        prepend-icon="mdi-plus"
-                        @click="showNewProcessDialog = true"
-                    >
+                    <v-btn v-if="isAdmin" color="primary" size="small" prepend-icon="mdi-plus" @click="showNewProcessDialog = true">
                         {{ $t('processArchitecture.newProcess') }}
                     </v-btn>
                 </div>
@@ -99,13 +87,7 @@
 
             <!-- Toolbar: View Toggle + To-Be Toggle -->
             <div class="d-flex align-center justify-space-between mt-4 mb-3 flex-wrap ga-2">
-                <v-btn-toggle
-                    v-model="activeView"
-                    mandatory
-                    density="compact"
-                    color="primary"
-                    class="view-toggle"
-                >
+                <v-btn-toggle v-model="activeView" mandatory density="compact" color="primary" class="view-toggle">
                     <v-btn value="card" size="small">
                         <v-icon start size="16">mdi-view-grid-outline</v-icon>
                         {{ $t('processArchitecture.views.card') }}
@@ -149,15 +131,12 @@
                         density="compact"
                         hide-details
                         clearable
-                        style="max-width: 320px; min-width: 200px;"
+                        style="max-width: 320px; min-width: 200px"
                         @focus="onSearchFocus"
                         @input="onSearchInput"
                     />
                     <!-- Smart Dropdown -->
-                    <div
-                        v-if="showSearchDropdown && topRecentlyViewed.length > 0 && !searchQuery"
-                        class="search-dropdown elevation-4"
-                    >
+                    <div v-if="showSearchDropdown && topRecentlyViewed.length > 0 && !searchQuery" class="search-dropdown elevation-4">
                         <div class="search-dropdown-header">
                             {{ $t('processArchitecture.search.recentlyViewed') }}
                         </div>
@@ -298,6 +277,19 @@
                     >
                         {{ domain.name }}
                     </v-chip>
+                    <!-- 도메인 추가 (PAL 모드 + 관리자) — 주변 칩과 동일 스타일 -->
+                    <v-chip
+                        v-if="isAdmin && isPalMode"
+                        size="small"
+                        variant="outlined"
+                        color="grey"
+                        class="domain-add-chip"
+                        prepend-icon="mdi-plus"
+                        clickable
+                        @click="openDomainAddDialog"
+                    >
+                        {{ $t('metricsView.addDomain') || '도메인 추가' }}
+                    </v-chip>
                 </div>
 
                 <!-- Quick Filters -->
@@ -366,22 +358,16 @@
             <!-- Empty State -->
             <div v-if="isFilteredEmpty" class="empty-state">
                 <svg class="empty-state-illustration" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="30" y="40" width="140" height="90" rx="8" fill="#f0f4ff" stroke="#c5cae9" stroke-width="2"/>
-                    <rect x="50" y="60" width="60" height="8" rx="4" fill="#c5cae9"/>
-                    <rect x="50" y="76" width="100" height="6" rx="3" fill="#e8eaf6"/>
-                    <rect x="50" y="90" width="80" height="6" rx="3" fill="#e8eaf6"/>
-                    <circle cx="155" cy="50" r="22" fill="#fff" stroke="#c5cae9" stroke-width="2"/>
-                    <line x1="148" y1="43" x2="162" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round"/>
-                    <line x1="162" y1="43" x2="148" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round"/>
+                    <rect x="30" y="40" width="140" height="90" rx="8" fill="#f0f4ff" stroke="#c5cae9" stroke-width="2" />
+                    <rect x="50" y="60" width="60" height="8" rx="4" fill="#c5cae9" />
+                    <rect x="50" y="76" width="100" height="6" rx="3" fill="#e8eaf6" />
+                    <rect x="50" y="90" width="80" height="6" rx="3" fill="#e8eaf6" />
+                    <circle cx="155" cy="50" r="22" fill="#fff" stroke="#c5cae9" stroke-width="2" />
+                    <line x1="148" y1="43" x2="162" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round" />
+                    <line x1="162" y1="43" x2="148" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round" />
                 </svg>
                 <p class="empty-state-message">{{ $t('processArchitecture.emptyState.message') }}</p>
-                <v-btn
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                    prepend-icon="mdi-filter-remove"
-                    @click="resetAllFilters"
-                >
+                <v-btn color="primary" variant="outlined" size="small" prepend-icon="mdi-filter-remove" @click="resetAllFilters">
                     {{ $t('processArchitecture.emptyState.resetFilters') }}
                 </v-btn>
             </div>
@@ -436,12 +422,7 @@
         </div>
 
         <!-- New Process Dialog -->
-        <NewProcessDialog
-            v-model="showNewProcessDialog"
-            :procMap="procMap"
-            :domains="domains"
-            @created="onProcessCreated"
-        />
+        <NewProcessDialog v-model="showNewProcessDialog" :procMap="procMap" :domains="domains" @created="onProcessCreated" />
 
         <!-- Advanced Filter Panel -->
         <AdvancedFilterPanel
@@ -452,21 +433,52 @@
             @apply="onAdvancedFilterApply"
         />
 
-        <!-- Export notification snackbar -->
-        <v-snackbar
-            v-model="exportSnackbar.show"
-            :color="exportSnackbar.color"
-            :timeout="exportSnackbar.timeout"
-            location="bottom right"
-        >
-            <div class="d-flex align-center ga-2">
-                <v-progress-circular
-                    v-if="exportSnackbar.loading"
-                    size="16"
-                    width="2"
-                    indeterminate
-                    color="white"
+        <!-- Domain Add Dialog -->
+        <v-dialog v-model="domainAddDialog.show" max-width="400" persistent>
+            <v-card class="pa-4 rounded-lg">
+                <v-card-title class="px-0 pt-0 text-h6 font-weight-bold">
+                    {{ t('metricsView.addDomain') || '도메인 추가' }}
+                </v-card-title>
+                <v-text-field
+                    v-model="domainAddDialog.name"
+                    :label="t('metricsView.domainName') || '도메인 명'"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details
+                    class="mt-2"
+                    @keyup.enter="saveDomainAdd"
+                    autofocus
                 />
+                <div class="mt-4">
+                    <div class="text-subtitle-2 mb-2">{{ t('processDefinitionMap.selectColor') || '색상 선택' }}</div>
+                    <div class="d-flex flex-wrap" style="gap: 8px">
+                        <div
+                            v-for="color in domainColors"
+                            :key="color"
+                            class="color-option"
+                            :class="{ 'color-selected': domainAddDialog.color === color }"
+                            :style="{ backgroundColor: color }"
+                            @click="domainAddDialog.color = color"
+                        />
+                    </div>
+                    <v-btn v-if="domainAddDialog.color" variant="text" size="small" class="mt-2" @click="domainAddDialog.color = null">
+                        {{ t('common.reset') || '초기화' }}
+                    </v-btn>
+                </div>
+                <v-card-actions class="px-0 pb-0 pt-3">
+                    <v-spacer />
+                    <v-btn variant="text" @click="domainAddDialog.show = false">{{ t('common.cancel') || '취소' }}</v-btn>
+                    <v-btn color="primary" variant="flat" :disabled="!domainAddDialog.name.trim()" @click="saveDomainAdd">
+                        {{ t('common.save') || '저장' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- Export notification snackbar -->
+        <v-snackbar v-model="exportSnackbar.show" :color="exportSnackbar.color" :timeout="exportSnackbar.timeout" location="bottom right">
+            <div class="d-flex align-center ga-2">
+                <v-progress-circular v-if="exportSnackbar.loading" size="16" width="2" indeterminate color="white" />
                 <span>{{ exportSnackbar.message }}</span>
             </div>
         </v-snackbar>
@@ -489,6 +501,7 @@ const t = (key: string) => instance.proxy!.$t(key);
 
 const {
     procMap,
+    metricsMap,
     loading,
     searchQuery,
     selectedDomain,
@@ -515,17 +528,77 @@ const {
     advancedFilters,
     filterPresets,
     saveFilterPreset,
-    loadFilterPreset,
-    deleteFilterPreset
-} = useProcessArchitecture();
+    deleteFilterPreset,
+    saveMetricsMap,
+});
 
 const isAdmin = computed(() => {
     const role = localStorage.getItem('role');
     return role === 'superAdmin' || localStorage.getItem('isAdmin') === 'true';
 });
 
+const isPalMode = computed(() => typeof window !== 'undefined' && !!(window as any).$pal);
+
 const showNewProcessDialog = ref(false);
 const showAdvancedFilter = ref(false);
+
+// 도메인 추가 다이얼로그
+const domainAddDialog = ref({
+    show: false,
+    name: '',
+    color: null as string | null
+});
+const domainColors = [
+    '#E53935',
+    '#D81B60',
+    '#8E24AA',
+    '#5E35B1',
+    '#3949AB',
+    '#1E88E5',
+    '#00ACC1',
+    '#00897B',
+    '#43A047',
+    '#7CB342',
+    '#FB8C00',
+    '#6D4C41'
+];
+
+function openDomainAddDialog() {
+    domainAddDialog.value = { show: true, name: '', color: null };
+}
+
+async function saveDomainAdd() {
+    const trimmedName = domainAddDialog.value.name.trim();
+    if (!trimmedName) return;
+    const current = metricsMap.value || { domains: [], mega_processes: [], processes: [] };
+    const domainsList = Array.isArray(current.domains) ? [...current.domains] : [];
+    const isDuplicate = domainsList.some((d: any) => (d.name || '').toLowerCase() === trimmedName.toLowerCase());
+    if (isDuplicate) {
+        alert(t('processDefinitionMap.duplicateName') || '동일한 이름이 이미 존재합니다.');
+        return;
+    }
+    const newId = trimmedName.toLowerCase().replace(/[/.]/g, '_');
+    const newOrder = domainsList.length + 1;
+    domainsList.push({
+        id: newId,
+        name: trimmedName,
+        color: domainAddDialog.value.color,
+        order: newOrder
+    });
+    const updated = {
+        ...current,
+        domains: domainsList,
+        mega_processes: current.mega_processes ?? [],
+        processes: current.processes ?? []
+    };
+    try {
+        await saveMetricsMap(updated);
+        domainAddDialog.value.show = false;
+    } catch (e) {
+        console.error('Failed to save domain:', e);
+        alert(t('common.saveFailed') || '저장에 실패했습니다.');
+    }
+}
 const selectedDomainIndex = ref(undefined);
 const showSearchDropdown = ref(false);
 const searchWrapperRef = ref<HTMLElement | null>(null);
@@ -534,11 +607,17 @@ let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 // Advanced filter helpers
 const hasAdvancedFilters = computed(() => {
     const af = advancedFilters.value;
-    return af.statuses.length > 0 || af.dateMode !== 'none' ||
-        af.owners.length > 0 || af.tags.length > 0 ||
-        af.fteRange[0] !== 0 || af.fteRange[1] !== 10 ||
-        af.leadTimeRange[0] !== 0 || af.leadTimeRange[1] !== 365 ||
-        af.systems.length > 0;
+    return (
+        af.statuses.length > 0 ||
+        af.dateMode !== 'none' ||
+        af.owners.length > 0 ||
+        af.tags.length > 0 ||
+        af.fteRange[0] !== 0 ||
+        af.fteRange[1] !== 10 ||
+        af.leadTimeRange[0] !== 0 ||
+        af.leadTimeRange[1] !== 365 ||
+        af.systems.length > 0
+    );
 });
 
 const advancedFilterCount = computed(() => {
@@ -560,14 +639,14 @@ const ownerOptionsForFilter = computed(() => {
     for (const def of allProcDefs.value) {
         if (def.owner) emails.add(def.owner);
     }
-    return [...emails].map(email => ({ email, label: email }));
+    return [...emails].map((email) => ({ email, label: email }));
 });
 
 // Tags from all proc definitions
 const availableTagsForFilter = computed(() => {
     const tags = new Set<string>();
     for (const def of allProcDefs.value) {
-        for (const tag of (def.tags || [])) {
+        for (const tag of def.tags || []) {
             tags.add(tag);
         }
     }
@@ -580,9 +659,9 @@ const availableSystemsForFilter = computed(() => {
     const map = procMap.value;
     if (map?.mega_proc_list) {
         for (const mega of map.mega_proc_list) {
-            for (const major of (mega.major_proc_list || [])) {
-                for (const sub of (major.sub_proc_list || [])) {
-                    for (const s of (sub.systems || sub.oss || [])) {
+            for (const major of mega.major_proc_list || []) {
+                for (const sub of major.sub_proc_list || []) {
+                    for (const s of sub.systems || sub.oss || []) {
                         systems.add(s);
                     }
                 }
@@ -615,7 +694,7 @@ function resetAdvancedFilters() {
 function toggleDomain(name: string) {
     const idx = selectedDomains.value.indexOf(name);
     if (idx >= 0) {
-        selectedDomains.value = selectedDomains.value.filter(d => d !== name);
+        selectedDomains.value = selectedDomains.value.filter((d) => d !== name);
     } else {
         selectedDomains.value = [...selectedDomains.value, name];
     }
@@ -632,14 +711,21 @@ function toggleMyProcessChip(key: 'favorites' | 'myCreation' | 'myOrganization')
 
 // Empty state: true when filters/search are active but no results
 const isFilteredEmpty = computed(() => {
-    const hasFilter = searchQuery.value || selectedDomain.value || (selectedDomains.value?.length ?? 0) > 0 || quickFilterNeedFeedback.value || quickFilterWIL.value || myProcessFilter.value.enabled || hasAdvancedFilters.value;
+    const hasFilter =
+        searchQuery.value ||
+        selectedDomain.value ||
+        (selectedDomains.value?.length ?? 0) > 0 ||
+        quickFilterNeedFeedback.value ||
+        quickFilterWIL.value ||
+        myProcessFilter.value.enabled ||
+        hasAdvancedFilters.value;
     if (!hasFilter) return false;
 
     // Check if filteredProcMap has any sub processes
     const map = filteredProcMap.value;
     if (map && map.mega_proc_list) {
         for (const mega of map.mega_proc_list) {
-            for (const major of (mega.major_proc_list || [])) {
+            for (const major of mega.major_proc_list || []) {
                 if ((major.sub_proc_list || []).length > 0) return false;
             }
         }
@@ -774,7 +860,7 @@ function countSubProcesses(map: any): number {
     let count = 0;
     if (!map?.mega_proc_list) return count;
     for (const mega of map.mega_proc_list) {
-        for (const major of (mega.major_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
             count += (major.sub_proc_list || []).length;
         }
     }
@@ -801,16 +887,18 @@ function flattenProcMap(map: any): any[] {
         defLookup.set(def.id, def);
     }
     for (const mega of map.mega_proc_list) {
-        for (const major of (mega.major_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
             const domain = major.domain || major.domain_id || '';
-            for (const sub of (major.sub_proc_list || [])) {
+            for (const sub of major.sub_proc_list || []) {
                 const status = processStatuses.value.get(sub.id);
                 const def = defLookup.get(sub.id);
                 // FTE: from proc definition fte field or fte_config
                 const fte = def?.fte ?? def?.fte_value ?? sub.fte ?? '';
                 // OSS/System: from proc definition systems or oss fields
-                const oss = (def?.systems || def?.oss_list || sub.systems || [])
-                    .map((s: any) => (typeof s === 'string' ? s : s.name || s.id || '')).join(', ') || '';
+                const oss =
+                    (def?.systems || def?.oss_list || sub.systems || [])
+                        .map((s: any) => (typeof s === 'string' ? s : s.name || s.id || ''))
+                        .join(', ') || '';
                 rows.push({
                     pid: sub.id,
                     domain,
@@ -836,10 +924,10 @@ function buildMermaidText(map: any): string {
     for (const mega of map.mega_proc_list) {
         const megaId = `mega_${mega.id}`.replace(/[^a-zA-Z0-9_]/g, '_');
         lines.push(`    ${megaId}["${mega.name || mega.id}"]`);
-        for (const major of (mega.major_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
             const majorId = `major_${major.id}`.replace(/[^a-zA-Z0-9_]/g, '_');
             lines.push(`    ${megaId} --> ${majorId}["[${major.id}] ${major.name}"]`);
-            for (const sub of (major.sub_proc_list || [])) {
+            for (const sub of major.sub_proc_list || []) {
                 const subId = `sub_${sub.id}`.replace(/[^a-zA-Z0-9_]/g, '_');
                 lines.push(`    ${majorId} --> ${subId}["[${sub.id}] ${sub.name}"]`);
             }
@@ -900,14 +988,9 @@ async function runExport(format: ExportFormat) {
     const isLargeData = subCount > LARGE_DATA_THRESHOLD;
 
     if (isLargeData) {
-        showExportNotification(
-            t('processArchitecture.exportMenu.processingLargeData'),
-            'primary',
-            true,
-            -1
-        );
+        showExportNotification(t('processArchitecture.exportMenu.processingLargeData'), 'primary', true, -1);
         // Run the heavy export work asynchronously so the UI can update first
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
             const idle = (window as any).requestIdleCallback || ((cb: () => void) => setTimeout(cb, 0));
             idle(() => resolve());
         });
@@ -915,34 +998,45 @@ async function runExport(format: ExportFormat) {
 
     try {
         if (format === 'excel') {
-            // NOTE: requires 'xlsx' package: npm install xlsx
-            // Dynamic import - falls back gracefully if not installed
-            const XLSX = await import('xlsx').catch(() => null);
-            if (!XLSX) {
-                alert('xlsx 패키지가 설치되어 있지 않습니다. npm install xlsx 를 실행해주세요.');
+            const ExcelJS = await import('exceljs').catch(() => null);
+            if (!ExcelJS) {
+                alert('exceljs 패키지가 설치되어 있지 않습니다. npm install exceljs 를 실행해주세요.');
                 return;
             }
             const rows = flattenProcMap(map);
-            const headers = ['PID', 'Domain', 'Mega Process', 'Major Process', 'Sub Process', 'Status', 'Version', 'Owner', 'FTE', 'OSS/System'];
+            const headers = [
+                'PID',
+                'Domain',
+                'Mega Process',
+                'Major Process',
+                'Sub Process',
+                'Status',
+                'Version',
+                'Owner',
+                'FTE',
+                'OSS/System'
+            ];
             const wsData = [
                 headers,
-                ...rows.map(r => [r.pid, r.domain, r.mega, r.major, r.sub, r.status, r.version, r.owner, r.fte, r.oss])
+                ...rows.map((r) => [r.pid, r.domain, r.mega, r.major, r.sub, r.status, r.version, r.owner, r.fte, r.oss])
             ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Processes');
-            XLSX.writeFile(wb, `process-architecture-${ts}.xlsx`);
-
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Processes');
+            worksheet.addRows(wsData);
+            worksheet.columns = [12, 18, 24, 24, 24, 14, 12, 18, 10, 20].map((width) => ({ width }));
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            downloadBlob(blob, `process-architecture-${ts}.xlsx`);
         } else if (format === 'json') {
             const json = JSON.stringify(map, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
             downloadBlob(blob, `process-architecture-${ts}.json`);
-
         } else if (format === 'mermaid') {
             const text = buildMermaidText(map);
             const blob = new Blob([text], { type: 'text/plain' });
             downloadBlob(blob, `process-architecture-${ts}.mmd`);
-
         } else if (format === 'png' || format === 'pdf') {
             const el = document.getElementById('processArchView');
             if (!el) return;
@@ -953,7 +1047,9 @@ async function runExport(format: ExportFormat) {
                 // Overlay logo watermark on canvas
                 const img = new Image();
                 img.src = dataUrl;
-                await new Promise(res => { img.onload = res; });
+                await new Promise((res) => {
+                    img.onload = res;
+                });
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
@@ -976,14 +1072,14 @@ async function runExport(format: ExportFormat) {
                 const tsText = `Exported: ${new Date().toLocaleString()}`;
                 const tsWidth = ctx.measureText(tsText).width;
                 ctx.fillText(tsText, img.width - tsWidth - padding, img.height - padding);
-                canvas.toBlob(blob => {
+                canvas.toBlob((blob) => {
                     if (blob) downloadBlob(blob, `process-architecture-${ts}.png`);
                 }, 'image/png');
             } else {
                 // PDF: render to PNG then embed in PDF via jsPDF (dynamic import)
                 // NOTE: requires 'jspdf' package: npm install jspdf
                 const dataUrl = await domtoimage.toPng(el, { bgcolor: '#ffffff' });
-                const jsPDF = await import('jspdf').then(m => m.default || m.jsPDF).catch(() => null);
+                const jsPDF = await import('jspdf').then((m) => m.default || m.jsPDF).catch(() => null);
                 if (!jsPDF) {
                     // Fallback: open PNG in new tab for manual PDF print
                     const win = window.open('', '_blank');
@@ -995,7 +1091,9 @@ async function runExport(format: ExportFormat) {
                 }
                 const img = new Image();
                 img.src = dataUrl;
-                await new Promise(res => { img.onload = res; });
+                await new Promise((res) => {
+                    img.onload = res;
+                });
                 const pdf = new (jsPDF as any)({
                     orientation: img.width > img.height ? 'landscape' : 'portrait',
                     unit: 'px',
@@ -1017,22 +1115,12 @@ async function runExport(format: ExportFormat) {
         const rows = flattenProcMap(map);
         await logExport(format, scope, rows.length);
         if (isLargeData) {
-            showExportNotification(
-                t('processArchitecture.exportMenu.exportComplete'),
-                'success',
-                false,
-                3000
-            );
+            showExportNotification(t('processArchitecture.exportMenu.exportComplete'), 'success', false, 3000);
         }
     } catch (e) {
         console.error(`[Export] ${format} failed:`, e);
         if (isLargeData) {
-            showExportNotification(
-                t('processArchitecture.exportMenu.exportFailed'),
-                'error',
-                false,
-                3000
-            );
+            showExportNotification(t('processArchitecture.exportMenu.exportFailed'), 'error', false, 3000);
         }
     } finally {
         exporting.value = false;
@@ -1057,6 +1145,23 @@ function onProcessCreated(newProc: { id: string; name: string }) {
 
 .domain-chips :deep(.v-chip) {
     font-weight: 500;
+}
+
+.color-option {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.color-option.color-selected {
+    border-color: #333;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
 }
 
 .stats-bar {

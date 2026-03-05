@@ -11,8 +11,6 @@ const items = shallowRef([
     { tab: 'Projects', icon: Layout2Icon, href: '/apps/user/profileone/projects' },
     { tab: 'Connection', icon: IdIcon, href: '/apps/user/profileone/connection' }
 ]);
-
-
 </script>
 
 <template>
@@ -30,16 +28,24 @@ const items = shallowRef([
                                         <PlusIcon size="16" stroke-width="2" />
                                     </v-avatar>
                                 </v-avatar>
-
                             </div>
                             <div class="ml-sm-4 text-sm-left text-center">
-                                <h5 class="text-h3 font-weight-semibold mb-1 my-sm-0 my-2">Jonathan Doe <v-chip color="primary"
-                                        class="bg-lightprimary font-weight-semibold ml-2 mt-n1" variant="outlined"
-                                        size="x-small">Admin</v-chip></h5>
-                                <span class="text-h6 font-weight-medium text-grey100">Dream big. Think different. Do
-                                    great!</span>
-                                <div class="text-subtitle-1 font-weight-semibold text-grey200 d-flex align-center mt-1 justify-sm-start justify-center">
-                                    <div class="bg-success pa-1 rounded-circle mr-2"></div>Active
+                                <h5 class="text-h3 font-weight-semibold mb-1 my-sm-0 my-2">
+                                    Jonathan Doe
+                                    <v-chip
+                                        color="primary"
+                                        class="bg-lightprimary font-weight-semibold ml-2 mt-n1"
+                                        variant="outlined"
+                                        size="x-small"
+                                        >Admin</v-chip
+                                    >
+                                </h5>
+                                <span class="text-h6 font-weight-medium text-grey100">Dream big. Think different. Do great!</span>
+                                <div
+                                    class="text-subtitle-1 font-weight-semibold text-grey200 d-flex align-center mt-1 justify-sm-start justify-center"
+                                >
+                                    <div class="bg-success pa-1 rounded-circle mr-2"></div>
+                                    Active
                                 </div>
                             </div>
                         </div>
@@ -52,17 +58,15 @@ const items = shallowRef([
                 </v-row>
                 <v-row>
                     <v-col md="12" class="profile-one">
-                        <v-tabs v-model="tab" color="primary" dark class="profiletab ">
+                        <v-tabs v-model="tab" color="primary" dark class="profiletab">
                             <v-tab v-for="item in items" :key="item.tab" :to="item.href" class="text-grey100 mr-sm-3">
-                                <component :is="item.icon" size="20" stroke-width="1.5"
-                                    class="mr-sm-2 text-h6 text-grey100 icon">
+                                <component :is="item.icon" size="20" stroke-width="1.5" class="mr-sm-2 text-h6 text-grey100 icon">
                                 </component>
                                 <span class="d-sm-flex d-none">{{ item.tab }}</span>
                             </v-tab>
                         </v-tabs>
                     </v-col>
                 </v-row>
-
             </v-card-item>
         </v-card>
     </div>
@@ -131,4 +135,5 @@ const items = shallowRef([
     .order-sm-last {
         order: 4;
     }
-}</style>
+}
+</style>

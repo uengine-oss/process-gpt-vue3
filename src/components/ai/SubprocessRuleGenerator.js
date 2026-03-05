@@ -1,4 +1,4 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 /**
  * SubprocessRuleGenerator
@@ -17,22 +17,21 @@ import AIGenerator from "./AIGenerator";
  *   }
  */
 export default class SubprocessRuleGenerator extends AIGenerator {
+    constructor(client, options) {
+        super(client, options);
 
-  constructor(client, options) {
-    super(client, options);
+        this.model = 'gpt-4o';
+        this.options = options ?? {};
 
-    this.model = "gpt-4o";
-    this.options = options ?? {};
+        // ---- 입력 파라미터 직렬화 ----
+        const name = typeof this.options.name === 'string' ? this.options.name : '';
+        const formDefs = JSON.stringify(this.options.formDefs ?? [], null, 2);
+        const previousExpr = typeof this.options.previousExpr === 'string' ? this.options.previousExpr : '';
 
-    // ---- 입력 파라미터 직렬화 ----
-    const name               = typeof this.options.name === "string" ? this.options.name : "";
-    const formDefs           = JSON.stringify(this.options.formDefs ?? [], null, 2);
-    const previousExpr       = typeof this.options.previousExpr === "string" ? this.options.previousExpr : "";
-
-    this.previousMessages = [
-      {
-        role: "system",
-        content: `You are a precise key selector for subprocess counting.
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `You are a precise key selector for subprocess counting.
  
 GOAL
 - Select exactly ONE key to count in the format "<form_key>:<field_key>".
@@ -68,7 +67,7 @@ OUTPUT (STRICT; return ONLY this JSON object)
 {
   "python_expr": "string in the format <form_key>:<field_key>"
 }`
-      }
-    ];
-  }
+            }
+        ];
+    }
 }

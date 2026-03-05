@@ -15,7 +15,7 @@ import { createApp } from 'vue';
 import VueTablerIcons from 'vue-tabler-icons';
 import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
-import PerfectScrollbar from 'vue3-perfect-scrollbar';
+import { PerfectScrollbar } from 'vue3-perfect-scrollbar';
 import App from './App.vue';
 import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
@@ -42,8 +42,8 @@ import setLocale from './plugins/setLocale';
 import { Icon, addCollection } from '@iconify/vue';
 import solarIcons from '@iconify-json/solar/icons.json';
 addCollection(solarIcons);
-import Icons from '@/components/ui-components/Icons.vue'
-import InfoAlert from '@/components/ui/InfoAlert.vue'
+import Icons from '@/components/ui-components/Icons.vue';
+import InfoAlert from '@/components/ui/InfoAlert.vue';
 
 // css
 import '@/assets/css/globalStyle.css';
@@ -175,7 +175,7 @@ declare global {
 // });
 
 Object.defineProperty(window, '$gs', {
-    value: (window._env_?.VITE_GS_MODE === 'true' || import.meta.env.VITE_GS_MODE === 'true'),
+    value: window._env_?.VITE_GS_MODE === 'true' || import.meta.env.VITE_GS_MODE === 'true',
     writable: false,
     configurable: false
 });
@@ -273,13 +273,15 @@ function setupAuthAuditLogging() {
                     provider
                 }
             });
-            void rpcPromise.then(({ error }: any) => {
-                if (error) {
-                    console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', error);
-                }
-            }).catch((e: any) => {
-                console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', e);
-            });
+            void rpcPromise
+                .then(({ error }: any) => {
+                    if (error) {
+                        console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', error);
+                    }
+                })
+                .catch((e: any) => {
+                    console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', e);
+                });
         } catch (e) {
             // 감사 로그 실패는 앱 동작에 영향 없도록 무시
             console.warn('[auth_login_audit] SIGNED_IN 기록 실패:', e);
@@ -332,7 +334,7 @@ async function initializeApp() {
     await setupSupabase();
     await setupTenant();
     setupAuthAuditLogging();
-    
+
     // 동적 언어 설정 (localStorage에 저장된 언어 우선, 없으면 자동 감지)
     const savedLocale = localStorage.getItem('locale');
     if (!savedLocale) {
@@ -459,7 +461,7 @@ async function initializeApp() {
     // 전역으로 복사 가능하게 추가
     document.addEventListener('keydown', function (event) {
         if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
-            let selection = window.getSelection();
+            const selection = window.getSelection();
             if (selection) {
                 navigator.clipboard.writeText(selection.toString()).then(
                     function () {
@@ -481,7 +483,7 @@ async function initializeApp() {
     if (window.$mode == 'uEngine') {
         (async () => {
             try {
-                let initOptions = {
+                const initOptions = {
                     url: window._env_?.VITE_KEYCLOAK_URL || import.meta.env.VITE_KEYCLOAK_URL || `http://localhost:8080/`,
                     realm: window._env_?.VITE_KEYCLOAK_REALM || import.meta.env.VITE_KEYCLOAK_REALM || `uengine`,
                     clientId: window._env_?.VITE_KEYCLOAK_CLIENT_ID || import.meta.env.VITE_KEYCLOAK_CLIENT_ID || `uengine`,
@@ -503,7 +505,7 @@ async function initializeApp() {
                         localStorage.setItem('uid', `${keycloak.tokenParsed.sub}`);
                         localStorage.setItem('groups', `${keycloak.tokenParsed.groups}`);
                         localStorage.setItem('roles', `${keycloak.tokenParsed.realm_access?.roles}`);
-                        
+
                         const realmRoles = Array.isArray(keycloak.tokenParsed.realm_access?.roles)
                             ? keycloak.tokenParsed.realm_access.roles
                             : [];

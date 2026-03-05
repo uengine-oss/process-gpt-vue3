@@ -1,11 +1,12 @@
 <template>
     <div>
-        <v-text-field 
-            v-model="eventKey" 
-            :label="$t('SignalEventDefinitionPanel.eventKey')" 
-            :disabled="isViewMode" 
-            ref="cursor" 
-            class="bpmn-property-panel-name mb-3">
+        <v-text-field
+            v-model="eventKey"
+            :label="$t('SignalEventDefinitionPanel.eventKey')"
+            :disabled="isViewMode"
+            ref="cursor"
+            class="bpmn-property-panel-name mb-3"
+        >
         </v-text-field>
     </div>
 </template>
@@ -47,7 +48,6 @@ export default {
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         }
     },
-    methods: {
-    }
+    methods: {}
 };
 </script>

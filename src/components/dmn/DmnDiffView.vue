@@ -37,8 +37,20 @@
                         <div class="d-flex align-center ga-2 mb-2">
                             <v-chip :color="getChangeColor(ch.type)" size="x-small" variant="flat">{{ getChangeText(ch.type) }}</v-chip>
                             <div class="text-body-2 font-weight-medium text-truncate">{{ getDecisionTitle(ch) }}</div>
-                            <v-chip v-if="(ch.current?.decisionTable || ch.previous?.decisionTable)" color="info" size="x-small" variant="tonal">DecisionTable</v-chip>
-                            <v-chip v-else-if="(ch.current?.literalExpression || ch.previous?.literalExpression)" color="info" size="x-small" variant="tonal">Expression</v-chip>
+                            <v-chip
+                                v-if="ch.current?.decisionTable || ch.previous?.decisionTable"
+                                color="info"
+                                size="x-small"
+                                variant="tonal"
+                                >DecisionTable</v-chip
+                            >
+                            <v-chip
+                                v-else-if="ch.current?.literalExpression || ch.previous?.literalExpression"
+                                color="info"
+                                size="x-small"
+                                variant="tonal"
+                                >Expression</v-chip
+                            >
                         </div>
 
                         <!-- (금지사항 준수) 요구관계/표현식은 raw 데이터 노출 금지: 요약만 표시 -->
@@ -59,14 +71,13 @@
 
                         <!-- DecisionTable: 수정은 전/후 비교, 추가/삭제는 한쪽만 -->
                         <decision-table-diff
-                            v-if="(ch.current?.decisionTable || ch.previous?.decisionTable)"
-                            :previous="ch.type === 'added' ? null : (ch.previous?.decisionTable || null)"
-                            :current="ch.type === 'removed' ? null : (ch.current?.decisionTable || null)"
+                            v-if="ch.current?.decisionTable || ch.previous?.decisionTable"
+                            :previous="ch.type === 'added' ? null : ch.previous?.decisionTable || null"
+                            :current="ch.type === 'removed' ? null : ch.current?.decisionTable || null"
                         />
                     </v-card>
                 </div>
             </div>
-
         </div>
 
         <!-- 변경 요약 (기존처럼 하단 1회만 표시) -->
@@ -75,13 +86,7 @@
                 <div class="flex-grow-1">
                     <div class="text-body-2 font-weight-medium mb-1">변경 요약</div>
                     <div class="summary-chips">
-                        <v-chip
-                            v-for="c in elementSummaryChips"
-                            :key="c.key"
-                            :color="c.color"
-                            size="small"
-                            variant="tonal"
-                        >
+                        <v-chip v-for="c in elementSummaryChips" :key="c.key" :color="c.color" size="small" variant="tonal">
                             {{ c.text }}
                         </v-chip>
                         <span v-if="elementSummaryChips.length === 0" class="text-caption text-medium-emphasis">-</span>
@@ -206,8 +211,10 @@ export default {
             const curr = ch.current || null;
             if (ch.type === 'modified') {
                 const diffs = [];
-                if ((prev?.name || '') !== (curr?.name || '')) diffs.push({ field: 'name', previous: prev?.name || null, current: curr?.name || null });
-                if ((prev?.variable?.typeRef || '') !== (curr?.variable?.typeRef || '')) diffs.push({ field: 'typeRef', previous: prev?.variable?.typeRef || null, current: curr?.variable?.typeRef || null });
+                if ((prev?.name || '') !== (curr?.name || ''))
+                    diffs.push({ field: 'name', previous: prev?.name || null, current: curr?.name || null });
+                if ((prev?.variable?.typeRef || '') !== (curr?.variable?.typeRef || ''))
+                    diffs.push({ field: 'typeRef', previous: prev?.variable?.typeRef || null, current: curr?.variable?.typeRef || null });
                 return diffs;
             }
             if (ch.type === 'added') {
@@ -240,8 +247,12 @@ export default {
         },
         buildIdNameMapFromDmn(dmn) {
             const map = {};
-            (dmn?.inputData || []).forEach((i) => { if (i?.id) map[i.id] = i.name || i.id; });
-            (dmn?.decisions || []).forEach((d) => { if (d?.id) map[d.id] = d.name || d.id; });
+            (dmn?.inputData || []).forEach((i) => {
+                if (i?.id) map[i.id] = i.name || i.id;
+            });
+            (dmn?.decisions || []).forEach((d) => {
+                if (d?.id) map[d.id] = d.name || d.id;
+            });
             return map;
         },
         hrefToId(href) {
@@ -279,7 +290,7 @@ export default {
             const mapCurr = this.buildIdNameMapFromDmn(this.current);
             const resolve = (k) => {
                 const [t, id] = k.split(':');
-                const name = (mapCurr[id] || mapPrev[id]) || id;
+                const name = mapCurr[id] || mapPrev[id] || id;
                 return `${t === 'I' ? '입력' : '결정'} ${name}`;
             };
 
@@ -502,4 +513,3 @@ export default {
     align-items: center;
 }
 </style>
-

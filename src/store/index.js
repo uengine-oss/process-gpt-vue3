@@ -13,8 +13,8 @@ export default createStore({
             state.editMessages = editMessages;
         },
         clearMessages(state) {
-            state.messages = null;  // or state.messages = [] if you prefer to reset to an empty array
-            state.editMessages = null;  // or state.messages = [] if you prefer to reset to an empty array
+            state.messages = null; // or state.messages = [] if you prefer to reset to an empty array
+            state.editMessages = null; // or state.messages = [] if you prefer to reset to an empty array
         }
     },
     actions: {

@@ -3,13 +3,29 @@ import { createRequire } from 'module';
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import vuetify from 'vite-plugin-vuetify';
-import dotenv from 'dotenv'
+import dotenv from 'dotenv';
 import path from 'path';
-dotenv.config()
-const env = loadEnv('development', process.cwd(), '')
+dotenv.config();
+const env = loadEnv('development', process.cwd(), '');
 
 const require = createRequire(import.meta.url);
 const monacoEditorPlugin = require('vite-plugin-monaco-editor').default || require('vite-plugin-monaco-editor');
+
+function spaFallbackPlugin() {
+    return {
+        name: 'spa-fallback-definition-map',
+        configureServer(server: any) {
+            const handler = (req: any, res: any, next: any) => {
+                const url = req.url?.split('?')[0] || '';
+                if (req.method === 'GET' && url.startsWith('/definition-map')) {
+                    req.url = '/index.html';
+                }
+                next();
+            };
+            server.middlewares.stack.unshift({ route: '', handle: handler });
+        }
+    };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -18,6 +34,7 @@ export default defineConfig({
         // SUPABASE_KEY: `"${env.SERVICE_ROLE_KEY}"`
     },
     plugins: [
+        spaFallbackPlugin(),
         vue(),
         vuetify({
             autoImport: true,
@@ -30,11 +47,11 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': fileURLToPath(new URL('./src', import.meta.url)),
-            'apextree': path.resolve(__dirname, 'node_modules/apextree/apextree.min.js'),
+            apextree: path.resolve(__dirname, 'node_modules/apextree/apextree.min.js'),
             '@fullcalendar/core': path.resolve(__dirname, 'node_modules/@fullcalendar/core'),
-            'vue': 'vue/dist/vue.esm-bundler.js',
+            vue: 'vue/dist/vue.esm-bundler.js',
             // Node.js 내장 모듈들을 빈 객체로 대체 (브라우저 환경에서 사용 불가)
-            'https': 'rollup-plugin-node-polyfills/polyfills/empty'
+            https: 'rollup-plugin-node-polyfills/polyfills/empty'
         }
     },
     css: {
@@ -51,36 +68,36 @@ export default defineConfig({
         proxy: {
             '/query': {
                 target: 'http://localhost:8005',
-                changeOrigin: true,
+                changeOrigin: true
             },
             '/retrieve': {
                 target: 'http://localhost:8005',
-                changeOrigin: true,
+                changeOrigin: true
             },
             '/complete': {
                 // Windows에서 localhost가 IPv6(::1)로 붙으면서 WSL/Docker 리스너로 가는 경우가 있어 IPv4로 고정
                 target: 'http://127.0.0.1:8000',
-                changeOrigin: true,
+                changeOrigin: true
             },
             '/vision-complete': {
                 target: 'http://127.0.0.1:8000',
-                changeOrigin: true,
+                changeOrigin: true
             },
             '/process-db-schema': {
                 target: 'http://127.0.0.1:8000',
-                changeOrigin: true,
+                changeOrigin: true
             },
             '/drop-process-table': {
                 target: 'http://127.0.0.1:8000',
-                changeOrigin: true,
+                changeOrigin: true
             },
             '/process-search': {
                 target: 'http://127.0.0.1:8000',
-                changeOrigin: true,
+                changeOrigin: true
             },
             '/vision-process-search': {
                 target: 'http://127.0.0.1:8000',
-                changeOrigin: true,
+                changeOrigin: true
             },
             '/langchain-chat': {
                 target: 'http://127.0.0.1:8000',
@@ -113,12 +130,11 @@ export default defineConfig({
     build: {
         rollupOptions: {
             // Node.js 내장 모듈들을 외부 모듈로 처리하여 번들에서 제외
-            external: ['https', 'xlsx'],
+            external: ['https'],
             output: {
                 // 외부 모듈에 대한 globals 설정
                 globals: {
-                    'https': '{}',
-                    'xlsx': '{}'
+                    https: '{}'
                 }
             }
         }

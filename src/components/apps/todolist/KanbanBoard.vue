@@ -1,12 +1,9 @@
 <template>
     <div elevation="10">
         <v-row class="ma-0 pa-0 todo-task-column-box-pc">
-            <v-col v-for="column in columns" :key="column.id"
-                class="pa-2 kanban-column"
-                :cols="columnCols"
-            >
-                <KanbanColumn 
-                    :column="column" 
+            <v-col v-for="column in columns" :key="column.id" class="pa-2 kanban-column" :cols="columnCols">
+                <KanbanColumn
+                    :column="column"
                     :loading="loading[column.id]"
                     :hasMore="hasMore[column.id]"
                     :currentPage="pages[column.id] || 0"
@@ -71,5 +68,5 @@ export default {
             // 컬럼 펼치기 기능 (필요시 구현)
         }
     }
-}
+};
 </script>

@@ -1,8 +1,8 @@
 <template>
-    <div class='demo-app'>
-        <div class='demo-app-main '>
-            <FullCalendar class='demo-app-calendar rounded-md' :options='calendarOptions' :key="calendarKey">
-                <template v-slot:eventContent='arg'>
+    <div class="demo-app">
+        <div class="demo-app-main">
+            <FullCalendar class="demo-app-calendar rounded-md" :options="calendarOptions" :key="calendarKey">
+                <template v-slot:eventContent="arg">
                     <div class="text-subtitle-1 pa-1 text-truncate">{{ arg.event.title }}</div>
                 </template>
             </FullCalendar>
@@ -37,11 +37,7 @@
                             </div>
                         </div>
                         <div v-if="editMode">
-                            <v-text-field
-                                v-model="selectedEvent.title"
-                                :label="$t('calendar.scheduleTitle')"
-                                outlined
-                            ></v-text-field>
+                            <v-text-field v-model="selectedEvent.title" :label="$t('calendar.scheduleTitle')" outlined></v-text-field>
                             <v-text-field
                                 v-model="selectedEvent.start"
                                 :label="$t('calendar.start')"
@@ -54,13 +50,9 @@
                                 outlined
                                 type="datetime-local"
                             ></v-text-field>
-                            <v-textarea
-                                v-model="selectedEvent.description"
-                                :label="$t('calendar.description')"
-                                outlined
-                            ></v-textarea>
-                            <v-select 
-                                v-model="selectedEvent.color" 
+                            <v-textarea v-model="selectedEvent.description" :label="$t('calendar.description')" outlined></v-textarea>
+                            <v-select
+                                v-model="selectedEvent.color"
                                 :label="$t('calendar.color')"
                                 :items="colorItems"
                                 item-title="text"
@@ -68,7 +60,7 @@
                             >
                                 <template v-slot:append>
                                     <v-btn icon @click="showColorPicker = !showColorPicker">
-                                        <v-icon :style="showColorPicker ? 'color: #2196F3':''">mdi-palette</v-icon>
+                                        <v-icon :style="showColorPicker ? 'color: #2196F3' : ''">mdi-palette</v-icon>
                                     </v-btn>
                                 </template>
                             </v-select>
@@ -79,9 +71,9 @@
                                 hide-inputs
                                 outlined
                             ></v-color-picker>
-                            <v-row class="pa-0 ma-0" style="margin-top: 10px;">
+                            <v-row class="pa-0 ma-0" style="margin-top: 10px">
                                 <v-spacer></v-spacer>
-                                <v-btn style="margin-right: 5px;" color="primary" @click="updateEvent">{{ $t('calendar.save') }}</v-btn>
+                                <v-btn style="margin-right: 5px" color="primary" @click="updateEvent">{{ $t('calendar.save') }}</v-btn>
                                 <v-btn color="error" @click="deleteEvent">{{ $t('calendar.delete') }}</v-btn>
                             </v-row>
                         </div>
@@ -93,34 +85,30 @@
 </template>
 
 <script>
-import StorageBaseFactory from '@/utils/StorageBaseFactory'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import FullCalendar from '@fullcalendar/vue3'
-import { defineComponent } from 'vue'
+import StorageBaseFactory from '@/utils/StorageBaseFactory';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import FullCalendar from '@fullcalendar/vue3';
+import { defineComponent } from 'vue';
 
 export default defineComponent({
     components: {
-        FullCalendar,
+        FullCalendar
     },
     data() {
         return {
             updateModalShow: false,
-            editMode: false, 
+            editMode: false,
             calendarOptions: {
-                plugins: [
-                    dayGridPlugin,
-                    timeGridPlugin,
-                    interactionPlugin 
-                ],
+                plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
                 initialView: 'dayGridMonth',
-                initialEvents: [], 
+                initialEvents: [],
                 editable: true,
                 selectable: true,
                 selectMirror: true,
@@ -133,7 +121,7 @@ export default defineComponent({
                 initialView: 'dayGridMonth',
                 initialDate: null,
                 longPressDelay: 0, // 모바일에서 터치 꾹 누름 문제 해결
-                locale: this.$i18n.locale,
+                locale: this.$i18n.locale
             },
             currentEvents: [],
             calendarKey: 0,
@@ -162,11 +150,11 @@ export default defineComponent({
                 }
             ],
             calendarData: null,
-            currentMonth: null,
-        }
+            currentMonth: null
+        };
     },
     methods: {
-        handleDateSet(info){
+        handleDateSet(info) {
             const startDate = new Date(info.startStr);
             let currentMonth;
             let currentYear = startDate.getFullYear();
@@ -185,27 +173,27 @@ export default defineComponent({
             const newCurrentMonth = `${currentYear}_${currentMonth < 9 ? `0${currentMonth + 1}` : currentMonth + 1}`;
             if (!this.currentMonth || this.currentMonth !== newCurrentMonth) {
                 this.currentMonth = newCurrentMonth;
-                this.setCalendar()
+                this.setCalendar();
             }
         },
-        async setCalendar(){
+        async setCalendar() {
             this.storage = StorageBaseFactory.getStorage();
             let option = {
-                    key: "uid"
-            }
-            if(!this.calendarData){
+                key: 'uid'
+            };
+            if (!this.calendarData) {
                 const res = await this.storage.getObject(`db://calendar/${localStorage.getItem('uid')}`, option);
-                if(res && res.data){
-                        this.calendarData = res.data
+                if (res && res.data) {
+                    this.calendarData = res.data;
                 }
-            } 
-            if(this.calendarData) {
-                if(this.calendarData[this.currentMonth]){
-                    this.calendarOptions.initialEvents = Object.values(this.calendarData[this.currentMonth])
+            }
+            if (this.calendarData) {
+                if (this.calendarData[this.currentMonth]) {
+                    this.calendarOptions.initialEvents = Object.values(this.calendarData[this.currentMonth]);
                 } else {
-                    this.calendarOptions.initialEvents = []
+                    this.calendarOptions.initialEvents = [];
                 }
-                this.calendarOptions.initialDate = this.currentMonth.replace('_', "-")
+                this.calendarOptions.initialDate = this.currentMonth.replace('_', '-');
             }
             this.calendarKey++;
         },
@@ -216,16 +204,15 @@ export default defineComponent({
                     .substring(1);
             }
 
-            return s4() + s4() + '-' + s4() + '-' +
-                s4() + '-' + s4() + s4() + s4();
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         },
         handleWeekendsToggle() {
-            this.calendarOptions.weekends = !this.calendarOptions.weekends 
+            this.calendarOptions.weekends = !this.calendarOptions.weekends;
         },
         handleDateSelect(selectInfo) {
-            const title = this.$t('calendar.newEventTitle')
-            const calendarApi = selectInfo.view.calendar
-            calendarApi.unselect()
+            const title = this.$t('calendar.newEventTitle');
+            const calendarApi = selectInfo.view.calendar;
+            calendarApi.unselect();
             if (title) {
                 let data = {
                     id: this.uuid(),
@@ -233,18 +220,17 @@ export default defineComponent({
                     start: selectInfo.startStr,
                     end: selectInfo.endStr,
                     allDay: selectInfo.allDay
-                }
-                calendarApi.addEvent(data)
-                this.calendarOptions.initialEvents.push(data)
+                };
+                calendarApi.addEvent(data);
+                this.calendarOptions.initialEvents.push(data);
             }
-            
         },
         handleEventClick(clickInfo) {
-            let selectedEvent = this.calendarOptions.initialEvents.find(x => x.id == clickInfo.event.id)
-            if(selectedEvent){
-                this.selectedEvent = selectedEvent
+            let selectedEvent = this.calendarOptions.initialEvents.find((x) => x.id == clickInfo.event.id);
+            if (selectedEvent) {
+                this.selectedEvent = selectedEvent;
             } else {
-                this.selectedEvent = clickInfo.event
+                this.selectedEvent = clickInfo.event;
             }
             this.showColorPicker = false;
             this.updateModalShow = true;
@@ -267,16 +253,16 @@ export default defineComponent({
             const year = startDate.getFullYear();
             const month = String(startDate.getMonth() + 1).padStart(2, '0');
 
-            if(option == 'update'){
-                if(!this.calendarData){
-                    this.calendarData = {}
+            if (option == 'update') {
+                if (!this.calendarData) {
+                    this.calendarData = {};
                 }
-                if(!this.calendarData[`${year}_${month}`]){
-                    this.calendarData[`${year}_${month}`] = {}
+                if (!this.calendarData[`${year}_${month}`]) {
+                    this.calendarData[`${year}_${month}`] = {};
                 }
                 this.calendarData[`${year}_${month}`][this.selectedEvent.id] = this.selectedEvent;
             } else {
-                delete this.calendarData[`${year}_${month}`][this.selectedEvent.id]
+                delete this.calendarData[`${year}_${month}`][this.selectedEvent.id];
             }
 
             let uid = localStorage.getItem('uid');
@@ -292,34 +278,34 @@ export default defineComponent({
             }
 
             let calendarObj = {
-                "uid": uid,
-                "data": this.calendarData
-            }
+                uid: uid,
+                data: this.calendarData
+            };
             await this.storage.putObject(`calendar`, calendarObj);
             this.calendarKey++;
         },
         updateEvent() {
-            this.saveCalendar('update')
+            this.saveCalendar('update');
         },
         deleteEvent() {
-            let eventIdx = this.calendarOptions.initialEvents.findIndex(x => x.id == this.selectedEvent.id);
+            let eventIdx = this.calendarOptions.initialEvents.findIndex((x) => x.id == this.selectedEvent.id);
             if (eventIdx !== -1) {
                 this.calendarOptions.initialEvents.splice(eventIdx, 1);
             }
-            this.saveCalendar('delete')
+            this.saveCalendar('delete');
         },
         toggleEditMode() {
-            this.editMode = !this.editMode; 
-        },
+            this.editMode = !this.editMode;
+        }
     }
-})
+});
 </script>
 
-<style lang='css'>
+<style lang="css">
 .fc-daygrid-day-bottom {
     margin-top: -15px !important;
 }
-.fc .fc-button-group>.fc-button {
+.fc .fc-button-group > .fc-button {
     display: flex;
     align-items: center;
     padding: 6px 22px;
@@ -328,7 +314,7 @@ export default defineComponent({
 .fc .fc-button {
     font-size: 1rem;
     font-weight: 500;
-    text-transform: capitalize
+    text-transform: capitalize;
 }
 
 .fc .fc-button .fc-icon {
@@ -339,7 +325,6 @@ export default defineComponent({
 .fc .fc-button-primary {
     background: rgb(var(--v-theme-primary));
     border-color: rgb(var(--v-theme-primary));
-
 }
 
 .fc .fc-button-primary:not(:disabled).fc-button-active,
@@ -378,12 +363,12 @@ export default defineComponent({
     font-size: 14px;
 }
 
-.fc-direction-ltr .fc-button-group>.fc-button:not(:last-child) {
+.fc-direction-ltr .fc-button-group > .fc-button:not(:last-child) {
     border-bottom-left-radius: 9999px;
     border-top-left-radius: 9999px;
 }
 
-.fc-direction-ltr .fc-button-group>.fc-button:not(:first-child) {
+.fc-direction-ltr .fc-button-group > .fc-button:not(:first-child) {
     border-bottom-right-radius: 9999px;
     border-top-right-radius: 9999px;
     margin-left: -1px;
@@ -439,23 +424,23 @@ export default defineComponent({
     margin: 0;
 }
 
-@media screen and (max-width:600px) {
+@media screen and (max-width: 600px) {
     .fc .fc-toolbar {
         display: block;
         text-align: center;
     }
 
     .fc-toolbar-chunk .fc-toolbar-title {
-        margin: 15px 0
+        margin: 15px 0;
     }
 
-    .fc .fc-button-group>.fc-button {
+    .fc .fc-button-group > .fc-button {
         display: flex;
         align-items: center;
         padding: 2px 10px;
     }
     .fc-toolbar-title {
-        padding:10px;
+        padding: 10px;
     }
 }
 </style>

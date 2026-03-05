@@ -1,7 +1,7 @@
 <template></template>
 
 <script>
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -36,7 +36,7 @@ export default {
         offset: 10,
         currentPage: 0,
         dialog: false,
-        userList: [],
+        userList: []
     }),
     async mounted() {
         await this.loadToDo();
@@ -49,48 +49,48 @@ export default {
             } else {
                 return null;
             }
-        },        
+        }
     },
     watch: {
         $route: {
             deep: true,
             handler(newVal, oldVal) {
                 if (newVal.params.instId && newVal.params.instId !== oldVal.params.instId) {
-                    this.columns.forEach(column => {
+                    this.columns.forEach((column) => {
                         column.tasks = [];
                     });
                     this.loadToDo();
                 }
             }
-        },
+        }
     },
     methods: {
         executeTask(item) {
-            var me = this
-            me.$router.push(`/todolist/${item.taskId}`)
+            var me = this;
+            me.$router.push(`/todolist/${item.taskId}`);
         },
         async loadToDo() {
-            var me = this
-            let worklist = await backend.getAllWorkListByInstId(me.id)
-            if(!worklist) return;
-            console.log(worklist)
+            var me = this;
+            let worklist = await backend.getAllWorkListByInstId(me.id);
+            if (!worklist) return;
+            console.log(worklist);
             worklist.forEach((item) => {
-                if (item.status == 'TODO' || item.status == 'DRAFT' || item.status == 'Ready' ) {
-                    me.columns.find(x => x.id == 'TODO').tasks.push(item);
+                if (item.status == 'TODO' || item.status == 'DRAFT' || item.status == 'Ready') {
+                    me.columns.find((x) => x.id == 'TODO').tasks.push(item);
                 } else if (item.status == 'IN_PROGRESS' || item.status == 'Running' || item.status == 'NEW' || item.status == 'SUBMITTED') {
-                    me.columns.find(x => x.id == 'IN_PROGRESS').tasks.push(item);
+                    me.columns.find((x) => x.id == 'IN_PROGRESS').tasks.push(item);
                 } else if (item.status == 'PENDING') {
-                    me.columns.find(x => x.id == 'PENDING').tasks.push(item);
+                    me.columns.find((x) => x.id == 'PENDING').tasks.push(item);
                 } else if (item.status == 'DONE' || item.status == 'COMPLETED') {
-                    me.columns.find(x => x.id == 'DONE').tasks.push(item);
+                    me.columns.find((x) => x.id == 'DONE').tasks.push(item);
                 }
-            })
+            });
         },
         async loadUserInfo() {
             try {
                 // 슈퍼베이스에서 사용자 목록 가져오기
                 const userList = await backend.getUserList();
-                
+
                 // 사용자 목록 저장
                 if (userList && userList.length > 0) {
                     this.userList = userList;
@@ -98,9 +98,9 @@ export default {
             } catch (error) {
                 console.error('Error in loadUserInfo:', error);
             }
-        },
-    },
-}
+        }
+    }
+};
 </script>
 
 <style>
@@ -111,4 +111,3 @@ export default {
     z-index: 1000;
 }
 </style>
-

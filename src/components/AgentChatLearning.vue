@@ -1,5 +1,5 @@
 <template>
-    <Chat 
+    <Chat
         :messages="messages"
         :agentInfo="agentInfo"
         :userInfo="userInfo"
@@ -11,9 +11,9 @@
 </template>
 
 <script>
-import Chat from "@/components/ui/Chat.vue";
-import AgentChatModule from "@/components/AgentChatModule.vue";
-import AgentChatGenerator from "@/components/ai/AgentChatGenerator.js";
+import Chat from '@/components/ui/Chat.vue';
+import AgentChatModule from '@/components/AgentChatModule.vue';
+import AgentChatGenerator from '@/components/ai/AgentChatGenerator.js';
 
 export default {
     name: 'AgentChatLearning',
@@ -30,12 +30,12 @@ export default {
                 title: '',
                 text: 'agentChat.learningModeInfo'
             }
-        }
+        };
     },
     created() {
         this.generator = new AgentChatGenerator(this, {
             isStream: false,
-            preferredLanguage: "Korean",
+            preferredLanguage: 'Korean'
         });
     },
     async mounted() {
@@ -46,11 +46,11 @@ export default {
     methods: {
         beforeSendMessage(newMessage) {
             if (newMessage && (newMessage.text != '' || (newMessage.images && newMessage.images.length > 0) || newMessage.image != null)) {
-                this.putMessage(this.createMessageObj(newMessage))
+                this.putMessage(this.createMessageObj(newMessage));
                 const options = {
                     agent_id: this.id,
                     is_learning_mode: true
-                }
+                };
                 this.generator.beforeGenerate(newMessage, options);
                 this.sendMessage(newMessage);
             }
@@ -60,27 +60,26 @@ export default {
          */
         async afterGenerationFinished(responseObj) {
             if (responseObj && responseObj.work) {
-                let obj = this.createMessageObj(responseObj, 'agent')
-                obj.name = this.agentInfo.username
-                obj.profile = this.agentInfo.profile
-                
+                let obj = this.createMessageObj(responseObj, 'agent');
+                obj.name = this.agentInfo.username;
+                obj.profile = this.agentInfo.profile;
+
                 // 응답 타입별 처리
                 if (responseObj.work == 'Mem0AgentInformation') {
-                    obj.content = responseObj.content
+                    obj.content = responseObj.content;
                 } else {
                     // 기본 처리
-                    obj.content = responseObj.content
+                    obj.content = responseObj.content;
                     if (responseObj.htmlContent) {
-                        obj.htmlContent = responseObj.htmlContent
+                        obj.htmlContent = responseObj.htmlContent;
                     }
                 }
-                
-                obj.uuid = this.uuid()
-                await this.putMessage(obj)
-                this.messages.push(obj)
+
+                obj.uuid = this.uuid();
+                await this.putMessage(obj);
+                this.messages.push(obj);
             }
         }
     }
-}
+};
 </script>
-

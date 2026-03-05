@@ -2,19 +2,20 @@
     <div class="main-chat-input-container" :class="containerVariantClass">
         <!-- 예시 문구들 (메인/시스템 채팅에서만 사용) -->
         <div v-if="showExamples" class="example-prompts">
-            <div
-                v-for="(example, index) in examples"
-                :key="index"
-                class="example-chip"
-                @click="selectExample(example)"
-            >
+            <div v-for="(example, index) in examples" :key="index" class="example-chip" @click="selectExample(example)">
                 <v-icon size="16" class="mr-1">{{ example.icon }}</v-icon>
                 <span>{{ example.text }}</span>
             </div>
         </div>
 
         <!-- 입력 필드 - Chat 컴포넌트 사용 -->
-        <div class="input-wrapper">
+        <div
+            class="input-wrapper"
+            :class="{ 'drag-over-highlight': isDragOver }"
+            @dragover.prevent="isDragOver = true"
+            @dragleave="isDragOver = false"
+            @drop.prevent.stop="handleWrapperDrop"
+        >
             <Chat
                 ref="inputChat"
                 :workAssistantAgentMode="true"
@@ -75,20 +76,18 @@ export default {
         // 데스크탑 음성 에이전트 활성화 여부 (버튼 하이라이트용)
         desktopVoiceActive: {
             type: Boolean,
-            default: false,
+            default: false
         },
         // 말하기/듣기 버튼 노출 여부 (1:1 에이전트 대화일 때만 true)
         enableDesktopVoice: {
             type: Boolean,
-            default: false,
-        },
+            default: false
+        }
     },
     emits: ['sendMessage', 'recording-mode-change', 'stopMessage', 'desktop-voice-toggle'],
     computed: {
         containerVariantClass() {
-            return this.variant === 'inline'
-                ? 'main-chat-input-container--inline'
-                : 'main-chat-input-container--panel';
+            return this.variant === 'inline' ? 'main-chat-input-container--inline' : 'main-chat-input-container--panel';
         },
         examples() {
             return [
@@ -115,7 +114,18 @@ export default {
             ];
         }
     },
+    data() {
+        return {
+            isDragOver: false
+        };
+    },
     methods: {
+        handleWrapperDrop(e) {
+            this.isDragOver = false;
+            const files = e.dataTransfer?.files;
+            if (!files || files.length === 0) return;
+            this.$refs.inputChat?.changeImage({ target: { files } });
+        },
         // ChatRoomPage(메시지 리스트)에서 reply 클릭 시, 입력창(Chat)의 reply UI를 사용하기 위한 브릿지
         setReply(message) {
             try {
@@ -202,15 +212,28 @@ export default {
 /* 입력 필드 */
 .input-wrapper {
     width: 100%;
+    position: relative;
+}
+
+.input-wrapper.drag-over-highlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px dashed rgb(var(--v-theme-primary));
+    border-radius: 12px;
+    background-color: rgba(var(--v-theme-primary), 0.06);
+    z-index: 10000;
+    pointer-events: none;
 }
 
 @media (max-width: 768px) {
     .main-chat-input-container {
-        padding: 0px;
+        padding: 8px;
     }
 
     .example-prompts {
         gap: 6px;
+        margin-bottom: 8px;
     }
 
     .example-chip {
@@ -219,4 +242,3 @@ export default {
     }
 }
 </style>
-

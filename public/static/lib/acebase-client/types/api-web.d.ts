@@ -49,19 +49,27 @@ export declare class WebApi extends Api {
     private accessToken;
     private manualConnectionMonitor;
     private eventCallback;
-    constructor(dbname: string, settings: Pick<ConnectionSettings, 'network' | 'sync' | 'logLevel' | 'autoConnect' | 'autoConnectDelay' | 'cache' | 'rootPath'> & {
-        debug: DebugLogger;
-        url: string;
-    }, callback: (event: string, ...args: any[]) => void);
+    constructor(
+        dbname: string,
+        settings: Pick<ConnectionSettings, 'network' | 'sync' | 'logLevel' | 'autoConnect' | 'autoConnectDelay' | 'cache' | 'rootPath'> & {
+            debug: DebugLogger;
+            url: string;
+        },
+        callback: (event: string, ...args: any[]) => void
+    );
     private checkConnection;
     private _handleDetectedDisconnect;
     connect(retry?: boolean): Promise<void>;
     disconnect(): void;
     subscribe(path: string, event: string, callback: EventSubscriptionCallback, settings: EventSubscriptionSettings): Promise<void>;
     unsubscribe(path: string, event?: string, callback?: EventSubscriptionCallback): Promise<void>;
-    transaction(path: string, callback: (val: any) => any, options?: {
-        context: any;
-    }): Promise<{
+    transaction(
+        path: string,
+        callback: (val: any) => any,
+        options?: {
+            context: any;
+        }
+    ): Promise<{
         cursor?: string;
     }>;
     /**
@@ -73,34 +81,55 @@ export declare class WebApi extends Api {
     signInWithEmail(email: string, password: string): Promise<IAceBaseAuthProviderSignInResult>;
     signInWithToken(token: string, emitEvent?: boolean): Promise<IAceBaseAuthProviderSignInResult>;
     setAccessToken(token: string): void;
-    startAuthProviderSignIn(providerName: string, callbackUrl: string, options: any): Promise<{
+    startAuthProviderSignIn(
+        providerName: string,
+        callbackUrl: string,
+        options: any
+    ): Promise<{
         redirectUrl: any;
     }>;
     finishAuthProviderSignIn(callbackResult: string): Promise<IAceBaseAuthProviderSignInResult>;
-    refreshAuthProviderToken(providerName: string, refreshToken: string): Promise<{
+    refreshAuthProviderToken(
+        providerName: string,
+        refreshToken: string
+    ): Promise<{
         provider: IAceBaseAuthProviderTokens;
     }>;
-    signOut(options: boolean | {
-        everywhere?: boolean;
-        clearCache?: boolean;
-    }): Promise<void>;
-    changePassword(uid: string, currentPassword: string, newPassword: string): Promise<{
+    signOut(
+        options:
+            | boolean
+            | {
+                  everywhere?: boolean;
+                  clearCache?: boolean;
+              }
+    ): Promise<void>;
+    changePassword(
+        uid: string,
+        currentPassword: string,
+        newPassword: string
+    ): Promise<{
         accessToken: string;
     }>;
     forgotPassword(email: string): Promise<any>;
     verifyEmailAddress(verificationCode: string): Promise<any>;
     resetPassword(resetCode: string, newPassword: string): Promise<any>;
-    signUp(details: any, signIn?: boolean): Promise<IAceBaseAuthProviderSignInResult | {
-        user: AceBaseUser;
-        accessToken: string | null;
-    }>;
+    signUp(
+        details: any,
+        signIn?: boolean
+    ): Promise<
+        | IAceBaseAuthProviderSignInResult
+        | {
+              user: AceBaseUser;
+              accessToken: string | null;
+          }
+    >;
     updateUserDetails(details: any): Promise<{
         user: AceBaseUser;
     }>;
     deleteAccount(uid: string, signOut?: boolean): Promise<boolean>;
     get isConnected(): boolean;
     get isConnecting(): boolean;
-    get connectionState(): "disconnected" | "connecting" | "connected" | "disconnecting";
+    get connectionState(): 'disconnected' | 'connecting' | 'connected' | 'disconnecting';
     stats(options?: any): Promise<any>;
     sync(options?: {
         firstSync?: boolean;
@@ -169,70 +198,95 @@ export declare class WebApi extends Api {
         new_cursor: string;
         changes: ValueChange[];
     }>;
-    _addCacheSetMutation(path: string, value: any, context: any): Promise<{
-        cursor?: string | undefined;
-    } | undefined>;
-    set(path: string, value: any, options?: {
-        allow_cache?: boolean;
-        context?: any;
-    }): Promise<{
+    _addCacheSetMutation(
+        path: string,
+        value: any,
+        context: any
+    ): Promise<
+        | {
+              cursor?: string | undefined;
+          }
+        | undefined
+    >;
+    set(
+        path: string,
+        value: any,
+        options?: {
+            allow_cache?: boolean;
+            context?: any;
+        }
+    ): Promise<{
         cursor?: string;
     }>;
-    update(path: string, updates: Record<string | number, any>, options?: {
-        allow_cache?: boolean;
-        context?: any;
-    }): Promise<{
+    update(
+        path: string,
+        updates: Record<string | number, any>,
+        options?: {
+            allow_cache?: boolean;
+            context?: any;
+        }
+    ): Promise<{
         cursor?: string;
     }>;
     /**
      * @returns Returns a promise that resolves with the value, context and optionally a server cursor
      */
-    get(path: string, options?: {
-        /**
-         * If a cached value is allowed or forced to be served.
-         * @default 'allow'
-         */
-        cache_mode?: 'allow' | 'bypass' | 'force';
-        /**
-         * Use a cursor to update the local cache with mutations from the server, then load and serve the entire value from cache.
-         * Only works in combination with `cache_mode: 'allow'` (previously `allow_cache: true`)
-         */
-        cache_cursor?: string;
-        /**
-         * @deprecated use `cache_mode` option instead
-         */
-        allow_cache?: boolean;
-        include?: (string | number)[];
-        exclude?: (string | number)[];
-        child_objects?: boolean;
-    }): Promise<{
+    get(
+        path: string,
+        options?: {
+            /**
+             * If a cached value is allowed or forced to be served.
+             * @default 'allow'
+             */
+            cache_mode?: 'allow' | 'bypass' | 'force';
+            /**
+             * Use a cursor to update the local cache with mutations from the server, then load and serve the entire value from cache.
+             * Only works in combination with `cache_mode: 'allow'` (previously `allow_cache: true`)
+             */
+            cache_cursor?: string;
+            /**
+             * @deprecated use `cache_mode` option instead
+             */
+            allow_cache?: boolean;
+            include?: (string | number)[];
+            exclude?: (string | number)[];
+            child_objects?: boolean;
+        }
+    ): Promise<{
         value: any;
         context: any;
         cursor?: string;
     }>;
-    exists(path: string, options?: {
-        allow_cache: boolean;
-    }): Promise<boolean>;
+    exists(
+        path: string,
+        options?: {
+            allow_cache: boolean;
+        }
+    ): Promise<boolean>;
     callExtension(method: HttpMethod | Uppercase<HttpMethod>, path: string, data?: any): Promise<any>;
     /**
      * Clears the entire cache, or a specific path without raising any events
      */
-    clearCache(path?: string): Promise<{
-        cursor?: string | undefined;
-    } | undefined>;
+    clearCache(path?: string): Promise<
+        | {
+              cursor?: string | undefined;
+          }
+        | undefined
+    >;
     /**
      * Updates the local cache with remote changes by retrieving all mutations to `path` since given `cursor` and applying them to the local cache database.
      * If the local path does not exist or no cursor is given, its entire value will be loaded from the server and stored in cache. If no cache database is used, an error will be thrown.
      */
     updateCache(
-    /**
-     * Path to update. The root path will be used if not given, synchronizing the entire database.
-     */
-    path: string | undefined, 
-    /**
-     * A previously acquired cursor to update the cache with. If not specified, `path`'s entire value will be loaded from the server
-     */
-    cursor: string | null): Promise<{
+        /**
+         * Path to update. The root path will be used if not given, synchronizing the entire database.
+         */
+        path: string | undefined,
+        /**
+         * A previously acquired cursor to update the cache with. If not specified, `path`'s entire value will be loaded from the server
+         */
+        cursor: string | null
+    ): Promise<{
         path: string;
         used_cursor: string | null;
         new_cursor: string;
@@ -247,11 +301,17 @@ export declare class WebApi extends Api {
     /**
      * @returns returns a promise that resolves with matching data or paths in `results`
      */
-    query(path: string, query: Query, options?: QueryOptions): Promise<{
-        results: Array<{
-            path: string;
-            val: any;
-        }> | string[];
+    query(
+        path: string,
+        query: Query,
+        options?: QueryOptions
+    ): Promise<{
+        results:
+            | Array<{
+                  path: string;
+                  val: any;
+              }>
+            | string[];
         context: any;
         stop(): Promise<void>;
     }>;
@@ -259,14 +319,22 @@ export declare class WebApi extends Api {
     getIndexes(): Promise<any>;
     deleteIndex(fileName: string): Promise<any>;
     reflect(path: string, type: 'info' | 'children', args: any): Promise<any>;
-    export(path: string, write: (chunk: string) => Promise<void>, options?: {
-        format: string;
-        type_safe: boolean;
-    }): ReturnType<Api['export']>;
-    import(path: string, read: (length: number) => string | Utils.TypedArrayLike | Promise<string | Utils.TypedArrayLike>, options?: {
-        format: string;
-        suppress_events: boolean;
-    }): Promise<any>;
+    export(
+        path: string,
+        write: (chunk: string) => Promise<void>,
+        options?: {
+            format: string;
+            type_safe: boolean;
+        }
+    ): ReturnType<Api['export']>;
+    import(
+        path: string,
+        read: (length: number) => string | Utils.TypedArrayLike | Promise<string | Utils.TypedArrayLike>,
+        options?: {
+            format: string;
+            suppress_events: boolean;
+        }
+    ): Promise<any>;
     get serverPingUrl(): string;
     getServerInfo(): Promise<any>;
     setSchema(path: string, schema: string | Record<string, any>): Promise<any>;

@@ -29,7 +29,6 @@ const filteredCards = computed(() => {
         return card.title.toLowerCase().includes(searchValue.value.toLowerCase());
     });
 });
-
 </script>
 
 <template>
@@ -65,7 +64,9 @@ const filteredCards = computed(() => {
                             <div class="d-flex align-center gap-3">
                                 <div>
                                     <h6 class="text-h6 font-weight-semibold mb-1">{{ card.title }}</h6>
-                                    <span class="text-subtitle-2 d-block text-truncate d-flex align-center gap-2 text-grey200 font-weight-medium">
+                                    <span
+                                        class="text-subtitle-2 d-block text-truncate d-flex align-center gap-2 text-grey200 font-weight-medium"
+                                    >
                                         {{ card.dateTime }}
                                     </span>
                                 </div>

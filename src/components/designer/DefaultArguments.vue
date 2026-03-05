@@ -4,8 +4,7 @@
             <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.inputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(input, idx) in inputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2" 
-                        @click="deleteInputData(input)">
+                    <v-chip v-if="input.mandatory" color="primary" variant="outlined" class="text-body-2" @click="deleteInputData(input)">
                         {{ input.argument.text }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
@@ -16,13 +15,18 @@
                 </div>
             </v-row>
         </div>
-        
+
         <div v-if="outputData.length > 0" class="mb-5">
             <div style="margin-bottom: -8px">{{ $t('BpmnPropertyPanel.outputData') }}</div>
             <v-row class="ma-0 pa-0">
                 <div v-for="(output, idx) in outputData" :key="idx" class="mr-2 mt-2">
-                    <v-chip v-if="output.mandatory" color="primary" class="text-body-2" variant="outlined" 
-                        @click="deleteOutputData(output)">
+                    <v-chip
+                        v-if="output.mandatory"
+                        color="primary"
+                        class="text-body-2"
+                        variant="outlined"
+                        @click="deleteOutputData(output)"
+                    >
                         {{ output.variable.name }}
                         <CircleXIcon class="ml-2" start size="20" />
                     </v-chip>
@@ -45,14 +49,14 @@ import BpmnParameterContexts from '@/components/designer/bpmnModeling/bpmn/varia
 
 export default {
     components: {
-        "bpmn-parameter-contexts": BpmnParameterContexts,
+        'bpmn-parameter-contexts': BpmnParameterContexts
     },
     props: {
-        modelValue: Object,
+        modelValue: Object
     },
     data() {
         return {
-            properties: JSON.parse(JSON.stringify(this.modelValue)),            
+            properties: JSON.parse(JSON.stringify(this.modelValue))
         };
     },
     computed: {
@@ -95,7 +99,7 @@ export default {
             if (index > -1) {
                 this.properties.parameters.splice(index, 1);
             }
-        },
+        }
     }
 };
 </script>

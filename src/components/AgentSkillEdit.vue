@@ -7,7 +7,7 @@
                     v-model="fileName"
                     class="ml-2 my-2"
                     hide-details
-                    style="min-width: 300px; flex: 1;"
+                    style="min-width: 300px; flex: 1"
                     density="compact"
                 ></v-text-field>
                 <span v-else class="ml-3">{{ fileName }}</span>
@@ -112,7 +112,7 @@ export default {
 
             // markdown preview
             markdownPreview: false
-        }
+        };
     },
     computed: {
         monacoEditorOptions() {
@@ -229,7 +229,7 @@ export default {
             this.markdownPreview = !this.markdownPreview;
         }
     }
-}
+};
 </script>
 
 <style scoped>

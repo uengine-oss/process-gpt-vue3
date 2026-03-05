@@ -14,7 +14,7 @@
         <div v-for="(checkpoint, index) in checkpoints" :key="index" class="mt-2">
             <v-checkbox v-model="checkpoint.checked" hide-details density="compact" color="success" :disabled="readOnly">
                 <template v-slot:label>
-                    <span class="text-body-1" style="line-height: 1.3;">{{ checkpoint.name }}</span>
+                    <span class="text-body-1" style="line-height: 1.3">{{ checkpoint.name }}</span>
                 </template>
             </v-checkbox>
         </div>
@@ -27,13 +27,13 @@ export default {
         workItem: {
             type: Object,
             default: function () {
-                return {}
+                return {};
             }
-        },
+        }
     },
     data: () => ({
         checkpoints: null,
-        showWarning: false,
+        showWarning: false
     }),
     computed: {
         checkedCount() {
@@ -42,7 +42,7 @@ export default {
         },
         allChecked() {
             if (!this.checkpoints) return true;
-            return this.checkpoints.every(checkpoint => checkpoint.checked);
+            return this.checkpoints.every((checkpoint) => checkpoint.checked);
         },
         readOnly() {
             return this.workItem.worklist.status === 'COMPLETED' || this.workItem.worklist.status === 'DONE';
@@ -79,6 +79,6 @@ export default {
                 }));
             }
         }
-    },
-}
+    }
+};
 </script>

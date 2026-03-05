@@ -1,5 +1,5 @@
 <template>
-    <v-card class="element-comment-panel" elevation="0">
+    <v-card class="element-comment-panel pa-0" elevation="0">
         <!-- 헤더 -->
         <v-card-title class="d-flex align-center pa-3 pb-2">
             <v-icon class="mr-2" size="20">mdi-comment-text-multiple-outline</v-icon>
@@ -71,8 +71,8 @@
 
         <!-- 댓글 목록 -->
         <v-card-text class="pa-0 comment-list-container">
-            <div v-if="loading" class="d-flex justify-center align-center pa-4">
-                <v-progress-circular indeterminate size="24" />
+            <div v-if="loading" class="d-flex justify-center align-center pa-8">
+                <v-progress-circular indeterminate size="32" color="primary" />
             </div>
 
             <!-- Element comments (existing) -->
@@ -109,7 +109,6 @@
                 </div>
                 <div v-for="comment in filteredProcessRootComments" :key="comment.id" class="comment-item mb-2">
                     <div class="process-comment-card" :class="{ 'process-comment-card--resolved': comment.is_resolved }">
-                        <div class="d-flex align-center justify-space-between mb-1">
                             <div class="d-flex align-center ga-1">
                                 <v-chip size="x-small" variant="tonal" color="primary">
                                     {{ comment.author_name || '익명' }}
@@ -138,7 +137,7 @@
         <v-divider />
 
         <!-- 댓글 입력 (Task 타입일 때만 활성화) -->
-        <v-card-actions v-if="selectedElement && isTaskType(selectedElement.type)" class="pa-3">
+        <v-card-actions v-if="selectedElement && isTaskType(selectedElement.type)" class="d-flex align-center pa-4">
             <v-textarea
                 v-model="newComment"
                 :placeholder="$t('elementComment.placeholder')"
@@ -148,23 +147,6 @@
                 hide-details
                 auto-grow
                 class="flex-grow-1"
-                @keydown.ctrl.enter="submitComment"
-            />
-            <v-btn
-                icon
-                color="primary"
-                class="ml-2"
-                :disabled="!newComment.trim()"
-                :loading="submitting"
-                @click="submitComment"
-            >
-                <v-icon>mdi-send</v-icon>
-            </v-btn>
-        </v-card-actions>
-    </v-card>
-</template>
-
-<script lang="ts">
 import { defineComponent, ref, computed, watch, onMounted } from 'vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import CommentThread from './CommentThread.vue';
@@ -199,7 +181,7 @@ export default defineComponent({
 
         // 루트 댓글 (부모가 없는 댓글)
         const rootComments = computed(() => {
-            return comments.value.filter(c => !c.parent_comment_id);
+            return comments.value.filter((c) => !c.parent_comment_id);
         });
 
         // 프로세스 전체 루트 댓글
@@ -247,7 +229,7 @@ export default defineComponent({
 
         // 특정 댓글의 답글 목록
         const getReplies = (parentId: string) => {
-            return comments.value.filter(c => c.parent_comment_id === parentId);
+            return comments.value.filter((c) => c.parent_comment_id === parentId);
         };
 
         // 댓글 목록 로드
@@ -256,10 +238,7 @@ export default defineComponent({
 
             loading.value = true;
             try {
-                comments.value = await backend.getElementComments(
-                    props.procDefId,
-                    props.selectedElement.id
-                );
+                comments.value = await backend.getElementComments(props.procDefId, props.selectedElement.id);
             } catch (e) {
                 console.error('댓글 로드 실패:', e);
             } finally {

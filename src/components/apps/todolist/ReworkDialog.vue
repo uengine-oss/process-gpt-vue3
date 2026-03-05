@@ -5,12 +5,7 @@
                 {{ $t('ReworkDialog.title') }}
             </v-card-title>
             <v-spacer></v-spacer>
-            <v-btn @click="close"
-                class="ml-auto" 
-                variant="text" 
-                density="compact"
-                icon
-            >
+            <v-btn @click="close" class="ml-auto" variant="text" density="compact" icon>
                 <v-icon>mdi-close</v-icon>
             </v-btn>
         </v-row>
@@ -22,10 +17,7 @@
         <v-card-text class="pa-4 pt-0 pb-0">
             <v-radio-group v-model="reworkType">
                 <div v-for="(item, index) in reworkItems" :key="item.id" :class="index !== 0 ? 'mt-5' : ''">
-                    <v-radio
-                        :value="item.id" 
-                        color="primary"
-                    >
+                    <v-radio :value="item.id" color="primary">
                         <template v-slot:label="{ props }">
                             <div v-bind="props">
                                 <span class="font-weight-bold" :class="reworkType === item.id ? 'text-primary' : 'text-default'">
@@ -35,9 +27,10 @@
                                     {{ item.description }}
                                 </div>
                                 <div v-if="item.activities.length > 0" class="mt-1">
-                                    <v-chip v-for="activity in item.activities" 
-                                        :key="activity.id" 
-                                        class="mr-2" 
+                                    <v-chip
+                                        v-for="activity in item.activities"
+                                        :key="activity.id"
+                                        class="mr-2"
                                         density="comfortable"
                                         label
                                         :color="reworkType === item.id ? 'primary' : 'default'"
@@ -54,12 +47,8 @@
 
         <v-row class="ma-0 pa-4">
             <v-spacer></v-spacer>
-            <v-btn @click="submitRework"
-                :disabled="reworkType === ''"
-                color="primary"
-                variant="flat" 
-                class="rounded-pill"
-            >{{ $t('ReworkDialog.submit') }}
+            <v-btn @click="submitRework" :disabled="reworkType === ''" color="primary" variant="flat" class="rounded-pill"
+                >{{ $t('ReworkDialog.submit') }}
             </v-btn>
         </v-row>
     </v-card>
@@ -86,24 +75,24 @@ export default {
             reworkItems: [
                 {
                     id: 'current',
-                    label: this.$t('ReworkDialog.currentOnly'), 
+                    label: this.$t('ReworkDialog.currentOnly'),
                     description: this.$t('ReworkDialog.currentOnlyDesc'),
                     activities: []
                 },
                 {
                     id: 'reference',
-                    label: this.$t('ReworkDialog.includeReference'), 
+                    label: this.$t('ReworkDialog.includeReference'),
                     description: this.$t('ReworkDialog.includeReferenceDesc'),
                     activities: []
                 },
                 {
                     id: 'all',
-                    label: this.$t('ReworkDialog.includeAll'), 
+                    label: this.$t('ReworkDialog.includeAll'),
                     description: this.$t('ReworkDialog.includeAllDesc'),
                     activities: []
                 }
-            ],
-        }
+            ]
+        };
     },
     computed: {
         currentActivityId() {
@@ -120,7 +109,7 @@ export default {
     methods: {
         loadActivities() {
             if (this.reworkActivities) {
-                this.reworkItems.forEach(item => {
+                this.reworkItems.forEach((item) => {
                     if (item.id === 'current') {
                         item.activities = this.reworkActivities.current;
                     } else if (item.id === 'reference') {
@@ -135,9 +124,9 @@ export default {
             this.$emit('close');
         },
         submitRework() {
-            const reworkActivities = this.reworkItems.find(item => item.id === this.reworkType).activities;
+            const reworkActivities = this.reworkItems.find((item) => item.id === this.reworkType).activities;
             this.$emit('submitRework', reworkActivities);
         }
     }
-}
+};
 </script>

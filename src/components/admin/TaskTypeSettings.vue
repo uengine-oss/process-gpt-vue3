@@ -6,33 +6,28 @@
                 <span class="text-body-1">{{ $t('taskCatalog.taskTypesDescription') }}</span>
             </v-row>
         </v-alert>
-        <v-card class="pa-0"
-            variant="outlined"
-        >
-            <!-- 테이블 -->
+        <!-- Desktop: [BLOCK:table.simple.v1] -->
+        <v-card v-if="!isMobile" class="pa-0" variant="outlined">
             <v-table density="comfortable">
                 <thead>
                     <tr>
                         <th>{{ $t('taskCatalog.taskType') }}</th>
                         <th>{{ $t('taskCatalog.label') }}</th>
-                        <th style="width: 100px;">{{ $t('taskCatalog.enabled') }}</th>
-                        <th style="width: 120px;">{{ $t('taskCatalog.status') }}</th>
+                        <th style="width: 100px">{{ $t('taskCatalog.enabled') }}</th>
+                        <th style="width: 120px">{{ $t('taskCatalog.status') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- 로딩 -->
                     <tr v-if="loading">
-                        <td colspan="5" class="text-center pa-8">
+                        <td colspan="4" class="text-center pa-8">
                             <v-progress-circular indeterminate size="32" color="primary" />
                         </td>
                     </tr>
-                    <!-- 데이터 없음 -->
                     <tr v-else-if="paletteTaskTypes.length === 0">
-                        <td colspan="5" class="text-center pa-8 text-medium-emphasis">
+                        <td colspan="4" class="text-center pa-8 text-medium-emphasis">
                             {{ $t('taskCatalog.noTaskTypes') }}
                         </td>
                     </tr>
-                    <!-- 데이터 목록 -->
                     <template v-else>
                         <tr v-for="item in paletteTaskTypes" :key="item.id">
                             <td>
@@ -61,6 +56,43 @@
                 </tbody>
             </v-table>
         </v-card>
+
+        <!-- Mobile: Card Layout -->
+        <div v-else>
+            <div v-if="loading" class="text-center pa-8">
+                <v-progress-circular indeterminate size="32" color="primary" />
+            </div>
+            <div v-else-if="paletteTaskTypes.length === 0" class="text-center pa-8 text-medium-emphasis">
+                {{ $t('taskCatalog.noTaskTypes') }}
+            </div>
+            <div v-else class="d-flex flex-column ga-3">
+                <v-card v-for="item in paletteTaskTypes" :key="item.id" variant="outlined" class="pa-4">
+                    <div class="d-flex justify-space-between align-center">
+                        <div class="d-flex align-center" style="min-width: 0">
+                            <div class="task-type-icon" :style="{ backgroundColor: getTaskTypeColor(item.task_type) }">
+                                <v-icon v-if="item.icon" size="16" color="white">{{ item.icon }}</v-icon>
+                            </div>
+                            <div class="ml-3" style="min-width: 0">
+                                <div class="text-subtitle-2 font-weight-bold text-truncate">{{ getLabel(item) }}</div>
+                                <div class="text-caption text-grey text-truncate">{{ item.task_type }}</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-center flex-shrink-0 ml-2">
+                            <v-switch
+                                :model-value="item.is_enabled"
+                                color="primary"
+                                density="compact"
+                                hide-details
+                                @update:model-value="toggleTaskType(item.id)"
+                            />
+                            <v-chip :color="item.is_enabled ? 'success' : 'grey'" size="small" variant="tonal" class="ml-2">
+                                {{ item.is_enabled ? $t('taskCatalog.enabled') : $t('taskCatalog.disabled') }}
+                            </v-chip>
+                        </div>
+                    </div>
+                </v-card>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -75,6 +107,9 @@ export default {
         };
     },
     computed: {
+        isMobile() {
+            return window.innerWidth <= 768;
+        },
         loading() {
             return this.store?.loading || false;
         },

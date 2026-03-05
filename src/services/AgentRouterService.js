@@ -53,7 +53,7 @@ class AgentRouterService {
             const response = await fetch(`${this.baseUrl}/${agentId}/chat/stream`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json; charset=utf-8',
+                    'Content-Type': 'application/json; charset=utf-8'
                 },
                 signal: options.signal,
                 body: JSON.stringify({
@@ -135,4 +135,3 @@ class AgentRouterService {
 
 export default new AgentRouterService();
 export { AgentRouterService };
-

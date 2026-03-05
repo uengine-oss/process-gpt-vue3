@@ -8,7 +8,7 @@
                 :content="activity.description"
                 content-type="html"
                 class="mb-4"
-                style="max-height: 400px; overflow:auto"
+                style="max-height: 400px; overflow: auto"
                 :style="isViewMode ? 'border-radius:10px;' : ''"
                 :options="options"
                 @update:content="onTextChange"
@@ -34,15 +34,10 @@
                     <v-icon @click="$refs.fileInput.click()">mdi-plus</v-icon>
                 </v-btn>
             </v-row>
-            <v-file-input
-                ref="fileInput"
-                type="file"
-                multiple
-                style="display: none"
-                @update:modelValue="onFileChange"
-            />
-            <div v-if="activity.attachments && activity.attachments.length > 0"
-                style="border: 1px solid lightgray; border-radius: 10px; padding: 8px;"
+            <v-file-input ref="fileInput" type="file" multiple style="display: none" @update:modelValue="onFileChange" />
+            <div
+                v-if="activity.attachments && activity.attachments.length > 0"
+                style="border: 1px solid lightgray; border-radius: 10px; padding: 8px"
             >
                 <div v-for="(attachment, index) in activity.attachments" :key="index">
                     <div class="d-flex pa-0 align-center">
@@ -51,12 +46,16 @@
                             <div class="ml-2 mr-auto" @click="openFile(attachment)">{{ replaceText(attachment) }}</div>
                         </div>
                         <v-spacer></v-spacer>
-                        <v-btn v-if="!isViewMode"
-                            @click="activity.attachments = activity.attachments.filter(a => a !== attachment)"
-                            icon variant="text" type="file" class="text-medium-emphasis" 
+                        <v-btn
+                            v-if="!isViewMode"
+                            @click="activity.attachments = activity.attachments.filter((a) => a !== attachment)"
+                            icon
+                            variant="text"
+                            type="file"
+                            class="text-medium-emphasis"
                             density="comfortable"
                         >
-                            <TrashIcon size="16" style="color:#FB977D"/>
+                            <TrashIcon size="16" style="color: #fb977d" />
                         </v-btn>
                     </div>
                 </div>
@@ -120,7 +119,7 @@ export default {
 
         // processDefinition 에서 기본값 설정 (GPT 패널과 동일한 패턴)
         if (this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
-            const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
+            const activity = this.processDefinition.activities.find((activity) => activity.id === this.element.id);
             if (activity) {
                 this.activity = { ...this.activity, ...activity };
             } else {
@@ -156,23 +155,26 @@ export default {
             return {
                 // placeholder: this.$t('PALUserTaskPanel.insertDescription'),
                 readOnly: this.isViewMode,
-                modules: this.isViewMode ? {toolbar:false} : {toolbar: [
-                    [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
-                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                    [{ 'font': [] }],
-                    ['bold', 'italic', 'underline'],        // toggled buttons
-                    ['link', 'image', 'video'],
-                    [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
-                    // [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-                    // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-                    // [{ 'direction': 'rtl' }],                         // text direction
+                modules: this.isViewMode
+                    ? { toolbar: false }
+                    : {
+                          toolbar: [
+                              [{ size: ['small', false, 'large', 'huge'] }], // custom dropdown
+                              [{ header: [1, 2, 3, 4, 5, 6, false] }],
+                              [{ font: [] }],
+                              ['bold', 'italic', 'underline'], // toggled buttons
+                              ['link', 'image', 'video'],
+                              [{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
+                              // [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+                              // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+                              // [{ 'direction': 'rtl' }],                         // text direction
 
-
-                    [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
-                    [{ 'align': [] }]
-                ]},
+                              [{ color: [] }, { background: [] }], // dropdown with defaults from theme
+                              [{ align: [] }]
+                          ]
+                      },
                 theme: 'snow'
-            }
+            };
         }
     },
     watch: {
@@ -181,7 +183,7 @@ export default {
             handler(newVal, oldVal) {
                 this.EventBus.emit('process-definition-updated', this.processDefinition);
             }
-        },
+        }
         // processDefinition: {
         //     deep: true,
         //     handler(newVal, oldVal) {
@@ -215,7 +217,7 @@ export default {
                 description: me.activity ? me.activity.description : undefined,
                 checkpoints: me.activity ? me.activity.checkpoints : undefined,
                 attachments: me.activity ? me.activity.attachments : undefined,
-                taskLink: me.activity ? me.activity.taskLink : undefined,
+                taskLink: me.activity ? me.activity.taskLink : undefined
             };
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);
@@ -258,7 +260,7 @@ export default {
 
 <style>
 .attached-file-text:hover {
-    background-color:rgba(var(--v-theme-primary), 0.2);
+    background-color: rgba(var(--v-theme-primary), 0.2);
     border-radius: 10px;
 }
 
@@ -266,11 +268,11 @@ export default {
     border-radius: 10px !important;
 }
 .quill-editor-edit-mode .ql-container {
-    border-bottom-left-radius : 10px;
-    border-bottom-right-radius : 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
 }
 .quill-editor-edit-mode .ql-toolbar {
-    border-top-left-radius : 10px;
-    border-top-right-radius : 10px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
 }
 </style>

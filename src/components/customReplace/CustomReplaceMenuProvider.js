@@ -11,19 +11,20 @@ export default function CustomReplaceMenuProvider(popupMenu, bpmnReplace, rules)
     popupMenu.registerProvider('bpmn-replace', this);
 }
 
-CustomReplaceMenuProvider.$inject = [
-    'popupMenu',
-    'bpmnReplace',
-    'rules'
-];
+CustomReplaceMenuProvider.$inject = ['popupMenu', 'bpmnReplace', 'rules'];
 
 /**
  * Get enabled task types from window global
  */
-CustomReplaceMenuProvider.prototype._getEnabledTaskTypes = function() {
+CustomReplaceMenuProvider.prototype._getEnabledTaskTypes = function () {
+    // uEngine·PAL 모드: UserTask만 사용
+    const isUEngineOrPal = typeof window !== 'undefined' && (window.$mode === 'uEngine' || window.$pal);
+    if (isUEngineOrPal) {
+        return ['bpmn:UserTask'];
+    }
     const enabledTypes = window.$enabledPaletteTaskTypes || [];
     if (enabledTypes.length > 0) {
-        return enabledTypes.map(t => t.task_type);
+        return enabledTypes.map((t) => t.task_type);
     }
     // Fallback to legacy palette settings
     const paletteSettings = window.$paletteSettings || { visibleTaskTypes: ['bpmn:ManualTask', 'bpmn:ServiceTask'] };
@@ -40,7 +41,7 @@ const TASK_TYPE_MAP = {
     'replace-with-service-task': 'bpmn:ServiceTask',
     'replace-with-user-task': 'bpmn:UserTask',
     'replace-with-script-task': 'bpmn:ScriptTask',
-    'replace-with-rule-task': 'bpmn:BusinessRuleTask',  // bpmn-js uses 'rule-task' not 'business-rule-task'
+    'replace-with-rule-task': 'bpmn:BusinessRuleTask', // bpmn-js uses 'rule-task' not 'business-rule-task'
     'replace-with-send-task': 'bpmn:SendTask',
     'replace-with-receive-task': 'bpmn:ReceiveTask',
     'replace-with-call-activity': 'bpmn:CallActivity',
@@ -51,12 +52,12 @@ const TASK_TYPE_MAP = {
 /**
  * Filter popup menu entries based on enabled task types
  */
-CustomReplaceMenuProvider.prototype.getPopupMenuEntries = function(element) {
+CustomReplaceMenuProvider.prototype.getPopupMenuEntries = function (element) {
     return (entries) => {
         const enabledTaskTypes = this._getEnabledTaskTypes();
         const filteredEntries = {};
 
-        Object.keys(entries).forEach(key => {
+        Object.keys(entries).forEach((key) => {
             const taskType = TASK_TYPE_MAP[key];
 
             // If it's a task type entry, check if it's enabled

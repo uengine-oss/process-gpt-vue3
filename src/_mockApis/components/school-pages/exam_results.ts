@@ -8,80 +8,78 @@ import user4 from '@/assets/images/profile/user4.jpg';
 import user5 from '@/assets/images/profile/user5.jpg';
 import user6 from '@/assets/images/profile/user6.jpg';
 
-
 // types
 export type KeyedObject = {
     [key: string]: string | number | KeyedObject | any;
 };
 
 const results: KeyedObject[] = [
-    {   
+    {
         avatar: user2,
         userinfo: 'Mark J. Freeman',
-        class:'10',
-        sec:'C',
-        Internalm:'10',
+        class: '10',
+        sec: 'C',
+        Internalm: '10',
         externalm: '20',
         total: '30',
         remarks: 'Fail',
-        color:'error'
+        color: 'error'
     },
-    {   
+    {
         avatar: user1,
         userinfo: 'Mark Maria',
-        class:'6',
-        sec:'D',
-        Internalm:'25',
+        class: '6',
+        sec: 'D',
+        Internalm: '25',
         externalm: '45',
         total: '70',
         remarks: 'Pass',
-        color:'success'
+        color: 'success'
     },
-    {   
+    {
         avatar: user3,
         userinfo: 'Midori Gurin',
-        class:'10',
-        sec:'E',
-        Internalm:'10',
+        class: '10',
+        sec: 'E',
+        Internalm: '10',
         externalm: '20',
         total: '30',
         remarks: 'Fail',
-        color:'error'
+        color: 'error'
     },
-    {   
+    {
         avatar: user4,
         userinfo: 'Nirav Joshi',
-        class:'7',
-        sec:'F',
-        Internalm:'20',
+        class: '7',
+        sec: 'F',
+        Internalm: '20',
         externalm: '70',
         total: '90',
         remarks: 'Pass',
-        color:'success'
+        color: 'success'
     },
-    {   
+    {
         avatar: user5,
         userinfo: 'Ryuto Ippongo',
-        class:'12',
-        sec:'A',
-        Internalm:'28',
+        class: '12',
+        sec: 'A',
+        Internalm: '28',
         externalm: '58',
         total: '80',
         remarks: 'Pass',
-        color:'success'
+        color: 'success'
     },
-    {   
+    {
         avatar: user6,
         userinfo: 'Sakyu Basu',
-        class:'7',
-        sec:'F',
-        Internalm:'30',
+        class: '7',
+        sec: 'F',
+        Internalm: '30',
         externalm: '70',
         total: '100',
         remarks: 'Pass',
-        color:'success'
-    },
-   
+        color: 'success'
+    }
 ];
 
 // ==============================|| MOCK SERVICES ||============================== //
@@ -89,6 +87,5 @@ const results: KeyedObject[] = [
 mock.onGet('/api/contacts').reply(() => {
     return [200, results];
 });
-
 
 export default results;

@@ -2,44 +2,45 @@
     <div v-if="!mode">
         <!-- <cron-vuetify v-model="cron" :chip-props="{ color: 'success', textColor: 'white' }" @error="error = $event" /> -->
         <!-- <v-text-field class="mt-4" v-model="copyUengineProperties.expression" :label="$t('TimerEventDefinitionPanel.cron')"></v-text-field> -->
-        
-        <cron-core v-model="expression" :format="mode ? 'default' : 'quartz'" v-slot="{fields, period, error}">
-            <div>
 
+        <cron-core v-model="expression" :format="mode ? 'default' : 'quartz'" v-slot="{ fields, period, error }">
+            <div>
                 <!-- period selection -->
-                {{period.prefix}}
+                {{ period.prefix }}
                 <v-chip>
-                {{period.attrs.modelValue}}
-                <v-menu activator="parent">
-                    <v-list>
-                    <v-list-item v-for="item in period.items"  :key="item.id" @click="period.events['update:model-value'](item.id)">
-                        {{item.text}}
-                    </v-list-item>
-                    </v-list>
-                </v-menu>
-                <v-icon small @click="period.events['update:model-value']('')">mdi-close</v-icon>
+                    {{ period.attrs.modelValue }}
+                    <v-menu activator="parent">
+                        <v-list>
+                            <v-list-item v-for="item in period.items" :key="item.id" @click="period.events['update:model-value'](item.id)">
+                                {{ item.text }}
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
+                    <v-icon small @click="period.events['update:model-value']('')">mdi-close</v-icon>
                 </v-chip>
-                {{period.suffix}}
+                {{ period.suffix }}
 
                 <!-- cron expression fields -->
                 <template v-for="f in fields" :key="f.id">
-                {{f.prefix}}
+                    {{ f.prefix }}
 
                     <v-chip>
-                    {{f.selectedStr}}
-                    <v-menu activator="parent" :close-on-content-click="false">
-
-                        <!-- list of field items -->
-                        <v-list :selected="f.attrs.modelValue" @update:selected="f.events['update:model-value']" select-strategy="multiple">
-                        <v-list-item v-for="item in f.items" :value="item.value" :key="item.value">
-                            {{item.text}}
-                        </v-list-item>
-                        </v-list>
-
-                    </v-menu>
-                    <v-icon small @click="f.events['update:model-value']([])">mdi-close</v-icon>
+                        {{ f.selectedStr }}
+                        <v-menu activator="parent" :close-on-content-click="false">
+                            <!-- list of field items -->
+                            <v-list
+                                :selected="f.attrs.modelValue"
+                                @update:selected="f.events['update:model-value']"
+                                select-strategy="multiple"
+                            >
+                                <v-list-item v-for="item in f.items" :value="item.value" :key="item.value">
+                                    {{ item.text }}
+                                </v-list-item>
+                            </v-list>
+                        </v-menu>
+                        <v-icon small @click="f.events['update:model-value']([])">mdi-close</v-icon>
                     </v-chip>
-                {{f.suffix}}
+                    {{ f.suffix }}
                 </template>
 
                 <!-- editable cron expression -->
@@ -50,9 +51,10 @@
                         @update:model-value="nextValue = $event"
                         @blur="value = nextValue"
                         label="cron expression"
-                        :error-messages="error" 
+                        :error-messages="error"
                     />
-                    <DetailComponent class="ml-2 mt-4"
+                    <DetailComponent
+                        class="ml-2 mt-4"
                         :title="$t('TimerEventDefinitionPanel.cronDescriptionTitle')"
                         :details="cronDescription"
                         :iconSize="24"
@@ -60,7 +62,6 @@
                 </v-row>
             </div>
         </cron-core>
-        
     </div>
     <div v-else>
         <TextConditionField
@@ -77,11 +78,7 @@
                 <span v-else>{{ $t('TimerEventDefinitionPanel.ruleGenerator') }}</span>
             </v-btn>
         </div>
-        <DetailComponent
-            class="mt-2"
-            :title="$t('TimerEventDefinitionPanel.cronDescriptionTitle')"
-            :details="cronDescription"
-        />
+        <DetailComponent class="mt-2" :title="$t('TimerEventDefinitionPanel.cronDescriptionTitle')" :details="cronDescription" />
         <v-dialog v-model="cronGenerationDialog" max-width="640" persistent>
             <v-card>
                 <v-card-title class="d-flex align-center">
@@ -102,15 +99,19 @@
                     />
                 </v-card-text>
                 <v-card-actions class="justify-end">
-                    <v-btn color="grey" variant="flat" rounded @click="cancelCronGeneration">{{ $t('TimerEventDefinitionPanel.cancel') }}</v-btn>
-                    <v-btn color="primary" variant="flat" rounded @click="applyGeneratedCronRule">{{ $t('TimerEventDefinitionPanel.confirm') }}</v-btn>
+                    <v-btn color="grey" variant="flat" rounded @click="cancelCronGeneration">{{
+                        $t('TimerEventDefinitionPanel.cancel')
+                    }}</v-btn>
+                    <v-btn color="primary" variant="flat" rounded @click="applyGeneratedCronRule">{{
+                        $t('TimerEventDefinitionPanel.confirm')
+                    }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
     </div>
 </template>
 <script>
-import { CronCore } from '@vue-js-cron/core'
+import { CronCore } from '@vue-js-cron/core';
 import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import TextConditionField from '../TextConditionField.vue';
@@ -162,8 +163,8 @@ export default {
             error: '',
             cronDescription: [
                 {
-                    title: 'TimerEventDefinitionPanel.cronDescriptionSubTitle',
-                },
+                    title: 'TimerEventDefinitionPanel.cronDescriptionSubTitle'
+                }
             ],
             // CronRuleGenerator UI 상태
             isCronGenerating: false,
@@ -172,8 +173,8 @@ export default {
         };
     },
     mounted() {
-        if(!this.copyUengineProperties.expression) {
-            this.copyUengineProperties.expression = "* * * * *";
+        if (!this.copyUengineProperties.expression) {
+            this.copyUengineProperties.expression = '* * * * *';
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         } else {
             this.expression = this.copyUengineProperties.expression;
@@ -244,14 +245,20 @@ export default {
             // 코드펜스(json) 우선 추출
             let m = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
             if (m && m[1]) {
-                try { return JSON.parse(m[1]); } catch(e) {}
+                try {
+                    return JSON.parse(m[1]);
+                } catch (e) {}
             }
             // 생 문자열 JSON 파싱 시도
-            try { return JSON.parse(text); } catch(e) {}
+            try {
+                return JSON.parse(text);
+            } catch (e) {}
             // 마지막으로 중괄호 블록만 추출
             m = text.match(/\{[\s\S]*\}/);
             if (m && m[0]) {
-                try { return JSON.parse(m[0]); } catch(e) {}
+                try {
+                    return JSON.parse(m[0]);
+                } catch (e) {}
             }
             return null;
         },

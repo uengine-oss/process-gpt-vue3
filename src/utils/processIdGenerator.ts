@@ -152,7 +152,7 @@ export function getNextSequenceFromIds(existingIds: string[], type: ProcessIdTyp
 
     let maxSequence = 0;
 
-    existingIds.forEach(id => {
+    existingIds.forEach((id) => {
         const match = id.match(regex);
         if (match) {
             const seq = parseInt(match[1], 10);

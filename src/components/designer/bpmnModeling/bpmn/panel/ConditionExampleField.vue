@@ -4,7 +4,12 @@
         <div class="d-flex justify-end mt-4">
             <v-btn @click="generateExamples" color="primary" density="compact" rounded variant="flat" :disabled="isGenerating">
                 <span v-if="isGenerating" class="thinking-wave-text">
-                    <span v-for="(char, index) in $t('ConditionExampleField.generatingExamples') " :key="index" :style="{ animationDelay: `${index * 0.1}s` }" class="thinking-char">
+                    <span
+                        v-for="(char, index) in $t('ConditionExampleField.generatingExamples')"
+                        :key="index"
+                        :style="{ animationDelay: `${index * 0.1}s` }"
+                        class="thinking-char"
+                    >
                         {{ char === ' ' ? '\u00A0' : char }}
                     </span>
                 </span>
@@ -35,7 +40,7 @@
 </template>
 
 <script>
-import ChatModule from "@/components/ChatModule.vue";
+import ChatModule from '@/components/ChatModule.vue';
 import ConditionExampleGenenrator from '@/components/ai/ConditionExampleGenenrator';
 import BackendFactory from '@/components/api/BackendFactory';
 import ExampleTable from './ExampleTable.vue';
@@ -78,7 +83,7 @@ export default {
 
         this.genenrator = new ConditionExampleGenenrator(this, {
             isStream: true,
-            preferredLanguage: "Korean",
+            preferredLanguage: 'Korean',
             processDefinition: this.processDefinition,
             condition: this.condition
         });
@@ -97,13 +102,13 @@ export default {
                     if (properties.examples) {
                         this.goodExamples = properties.examples.good_examples;
                         if (this.goodExamples) {
-                            this.goodExamples.forEach(example => {
+                            this.goodExamples.forEach((example) => {
                                 example.valid_at = example.valid_at ? example.valid_at : today;
                             });
                         }
                         this.badExamples = properties.examples.bad_examples;
                         if (this.badExamples) {
-                            this.badExamples.forEach(example => {
+                            this.badExamples.forEach((example) => {
                                 example.invalid_at = example.invalid_at ? example.invalid_at : today;
                             });
                         }
@@ -129,11 +134,11 @@ export default {
             if (responseObj) {
                 const today = new Date().toISOString();
                 this.goodExamples = responseObj.good_examples;
-                this.goodExamples.forEach(example => {
+                this.goodExamples.forEach((example) => {
                     example.valid_at = example.valid_at ? example.valid_at : today;
                 });
                 this.badExamples = responseObj.bad_examples;
-                this.badExamples.forEach(example => {
+                this.badExamples.forEach((example) => {
                     example.invalid_at = example.invalid_at ? example.invalid_at : today;
                 });
                 this.$emit('update:value', {

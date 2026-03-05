@@ -26,13 +26,7 @@
                 </v-tab>
             </v-tabs>
             <div>
-                <v-btn
-                    icon
-                    variant="text"
-                    size="small"
-                    class="add-tab-btn"
-                    @click="addNewTab()"
-                >
+                <v-btn icon variant="text" size="small" class="add-tab-btn" @click="addNewTab()">
                     <v-icon>mdi-plus</v-icon>
                 </v-btn>
                 <v-tooltip activator="parent" location="bottom">
@@ -57,8 +51,8 @@
 </template>
 
 <script>
-import AgentMonitor from "@/views/markdown/AgentMonitor.vue";
-import ChatGenerator from "@/components/ai/WorkItemAgentGenerator.js";
+import AgentMonitor from '@/views/markdown/AgentMonitor.vue';
+import ChatGenerator from '@/components/ai/WorkItemAgentGenerator.js';
 
 import JSON5 from 'json5';
 import partialParse from 'partial-json-parser';
@@ -109,12 +103,12 @@ export default {
         selectedAgent: {
             agent: '',
             agentMode: 'draft',
-            orchestration: 'crewai-action',
+            orchestration: 'crewai-action'
         },
         instId: '',
         isInitialized: false, // 초기화 완료 플래그
 
-        generator: null,
+        generator: null
     }),
     computed: {
         id() {
@@ -137,13 +131,13 @@ export default {
                         this.selectedAgent = {
                             agent: newVal.id,
                             agentMode: 'draft',
-                            orchestration: newVal.agent_type === 'agent' ? 'crewai-action' : newVal.alias,
-                        }
+                            orchestration: newVal.agent_type === 'agent' ? 'crewai-action' : newVal.alias
+                        };
                         if (newVal.agent_type) {
                             this.defaultWorkItem.worklist.orchestration = newVal.alias;
                         }
                         this.instId = `${newVal.id}-actions`;
-                        
+
                         this.hoveredTabIndex = null;
                         this.hoverTimeout = null;
                         this.tabs = [];
@@ -152,7 +146,7 @@ export default {
 
                         // 기존 워크리스트 로드하여 탭으로 표시
                         await this.loadExistingWorkItems();
-                        
+
                         // 탭이 없으면 새 탭 생성
                         if (this.tabs.length === 0) {
                             await this.addNewTab();
@@ -166,7 +160,7 @@ export default {
     async mounted() {
         this.generator = new ChatGenerator(this, {
             isStream: true,
-            preferredLanguage: "Korean",
+            preferredLanguage: 'Korean'
         });
 
         await this.init();
@@ -174,8 +168,8 @@ export default {
             this.selectedAgent = {
                 agent: this.agentInfo.id,
                 agentMode: 'draft',
-                orchestration: this.agentInfo.agent_type === 'agent' ? 'crewai-action' : this.agentInfo.alias,
-            }
+                orchestration: this.agentInfo.agent_type === 'agent' ? 'crewai-action' : this.agentInfo.alias
+            };
             if (this.agentInfo.agent_type) {
                 this.defaultWorkItem.worklist.orchestration = this.agentInfo.alias;
             }
@@ -184,24 +178,23 @@ export default {
 
         // 기존 워크리스트 로드하여 탭으로 표시
         await this.loadExistingWorkItems();
-        
+
         // 탭이 없으면 새 탭 생성
         if (this.tabs.length === 0) {
             await this.addNewTab();
         }
-        
+
         // initialMessage가 있으면 새 탭 생성 후 자동 전송
         if (this.initialMessage) {
             const tabId = await this.addNewTab(this.initialMessage);
             if (tabId) {
-                const tab = this.tabs.find(t => t.id === tabId);
+                const tab = this.tabs.find((t) => t.id === tabId);
                 if (tab) {
-                    tab.title = this.initialMessage.substring(0, 20) + 
-                               (this.initialMessage.length > 20 ? '...' : '');
+                    tab.title = this.initialMessage.substring(0, 20) + (this.initialMessage.length > 20 ? '...' : '');
                 }
             }
         }
-        
+
         // 초기화 완료 플래그 설정
         this.isInitialized = true;
     },
@@ -229,8 +222,8 @@ export default {
                     start_date: new Date().toISOString(),
                     end_date: null,
                     due_date: null,
-                    project_id: null,
-                }
+                    project_id: null
+                };
                 await backend.putInstance(this.instId, instanceData);
                 this.instance = await backend.getInstance(this.instId);
             }
@@ -241,24 +234,28 @@ export default {
                 if (worklist.length > 0) {
                     // 최신순으로 정렬
                     worklist = worklist.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                    
+
                     // 각 워크아이템을 탭으로 추가
                     for (const workItemRef of worklist) {
                         const workItem = await backend.getWorkItem(workItemRef.taskId);
                         if (workItem) {
                             const tabId = this.uuid();
-                            const tabTitle = workItem.activity.name || workItem.worklist.description || workItem.worklist.query || `새 대화 ${this.tabCounter++}`;
-                            
+                            const tabTitle =
+                                workItem.activity.name ||
+                                workItem.worklist.description ||
+                                workItem.worklist.query ||
+                                `새 대화 ${this.tabCounter++}`;
+
                             this.tabs.push({
                                 id: tabId,
                                 title: tabTitle.length > 20 ? tabTitle.substring(0, 20) + '...' : tabTitle,
                                 workItemId: workItemRef.taskId
                             });
-                            
+
                             this.workItemsByTab[tabId] = workItem;
                         }
                     }
-                    
+
                     // 가장 최근 워크아이템(첫 번째 탭) 활성화
                     if (this.tabs.length > 0) {
                         this.currentTabIndex = 0;
@@ -290,7 +287,7 @@ export default {
             try {
                 const tabId = this.uuid();
                 const tabTitle = `새 대화 ${this.tabCounter++}`;
-                
+
                 // 새 탭 추가
                 this.tabs.push({
                     id: tabId,
@@ -298,10 +295,10 @@ export default {
                     workItemId: null,
                     autoMessage: autoMessage || null // 자동 전송 메시지
                 });
-                
+
                 // 새 탭으로 전환
                 this.currentTabIndex = this.tabs.length - 1;
-                
+
                 let agentOrch = 'crewai-action';
                 if (this.agentInfo?.agent_type === 'pgagent') {
                     agentOrch = this.agentInfo?.alias;
@@ -315,14 +312,14 @@ export default {
                     message: '',
                     agentOrch: agentOrch
                 });
-                
+
                 if (newWorkItem) {
                     // 탭에 워크아이템 ID 저장
                     const currentTab = this.tabs[this.tabs.length - 1];
                     currentTab.workItemId = newWorkItem.id;
                     this.workItemsByTab[tabId] = newWorkItem;
                 }
-                
+
                 return tabId;
             } catch (error) {
                 console.error('새 탭 추가 중 오류:', error);
@@ -340,9 +337,9 @@ export default {
             if (this.tabs.length <= 1) {
                 return;
             }
-            
+
             const tabToRemove = this.tabs[tabIndex];
-            
+
             // 워크아이템 삭제
             if (tabToRemove.workItemId) {
                 try {
@@ -352,22 +349,22 @@ export default {
                     // 삭제 실패해도 탭은 제거 (UI 일관성 유지)
                 }
             }
-            
+
             // 워크아이템 데이터에서 제거
             if (this.workItemsByTab[tabToRemove.id]) {
                 delete this.workItemsByTab[tabToRemove.id];
             }
-            
+
             // 탭 제거
             this.tabs.splice(tabIndex, 1);
-            
+
             // 현재 탭 인덱스 조정
             if (this.currentTabIndex >= this.tabs.length) {
                 this.currentTabIndex = this.tabs.length - 1;
             } else if (this.currentTabIndex > tabIndex) {
                 this.currentTabIndex--;
             }
-            
+
             // 탭이 하나도 없으면 자동으로 새 탭 생성
             if (this.tabs.length === 0) {
                 await this.addNewTab();
@@ -384,19 +381,19 @@ export default {
                     user_id: this.id,
                     description: data.message,
                     query: data.message,
-                    tool: "formHandler:defaultform",
+                    tool: 'formHandler:defaultform',
                     status: 'NEW',
                     agent_mode: 'DRAFT',
                     agent_orch: agentOrch || 'crewai-action',
-                    start_date: new Date().toISOString(),
+                    start_date: new Date().toISOString()
                 });
                 const workItem = await backend.getWorkItem(taskId);
-                
+
                 // 현재 탭이 있으면 워크아이템 업데이트
                 if (this.currentTab) {
                     this.workItemsByTab[this.currentTab.id] = workItem;
                 }
-                
+
                 return workItem;
             } catch (error) {
                 console.error('새로운 작업 항목 생성 중 오류가 발생했습니다:', error);
@@ -415,11 +412,11 @@ export default {
         },
         updateNewTabTitle(title, taskId) {
             if (this.generator) {
-                this.generator.previousMessages = []
+                this.generator.previousMessages = [];
                 this.generator.previousMessages.push({
-                    "content": `다음 내용을 대화방 제목으로 사용할 수 있도록 요약해줘: ${title}
+                    content: `다음 내용을 대화방 제목으로 사용할 수 있도록 요약해줘: ${title}
 결과는 {"title": "대화방 제목"} 형식으로 생성해줘.`,
-                    "role": "user"
+                    role: 'user'
                 });
                 this.generator.generate();
             }
@@ -432,21 +429,21 @@ export default {
             let jsonData = response;
             if (typeof response == 'string') {
                 jsonData = this.extractJSON(response);
-                if(jsonData && jsonData.includes('{')){
+                if (jsonData && jsonData.includes('{')) {
                     try {
                         jsonData = JSON.parse(jsonData);
-                    } catch(e) {
-                        console.log(e)
-                        jsonData = partialParse(jsonData)
+                    } catch (e) {
+                        console.log(e);
+                        jsonData = partialParse(jsonData);
                     }
                 } else {
-                    jsonData = null
+                    jsonData = null;
                 }
             }
             if (jsonData && jsonData.title && this.currentTab) {
                 await backend.putWorkItem(this.currentTab.workItemId, {
                     id: this.currentTab.workItemId,
-                    activity_name: jsonData.title,
+                    activity_name: jsonData.title
                 });
                 this.currentTab.title = jsonData.title;
             }
@@ -479,7 +476,7 @@ export default {
             // 정규 표현식 정의
             //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
             let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
-            
+
             // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
             let match = inputString.match(regex);
             // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
@@ -492,16 +489,16 @@ export default {
                     });
                 else return match[1];
             } else {
-                regex = /\{[\s\S]*\}/
+                regex = /\{[\s\S]*\}/;
                 match = inputString.match(regex);
                 return match && match[0] ? match[0] : null;
             }
 
             // 매치된 결과가 없으면 null 반환
             return null;
-        },
+        }
     }
-}
+};
 </script>
 
 <style scoped>

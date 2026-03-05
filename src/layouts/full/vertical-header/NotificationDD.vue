@@ -15,18 +15,13 @@
             </v-btn>
         </template>
 
-        <v-sheet class="mt-5 dropdown-box notification-dd-box"
-            rounded="lg"
-            elevation="10" 
-        >
+        <v-sheet class="mt-5 dropdown-box notification-dd-box" rounded="lg" elevation="10">
             <div class="d-flex align-center pa-3">
                 <h6 class="text-h5 font-weight-semibold">{{ $t('NotificationDD.notification') }}</h6>
-                <v-chip color="primary" variant="flat" size="x-small" class="text-white ml-4" rounded="xl">
-                    {{ notiCount }} New
-                </v-chip>
+                <v-chip color="primary" variant="flat" size="x-small" class="text-white ml-4" rounded="xl"> {{ notiCount }} New </v-chip>
             </div>
             <v-divider></v-divider>
-            <div style="height: 300px; overflow: auto !important;">
+            <div style="height: 300px; overflow: auto !important">
                 <v-list lines="one">
                     <v-list-item v-for="item in notifications" :key="item.id" @click="checkNotification(item)">
                         <template v-slot:prepend>
@@ -41,7 +36,7 @@
                             <div class="ml-auto">{{ item.timeStamp }} ago</div>
                         </v-list-item-subtitle>
                         <v-list-item-title class="d-flex mt-1">
-                            <div style="word-wrap: break-word; white-space: normal; width: 100%;">{{ item.title }}</div>
+                            <div style="word-wrap: break-word; white-space: normal; width: 100%">{{ item.title }}</div>
                             <div class="ml-auto">
                                 <v-badge v-if="item.count > 1" color="primary" :content="item.count" inline></v-badge>
                             </div>
@@ -65,7 +60,7 @@ export default {
         menuOpen: false,
         isConfirm: false,
         notifications: [],
-        defaultSetting: useDefaultSetting(),
+        defaultSetting: useDefaultSetting()
     }),
     computed: {
         notificationStore() {
@@ -87,6 +82,19 @@ export default {
     },
     async mounted() {
         await this.notificationStore.init();
+        this.fetchNotifications();
+
+        await backend.watchNotifications((noti) => {
+            if (noti && noti.new && noti.new.is_checked === false) {
+                this.fetchNotifications();
+                if (localStorage.getItem('email') && noti.new.user_id === localStorage.getItem('email')) {
+                    this.$emit('newNotification', noti.new.type);
+                }
+                if (noti.eventType === 'INSERT') {
+                    this.EventBus.emit('show-notification', noti.new);
+                }
+            }
+        });
     },
     methods: {
         async fetchNotifications() {
@@ -124,9 +132,11 @@ export default {
                         }
                         if (room && room.id) {
                             await this.$router.push({ path: '/chat', query: { roomId: room.id }, hash: '' });
-                            window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                                detail: { type: 'chat', value: false, id: room.id }
-                            }));
+                            window.dispatchEvent(
+                                new CustomEvent('update-notification-badge', {
+                                    detail: { type: 'chat', value: false, id: room.id }
+                                })
+                            );
                         } else {
                             // 방 조회 실패 시 기존 url로 fallback
                             this.$router.push(value.url);
@@ -143,10 +153,10 @@ export default {
             // 같은 채팅방(url) 알림은 모두 읽음 처리되므로 해당 url 항목 전부 UI에서 제거
             const urlToRemove = value.url || '';
             this.notifications = urlToRemove
-                ? this.notifications.filter(n => n.url !== urlToRemove)
-                : this.notifications.filter(n => n.id !== value.id);
+                ? this.notifications.filter((n) => n.url !== urlToRemove)
+                : this.notifications.filter((n) => n.id !== value.id);
             this.fetchNotifications();
         }
     }
-}
+};
 </script>

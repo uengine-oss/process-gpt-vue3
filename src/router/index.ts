@@ -74,9 +74,11 @@ let hasRouterError = false;
 
 /** 비밀번호 재설정 화면에 메일 링크(recovery)로 진입한 상태인지 여부 */
 function isOnResetPasswordWithRecoveryHash(): boolean {
-    return typeof window !== 'undefined' &&
+    return (
+        typeof window !== 'undefined' &&
         window.location.pathname === '/auth/reset-password' &&
-        window.location.hash.includes('type=recovery');
+        window.location.hash.includes('type=recovery')
+    );
 }
 
 router.beforeEach(async (to: any, from: any, next: any) => {
@@ -102,23 +104,22 @@ router.beforeEach(async (to: any, from: any, next: any) => {
                 if (window.$isTenantServer) {
                     if (!to.fullPath.includes('/tenant') && to.fullPath !== '/') {
                         return next('/tenant/manage');
-                    } else if (to.fullPath === '/' || 
-                        to.matched.some((record) => TenantRoutes.children.includes(record as any))) {
+                    } else if (to.fullPath === '/' || to.matched.some((record) => TenantRoutes.children.includes(record as any))) {
                         next();
                     }
                 } else {
                     // ===== 로컬 테스트용 코드 시작 =====
                     // 로컬호스트에서 테넌트 관리 페이지 테스트를 위한 코드
                     // 필요시 주석을 해제하여 사용
-                    // const isLocalhost = window.location.host.includes('localhost') || 
-                    //                    window.location.host.includes('192.168') || 
+                    // const isLocalhost = window.location.host.includes('localhost') ||
+                    //                    window.location.host.includes('192.168') ||
                     //                    window.location.host.includes('127.0.0.1');
-                    // 
+                    //
                     // if (to.fullPath.includes('/tenant') && !isLocalhost) {
                     //     return next('/');
                     // }
                     // ===== 로컬 테스트용 코드 끝 =====
-                    
+
                     // 기존 코드 (운영환경용)
                     if (to.fullPath.includes('/tenant')) {
                         return next('/');
@@ -138,15 +139,17 @@ router.beforeEach(async (to: any, from: any, next: any) => {
 // 라우터 에러 핸들러 추가
 router.onError((error) => {
     console.error('[라우터] 라우팅 에러 발생:', error);
-    
+
     const errorMessage = error?.message || error?.toString() || '';
-    
+
     // 동적 임포트 실패 시 자동 복구
-    if (errorMessage.includes('Failed to fetch dynamically imported module') ||
+    if (
+        errorMessage.includes('Failed to fetch dynamically imported module') ||
         errorMessage.includes('Module not found') ||
-        errorMessage.includes('Cannot resolve component')) {
+        errorMessage.includes('Cannot resolve component')
+    ) {
         hasRouterError = true;
-        
+
         // 사용자에게 알림
         if (window.$app_) {
             window.$app_.snackbarMessage = '페이지 로딩 중 오류가 발생했습니다. 자동으로 재시도합니다.';
@@ -154,7 +157,7 @@ router.onError((error) => {
             window.$app_.snackbar = true;
             window.$app_.clickCount = 0;
         }
-        
+
         // 2초 후 자동 새로고침
         setTimeout(() => {
             window.location.reload();
@@ -163,6 +166,5 @@ router.onError((error) => {
         console.log('[라우터] 일반적인 에러 - 라우팅 계속 진행');
     }
 });
-
 
 export default router;

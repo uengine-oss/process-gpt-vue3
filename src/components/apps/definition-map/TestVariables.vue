@@ -1,25 +1,12 @@
-<template>    
-    <div class="h-100" style="width: 100%; height: 100%;" variant="outlined">
-        <v-row class="ma-0 pa-0 mt-2"
-            style="position:absolute;
-            top:0px;
-            right:5px;"
-        >
+<template>
+    <div class="h-100" style="width: 100%; height: 100%" variant="outlined">
+        <v-row class="ma-0 pa-0 mt-2" style="position: absolute; top: 0px; right: 5px">
             <v-spacer></v-spacer>
-            <v-btn @click="workItemDialog = !workItemDialog"
-                color="primary"
-                variant="text"
-                icon
-                density="comfortable"
-            >
+            <v-btn @click="workItemDialog = !workItemDialog" color="primary" variant="text" icon density="comfortable">
                 <Icons :icon="'plus'" />
             </v-btn>
         </v-row>
-        <div
-            style="max-height: calc(100vh - 380px);
-            color: black;
-            overflow: auto;"
-        >
+        <div style="max-height: calc(100vh - 380px); color: black; overflow: auto">
             <v-table v-if="headers">
                 <thead>
                     <tr>
@@ -28,7 +15,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <test-variable v-for="(val, idx) in selectedTask" :key="idx" :idx="idx" :selected-task="val" :headers="headers" @execute="e => runExistingTest(e)" @delete="idx => deleteTest(idx)"></test-variable>
+                    <test-variable
+                        v-for="(val, idx) in selectedTask"
+                        :key="idx"
+                        :idx="idx"
+                        :selected-task="val"
+                        :headers="headers"
+                        @execute="(e) => runExistingTest(e)"
+                        @delete="(idx) => deleteTest(idx)"
+                    ></test-variable>
                 </tbody>
             </v-table>
             <v-card-text v-else class="pa-0">
@@ -41,12 +36,12 @@
         </v-card-actions> -->
         <v-dialog v-model="workItemDialog" style="width: 50%">
             <v-card v-if="currentComponent" class="work-item-dialog-card">
-                <component 
-                    :is="currentComponent" 
+                <component
+                    :is="currentComponent"
                     :definitionId="definitionId"
-                    :work-item="workItem" 
-                    :workItemStatus="workItemStatus" 
-                    :isDryRun="false" 
+                    :work-item="workItem"
+                    :workItemStatus="workItemStatus"
+                    :isDryRun="false"
                     :dryRunWorkItem="dryRunWorkItem"
                     :currentActivities="currentActivities"
                     @updateCurrentActivities="updateCurrentActivities"
@@ -81,7 +76,7 @@ export default {
     props: {
         definitionId: String,
         task: String,
-        taskId: String,
+        taskId: String
     },
     data: () => ({
         testList: {},
@@ -90,30 +85,29 @@ export default {
         currentComponent: null,
         workItemDialog: false,
         headers: [],
-        values: [],
+        values: []
     }),
     async created() {
-        await this.init()
-        
+        await this.init();
     },
     methods: {
         runNewTest(e) {
             // File 추가 API를 따로 생성해서 파일 업데이트 하는 방식으로 해야 할 지 고민 필요.
             // 우선 화면에만 추가 이후, InstanceServiceImpl에서 실행하여 파일에도 저장하는 Logic으로
-            this.$emit('executeTest', e)
+            this.$emit('executeTest', e);
         },
         runExistingTest(e) {
-            console.log(this.selectedTask[e])
-            delete this.selectedTask[e]["_type"];
-            this.$emit('executeTest', this.selectedTask[e])
+            console.log(this.selectedTask[e]);
+            delete this.selectedTask[e]['_type'];
+            this.$emit('executeTest', this.selectedTask[e]);
         },
         async deleteTest(idx) {
-            console.log(this.task)
+            console.log(this.task);
             await backend.deleteTest(this.definitionId, this.task, idx);
             this.init();
         },
         async init() {
-            let me = this
+            let me = this;
             me.workItem = await backend.getWorkItem(me.taskId);
             if (me.workItem.worklist.execScope) me.workItem.execScope = me.workItem.worklist.execScope;
             me.workListByInstId = await backend.getWorkListByInstId(me.workItem.worklist.instId);
@@ -122,12 +116,12 @@ export default {
                 : me.workItem.worklist.tool.includes('formHandler')
                 ? 'FormWorkItem'
                 : 'DefaultWorkItem';
-            
-            this.$emit('type', me.currentComponent)
-            this.$emit('workItem', me.workItem)
+
+            this.$emit('type', me.currentComponent);
+            this.$emit('workItem', me.workItem);
             const list = await backend.testList(this.workItem.worklist.defId);
             this.testList = list;
-            console.log(this.task)
+            console.log(this.task);
             if (this.testList[this.task]) this.selectedTask = JSON.parse(this.testList[this.task]);
             this.extractHeadersAndValues();
         },
@@ -136,9 +130,9 @@ export default {
             this.values = [];
 
             if (this.selectedTask) {
-                this.selectedTask.forEach(taskVariable => {
-                    if(taskVariable && Object.keys(taskVariable).length > 0) {
-                        Object.keys(taskVariable).forEach(key => {
+                this.selectedTask.forEach((taskVariable) => {
+                    if (taskVariable && Object.keys(taskVariable).length > 0) {
+                        Object.keys(taskVariable).forEach((key) => {
                             if (!this.headers.includes(key)) {
                                 this.headers.push(key);
                             }
@@ -147,7 +141,7 @@ export default {
                     }
                 });
             }
-        },
+        }
     }
 };
 </script>

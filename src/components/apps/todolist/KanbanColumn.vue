@@ -3,26 +3,15 @@
         <v-row class="ma-0 pa-0 pa-3 pb-2 pt-2 align-center">
             <h6 class="text-h6 font-weight-semibold">{{ $t(column.title) }}</h6>
             <v-spacer></v-spacer>
-            <Icons v-if="!todoTaskColumnBtnStatus"
-                @click="todoTaskColumnFold(column.id)"
-                :icon="'fold'"
-                class="todo-task-fold-btn"
-            />
-            <Icons v-else
-                @click="todoTaskColumnUnfold(column.id)"
-                :icon="'unfold'"
-                class="todo-task-unfold-btn"
-            />
+            <Icons v-if="!todoTaskColumnBtnStatus" @click="todoTaskColumnFold(column.id)" :icon="'fold'" class="todo-task-fold-btn" />
+            <Icons v-else @click="todoTaskColumnUnfold(column.id)" :icon="'unfold'" class="todo-task-unfold-btn" />
         </v-row>
-        
-           
-        <div v-if="!todoTaskColumnBtnStatus" ref="section"
-            class="pa-3 todo-list-card-box"
-        >
+
+        <div v-if="!todoTaskColumnBtnStatus" ref="section" class="pa-3 todo-list-card-box">
             <!-- 드래그 가능한 구조 (완료됨과 진행중 간에만, 모바일은 드래그 불가) -->
-            <component 
-                :is="dragComponentType" 
-                class="dragArea list-group" 
+            <component
+                :is="dragComponentType"
+                class="dragArea list-group"
                 :class="dragCursorClass"
                 v-bind="draggableProps"
                 @change="handleDragChange"
@@ -34,52 +23,50 @@
                     </div>
                 </div>
                 <transition-group v-else>
-                    <div v-for="task in sortedTasks" :key="task.taskId" 
+                    <div
+                        v-for="task in sortedTasks"
+                        :key="task.taskId"
                         class="todo-task-item-card-style"
                         :class="{ 'cursor-move': !isMobile }"
                     >
                         <KanbanColumnCard :task="task" @deleteTask="deleteTask" :userList="users" />
                     </div>
                 </transition-group>
-                
+
                 <!-- 추가 로딩시 하단 스켈레톤 표시 (기존 데이터가 있을 때) -->
                 <div v-if="loading && column.tasks.length > 0" class="mt-2">
                     <div v-for="index in 10" :key="'loading-skeleton-' + index" class="todo-task-item-card-style mb-3">
                         <v-skeleton-loader height="120"></v-skeleton-loader>
                     </div>
                 </div>
-                
+
                 <!-- 마지막 페이지 표시 (스크롤을 통해 추가 로딩이 발생한 경우에만) -->
                 <div v-if="!hasMore && currentPage > 0 && column.tasks.length > 0">
-                    <div class="d-flex align-center justify-center pa-2" style="color: #999; font-size: 12px;">
+                    <div class="d-flex align-center justify-center pa-2" style="color: #999; font-size: 12px">
                         <v-icon size="small" color="grey-lighten-1" class="mr-1">mdi-checkbox-marked-circle-outline</v-icon>
                         <span>{{ $t('todoList.endOfList') }}</span>
                     </div>
                 </div>
             </component>
         </div>
-         <!-- workItem dialog -->
-         <v-dialog v-model="dialog" max-width="500">
+        <!-- workItem dialog -->
+        <v-dialog v-model="dialog" max-width="500">
             <WorkItemDialog :taskId="taskId" :workItem="workItem" @closeDialog="closeDialog" />
         </v-dialog>
-        
+
         <!-- rework dialog -->
         <v-dialog v-model="reworkDialog" width="500">
-            <ReworkDialog
-                :reworkActivities="reworkActivities"
-                @submitRework="submitRework"
-                @close="closeReworkDialog"
-            />
+            <ReworkDialog :reworkActivities="reworkActivities" @submitRework="submitRework" @close="closeReworkDialog" />
         </v-dialog>
     </v-card>
 </template>
 
 <script>
-import KanbanColumnCard from "./KanbanColumnCard.vue";
-import WorkItemDialog from "./WorkItemDialog.vue";
-import ReworkDialog from "./ReworkDialog.vue";
+import KanbanColumnCard from './KanbanColumnCard.vue';
+import WorkItemDialog from './WorkItemDialog.vue';
+import ReworkDialog from './ReworkDialog.vue';
 
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 export default {
     components: {
@@ -99,7 +86,7 @@ export default {
             default: 0
         },
         isNotAll: {
-            type: Boolean, 
+            type: Boolean,
             default: false
         },
         users: {
@@ -121,7 +108,7 @@ export default {
         originColumnId: null,
         reworkDialog: false,
         reworkActivities: [],
-        currentDraggedTask: null,
+        currentDraggedTask: null
     }),
     computed: {
         isMobile() {
@@ -157,19 +144,19 @@ export default {
             if (!this.column.tasks || this.column.tasks.length === 0) {
                 return [];
             }
-            
+
             const sortedTasks = [...this.column.tasks];
-            
+
             if (this.sortOption === 'dueDate') {
                 // 마감일이 가까운 순 (오름차순)
                 sortedTasks.sort((a, b) => {
                     const dateA = a.dueDate || a.endDate;
                     const dateB = b.dueDate || b.endDate;
-                    
+
                     if (!dateA && !dateB) return 0;
-                    if (!dateA) return 1;  // dateA가 없으면 뒤로
+                    if (!dateA) return 1; // dateA가 없으면 뒤로
                     if (!dateB) return -1; // dateB가 없으면 뒤로
-                    
+
                     return new Date(dateA) - new Date(dateB);
                 });
             } else if (this.sortOption === 'startDate') {
@@ -177,11 +164,11 @@ export default {
                 sortedTasks.sort((a, b) => {
                     const dateA = a.startDate || a.createdDate || a.startedDate;
                     const dateB = b.startDate || b.createdDate || b.startedDate;
-                    
+
                     if (!dateA && !dateB) return 0;
-                    if (!dateA) return 1;  // dateA가 없으면 뒤로
+                    if (!dateA) return 1; // dateA가 없으면 뒤로
                     if (!dateB) return -1; // dateB가 없으면 뒤로
-                    
+
                     return new Date(dateB) - new Date(dateA);
                 });
             } else if (this.sortOption === 'updatedAt') {
@@ -190,26 +177,26 @@ export default {
                     return new Date(b.updatedAt) - new Date(a.updatedAt);
                 });
             }
-            
+
             return sortedTasks;
         }
     },
     async mounted() {
-        if(this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
+        if (this.$refs.section) this.$refs.section.addEventListener('scroll', this.checkScrollBottom);
     },
     methods: {
         todoTaskColumnFold(id) {
-            this.todoTaskColumnBtnStatus = true
+            this.todoTaskColumnBtnStatus = true;
             this.$emit('todoTaskColumnFold', id);
         },
         todoTaskColumnUnfold(id) {
-            this.todoTaskColumnBtnStatus = false
+            this.todoTaskColumnBtnStatus = false;
             this.$emit('todoTaskColumnunfold', id);
         },
-        checkScrollBottom(){
+        checkScrollBottom() {
             const section = this.$refs.section;
             const isAtBottom = section.scrollTop + section.clientHeight >= section.scrollHeight - 1;
-            
+
             if (isAtBottom && !this.loading && this.hasMore) {
                 this.$emit('scrollBottom', this.column.id);
             }
@@ -223,11 +210,11 @@ export default {
             if (event.added) {
                 const addedTask = event.added.element;
                 const taskId = addedTask.taskId;
-                
+
                 // 이동 전 상태는 addedTask에 저장된 원래 상태 사용
                 const fromStatus = addedTask.status;
                 const toStatus = this.column.id;
-                
+
                 // 완료됨(DONE)에서 진행중(IN_PROGRESS)으로 이동 시 재작업 가능 여부 판별
                 if (fromStatus === 'DONE' && toStatus === 'IN_PROGRESS') {
                     this.currentDraggedTask = addedTask;
@@ -238,25 +225,24 @@ export default {
                 }
 
                 // 원본 column.tasks에서 정확한 task 찾기 (고유 ID 기반)
-                const originalTask = this.column.tasks.find(t => t.taskId === taskId);
+                const originalTask = this.column.tasks.find((t) => t.taskId === taskId);
                 if (!originalTask) {
                     // 원본에 없으면 새로 추가
                     this.column.tasks.push(addedTask);
                 }
             }
-            
+
             // removed 이벤트 처리 (드래그 시작 시 출발지에서 제거될 때)
             if (event.removed) {
                 const removedTask = event.removed.element;
                 const taskId = removedTask.taskId;
-                
+
                 // 원본 column.tasks에서도 제거
-                const index = this.column.tasks.findIndex(t => t.taskId === taskId);
+                const index = this.column.tasks.findIndex((t) => t.taskId === taskId);
                 if (index > -1) {
                     this.column.tasks.splice(index, 1);
                 }
             }
-            
         },
         async openReworkDialog(task, fromStatus) {
             const enableRework = await backend.enableRework(task);
@@ -277,14 +263,16 @@ export default {
         async loadReworkActivities(task) {
             // WorkItem과 동일한 구조로 초기화
             this.reworkActivities = {
-                current: [{
-                    id: task.tracingTag || task.activityId,
-                    name: task.name || task.title
-                }],
+                current: [
+                    {
+                        id: task.tracingTag || task.activityId,
+                        name: task.name || task.title
+                    }
+                ],
                 reference: [],
                 all: []
             };
-            
+
             try {
                 // task에 instId와 tracingTag가 있는 경우에만 백엔드 호출
                 if (task.instId && (task.tracingTag || task.activityId)) {
@@ -293,7 +281,7 @@ export default {
                         activityId: task.tracingTag || task.activityId
                     };
                     const result = await backend.getReworkActivities(options);
-                    
+
                     if (result.reference) {
                         this.reworkActivities.reference = result.reference;
                     }
@@ -309,43 +297,46 @@ export default {
             this.reworkDialog = false;
             this.reworkActivities = [];
             this.currentDraggedTask = null;
-            
+
             // UI 상태만 새로고침 (백엔드는 변경되지 않았으므로)
             this.EventBus.emit('todolist-updated');
         },
         submitRework(activities) {
             const me = this;
-            
+
             this.reworkDialog = false;
             this.reworkActivities = [];
             if (!me.currentDraggedTask || !me.currentDraggedTask.instId) {
                 console.error('재작업할 태스크 정보가 없습니다.');
                 return;
             }
-            
-            backend.reWorkItem({
-                instanceId: me.currentDraggedTask.instId,
-                activities: activities,
-                activityId: me.currentDraggedTask.tracingTag
-            }).then(data => {
-                if (data) {
-                    me.$try({
-                        context: me,
-                        action: () => {
-                            me.currentDraggedTask = null;
-                            me.EventBus.emit('todolist-updated');
-                        },
-                        successMsg: this.$t('successMsg.reworkRequested')
-                    });
-                }
-            }).catch(err => {
-                console.error('재작업 요청 중 오류:', err);
-            });
+
+            backend
+                .reWorkItem({
+                    instanceId: me.currentDraggedTask.instId,
+                    activities: activities,
+                    activityId: me.currentDraggedTask.tracingTag
+                })
+                .then((data) => {
+                    if (data) {
+                        me.$try({
+                            context: me,
+                            action: () => {
+                                me.currentDraggedTask = null;
+                                me.EventBus.emit('todolist-updated');
+                            },
+                            successMsg: this.$t('successMsg.reworkRequested')
+                        });
+                    }
+                })
+                .catch((err) => {
+                    console.error('재작업 요청 중 오류:', err);
+                });
         },
         updateTask(event) {
             var me = this;
             const movedTaskId = event.item.dataset.id;
-            const movedTask = me.column.tasks.find(task => task.id === movedTaskId);
+            const movedTask = me.column.tasks.find((task) => task.id === movedTaskId);
             me.originColumnId = movedTask.status;
             movedTask.status = me.column.id;
             me.updateWorkItem(movedTask);
@@ -364,7 +355,7 @@ export default {
         },
         closeDialog(isUpdated) {
             this.dialog = false;
-            if(!isUpdated) {
+            if (!isUpdated) {
                 this.$emit('updateStatus', this.taskId, this.originColumnId);
             } else {
                 this.EventBus.emit('instances-updated');
@@ -377,10 +368,10 @@ export default {
          * @param {*} task 삭제하려는 task 정보
          * TODO:: UEngineBackend.ts 에서 workitem 삭제 사용시 Backend.ts 로 삭제 함수 공통화
          */
-         async deleteTask(task) {
+        async deleteTask(task) {
             await backend.deleteWorkItem(task.taskId);
             this.column.tasks = this.column.tasks.filter((item) => item.taskId !== task.taskId);
-        },
+        }
     }
-}
+};
 </script>

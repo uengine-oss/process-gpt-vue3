@@ -3,7 +3,9 @@
         <v-card>
             <v-row class="ma-0 pa-0">
                 <!-- {{$t('processDefinition.editProcessData') }} -->
-                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important"> {{ name }} {{$t('Mapper.mapper')}}  </v-card-title>
+                <v-card-title class="ma-0 pa-0" style="padding: 15px 0px 0px 25px !important">
+                    {{ name }} {{ $t('Mapper.mapper') }}
+                </v-card-title>
                 <v-spacer></v-spacer>
                 <v-btn icon @click="closeFormMapper()">
                     <v-icon>mdi-content-save-outline</v-icon>
@@ -119,7 +121,6 @@ import FormMapper from './scripts/formMapper';
 import ContextMenu from './ContextMenu.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 
-
 export default {
     name: 'mapper',
     mixins: [FormMapper],
@@ -136,7 +137,7 @@ export default {
             type: String,
             required: true
         },
-        expandableTrees : {
+        expandableTrees: {
             type: Object,
             required: true,
             default: null
@@ -148,7 +149,7 @@ export default {
         replaceToExpandableNode: {
             type: Function, // function replaceToExpandableNode(nodeKey) return String
             required: true
-        },
+        }
     },
     components: {
         BlockComponent,
@@ -178,7 +179,7 @@ export default {
             processVariableDescriptors: [],
             portArray: [],
             activities: [],
-            roles:[],
+            roles: [],
             processElement: null
         };
     },
@@ -212,9 +213,9 @@ export default {
                 this.addTreeViewPort();
             }, 500);
         });
-        
+
         const treeviewsContainer = document.querySelector('.form-mapper .treeviews-container');
-            if (treeviewsContainer) {
+        if (treeviewsContainer) {
             resizeObserver.observe(treeviewsContainer);
         }
 
@@ -223,7 +224,7 @@ export default {
     methods: {
         async initVariableData() {
             var me = this;
-            if(!me.definition) return;
+            if (!me.definition) return;
             let forms = [];
             let formDefs = await me.backend.listDefinition();
 
@@ -234,7 +235,7 @@ export default {
             });
 
             me.definition.processVariables.forEach(async (variable) => {
-                if(variable.defaultValue) {
+                if (variable.defaultValue) {
                     if (variable.defaultValue.formDefId && variable.type === 'Form') {
                         let formHtml = await me.backend.getRawDefinition(variable.defaultValue.formDefId, { type: 'form' });
                         let fields = me.parseFormHtmlField(formHtml);
@@ -272,8 +273,7 @@ export default {
                         const tagName = child.tagName.toLowerCase();
 
                         // 입력 필드인 경우, 해당 변수명을 추가
-                        if(tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
-                            
+                        if (tagName.includes('field') && !tagName.includes('label') && !tagName.includes('code-field')) {
                             fields.push({
                                 name: child.getAttribute('name'),
                                 alias: child.getAttribute('alias'),
@@ -281,24 +281,22 @@ export default {
                                 children: []
                             });
 
-                        // 레이아웃인 경우 멀티 데이터 설정시에만 해당 이름을 필드로 추가하고, 하위 필드를 탐색
-                        } else if(tagName.includes('row-layout') && child.getAttribute('is_multidata_mode') === 'true') {
-
+                            // 레이아웃인 경우 멀티 데이터 설정시에만 해당 이름을 필드로 추가하고, 하위 필드를 탐색
+                        } else if (tagName.includes('row-layout') && child.getAttribute('is_multidata_mode') === 'true') {
                             fields.push({
                                 name: child.getAttribute('name'),
                                 alias: child.getAttribute('alias'),
                                 fields: extractFieldsRecursively(child)
-                            })
+                            });
 
-                        // 그외의 경우에는 하위 노드들을 계속 탐색
-                        } else 
-                            fields = fields.concat(extractFieldsRecursively(child));
+                            // 그외의 경우에는 하위 노드들을 계속 탐색
+                        } else fields = fields.concat(extractFieldsRecursively(child));
                     });
                 }
                 return fields;
-            }
+            };
 
-            return extractFieldsRecursively(doc.body)
+            return extractFieldsRecursively(doc.body);
         },
         async initializeNodesAndConfig() {
             this.leftNodes = {};
@@ -307,7 +305,7 @@ export default {
                 roots: []
             };
         },
-        async initActivityData () {
+        async initActivityData() {
             var me = this;
             me.activities = [];
             if (me.processElement) {
@@ -318,7 +316,7 @@ export default {
         },
         findTasks(elements) {
             var me = this;
-            if(!elements) return;
+            if (!elements) return;
             elements.forEach((element) => {
                 if (element.$type.toLowerCase().indexOf('task') !== -1) {
                     me.activities.push(element);
@@ -372,7 +370,7 @@ export default {
         },
         processVariableNodes(nodes) {
             const definition = this.definition;
-            if(!definition) return;
+            if (!definition) return;
             for (const variable of definition.processVariables) {
                 if (!this.config.roots.includes('Variables')) {
                     this.config.roots.push('Variables');
@@ -510,11 +508,11 @@ export default {
                 }
             }
         },
-        processExpandableNodes(nodes){
+        processExpandableNodes(nodes) {
             var me = this;
             const expandableTrees = me.expandableTrees;
-            
-            if(!expandableTrees) return;
+
+            if (!expandableTrees) return;
             Object.keys(expandableTrees).forEach((key) => {
                 // NOTE:
                 // expandableTrees는 "외부 주입 트리"이므로, 루트(parent가 없는 노드)만 roots로 취급해야 한다.
@@ -555,7 +553,6 @@ export default {
             };
 
             calculateOffsets(treeStructure);
-
         },
         addPortToBlockTemplates(nodePath, yOffset, blockName) {
             if (blockName == 'Source') {
@@ -612,8 +609,8 @@ export default {
         addTreeViewPort() {
             var me = this;
             const formAreaRect = document.getElementById('formArea')?.getBoundingClientRect();
-            if(!formAreaRect) return;
-            
+            if (!formAreaRect) return;
+
             if (this.blocks['Source']) {
                 delete this.blocks['Source'];
             }
@@ -802,7 +799,7 @@ export default {
     stroke-width: 3;
 }
 
-.mapper-dialog .v-overlay__content{
+.mapper-dialog .v-overlay__content {
     overflow: auto !important;
     scrollbar-width: none;
     border-radius: 20px;
@@ -829,7 +826,7 @@ export default {
     border-block-color: #eee;
     border-block-width: 1px;
     border-block-style: solid;
-    width:100%;
+    width: 100%;
     height: 24px;
     font-weight: bold;
     user-select: none;
@@ -882,4 +879,3 @@ export default {
     width: 250px;
 }
 </style>
-

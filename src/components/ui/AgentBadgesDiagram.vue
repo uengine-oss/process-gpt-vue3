@@ -1,21 +1,15 @@
 <template>
-    <div v-if="show" class="profile-container" :class="{ 'mobile': isMobile }">
+    <div v-if="show" class="profile-container" :class="{ mobile: isMobile }">
         <div class="profile-wrapper">
             <v-row class="profile-header ma-0 pa-4 pb-0">
                 <div class="d-flex flex-column">
                     <span class="profile-title">{{ agentName }}</span>
                     <span v-if="knowledgeSetupMessage" class="profile-subtitle">{{ knowledgeSetupMessage }}</span>
                 </div>
-                <div v-if="agentData && agentData.id"
-                    class="ml-2"
-                >
+                <div v-if="agentData && agentData.id" class="ml-2">
                     <div class="learning-buttons-item">
-                        <v-btn @click="goToAgentChat"
-                            color="primary"
-                            variant="flat" 
-                            class="rounded-pill"
-                            density="compact"
-                        >{{ $t('AgentBadgesDiagram.settings') }}
+                        <v-btn @click="goToAgentChat" color="primary" variant="flat" class="rounded-pill" density="compact"
+                            >{{ $t('AgentBadgesDiagram.settings') }}
                         </v-btn>
                     </div>
                 </div>
@@ -25,18 +19,18 @@
                     <span class="zoom-level">{{ Math.round(zoomLevel * 100) }}%</span>
                     <button @click="zoomIn" class="zoom-btn" :disabled="zoomLevel >= 2">+</button>
                 </v-row>
-                <v-btn @click="close"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="close" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
             <div class="diagram-container" v-if="!isMobile">
                 <svg ref="profileDiagram" :width="svgWidth" :height="svgHeight" class="profile-svg">
-                    <g ref="contentGroup" :transform="`scale(${zoomLevel}) translate(${(svgWidth/2) * (1-zoomLevel)/zoomLevel}, ${(svgHeight/2) * (1-zoomLevel)/zoomLevel})`"></g>
+                    <g
+                        ref="contentGroup"
+                        :transform="`scale(${zoomLevel}) translate(${((svgWidth / 2) * (1 - zoomLevel)) / zoomLevel}, ${
+                            ((svgHeight / 2) * (1 - zoomLevel)) / zoomLevel
+                        })`"
+                    ></g>
                 </svg>
             </div>
             <div class="mobile-content" v-else>
@@ -49,7 +43,7 @@
                     <h3 class="agent-name">{{ agentName }}</h3>
                     <span v-if="knowledgeSetupMessage" class="profile-subtitle">{{ knowledgeSetupMessage }}</span>
                 </div>
-                
+
                 <div class="mobile-sections">
                     <div v-for="section in mobileSections" :key="section.id" class="mobile-section">
                         <h4 class="section-title">{{ section.title }}</h4>
@@ -70,12 +64,12 @@ export default {
     props: {
         show: {
             type: Boolean,
-            default: false,
+            default: false
         },
         agentData: {
             type: Object,
-            default: () => ({}),
-        },
+            default: () => ({})
+        }
     },
     data: () => ({
         d3: null,
@@ -182,7 +176,7 @@ export default {
         },
         adjustSize() {
             if (this.isMobile) return;
-            
+
             // 450px 너비에 맞춰 SVG 크기 조정
             this.svgWidth = 420;
             this.svgHeight = 400;
@@ -190,18 +184,18 @@ export default {
         handleResize() {
             this.checkMobile();
             this.adjustSize();
-            
+
             if (this.show && !this.isMobile && this.simulation) {
                 this.initializeSimulation();
             }
         },
         initializeMobileData() {
             this.mobileSections = [];
-            
+
             // 페르소나 (실제 데이터)
             const personaInfo = [];
             if (this.agentData?.persona) personaInfo.push(this.agentData.persona);
-            
+
             if (personaInfo.length > 0) {
                 this.mobileSections.push({
                     id: 'persona',
@@ -215,7 +209,7 @@ export default {
             if (this.agentData?.tools) {
                 // 쉼표로 구분된 문자열이면 분리하여 각각 별도 줄로 표시
                 if (typeof this.agentData.tools === 'string') {
-                    const tools = this.agentData.tools.split(',').map(tool => tool.trim());
+                    const tools = this.agentData.tools.split(',').map((tool) => tool.trim());
                     toolsInfo.push(...tools);
                 } else if (Array.isArray(this.agentData.tools)) {
                     toolsInfo.push(...this.agentData.tools);
@@ -223,7 +217,7 @@ export default {
                     toolsInfo.push(this.agentData.tools);
                 }
             }
-            
+
             if (toolsInfo.length > 0) {
                 this.mobileSections.push({
                     id: 'tools',
@@ -253,7 +247,7 @@ export default {
                 this.d3 = window.d3;
                 return;
             }
-            
+
             return new Promise((resolve) => {
                 const script = document.createElement('script');
                 script.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js';
@@ -282,7 +276,7 @@ export default {
             // 페르소나 (실제 데이터)
             const personaInfo = [];
             if (this.agentData?.persona) personaInfo.push(this.agentData.persona);
-            
+
             if (personaInfo.length > 0) {
                 this.nodesData.push({
                     id: 'persona',
@@ -300,7 +294,7 @@ export default {
             if (this.agentData?.tools) {
                 // 쉼표로 구분된 문자열이면 분리하여 각각 별도 줄로 표시
                 if (typeof this.agentData.tools === 'string') {
-                    const tools = this.agentData.tools.split(',').map(tool => tool.trim());
+                    const tools = this.agentData.tools.split(',').map((tool) => tool.trim());
                     toolsInfo.push(...tools);
                 } else if (Array.isArray(this.agentData.tools)) {
                     toolsInfo.push(...this.agentData.tools);
@@ -308,7 +302,7 @@ export default {
                     toolsInfo.push(this.agentData.tools);
                 }
             }
-            
+
             if (toolsInfo.length > 0) {
                 this.nodesData.push({
                     id: 'tools',
@@ -345,44 +339,52 @@ export default {
                 y: this.centerY + 50
             });
 
-            this.linksData = this.nodesData
-                .filter(d => d.type === 'callout')
-                .map(d => ({ source: 'center', target: d.id }));
+            this.linksData = this.nodesData.filter((d) => d.type === 'callout').map((d) => ({ source: 'center', target: d.id }));
         },
         initializeSimulation() {
             if (!this.$refs.profileDiagram || !this.d3) return;
-            
+
             this.svg = this.d3.select(this.$refs.profileDiagram);
-            
+
             // 중앙 노드의 위치를 확실히 고정
-            const centerNode = this.nodesData.find(d => d.type === 'center');
+            const centerNode = this.nodesData.find((d) => d.type === 'center');
             if (centerNode) {
                 centerNode.x = this.centerX;
                 centerNode.y = this.centerY;
                 centerNode.fx = this.centerX;
                 centerNode.fy = this.centerY;
             }
-            
-            this.simulation = this.d3.forceSimulation(this.nodesData)
-                .force('link', this.d3.forceLink(this.linksData).id(d => d.id).distance(80))
+
+            this.simulation = this.d3
+                .forceSimulation(this.nodesData)
+                .force(
+                    'link',
+                    this.d3
+                        .forceLink(this.linksData)
+                        .id((d) => d.id)
+                        .distance(80)
+                )
                 .force('charge', this.d3.forceManyBody().strength(-200))
                 .force('center', this.d3.forceCenter(this.centerX, this.centerY))
-                .force('collision', this.d3.forceCollide().radius(d => {
-                    const size = this.calculateNodeSize(d);
-                    return Math.max(size.width, size.height) / 2 + 8;
-                }))
+                .force(
+                    'collision',
+                    this.d3.forceCollide().radius((d) => {
+                        const size = this.calculateNodeSize(d);
+                        return Math.max(size.width, size.height) / 2 + 8;
+                    })
+                )
                 .alphaTarget(0.1)
                 .alphaDecay(0.02);
 
             this.createElements();
-            
+
             this.simulation.on('tick', () => {
                 this.updatePositions();
             });
         },
         updateSimulation() {
             if (!this.simulation) return;
-            
+
             this.simulation.nodes(this.nodesData);
             this.simulation.force('link').links(this.linksData);
             this.createElements();
@@ -390,28 +392,28 @@ export default {
         },
         calculateNodeSize(node) {
             if (node.type === 'center') return { width: 60, height: 60 };
-            
+
             const maxWidth = 150;
             const charWidth = 7;
             const lineHeight = 14;
             const padding = 20;
             const titleHeight = 20;
             const bottomPadding = 10;
-            
+
             // 제목 줄바꿈 계산
             const availableWidth = maxWidth - padding;
             const titleLines = Math.ceil((node.title.length * 8) / availableWidth);
-            
+
             // 내용 줄바꿈 계산
             let totalContentLines = 0;
-            node.content.forEach(line => {
+            node.content.forEach((line) => {
                 const lineWidth = line.length * charWidth;
                 const linesNeeded = Math.ceil(lineWidth / availableWidth);
                 totalContentLines += Math.max(1, linesNeeded);
             });
-            
-            const nodeHeight = titleHeight + (titleLines * lineHeight) + (totalContentLines * lineHeight) + bottomPadding;
-            
+
+            const nodeHeight = titleHeight + titleLines * lineHeight + totalContentLines * lineHeight + bottomPadding;
+
             return {
                 width: maxWidth,
                 height: Math.max(70, nodeHeight)
@@ -424,59 +426,55 @@ export default {
 
             // 스타일 정의는 SVG 루트에
             const defs = this.svg.select('defs').empty() ? this.svg.append('defs') : this.svg.select('defs');
-            
+
             if (defs.select('#drop-shadow').empty()) {
-                const filter = defs.append('filter')
+                const filter = defs
+                    .append('filter')
                     .attr('id', 'drop-shadow')
                     .attr('x', '-50%')
                     .attr('y', '-50%')
                     .attr('width', '200%')
                     .attr('height', '200%');
-                
-                filter.append('feDropShadow')
-                    .attr('dx', 2)
-                    .attr('dy', 2)
-                    .attr('stdDeviation', 3)
-                    .attr('flood-opacity', 0.1);
+
+                filter.append('feDropShadow').attr('dx', 2).attr('dy', 2).attr('stdDeviation', 3).attr('flood-opacity', 0.1);
             }
 
             // 링크 생성 (contentGroup 내부에)
-            this.linkElements = contentGroup.selectAll('.connection-line')
+            this.linkElements = contentGroup
+                .selectAll('.connection-line')
                 .data(this.linksData)
                 .enter()
                 .append('line')
                 .attr('class', 'connection-line');
 
             // 노드 그룹 생성 (contentGroup 내부에)
-            const nodeGroups = contentGroup.selectAll('.node-group')
+            const nodeGroups = contentGroup
+                .selectAll('.node-group')
                 .data(this.nodesData)
                 .enter()
                 .append('g')
                 .attr('class', 'node-group')
-                .call(this.d3.drag()
-                    .on('start', this.dragstarted.bind(this))
-                    .on('drag', this.dragged.bind(this))
-                    .on('end', this.dragended.bind(this))
+                .call(
+                    this.d3
+                        .drag()
+                        .on('start', this.dragstarted.bind(this))
+                        .on('drag', this.dragged.bind(this))
+                        .on('end', this.dragended.bind(this))
                 );
 
             // 중앙 노드
-            const centerNodes = nodeGroups.filter(d => d.type === 'center');
-            
+            const centerNodes = nodeGroups.filter((d) => d.type === 'center');
+
             centerNodes
                 .append('circle')
                 .attr('class', 'center-profile')
-                .attr('r', d => d.size);
+                .attr('r', (d) => d.size);
 
             // 중앙 노드에 프로필 이미지 추가 (이미지가 있을 경우)
             if (this.agentData?.img) {
                 // 이미지용 클립패스 정의
                 if (defs.select('#center-clip').empty()) {
-                    defs.append('clipPath')
-                        .attr('id', 'center-clip')
-                        .append('circle')
-                        .attr('r', 35)
-                        .attr('cx', 0)
-                        .attr('cy', 0);
+                    defs.append('clipPath').attr('id', 'center-clip').append('circle').attr('r', 35).attr('cx', 0).attr('cy', 0);
                 }
 
                 centerNodes
@@ -512,10 +510,10 @@ export default {
                 .attr('font-size', '10px')
                 .attr('fill', 'black')
                 .attr('font-weight', 'bold')
-                .text(d => this.agentName);
+                .text((d) => this.agentName);
 
             // Callout 노드들
-            const calloutGroups = nodeGroups.filter(d => d.type === 'callout');
+            const calloutGroups = nodeGroups.filter((d) => d.type === 'callout');
 
             // Callout 박스
             calloutGroups
@@ -535,17 +533,17 @@ export default {
                     const size = this.calculateNodeSize(d);
                     const maxWidth = 130; // 150px - 20px padding
                     const title = d.title;
-                    
+
                     // 박스 상단에서 15px 아래에 제목 위치
-                    const startY = -size.height/2 + 15;
-                    
+                    const startY = -size.height / 2 + 15;
+
                     if (title.length * 8 > maxWidth) {
                         // 긴 제목은 줄바꿈
                         const words = title.split(' ');
                         let line = [];
                         let lineNumber = 0;
-                        
-                        words.forEach(word => {
+
+                        words.forEach((word) => {
                             line.push(word);
                             const testLine = line.join(' ');
                             if (testLine.length * 8 > maxWidth && line.length > 1) {
@@ -558,7 +556,7 @@ export default {
                                 lineNumber++;
                             }
                         });
-                        
+
                         if (line.length > 0) {
                             text.append('tspan')
                                 .attr('x', 0)
@@ -575,22 +573,24 @@ export default {
                 const group = this.d3.select(nodes[i]);
                 const size = this.calculateNodeSize(d);
                 const maxWidth = 130; // 150px - 20px padding
-                
+
                 // 제목 아래에서 시작 (언어별, 섹션별 마진 조정)
-                let currentY = -size.height/2 + (this.$i18n.locale === 'en' && (d.id === 'knowledge' || d.id === 'achievements') ? 50 : 35);
-                
+                let currentY =
+                    -size.height / 2 + (this.$i18n.locale === 'en' && (d.id === 'knowledge' || d.id === 'achievements') ? 50 : 35);
+
                 d.content.forEach((line) => {
                     if (line.length * 7 > maxWidth) {
                         // 긴 내용은 줄바꿈
                         const words = line.split(' ');
                         let currentLine = [];
-                        
-                        words.forEach(word => {
+
+                        words.forEach((word) => {
                             currentLine.push(word);
                             const testLine = currentLine.join(' ');
                             if (testLine.length * 7 > maxWidth && currentLine.length > 1) {
                                 currentLine.pop();
-                                group.append('text')
+                                group
+                                    .append('text')
                                     .attr('class', 'callout-content')
                                     .attr('text-anchor', 'middle')
                                     .attr('dy', currentY)
@@ -599,9 +599,10 @@ export default {
                                 currentY += 14;
                             }
                         });
-                        
+
                         if (currentLine.length > 0) {
-                            group.append('text')
+                            group
+                                .append('text')
                                 .attr('class', 'callout-content')
                                 .attr('text-anchor', 'middle')
                                 .attr('dy', currentY)
@@ -609,11 +610,7 @@ export default {
                             currentY += 14;
                         }
                     } else {
-                        group.append('text')
-                            .attr('class', 'callout-content')
-                            .attr('text-anchor', 'middle')
-                            .attr('dy', currentY)
-                            .text(line);
+                        group.append('text').attr('class', 'callout-content').attr('text-anchor', 'middle').attr('dy', currentY).text(line);
                         currentY += 14;
                     }
                 });
@@ -623,30 +620,29 @@ export default {
         },
         updatePositions() {
             this.linkElements
-                .attr('x1', d => d.source.x)
-                .attr('y1', d => d.source.y)
-                .attr('x2', d => d.target.x)
-                .attr('y2', d => d.target.y);
+                .attr('x1', (d) => d.source.x)
+                .attr('y1', (d) => d.source.y)
+                .attr('x2', (d) => d.target.x)
+                .attr('y2', (d) => d.target.y);
 
-            this.nodeElements.attr('transform', d => `translate(${d.x},${d.y})`);
+            this.nodeElements.attr('transform', (d) => `translate(${d.x},${d.y})`);
 
             this.nodeElements
-                .filter(d => d.type === 'callout')
+                .filter((d) => d.type === 'callout')
                 .select('.callout-box')
-                .attr('x', d => {
+                .attr('x', (d) => {
                     const size = this.calculateNodeSize(d);
                     return -size.width / 2;
                 })
-                .attr('y', d => {
+                .attr('y', (d) => {
                     const size = this.calculateNodeSize(d);
                     return -size.height / 2;
                 })
-                .attr('width', d => this.calculateNodeSize(d).width)
-                .attr('height', d => this.calculateNodeSize(d).height);
+                .attr('width', (d) => this.calculateNodeSize(d).width)
+                .attr('height', (d) => this.calculateNodeSize(d).height);
         },
         highlightConnections(nodeId) {
-            this.linkElements
-                .classed('highlighted', d => d.source.id === nodeId || d.target.id === nodeId);
+            this.linkElements.classed('highlighted', (d) => d.source.id === nodeId || d.target.id === nodeId);
         },
         unhighlightConnections() {
             this.linkElements.classed('highlighted', false);
@@ -698,10 +694,10 @@ export default {
         },
 
         goToAgentChat() {
-            this.$router.push(`/agent-chat/${this.agentData.id}`)
-        },
+            this.$router.push(`/agent-chat/${this.agentData.id}`);
+        }
     }
-}
+};
 </script>
 
 <style scoped>
@@ -942,7 +938,7 @@ export default {
     fill: white;
     stroke: #ddd;
     stroke-width: 1;
-    filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.1));
+    filter: drop-shadow(1px 1px 3px rgba(0, 0, 0, 0.1));
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -1010,5 +1006,4 @@ export default {
         display: none;
     }
 }
-
-</style> 
+</style>

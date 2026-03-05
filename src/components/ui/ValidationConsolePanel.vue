@@ -25,14 +25,11 @@
                         v-for="(item, index) in items"
                         :key="index"
                         class="validation-item"
-                        :class="{ 'clickable': !!item.elementId }"
+                        :class="{ clickable: !!item.elementId }"
                         @click="item.elementId && $emit('focusElement', item.elementId)"
                     >
                         <template v-slot:prepend>
-                            <v-icon
-                                :color="item.level === 'error' ? 'error' : 'warning'"
-                                size="16"
-                            >
+                            <v-icon :color="item.level === 'error' ? 'error' : 'warning'" size="16">
                                 {{ item.level === 'error' ? 'mdi-close-circle' : 'mdi-alert' }}
                             </v-icon>
                         </template>
@@ -65,10 +62,10 @@ export default {
     emits: ['close', 'focusElement'],
     computed: {
         errorCount() {
-            return this.items.filter(i => i.level === 'error').length;
+            return this.items.filter((i) => i.level === 'error').length;
         },
         warningCount() {
-            return this.items.filter(i => i.level === 'warning').length;
+            return this.items.filter((i) => i.level === 'warning').length;
         }
     }
 };

@@ -19,7 +19,7 @@
 
         <v-row class="ma-0 pa-0 br-body-row" no-gutters>
             <!-- 목록 -->
-            <v-col cols="4" class="pa-0 br-col" style="min-width: 320px; max-width: 420px;">
+            <v-col cols="4" class="pa-0 br-col" style="min-width: 320px; max-width: 420px">
                 <v-card elevation="10" rounded="lg" class="br-side-card">
                     <div class="br-side-header">
                         <div class="br-side-title">{{ $t('businessRuleDefinition.listTitle') }}</div>
@@ -64,21 +64,10 @@
                                         {{ rule.description }}
                                     </v-list-item-subtitle>
                                     <template #append>
-                                        <v-btn
-                                            icon
-                                            variant="text"
-                                            size="small"
-                                            @click.stop="copyRule(rule.id)"
-                                            class="mr-1"
-                                        >
+                                        <v-btn icon variant="text" size="small" @click.stop="copyRule(rule.id)" class="mr-1">
                                             <v-icon size="18">mdi-content-copy</v-icon>
                                         </v-btn>
-                                        <v-btn
-                                            icon
-                                            variant="text"
-                                            size="small"
-                                            @click.stop="confirmDeleteRule(rule.id, rule.name)"
-                                        >
+                                        <v-btn icon variant="text" size="small" @click.stop="confirmDeleteRule(rule.id, rule.name)">
                                             <v-icon size="18">mdi-delete-outline</v-icon>
                                         </v-btn>
                                     </template>
@@ -93,7 +82,7 @@
             </v-col>
 
             <!-- 편집 -->
-            <v-col class="pa-0 br-col" style="min-width: 520px;">
+            <v-col class="pa-0 br-col" style="min-width: 520px">
                 <v-card elevation="10" rounded="lg" class="br-editor-card">
                     <!-- 편집 카드 상단 sticky 헤더 -->
                     <div class="br-editor-header">
@@ -101,44 +90,36 @@
                             <v-icon class="mr-2" color="primary" size="20">mdi-pencil-outline</v-icon>
                             <div>
                                 <div class="br-editor-title-text">
-                                    {{ isEditing ? (draft?.name || $t('businessRuleDefinition.editTitle')) : $t('businessRuleDefinition.editTitle') }}
+                                    {{
+                                        isEditing
+                                            ? draft?.name || $t('businessRuleDefinition.editTitle')
+                                            : $t('businessRuleDefinition.editTitle')
+                                    }}
                                 </div>
                                 <div class="br-editor-subtitle text-medium-emphasis">
                                     {{ isEditing ? $t('businessRuleDefinition.editSubtitle') : $t('businessRuleDefinition.selectHint') }}
                                 </div>
                             </div>
                         </div>
-                    <div class="br-editor-actions" v-if="isEditing">
-                        <v-switch
-                            v-model="isAdvancedMode"
-                            :label="$t('businessRuleDefinition.advancedMode')"
-                            color="primary"
-                            density="compact"
-                            hide-details
-                            inset
-                            class="mr-2"
-                            @update:model-value="onToggleAdvancedMode"
-                        />
-                        <v-btn
-                            v-if="isUEngineMode && draft?.id"
-                            variant="text"
-                            rounded
-                            class="mr-2"
-                            @click="openVersionManager"
-                        >
-                            <v-icon start>mdi-history</v-icon>
-                            {{ $t('businessRuleDefinition.versionManagement') }}
-                        </v-btn>
-                        <v-btn
-                            v-if="draft?.id"
-                            variant="text"
-                            rounded
-                            class="mr-2"
-                            @click="openTestRunner"
-                        >
-                            <v-icon start>mdi-play-circle-outline</v-icon>
-                            테스트 실행
-                        </v-btn>
+                        <div class="br-editor-actions" v-if="isEditing">
+                            <v-switch
+                                v-model="isAdvancedMode"
+                                :label="$t('businessRuleDefinition.advancedMode')"
+                                color="primary"
+                                density="compact"
+                                hide-details
+                                inset
+                                class="mr-2"
+                                @update:model-value="onToggleAdvancedMode"
+                            />
+                            <v-btn v-if="isUEngineMode && draft?.id" variant="text" rounded class="mr-2" @click="openVersionManager">
+                                <v-icon start>mdi-history</v-icon>
+                                {{ $t('businessRuleDefinition.versionManagement') }}
+                            </v-btn>
+                            <v-btn v-if="draft?.id" variant="text" rounded class="mr-2" @click="openTestRunner">
+                                <v-icon start>mdi-play-circle-outline</v-icon>
+                                테스트 실행
+                            </v-btn>
                             <v-btn variant="text" rounded @click="cancelEdit">
                                 {{ $t('businessRuleDefinition.cancel') }}
                             </v-btn>
@@ -155,14 +136,14 @@
 
                         <div v-else-if="!isEditing" class="br-editor-empty text-medium-emphasis">
                             <v-icon size="48" class="mb-2">mdi-arrow-left-circle-outline</v-icon>
-                            <div style="font-weight: 700;">{{ $t('businessRuleDefinition.selectRuleHint') }}</div>
-                            <div style="font-size: 13px;">또는 ‘새 규칙’으로 새로 만들 수 있어요.</div>
+                            <div style="font-weight: 700">{{ $t('businessRuleDefinition.selectRuleHint') }}</div>
+                            <div style="font-size: 13px">또는 ‘새 규칙’으로 새로 만들 수 있어요.</div>
                         </div>
 
                         <div v-else class="br-editor-content" :class="{ 'br-advanced': isAdvancedMode }">
                             <!-- 1) 룰 기본 정보 -->
                             <div class="mb-4">
-                                <div class="mb-2" style="font-weight: 700;">{{ $t('businessRuleDefinition.sectionBasic') }}</div>
+                                <div class="mb-2" style="font-weight: 700">{{ $t('businessRuleDefinition.sectionBasic') }}</div>
                                 <v-text-field
                                     v-model="draft.name"
                                     :label="$t('businessRuleDefinition.ruleName')"
@@ -185,8 +166,8 @@
                             <template v-if="!isAdvancedMode">
                                 <!-- 2) 판단 항목 정의(메타 정보) -->
                                 <div class="mb-4">
-                                    <div class="mb-2" style="font-weight: 700;">{{ $t('businessRuleDefinition.sectionConditions') }}</div>
-                                    <div class="text-medium-emphasis mb-3" style="font-size: 13px;">
+                                    <div class="mb-2" style="font-weight: 700">{{ $t('businessRuleDefinition.sectionConditions') }}</div>
+                                    <div class="text-medium-emphasis mb-3" style="font-size: 13px">
                                         판단 항목은 “규칙 표에서 사용할 재료”를 정의하는 곳입니다. 실제 값 입력은 아래 규칙 표에서만 합니다.
                                     </div>
 
@@ -195,16 +176,16 @@
                                         <v-table class="excel-table" density="compact">
                                             <thead>
                                                 <tr>
-                                                    <th style="width: 56px;">#</th>
-                                                    <th style="min-width: 260px;">{{ $t('businessRuleDefinition.itemName') }}</th>
-                                                    <th style="width: 200px;">{{ $t('businessRuleDefinition.inputMode') }}</th>
-                                                    <th style="min-width: 260px;">{{ $t('businessRuleDefinition.optionsLabel') }}</th>
-                                                    <th style="width: 56px;"></th>
+                                                    <th style="width: 56px">#</th>
+                                                    <th style="min-width: 260px">{{ $t('businessRuleDefinition.itemName') }}</th>
+                                                    <th style="width: 200px">{{ $t('businessRuleDefinition.inputMode') }}</th>
+                                                    <th style="min-width: 260px">{{ $t('businessRuleDefinition.optionsLabel') }}</th>
+                                                    <th style="width: 56px"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr v-for="(i, idx) in draft.inputs" :key="i._rowId">
-                                                    <td class="text-medium-emphasis" style="font-size: 12px;">{{ idx + 1 }}</td>
+                                                    <td class="text-medium-emphasis" style="font-size: 12px">{{ idx + 1 }}</td>
                                                     <td>
                                                         <v-text-field
                                                             v-model="i.label"
@@ -238,7 +219,7 @@
                                                             closable-chips
                                                             placeholder="예: VIP, GOLD, SILVER"
                                                         />
-                                                        <div v-else class="text-medium-emphasis" style="font-size: 12px; padding: 6px 0;">
+                                                        <div v-else class="text-medium-emphasis" style="font-size: 12px; padding: 6px 0">
                                                             -
                                                         </div>
                                                     </td>
@@ -263,10 +244,8 @@
 
                                 <!-- 3) 규칙(조건 + 결과) 묶음: 규칙 추가 시 이 카드가 1개씩 늘어남 -->
                                 <div class="mb-4">
-                                    <div class="mb-2" style="font-weight: 700;">규칙</div>
-                                    <div class="text-medium-emphasis mb-3" style="font-size: 13px;">
-                                        위에 있는 규칙이 우선 적용됩니다.
-                                    </div>
+                                    <div class="mb-2" style="font-weight: 700">규칙</div>
+                                    <div class="text-medium-emphasis mb-3" style="font-size: 13px">위에 있는 규칙이 우선 적용됩니다.</div>
 
                                     <v-card
                                         v-for="(r, rIdx) in draft.rules"
@@ -277,7 +256,9 @@
                                         :style="{ opacity: r.enabled !== false ? 1 : 0.6 }"
                                     >
                                         <v-row class="ma-0 pa-0 align-center mb-2">
-                                            <div style="font-weight: 700;">{{ $t('businessRuleDefinition.ruleNumber', { n: rIdx + 1 }) }}</div>
+                                            <div style="font-weight: 700">
+                                                {{ $t('businessRuleDefinition.ruleNumber', { n: rIdx + 1 }) }}
+                                            </div>
                                             <v-spacer />
                                             <v-switch
                                                 v-model="r.enabled"
@@ -290,31 +271,28 @@
                                                 :true-value="true"
                                                 :false-value="false"
                                             />
-                                            <v-btn
-                                                icon
-                                                variant="text"
-                                                density="comfortable"
-                                                @click="removeRuleRow(rIdx)"
-                                            >
+                                            <v-btn icon variant="text" density="comfortable" @click="removeRuleRow(rIdx)">
                                                 <v-icon>mdi-delete</v-icon>
                                             </v-btn>
                                         </v-row>
 
                                         <!-- 판단 기준 설정 (이 규칙의 조건들) -->
-                                        <div class="mb-2" style="font-weight: 700;">{{ $t('businessRuleDefinition.conditionSettings') }}</div>
+                                        <div class="mb-2" style="font-weight: 700">
+                                            {{ $t('businessRuleDefinition.conditionSettings') }}
+                                        </div>
                                         <v-table class="excel-table" density="compact">
                                             <thead>
                                                 <tr>
-                                                    <th style="width: 56px;">#</th>
-                                                    <th style="min-width: 220px;">{{ $t('businessRuleDefinition.conditionItem') }}</th>
-                                                    <th style="width: 180px;">{{ $t('businessRuleDefinition.conditionOperator') }}</th>
-                                                    <th style="min-width: 260px;">{{ $t('businessRuleDefinition.conditionValue') }}</th>
-                                                    <th style="width: 56px;"></th>
+                                                    <th style="width: 56px">#</th>
+                                                    <th style="min-width: 220px">{{ $t('businessRuleDefinition.conditionItem') }}</th>
+                                                    <th style="width: 180px">{{ $t('businessRuleDefinition.conditionOperator') }}</th>
+                                                    <th style="min-width: 260px">{{ $t('businessRuleDefinition.conditionValue') }}</th>
+                                                    <th style="width: 56px"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr v-for="(c, cIdx) in r.conditions" :key="`cond_${r._rowId}_${cIdx}`">
-                                                    <td class="text-medium-emphasis" style="font-size: 12px;">{{ cIdx + 1 }}</td>
+                                                    <td class="text-medium-emphasis" style="font-size: 12px">{{ cIdx + 1 }}</td>
                                                     <td>
                                                         <v-select
                                                             v-model="c.key"
@@ -394,7 +372,12 @@
                                                         />
                                                     </td>
                                                     <td class="text-right">
-                                                        <v-btn icon variant="text" density="comfortable" @click="removeRuleCondition(r, cIdx)">
+                                                        <v-btn
+                                                            icon
+                                                            variant="text"
+                                                            density="comfortable"
+                                                            @click="removeRuleCondition(r, cIdx)"
+                                                        >
                                                             <v-icon>mdi-delete</v-icon>
                                                         </v-btn>
                                                     </td>
@@ -402,15 +385,17 @@
                                             </tbody>
                                         </v-table>
                                         <v-row class="ma-0 pa-0 mt-3 justify-end">
-                                            <v-btn variant="outlined" rounded @click="addRuleCondition(r)">{{ $t('businessRuleDefinition.addCondition') }}</v-btn>
+                                            <v-btn variant="outlined" rounded @click="addRuleCondition(r)">{{
+                                                $t('businessRuleDefinition.addCondition')
+                                            }}</v-btn>
                                         </v-row>
 
                                         <v-divider class="my-4" />
 
                                         <!-- 결과 설정 -->
-                                        <div class="mb-2" style="font-weight: 700;">{{ $t('businessRuleDefinition.resultSettings') }}</div>
-                                        <v-row class="ma-0 pa-0" style="gap: 12px;">
-                                            <v-col class="pa-0" cols="3" style="min-width: 220px;">
+                                        <div class="mb-2" style="font-weight: 700">{{ $t('businessRuleDefinition.resultSettings') }}</div>
+                                        <v-row class="ma-0 pa-0" style="gap: 12px">
+                                            <v-col class="pa-0" cols="3" style="min-width: 220px">
                                                 <v-select
                                                     v-model="r.result.outcome"
                                                     :items="outcomeItems"
@@ -432,23 +417,20 @@
                                     </v-card>
 
                                     <v-row class="ma-0 pa-0 mt-2 justify-end">
-                                        <v-btn variant="outlined" rounded @click="addRuleRow">{{ $t('businessRuleDefinition.addRule') }}</v-btn>
+                                        <v-btn variant="outlined" rounded @click="addRuleRow">{{
+                                            $t('businessRuleDefinition.addRule')
+                                        }}</v-btn>
                                     </v-row>
                                 </div>
                             </template>
 
                             <template v-else>
-                                <div class="mb-2" style="font-weight: 700;">{{ $t('businessRuleDefinition.dmnAdvancedEdit') }}</div>
-                                <div class="text-medium-emphasis mb-3" style="font-size: 13px;">
+                                <div class="mb-2" style="font-weight: 700">{{ $t('businessRuleDefinition.dmnAdvancedEdit') }}</div>
+                                <div class="text-medium-emphasis mb-3" style="font-size: 13px">
                                     {{ $t('businessRuleDefinition.dmnAdvancedDescription') }}
                                 </div>
                                 <v-card variant="outlined" class="pa-2 br-dmn-card">
-                                    <DmnModeler
-                                        ref="dmnEditor"
-                                        :dmn="draft.dmnXml"
-                                        :isViewMode="false"
-                                        :key="dmnRenderKey"
-                                    />
+                                    <DmnModeler ref="dmnEditor" :dmn="draft.dmnXml" :isViewMode="false" :key="dmnRenderKey" />
                                 </v-card>
                             </template>
 
@@ -459,7 +441,7 @@
                 </v-card>
             </v-col>
         </v-row>
-        
+
         <!-- 버전 관리 다이얼로그 (UEngine 모드 전용) -->
         <business-rule-version-manager
             v-if="showVersionManager && isUEngineMode && draft?.id"
@@ -470,12 +452,7 @@
         />
 
         <!-- 테스트 실행기 다이얼로그 -->
-        <business-rule-test-runner
-            v-model="showTestRunner"
-            :rule-id="draft?.id"
-            :rule-name="draft?.name"
-            @close="showTestRunner = false"
-        />
+        <business-rule-test-runner v-model="showTestRunner" :rule-id="draft?.id" :rule-name="draft?.name" @close="showTestRunner = false" />
 
         <!-- 삭제 확인 다이얼로그 -->
         <v-dialog v-model="deleteDialog" max-width="500" persistent>
@@ -483,7 +460,7 @@
                 <v-card-title class="text-h6">{{ $t('businessRuleDefinition.deleteConfirmTitle') }}</v-card-title>
                 <v-card-text>
                     <div class="mb-2">{{ $t('businessRuleDefinition.deleteConfirmMessage', { name: ruleToDelete?.name || '' }) }}</div>
-                    <div class="text-medium-emphasis" style="font-size: 13px;">
+                    <div class="text-medium-emphasis" style="font-size: 13px">
                         {{ $t('businessRuleDefinition.deleteConfirmHint') }}
                     </div>
                 </v-card-text>
@@ -515,15 +492,16 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="copyDialog = false; copiedRuleName = ''">
+                    <v-btn
+                        variant="text"
+                        @click="
+                            copyDialog = false;
+                            copiedRuleName = '';
+                        "
+                    >
                         {{ $t('businessRuleDefinition.cancel') }}
                     </v-btn>
-                    <v-btn 
-                        color="primary" 
-                        variant="flat" 
-                        :disabled="!copiedRuleName || !copiedRuleName.trim()"
-                        @click="executeCopyRule"
-                    >
+                    <v-btn color="primary" variant="flat" :disabled="!copiedRuleName || !copiedRuleName.trim()" @click="executeCopyRule">
                         {{ $t('businessRuleDefinition.copy') }}
                     </v-btn>
                 </v-card-actions>
@@ -541,7 +519,7 @@ import BusinessRuleTestRunner from './BusinessRuleTestRunner.vue';
 
 export default {
     name: 'business-rule-definitions',
-    components: { 
+    components: {
         DmnModeler,
         BusinessRuleVersionManager,
         BusinessRuleTestRunner
@@ -593,9 +571,15 @@ export default {
     },
     computed: {
         filteredRules() {
-            const q = String(this.search || '').trim().toLowerCase();
+            const q = String(this.search || '')
+                .trim()
+                .toLowerCase();
             if (!q) return this.rules;
-            return this.rules.filter((r) => String(r.name || '').toLowerCase().includes(q));
+            return this.rules.filter((r) =>
+                String(r.name || '')
+                    .toLowerCase()
+                    .includes(q)
+            );
         },
         canSave() {
             if (!this.draft) return false;
@@ -658,11 +642,13 @@ export default {
                     options: Array.isArray(i?.options) ? i.options : []
                 })),
                 rules: rules.map((r) => ({
-                    conditions: Array.isArray(r?.conditions) ? r.conditions.map((c) => ({
-                        key: c?.key ?? '',
-                        operator: c?.operator ?? '',
-                        value: c?.value ?? ''
-                    })) : [],
+                    conditions: Array.isArray(r?.conditions)
+                        ? r.conditions.map((c) => ({
+                              key: c?.key ?? '',
+                              operator: c?.operator ?? '',
+                              value: c?.value ?? ''
+                          }))
+                        : [],
                     result: {
                         outcome: r?.result?.outcome ?? '',
                         note: r?.result?.note ?? ''
@@ -706,20 +692,20 @@ export default {
 
             // 고급 모드 → 기본 모드:
             // dmnXml이 단일 진실이므로, 현재 모델러 XML을 가져와서 dmnXml 갱신 후 표를 재구성한다.
-                const currentXml = String(await this.getDmnXmlFromEditorOrDraft() || '').trim();
-                if (!currentXml) {
-                    // 저장할 수 없는 상태면 모드 전환을 막는다(입력 손실 방지)
-                    this.notifyWarning(this.$t('businessRuleDefinition.advancedModeLoadFailed'));
-                    this.isAdvancedMode = true;
-                    return;
-                }
-                const ok = await this.syncFromDmnEditorToDraft();
-                if (!ok) {
-                    // 동기화 실패 시 모드 전환을 막는다(적용 안됨/날아감 방지)
-                    this.notifyWarning(this.$t('businessRuleDefinition.advancedModeSyncFailed'));
-                    this.isAdvancedMode = true;
-                    return;
-                }
+            const currentXml = String((await this.getDmnXmlFromEditorOrDraft()) || '').trim();
+            if (!currentXml) {
+                // 저장할 수 없는 상태면 모드 전환을 막는다(입력 손실 방지)
+                this.notifyWarning(this.$t('businessRuleDefinition.advancedModeLoadFailed'));
+                this.isAdvancedMode = true;
+                return;
+            }
+            const ok = await this.syncFromDmnEditorToDraft();
+            if (!ok) {
+                // 동기화 실패 시 모드 전환을 막는다(적용 안됨/날아감 방지)
+                this.notifyWarning(this.$t('businessRuleDefinition.advancedModeSyncFailed'));
+                this.isAdvancedMode = true;
+                return;
+            }
             this.isAdvancedMode = false;
             this.advancedEnterSnapshot = null;
             this.advancedEnterDmnXml = '';
@@ -787,11 +773,13 @@ export default {
             if (Array.isArray(parsed.rules) && parsed.rules.length > 0) {
                 this.draft.rules = parsed.rules.map((r) => ({
                     _rowId: String(Date.now() + Math.random()),
-                    conditions: Array.isArray(r.conditions) ? r.conditions.map((c) => ({
-                        key: c?.key ?? c?.item ?? '',
-                        operator: c?.operator ?? 'eq',
-                        value: c?.value ?? ''
-                    })) : [{ key: '', operator: 'eq', value: '' }],
+                    conditions: Array.isArray(r.conditions)
+                        ? r.conditions.map((c) => ({
+                              key: c?.key ?? c?.item ?? '',
+                              operator: c?.operator ?? 'eq',
+                              value: c?.value ?? ''
+                          }))
+                        : [{ key: '', operator: 'eq', value: '' }],
                     result: {
                         outcome: r?.result?.outcome ?? 'approve',
                         note: typeof r?.result?.note === 'string' ? r.result.note : ''
@@ -938,9 +926,7 @@ export default {
                 id: null,
                 name: '',
                 description: '',
-                inputs: [
-                    { _rowId: String(Date.now()), label: '', key: '', inputMode: 'number', options: [] }
-                ],
+                inputs: [{ _rowId: String(Date.now()), label: '', key: '', inputMode: 'number', options: [] }],
                 rules: [
                     {
                         _rowId: String(Date.now() + 1),
@@ -1005,8 +991,8 @@ export default {
             } else {
                 this.draft.inputs = this.draft.inputs.map((i) => ({
                     _rowId: i._rowId || String(Math.random()),
-                    label: i.label ?? (i.item ?? ''), // 과거 데이터 호환
-                    key: i.key ?? (i.item ?? ''), // 과거 데이터 호환
+                    label: i.label ?? i.item ?? '', // 과거 데이터 호환
+                    key: i.key ?? i.item ?? '', // 과거 데이터 호환
                     inputMode: i.inputMode ?? 'number',
                     options: Array.isArray(i.options) ? i.options : []
                 }));
@@ -1016,20 +1002,24 @@ export default {
             this.draft.inputs.forEach((i) => this.ensureInputKey(i));
 
             if (!Array.isArray(this.draft.rules) || this.draft.rules.length === 0) {
-                this.draft.rules = [{ 
-                    _rowId: String(Date.now() + 1), 
-                    conditions: [{ key: '', operator: 'eq', value: '' }], 
-                    result: { outcome: 'approve', note: '' },
-                    enabled: true
-                }];
+                this.draft.rules = [
+                    {
+                        _rowId: String(Date.now() + 1),
+                        conditions: [{ key: '', operator: 'eq', value: '' }],
+                        result: { outcome: 'approve', note: '' },
+                        enabled: true
+                    }
+                ];
             } else {
                 this.draft.rules = this.draft.rules.map((r) => ({
                     _rowId: r._rowId || String(Math.random()),
-                    conditions: Array.isArray(r.conditions) ? r.conditions.map((c) => ({
-                        key: c?.key ?? c?.item ?? '',
-                        operator: c?.operator ?? 'eq',
-                        value: c?.value ?? ''
-                    })) : [{ key: '', operator: 'eq', value: '' }],
+                    conditions: Array.isArray(r.conditions)
+                        ? r.conditions.map((c) => ({
+                              key: c?.key ?? c?.item ?? '',
+                              operator: c?.operator ?? 'eq',
+                              value: c?.value ?? ''
+                          }))
+                        : [{ key: '', operator: 'eq', value: '' }],
                     result: {
                         outcome: r?.result?.outcome ?? 'approve',
                         note: typeof r?.result?.note === 'string' ? r.result.note : ''
@@ -1113,36 +1103,37 @@ export default {
         },
         operatorItemsForInput(inp) {
             const mode = String(inp?.inputMode || 'number');
-            if (mode === 'number') return [
-                { title: '이상', value: 'gte' },
-                { title: '이하', value: 'lte' },
-                { title: '같다', value: 'eq' }
-            ];
-            if (mode === 'boolean') return [
-                { title: '같다', value: 'eq' }
-            ];
-            if (mode === 'enum') return [
-                { title: '같다', value: 'eq' },
-                { title: '포함', value: 'contains' }
-            ];
-            if (mode === 'date') return [
-                { title: '이전', value: 'before' },
-                { title: '이후', value: 'after' },
-                { title: '같다', value: 'eq' }
-            ];
-            if (mode === 'time' || mode === 'dateTime') return [
-                { title: '이전', value: 'before' },
-                { title: '이후', value: 'after' },
-                { title: '같다', value: 'eq' }
-            ];
-            if (mode === 'dayTimeDuration' || mode === 'yearMonthDuration') return [
-                { title: '이상', value: 'gte' },
-                { title: '이하', value: 'lte' },
-                { title: '같다', value: 'eq' }
-            ];
-            if (mode === 'any') return [
-                { title: '같다', value: 'eq' }
-            ];
+            if (mode === 'number')
+                return [
+                    { title: '이상', value: 'gte' },
+                    { title: '이하', value: 'lte' },
+                    { title: '같다', value: 'eq' }
+                ];
+            if (mode === 'boolean') return [{ title: '같다', value: 'eq' }];
+            if (mode === 'enum')
+                return [
+                    { title: '같다', value: 'eq' },
+                    { title: '포함', value: 'contains' }
+                ];
+            if (mode === 'date')
+                return [
+                    { title: '이전', value: 'before' },
+                    { title: '이후', value: 'after' },
+                    { title: '같다', value: 'eq' }
+                ];
+            if (mode === 'time' || mode === 'dateTime')
+                return [
+                    { title: '이전', value: 'before' },
+                    { title: '이후', value: 'after' },
+                    { title: '같다', value: 'eq' }
+                ];
+            if (mode === 'dayTimeDuration' || mode === 'yearMonthDuration')
+                return [
+                    { title: '이상', value: 'gte' },
+                    { title: '이하', value: 'lte' },
+                    { title: '같다', value: 'eq' }
+                ];
+            if (mode === 'any') return [{ title: '같다', value: 'eq' }];
             return [{ title: '같다', value: 'eq' }];
         },
         enumValueItems(inp) {
@@ -1315,10 +1306,10 @@ export default {
 
                 // 성공 메시지
                 if (this.$try) {
-                    this.$try({ 
-                        context: this, 
-                        action: async () => {}, 
-                        successMsg: this.$t('businessRuleDefinition.copySuccess') 
+                    this.$try({
+                        context: this,
+                        action: async () => {},
+                        successMsg: this.$t('businessRuleDefinition.copySuccess')
                     });
                 } else if (window.$app_) {
                     window.$app_.snackbarMessage = this.$t('businessRuleDefinition.copySuccess');
@@ -1354,23 +1345,23 @@ export default {
             const ruleId = this.ruleToDelete.id;
             try {
                 await this.backend.deleteBusinessRule(ruleId);
-                
+
                 // 삭제된 룰이 현재 편집 중인 룰이면 편집 화면 닫기
                 if (this.selectedRuleId === ruleId) {
                     this.selectedRuleId = null;
                     this.isEditing = false;
                     this.draft = null;
                 }
-                
+
                 // 목록 갱신
                 await this.refreshList();
-                
+
                 // 성공 메시지
                 if (this.$try) {
-                    this.$try({ 
-                        context: this, 
-                        action: async () => {}, 
-                        successMsg: this.$t('businessRuleDefinition.deleteSuccess') 
+                    this.$try({
+                        context: this,
+                        action: async () => {},
+                        successMsg: this.$t('businessRuleDefinition.deleteSuccess')
                     });
                 } else if (window.$app_) {
                     window.$app_.snackbarMessage = this.$t('businessRuleDefinition.deleteSuccess');
@@ -1403,11 +1394,11 @@ export default {
         async handleVersionChanged(data) {
             // 버전 변경: 버전 파일을 현재 룰 파일로 덮어쓰기
             if (!data || !data.versionDto || !data.ruleId) return;
-            
+
             try {
                 const versionDto = data.versionDto;
                 const ruleId = data.ruleId;
-                
+
                 // 버전 파일의 JSON을 현재 룰 ID로 덮어쓰기 (id는 현재 룰 ID 유지)
                 const versionedPayload = {
                     ...versionDto,
@@ -1416,14 +1407,12 @@ export default {
                     created_at: versionDto.created_at || new Date().toISOString(),
                     created_by: versionDto.created_by || this.backend.__getCurrentUserId?.() || ''
                 };
-                
+
                 // 버전 파일의 내용을 현재 룰 파일로 덮어쓰기
-                await this.backend.putRawDefinition(
-                    JSON.stringify(versionedPayload),
-                    `businessRules/${encodeURIComponent(ruleId)}`,
-                    { type: 'rule' }
-                );
-                
+                await this.backend.putRawDefinition(JSON.stringify(versionedPayload), `businessRules/${encodeURIComponent(ruleId)}`, {
+                    type: 'rule'
+                });
+
                 // 저장 후 전체 룰 정보를 다시 로드하여 draft 업데이트
                 const rule = await this.backend.getBusinessRule(ruleId);
                 if (rule) {
@@ -1434,10 +1423,10 @@ export default {
                     this.normalizeDraft();
                     this.isEditing = true;
                 }
-                
+
                 // 다이얼로그 닫기
                 this.showVersionManager = false;
-                
+
                 this.$try({
                     action: async () => {},
                     successMsg: this.$t('businessRuleDefinition.versionApplied', { version: data.version })

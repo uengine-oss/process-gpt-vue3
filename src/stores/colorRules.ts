@@ -75,16 +75,16 @@ export const useColorRulesStore = defineStore({
             this.saveRules();
         },
         updateRule(rule: ColorRule) {
-            const index = this.rules.findIndex(r => r.id === rule.id);
+            const index = this.rules.findIndex((r) => r.id === rule.id);
             if (index !== -1) {
                 this.rules[index] = rule;
                 this.saveRules();
             }
         },
         deleteRule(id: string) {
-            this.rules = this.rules.filter(r => r.id !== id);
+            this.rules = this.rules.filter((r) => r.id !== id);
             // Re-assign priorities
-            this.rules.forEach((r, i) => r.priority = i);
+            this.rules.forEach((r, i) => (r.priority = i));
             this.saveRules();
         },
         reorderRules(newOrder: ColorRule[]) {
@@ -100,52 +100,52 @@ export const useColorRulesStore = defineStore({
         sortedRules: (state) => {
             return [...state.rules].sort((a, b) => a.priority - b.priority);
         },
-        getColorForElement: (state) => (element: any): { fillColor: string; strokeColor?: string } | null => {
-            // Get element type
-            const elementType = element.businessObject?.$type;
-            if (!elementType) return null;
+        getColorForElement:
+            (state) =>
+            (element: any): { fillColor: string; strokeColor?: string } | null => {
+                // Get element type
+                const elementType = element.businessObject?.$type;
+                if (!elementType) return null;
 
-            // Get duration from extension elements
-            let duration: number | null = null;
-            const extensionElements = element.businessObject?.extensionElements;
-            if (extensionElements?.values) {
-                const uengineProps = extensionElements.values.find((v: any) => v.$type === 'uengine:Properties');
-                if (uengineProps?.json) {
-                    try {
-                        const parsed = JSON.parse(uengineProps.json);
-                        if (parsed.duration !== undefined) {
-                            duration = Number(parsed.duration);
+                // Get duration from extension elements
+                let duration: number | null = null;
+                const extensionElements = element.businessObject?.extensionElements;
+                if (extensionElements?.values) {
+                    const uengineProps = extensionElements.values.find((v: any) => v.$type === 'uengine:Properties');
+                    if (uengineProps?.json) {
+                        try {
+                            const parsed = JSON.parse(uengineProps.json);
+                            if (parsed.duration !== undefined) {
+                                duration = Number(parsed.duration);
+                            }
+                        } catch (e) {
+                            // Ignore parse errors
                         }
-                    } catch (e) {
-                        // Ignore parse errors
                     }
                 }
-            }
 
-            // Sort rules by priority
-            const sortedRules = [...state.rules]
-                .filter(r => r.enabled)
-                .sort((a, b) => a.priority - b.priority);
+                // Sort rules by priority
+                const sortedRules = [...state.rules].filter((r) => r.enabled).sort((a, b) => a.priority - b.priority);
 
-            // Check lead time rules first (higher priority when priority number is same)
-            for (const rule of sortedRules.filter(r => r.type === 'leadTime')) {
-                if (duration !== null) {
-                    const min = rule.minDuration ?? 0;
-                    const max = rule.maxDuration ?? Infinity;
-                    if (duration >= min && duration < max) {
+                // Check lead time rules first (higher priority when priority number is same)
+                for (const rule of sortedRules.filter((r) => r.type === 'leadTime')) {
+                    if (duration !== null) {
+                        const min = rule.minDuration ?? 0;
+                        const max = rule.maxDuration ?? Infinity;
+                        if (duration >= min && duration < max) {
+                            return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
+                        }
+                    }
+                }
+
+                // Then check task type rules
+                for (const rule of sortedRules.filter((r) => r.type === 'taskType')) {
+                    if (rule.taskTypes?.includes(elementType)) {
                         return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
                     }
                 }
-            }
 
-            // Then check task type rules
-            for (const rule of sortedRules.filter(r => r.type === 'taskType')) {
-                if (rule.taskTypes?.includes(elementType)) {
-                    return { fillColor: rule.fillColor, strokeColor: rule.strokeColor };
-                }
+                return null;
             }
-
-            return null;
-        }
     }
 });

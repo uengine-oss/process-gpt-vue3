@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { shallowRef } from 'vue';
-import {ChevronUpIcon} from 'vue-tabler-icons';
-import {ChevronDownIcon} from 'vue-tabler-icons';
+import { ChevronUpIcon } from 'vue-tabler-icons';
+import { ChevronDownIcon } from 'vue-tabler-icons';
 const props = defineProps(['icon']);
 const component = props.icon;
 // custom list data
@@ -40,9 +40,7 @@ const customs = shallowRef([
                 <v-list-item-subtitle v-if="custom.profit" class="text-subtitle-2 text-success text-high-emphasis"
                     >{{ custom.percent }}% Profit</v-list-item-subtitle
                 >
-                <v-list-item-subtitle v-else class="text-subtitle-2 text-error "
-                    >{{ custom.percent }}% Loss</v-list-item-subtitle
-                >
+                <v-list-item-subtitle v-else class="text-subtitle-2 text-error">{{ custom.percent }}% Loss</v-list-item-subtitle>
                 <template v-slot:append>
                     <v-list-item-subtitle class="text-subtitle-1 text-high-emphasis mr-3"> ${{ custom.price }}</v-list-item-subtitle>
                     <v-chip color="success" label size="x-small" v-if="custom.profit">
