@@ -224,12 +224,12 @@
                     <SubProcessDetail :value="value" @capture="capturePng" :enableEdit="enableEdit" :isAdmin="isAdmin" />
                 </div>
                 <div v-else>
-                    <!-- 필터 및 탭 영역 -->
+                    <!-- 필터 및 탭 영역: 도메인 칩 + 도메인 추가. 편집 모드면 도메인 없어도 추가 버튼 표시 -->
                     <!-- 도메인 및 조직필터 display: none 처리 필요시 display:none 제거-->
                     <div
-                        v-if="viewMode === 'proc_map' && metricsValue?.domains && metricsValue.domains.length > 0"
+                        v-if="viewMode === 'proc_map' && (enableEdit || (metricsValue?.domains && metricsValue.domains.length > 0))"
                         class="filter-tab-section glass-tab-container"
-                        style="display: none"
+                        :style="isPalMode ? undefined : { display: 'none' }"
                     >
                         <div class="px-6 py-3 d-flex align-center" style="gap: 16px; flex-wrap: wrap">
                             <!-- 왼쪽: 조직 필터 + 도메인 탭 -->
@@ -880,6 +880,9 @@ export default {
         showNewMajorInput: false
     }),
     computed: {
+        isPalMode() {
+            return !!(window.$pal && window.$mode === 'uEngine');
+        },
         useLock() {
             if (window.$pal && window.$mode === 'uEngine') {
                 return false;
@@ -966,7 +969,7 @@ export default {
                     action: () => {
                         this.openMarketplaceDialog = true;
                     }
-                }
+                },
                 // {
                 //     show: this.componentName === 'DefinitionMapList' && this.isAdmin,
                 //     icon: 'file-tree',
@@ -1126,6 +1129,10 @@ export default {
 
         // Subscribe to lock table changes for force checkout notifications
         this.subscribeLockChanges();
+
+        // PAL 전용: 서브프로세스 설정(공통 모듈) 저장 시 정의체계도 저장
+        this._onSaveProcessDefinitionMap = () => this.saveProcess();
+        this.EventBus.on('saveProcessDefinitionMap', this._onSaveProcessDefinitionMap);
     },
     beforeUnmount() {
         // Unsubscribe from lock table changes
@@ -1133,8 +1140,10 @@ export default {
             this.lockSubscription.unsubscribe();
             this.lockSubscription = null;
         }
+        if (this._onSaveProcessDefinitionMap) {
+            this.EventBus.off('saveProcessDefinitionMap', this._onSaveProcessDefinitionMap);
+        }
     },
-    beforeUnmount() {},
     beforeRouteLeave(to, from, next) {
         if (this.lock && this.enableEdit) {
             this.pendingRoute = { to, from, next };

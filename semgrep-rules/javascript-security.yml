@@ -1,0 +1,42 @@
+rules:
+  - id: javascript.security.no-eval
+    message: "Avoid eval(). It can execute untrusted input and lead to code injection."
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: window.eval(...)
+
+  - id: javascript.security.no-function-constructor
+    message: "Avoid Function constructor. It has eval-like code execution risk."
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+    pattern: new Function(...)
+
+  - id: javascript.security.no-string-settimeout
+    message: "Avoid string argument in setTimeout(). It behaves like eval()."
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+    patterns:
+      - pattern: setTimeout($CODE, ...)
+      - metavariable-pattern:
+          metavariable: $CODE
+          pattern-regex: "^[\"'].*[\"']$"
+
+  - id: javascript.security.no-string-setinterval
+    message: "Avoid string argument in setInterval(). It behaves like eval()."
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+    patterns:
+      - pattern: setInterval($CODE, ...)
+      - metavariable-pattern:
+          metavariable: $CODE
+          pattern-regex: "^[\"'].*[\"']$"

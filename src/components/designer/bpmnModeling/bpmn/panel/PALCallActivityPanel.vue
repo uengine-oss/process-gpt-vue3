@@ -8,7 +8,7 @@
                 v-model="copyUengineProperties.definitionId"
                 :disabled="isViewMode"
                 :file-extensions="['.bpmn']"
-                :options="{ hideDetails: true, itemTitle: 'name', itemValue: 'path' }"
+                :options="{ hideDetails: true, itemTitle: 'name', itemValue: 'path', commonModuleOnly: true }"
             />
         </div>
         <div v-if="copyUengineProperties.definitionId" class="text-caption text-medium-emphasis">

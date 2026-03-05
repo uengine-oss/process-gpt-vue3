@@ -30,29 +30,31 @@
                     variant="outlined"
                     size="x-small"
                 >New</v-chip>
-                <v-spacer />
-                <v-btn
-                    v-if="isExecutionByProject"
-                    variant="elevated"
-                    color="primary"
-                    size="x-small"
-                    @click="clickPlayBtn()"
-                    class="rounded-pill"
-                >
-                    {{ $t('SubProcess.execute') }}
-                </v-btn>
-                <ProcessMenu
-                    :size="16"
-                    :type="type"
-                    :process="value"
-                    :enableEdit="enableEdit"
-                    @delete="deleteProcess"
-                    @editProcessdialog="editProcessdialog"
-                    @modeling="editProcessModel"
-                    @setPermission="openPermissionDialog(value)"
-                    @duplicate="duplicateProcess"
-                    @setOwner="openOwnerDialog"
-                />
+                <div class="ml-auto add-sub-process" style="flex-shrink: 0;">
+                    <v-btn
+                        v-if="isExecutionByProject"
+                        variant="elevated"
+                        color="primary"
+                        size="x-small"
+                        @click="clickPlayBtn()"
+                        class="rounded-pill"
+                    >
+                        {{ $t('SubProcess.execute') }}
+                    </v-btn>
+                    <ProcessMenu
+                        :size="16"
+                        :type="type"
+                        :process="value"
+                        :enableEdit="enableEdit"
+                        @delete="deleteProcess"
+                        @editProcessdialog="editProcessdialog"
+                        @modeling="editProcessModel"
+                        @setPermission="openPermissionDialog(value)"
+                        @duplicate="duplicateProcess"
+                        @setOwner="openOwnerDialog"
+                        @openSubprocessSettings="openSubprocessSettingsDialog"
+                    />
+                </div>
             </div>
         </div>
         <ProcessDialog v-else-if="processDialogStatus && enableEdit && processType === 'update'"
@@ -71,6 +73,32 @@
             :process="value"
             @saved="onOwnerSaved"
         />
+
+        <!-- PAL 전용: 서브프로세스 설정 (공통 모듈) 다이얼로그 -->
+        <v-dialog v-model="subprocessSettingsDialog" max-width="400" persistent>
+            <v-card>
+                <v-card-title class="text-subtitle-1">
+                    {{ $t('ProcessMenu.settings') || '설정' }}
+                </v-card-title>
+                <v-card-text>
+                    <v-switch
+                        v-model="subprocessSettingsCommonModule"
+                        :label="$t('ProcessMenu.commonModule') || '공통 모듈'"
+                        color="primary"
+                        hide-details
+                    />
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer />
+                    <v-btn variant="text" @click="subprocessSettingsDialog = false">
+                        {{ $t('common.cancel') || '취소' }}
+                    </v-btn>
+                    <v-btn color="primary" variant="flat" @click="saveSubprocessSettings">
+                        {{ $t('common.save') || '저장' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
     </div>
 </template>
 
@@ -129,6 +157,9 @@ export default {
         },
         processStatus: null,
         tooltipLoaded: false,
+        // PAL 전용: 서브프로세스 설정 다이얼로그
+        subprocessSettingsDialog: false,
+        subprocessSettingsCommonModule: false,
     }),
     async created() {
         this.checkedProcess = JSON.parse(localStorage.getItem('checkedProcess')) || [];
@@ -207,6 +238,22 @@ export default {
          */
         openOwnerDialog() {
             this.ownerDialogOpen = true;
+        },
+        /** PAL 전용: 서브프로세스 설정 다이얼로그 열기 (공통 모듈 토글) */
+        openSubprocessSettingsDialog() {
+            this.subprocessSettingsCommonModule = !!this.value.commonModule;
+            this.subprocessSettingsDialog = true;
+        },
+        /** PAL 전용: 공통 모듈 설정 저장 후 정의체계도 저장 */
+        saveSubprocessSettings() {
+            this.value.commonModule = this.subprocessSettingsCommonModule;
+            this.subprocessSettingsDialog = false;
+            this.EventBus.emit('saveProcessDefinitionMap');
+            if (window.$app_) {
+                window.$app_.snackbarMessage = this.$t('successMsg.save') || '저장되었습니다.';
+                window.$app_.snackbarColor = 'success';
+                window.$app_.snackbar = true;
+            }
         },
         /**
          * 담당자 저장 완료 처리

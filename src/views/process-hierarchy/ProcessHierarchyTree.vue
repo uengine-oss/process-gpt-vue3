@@ -40,6 +40,33 @@
                     <v-icon size="16" class="mr-2" color="primary">mdi-folder-network</v-icon>
                     <span class="tree-node-label">{{ mega.name }}</span>
                     <v-chip size="x-small" variant="tonal" class="ml-auto">{{ mega.subCount }}</v-chip>
+                    <v-menu location="bottom end" :close-on-content-click="true" @click.stop>
+                        <template #activator="{ props }">
+                            <v-btn
+                                v-bind="props"
+                                icon
+                                variant="text"
+                                size="x-small"
+                                class="tree-row-menu-btn"
+                                aria-label="메뉴"
+                                @click.stop
+                            >
+                                <v-icon size="18">mdi-dots-vertical</v-icon>
+                            </v-btn>
+                        </template>
+                        <v-list density="compact">
+                            <v-list-item
+                                prepend-icon="mdi-unfold-more-horizontal"
+                                :title="$t('processHierarchy.expandAll') || '전체열기'"
+                                @click="expandAllUnder(mega)"
+                            />
+                            <v-list-item
+                                prepend-icon="mdi-unfold-less-horizontal"
+                                :title="$t('processHierarchy.collapseAll') || '전체닫기'"
+                                @click="collapseAllUnder(mega)"
+                            />
+                        </v-list>
+                    </v-menu>
                 </div>
 
                 <!-- Domain Level -->
@@ -55,6 +82,33 @@
                             <v-icon size="16" class="mr-2" :color="domain.color || 'grey'">mdi-folder</v-icon>
                             <span class="tree-node-label">{{ domain.name }}</span>
                             <v-chip size="x-small" variant="tonal" class="ml-auto">{{ domain.subCount }}</v-chip>
+                            <v-menu location="bottom end" :close-on-content-click="true" @click.stop>
+                                <template #activator="{ props }">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        size="x-small"
+                                        class="tree-row-menu-btn"
+                                        aria-label="메뉴"
+                                        @click.stop
+                                    >
+                                        <v-icon size="18">mdi-dots-vertical</v-icon>
+                                    </v-btn>
+                                </template>
+                                <v-list density="compact">
+                                    <v-list-item
+                                        prepend-icon="mdi-unfold-more-horizontal"
+                                        :title="$t('processHierarchy.expandAll') || '전체열기'"
+                                        @click="expandAllUnder(domain)"
+                                    />
+                                    <v-list-item
+                                        prepend-icon="mdi-unfold-less-horizontal"
+                                        :title="$t('processHierarchy.collapseAll') || '전체닫기'"
+                                        @click="collapseAllUnder(domain)"
+                                    />
+                                </v-list>
+                            </v-menu>
                         </div>
 
                         <!-- Major Process Level -->
@@ -69,6 +123,33 @@
                                     </v-icon>
                                     <v-icon size="16" class="mr-2">mdi-folder-outline</v-icon>
                                     <span class="tree-node-label">{{ major.name }}</span>
+                                    <v-menu location="bottom end" :close-on-content-click="true" @click.stop>
+                                        <template #activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                icon
+                                                variant="text"
+                                                size="x-small"
+                                                class="tree-row-menu-btn ml-auto"
+                                                aria-label="메뉴"
+                                                @click.stop
+                                            >
+                                                <v-icon size="18">mdi-dots-vertical</v-icon>
+                                            </v-btn>
+                                        </template>
+                                        <v-list density="compact">
+                                            <v-list-item
+                                                prepend-icon="mdi-unfold-more-horizontal"
+                                                :title="$t('processHierarchy.expandAll') || '전체열기'"
+                                                @click="expandAllUnder(major)"
+                                            />
+                                            <v-list-item
+                                                prepend-icon="mdi-unfold-less-horizontal"
+                                                :title="$t('processHierarchy.collapseAll') || '전체닫기'"
+                                                @click="collapseAllUnder(major)"
+                                            />
+                                        </v-list>
+                                    </v-menu>
                                 </div>
 
                                 <!-- Sub Process Level (Leaf Nodes) -->
@@ -257,6 +338,31 @@ export default {
             }
         },
 
+        /** 노드 자신과 하위에서 펼칠 수 있는 모든 노드 ID 수집 */
+        collectExpandableIds(nodes) {
+            const ids = [];
+            if (!nodes) return ids;
+            for (const node of nodes) {
+                ids.push(node.id);
+                if (node.children?.length) {
+                    ids.push(...this.collectExpandableIds(node.children));
+                }
+            }
+            return ids;
+        },
+
+        /** 해당 노드 및 하위 전체 열기 */
+        expandAllUnder(node) {
+            const ids = this.collectExpandableIds([node]);
+            this.expandedNodes = new Set([...this.expandedNodes, ...ids]);
+        },
+
+        /** 해당 노드 및 하위 전체 닫기 */
+        collapseAllUnder(node) {
+            const toRemove = new Set(this.collectExpandableIds([node]));
+            this.expandedNodes = new Set([...this.expandedNodes].filter(id => !toRemove.has(id)));
+        },
+
         isExpanded(nodeId) {
             return this.expandedNodes.has(nodeId);
         },
@@ -287,6 +393,15 @@ export default {
 .tree-header {
     flex-shrink: 0;
     border-bottom: 1px solid #eee;
+}
+
+.tree-row-menu-btn {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.tree-node:hover .tree-row-menu-btn {
+    opacity: 1;
 }
 
 .tree-content {

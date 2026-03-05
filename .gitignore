@@ -13,7 +13,9 @@ acebase/mydb.acebase
 *.idx
 spikeadmin*
 cypress.config.ts
-
+.tmp/
+.cache/
+reports/
 # Compiled Java class files
 *.class
 

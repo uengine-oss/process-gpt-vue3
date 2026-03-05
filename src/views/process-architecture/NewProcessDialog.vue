@@ -414,15 +414,45 @@ interface AiSuggestion {
 const aiSuggestion = ref<AiSuggestion | null>(null);
 const suggestionTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
+/** 폴더는 제외하고, 하위까지 재귀 탐색해 .bpmn 파일만 수집 (id 기준 중복 제거) */
+async function collectBpmnDefinitionsOnly(basePath: string = ''): Promise<{ id: string; name: string }[]> {
+    const opts = basePath === '' ? { match: { isdeleted: false } } : undefined;
+    const list = await (backend as any).listDefinition(basePath, opts);
+    const result: { id: string; name: string }[] = [];
+    for (const item of list || []) {
+        if (item.directory) {
+            const subPath = item.path || item.name || item.id;
+            if (subPath) {
+                const children = await collectBpmnDefinitionsOnly(subPath);
+                result.push(...children);
+            }
+        } else {
+            const path = String(item.path || item.name || item.id || '');
+            if (path.toLowerCase().endsWith('.bpmn')) {
+                const id = (item.id || path.replace(/\.bpmn$/i, '')).toString().replace(/\.bpmn$/i, '');
+                const name = item.name || id;
+                result.push({ id, name });
+            }
+        }
+    }
+    // 동일 id 중복 제거 (같은 프로세스가 여러 경로로 나올 수 있음)
+    const seen = new Set<string>();
+    return result.filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+    });
+}
+
 // Load existing processes and users when dialog opens
 watch(() => props.modelValue, async (open) => {
     if (open) {
         try {
-            const [defs, users] = await Promise.all([
-                backend.listDefinition('', { match: { isdeleted: false } }),
+            const [bpmnDefs, users] = await Promise.all([
+                collectBpmnDefinitionsOnly(''),
                 backend.listUsers ? backend.listUsers() : Promise.resolve([])
             ]);
-            existingProcesses.value = (defs || []).map((d: any) => ({ id: d.id, name: d.name || d.id }));
+            existingProcesses.value = bpmnDefs;
             if (users && Array.isArray(users)) {
                 userOptions.value = users.map((u: any) => ({
                     email: u.email || u.id,

@@ -66,6 +66,16 @@
                         @click.stop
                     ></v-text-field>
 
+                    <!-- PAL 전용: 서브프로세스 추가 시 공통 모듈 토글 -->
+                    <v-switch
+                        v-if="addType === 'sub' && processType === 'add' && isPal"
+                        v-model="newProcess.commonModule"
+                        :label="$t('ProcessMenu.commonModule') || '공통 모듈'"
+                        color="primary"
+                        hide-details
+                        class="mt-2"
+                    />
+
                     <!-- ID field for new subprocess creation -->
                     <v-text-field
                         v-if="addType === 'sub' && isNewDef && processType === 'add'"
@@ -146,7 +156,8 @@ export default {
         newProcess: {
             id: '',
             name: '',
-            domain: ''
+            domain: '',
+            commonModule: false
         },
         isNewDef: false,
         isGeneratingId: false,
@@ -184,6 +195,9 @@ export default {
             }
             return this.addType;
         },
+        isPal() {
+            return typeof window !== 'undefined' && window.$pal;
+        },
         isSaveDisabled() {
             if (this.addType === 'sub') {
                 if (this.isNewDef) {
@@ -211,7 +225,8 @@ export default {
             this.newProcess = {
                 id: '',
                 name: '',
-                domain: this.defaultDomain || ''
+                domain: this.defaultDomain || '',
+                commonModule: false
             };
             this.previousSuggestions = [];
             this.isGeneratingId = false;
@@ -224,7 +239,8 @@ export default {
                 this.newProcess = {
                     id: '',
                     name: '',
-                    domain: this.defaultDomain || ''
+                    domain: this.defaultDomain || '',
+                    commonModule: false
                 };
                 this.previousSuggestions = [];
                 this.isGeneratingId = false;
@@ -248,7 +264,8 @@ export default {
                         const processData = {
                             id: this.newProcess.id,
                             name: this.newProcess.name,
-                            isNew: true  // Flag to indicate this is a newly created process
+                            isNew: true,  // Flag to indicate this is a newly created process
+                            ...(this.isPal && { commonModule: !!this.newProcess.commonModule })
                         };
                         this.$emit("add", processData);
                         this.closeDialog();
@@ -263,7 +280,8 @@ export default {
                         this.$emit("add", {
                             id: this.newProcess.id || '',
                             name: name,
-                            isNew: false
+                            isNew: false,
+                            ...(this.isPal && { commonModule: !!this.newProcess.commonModule })
                         });
                         this.closeDialog();
                     }

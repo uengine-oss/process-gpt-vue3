@@ -137,7 +137,7 @@
                         <input
                             ref="fileInput"
                             type="file"
-                            accept=".xlsx,.xls"
+                            accept=".xlsx"
                             style="display: none"
                             @change="handleFileSelect"
                         />
@@ -159,7 +159,7 @@ import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 import VTreeview from 'vue3-treeview';
 import 'vue3-treeview/dist/style.css';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const backend = BackendFactory.createBackend();
 
@@ -477,8 +477,8 @@ export default {
             this.uploadedFileName = null;
             
             try {
-                // XLSX 라이브러리로 파싱
-                const result = await this.parseWithXLSX(file);
+                // ExcelJS 라이브러리로 파싱
+                const result = await this.parseWithExcelJS(file);
                 
                 if (result.success) {
                     this.uploadedFileName = file.name;
@@ -505,49 +505,110 @@ export default {
             }
         },
 
+        normalizeExcelCellValue(value) {
+            if (value == null) return '';
+            if (value instanceof Date) return value.toISOString();
+            if (typeof value === 'object') {
+                if (Object.prototype.hasOwnProperty.call(value, 'result')) {
+                    return this.normalizeExcelCellValue(value.result);
+                }
+                if (Array.isArray(value.richText)) {
+                    return value.richText.map(item => item?.text || '').join('');
+                }
+                if (typeof value.text === 'string') return value.text;
+                if (typeof value.hyperlink === 'string' && typeof value.tooltip === 'string') return value.tooltip;
+            }
+            return String(value);
+        },
+        worksheetToArray(worksheet) {
+            const rows = [];
+            const colCount = Math.max(worksheet?.actualColumnCount || 0, 1);
+            worksheet.eachRow({ includeEmpty: true }, (row) => {
+                const current = [];
+                for (let col = 1; col <= colCount; col += 1) {
+                    current.push(this.normalizeExcelCellValue(row.getCell(col).value));
+                }
+                rows.push(current);
+            });
+            return rows;
+        },
+        rowsToObjects(rows) {
+            if (!Array.isArray(rows) || rows.length === 0) return [];
+            const headerRow = rows[0] || [];
+            const headers = headerRow.map((value, idx) => {
+                const text = String(value || '').trim();
+                return text || `column_${idx + 1}`;
+            });
+            const result = [];
+            for (let i = 1; i < rows.length; i += 1) {
+                const row = rows[i] || [];
+                if (row.every(cell => String(cell || '').trim() === '')) continue;
+                const obj = {};
+                headers.forEach((header, idx) => {
+                    obj[header] = row[idx] ?? '';
+                });
+                result.push(obj);
+            }
+            return result;
+        },
+        setWorksheetColumns(worksheet, widths) {
+            if (!Array.isArray(widths) || widths.length === 0) return;
+            worksheet.columns = widths.map(width => ({ width }));
+        },
+        async downloadWorkbook(workbook, fileName) {
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        },
         /**
-         * XLSX 라이브러리를 사용하여 엑셀 파싱
+         * ExcelJS 라이브러리를 사용하여 엑셀 파싱
          */
-        parseWithXLSX(file) {
-            return new Promise((resolve, reject) => {
+        parseWithExcelJS(file) {
+            return new Promise((resolve) => {
                 const reader = new FileReader();
                 
-                reader.onload = (e) => {
+                reader.onload = async (e) => {
                     try {
                         const data = e.target.result;
                         const startTime = Date.now();
                         
-                        // 엑셀 파일 파싱
-                        const workbook = XLSX.read(data, { type: 'array' });
+                        const workbook = new ExcelJS.Workbook();
+                        await workbook.xlsx.load(data);
                         
                         const elapsed = (Date.now() - startTime) / 1000;
-                        console.log(`⏱️ XLSX 파싱 시간: ${elapsed.toFixed(2)}초`);
+                        console.log(`⏱️ ExcelJS 파싱 시간: ${elapsed.toFixed(2)}초`);
                         
-                        // 모든 시트의 데이터를 추출
                         const result = {};
-                        
-                        workbook.SheetNames.forEach(sheetName => {
-                            const worksheet = workbook.Sheets[sheetName];
-                            // 시트를 JSON으로 변환 (두 가지 형태로)
-                            const jsonArray = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                            const jsonObjects = XLSX.utils.sheet_to_json(worksheet);
-                            
+                        const sheetNames = workbook.worksheets.map(ws => ws.name);
+                        workbook.worksheets.forEach((worksheet) => {
+                            const sheetName = worksheet.name;
+                            const jsonArray = this.worksheetToArray(worksheet);
+                            const jsonObjects = this.rowsToObjects(jsonArray);
                             result[sheetName] = {
-                                array: jsonArray,      // 배열 형태
-                                objects: jsonObjects   // 객체 배열 형태
+                                array: jsonArray,
+                                objects: jsonObjects
                             };
                         });
                         
                         resolve({
                             success: true,
                             data: result,
-                            sheetNames: workbook.SheetNames,
-                            sheetCount: workbook.SheetNames.length,
-                            workbook: workbook
+                            sheetNames,
+                            sheetCount: sheetNames.length,
+                            workbook
                         });
                         
                     } catch (parseError) {
-                        console.error('❌ XLSX 파싱 중 오류:', parseError);
+                        console.error('❌ ExcelJS 파싱 중 오류:', parseError);
                         resolve({
                             success: false,
                             error: parseError.message
@@ -655,7 +716,7 @@ export default {
                 console.log('📋 프로세스 정의:', processDefinition);
 
                 // 워크북 생성
-                const workbook = XLSX.utils.book_new();
+                const workbook = new ExcelJS.Workbook();
 
                 // 1. 프로세스 기본 정보 시트
                 const processInfoData = [
@@ -669,12 +730,9 @@ export default {
                     ['자동 레이아웃', processDefinition.isAutoLayout ? '예' : '아니오'],
                     ['생성일', new Date().toLocaleDateString('ko-KR')]
                 ];
-                const processInfoSheet = XLSX.utils.aoa_to_sheet(processInfoData);
-                processInfoSheet['!cols'] = [
-                    { wch: 20 },
-                    { wch: 50 }
-                ];
-                XLSX.utils.book_append_sheet(workbook, processInfoSheet, '1.프로세스정보');
+                const processInfoSheet = workbook.addWorksheet('1.프로세스정보');
+                processInfoSheet.addRows(processInfoData);
+                this.setWorksheetColumns(processInfoSheet, [20, 50]);
 
                 // 2. 프로세스 변수(Data) 시트
                 if (processDefinition.data && processDefinition.data.length > 0) {
@@ -690,13 +748,9 @@ export default {
                         ]);
                     });
 
-                    const dataSheet = XLSX.utils.aoa_to_sheet(dataSheetData);
-                    dataSheet['!cols'] = [
-                        { wch: 20 },  // 변수명
-                        { wch: 50 },  // 설명
-                        { wch: 15 }   // 타입
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, dataSheet, '2.프로세스변수');
+                    const dataSheet = workbook.addWorksheet('2.프로세스변수');
+                    dataSheet.addRows(dataSheetData);
+                    this.setWorksheetColumns(dataSheet, [20, 50, 15]);
                 }
 
                 // 3. Roles(역할/Lane) 시트
@@ -717,17 +771,9 @@ export default {
                         ]);
                     });
 
-                    const rolesSheet = XLSX.utils.aoa_to_sheet(rolesData);
-                    rolesSheet['!cols'] = [
-                        { wch: 20 },  // 역할 이름
-                        { wch: 25 },  // Endpoint
-                        { wch: 40 },  // 담당 업무
-                        { wch: 10 },  // X좌표
-                        { wch: 10 },  // Y좌표
-                        { wch: 10 },  // 너비
-                        { wch: 10 }   // 높이
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, rolesSheet, '3.역할(Lane)');
+                    const rolesSheet = workbook.addWorksheet('3.역할(Lane)');
+                    rolesSheet.addRows(rolesData);
+                    this.setWorksheetColumns(rolesSheet, [20, 25, 40, 10, 10, 10, 10]);
                 }
 
                 // 4. Elements에서 Activity만 추출
@@ -763,27 +809,9 @@ export default {
                             ]);
                         });
 
-                        const activitiesSheet = XLSX.utils.aoa_to_sheet(activitiesData);
-                        activitiesSheet['!cols'] = [
-                            { wch: 30 },  // ID
-                            { wch: 25 },  // 이름
-                            { wch: 15 },  // 타입
-                            { wch: 15 },  // 역할
-                            { wch: 40 },  // 설명
-                            { wch: 40 },  // 지시사항
-                            { wch: 12 },  // 소요시간
-                            { wch: 30 },  // 체크포인트
-                            { wch: 30 },  // 입력데이터
-                            { wch: 30 },  // 출력데이터
-                            { wch: 35 },  // 도구
-                            { wch: 8 },   // Layer
-                            { wch: 8 },   // Order
-                            { wch: 8 },   // X좌표
-                            { wch: 8 },   // Y좌표
-                            { wch: 8 },   // 너비
-                            { wch: 8 }    // 높이
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, activitiesSheet, '4.액티비티');
+                        const activitiesSheet = workbook.addWorksheet('4.액티비티');
+                        activitiesSheet.addRows(activitiesData);
+                        this.setWorksheetColumns(activitiesSheet, [30, 25, 15, 15, 40, 40, 12, 30, 30, 30, 35, 8, 8, 8, 8, 8, 8]);
                     }
                 }
 
@@ -815,23 +843,9 @@ export default {
                             ]);
                         });
 
-                        const eventsSheet = XLSX.utils.aoa_to_sheet(eventsData);
-                        eventsSheet['!cols'] = [
-                            { wch: 30 },  // ID
-                            { wch: 25 },  // 이름
-                            { wch: 15 },  // 타입
-                            { wch: 15 },  // 역할
-                            { wch: 40 },  // 설명
-                            { wch: 30 },  // 트리거
-                            { wch: 20 },  // BPMN타입
-                            { wch: 8 },   // Layer
-                            { wch: 8 },   // Order
-                            { wch: 8 },   // X좌표
-                            { wch: 8 },   // Y좌표
-                            { wch: 8 },   // 너비
-                            { wch: 8 }    // 높이
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, eventsSheet, '5.이벤트');
+                        const eventsSheet = workbook.addWorksheet('5.이벤트');
+                        eventsSheet.addRows(eventsData);
+                        this.setWorksheetColumns(eventsSheet, [30, 25, 15, 15, 40, 30, 20, 8, 8, 8, 8, 8, 8]);
                     }
                 }
 
@@ -863,23 +877,9 @@ export default {
                             ]);
                         });
 
-                        const gatewaysSheet = XLSX.utils.aoa_to_sheet(gatewaysData);
-                        gatewaysSheet['!cols'] = [
-                            { wch: 30 },  // ID
-                            { wch: 25 },  // 이름
-                            { wch: 15 },  // 타입
-                            { wch: 15 },  // 역할
-                            { wch: 40 },  // 설명
-                            { wch: 30 },  // 조건
-                            { wch: 20 },  // BPMN타입
-                            { wch: 8 },   // Layer
-                            { wch: 8 },   // Order
-                            { wch: 8 },   // X좌표
-                            { wch: 8 },   // Y좌표
-                            { wch: 8 },   // 너비
-                            { wch: 8 }    // 높이
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, gatewaysSheet, '6.게이트웨이');
+                        const gatewaysSheet = workbook.addWorksheet('6.게이트웨이');
+                        gatewaysSheet.addRows(gatewaysData);
+                        this.setWorksheetColumns(gatewaysSheet, [30, 25, 15, 15, 40, 30, 20, 8, 8, 8, 8, 8, 8]);
                     }
                 }
 
@@ -907,16 +907,9 @@ export default {
                             ]);
                         });
 
-                        const sequencesSheet = XLSX.utils.aoa_to_sheet(sequencesData);
-                        sequencesSheet['!cols'] = [
-                            { wch: 30 },  // ID
-                            { wch: 30 },  // 이름
-                            { wch: 30 },  // 시작
-                            { wch: 30 },  // 종료
-                            { wch: 40 },  // 조건
-                            { wch: 50 }   // Waypoints
-                        ];
-                        XLSX.utils.book_append_sheet(workbook, sequencesSheet, '7.시퀀스(흐름)');
+                        const sequencesSheet = workbook.addWorksheet('7.시퀀스(흐름)');
+                        sequencesSheet.addRows(sequencesData);
+                        this.setWorksheetColumns(sequencesSheet, [30, 30, 30, 30, 40, 50]);
                     }
                 }
 
@@ -935,21 +928,16 @@ export default {
                         ]);
                     });
 
-                    const subProcessesSheet = XLSX.utils.aoa_to_sheet(subProcessesData);
-                    subProcessesSheet['!cols'] = [
-                        { wch: 30 },  // ID
-                        { wch: 30 },  // 이름
-                        { wch: 50 },  // 설명
-                        { wch: 20 }   // 타입
-                    ];
-                    XLSX.utils.book_append_sheet(workbook, subProcessesSheet, '8.서브프로세스');
+                    const subProcessesSheet = workbook.addWorksheet('8.서브프로세스');
+                    subProcessesSheet.addRows(subProcessesData);
+                    this.setWorksheetColumns(subProcessesSheet, [30, 30, 50, 20]);
                 }
 
                 // 파일 이름 생성
                 const fileName = `${processDefinition.processDefinitionName || 'process'}_${new Date().getTime()}.xlsx`;
 
                 // 엑셀 파일 생성 및 다운로드
-                XLSX.writeFile(workbook, fileName);
+                await this.downloadWorkbook(workbook, fileName);
 
                 console.log('✅ 엑셀 파일 다운로드 완료:', fileName);
                 

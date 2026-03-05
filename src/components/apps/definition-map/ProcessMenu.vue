@@ -35,6 +35,17 @@
                     </v-btn>
                 </template>
             </v-tooltip>
+            <v-tooltip v-if="type === 'sub' && isPal" :text="$t('ProcessMenu.settings')">
+                <template v-slot:activator="{ props }">
+                    <v-btn @click.stop="openSubprocessSettings"
+                        icon v-bind="props"
+                        density="compact"
+                        size="small"
+                    >
+                        <v-icon size="12">mdi-cog</v-icon>
+                    </v-btn>
+                </template>
+            </v-tooltip>
             <v-tooltip v-if="type === 'sub'" :text="$t('ProcessMenu.setOwner')">
                 <template v-slot:activator="{ props }">
                     <v-btn @click.stop="setOwner"
@@ -146,6 +157,9 @@ export default {
         },
         setOwner() {
             this.$emit("setOwner", this.process);
+        },
+        openSubprocessSettings() {
+            this.$emit("openSubprocessSettings", this.process);
         },
         addProcess() {
             this.$emit("add");

@@ -252,6 +252,19 @@
                     >
                         {{ domain.name }}
                     </v-chip>
+                    <!-- 도메인 추가 (PAL 모드 + 관리자) — 주변 칩과 동일 스타일 -->
+                    <v-chip
+                        v-if="isAdmin && isPalMode"
+                        size="small"
+                        variant="outlined"
+                        color="grey"
+                        class="domain-add-chip"
+                        prepend-icon="mdi-plus"
+                        clickable
+                        @click="openDomainAddDialog"
+                    >
+                        {{ $t('metricsView.addDomain') || '도메인 추가' }}
+                    </v-chip>
                 </div>
 
                 <!-- Quick Filters -->
@@ -406,6 +419,48 @@
             @apply="onAdvancedFilterApply"
         />
 
+        <!-- Domain Add Dialog -->
+        <v-dialog v-model="domainAddDialog.show" max-width="400" persistent>
+            <v-card class="pa-4 rounded-lg">
+                <v-card-title class="px-0 pt-0 text-h6 font-weight-bold">
+                    {{ t('metricsView.addDomain') || '도메인 추가' }}
+                </v-card-title>
+                <v-text-field
+                    v-model="domainAddDialog.name"
+                    :label="t('metricsView.domainName') || '도메인 명'"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details
+                    class="mt-2"
+                    @keyup.enter="saveDomainAdd"
+                    autofocus
+                />
+                <div class="mt-4">
+                    <div class="text-subtitle-2 mb-2">{{ t('processDefinitionMap.selectColor') || '색상 선택' }}</div>
+                    <div class="d-flex flex-wrap" style="gap: 8px">
+                        <div
+                            v-for="color in domainColors"
+                            :key="color"
+                            class="color-option"
+                            :class="{ 'color-selected': domainAddDialog.color === color }"
+                            :style="{ backgroundColor: color }"
+                            @click="domainAddDialog.color = color"
+                        />
+                    </div>
+                    <v-btn v-if="domainAddDialog.color" variant="text" size="small" class="mt-2" @click="domainAddDialog.color = null">
+                        {{ t('common.reset') || '초기화' }}
+                    </v-btn>
+                </div>
+                <v-card-actions class="px-0 pb-0 pt-3">
+                    <v-spacer />
+                    <v-btn variant="text" @click="domainAddDialog.show = false">{{ t('common.cancel') || '취소' }}</v-btn>
+                    <v-btn color="primary" variant="flat" :disabled="!domainAddDialog.name.trim()" @click="saveDomainAdd">
+                        {{ t('common.save') || '저장' }}
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
         <!-- Export notification snackbar -->
         <v-snackbar
             v-model="exportSnackbar.show"
@@ -443,6 +498,7 @@ const t = (key: string) => instance.proxy!.$t(key);
 
 const {
     procMap,
+    metricsMap,
     loading,
     searchQuery,
     selectedDomain,
@@ -466,6 +522,7 @@ const {
     loadCurrentUserOrgs,
     showToBe,
     saveProcMap,
+    saveMetricsMap,
     advancedFilters
 } = useProcessArchitecture();
 
@@ -474,8 +531,59 @@ const isAdmin = computed(() => {
     return role === 'superAdmin' || localStorage.getItem('isAdmin') === 'true';
 });
 
+const isPalMode = computed(() => typeof window !== 'undefined' && !!(window as any).$pal);
+
 const showNewProcessDialog = ref(false);
 const showAdvancedFilter = ref(false);
+
+// 도메인 추가 다이얼로그
+const domainAddDialog = ref({
+    show: false,
+    name: '',
+    color: null as string | null
+});
+const domainColors = [
+    '#E53935', '#D81B60', '#8E24AA', '#5E35B1',
+    '#3949AB', '#1E88E5', '#00ACC1', '#00897B',
+    '#43A047', '#7CB342', '#FB8C00', '#6D4C41'
+];
+
+function openDomainAddDialog() {
+    domainAddDialog.value = { show: true, name: '', color: null };
+}
+
+async function saveDomainAdd() {
+    const trimmedName = domainAddDialog.value.name.trim();
+    if (!trimmedName) return;
+    const current = metricsMap.value || { domains: [], mega_processes: [], processes: [] };
+    const domainsList = Array.isArray(current.domains) ? [...current.domains] : [];
+    const isDuplicate = domainsList.some((d: any) => (d.name || '').toLowerCase() === trimmedName.toLowerCase());
+    if (isDuplicate) {
+        alert(t('processDefinitionMap.duplicateName') || '동일한 이름이 이미 존재합니다.');
+        return;
+    }
+    const newId = trimmedName.toLowerCase().replace(/[/.]/g, '_');
+    const newOrder = domainsList.length + 1;
+    domainsList.push({
+        id: newId,
+        name: trimmedName,
+        color: domainAddDialog.value.color,
+        order: newOrder
+    });
+    const updated = {
+        ...current,
+        domains: domainsList,
+        mega_processes: current.mega_processes ?? [],
+        processes: current.processes ?? []
+    };
+    try {
+        await saveMetricsMap(updated);
+        domainAddDialog.value.show = false;
+    } catch (e) {
+        console.error('Failed to save domain:', e);
+        alert(t('common.saveFailed') || '저장에 실패했습니다.');
+    }
+}
 const selectedDomainIndex = ref(undefined);
 const showSearchDropdown = ref(false);
 const searchWrapperRef = ref<HTMLElement | null>(null);
@@ -858,11 +966,9 @@ async function runExport(format: ExportFormat) {
 
     try {
         if (format === 'excel') {
-            // NOTE: requires 'xlsx' package: npm install xlsx
-            // Dynamic import - falls back gracefully if not installed
-            const XLSX = await import('xlsx').catch(() => null);
-            if (!XLSX) {
-                alert('xlsx 패키지가 설치되어 있지 않습니다. npm install xlsx 를 실행해주세요.');
+            const ExcelJS = await import('exceljs').catch(() => null);
+            if (!ExcelJS) {
+                alert('exceljs 패키지가 설치되어 있지 않습니다. npm install exceljs 를 실행해주세요.');
                 return;
             }
             const rows = flattenProcMap(map);
@@ -871,10 +977,15 @@ async function runExport(format: ExportFormat) {
                 headers,
                 ...rows.map(r => [r.pid, r.domain, r.mega, r.major, r.sub, r.status, r.version, r.owner, r.fte, r.oss])
             ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Processes');
-            XLSX.writeFile(wb, `process-architecture-${ts}.xlsx`);
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Processes');
+            worksheet.addRows(wsData);
+            worksheet.columns = [12, 18, 24, 24, 24, 14, 12, 18, 10, 20].map((width) => ({ width }));
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            downloadBlob(blob, `process-architecture-${ts}.xlsx`);
 
         } else if (format === 'json') {
             const json = JSON.stringify(map, null, 2);
@@ -1000,6 +1111,23 @@ function onProcessCreated(newProc: { id: string; name: string }) {
 
 .domain-chips :deep(.v-chip) {
     font-weight: 500;
+}
+
+.color-option {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.color-option:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.color-option.color-selected {
+    border-color: #333;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #333;
 }
 
 .stats-bar {
