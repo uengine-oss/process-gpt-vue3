@@ -3,7 +3,7 @@ name: process-gpt-build-and-deploy
 on:
   push:
     branches:
-      - skt
+      - main
 
 jobs:
   SBOM-upload:
@@ -93,10 +93,16 @@ jobs:
       # Optional cryptographic signature for hash manifest.
       # Requires: GPG_PRIVATE_KEY, GPG_PASSPHRASE secrets.
       - name: Optional GPG sign SHA256SUMS
-        if: secrets.GPG_PRIVATE_KEY != ''
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
-          gpg --batch --yes --pinentry-mode loopback --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+          if [ -z "${GPG_PRIVATE_KEY}" ]; then
+            echo "GPG_PRIVATE_KEY is not set. Skip signing."
+            exit 0
+          fi
+          echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
+          gpg --batch --yes --pinentry-mode loopback --passphrase "${GPG_PASSPHRASE}" \
             --armor --detach-sign --output SHA256SUMS.asc SHA256SUMS
 
       - name: Upload build artifact (workflow artifact)
@@ -119,8 +125,10 @@ jobs:
           
           if [ "${{ github.ref_name }}" == "skt" ]; then
             IMAGE_NAME=ghcr.io/uengine-oss/process-gpt-skt:$IMAGE_TAG
+            IMAGE_NAME_LATEST=ghcr.io/uengine-oss/process-gpt-skt:latest
           else
             IMAGE_NAME=ghcr.io/uengine-oss/process-gpt:$IMAGE_TAG
+            IMAGE_NAME_LATEST=ghcr.io/uengine-oss/process-gpt:latest
           fi
 
           docker build -t $IMAGE_NAME -t $IMAGE_NAME_LATEST .
