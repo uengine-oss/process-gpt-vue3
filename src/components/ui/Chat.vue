@@ -53,11 +53,6 @@
                     </div>
 
                     <div v-if="!workAssistantAgentMode" ref="chatSplitContainer" class="chat-split-container" :class="{ 'chat-split-active': showAgentMessagePanel }">
-                    <perfect-scrollbar
-                        :class="['h-100 chat-view-box', { 'chat-room-mode': chatRoomMode }, showAgentMessagePanel ? 'chat-view-box-split-left' : '']"
-                        ref="scrollContainer"
-                        @scroll="handleScroll"
-                    >
                         <perfect-scrollbar
                             :class="[
                                 'h-100 chat-view-box',
@@ -242,10 +237,10 @@
                                                         >
                                                             <v-icon start size="14">mdi-sitemap</v-icon>
                                                             {{ bpmn.process_name || bpmn.process_id }}
-                                                        </v-chip>
+                                                        </v-btn>
                                                     </div>
                                                 </div>
-                                            </v-card>
+                                            </v-sheet>
                                         </div>
 
                                         <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
