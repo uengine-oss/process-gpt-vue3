@@ -15,7 +15,7 @@
             </v-btn>
         </template>
 
-        <v-sheet class="mt-5 dropdown-box notification-dd-box" rounded="lg" elevation="10">
+        <v-sheet class="dropdown-box notification-dd-box" rounded="lg" elevation="10">
             <div class="d-flex align-center pa-3">
                 <h6 class="text-h5 font-weight-semibold">{{ $t('NotificationDD.notification') }}</h6>
                 <v-chip color="primary" variant="flat" size="x-small" class="text-white ml-4" rounded="xl"> {{ notiCount }} New </v-chip>

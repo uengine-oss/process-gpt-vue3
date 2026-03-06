@@ -18,14 +18,14 @@
 
         <!-- 팀 관리 버튼 -->
         <div class="px-4 pb-2">
-            <div class="d-flex ga-2 justify-end">
+            <div class="d-flex ga-2 justify-end flex-wrap">
                 <v-btn
                     v-for="button in teamButtons"
                     :key="button.type"
                     @click="openTeamDialog(button.type)"
                     :color="button.color"
                     variant="flat"
-                    class="rounded-pill"
+                    class="rounded-pill text-none"
                     size="small"
                     :prepend-icon="button.icon"
                     :disabled="button.disabled && !selectedTeam"

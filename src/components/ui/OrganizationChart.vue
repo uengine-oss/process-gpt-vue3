@@ -109,9 +109,16 @@ export default {
                 direction: 'top',
                 enableExpandCollapse: false,
                 nodeTemplate: (content) => {
-                    // 실제 사용자 데이터 가져오기
                     const userData = this.getUserData(content);
                     const nodeId = content.renderNodeId || content.id;
+                    const isRoot = content.id == 'root';
+                    const displayName = userData.username || content.name;
+                    const currentUid = localStorage.getItem('uid');
+                    const currentUser = this.userList.find((u) => u.id === currentUid);
+                    const canEditRootName = isRoot && currentUser && currentUser.role === 'superAdmin';
+                    const editBtn = canEditRootName
+                        ? `<div class="node-content-btn-box"><div class="node-content-btn edit-root-name-btn"><i class="mdi mdi-pencil node-content-icon"></i></div></div>`
+                        : '';
                     return `
                     <div class='node-content' id='${nodeId}' data-original-id='${content.id}'>
                         <div class="node-content-text-box">
@@ -124,12 +131,10 @@ export default {
                                         : `<img class="node-content-img" src='/images/defaultUser.png' />`
                                 }
                                 <div style="flex: 1;"></div>
-                                
+                                ${editBtn}
                             </div>
                             <div class="node-content-title-box" data-node-id="${content.id}">
-                                <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${
-                                    userData.username || content.name
-                                }</div>
+                                <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${displayName}</div>
                                 ${userData.email ? `<div style="font-family: Arial; font-size: 12px">${userData.email}</div>` : ''}
                                 ${
                                     userData.role
@@ -159,7 +164,13 @@ export default {
                         this.editNode = this.findOriginalNodeById(this.node, originalId);
                     }
 
-                    if (button.classList.contains('add-team-btn')) {
+                    if (button.classList.contains('edit-root-name-btn')) {
+                        this.startRootNameEdit(button.closest('.node-content'));
+                    } else if (button.classList.contains('save-root-name-btn')) {
+                        this.saveRootNameEdit(button.closest('.node-content'));
+                    } else if (button.classList.contains('cancel-root-name-btn')) {
+                        this.cancelRootNameEdit();
+                    } else if (button.classList.contains('add-team-btn')) {
                         this.openTeamDialog('add');
                     } else if (button.classList.contains('edit-team-btn')) {
                         this.openTeamDialog('edit');
@@ -635,6 +646,39 @@ export default {
             await this.drawTree();
             this.$emit('updateNode');
             this.closeEditDialog();
+        },
+        startRootNameEdit(nodeEl) {
+            const titleBox = nodeEl.querySelector('.node-content-title-box');
+            if (!titleBox) return;
+            const nameDiv = titleBox.querySelector('div');
+            if (!nameDiv) return;
+            const currentName = nameDiv.textContent.trim();
+
+            nameDiv.outerHTML = `<input type="text" class="root-name-input" value="${currentName}" style="font-weight:bold; font-family:Arial; font-size:14px; border:1px solid rgba(0,0,0,0.2); border-radius:4px; padding:2px 6px; width:100%; outline:none;" />`;
+
+            const btnBox = nodeEl.querySelector('.node-content-btn-box');
+            if (btnBox) {
+                btnBox.innerHTML = `<div class="node-content-btn save-root-name-btn"><i class="mdi mdi-check node-content-icon"></i></div><div class="node-content-btn cancel-root-name-btn"><i class="mdi mdi-close node-content-icon"></i></div>`;
+            }
+
+            const input = nodeEl.querySelector('.root-name-input');
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        },
+        saveRootNameEdit(nodeEl) {
+            const input = nodeEl.querySelector('.root-name-input');
+            if (!input) return;
+            const newName = input.value.trim();
+            if (newName && this.node.data) {
+                this.node.data.name = newName;
+                this.$emit('updateNode');
+            }
+            this.drawTree();
+        },
+        cancelRootNameEdit() {
+            this.drawTree();
         },
         handleTouch(e) {
             // 버튼 영역이면 터치 이벤트 처리하지 않음

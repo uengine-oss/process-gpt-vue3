@@ -1,6 +1,12 @@
 <template>
     <div>
-        <ExpandableList :items="instanceList" :limit="10" @expanded="onInstancesExpanded" @collapsed="onInstancesCollapsed">
+        <div v-if="isLoading" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{ $t('ProcessInstanceList.loading') || '인스턴스 로딩 중...' }}
+        </div>
+        <div v-else-if="instanceList.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{ $t('ProcessInstanceList.empty') || '실행 중인 인스턴스가 없습니다' }}
+        </div>
+        <ExpandableList v-else :items="instanceList" :limit="10" @expanded="onInstancesExpanded" @collapsed="onInstancesCollapsed">
             <template #items="{ displayedItems }">
                 <template v-for="item in displayedItems" :key="item.title">
                     <div v-if="item.isNew" class="d-flex">
@@ -35,6 +41,7 @@ export default {
         ExpandableList
     },
     data: () => ({
+        isLoading: true,
         instanceList: [],
         //
         myGroupInstanceList: [],
@@ -70,11 +77,16 @@ export default {
     },
     methods: {
         async init() {
-            if (window.$mode == 'ProcessGPT') {
-                await this.loadInstances();
-            } else {
-                await this.loadInstancesByRole();
-                await this.loadGroupInstances();
+            this.isLoading = true;
+            try {
+                if (window.$mode == 'ProcessGPT') {
+                    await this.loadInstances();
+                } else {
+                    await this.loadInstancesByRole();
+                    await this.loadGroupInstances();
+                }
+            } finally {
+                this.isLoading = false;
             }
         },
         async loadInstances() {
@@ -147,3 +159,12 @@ export default {
     }
 };
 </script>
+
+<style scoped>
+.empty-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+}
+</style>

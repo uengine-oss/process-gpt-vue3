@@ -2083,7 +2083,14 @@
         "confirmDeleteChatRoom": "채팅방을 삭제하시겠습니까?",
         "deleteChatRoomConfirm": "이 대화를 삭제하시겠습니까? 삭제된 대화는 복구할 수 없습니다.",
         "enterChatRoomName": "채팅방 이름을 입력해주세요.",
-        "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요."
+        "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요.",
+        "newChat": "새 채팅",
+        "defaultUser": "사용자",
+        "renameChatRoom": "채팅방 이름 변경",
+        "changeParticipants": "참여자 변경",
+        "chat": "대화",
+        "loadingUserInfo": "유저 정보를 불러오는 중...",
+        "deleteWarning": "- 삭제하면 복구할 수 없습니다."
     },
     "userListing": {
         "search": "검색",
@@ -2488,7 +2495,7 @@
         "showLess": "접기",
         "chatList": "대화목록",
         "chatLoading": "불러오는 중...",
-        "chatEmpty": "채팅방이 없습니다.",
+        "chatEmpty": "진행중인 대화가 없습니다.",
         "analytics": "분석"
     },
     "ProfitExpanse": {
@@ -3285,6 +3292,28 @@
         "processSelectLabel": "Process",
         "versionSelectLabel": "Version"
     },
+    "defaultSetting": {
+        "defaultLLM": {
+            "username": "기본 LLM",
+            "description": "기본 AI 모델을 사용한 빠른 초안 생성. ex) 기본 문서 작성, 간단한 분석 (1~3분 소요)"
+        },
+        "openaiDeepResearch": {
+            "username": "OpenAI 고급 분석",
+            "description": "GPT-4 기반의 고급 추론과 체계적 분석을 통한 연구. ex) 논리적 사고, 창의적 문제해결 (3~10분 소요)"
+        },
+        "browserAutomation": {
+            "username": "브라우저 자동화 에이전트",
+            "description": "브라우저 자동화 에이전트"
+        },
+        "visionparse": {
+            "username": "이미지 분석",
+            "description": "이미지 분석 및 텍스트 추출"
+        }
+    },
+    "ProcessInstanceList": {
+        "loading": "인스턴스 로딩 중...",
+        "empty": "실행 중인 인스턴스가 없습니다"
+    },
     "AgentList": {
         "title": "에이전트 목록",
         "loading": "에이전트 로딩 중...",
@@ -3296,6 +3325,11 @@
         "loading": "스킬 로딩 중...",
         "empty": "등록된 스킬이 없습니다",
         "loadFailed": "스킬 목록 로딩 실패"
+    },
+    "UserList": {
+        "loading": "유저 목록을 불러오는 중...",
+        "empty": "등록된 유저가 없습니다.",
+        "searchEmpty": "검색 결과가 없습니다."
     },
     "SkillDetail": {
         "title": "스킬 상세",

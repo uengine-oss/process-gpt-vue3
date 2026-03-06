@@ -41,7 +41,7 @@
                                 </template>
                             </div>
                             <div class="header-title">
-                                <div class="room-name">{{ currentChatRoom?.name || '대화' }}</div>
+                                <div class="room-name">{{ currentChatRoom?.name || $t('chatListing.chat') }}</div>
                                 <div class="room-subtitle text-caption text-medium-emphasis d-flex align-center" style="gap: 8px">
                                     <v-btn variant="text" density="compact" class="participants-summary-btn" @click="openParticipantsView">
                                         <v-icon size="16" class="mr-1">mdi-account-multiple</v-icon>
@@ -179,7 +179,7 @@
             <div v-else-if="userId" class="chat-container">
                 <div v-if="isLoadingTargetUser" class="loading-state">
                     <v-progress-circular indeterminate color="primary" :size="28" />
-                    <span class="ml-2 text-caption">유저 정보를 불러오는 중...</span>
+                    <span class="ml-2 text-caption">{{ $t('chatListing.loadingUserInfo') }}</span>
                 </div>
 
                 <template v-else-if="targetUser">
@@ -196,9 +196,9 @@
                                     </v-avatar>
                                 </div>
                                 <div class="header-title">
-                                    <div class="room-name">{{ draftName || '새 채팅' }}</div>
+                                    <div class="room-name">{{ draftName || $t('chatListing.newChat') }}</div>
                                     <div class="room-subtitle text-caption text-medium-emphasis">
-                                        {{ targetUser?.username || targetUser?.email || 'User' }}
+                                        {{ targetUser?.username || targetUser?.email || $t('chatListing.defaultUser') }}
                                     </div>
                                 </div>
                             </div>
@@ -211,7 +211,7 @@
                                     </template>
                                     <v-card min-width="260" class="pa-2">
                                         <div class="text-caption text-medium-emphasis px-2 pt-1 pb-1">
-                                            {{ $t('chatListing.setting') || '설정' }}
+                                            {{ $t('chatListing.setting') }}
                                         </div>
                                         <v-list density="compact" class="pa-0">
                                             <v-list-item @click="openRenameDialog">
@@ -219,7 +219,7 @@
                                                     <v-icon size="18">mdi-pencil-outline</v-icon>
                                                 </template>
                                                 <v-list-item-title>
-                                                    {{ $t('chatListing.chatRoomName') || '채팅방 이름 변경' }}
+                                                    {{ $t('chatListing.renameChatRoom') }}
                                                 </v-list-item-title>
                                             </v-list-item>
                                             <v-list-item @click="openParticipantsDialog">
@@ -227,7 +227,7 @@
                                                     <v-icon size="18">mdi-account-multiple-plus-outline</v-icon>
                                                 </template>
                                                 <v-list-item-title>
-                                                    {{ $t('chatListing.selectParticipants') || '참여자 변경' }}
+                                                    {{ $t('chatListing.changeParticipants') }}
                                                 </v-list-item-title>
                                             </v-list-item>
                                         </v-list>
@@ -320,7 +320,7 @@
                                 </v-avatar>
                             </div>
                             <div class="header-title">
-                                <div class="room-name">{{ draftName || '새 채팅' }}</div>
+                                <div class="room-name">{{ draftName || $t('chatListing.newChat') }}</div>
                                 <div class="room-subtitle text-caption text-medium-emphasis">
                                     {{ contextAgent?.username || contextAgent?.email || contextAgentId }}
                                 </div>
@@ -593,8 +593,8 @@
                     </v-btn>
                 </v-card-title>
                 <v-card-text class="pa-3 pt-2">
-                    "{{ currentChatRoom?.name || '대화' }}" {{ $t('chatListing.confirmDeleteChatRoom') || '채팅방을 삭제하시겠습니까?' }}
-                    <div class="text-caption text-medium-emphasis mt-2">- 삭제하면 복구할 수 없습니다.</div>
+                    "{{ currentChatRoom?.name || $t('chatListing.chat') }}" {{ $t('chatListing.confirmDeleteChatRoom') }}
+                    <div class="text-caption text-medium-emphasis mt-2">{{ $t('chatListing.deleteWarning') }}</div>
                 </v-card-text>
                 <v-card-actions class="pa-3 pt-0">
                     <v-spacer></v-spacer>
@@ -764,7 +764,7 @@ export default {
             _agentDirectoryCacheAt: 0,
 
             // draft settings (새 채팅)
-            draftName: '새 채팅',
+            draftName: '',
             draftParticipants: [],
 
             // embedded context (agent/user) rooms
@@ -1289,7 +1289,7 @@ export default {
 
                 this.contextRoomTabs = filtered.map((r) => ({
                     roomId: r.id,
-                    title: r.name || '대화'
+                    title: r.name || this.$t('chatListing.chat')
                 }));
 
                 const initial = this.initialRoomId || null;
@@ -1404,9 +1404,9 @@ export default {
                 const room = {
                     id: roomId,
                     name:
-                        String(this.draftName || '새 채팅')
+                        String(this.draftName || this.$t('chatListing.newChat'))
                             .trim()
-                            .substring(0, 50) || '새 채팅',
+                            .substring(0, 50) || this.$t('chatListing.newChat'),
                     participants: this.getDraftParticipantsFallback([me, tu]),
                     message: { msg: 'NEW', type: 'text', createdAt: nowIso }
                 };
@@ -1478,9 +1478,9 @@ export default {
                 const room = {
                     id: roomId,
                     name:
-                        String(this.draftName || '새 채팅')
+                        String(this.draftName || this.$t('chatListing.newChat'))
                             .trim()
-                            .substring(0, 50) || '새 채팅',
+                            .substring(0, 50) || this.$t('chatListing.newChat'),
                     participants: this.getDraftParticipantsFallback([me, ag]),
                     message: { msg: 'NEW', type: 'text', createdAt: nowIso }
                 };
@@ -1527,7 +1527,7 @@ export default {
             }
         },
         resetDraft() {
-            this.draftName = '새 채팅';
+            this.draftName = this.$t('chatListing.newChat');
             const me = this.normalizeParticipant(this.userInfo);
             const target = this.isDraftContextView
                 ? this.normalizeParticipant(this.contextAgent)
@@ -1705,7 +1705,7 @@ export default {
 
             const rooms = await backend.getChatRoomList('chat_rooms');
             const found = (rooms || []).find((r) => r.id === roomId) || null;
-            this.currentChatRoom = found || { id: roomId, name: '대화', participants: [] };
+            this.currentChatRoom = found || { id: roomId, name: this.$t('chatListing.chat'), participants: [] };
         },
         async loadMessages(roomId) {
             this.messages = [];
@@ -1913,7 +1913,7 @@ export default {
         },
         openRenameDialog() {
             this.settingsMenu = false;
-            this.renameDraft = (this.currentChatRoom?.id ? this.currentChatRoom?.name || '' : this.draftName || '새 채팅').toString();
+            this.renameDraft = (this.currentChatRoom?.id ? this.currentChatRoom?.name || '' : this.draftName || this.$t('chatListing.newChat')).toString();
             this.renameDialog = true;
         },
         async confirmRename() {
@@ -2062,9 +2062,9 @@ export default {
             const room = {
                 id: roomId,
                 name:
-                    String(this.draftName || '새 채팅')
+                    String(this.draftName || this.$t('chatListing.newChat'))
                         .trim()
-                        .substring(0, 50) || '새 채팅',
+                        .substring(0, 50) || this.$t('chatListing.newChat'),
                 participants,
                 message: { msg: 'NEW', type: 'text', createdAt: nowIso }
             };

@@ -5,9 +5,8 @@
             <span class="ml-2 text-caption">{{ $t('SkillList.loading') }}</span>
         </div>
 
-        <div v-else-if="skillList.length === 0" class="empty-state">
-            <v-icon size="32" color="grey-lighten-1">mdi-lightning-bolt-outline</v-icon>
-            <span class="text-caption text-grey">{{ $t('SkillList.empty') }}</span>
+        <div v-else-if="skillList.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{ $t('SkillList.empty') || '등록된 스킬이 없습니다' }}
         </div>
 
         <ExpandableList v-else :items="skillList" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">

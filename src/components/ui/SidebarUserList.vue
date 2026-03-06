@@ -17,20 +17,17 @@
 
         <div v-if="isLoading" class="loading-state">
             <v-progress-circular indeterminate size="24" color="primary"></v-progress-circular>
-            <span class="ml-2 text-caption">{{ $t('UserList.loading') || '유저 목록을 불러오는 중...' }}</span>
+            <span class="ml-2 text-caption">{{ $t('UserList.loading') }}</span>
         </div>
 
-        <div v-else-if="filteredUsers.length === 0" class="empty-state">
-            <v-icon size="32" color="grey-lighten-1">mdi-account-outline</v-icon>
-            <span class="text-caption text-grey">
-                {{
-                    users.length === 0
-                        ? $t('UserList.empty') || '표시할 유저가 없습니다.'
-                        : (searchValue || '').trim()
-                        ? '검색 > 검색결과 없음'
-                        : $t('userListing.search') || '검색'
-                }}
-            </span>
+        <div v-else-if="filteredUsers.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{
+                users.length === 0
+                    ? $t('UserList.empty')
+                    : (searchValue || '').trim()
+                    ? $t('UserList.searchEmpty')
+                    : $t('UserList.empty')
+            }}
         </div>
 
         <ExpandableList v-else :items="filteredUsers" :limit="5">

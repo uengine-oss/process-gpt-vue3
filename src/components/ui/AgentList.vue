@@ -5,9 +5,8 @@
             <span class="ml-2 text-caption">{{ $t('AgentList.loading') }}</span>
         </div>
 
-        <div v-else-if="agentList.length === 0" class="empty-state">
-            <v-icon size="32" color="grey-lighten-1">mdi-robot-outline</v-icon>
-            <span class="text-caption text-grey">{{ $t('AgentList.empty') }}</span>
+        <div v-else-if="agentList.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{ $t('AgentList.empty') || '등록된 에이전트가 없습니다' }}
         </div>
 
         <ExpandableList v-else :items="agentList" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">

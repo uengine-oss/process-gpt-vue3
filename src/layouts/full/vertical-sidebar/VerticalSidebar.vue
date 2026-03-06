@@ -129,9 +129,6 @@
                         </div>
                     </div>
                     <ProcessInstanceList @update:instanceLists="handleInstanceListUpdate" />
-
-                    <!-- 대화목록 -->
-                    <ChatList v-if="!gs" />
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
@@ -157,43 +154,6 @@
                     </v-col>
                 </div>
 
-                <!-- 프로세스 관리 타이틀 + 목록 -->
-                <div v-if="processItem.length > 0" class="mb-4">
-                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
-                        {{ $t('processHierarchy.processManagement') || '프로세스 관리' }}
-                    </div>
-                    <v-col class="pa-0">
-                        <v-list-item
-                            v-for="item in processItem"
-                            :key="item.title"
-                            :to="item.to"
-                            :disabled="item.disable"
-                            density="compact"
-                            class="leftPadding"
-                        >
-                            <template v-slot:prepend>
-                                <Icons :icon="item.icon" :size="20" class="mr-2" />
-                            </template>
-                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
-                        </v-list-item>
-                    </v-col>
-                </div>
-
-                <!-- 유저 목록 -->
-                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
-                    <div class="d-flex align-center ml-2">
-                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
-                            {{ $t('VerticalSidebar.userList') || '유저 목록' }}
-                        </div>
-                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
-                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
-                        </div>
-                    </div>
-                    <v-col class="pa-0">
-                        <SidebarUserList ref="sidebarUserList" />
-                    </v-col>
-                </div>
-
                 <!-- 스킬 타이틀 + 목록 -->
                 <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
@@ -213,8 +173,26 @@
                     </v-col>
                 </div>
 
+                <!-- 유저 목록 -->
+                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                    <div class="d-flex align-center ml-2">
+                        <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
+                            {{ $t('VerticalSidebar.userList') || '유저 목록' }}
+                        </div>
+                        <div class="sidebar-title-icon" @click="toggleSidebarUserSearch">
+                            <Icons :icon="'search'" :size="14" :color="'#808080'" style="width: 14px; height: 14px" />
+                        </div>
+                    </div>
+                    <v-col class="pa-0">
+                        <SidebarUserList ref="sidebarUserList" />
+                    </v-col>
+                </div>
+
+                <!-- 대화목록 -->
+                <ChatList v-if="!gs" />
+
                 <!-- Analytics 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
+                <!-- <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('VerticalSidebar.analytics') }}
                     </div>
@@ -234,7 +212,30 @@
                             <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
                         </v-list-item>
                     </v-col>
-                </div>
+                </div> -->
+
+                <!-- 프로세스 관리 타이틀 + 목록 -->
+                <!-- <div v-if="processItem.length > 0" class="mb-4">
+                    <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
+                        {{ $t('processHierarchy.processManagement') }}
+                    </div>
+                    <v-col class="pa-0">
+                        <v-list-item
+                            v-for="item in processItem"
+                            :key="item.title"
+                            :to="item.to"
+                            :disabled="item.disable"
+                            density="compact"
+                            class="leftPadding sidebar-list-hover-bg"
+                            :class="{ 'sidebar-list-hover-bg--active': isProcessItemActive(item) }"
+                        >
+                            <template v-slot:prepend>
+                                <Icons :icon="item.icon" :size="20" class="mr-2" />
+                            </template>
+                            <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+                        </v-list-item>
+                    </v-col>
+                </div> -->
 
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
                 <v-col class="pa-0">
@@ -320,6 +321,7 @@
                         </template>
                     </v-list-item>
                 </v-col>
+                <!-- 정의 목록 -->
                 <v-col class="pa-0">
                     <ExpandableList
                         v-if="definitionList && definitionList.children"
@@ -497,6 +499,10 @@ export default {
     },
     methods: {
         isAnalyticsItemActive(item) {
+            if (!item || !item.to) return false;
+            return this.$route?.path === item.to;
+        },
+        isProcessItemActive(item) {
             if (!item || !item.to) return false;
             return this.$route?.path === item.to;
         },

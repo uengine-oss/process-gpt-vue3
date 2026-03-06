@@ -502,7 +502,7 @@ export default {
             if (!agentId || !this.backend?.watchData || !this.backend?.getAgentKnowledgeSetupLog) return;
             try {
                 const log = await this.backend.getAgentKnowledgeSetupLog(agentId);
-                if (log && (log.status === 'DONE' || log.status === 'FAILED')) return;
+                if (!log || log.status === 'DONE' || log.status === 'FAILED') return;
                 this.isKnowledgeSetupInProgress = true;
                 const channel = `agent-knowledge-setup-${agentId}-${Date.now()}`;
                 this.knowledgeSetupChannel = await this.backend.watchData(

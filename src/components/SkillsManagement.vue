@@ -20,7 +20,7 @@
                         </v-btn-toggle>
                         <v-menu location="bottom end" :disabled="isUploading">
                             <template v-slot:activator="{ props }">
-                                <v-btn v-bind="props" color="primary" variant="flat" size="small" :loading="isUploading">
+                                <v-btn v-bind="props" color="primary" rounded variant="flat" size="small" :loading="isUploading">
                                     <v-icon start>mdi-plus</v-icon>
                                     {{ $t('SkillsManagement.addSkill') }}
                                 </v-btn>
@@ -97,22 +97,40 @@
                                                     : $t('SkillsManagement.uploadedEmpty')
                                             }}
                                         </p>
-                                        <div v-if="builtinSkillList.length === 0" class="empty-actions">
-                                            <v-card variant="outlined" class="empty-action-card" rounded="lg" @click="openZipUpload">
-                                                <v-icon size="32" color="primary">mdi-folder-zip-outline</v-icon>
-                                                <span class="empty-action-label">{{ $t('SkillsManagement.addFromZip') }}</span>
-                                                <span class="text-caption text-medium-emphasis">{{
-                                                    $t('SkillsManagement.addFromZipHint')
-                                                }}</span>
-                                            </v-card>
-                                            <v-card variant="outlined" class="empty-action-card" rounded="lg" @click="openRepoDialog">
-                                                <v-icon size="32" color="primary">mdi-github</v-icon>
-                                                <span class="empty-action-label">{{ $t('SkillsManagement.addFromRepo') }}</span>
-                                                <span class="text-caption text-medium-emphasis">{{
-                                                    $t('SkillsManagement.addFromRepoHint')
-                                                }}</span>
-                                            </v-card>
-                                        </div>
+                                        <v-row v-if="builtinSkillList.length === 0" class="empty-actions-row ma-0" justify="center">
+                                            <v-col cols="12" sm="6">
+                                                <v-card variant="outlined" class="empty-action-card" rounded="lg" @click="openZipUpload">
+                                                    <div class="empty-action-inner">
+                                                        <div class="empty-action-icon-wrap">
+                                                            <v-icon size="36" color="primary">mdi-folder-zip-outline</v-icon>
+                                                        </div>
+                                                        <span class="empty-action-label">{{ $t('SkillsManagement.addFromZip') }}</span>
+                                                        <span class="empty-action-hint">
+                                                            {{ $t('SkillsManagement.addFromZipHint') }}
+                                                        </span>
+                                                        <v-icon size="20" color="primary" class="empty-action-arrow">
+                                                            mdi-arrow-right
+                                                        </v-icon>
+                                                    </div>
+                                                </v-card>
+                                            </v-col>
+                                            <v-col cols="12" sm="6">
+                                                <v-card variant="outlined" class="empty-action-card" rounded="lg" @click="openRepoDialog">
+                                                    <div class="empty-action-inner">
+                                                        <div class="empty-action-icon-wrap">
+                                                            <v-icon size="36" color="primary">mdi-github</v-icon>
+                                                        </div>
+                                                        <span class="empty-action-label">{{ $t('SkillsManagement.addFromRepo') }}</span>
+                                                        <span class="empty-action-hint">
+                                                            {{ $t('SkillsManagement.addFromRepoHint') }}
+                                                        </span>
+                                                        <v-icon size="20" color="primary" class="empty-action-arrow">
+                                                            mdi-arrow-right
+                                                        </v-icon>
+                                                    </div>
+                                                </v-card>
+                                            </v-col>
+                                        </v-row>
                                     </div>
                                     <template v-else>
                                         <div v-if="viewMode === 'table'" class="table-wrap w-100">
@@ -208,8 +226,7 @@
                                             </v-data-table>
                                         </div>
                                         <v-row v-else-if="viewMode === 'card'" class="skill-card-list ma-0 pa-0">
-                                            <v-col
-                                                v-for="skill in uploadedCardRowsPaginated"
+                                            <v-col v-for="skill in uploadedCardRowsPaginated"
                                                 :key="'uploaded-' + skill.name"
                                                 cols="12"
                                                 sm="6"
@@ -586,6 +603,9 @@ export default {
         this.backend = BackendFactory.createBackend();
     },
     mounted() {
+        if (window.innerWidth <= 1279) {
+            this.viewMode = 'card';
+        }
         this.refreshAll();
     },
     methods: {
@@ -893,36 +913,71 @@ export default {
     margin-right: auto;
 }
 
-.empty-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    justify-content: center;
+.empty-actions-row {
+    max-width: 960px;
+    margin-left: auto !important;
+    margin-right: auto !important;
 }
 
 .empty-action-card {
-    padding: 24px;
-    min-width: 200px;
-    max-width: 240px;
     cursor: pointer;
-    transition: background-color 0.2s, box-shadow 0.2s;
+    transition: all 0.3s ease;
+    height: 100%;
 }
 
 .empty-action-card:hover {
-    background: rgba(var(--v-theme-primary), 0.04);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1) !important;
+    border-color: rgba(var(--v-theme-primary), 0.4) !important;
 }
 
-.empty-action-card .v-icon {
-    display: block;
-    margin-bottom: 8px;
+.empty-action-inner {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+}
+
+.empty-action-icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(var(--v-theme-primary), 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    transition: background 0.3s ease;
+}
+
+.empty-action-card:hover .empty-action-icon-wrap {
+    background: rgba(var(--v-theme-primary), 0.14);
 }
 
 .empty-action-label {
     display: block;
     font-weight: 600;
-    font-size: 0.9375rem;
-    margin-bottom: 4px;
+    font-size: 1rem;
+    margin-bottom: 6px;
+}
+
+.empty-action-hint {
+    font-size: 0.8125rem;
+    color: rgba(var(--v-theme-on-surface), 0.55);
+    margin-bottom: 12px;
+}
+
+.empty-action-arrow {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.empty-action-card:hover .empty-action-arrow {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 /* 테이블 */
@@ -1015,8 +1070,9 @@ export default {
 }
 
 .skill-management-table :deep(td) {
-    padding: 14px 16px;
+    padding: 20px 16px !important;
     vertical-align: middle;
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 }
 
 .td-name {
