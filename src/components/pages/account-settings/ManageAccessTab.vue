@@ -56,8 +56,26 @@
                             </div>
                         </div>
                         <div class="d-flex align-center">
+                            <v-chip
+                                v-if="isCurrentUser(item)"
+                                size="x-small"
+                                variant="outlined"
+                                color="secondary"
+                                class="mr-2"
+                            >
+                                me
+                            </v-chip>
+                            <v-chip
+                                v-if="isSuperAdminUser(item)"
+                                size="x-small"
+                                variant="outlined"
+                                color="primary"
+                                class="mr-2"
+                            >
+                                superAdmin
+                            </v-chip>
                             <v-chip 
-                                v-if="editable"
+                                v-if="canEditUserRole(item)"
                                 variant="elevated"
                                 :color="item.is_admin ? 'primary' : 'gray'"
                                 class="chip-select-wrapper"
@@ -80,7 +98,7 @@
                                 </v-select>
                             </v-chip>
                             <v-btn 
-                                v-if="isAdmin"
+                                v-if="canDeleteUser(item)"
                                 @click="openDeleteDialog(item)" 
                                 icon
                                 variant="text"
@@ -215,6 +233,9 @@ export default {
         organizationChart: null,
     }),
     computed: {
+        currentUserId() {
+            return localStorage.getItem('uid');
+        },
         isAdmin() {
             const isAdmin = localStorage.getItem('isAdmin') == 'true';
             return isAdmin;
@@ -247,6 +268,22 @@ export default {
         this.getOrganizationChart();
     },
     methods: {
+        isCurrentUser(user) {
+            return user?.id === this.currentUserId;
+        },
+        isSuperAdminUser(user) {
+            return user?.role === 'superAdmin';
+        },
+        canEditUserRole(user) {
+            const isTargetSelf = this.isCurrentUser(user);
+            const isTargetSuperAdmin = this.isSuperAdminUser(user);
+            return this.editable && !isTargetSelf && !isTargetSuperAdmin;
+        },
+        canDeleteUser(user) {
+            const isTargetSelf = this.isCurrentUser(user);
+            const isTargetSuperAdmin = this.isSuperAdminUser(user);
+            return this.isAdmin && !isTargetSelf && !isTargetSuperAdmin;
+        },
         handleSearch() {
             this.searchQuery = this.searchInput;
         },
@@ -310,7 +347,8 @@ export default {
                     profile: user.profile,
                     name: user.username,
                     email: user.email,
-                    is_admin: user.is_admin
+                    is_admin: user.is_admin,
+                    role: user.role
                 };
             });
             

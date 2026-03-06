@@ -218,7 +218,7 @@
                                 style="overflow: auto;"
                                 :style="!isMobile ? 'height: calc(100vh - 205px);' : ''"
                             >
-                                <ManageAccessTab :editable="superAdmin" />
+                                <ManageAccessTab :editable="admin" />
                             </div>
                         </v-window-item>
                         
