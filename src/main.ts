@@ -159,9 +159,11 @@ declare global {
         $isTenantServer: boolean;
         $tenantName: string;
         _env_: any;
-        $themeColor: any; // 테마 색상을 위한 전역 변수 추가
-        $globalIsMobile: boolean; // 모바일 체크를 위한 전역 변수 추가
+        $themeColor: any;
+        $globalIsMobile: boolean;
         $app_?: any;
+        $i18n?: any;
+        $user?: any;
     }
 }
 
