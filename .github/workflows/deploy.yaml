@@ -29,6 +29,11 @@ jobs:
         filePath: "_manifest/spdx_2.2/"
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout code
@@ -90,15 +95,33 @@ jobs:
           sha256sum process-gpt-dist-${{ github.sha }}.tar.gz > SHA256SUMS
           cat SHA256SUMS
 
-      # Optional cryptographic signature for hash manifest.
-      # Requires: GPG_PRIVATE_KEY, GPG_PASSPHRASE secrets.
+      # ── 빌드 아티팩트 코드서명 (cosign sign-blob, keyless OIDC) ──
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign build artifact with cosign
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          cosign sign-blob --yes \
+            --output-signature process-gpt-dist-${{ github.sha }}.tar.gz.sig \
+            --output-certificate process-gpt-dist-${{ github.sha }}.tar.gz.cert \
+            process-gpt-dist-${{ github.sha }}.tar.gz
+
+      # ── SLSA Build Provenance 증명 (GitHub Attestation) ──
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: process-gpt-dist-${{ github.sha }}.tar.gz
+
+      # Optional GPG signature (if GPG key configured).
       - name: Optional GPG sign SHA256SUMS
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           if [ -z "${GPG_PRIVATE_KEY}" ]; then
-            echo "GPG_PRIVATE_KEY is not set. Skip signing."
+            echo "GPG_PRIVATE_KEY is not set. Skip GPG signing."
             exit 0
           fi
           echo "${GPG_PRIVATE_KEY}" | gpg --batch --import
@@ -111,6 +134,8 @@ jobs:
           name: process-gpt-dist-${{ github.sha }}
           path: |
             process-gpt-dist-${{ github.sha }}.tar.gz
+            process-gpt-dist-${{ github.sha }}.tar.gz.sig
+            process-gpt-dist-${{ github.sha }}.tar.gz.cert
             SHA256SUMS
             SHA256SUMS.asc
           if-no-files-found: error
@@ -138,6 +163,19 @@ jobs:
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
           echo "IMAGE_NAME_LATEST=$IMAGE_NAME_LATEST" >> $GITHUB_ENV
+
+      # ── Docker 이미지 서명 (cosign keyless - Sigstore OIDC) ──
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign Docker image with cosign
+        env:
+          COSIGN_EXPERIMENTAL: "true"
+        run: |
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' $IMAGE_NAME 2>/dev/null || \
+                   docker inspect --format='{{.Id}}' $IMAGE_NAME)
+          cosign sign --yes "$DIGEST"
+          echo "SIGNED_DIGEST=$DIGEST" >> $GITHUB_ENV
 
       - name: Checkout GitOps repository
         if: github.ref_name == 'main'
@@ -184,7 +222,8 @@ jobs:
           echo "| **Image (latest)** | \`${{ env.IMAGE_NAME_LATEST }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Tag** | \`${{ env.IMAGE_TAG }}\` / \`latest\` |" >> $GITHUB_STEP_SUMMARY
           echo "| **Commit** | [\`${{ github.sha }}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) |" >> $GITHUB_STEP_SUMMARY
-          
+          echo "| **Cosign Signed** | \`${{ env.SIGNED_DIGEST }}\` |" >> $GITHUB_STEP_SUMMARY
+
           if [ "${{ github.ref_name }}" == "main" ]; then
             echo "| **GitOps Repo** | [process-gpt-k8s](https://github.com/uengine-oss/process-gpt-k8s) |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
