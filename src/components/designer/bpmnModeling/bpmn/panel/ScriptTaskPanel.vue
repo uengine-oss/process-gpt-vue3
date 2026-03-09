@@ -39,7 +39,7 @@
             style="padding-bottom:20px;"
             :title="$t('ScriptTaskPanel.returnTitle')"
         />
-        <div class="mt-3" v-if="mode == 'ProcessGPT'">
+        <div class="mt-3" v-if="mode == 'ProcessGPT' && !isGsMode">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
@@ -156,6 +156,9 @@ export default {
         me.initialize();
     },
     computed: {
+        isGsMode() {
+            return !!window.$gs;
+        },
         // inputData() {
         //     let params = this.copyUengineProperties.parameters;
         //     let result = [];

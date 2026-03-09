@@ -95,6 +95,10 @@ export default {
             type: Boolean,
             default: true
         },
+        limitNonAgentToSingle: {
+            type: Boolean,
+            default: true
+        },
         onlyAgent: {
             type: Boolean,
             default: false
@@ -231,13 +235,15 @@ export default {
 
                 // isAgent가 false인 유저: 1개만 선택 가능
                 if (!userData.isAgent) {
-                    // 기존 일반 유저 제거하고 현재 것만 유지
-                    const existingIndex = result.findIndex(r => {
-                        const rData = getUserData(r);
-                        return rData && !rData.isAgent;
-                    });
-                    if (existingIndex >= 0) {
-                        result.splice(existingIndex, 1);
+                    // 필요 시 일반 사용자 1명만 허용 (기본값)
+                    if (this.limitNonAgentToSingle) {
+                        const existingIndex = result.findIndex(r => {
+                            const rData = getUserData(r);
+                            return rData && !rData.isAgent;
+                        });
+                        if (existingIndex >= 0) {
+                            result.splice(existingIndex, 1);
+                        }
                     }
                     result.push(user);
                 }

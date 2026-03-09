@@ -70,7 +70,8 @@
                         :name="$t('LanePanel.userID')"
                         :item-value="'id'"
                         :hide-details="true"
-                        :use-agent="true"
+                        :use-agent="false"
+                        :use-multiple="true"
                         class="mt-4"
                     ></user-select-field>
                 </div>
@@ -138,6 +139,7 @@ export default {
             role: null,
             roleOptions: [
                 { value: 'None', label: 'LanePanel.none' },
+                { value: 'org.uengine.kernel.DirectRoleResolutionContext', label: 'LanePanel.UserRole' },
                 { value: 'Organization', label: 'LanePanel.organization' },
             ],
             radioDescription: [
@@ -196,7 +198,7 @@ export default {
                 this.isDirectUser = true;
                 if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.DirectRoleResolutionContext';
-                if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = ''
+                if(!this.copyUengineProperties.roleResolutionContext.endpoint) this.copyUengineProperties.roleResolutionContext.endpoint = []
             } else if (after == 'None') {
                 if (this.copyUengineProperties.roleResolutionContext) {
                     delete this.copyUengineProperties.roleResolutionContext;
@@ -234,12 +236,41 @@ export default {
         },
     },
     methods: {
+        extractTeamsFromOrgChart(node) {
+            const teams = [];
+            const traverse = (n) => {
+                if (!n || typeof n !== 'object') return;
+
+                if (n.data?.isTeam) {
+                    teams.push({
+                        id: n.id || n.data?.id || n.data?.name,
+                        name: n.data?.name || n.name || n.id
+                    });
+                }
+
+                if (Array.isArray(n.children)) {
+                    n.children.forEach(child => traverse(child));
+                }
+            };
+
+            traverse(node);
+            return teams.filter(team => team.id && team.name);
+        },
         initialize() {
             if (!this.copyUengineProperties.roleResolutionContext) {
                 this.type = 'None';
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
                 this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
-                this.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint
+                const rawEndpoint = this.copyUengineProperties.roleResolutionContext.endpoint;
+                if (Array.isArray(rawEndpoint)) {
+                    this.copyUengineProperties.roleResolutionContext.endpoint = rawEndpoint;
+                } else if (typeof rawEndpoint === 'string' && rawEndpoint.trim().length > 0) {
+                    this.copyUengineProperties.roleResolutionContext.endpoint = rawEndpoint.includes(',')
+                        ? rawEndpoint.split(',').map(item => item.trim()).filter(Boolean)
+                        : [rawEndpoint.trim()];
+                } else {
+                    this.copyUengineProperties.roleResolutionContext.endpoint = [];
+                }
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 this.type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
                 this.scope = this.copyUengineProperties.roleResolutionContext.scope
@@ -285,7 +316,7 @@ export default {
                     .select('value')
                     .eq('key', 'organization')
                     .eq('tenant_id', tenantId)
-                    .single();
+                    .maybeSingle();
 
                 if (!orgError && orgData?.value) {
                     const orgValue = typeof orgData.value === 'string' ? JSON.parse(orgData.value) : orgData.value;

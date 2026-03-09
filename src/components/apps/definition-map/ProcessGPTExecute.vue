@@ -44,6 +44,7 @@
                                 :hide-details="true"
                                 :use-agent="true"
                                 :use-multiple="true"
+                                :limit-non-agent-to-single="false"
                             ></user-select-field>
                         </div>
                     </div>
@@ -216,6 +217,19 @@ export default {
         }
     },
     methods: {
+        normalizeEndpointList(value) {
+            if (Array.isArray(value)) {
+                return value.map(v => String(v || '').trim()).filter(Boolean);
+            }
+            if (typeof value === 'string') {
+                const trimmed = value.trim();
+                if (!trimmed) return [];
+                return trimmed.includes(',')
+                    ? trimmed.split(',').map(v => v.trim()).filter(Boolean)
+                    : [trimmed];
+            }
+            return [];
+        },
         findStartActivity() {
             const startSequence = this.processDefinition.sequences.find(sequence => sequence.source === 'start_event');
             if (startSequence) {
@@ -298,47 +312,37 @@ export default {
                     me.renderKey++;
                 }
 
-                function isUUID(uuid) {
-                    const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-                    return regex.test(uuid);
-                }
                 const roles = me.processDefinition.roles;
-                let hasDefaultRole = false;
                 me.roleMappings = roles.map((role) => {
-                    let disabled = "false";
+                    let roleEndpoint = me.normalizeEndpointList(role.endpoint);
+                    const roleDefault = me.normalizeEndpointList(role.default);
+
                     if (role.name == startActivity.role) {
                         const uid = localStorage.getItem('uid');
-                        role.endpoint = uid;
-                        disabled = "true";
-                    } else if(role.default && role.default.length > 0) {
-                        hasDefaultRole = true;
-                        if (Array.isArray(role.default)) {
-                            role.default = role.default.filter((item) => isUUID(item));
-                        } else {
-                            role.default = isUUID(role.default) ? role.default : "";
-                        }
-                    } else {
-                        hasDefaultRole = false;
-                        role.endpoint = isUUID(role.endpoint) ? role.endpoint : "";
+                        roleEndpoint = uid ? [uid] : [];
                     }
+
                     return {
                         name: role.name,
-                        endpoint: hasDefaultRole ? role.default : role.endpoint,
+                        endpoint: roleDefault.length > 0 ? roleDefault : roleEndpoint,
                         resolutionRule: role.resolutionRule,
-                        default: hasDefaultRole ? role.default : '',
-                        // disabled: disabled
+                        default: roleDefault
                     };
                 });
 
 
-                if (!hasDefaultRole) {
+                const hasAnyDefaultRole = me.roleMappings.some(role =>
+                    Array.isArray(role.default) ? role.default.length > 0 : !!role.default
+                );
+
+                if (!hasAnyDefaultRole) {
                     const roleBindings = await backend.bindRole(me.processDefinition.roles, me.processDefinition.id);
                     if (roleBindings && roleBindings.length > 0) {
                         roleBindings.forEach((roleBinding) => {
                             let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
-                            if(role && role.endpoint == '') {
-                                role['endpoint'] = roleBinding.userId;
-                                role['default'] = roleBinding.userId;
+                            if(role && me.normalizeEndpointList(role.endpoint).length === 0) {
+                                role['endpoint'] = roleBinding.userId ? [roleBinding.userId] : [];
+                                role['default'] = roleBinding.userId ? [roleBinding.userId] : [];
                             }
                         })
                     }
@@ -444,11 +448,17 @@ export default {
                     answer = value.user_input_text;
                 }
 
+                const normalizedRoleMappings = (me.roleMappings || []).map(role => ({
+                    ...role,
+                    endpoint: me.normalizeEndpointList(role.endpoint),
+                    default: me.normalizeEndpointList(role.default)
+                }));
+
                 let input = {
                     process_instance_id: me.instId,
                     process_definition_id: me.definitionId,
                     activity_id: me.workItem.activity.tracingTag,
-                    role_mappings: me.roleMappings,
+                    role_mappings: normalizedRoleMappings,
                     answer: answer,
                     form_values: value || {},
                     // todolist / 엔진 쪽에서 사용할 버전 정보 전달
@@ -462,7 +472,7 @@ export default {
                     input.source_list = me.$refs.instanceSourceRef.sourceList;
                 }
 
-                me.roleMappings.forEach(role => {
+                normalizedRoleMappings.forEach(role => {
                     if (me.workItem.worklist.role === role.name && role.endpoint) {
                         me.workItem.worklist.endpoint = role.endpoint;
                     }

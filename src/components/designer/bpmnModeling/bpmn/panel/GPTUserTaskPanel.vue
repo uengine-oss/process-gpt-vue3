@@ -61,6 +61,7 @@
                 
                 <!-- Custom Properties (Key-Value) -->
                 <KeyValueField
+                    v-if="!isGsMode"
                     v-model="activity.customProperties"
                     :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
                     :readonly="isViewMode"
@@ -226,6 +227,9 @@ export default {
         await me.loadMentionCandidates();
     },
     computed: {
+        isGsMode() {
+            return !!window.$gs;
+        },
         lastPath() {
             if (this.$route.path == '/definition-map') {
                 return 'definition-map';

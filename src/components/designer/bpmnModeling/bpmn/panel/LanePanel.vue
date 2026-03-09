@@ -57,6 +57,7 @@
                         :items="candidateUsers"
                         :item-title="item => item.title"
                         :item-value="item => item.value"
+                        multiple
                         chips
                         closable-chips
                         variant="outlined"
@@ -289,7 +290,16 @@ export default {
 
             if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.DirectRoleResolutionContext') {
                 this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
-                this.userRoleContext.endpoint = this.copyUengineProperties.roleResolutionContext.endpoint || null;
+                const rawEndpoint = this.copyUengineProperties.roleResolutionContext.endpoint;
+                if (Array.isArray(rawEndpoint)) {
+                    this.userRoleContext.endpoint = rawEndpoint;
+                } else if (typeof rawEndpoint === 'string' && rawEndpoint.trim().length > 0) {
+                    this.userRoleContext.endpoint = rawEndpoint.includes(',')
+                        ? rawEndpoint.split(',').map(item => item.trim()).filter(Boolean)
+                        : [rawEndpoint.trim()];
+                } else {
+                    this.userRoleContext.endpoint = [];
+                }
                 this.dispatchingOption = 7;
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.GroupRoleResolutionContext') {
                 this.type = 'org.uengine.five.overriding.GroupRoleResolutionContext';
@@ -306,7 +316,7 @@ export default {
         },
         handleUserSelectionChange(newValue) {
             // 사용자 선택 변경 시 반응성 보장 (Vue 3에서는 직접 할당)
-            this.userRoleContext.endpoint = newValue || null;
+            this.userRoleContext.endpoint = newValue || [];
             this.updateRoleResolutionContext();
         },
         

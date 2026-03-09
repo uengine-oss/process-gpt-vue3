@@ -2982,6 +2982,10 @@ class ProcessGPTBackend implements Backend {
     async getAgentList() {
         try {
             const list = await storage.list('users', { match: { is_agent: true, tenant_id: window.$tenantName } });
+            if (window.$gs) {
+                return list;
+            }
+
             const defaultSetting = useDefaultSetting();
             const defaultAgents = defaultSetting.getAgentList;
             return [...defaultAgents, ...list];

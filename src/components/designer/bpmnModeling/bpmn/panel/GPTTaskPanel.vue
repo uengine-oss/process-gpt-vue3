@@ -19,6 +19,7 @@
             
             <!-- Custom Properties -->
             <KeyValueField
+                v-if="!isGsMode"
                 v-model="activity.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
                 :readonly="isViewMode"
@@ -118,6 +119,11 @@ export default {
                 { name: 'Light Gray', value: '#f5f5f5' },
                 { name: 'White', value: '#ffffff' }
             ]
+        }
+    },
+    computed: {
+        isGsMode() {
+            return !!window.$gs;
         }
     },
     async mounted() {

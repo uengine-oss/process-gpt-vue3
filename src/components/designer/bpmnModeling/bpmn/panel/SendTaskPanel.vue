@@ -121,7 +121,7 @@
                 </v-row>
             </div>
         </div>
-        <div class="mt-3">
+        <div v-if="!isGsMode" class="mt-3">
             <KeyValueField
                 v-model="copyUengineProperties.customProperties"
                 :label="$t('BpmnPropertyPanel.customProperties') || '사용자 속성'"
@@ -271,7 +271,11 @@ export default {
             this.selectedActivity = 'rest_api';
         }
     },
-    computed: {},
+    computed: {
+        isGsMode() {
+            return !!window.$gs;
+        }
+    },
     watch: {
         'sendType'(newType) {
             if (newType === 'email') {
