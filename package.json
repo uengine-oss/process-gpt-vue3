@@ -23,7 +23,7 @@
         "sast:vue:typecheck:report": "mkdir -p .cache reports && vue-tsc --noEmit --incremental --tsBuildInfoFile .cache/vue-tsc.sast.tsbuildinfo > reports/typecheck.txt 2>&1",
         "sast:vue:semgrep": "node scripts/sast-vue-semgrep.mjs",
         "sast:vue": "npm run sast:vue:lint && npm run sast:vue:typecheck && npm run sast:vue:semgrep",
-        "sast:vue:report": "mkdir -p reports && npm run sast:vue:semgrep && npm run sast:vue:lint:report && npm run sast:vue:typecheck:report",
+        "sast:vue:report": "node scripts/sast-vue-report.mjs",
         "license:check": "npx --yes license-checker --production --summary"
     },
     "bin": "server.js",
@@ -129,6 +129,7 @@
         "pinia": "2.0.11",
         "pptxgenjs": "^4.0.0",
         "prismjs": "^1.29.0",
+        "quill": "^2.0.3",
         "remixicon": "2.5.0",
         "reveal.js": "^5.2.1",
         "sass": "^1.54.9",
@@ -252,9 +253,9 @@
         "postcss": "8",
         "stylelint-order": "5",
         "postcss-sorting": "^7.0.1",
-        "quill": "^2.0.2"
+        "quill": "^2.0.3"
     },
     "overrides": {
-        "quill": "^2.0.2"
+        "quill": "^2.0.3"
     }
 }
