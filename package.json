@@ -23,7 +23,7 @@
         "sast:vue:typecheck:report": "mkdir -p .cache reports && vue-tsc --noEmit --incremental --tsBuildInfoFile .cache/vue-tsc.sast.tsbuildinfo > reports/typecheck.txt 2>&1",
         "sast:vue:semgrep": "node scripts/sast-vue-semgrep.mjs",
         "sast:vue": "npm run sast:vue:lint && npm run sast:vue:typecheck && npm run sast:vue:semgrep",
-        "sast:vue:report": "mkdir -p reports && npm run sast:vue:semgrep && npm run sast:vue:lint:report && npm run sast:vue:typecheck:report",
+        "sast:vue:report": "mkdir -p reports && npm run sast:vue:semgrep; npm run sast:vue:lint:report; npm run sast:vue:typecheck:report",
         "license:check": "npx --yes license-checker --production --summary"
     },
     "bin": "server.js",
