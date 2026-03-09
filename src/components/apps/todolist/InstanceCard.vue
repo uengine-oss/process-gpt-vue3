@@ -732,15 +732,20 @@ export default {
         },
         getFormattedStartDate() {
             if (!this.firstWorkItem) {
-                return; // 로딩 중 - undefined 반환
+                return;
             }
             if (this.firstWorkItem.startDate) {
-                const date = new Date(this.firstWorkItem.startDate);
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const hours = String(date.getHours()).padStart(2, '0');
-                const minutes = String(date.getMinutes()).padStart(2, '0');
+                let dateStr = this.firstWorkItem.startDate;
+                if (typeof dateStr === 'string' && !dateStr.endsWith('Z') && !dateStr.includes('+')) {
+                    dateStr += 'Z';
+                }
+                const date = new Date(dateStr);
+                const kst = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+                const year = kst.getFullYear();
+                const month = String(kst.getMonth() + 1).padStart(2, '0');
+                const day = String(kst.getDate()).padStart(2, '0');
+                const hours = String(kst.getHours()).padStart(2, '0');
+                const minutes = String(kst.getMinutes()).padStart(2, '0');
                 return `${year}.${month}.${day} / ${hours}:${minutes}`;
             }
         }

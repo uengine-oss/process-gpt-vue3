@@ -1067,6 +1067,7 @@
     },
     "progressBadge": {
         "draft": "In Progress",
+        "processEditing": "Editing",
         "review": "Under Review",
         "published": "Completed",
         "public_review": "Public Review",
@@ -3005,7 +3006,8 @@
         "skipped": "Skipped"
     },
     "SubProcess": {
-        "execute": "Execute"
+        "execute": "Execute",
+        "lockedWarning": "This process is currently being edited by {name}."
     },
     "ProcessInstanceChat": {
         "subprocessCreating": "Subprocess creating...",

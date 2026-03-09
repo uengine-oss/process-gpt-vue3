@@ -1,67 +1,65 @@
 <template>
-    <div class="align-center pa-2 cursor-pointer sub-process-hover sub-process-style pr-3 pl-3">
-        <h6 v-if="!processDialogStatus || processType === 'add'" class="text-subtitle-2 font-weight-semibold">
-            <v-row class="ma-0 pa-0 align-center">
-                <ProcessTooltip
-                    :processInfo="processTooltipInfo"
-                    :loading="loadingTooltip"
-                    :disabled="!showTooltip"
-                    location="right"
-                    @mouseenter.native="loadProcessInfo"
-                >
-                    <template #default="tooltipProps">
-                        <div
-                            v-bind="tooltipProps"
-                            @click="handleClick"
-                            @dblclick.stop="handleDoubleClick"
-                            @mouseenter="loadProcessInfo"
-                            class="ma-0 pa-0 d-flex align-center"
-                            style="flex: 1; min-width: 0; gap: 4px"
-                        >
-                            <div>{{ value.name }}</div>
-
-                            <!-- New 뱃지 -->
-                            <v-chip v-if="isNew(value.id) && !enableEdit" color="primary" variant="outlined" size="x-small">New</v-chip>
-                        </div>
-                    </template>
-                </ProcessTooltip>
-
-                <!-- 진척률/상태 뱃지 - 항상 표시 -->
+    <div
+        class="align-center pa-2 sub-process-style pr-3 pl-3"
+        :class="isProcessLocked() ? 'sub-process-disabled' : 'cursor-pointer sub-process-hover'"
+    >
+        <div v-if="!processDialogStatus || processType === 'add'">
+            <ProcessTooltip
+                :processInfo="processTooltipInfo"
+                :loading="loadingTooltip"
+                :disabled="!showTooltip"
+                location="right"
+                @mouseenter.native="loadProcessInfo"
+            >
+                <template #default="tooltipProps">
+                    <h6
+                        v-bind="tooltipProps"
+                        @click="handleClick"
+                        @dblclick.stop="handleDoubleClick"
+                        @mouseenter="loadProcessInfo"
+                        class="text-subtitle-2 font-weight-semibold ma-0 pa-0"
+                        :class="{ 'text-disabled': isProcessLocked() }"
+                    >
+                        {{ value.name }}
+                    </h6>
+                </template>
+            </ProcessTooltip>
+            <div class="d-flex align-center mt-1" style="gap: 4px">
                 <ProgressBadge
-                    v-if="showStatusBadge && processStatus"
+                    v-if="showStatusBadge && processStatus === 'draft'"
                     type="status"
                     :status="processStatus"
+                    :customText="draftBadgeText"
                     size="x-small"
                     :showIcon="true"
                 />
                 <v-chip v-if="isNew(value.id) && !enableEdit" color="primary" variant="outlined" size="x-small">New</v-chip>
-                <div class="ml-auto add-sub-process" style="flex-shrink: 0">
-                    <v-btn
-                        v-if="isExecutionByProject"
-                        variant="elevated"
-                        color="primary"
-                        size="x-small"
-                        @click="clickPlayBtn()"
-                        class="rounded-pill"
-                    >
-                        {{ $t('SubProcess.execute') }}
-                    </v-btn>
-                    <ProcessMenu
-                        :size="16"
-                        :type="type"
-                        :process="value"
-                        :enableEdit="enableEdit"
-                        @delete="deleteProcess"
-                        @editProcessdialog="editProcessdialog"
-                        @modeling="editProcessModel"
-                        @setPermission="openPermissionDialog(value)"
-                        @duplicate="duplicateProcess"
-                        @setOwner="openOwnerDialog"
-                        @openSubprocessSettings="openSubprocessSettingsDialog"
-                    />
-                </div>
-            </v-row>
-        </h6>
+                <v-spacer />
+                <v-btn
+                    v-if="isExecutionByProject"
+                    variant="elevated"
+                    color="primary"
+                    size="x-small"
+                    @click="clickPlayBtn()"
+                    class="rounded-pill"
+                >
+                    {{ $t('SubProcess.execute') }}
+                </v-btn>
+                <ProcessMenu
+                    :size="16"
+                    :type="type"
+                    :process="value"
+                    :enableEdit="enableEdit"
+                    @delete="deleteProcess"
+                    @editProcessdialog="editProcessdialog"
+                    @modeling="editProcessModel"
+                    @setPermission="openPermissionDialog(value)"
+                    @duplicate="duplicateProcess"
+                    @setOwner="openOwnerDialog"
+                    @openSubprocessSettings="openSubprocessSettingsDialog"
+                />
+            </div>
+        </div>
         <ProcessDialog
             v-else-if="processDialogStatus && enableEdit && processType === 'update'"
             :enableEdit="enableEdit"
@@ -80,12 +78,12 @@
         <v-dialog v-model="subprocessSettingsDialog" max-width="400" persistent>
             <v-card>
                 <v-card-title class="text-subtitle-1">
-                    {{ $t('ProcessMenu.settings') || '설정' }}
+                    {{ $t('ProcessMenu.settings') }}
                 </v-card-title>
                 <v-card-text>
                     <v-switch
                         v-model="subprocessSettingsCommonModule"
-                        :label="$t('ProcessMenu.commonModule') || '공통 모듈'"
+                        :label="$t('ProcessMenu.commonModule')"
                         color="primary"
                         hide-details
                     />
@@ -93,10 +91,10 @@
                 <v-card-actions>
                     <v-spacer />
                     <v-btn variant="text" @click="subprocessSettingsDialog = false">
-                        {{ $t('common.cancel') || '취소' }}
+                        {{ $t('common.cancel') }}
                     </v-btn>
                     <v-btn color="primary" variant="flat" @click="saveSubprocessSettings">
-                        {{ $t('common.save') || '저장' }}
+                        {{ $t('common.save') }}
                     </v-btn>
                 </v-card-actions>
             </v-card>
@@ -158,11 +156,21 @@ export default {
             completionRate: 0
         },
         processStatus: null,
+        lockUserName: '',
         tooltipLoaded: false,
         // PAL 전용: 서브프로세스 설정 다이얼로그
         subprocessSettingsDialog: false,
         subprocessSettingsCommonModule: false
     }),
+    computed: {
+        draftBadgeText() {
+            if (this.processStatus === 'draft' && this.lockUserName) {
+                const label = this.$t('progressBadge.processEditing');
+                return `${label}(${this.lockUserName})`;
+            }
+            return '';
+        }
+    },
     async created() {
         this.checkedProcess = JSON.parse(localStorage.getItem('checkedProcess')) || [];
 
@@ -187,8 +195,18 @@ export default {
         isNew(id) {
             return !this.checkedProcess.includes(id);
         },
+        isProcessLocked() {
+            return this.processStatus === 'draft';
+        },
         handleClick() {
             if (this.isExecutionByProject) return;
+            if (this.isProcessLocked()) {
+                this.$try({
+                    action: async () => {},
+                    warningMsg: this.$t('SubProcess.lockedWarning', { name: this.lockUserName })
+                });
+                return;
+            }
 
             if (window.$mode == 'ProcessGPT') {
                 this.goProcess(this.value.id, 'sub');
@@ -202,6 +220,13 @@ export default {
         },
         handleDoubleClick() {
             if (this.isExecutionByProject) return;
+            if (this.isProcessLocked()) {
+                this.$try({
+                    action: async () => {},
+                    warningMsg: this.$t('SubProcess.lockedWarning', { name: this.lockUserName })
+                });
+                return;
+            }
             const path = this.value.id ?? this.value.path;
             if (!path) return;
             // PAL 모드 또는 uEngine 모드: 더블클릭 시 SubProcessDetail 화면으로 이동
@@ -311,19 +336,23 @@ export default {
         async loadProcessStatus() {
             try {
                 const supabase = window.$supabase;
-                if (!supabase) {
-                    this.processStatus = 'published';
-                    return;
+                if (!supabase) return;
+
+                const { data: lockData } = await supabase
+                    .from('lock')
+                    .select('id, user_id')
+                    .eq('id', this.value.id)
+                    .eq('tenant_id', window.$tenantName)
+                    .maybeSingle();
+
+                if (lockData) {
+                    this.processStatus = 'draft';
+                    if (lockData.user_id) {
+                        this.lockUserName = await this.resolveOwnerName(lockData.user_id);
+                    }
                 }
-
-                // lock 테이블에서 해당 프로세스가 잠겨있는지 확인
-                const { data: lockData } = await supabase.from('lock').select('id').eq('id', this.value.id).maybeSingle();
-
-                // lock이 있으면 작성중, 없으면 완료
-                this.processStatus = lockData ? 'draft' : 'published';
             } catch (error) {
                 console.error('프로세스 상태 로드 실패:', error);
-                this.processStatus = 'published';
             }
         },
         /**
@@ -343,12 +372,20 @@ export default {
                     const definition = procDef.definition;
                     const activities = definition?.activities || [];
 
-                    // lock 테이블에서 상태 확인 (작성중/완료)
-                    let status = 'published';
+                    let status = null;
+                    let lockUserId = '';
                     const supabase = window.$supabase;
                     if (supabase) {
-                        const { data: lockData } = await supabase.from('lock').select('id').eq('id', this.value.id).maybeSingle();
-                        status = lockData ? 'draft' : 'published';
+                        const { data: lockData } = await supabase
+                            .from('lock')
+                            .select('id, user_id')
+                            .eq('id', this.value.id)
+                            .eq('tenant_id', window.$tenantName)
+                            .maybeSingle();
+                        if (lockData) {
+                            status = 'draft';
+                            lockUserId = lockData.user_id || '';
+                        }
                     }
 
                     // owner ID를 이름으로 변환
@@ -369,16 +406,20 @@ export default {
                     };
 
                     this.processStatus = status;
+                    if (lockUserId) {
+                        this.lockUserName = await this.resolveOwnerName(lockUserId);
+                    } else {
+                        this.lockUserName = '';
+                    }
                     this.tooltipLoaded = true;
                 }
             } catch (error) {
                 console.error('프로세스 정보 로드 실패:', error);
-                // 기본 정보 설정
                 this.processTooltipInfo = {
                     id: this.value.id,
                     name: this.value.name,
                     owner: '',
-                    status: 'published',
+                    status: null,
                     updatedAt: null,
                     description: '',
                     taskCount: 0,
@@ -419,5 +460,9 @@ export default {
 }
 .sub-process-hover:hover {
     background-color: #e7ecf0 !important;
+}
+.sub-process-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 </style>
