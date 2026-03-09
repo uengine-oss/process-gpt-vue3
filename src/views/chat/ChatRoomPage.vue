@@ -2619,6 +2619,38 @@ export default {
             return lines.length > 0 ? lines.join('\n') : '(없음)';
         },
 
+        extractAssignedSkills(agentTarget) {
+            const raw = agentTarget?.skills ?? null;
+            if (!raw) return [];
+            if (Array.isArray(raw)) {
+                return raw.map((v) => String(v || '').trim()).filter(Boolean);
+            }
+            if (typeof raw === 'string') {
+                const s = raw.trim();
+                if (!s) return [];
+                if (s.startsWith('[')) {
+                    try {
+                        const parsed = JSON.parse(s);
+                        if (Array.isArray(parsed)) {
+                            return parsed.map((v) => String(v || '').trim()).filter(Boolean);
+                        }
+                    } catch (e) {
+                        // ignore parse error and fallback to comma split
+                    }
+                }
+                return s.split(',').map((v) => v.trim()).filter(Boolean);
+            }
+            if (typeof raw === 'object') {
+                try {
+                    const values = Object.values(raw || {});
+                    return values.map((v) => String(v || '').trim()).filter(Boolean);
+                } catch (e) {
+                    return [];
+                }
+            }
+            return [];
+        },
+
         addRoutingLoadingMessage() {
             try {
                 const uuid = this.uuid();
@@ -2999,6 +3031,18 @@ export default {
                 // 에이전트가 채팅방 맥락을 잡을 수 있도록 최근 대화 10개를 함께 전달
                 // (최근 대화 10개 + 벡터검색 결과 하이브리드 컨텍스트에 사용)
                 const room_recent_history = this.buildRecentHistoryForRouting(10);
+                const assignedSkills = this.extractAssignedSkills(agentTarget);
+                const agentProfileForRuntime = {
+                    id: agentId,
+                    username: agentTarget?.username || agentId,
+                    alias: agentTarget?.alias || '',
+                    role: agentTarget?.role || '',
+                    goal: agentTarget?.goal || '',
+                    persona: agentTarget?.persona || '',
+                    description: agentTarget?.description || '',
+                    tools: agentTarget?.tools || '',
+                    skills: assignedSkills,
+                };
 
                 const commonParams = {
                     message: messageForAgent,
@@ -3011,6 +3055,8 @@ export default {
                     metadata: {
                         ...(agentTarget?.__routingDecision ? { routing: agentTarget.__routingDecision } : {}),
                         room_recent_history,
+                        assigned_skills: assignedSkills,
+                        agent_profile: agentProfileForRuntime,
                     }
                 };
 

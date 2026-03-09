@@ -26,12 +26,16 @@
         
     },
     methods: {
+        getScrollContainerElement() {
+            const scrollRef = this.$refs?.scrollContainer;
+            if (!scrollRef) return null;
+            return scrollRef.$el || scrollRef;
+        },
         scrollToBottom() {
             setTimeout(() => {
-                if(this.$refs.scrollContainer) {
-                    const container = this.$refs.scrollContainer.$el;
-                    container.scrollTop = container.scrollHeight;
-                }
+                const container = this.getScrollContainerElement();
+                if (!container || typeof container.scrollHeight === 'undefined') return;
+                container.scrollTop = container.scrollHeight;
             }, 300);
             // this.$nextTick(() => {
             //     const container = this.$refs.scrollContainer.$el;
@@ -39,8 +43,8 @@
             // });
         },
         handleScroll() {
-            if(this.$refs.scrollContainer) {
-                const container = this.$refs.scrollContainer.$el;
+            const container = this.getScrollContainerElement();
+            if (container && typeof container.scrollHeight !== 'undefined') {
                 clearTimeout(this.scrollTimeout);
                 this.scrollTimeout = setTimeout(() => {
                     const scrollPosition = Math.round(container.scrollTop + container.clientHeight) + 1;
@@ -64,7 +68,7 @@
                             }
                         }
                     }
-                }, 200);    
+                }, 200);
             }
             
         },

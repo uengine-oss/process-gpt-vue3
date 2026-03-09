@@ -192,7 +192,7 @@ spring:
 
                 # VNC 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
                 - id: vnc-0-dev
-                  uri: http://vnc-0.dev.svc.cluster.local:6080
+                  uri: http://browser-server-0.dev.svc.cluster.local:6080
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/vnc/processgpt-browser-server-0/**
@@ -201,7 +201,7 @@ spring:
                   order: 50
 
                 - id: vnc-1-dev
-                  uri: http://vnc-1.dev.svc.cluster.local:6080
+                  uri: http://browser-server-1.dev.svc.cluster.local:6080
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/vnc/processgpt-browser-server-1/**
@@ -210,7 +210,7 @@ spring:
                   order: 51
 
                 - id: vnc-2-dev
-                  uri: http://vnc-2.dev.svc.cluster.local:6080
+                  uri: http://browser-server-2.dev.svc.cluster.local:6080
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/vnc/processgpt-browser-server-2/**
@@ -219,7 +219,7 @@ spring:
                   order: 52
 
                 - id: vnc-3-dev
-                  uri: http://vnc-3.dev.svc.cluster.local:6080
+                  uri: http://browser-server-3.dev.svc.cluster.local:6080
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/vnc/processgpt-browser-server-3/**
@@ -228,7 +228,7 @@ spring:
                   order: 53
 
                 - id: vnc-4-dev
-                  uri: http://vnc-4.dev.svc.cluster.local:6080
+                  uri: http://browser-server-4.dev.svc.cluster.local:6080
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/vnc/processgpt-browser-server-4/**
@@ -238,7 +238,7 @@ spring:
 
                 # VNC 라우팅 (Consumer ID 기반) - default 네임스페이스 (그 외 모든 호스트)
                 - id: vnc-0-default
-                  uri: http://vnc-0.default.svc.cluster.local:6080
+                  uri: http://browser-server-0.default.svc.cluster.local:6080
                   predicates:
                       - Path=/vnc/processgpt-browser-server-0/**
                   filters:
@@ -246,7 +246,7 @@ spring:
                   order: 55
 
                 - id: vnc-1-default
-                  uri: http://vnc-1.default.svc.cluster.local:6080
+                  uri: http://browser-server-1.default.svc.cluster.local:6080
                   predicates:
                       - Path=/vnc/processgpt-browser-server-1/**
                   filters:
@@ -254,7 +254,7 @@ spring:
                   order: 56
 
                 - id: vnc-2-default
-                  uri: http://vnc-2.default.svc.cluster.local:6080
+                  uri: http://browser-server-2.default.svc.cluster.local:6080
                   predicates:
                       - Path=/vnc/processgpt-browser-server-2/**
                   filters:
@@ -262,7 +262,7 @@ spring:
                   order: 57
 
                 - id: vnc-3-default
-                  uri: http://vnc-3.default.svc.cluster.local:6080
+                  uri: http://browser-server-3.default.svc.cluster.local:6080
                   predicates:
                       - Path=/vnc/processgpt-browser-server-3/**
                   filters:
@@ -270,7 +270,7 @@ spring:
                   order: 58
 
                 - id: vnc-4-default
-                  uri: http://vnc-4.default.svc.cluster.local:6080
+                  uri: http://browser-server-4.default.svc.cluster.local:6080
                   predicates:
                       - Path=/vnc/processgpt-browser-server-4/**
                   filters:
@@ -279,7 +279,7 @@ spring:
 
                 # API 라우팅 (Consumer ID 기반) - dev 네임스페이스 (uengine.process-gpt.io)
                 - id: api-0-dev
-                  uri: http://processgpt-api-0.dev.svc.cluster.local:5001
+                  uri: http://browser-server-0.dev.svc.cluster.local:5001
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/api/processgpt-browser-server-0/**
@@ -288,7 +288,7 @@ spring:
                   order: 60
 
                 - id: api-1-dev
-                  uri: http://processgpt-api-1.dev.svc.cluster.local:5001
+                  uri: http://browser-server-1.dev.svc.cluster.local:5001
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/api/processgpt-browser-server-1/**
@@ -297,7 +297,7 @@ spring:
                   order: 61
 
                 - id: api-2-dev
-                  uri: http://processgpt-api-2.dev.svc.cluster.local:5001
+                  uri: http://browser-server-2.dev.svc.cluster.local:5001
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/api/processgpt-browser-server-2/**
@@ -306,7 +306,7 @@ spring:
                   order: 62
 
                 - id: api-3-dev
-                  uri: http://processgpt-api-3.dev.svc.cluster.local:5001
+                  uri: http://browser-server-3.dev.svc.cluster.local:5001
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/api/processgpt-browser-server-3/**
@@ -315,7 +315,7 @@ spring:
                   order: 63
 
                 - id: api-4-dev
-                  uri: http://processgpt-api-4.dev.svc.cluster.local:5001
+                  uri: http://browser-server-4.dev.svc.cluster.local:5001
                   predicates:
                       - Host=uengine.process-gpt.io
                       - Path=/api/processgpt-browser-server-4/**
@@ -325,7 +325,7 @@ spring:
 
                 # API 라우팅 (Consumer ID 기반) - default 네임스페이스 (그 외 모든 호스트)
                 - id: api-0-default
-                  uri: http://processgpt-api-0.default.svc.cluster.local:5001
+                  uri: http://browser-server-0.default.svc.cluster.local:5001
                   predicates:
                       - Path=/api/processgpt-browser-server-0/**
                   filters:
@@ -333,7 +333,7 @@ spring:
                   order: 65
 
                 - id: api-1-default
-                  uri: http://processgpt-api-1.default.svc.cluster.local:5001
+                  uri: http://browser-server-1.default.svc.cluster.local:5001
                   predicates:
                       - Path=/api/processgpt-browser-server-1/**
                   filters:
@@ -341,7 +341,7 @@ spring:
                   order: 66
 
                 - id: api-2-default
-                  uri: http://processgpt-api-2.default.svc.cluster.local:5001
+                  uri: http://browser-server-2.default.svc.cluster.local:5001
                   predicates:
                       - Path=/api/processgpt-browser-server-2/**
                   filters:
@@ -349,7 +349,7 @@ spring:
                   order: 67
 
                 - id: api-3-default
-                  uri: http://processgpt-api-3.default.svc.cluster.local:5001
+                  uri: http://browser-server-3.default.svc.cluster.local:5001
                   predicates:
                       - Path=/api/processgpt-browser-server-3/**
                   filters:
@@ -357,7 +357,7 @@ spring:
                   order: 68
 
                 - id: api-4-default
-                  uri: http://processgpt-api-4.default.svc.cluster.local:5001
+                  uri: http://browser-server-4.default.svc.cluster.local:5001
                   predicates:
                       - Path=/api/processgpt-browser-server-4/**
                   filters:
