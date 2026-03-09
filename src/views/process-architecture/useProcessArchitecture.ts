@@ -65,10 +65,10 @@ export function useProcessArchitecture() {
     });
     // Current user org IDs loaded lazily when My Organization filter is first enabled
     const currentUserOrgIds: Ref<string[]> = ref([]);
-    const currentUserId: Ref<string> = ref((window as any).$user?.id || '');
+    const currentUserId: Ref<string> = ref(window.$user?.id || '');
 
     // Advanced filter state (AND-combined with quick filters)
-    const advancedFilters: Ref<{
+    const advancedFilters = ref<{
         statuses: string[];
         dateMode: 'none' | 'relative' | 'absolute';
         relativeDays: number | null;
@@ -80,7 +80,7 @@ export function useProcessArchitecture() {
         fteRange: [number, number];
         leadTimeRange: [number, number];
         systems: string[];
-    }> = ref({
+    }>({
         statuses: [],
         dateMode: 'none',
         relativeDays: 30,
