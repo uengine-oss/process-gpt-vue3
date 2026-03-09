@@ -6,11 +6,7 @@
             <span class="text-subtitle-1 font-weight-medium">{{ $t('approvalState.title') }}</span>
             <v-spacer />
             <template v-if="approvalState">
-                <v-chip
-                    :color="stateConfig.color"
-                    variant="tonal"
-                    size="small"
-                >
+                <v-chip :color="stateConfig.color" variant="tonal" size="small">
                     <v-icon start size="14">{{ stateConfig.icon }}</v-icon>
                     {{ stateConfig.label }}
                 </v-chip>
@@ -29,19 +25,13 @@
                     class="pipeline-step text-center"
                     :class="{ active: currentStepIndex >= idx, current: currentStepIndex === idx }"
                 >
-                    <v-icon
-                        :color="currentStepIndex >= idx ? 'primary' : 'grey-lighten-2'"
-                        size="22"
-                    >{{ step.icon }}</v-icon>
+                    <v-icon :color="currentStepIndex >= idx ? 'primary' : 'grey-lighten-2'" size="22">{{ step.icon }}</v-icon>
                     <div class="text-caption mt-1" :class="currentStepIndex === idx ? 'font-weight-bold text-primary' : 'text-grey'">
                         {{ step.label }}
                     </div>
-                    <v-icon
-                        v-if="idx < pipelineSteps.length - 1"
-                        size="14"
-                        color="grey-lighten-1"
-                        class="pipeline-arrow"
-                    >mdi-chevron-right</v-icon>
+                    <v-icon v-if="idx < pipelineSteps.length - 1" size="14" color="grey-lighten-1" class="pipeline-arrow"
+                        >mdi-chevron-right</v-icon
+                    >
                 </div>
             </div>
 
@@ -49,19 +39,11 @@
             <div v-if="approvalState?.state === 'in_review'" class="mt-3">
                 <div class="text-caption font-weight-medium mb-2">{{ $t('approvalState.parallelReview') }}</div>
                 <div class="d-flex ga-2">
-                    <v-chip
-                        :color="hqChipColor"
-                        variant="tonal"
-                        size="small"
-                    >
+                    <v-chip :color="hqChipColor" variant="tonal" size="small">
                         <v-icon start size="14">{{ hqChipIcon }}</v-icon>
                         HQ: {{ hqStatusLabel }}
                     </v-chip>
-                    <v-chip
-                        :color="fieldChipColor"
-                        variant="tonal"
-                        size="small"
-                    >
+                    <v-chip :color="fieldChipColor" variant="tonal" size="small">
                         <v-icon start size="14">{{ fieldChipIcon }}</v-icon>
                         Field: {{ fieldStatusLabel }}
                     </v-chip>
@@ -80,12 +62,7 @@
                     <span class="text-subtitle-2">
                         {{ $t('approvalState.publicFeedbackPeriod') }}
                     </span>
-                    <v-chip
-                        size="x-small"
-                        :color="isPublicFeedbackExpired ? 'error' : 'info'"
-                        variant="flat"
-                        class="font-weight-bold"
-                    >
+                    <v-chip size="x-small" :color="isPublicFeedbackExpired ? 'error' : 'info'" variant="flat" class="font-weight-bold">
                         {{ publicFeedbackDday }}
                     </v-chip>
                 </div>
@@ -99,9 +76,7 @@
                 density="compact"
                 class="mt-3"
             >
-                <div class="text-subtitle-2 mb-1">
-                    {{ $t('approvalState.unresolvedFeedbackBlock') }} ({{ unresolvedComments.length }})
-                </div>
+                <div class="text-subtitle-2 mb-1">{{ $t('approvalState.unresolvedFeedbackBlock') }} ({{ unresolvedComments.length }})</div>
                 <div
                     v-for="uc in unresolvedComments"
                     :key="uc.id"
@@ -109,7 +84,7 @@
                     @click="$emit('navigateToElement', uc.element_id)"
                 >
                     <v-icon size="14" color="error">mdi-message-alert-outline</v-icon>
-                    <span class="text-body-2 text-truncate" style="max-width: 200px;">
+                    <span class="text-body-2 text-truncate" style="max-width: 200px">
                         {{ uc.content || uc.comment || '—' }}
                     </span>
                     <v-icon size="12" color="grey" class="ml-auto">mdi-arrow-right</v-icon>
@@ -117,25 +92,13 @@
             </v-alert>
 
             <!-- 반려 상태 표시 -->
-            <v-alert
-                v-if="approvalState?.state === 'rejected'"
-                type="error"
-                variant="tonal"
-                density="compact"
-                class="mt-3"
-            >
+            <v-alert v-if="approvalState?.state === 'rejected'" type="error" variant="tonal" density="compact" class="mt-3">
                 <div class="text-subtitle-2">{{ $t('approvalState.rejectedBy') }}: {{ approvalState.rejected_by_name }}</div>
                 <div class="text-body-2 mt-1">{{ approvalState.reject_comment }}</div>
             </v-alert>
 
             <!-- Re-open 요청 상태 -->
-            <v-alert
-                v-if="approvalState?.state === 'reopen_requested'"
-                type="warning"
-                variant="tonal"
-                density="compact"
-                class="mt-3"
-            >
+            <v-alert v-if="approvalState?.state === 'reopen_requested'" type="warning" variant="tonal" density="compact" class="mt-3">
                 <div class="text-subtitle-2">{{ $t('approvalState.reopenRequested') }}: {{ approvalState.reopen_requested_by }}</div>
                 <div class="text-body-2 mt-1">{{ approvalState.reopen_reason }}</div>
             </v-alert>
@@ -149,7 +112,10 @@
                         {{ versionDisplayLabel }}
                     </div>
                     <!-- To-Be 파생 버튼 (Published 이후에만 활성화) -->
-                    <v-tooltip location="bottom" :text="canDeriveToBase ? $t('approvalState.deriveToBe') : $t('approvalState.deriveToBeLockedHint')">
+                    <v-tooltip
+                        location="bottom"
+                        :text="canDeriveToBase ? $t('approvalState.deriveToBe') : $t('approvalState.deriveToBeLockedHint')"
+                    >
                         <template #activator="{ props: tp }">
                             <span v-bind="tp">
                                 <v-btn
@@ -175,29 +141,29 @@
                 <div v-if="approvalState.submitted_at" class="d-flex align-center mb-2">
                     <v-icon size="16" class="mr-2" color="grey">mdi-send</v-icon>
                     <span class="text-caption text-grey">
-                        {{ $t('approvalState.submittedBy') }}: {{ approvalState.submitted_by }}
-                        ({{ formatDate(approvalState.submitted_at) }})
+                        {{ $t('approvalState.submittedBy') }}: {{ approvalState.submitted_by }} ({{
+                            formatDate(approvalState.submitted_at)
+                        }})
                     </span>
                 </div>
                 <div v-if="approvalState.hq_reviewed_at" class="d-flex align-center mb-2">
                     <v-icon size="16" class="mr-2" color="blue">mdi-domain</v-icon>
                     <span class="text-caption text-grey">
-                        HQ: {{ approvalState.hq_reviewer_name }}
-                        ({{ formatDate(approvalState.hq_reviewed_at) }})
+                        HQ: {{ approvalState.hq_reviewer_name }} ({{ formatDate(approvalState.hq_reviewed_at) }})
                     </span>
                 </div>
                 <div v-if="approvalState.field_reviewed_at" class="d-flex align-center mb-2">
                     <v-icon size="16" class="mr-2" color="green">mdi-account-hard-hat</v-icon>
                     <span class="text-caption text-grey">
-                        Field: {{ approvalState.field_reviewer_name }}
-                        ({{ formatDate(approvalState.field_reviewed_at) }})
+                        Field: {{ approvalState.field_reviewer_name }} ({{ formatDate(approvalState.field_reviewed_at) }})
                     </span>
                 </div>
                 <div v-if="approvalState.published_at" class="d-flex align-center mb-2">
                     <v-icon size="16" class="mr-2" color="success">mdi-rocket-launch</v-icon>
                     <span class="text-caption text-grey">
-                        {{ $t('approvalState.publishedBy') }}: {{ approvalState.published_by_name }}
-                        ({{ formatDate(approvalState.published_at) }})
+                        {{ $t('approvalState.publishedBy') }}: {{ approvalState.published_by_name }} ({{
+                            formatDate(approvalState.published_at)
+                        }})
                     </span>
                 </div>
             </div>
@@ -320,14 +286,7 @@
             <v-spacer />
 
             <!-- 반려 버튼 -->
-            <v-btn
-                v-if="canReject"
-                color="error"
-                variant="text"
-                size="small"
-                :loading="actionLoading"
-                @click="openActionDialog('reject')"
-            >
+            <v-btn v-if="canReject" color="error" variant="text" size="small" :loading="actionLoading" @click="openActionDialog('reject')">
                 <v-icon start>mdi-close-circle</v-icon>
                 {{ $t('approvalState.reject') }}
             </v-btn>
@@ -359,45 +318,28 @@
 
         <!-- 이력 보기 -->
         <v-card-actions class="pa-3 pt-0">
-            <v-btn
-                variant="text"
-                size="small"
-                color="grey"
-                @click="showHistory = !showHistory"
-            >
+            <v-btn variant="text" size="small" color="grey" @click="showHistory = !showHistory">
                 <v-icon start>mdi-history</v-icon>
                 {{ $t('approvalState.viewHistory') }}
                 <v-icon end>{{ showHistory ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
             </v-btn>
             <v-spacer />
             <!-- Phase 3-5: 전체 로그 보기 -->
-            <v-btn
-                variant="text"
-                size="small"
-                color="primary"
-                @click="showAuditLog = true"
-            >
+            <v-btn variant="text" size="small" color="primary" @click="showAuditLog = true">
                 <v-icon start size="16">mdi-text-box-search-outline</v-icon>
                 {{ $t('auditLog.viewFullLog') }}
             </v-btn>
         </v-card-actions>
 
         <!-- Phase 3-5: Audit Log Viewer -->
-        <AuditLogViewer
-            v-model="showAuditLog"
-            :procDefId="procDefId"
-        />
+        <AuditLogViewer v-model="showAuditLog" :procDefId="procDefId" />
 
         <!-- 이력 목록 -->
         <v-expand-transition>
             <div v-if="showHistory">
                 <v-divider />
                 <v-list density="compact" class="pa-0">
-                    <v-list-item
-                        v-for="item in history"
-                        :key="item.id"
-                        class="px-3"
-                    >
+                    <v-list-item v-for="item in history" :key="item.id" class="px-3">
                         <template #prepend>
                             <v-icon size="16" :color="getActionColor(item.action)">
                                 {{ getActionIcon(item.action) }}
@@ -448,7 +390,7 @@
                         :placeholder="$t('approvalState.commentPlaceholder')"
                         variant="outlined"
                         rows="3"
-                        :rules="requiresComment ? [v => !!v || $t('approvalState.commentRequired')] : []"
+                        :rules="requiresComment ? [(v) => !!v || $t('approvalState.commentRequired')] : []"
                     />
                 </v-card-text>
                 <v-card-actions>
@@ -516,7 +458,7 @@ export default defineComponent({
             { key: 'in_review', icon: 'mdi-account-group', label: t('approvalState.expertReview') },
             { key: 'public_feedback', icon: 'mdi-forum', label: t('approvalState.publicFeedback') },
             { key: 'final_edit', icon: 'mdi-file-edit', label: t('approvalState.finalEdit') },
-            { key: 'published', icon: 'mdi-rocket-launch', label: t('approvalState.published') },
+            { key: 'published', icon: 'mdi-rocket-launch', label: t('approvalState.published') }
         ]);
 
         const stateStepMap: Record<string, number> = {
@@ -561,9 +503,12 @@ export default defineComponent({
 
         const statusChipConfig = (status: string) => {
             switch (status) {
-                case 'approved': return { color: 'success', icon: 'mdi-check-circle' };
-                case 'rejected': return { color: 'error', icon: 'mdi-close-circle' };
-                default: return { color: 'grey', icon: 'mdi-clock-outline' };
+                case 'approved':
+                    return { color: 'success', icon: 'mdi-check-circle' };
+                case 'rejected':
+                    return { color: 'error', icon: 'mdi-close-circle' };
+                default:
+                    return { color: 'grey', icon: 'mdi-clock-outline' };
             }
         };
 
@@ -574,9 +519,12 @@ export default defineComponent({
 
         const statusLabel = (status: string) => {
             switch (status) {
-                case 'approved': return t('approvalState.approved');
-                case 'rejected': return t('approvalState.rejected');
-                default: return t('approvalState.pending');
+                case 'approved':
+                    return t('approvalState.approved');
+                case 'rejected':
+                    return t('approvalState.rejected');
+                default:
+                    return t('approvalState.pending');
             }
         };
         const hqStatusLabel = computed(() => statusLabel(hqStatus.value));
@@ -627,12 +575,8 @@ export default defineComponent({
 
         // 권한 체크
         const canSubmitForReview = computed(() => approvalState.value?.state === 'draft');
-        const canApproveHQ = computed(() =>
-            approvalState.value?.state === 'in_review' && hqStatus.value === 'pending'
-        );
-        const canApproveField = computed(() =>
-            approvalState.value?.state === 'in_review' && fieldStatus.value === 'pending'
-        );
+        const canApproveHQ = computed(() => approvalState.value?.state === 'in_review' && hqStatus.value === 'pending');
+        const canApproveField = computed(() => approvalState.value?.state === 'in_review' && fieldStatus.value === 'pending');
         const canEndPublicFeedback = computed(() => approvalState.value?.state === 'public_feedback');
         const canPublish = computed(() => approvalState.value?.state === 'final_edit');
         const canPublishEnabled = computed(() => canPublish.value && unresolvedCount.value === 0);
@@ -645,9 +589,7 @@ export default defineComponent({
         });
         const canReopen = computed(() => approvalState.value?.state === 'rejected');
 
-        const requiresComment = computed(() =>
-            ['reject', 'reject_hq', 'reject_field', 'request_reopen'].includes(actionType.value)
-        );
+        const requiresComment = computed(() => ['reject', 'reject_hq', 'reject_field', 'request_reopen'].includes(actionType.value));
 
         const actionButtonColor = computed(() => {
             if (['reject', 'reject_hq', 'reject_field', 'reject_reopen'].includes(actionType.value)) return 'error';
@@ -665,7 +607,7 @@ export default defineComponent({
                 reopen: t('approvalState.reopen'),
                 request_reopen: t('approvalState.requestReopen'),
                 approve_reopen: t('approvalState.approveReopen'),
-                reject_reopen: t('approvalState.rejectReopen'),
+                reject_reopen: t('approvalState.rejectReopen')
             };
             return titles[actionType.value] || '';
         });
@@ -697,7 +639,7 @@ export default defineComponent({
                 reject_reopen: 'mdi-close',
                 reset_approvals: 'mdi-refresh-circle',
                 cancel: 'mdi-cancel',
-                comment: 'mdi-comment',
+                comment: 'mdi-comment'
             };
             return icons[action] || 'mdi-circle';
         };
@@ -719,7 +661,7 @@ export default defineComponent({
                 reject_reopen: 'error',
                 reset_approvals: 'warning',
                 cancel: 'grey',
-                comment: 'grey',
+                comment: 'grey'
             };
             return colors[action] || 'grey';
         };
@@ -741,7 +683,7 @@ export default defineComponent({
                 reject_reopen: t('approvalState.actionRejectReopen'),
                 reset_approvals: t('approvalState.actionReset'),
                 cancel: t('approvalState.actionCancel'),
-                comment: t('approvalState.actionComment'),
+                comment: t('approvalState.actionComment')
             };
             return labels[action] || action;
         };
@@ -763,10 +705,7 @@ export default defineComponent({
                     const end = new Date(approvalState.value.public_feedback_ends_at);
                     if (new Date() > end) {
                         try {
-                            await backend.endPublicFeedback(
-                                approvalState.value.id,
-                                t('approvalResetWarning.autoTransitionComment')
-                            );
+                            await backend.endPublicFeedback(approvalState.value.id, t('approvalResetWarning.autoTransitionComment'));
                             // Reload after auto-transition
                             approvalState.value = await backend.getApprovalState(props.procDefId);
                             history.value = await backend.getApprovalHistory(props.procDefId);
@@ -820,7 +759,7 @@ export default defineComponent({
                     case 'submit':
                         await backend.submitForReview(props.procDefId, comment, undefined, {
                             hq: hqReviewerName.value ? { id: '', name: hqReviewerName.value } : undefined,
-                            field: fieldReviewerName.value ? { id: '', name: fieldReviewerName.value } : undefined,
+                            field: fieldReviewerName.value ? { id: '', name: fieldReviewerName.value } : undefined
                         });
                         break;
                     case 'approve_hq':
@@ -863,29 +802,64 @@ export default defineComponent({
             }
         };
 
-        watch(() => props.procDefId, () => {
-            loadApprovalState();
-        }, { immediate: true });
+        watch(
+            () => props.procDefId,
+            () => {
+                loadApprovalState();
+            },
+            { immediate: true }
+        );
 
         return {
-            approvalState, history, loading, actionLoading, showHistory,
-            isSelfApproval, unresolvedCount, unresolvedComments,
-            showAuditLog, isPublicFeedbackExpired,
-            actionDialog, actionType, actionComment,
-            hqReviewerName, fieldReviewerName,
-            pipelineSteps, currentStepIndex, stateConfig,
-            hqChipColor, hqChipIcon, fieldChipColor, fieldChipIcon,
-            hqStatusLabel, fieldStatusLabel,
+            approvalState,
+            history,
+            loading,
+            actionLoading,
+            showHistory,
+            isSelfApproval,
+            unresolvedCount,
+            unresolvedComments,
+            showAuditLog,
+            isPublicFeedbackExpired,
+            actionDialog,
+            actionType,
+            actionComment,
+            hqReviewerName,
+            fieldReviewerName,
+            pipelineSteps,
+            currentStepIndex,
+            stateConfig,
+            hqChipColor,
+            hqChipIcon,
+            fieldChipColor,
+            fieldChipIcon,
+            hqStatusLabel,
+            fieldStatusLabel,
             publicFeedbackDday,
-            isPublishedState, versionDisplayLabel, canDeriveToBase,
-            canSubmitForReview, canApproveHQ, canApproveField,
+            isPublishedState,
+            versionDisplayLabel,
+            canDeriveToBase,
+            canSubmitForReview,
+            canApproveHQ,
+            canApproveField,
             canEndPublicFeedback,
-            canPublish, canPublishEnabled,
-            canRequestReopen, canApproveReopen, canRejectReopen,
-            canReject, canReopen,
-            requiresComment, actionButtonColor, actionDialogTitle,
-            formatDate, getActionIcon, getActionColor, getActionLabel,
-            openActionDialog, closeActionDialog, executeAction,
+            canPublish,
+            canPublishEnabled,
+            canRequestReopen,
+            canApproveReopen,
+            canRejectReopen,
+            canReject,
+            canReopen,
+            requiresComment,
+            actionButtonColor,
+            actionDialogTitle,
+            formatDate,
+            getActionIcon,
+            getActionColor,
+            getActionLabel,
+            openActionDialog,
+            closeActionDialog,
+            executeAction
         };
     }
 });

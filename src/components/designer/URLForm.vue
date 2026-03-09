@@ -1,6 +1,6 @@
 <template>
-    <div v-if="url" class="input-group" style="width: 100%;">
-        <iframe id="url-iframe" :src="url" style="width: 100%; height: calc(75vh);"></iframe>
+    <div v-if="url" class="input-group" style="width: 100%">
+        <iframe id="url-iframe" :src="url" style="width: 100%; height: calc(75vh)"></iframe>
     </div>
     <div v-else>
         <div class="d-flex justify-center">
@@ -11,13 +11,13 @@
 
 <script>
 export default {
-    props:{
+    props: {
         url: {
             type: String,
             default: function () {
-                return null
-            },
+                return null;
+            }
         }
-    },
-}
+    }
+};
 </script>

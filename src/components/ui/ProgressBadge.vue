@@ -1,10 +1,5 @@
 <template>
-    <v-tooltip
-        v-if="type === 'status' && status === 'public_review' && tooltipText"
-        :text="tooltipText"
-        location="top"
-        max-width="300"
-    >
+    <v-tooltip v-if="type === 'status' && status === 'public_review' && tooltipText" :text="tooltipText" location="top" max-width="300">
         <template #activator="{ props: tooltipProps }">
             <v-chip
                 v-bind="tooltipProps"
@@ -149,11 +144,12 @@ export default {
             if (this.status === 'public_review') {
                 const endDate = this.reviewEndDate || '';
                 if (endDate) {
-                    return this.$t('progressBadge.publicReviewTooltipWithDate', { date: endDate }) ||
-                        `본사/현업 검토가 승인되었습니다. ${endDate}까지 자유롭게 의견을 남겨주세요.`;
+                    return (
+                        this.$t('progressBadge.publicReviewTooltipWithDate', { date: endDate }) ||
+                        `본사/현업 검토가 승인되었습니다. ${endDate}까지 자유롭게 의견을 남겨주세요.`
+                    );
                 }
-                return this.$t('progressBadge.publicReviewTooltip') ||
-                    '본사/현업 검토가 승인되었습니다. 자유롭게 의견을 남겨주세요.';
+                return this.$t('progressBadge.publicReviewTooltip') || '본사/현업 검토가 승인되었습니다. 자유롭게 의견을 남겨주세요.';
             }
             return '';
         },
@@ -187,9 +183,9 @@ export default {
         iconSize() {
             const sizeMap = {
                 'x-small': 12,
-                'small': 14,
-                'default': 16,
-                'large': 18,
+                small: 14,
+                default: 16,
+                large: 18,
                 'x-large': 20
             };
             return sizeMap[this.size] || 14;

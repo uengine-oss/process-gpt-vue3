@@ -5,22 +5,22 @@ export const useBpmnStore = defineStore({
     state: () => ({
         bpmnModeler: null,
         processDefinition: null
-      }),
+    }),
     actions: {
         setModeler(modeler: any) {
-            this.bpmnModeler = modeler
+            this.bpmnModeler = modeler;
         },
         setProcessDefinition(definition: any) {
-            this.processDefinition = definition
+            this.processDefinition = definition;
         }
     },
     getters: {
-        getModeler: state => {
+        getModeler: (state) => {
             return state.bpmnModeler;
-        },
+        }
         // getXML: async state => {
         //     if (state.bpmnModeler && typeof state.bpmnModeler?.saveXML === 'function') {
-                
+
         //     }
         // }
     }

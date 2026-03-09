@@ -33,7 +33,7 @@
                         />
                         <v-select
                             v-model="formData.applies_to"
-                            :items="availableTargets.filter(t => t.value !== '__all__')"
+                            :items="availableTargets.filter((t) => t.value !== '__all__')"
                             item-title="label"
                             item-value="value"
                             :label="$t('taskCatalog.appliesTo')"
@@ -94,13 +94,21 @@
                     <!-- Options for select type -->
                     <div v-if="formData.property_type === 'select'" class="mb-3">
                         <div class="text-subtitle-2 mb-2">{{ $t('taskCatalog.options') }}</div>
-                        <div
-                            v-for="(option, index) in formData.options"
-                            :key="index"
-                            class="d-flex ga-2 mb-2 align-center"
-                        >
-                            <v-text-field v-model="option.label" :placeholder="$t('taskCatalog.optionLabel')" variant="outlined" density="compact" hide-details />
-                            <v-text-field v-model="option.value" :placeholder="$t('taskCatalog.optionValue')" variant="outlined" density="compact" hide-details />
+                        <div v-for="(option, index) in formData.options" :key="index" class="d-flex ga-2 mb-2 align-center">
+                            <v-text-field
+                                v-model="option.label"
+                                :placeholder="$t('taskCatalog.optionLabel')"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                            />
+                            <v-text-field
+                                v-model="option.value"
+                                :placeholder="$t('taskCatalog.optionValue')"
+                                variant="outlined"
+                                density="compact"
+                                hide-details
+                            />
                             <v-btn icon variant="text" density="compact" color="error" @click="removeOption(index)">
                                 <v-icon size="14">mdi-minus</v-icon>
                             </v-btn>
@@ -157,7 +165,9 @@
         <!-- Field Types Guide -->
         <v-alert dense outlined type="info" color="gray" class="mt-4 mb-4 pa-4 pt-2 pb-2">
             <span class="text-body-2 font-weight-bold d-block mb-1">{{ $t('taskCatalog.fieldTypesGuide') }}</span>
-            <span class="text-body-2" style="white-space: pre-line;">{{ isMobile ? $t('taskCatalog.fieldTypesGuideText.mobile') : $t('taskCatalog.fieldTypesGuideText.pc') }}</span>
+            <span class="text-body-2" style="white-space: pre-line">{{
+                isMobile ? $t('taskCatalog.fieldTypesGuideText.mobile') : $t('taskCatalog.fieldTypesGuideText.pc')
+            }}</span>
         </v-alert>
 
         <!-- Layout Preview Section -->
@@ -174,12 +184,7 @@
                             <div v-if="sectionName !== '__default__'" class="section-header">{{ sectionName }}</div>
                             <template v-for="(row, rowIndex) in section" :key="rowIndex">
                                 <v-row class="preview-row">
-                                    <v-col
-                                        v-for="schema in row"
-                                        :key="schema.id"
-                                        :cols="schema.col_span || 12"
-                                        class="preview-field"
-                                    >
+                                    <v-col v-for="schema in row" :key="schema.id" :cols="schema.col_span || 12" class="preview-field">
                                         <div class="field-label-preview">
                                             {{ schema.property_label }}
                                             <span v-if="schema.is_mandatory" class="mandatory-indicator">*</span>
@@ -187,7 +192,10 @@
                                         <div class="field-input" :class="schema.property_type">
                                             <div v-if="schema.property_type === 'textarea'" class="mock-textarea"></div>
                                             <div v-else-if="schema.property_type === 'boolean'" class="mock-switch"></div>
-                                            <div v-else-if="schema.property_type === 'select' || schema.property_type === 'db-select'" class="mock-select">
+                                            <div
+                                                v-else-if="schema.property_type === 'select' || schema.property_type === 'db-select'"
+                                                class="mock-select"
+                                            >
                                                 <span>{{ schema.default_value || '- 선택 -' }}</span>
                                                 <v-icon size="16">mdi-chevron-down</v-icon>
                                             </div>
@@ -207,14 +215,14 @@
             <v-table density="comfortable">
                 <thead>
                     <tr>
-                        <th style="width: 28px;"></th>
+                        <th style="width: 28px"></th>
                         <th>{{ $t('taskCatalog.fieldName') }}</th>
                         <th>{{ $t('taskCatalog.fieldType') }}</th>
                         <th>{{ $t('taskCatalog.appliesTo') }}</th>
                         <th>{{ $t('taskCatalog.config') }}</th>
-                        <th style="text-align: center;">{{ $t('taskCatalog.mandatory') }}</th>
-                        <th style="text-align: center;">{{ $t('taskCatalog.visible') }}</th>
-                        <th style="width: 80px; text-align: right;">{{ $t('taskCatalog.actions') }}</th>
+                        <th style="text-align: center">{{ $t('taskCatalog.mandatory') }}</th>
+                        <th style="text-align: center">{{ $t('taskCatalog.visible') }}</th>
+                        <th style="width: 80px; text-align: right">{{ $t('taskCatalog.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -229,12 +237,14 @@
                         </td>
                     </tr>
                     <tr v-else v-for="item in filteredSchemas" :key="item.id">
-                        <td style="width: 28px; padding: 12px 4px 12px 12px; cursor: grab;">
+                        <td style="width: 28px; padding: 12px 4px 12px 12px; cursor: grab">
                             <v-icon size="14" color="grey-lighten-1">mdi-drag-vertical</v-icon>
                         </td>
                         <td>
                             <div class="font-weight-medium">{{ item.property_label }}</div>
-                            <div v-if="item.placeholder" class="text-caption text-medium-emphasis mt-1">Placeholder: {{ item.placeholder }}</div>
+                            <div v-if="item.placeholder" class="text-caption text-medium-emphasis mt-1">
+                                Placeholder: {{ item.placeholder }}
+                            </div>
                         </td>
                         <td>
                             <v-chip size="x-small" variant="tonal" color="default" label>{{ getTypeLabel(item.property_type) }}</v-chip>
@@ -245,28 +255,36 @@
                             </v-chip>
                         </td>
                         <td>
-                            <span v-if="item.config" class="text-caption" style="font-family: monospace; background: #f5f5f5; padding: 2px 8px; border-radius: 4px;">
+                            <span
+                                v-if="item.config"
+                                class="text-caption"
+                                style="font-family: monospace; background: #f5f5f5; padding: 2px 8px; border-radius: 4px"
+                            >
                                 <template v-if="item.property_type === 'db-select'">DB: {{ item.config.table || '' }}</template>
                                 <template v-else-if="item.property_type === 'formula'">{{ item.config.expression || '' }}</template>
                                 <template v-else>{{ JSON.stringify(item.config) }}</template>
                             </span>
                         </td>
-                        <td style="text-align: center;">
+                        <td style="text-align: center">
                             <v-icon v-if="item.is_mandatory" size="18" color="primary">mdi-checkbox-marked</v-icon>
                             <v-icon v-else size="18" color="grey-lighten-2">mdi-checkbox-blank-outline</v-icon>
                         </td>
-                        <td style="text-align: center;">
-                            <v-icon
-                                size="18"
-                                :color="item.visible_by_default !== false ? 'primary' : 'grey-lighten-2'"
-                            >
+                        <td style="text-align: center">
+                            <v-icon size="18" :color="item.visible_by_default !== false ? 'primary' : 'grey-lighten-2'">
                                 {{ item.visible_by_default !== false ? 'mdi-eye' : 'mdi-eye-off' }}
                             </v-icon>
                         </td>
-                        <td style="text-align: right;">
+                        <td style="text-align: right">
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click="openEditForm(item)">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="openEditForm(item)"
+                                    >
                                         <v-icon size="16">mdi-pencil</v-icon>
                                     </v-btn>
                                 </template>
@@ -274,7 +292,14 @@
                             </v-tooltip>
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" density="comfortable" @click="confirmDelete(item)">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="confirmDelete(item)"
+                                    >
                                         <v-icon color="error">mdi-delete-outline</v-icon>
                                     </v-btn>
                                 </template>
@@ -294,13 +319,7 @@
             <div v-else-if="filteredSchemas.length === 0" class="text-center pa-8 text-medium-emphasis">
                 {{ $t('taskCatalog.noSchemas') || 'No property schemas found.' }}
             </div>
-            <v-card
-                v-else
-                v-for="item in filteredSchemas"
-                :key="item.id"
-                variant="outlined"
-                class="mb-3"
-            >
+            <v-card v-else v-for="item in filteredSchemas" :key="item.id" variant="outlined" class="mb-3">
                 <v-card-text class="pa-3 pb-0">
                     <div class="d-flex align-center justify-space-between mb-2">
                         <div class="font-weight-bold text-body-1">{{ item.property_label }}</div>
@@ -315,26 +334,30 @@
                     </div>
                     <div class="d-flex flex-column ga-1 mb-2">
                         <div class="d-flex align-center">
-                            <span class="text-caption text-medium-emphasis" style="min-width: 70px;">{{ $t('taskCatalog.fieldType') }}</span>
+                            <span class="text-caption text-medium-emphasis" style="min-width: 70px">{{ $t('taskCatalog.fieldType') }}</span>
                             <v-chip size="x-small" variant="tonal" color="default" label>{{ getTypeLabel(item.property_type) }}</v-chip>
                         </div>
                         <div class="d-flex align-center">
-                            <span class="text-caption text-medium-emphasis" style="min-width: 70px;">{{ $t('taskCatalog.appliesTo') }}</span>
-                            <v-chip size="x-small" variant="tonal" :color="getAppliesToChipColor(item.applies_to)" label>{{ getAppliesToLabel(item.applies_to) }}</v-chip>
+                            <span class="text-caption text-medium-emphasis" style="min-width: 70px">{{ $t('taskCatalog.appliesTo') }}</span>
+                            <v-chip size="x-small" variant="tonal" :color="getAppliesToChipColor(item.applies_to)" label>{{
+                                getAppliesToLabel(item.applies_to)
+                            }}</v-chip>
                         </div>
                         <div class="d-flex align-center">
-                            <span class="text-caption text-medium-emphasis" style="min-width: 70px;">{{ $t('taskCatalog.mandatory') }}</span>
-                            <v-icon size="16" :color="item.is_mandatory ? 'primary' : 'grey-lighten-2'">{{ item.is_mandatory ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline' }}</v-icon>
+                            <span class="text-caption text-medium-emphasis" style="min-width: 70px">{{ $t('taskCatalog.mandatory') }}</span>
+                            <v-icon size="16" :color="item.is_mandatory ? 'primary' : 'grey-lighten-2'">{{
+                                item.is_mandatory ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'
+                            }}</v-icon>
                         </div>
                         <div class="d-flex align-center">
-                            <span class="text-caption text-medium-emphasis" style="min-width: 70px;">{{ $t('taskCatalog.visible') }}</span>
-                            <v-icon size="16" :color="item.visible_by_default !== false ? 'primary' : 'grey-lighten-2'">{{ item.visible_by_default !== false ? 'mdi-eye' : 'mdi-eye-off' }}</v-icon>
+                            <span class="text-caption text-medium-emphasis" style="min-width: 70px">{{ $t('taskCatalog.visible') }}</span>
+                            <v-icon size="16" :color="item.visible_by_default !== false ? 'primary' : 'grey-lighten-2'">{{
+                                item.visible_by_default !== false ? 'mdi-eye' : 'mdi-eye-off'
+                            }}</v-icon>
                         </div>
                     </div>
-                    <div v-if="item.placeholder" class="text-caption text-medium-emphasis mb-1">
-                        Placeholder: {{ item.placeholder }}
-                    </div>
-                    <div v-if="item.config" class="text-caption text-medium-emphasis mb-1" style="font-family: monospace;">
+                    <div v-if="item.placeholder" class="text-caption text-medium-emphasis mb-1">Placeholder: {{ item.placeholder }}</div>
+                    <div v-if="item.config" class="text-caption text-medium-emphasis mb-1" style="font-family: monospace">
                         <template v-if="item.property_type === 'db-select'">DB: {{ item.config.table || '' }}</template>
                         <template v-else-if="item.property_type === 'formula'">{{ item.config.expression || '' }}</template>
                         <template v-else>{{ JSON.stringify(item.config) }}</template>
@@ -356,8 +379,12 @@
                     {{ $t('taskCatalog.deleteSchemaConfirm', { name: deletingSchema?.property_label }) }}
                 </v-card-text>
                 <v-card-actions class="d-flex justify-end align-center pa-4">
-                    <v-btn color="gray" rounded="pill" variant="flat" @click="deleteDialogOpen = false">{{ $t('taskCatalog.cancel') }}</v-btn>
-                    <v-btn color="error" rounded variant="flat" :loading="loading" @click="deleteSchema">{{ $t('taskCatalog.delete') }}</v-btn>
+                    <v-btn color="gray" rounded="pill" variant="flat" @click="deleteDialogOpen = false">{{
+                        $t('taskCatalog.cancel')
+                    }}</v-btn>
+                    <v-btn color="error" rounded variant="flat" :loading="loading" @click="deleteSchema">{{
+                        $t('taskCatalog.delete')
+                    }}</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -366,7 +393,13 @@
 
 <script>
 import { defineComponent, ref, computed, watch, getCurrentInstance, reactive } from 'vue';
-import { useTaskCatalogStore, AVAILABLE_TASK_TYPES, PROPERTY_TYPES, APPLIES_TO_OPTIONS, BUILT_IN_PROPERTY_KEYS } from '@/stores/taskCatalog';
+import {
+    useTaskCatalogStore,
+    AVAILABLE_TASK_TYPES,
+    PROPERTY_TYPES,
+    APPLIES_TO_OPTIONS,
+    BUILT_IN_PROPERTY_KEYS
+} from '@/stores/taskCatalog';
 
 export default defineComponent({
     name: 'PropertySchemaManager',
@@ -411,18 +444,18 @@ export default defineComponent({
         const availableTargets = computed(() => {
             return [
                 { value: '__all__', label: locale.value === 'ko' ? '전체' : 'All' },
-                ...APPLIES_TO_OPTIONS.map(item => ({
+                ...APPLIES_TO_OPTIONS.map((item) => ({
                     ...item,
-                    label: locale.value === 'ko' ? (item.labelKo || item.label) : item.label
-                })),
+                    label: locale.value === 'ko' ? item.labelKo || item.label : item.label
+                }))
             ];
         });
 
         const filteredSchemas = computed(() => {
             let schemas = store.propertySchemas || [];
-            schemas = schemas.filter(s => !BUILT_IN_PROPERTY_KEYS.includes(s.property_key));
+            schemas = schemas.filter((s) => !BUILT_IN_PROPERTY_KEYS.includes(s.property_key));
             if (selectedTarget.value && selectedTarget.value !== '__all__') {
-                schemas = schemas.filter(s => {
+                schemas = schemas.filter((s) => {
                     const at = s.applies_to || 'both';
                     return at === selectedTarget.value;
                 });
@@ -435,7 +468,7 @@ export default defineComponent({
             const schemas = filteredSchemas.value;
             if (!schemas.length) return {};
             const sections = {};
-            schemas.forEach(schema => {
+            schemas.forEach((schema) => {
                 const section = schema.section_name || '__default__';
                 if (!sections[section]) sections[section] = {};
                 const rowIdx = schema.row_index ?? schema.display_order ?? 0;
@@ -443,25 +476,31 @@ export default defineComponent({
                 sections[section][rowIdx].push(schema);
             });
             const result = {};
-            Object.keys(sections).sort((a, b) => {
-                if (a === '__default__') return -1;
-                if (b === '__default__') return 1;
-                return a.localeCompare(b);
-            }).forEach(sectionName => {
-                const rows = sections[sectionName];
-                result[sectionName] = Object.keys(rows)
-                    .sort((a, b) => parseInt(a) - parseInt(b))
-                    .map(rowIdx => rows[rowIdx].sort((a, b) => (a.display_order || 0) - (b.display_order || 0)));
-            });
+            Object.keys(sections)
+                .sort((a, b) => {
+                    if (a === '__default__') return -1;
+                    if (b === '__default__') return 1;
+                    return a.localeCompare(b);
+                })
+                .forEach((sectionName) => {
+                    const rows = sections[sectionName];
+                    result[sectionName] = Object.keys(rows)
+                        .sort((a, b) => parseInt(a) - parseInt(b))
+                        .map((rowIdx) => rows[rowIdx].sort((a, b) => (a.display_order || 0) - (b.display_order || 0)));
+                });
             return result;
         });
 
-        watch(selectedTarget, async () => {
-            // Load all schemas (no task_type filter)
-            if (!store.schemasLoaded) {
-                await store.loadSchemas();
-            }
-        }, { immediate: true });
+        watch(
+            selectedTarget,
+            async () => {
+                // Load all schemas (no task_type filter)
+                if (!store.schemasLoaded) {
+                    await store.loadSchemas();
+                }
+            },
+            { immediate: true }
+        );
 
         const generateKey = (label) => {
             if (!label) return '';
@@ -487,7 +526,7 @@ export default defineComponent({
                 applies_to: schema.applies_to || 'both',
                 placeholder: schema.placeholder || '',
                 visible_by_default: schema.visible_by_default !== false,
-                config: schema.config || null,
+                config: schema.config || null
             };
             // Serialize config for text input
             if (schema.config) {
@@ -522,7 +561,11 @@ export default defineComponent({
             if (type === 'formula') {
                 return { expression: trimmed };
             }
-            try { return JSON.parse(trimmed); } catch { return { value: trimmed }; }
+            try {
+                return JSON.parse(trimmed);
+            } catch {
+                return { value: trimmed };
+            }
         };
 
         const saveField = async () => {
@@ -538,7 +581,7 @@ export default defineComponent({
                     ...formData.value,
                     id: editingSchema.value?.id,
                     task_type: formData.value.applies_to,
-                    config,
+                    config
                 });
                 cancelForm();
                 store.schemasLoaded = false;
@@ -574,7 +617,7 @@ export default defineComponent({
         };
 
         const getTypeLabel = (type) => {
-            const found = PROPERTY_TYPES.find(t => t.value === type);
+            const found = PROPERTY_TYPES.find((t) => t.value === type);
             return found ? found.label : type;
         };
 
@@ -593,8 +636,8 @@ export default defineComponent({
         };
 
         const getAppliesToLabel = (val) => {
-            const found = APPLIES_TO_OPTIONS.find(o => o.value === val);
-            if (found) return locale.value === 'ko' ? (found.labelKo || found.label) : found.label;
+            const found = APPLIES_TO_OPTIONS.find((o) => o.value === val);
+            if (found) return locale.value === 'ko' ? found.labelKo || found.label : found.label;
             return val || (locale.value === 'ko' ? '프로세스 + Task' : 'Process + Task');
         };
 
@@ -626,7 +669,7 @@ export default defineComponent({
             confirmDelete,
             deleteSchema,
             getTypeLabel,
-            getAppliesToLabel,
+            getAppliesToLabel
         };
     }
 });
@@ -653,8 +696,12 @@ export default defineComponent({
     border-bottom: 1px solid #e5e7eb;
 }
 
-.preview-row { margin-bottom: 12px; }
-.preview-field { padding: 4px 8px; }
+.preview-row {
+    margin-bottom: 12px;
+}
+.preview-field {
+    padding: 4px 8px;
+}
 
 .field-label-preview {
     font-size: 12px;
@@ -667,7 +714,9 @@ export default defineComponent({
     margin-left: 2px;
 }
 
-.field-input { min-height: 36px; }
+.field-input {
+    min-height: 36px;
+}
 
 .mock-input,
 .mock-select,
@@ -679,7 +728,9 @@ export default defineComponent({
     font-size: 13px;
     color: #9ca3af;
 }
-.mock-textarea { min-height: 60px; }
+.mock-textarea {
+    min-height: 60px;
+}
 .mock-select {
     display: flex;
     align-items: center;

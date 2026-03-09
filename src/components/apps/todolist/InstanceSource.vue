@@ -1,12 +1,8 @@
 <template>
-    <div
-        @drop="onDrop" 
-        @dragover="onDragOver" 
-        @dragleave="onDragLeave"
-    >
+    <div @drop="onDrop" @dragover="onDragOver" @dragleave="onDragLeave">
         <div class="d-flex flex-column ga-2">
             <!-- 새 파일 추가 카드 -->
-            <v-card 
+            <v-card
                 class="add-file-card d-flex align-center justify-center text-gray"
                 :class="{ 'drag-over': isDragOver }"
                 elevation="2"
@@ -53,11 +49,7 @@
                     <!-- 상단: 파일명 + 상태 칩 -->
                     <div class="d-flex align-start ga-2">
                         <div class="source-file-name flex-grow-1">{{ item.name }}</div>
-                        <v-chip
-                            :color="item.isProcess ? 'success' : 'error'"
-                            size="x-small"
-                            variant="tonal"
-                        >
+                        <v-chip :color="item.isProcess ? 'success' : 'error'" size="x-small" variant="tonal">
                             {{ item.isProcess ? $t('InstanceSource.complete') : $t('InstanceSource.failed') }}
                         </v-chip>
                     </div>
@@ -66,15 +58,11 @@
 
                     <!-- 하단: 액션 버튼 -->
                     <div class="d-flex justify-end">
-                        <v-btn
-                            variant="text"
-                            density="compact"
-                            icon
-                            @click="deleteFile(item)"
-                        >
+                        <v-btn variant="text" density="compact" icon @click="deleteFile(item)">
                             <v-icon size="16" color="error">mdi-delete-outline</v-icon>
                         </v-btn>
-                        <v-btn style="padding-top:2px;"
+                        <v-btn
+                            style="padding-top: 2px"
                             v-if="item.isProcess && !item.isError"
                             variant="text"
                             density="compact"
@@ -96,13 +84,12 @@
             accept=".pdf,.doc,.docx,.hwpx,.txt,.csv,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff"
             style="display: none"
             @change="onFileSelect"
-        >
-
+        />
     </div>
 </template>
 
 <script>
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -127,7 +114,7 @@ export default {
     data: () => ({
         sourceList: [],
         isDragOver: false,
-        selectedFile: null,
+        selectedFile: null
     }),
     mounted() {
         this.init();
@@ -155,7 +142,7 @@ export default {
                     this.init();
                 }
             }
-        },
+        }
     },
     methods: {
         async init() {
@@ -166,7 +153,7 @@ export default {
             if (this.id) {
                 const instId = this.id;
                 const list = await backend.getInstanceSource(instId);
-                this.sourceList = list.map(item => ({
+                this.sourceList = list.map((item) => ({
                     id: item.id,
                     name: item.file_name,
                     path: item.file_path,
@@ -244,7 +231,7 @@ export default {
                     };
 
                     const onProgress = (percent) => {
-                        me.sourceList.forEach(item => {
+                        me.sourceList.forEach((item) => {
                             if (item.id === fileId) {
                                 // 업로드 진행률을 0~95%로 매핑 (서버 처리 대기 구간 확보)
                                 item.uploadProgress = Math.round(percent * 0.95);
@@ -259,60 +246,78 @@ export default {
                                 throw new Error(response.message);
                             },
                             onFail: () => {
-                                me.sourceList.forEach(item => {
+                                me.sourceList.forEach((item) => {
                                     if (item.id === fileId) {
                                         item.isError = true;
                                     }
                                 });
                             },
                             errorMsg: `${file.name} 파일 업로드에 실패했습니다. ${response.message}`
-                        })
+                        });
                     } else {
                         // 서버 응답 완료 시 100%로 설정 후 완료 카드로 전환
-                        me.sourceList.forEach(item => {
+                        me.sourceList.forEach((item) => {
                             if (item.id === fileId) {
                                 item.uploadProgress = 100;
                             }
                         });
-                        await new Promise(resolve => setTimeout(resolve, 300));
+                        await new Promise((resolve) => setTimeout(resolve, 300));
                         me.$try({
                             action: () => {
-                                me.sourceList.forEach(item => {
+                                me.sourceList.forEach((item) => {
                                     if (item.id === fileId) {
                                         item.isProcess = true;
                                     }
                                 });
                             },
-                            successMsg: `${file.name} 파일이 업로드되었습니다.`,
-                        })
+                            successMsg: `${file.name} 파일이 업로드되었습니다.`
+                        });
                     }
-                    
                 }
             }
         },
 
         validateFile(file) {
             var me = this;
-            const allowedTypes = ['.pdf', '.doc', '.docx', '.hwpx', '.txt', '.csv', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
+            const allowedTypes = [
+                '.pdf',
+                '.doc',
+                '.docx',
+                '.hwpx',
+                '.txt',
+                '.csv',
+                '.xls',
+                '.xlsx',
+                '.ppt',
+                '.pptx',
+                '.jpg',
+                '.jpeg',
+                '.png',
+                '.gif',
+                '.webp',
+                '.bmp',
+                '.tiff'
+            ];
             const fileExtension = this.getFileExtension(file.name);
-            
+
             if (!allowedTypes.includes(fileExtension)) {
                 me.$try({
                     action: () => {
                         throw new Error(`${file.name}은 지원되지 않는 파일 형식입니다.`);
                     },
                     errorMsg: `${file.name}은 지원되지 않는 파일 형식입니다.`
-                })
+                });
                 return false;
             }
 
-            if (file.size > 50 * 1024 * 1024) { // 50MB 제한
+            if (file.size > 50 * 1024 * 1024) {
+                // 50MB 제한
                 me.$try({
                     action: () => {
                         throw new Error(`${file.name} 파일이 너무 큽니다. (최대 50MB)`);
                     },
                     errorMsg: `${file.name} 파일이 너무 큽니다. (최대 50MB)`
-                })
+                });
                 return false;
             }
 
@@ -396,19 +401,19 @@ export default {
                             throw new Error(result.error.message);
                         },
                         errorMsg: result.error.message
-                    })
+                    });
                     return;
                 }
             }
             me.$try({
                 action: () => {
-                    me.sourceList = me.sourceList.filter(item => item.id !== file.id);
+                    me.sourceList = me.sourceList.filter((item) => item.id !== file.id);
                 },
                 successMsg: `${file.name} 파일이 삭제되었습니다.`
-            })
-        },
-    },
-}
+            });
+        }
+    }
+};
 </script>
 
 <style scoped>
@@ -502,4 +507,3 @@ export default {
     color: rgb(var(--v-theme-primary)) !important;
 }
 </style>
-

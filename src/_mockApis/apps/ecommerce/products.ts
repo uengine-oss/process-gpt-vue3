@@ -35,8 +35,8 @@ const products: Products[] = [
         created: sub(new Date(), { days: 8, hours: 6, minutes: 20 }),
         isStock: true,
         qty: 1,
-        rank:87,
-        price:'200'
+        rank: 87,
+        price: '200'
     },
     {
         id: 2,
@@ -55,8 +55,8 @@ const products: Products[] = [
         created: sub(new Date(), { days: 10, hours: 8, minutes: 69 }),
         isStock: false,
         qty: 1,
-        rank:87,
-        price:'100'
+        rank: 87,
+        price: '100'
     },
     {
         id: 3,
@@ -75,8 +75,8 @@ const products: Products[] = [
         created: sub(new Date(), { days: 4, hours: 9, minutes: 50 }),
         isStock: true,
         qty: 1,
-        rank:50,
-        price:'100'
+        rank: 50,
+        price: '100'
     },
     {
         id: 4,
@@ -95,8 +95,8 @@ const products: Products[] = [
         created: sub(new Date(), { days: 7, hours: 6, minutes: 45 }),
         isStock: false,
         qty: 1,
-        rank:90,
-        price:'50'
+        rank: 90,
+        price: '50'
     },
     {
         id: 5,
@@ -115,8 +115,8 @@ const products: Products[] = [
         created: sub(new Date(), { days: 2, hours: 9, minutes: 45 }),
         isStock: true,
         qty: 1,
-        rank:88,
-        price:'50'
+        rank: 88,
+        price: '50'
     },
     {
         id: 6,
@@ -135,8 +135,8 @@ const products: Products[] = [
         created: add(new Date(), { days: 6, hours: 10, minutes: 0 }),
         isStock: true,
         qty: 1,
-        rank:95,
-        price:'100'
+        rank: 95,
+        price: '100'
     },
     {
         id: 7,
@@ -155,8 +155,8 @@ const products: Products[] = [
         created: add(new Date(), { days: 14, hours: 1, minutes: 55 }),
         isStock: false,
         qty: 1,
-        rank:60,
-        price:'50'
+        rank: 60,
+        price: '50'
     },
     {
         id: 8,
@@ -175,8 +175,8 @@ const products: Products[] = [
         created: sub(new Date(), { days: 0, hours: 11, minutes: 10 }),
         isStock: true,
         qty: 1,
-        rank:80,
-        price:'151'
+        rank: 80,
+        price: '151'
     }
 ];
 

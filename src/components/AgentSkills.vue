@@ -10,7 +10,7 @@
                     <span>Repository로 스킬 추가</span>
                 </v-tooltip>
             </div>
-            
+
             <div class="ml-2">
                 <v-btn variant="text" icon size="small" @click="openSkillUpload">
                     <v-icon>mdi-folder-zip-outline</v-icon>
@@ -18,16 +18,11 @@
                 <v-tooltip activator="parent" location="right">
                     <span>압축 파일로 스킬 추가</span>
                 </v-tooltip>
-                <input type="file" ref="skillUploadInput" accept=".zip" style="display: none;" @change="handleSkillUpload">
+                <input type="file" ref="skillUploadInput" accept=".zip" style="display: none" @change="handleSkillUpload" />
             </div>
 
             <div class="ml-2">
-                <v-btn 
-                    variant="text" 
-                    icon size="small" 
-                    :disabled="selectedNodeId === null"
-                    @click="addNode('folder')"
-                >
+                <v-btn variant="text" icon size="small" :disabled="selectedNodeId === null" @click="addNode('folder')">
                     <v-icon>mdi-folder-plus-outline</v-icon>
                 </v-btn>
                 <v-tooltip activator="parent" location="right">
@@ -36,12 +31,7 @@
             </div>
 
             <div>
-                <v-btn 
-                    variant="text" 
-                    icon size="small" 
-                    :disabled="selectedNodeId === null || isFileNode"
-                    @click="addNode('file')"
-                >
+                <v-btn variant="text" icon size="small" :disabled="selectedNodeId === null || isFileNode" @click="addNode('file')">
                     <v-icon>mdi-file-document-plus-outline</v-icon>
                 </v-btn>
                 <v-tooltip activator="parent" location="right">
@@ -52,38 +42,29 @@
 
         <!-- skills tree -->
         <v-card flat class="px-3 py-2">
-            <v-treeview
-                :config="config"
-                :nodes="nodes"
-                style="user-select: none; width: 100%;"
-            >
+            <v-treeview :config="config" :nodes="nodes" style="user-select: none; width: 100%">
                 <template #before-input="{ node }">
-                    <div @click="handleNodeClick(node)" class="d-inline-flex align-center justify-space-between cursor-pointer w-100"
+                    <div
+                        @click="handleNodeClick(node)"
+                        class="d-inline-flex align-center justify-space-between cursor-pointer w-100"
                         :class="{
                             'text-primary': selectedNodeId === node.id,
-                            'selected-node-background': selectedNodeId === node.id,
+                            'selected-node-background': selectedNodeId === node.id
                         }"
                     >
-                        <div v-if="editingNodeId !== node.id || node.data.type !== 'folder'" class="d-inline-flex align-center text-subtitle-1 font-weight-medium text-truncate ml-1">
+                        <div
+                            v-if="editingNodeId !== node.id || node.data.type !== 'folder'"
+                            class="d-inline-flex align-center text-subtitle-1 font-weight-medium text-truncate ml-1"
+                        >
                             <span class="text-truncate">
                                 {{ node.text }}
                                 <v-tooltip activator="parent" location="bottom">
                                     {{ node.text }}
                                 </v-tooltip>
                             </span>
-                            <v-tooltip 
-                                v-if="node.data.type === 'skill' && node.data.hasWarning"
-                                location="bottom"
-                            >
+                            <v-tooltip v-if="node.data.type === 'skill' && node.data.hasWarning" location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-icon 
-                                        v-bind="props"
-                                        size="small" 
-                                        color="warning" 
-                                        class="ml-1"
-                                    >
-                                        mdi-alert-circle
-                                    </v-icon>
+                                    <v-icon v-bind="props" size="small" color="warning" class="ml-1"> mdi-alert-circle </v-icon>
                                 </template>
                                 <span>{{ node.data.warningMessage || '스킬을 불러올 수 없습니다' }}</span>
                             </v-tooltip>
@@ -95,45 +76,33 @@
                             density="compact"
                             hide-details
                             class="ml-1"
-                            style="min-width: 100px; max-width: 200px;"
+                            style="min-width: 100px; max-width: 200px"
                             @keyup.enter="finishEditFolder(node)"
                             @keyup.esc="cancelEditFolder"
                             ref="folderNameInput"
                             autofocus
                         ></v-text-field>
                         <div v-if="node.data.type === 'skill'">
-                            <v-btn 
+                            <v-btn
                                 v-if="node.exists || node.data.hasWarning"
-                                variant="text" 
-                                icon 
-                                size="x-small" color="error" 
-                                @click="showDeleteDialog = true; selectedNodeId = node.id;">
+                                variant="text"
+                                icon
+                                size="x-small"
+                                color="error"
+                                @click="
+                                    showDeleteDialog = true;
+                                    selectedNodeId = node.id;
+                                "
+                            >
                                 <v-icon>mdi-delete</v-icon>
                             </v-btn>
-                            <v-progress-circular
-                                v-else
-                                size="12"
-                                width="2"
-                                color="primary"
-                                indeterminate
-                            ></v-progress-circular>
+                            <v-progress-circular v-else size="12" width="2" color="primary" indeterminate></v-progress-circular>
                         </div>
                         <div v-else-if="node.data.type === 'folder'">
-                            <v-btn
-                                v-if="editingNodeId !== node.id"
-                                variant="text"
-                                icon size="x-small"
-                                @click.stop="startEditFolder(node)"
-                            >
+                            <v-btn v-if="editingNodeId !== node.id" variant="text" icon size="x-small" @click.stop="startEditFolder(node)">
                                 <v-icon>mdi-pencil-outline</v-icon>
                             </v-btn>
-                            <v-btn
-                                v-else
-                                variant="text"
-                                icon size="x-small"
-                                color="primary"
-                                @click.stop="finishEditFolder(node)"
-                            >
+                            <v-btn v-else variant="text" icon size="x-small" color="primary" @click.stop="finishEditFolder(node)">
                                 <v-icon>mdi-check</v-icon>
                             </v-btn>
                         </div>
@@ -144,12 +113,8 @@
 
         <v-dialog v-model="showRepositoryUpload" max-width="400">
             <v-card>
-                <v-card-title>
-                    스킬 추가
-                </v-card-title>
-                <v-card-subtitle>
-                    Repository URL을 입력하여 스킬을 추가합니다.
-                </v-card-subtitle>
+                <v-card-title> 스킬 추가 </v-card-title>
+                <v-card-subtitle> Repository URL을 입력하여 스킬을 추가합니다. </v-card-subtitle>
                 <v-card-text>
                     <v-text-field
                         v-model="repositoryUrl"
@@ -166,9 +131,13 @@
                     <v-btn @click="showRepositoryUpload = false" variant="flat" color="error" rounded>
                         {{ $t('common.cancel') }}
                     </v-btn>
-                    <v-btn @click="uploadSkills({ type: 'url', url: repositoryUrl })" 
+                    <v-btn
+                        @click="uploadSkills({ type: 'url', url: repositoryUrl })"
                         :loading="isLoading && repositoryUrl !== ''"
-                        variant="flat" color="primary" rounded>
+                        variant="flat"
+                        color="primary"
+                        rounded
+                    >
                         {{ $t('common.add') }}
                     </v-btn>
                 </v-card-actions>
@@ -177,12 +146,8 @@
 
         <v-dialog v-model="showDeleteDialog" max-width="400">
             <v-card>
-                <v-card-title>
-                    스킬 삭제
-                </v-card-title>
-                <v-card-text>
-                    삭제된 스킬은 복구할 수 없습니다. 정말 삭제하시겠습니까?
-                </v-card-text>
+                <v-card-title> 스킬 삭제 </v-card-title>
+                <v-card-text> 삭제된 스킬은 복구할 수 없습니다. 정말 삭제하시겠습니까? </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn @click="showDeleteDialog = false" variant="flat" color="error" rounded>
@@ -204,7 +169,7 @@ import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
     components: {
-        VTreeview,
+        VTreeview
     },
     props: {
         isLoading: {
@@ -215,7 +180,7 @@ export default {
     data: () => ({
         backend: null,
         skills: [],
-        
+
         // uploaded repository url
         showRepositoryUpload: false,
         repositoryUrl: '',
@@ -233,12 +198,12 @@ export default {
         // folder editing
         editingNodeId: null,
         editingFolderName: '',
-        originalFolderName: '',
+        originalFolderName: ''
     }),
     computed: {
         isFileNode() {
             return this.selectedNodeId && this.nodes[this.selectedNodeId] && this.nodes[this.selectedNodeId].data?.type === 'file';
-        },
+        }
     },
     watch: {
         selectedNodeId: {
@@ -292,7 +257,7 @@ export default {
                         documentCount: null
                     },
                     exists: false
-                }
+                };
                 const options = {
                     type: 'file',
                     file: files[0]
@@ -325,7 +290,7 @@ export default {
         async loadSkillFiles() {
             const result = await this.backend.getTenantSkills(window.$tenantName);
             const tenantSkills = result.skills;
-            this.skills = Array.isArray(tenantSkills) ? tenantSkills : (tenantSkills?.skills || []);
+            this.skills = Array.isArray(tenantSkills) ? tenantSkills : tenantSkills?.skills || [];
 
             this.nodes = {};
             this.config.roots = [];
@@ -338,7 +303,7 @@ export default {
                 let warningMessage = '';
                 let skill = null;
                 let files = [];
-                
+
                 try {
                     skill = await this.backend.getSkillFile(skillName);
                     if (!skill || !skill.skill_name) {
@@ -392,7 +357,9 @@ export default {
                         files.forEach((file, index) => {
                             const rawPath = (file.path || file.file_name || file.name || '').replace(/\\/g, '/');
                             const fallbackName = file.file_name || file.name || `file_${index + 1}`;
-                            const segments = (rawPath ? rawPath.split('/') : [fallbackName]).filter(segment => segment && segment.trim().length > 0);
+                            const segments = (rawPath ? rawPath.split('/') : [fallbackName]).filter(
+                                (segment) => segment && segment.trim().length > 0
+                            );
 
                             if (segments.length === 0) {
                                 segments.push(fallbackName);
@@ -411,17 +378,19 @@ export default {
                                         id: nodeId,
                                         text: segment,
                                         children: [],
-                                        ...(isFile ? {} : {
-                                            state: {
-                                                opened: false
-                                            }
-                                        }),
+                                        ...(isFile
+                                            ? {}
+                                            : {
+                                                  state: {
+                                                      opened: false
+                                                  }
+                                              }),
                                         data: {
                                             type: isFile ? 'file' : 'folder',
                                             originalId: segment,
                                             path: accumulatedPath,
-                                            size: isFile ? (file.size ?? null) : null,
-                                            modified: isFile ? (file.modified ?? null) : null
+                                            size: isFile ? file.size ?? null : null,
+                                            modified: isFile ? file.modified ?? null : null
                                         },
                                         exists: true
                                     };
@@ -440,7 +409,6 @@ export default {
                             });
                         });
                     }
-
                 } catch (error) {
                     delete this.nodes[skillId];
                     const rootIndex = this.config.roots.indexOf(skillId);
@@ -473,15 +441,15 @@ export default {
         async syncTenantSkills(skillNames = null) {
             try {
                 let skillsToSync = skillNames;
-                
+
                 // skillNames가 제공되지 않으면 this.skills 사용
                 if (!skillsToSync) {
                     // this.skills가 객체 배열인 경우 스킬명 배열로 변환
-                    skillsToSync = Array.isArray(this.skills) 
-                        ? this.skills.map(skill => typeof skill === 'string' ? skill : skill.name).filter(Boolean)
+                    skillsToSync = Array.isArray(this.skills)
+                        ? this.skills.map((skill) => (typeof skill === 'string' ? skill : skill.name)).filter(Boolean)
                         : [];
                 }
-                
+
                 // 스킬 목록이 있으면 tenants 테이블에 동기화
                 if (skillsToSync.length > 0 || skillNames !== null) {
                     await this.backend.saveSkills(skillsToSync, true);
@@ -531,8 +499,8 @@ export default {
             }
             this.nodes[this.selectedNodeId].exists = false;
             const options = {
-                skillName: this.selectedNodeId,
-            }
+                skillName: this.selectedNodeId
+            };
             try {
                 await this.backend.deleteSkills(options);
                 await this.loadSkillFiles();
@@ -570,15 +538,15 @@ export default {
 
             let newNodeId = parentNode.id;
             let newNodePath = '';
-            
+
             if (parentNode.data.type === 'skill') {
-                newNodeId += '::new_file.md'
+                newNodeId += '::new_file.md';
                 newNodePath = 'new_file.md';
             } else if (parentNode.data.type === 'folder') {
-                newNodeId += '/new_file.md'
+                newNodeId += '/new_file.md';
                 newNodePath = parentNode.data.path + '/new_file.md';
             }
-            
+
             const fileNode = {
                 id: newNodeId,
                 text: 'new_file.md',
@@ -589,7 +557,7 @@ export default {
                 },
                 parent: parentNode.data.parent,
                 exists: false
-            }
+            };
             return { fileNode, parentNode };
         },
         addFolder() {
@@ -599,20 +567,20 @@ export default {
             }
             let newNodeId = parentNode.id;
             let newNodePath = '';
-            
+
             if (parentNode.data.type === 'skill') {
-                newNodeId += '::new_folder'
+                newNodeId += '::new_folder';
                 newNodePath = 'new_folder';
             } else if (parentNode.data.type === 'folder') {
-                newNodeId += '/new_folder'
+                newNodeId += '/new_folder';
                 newNodePath = parentNode.data.path + '/new_folder';
             } else if (parentNode.data.type === 'file') {
-                const parentId = newNodeId.split('/').slice(0, -1).join('/')
+                const parentId = newNodeId.split('/').slice(0, -1).join('/');
                 parentNode = this.nodes[parentId];
                 newNodeId = newNodeId.split('/').slice(0, -1).join('/') + '/new_folder';
                 newNodePath = parentNode.data.path + '/new_folder';
             }
-            
+
             const folderNode = {
                 id: newNodeId,
                 text: 'new_folder',
@@ -627,7 +595,7 @@ export default {
                 },
                 parent: parentNode.data.parent,
                 exists: false
-            }
+            };
             return { folderNode, parentNode };
         },
         startEditFolder(node) {
@@ -675,9 +643,9 @@ export default {
             this.editingNodeId = null;
             this.editingFolderName = '';
             this.originalFolderName = '';
-        },
+        }
     }
-}
+};
 </script>
 
 <style scoped>

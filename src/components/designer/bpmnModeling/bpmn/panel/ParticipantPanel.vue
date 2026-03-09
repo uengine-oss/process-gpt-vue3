@@ -3,29 +3,34 @@
         <div class="included" style="margin-bottom: 22px; height: 100%">
             <div class="mb-1 mt-4">{{}}</div>
             <v-row class="ma-0 pa-0 align-center pb-2">
-                <v-autocomplete v-model="copyUengineProperties.selectedSystem" :items="systemList" @input="$evt => selectSystem($evt)" 
+                <v-autocomplete
+                    v-model="copyUengineProperties.selectedSystem"
+                    :items="systemList"
+                    @input="($evt) => selectSystem($evt)"
                     density="comfortable"
                     variant="outlined"
                     :label="$t('ParticipantPanel.system')"
                 />
-                <DetailComponent class="ml-2"
+                <DetailComponent
+                    class="ml-2"
                     :title="$t('ParticipantPanel.systemDefinitionDescriptionTitle')"
                     :details="methodTypeDescription"
                     :iconSize="24"
                 />
             </v-row>
-            
+
             <v-row class="ma-0 pa-0 align-center pb-2">
                 <v-text-field :label="$t('ParticipantPanel.apiUrl')" v-model="copyUengineProperties.serviceURL"></v-text-field>
-                <DetailComponent class="ml-2"
+                <DetailComponent
+                    class="ml-2"
                     :title="$t('ParticipantPanel.apiUrlDescriptionTitle')"
                     :details="apiUrlDescription"
                     :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
                     :iconSize="24"
-                />  
+                />
             </v-row>
-            
-            <div class="mb-1 mt-4">{{$t('ParticipantPanel.openAPISpec')}}</div>
+
+            <div class="mb-1 mt-4">{{ $t('ParticipantPanel.openAPISpec') }}</div>
             <v-row class="ma-0 pa-0" style="height: 50vh">
                 <vue-monaco-editor
                     v-model:value="copyUengineProperties.openAPI"
@@ -85,12 +90,12 @@ export default {
             backend: null,
             methodTypeDescription: [
                 {
-                    image: 'systemDefinition.gif',
-                },
+                    image: 'systemDefinition.gif'
+                }
             ],
             apiUrlDescription: [
                 {
-                    title: "ParticipantPanel.apiUrlDescriptionSubTitle1",
+                    title: 'ParticipantPanel.apiUrlDescriptionSubTitle1'
                 }
             ]
         };
@@ -102,7 +107,7 @@ export default {
         this.bpmnModeler = store.getModeler;
         let def = this.bpmnModeler.getDefinitions();
         let process = me.element.processRef;
-        
+
         if (this.copyUengineProperties?.serviceURL?.length > 0) {
             process.isExecutable = false;
         } else {
@@ -128,19 +133,19 @@ export default {
             this.definitions = value;
         }
         const systemList = await this.backend.getSystemList();
-        systemList.forEach(system => {
-            this.systemList.push(system.name.replace(".json",""));
-        })
+        systemList.forEach((system) => {
+            this.systemList.push(system.name.replace('.json', ''));
+        });
     },
     computed: {},
     watch: {
         'copyUengineProperties.selectedSystem'(newVal) {
-            this.backend.getSystem(newVal).then(result => {
-                console.log(result)
+            this.backend.getSystem(newVal).then((result) => {
+                console.log(result);
                 this.copyUengineProperties.selectedSystem = newVal;
                 this.copyUengineProperties.serviceURL = result.url;
                 this.copyUengineProperties.openAPI = result.spec;
-            })
+            });
         },
         'copyUengineProperties.serviceURL': function (newVal, oldVal) {
             let me = this;
@@ -193,7 +198,7 @@ export default {
 
             return obj;
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

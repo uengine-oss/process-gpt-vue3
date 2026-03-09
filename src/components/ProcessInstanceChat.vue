@@ -1,17 +1,25 @@
 <template>
-    <div style="background-color: rgba(255, 255, 255, 0); width: 100%;">
+    <div style="background-color: rgba(255, 255, 255, 0); width: 100%">
         <v-skeleton-loader
             v-if="messages.length === 0"
             type="image"
             class="mx-auto process-instance-chat-skeleton-loader"
         ></v-skeleton-loader>
-        
-        <Chat v-else :messages="messages" :agentInfo="agentInfo"
-            :userInfo="userInfo" :disableChat="disableChat"
-            :type="'instances'" :name="chatName" 
-            :chatRoomId="chatRoomId" :hideInput="!isTaskMode"
-            @requestDraftAgent="requestDraftAgent" @sendMessage="beforeSendMessage"
-            @sendEditedMessage="beforeSendEditedMessage" @stopMessage="stopMessage"
+
+        <Chat
+            v-else
+            :messages="messages"
+            :agentInfo="agentInfo"
+            :userInfo="userInfo"
+            :disableChat="disableChat"
+            :type="'instances'"
+            :name="chatName"
+            :chatRoomId="chatRoomId"
+            :hideInput="!isTaskMode"
+            @requestDraftAgent="requestDraftAgent"
+            @sendMessage="beforeSendMessage"
+            @sendEditedMessage="beforeSendEditedMessage"
+            @stopMessage="stopMessage"
             ref="chatComponent"
         >
             <template v-slot:custom-title>
@@ -21,47 +29,60 @@
                 <!-- streaming text -->
                 <div v-if="streamingText" class="position-absolute bottom-0 end-0">
                     <div class="mx-2">
-                        <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width: 100% !important;">
+                        <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width: 100% !important">
                             <pre class="text-body-1">{{ filteredStreamingText }}</pre>
                         </v-sheet>
                     </div>
                 </div>
-                <div v-if="childStreamingText && Object.keys(filteredChildStreamingText).length > 0" class="position-absolute bottom-0 end-0">
+                <div
+                    v-if="childStreamingText && Object.keys(filteredChildStreamingText).length > 0"
+                    class="position-absolute bottom-0 end-0"
+                >
                     <div class="mx-2" v-for="key in Object.keys(filteredChildStreamingText)" :key="key">
                         <template v-if="isOpenSubprocess[key]">
-                            <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100" style="max-width:100% !important;">
+                            <v-sheet
+                                class="chat-message-bubble rounded-md px-3 py-2 other-message w-100"
+                                style="max-width: 100% !important"
+                            >
                                 <div
-                                style="display:flex;align-items:center;gap:6px;width:100%;min-width:0;cursor:pointer;"
-                                @click="isOpenSubprocess[key] = false"
+                                    style="display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; cursor: pointer"
+                                    @click="isOpenSubprocess[key] = false"
                                 >
-                                <div class="text-body-2"
-                                    style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-                                    :title="key">
-                                    {{ key }}
-                                </div>
-                                <v-btn icon variant="text" @click.stop="isOpenSubprocess[key] = false" :aria-label="$t('common.close')">
-                                    <v-icon>mdi-chevron-up</v-icon>
-                                </v-btn>
+                                    <div
+                                        class="text-body-2"
+                                        style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+                                        :title="key"
+                                    >
+                                        {{ key }}
+                                    </div>
+                                    <v-btn icon variant="text" @click.stop="isOpenSubprocess[key] = false" :aria-label="$t('common.close')">
+                                        <v-icon>mdi-chevron-up</v-icon>
+                                    </v-btn>
                                 </div>
 
-                                <pre class="text-body-1"
-                                    style="margin:8px 0 0 0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;">
-                            {{ filteredChildStreamingText[key] }}</pre>
+                                <pre
+                                    class="text-body-1"
+                                    style="margin: 8px 0 0 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word"
+                                >
+                            {{ filteredChildStreamingText[key] }}</pre
+                                >
                             </v-sheet>
                         </template>
                         <template v-if="!isOpenSubprocess[key]">
                             <v-sheet class="chat-message-bubble rounded-md px-3 py-2 other-message w-100">
                                 <div
-                                    style="display:flex;align-items:center;gap:6px;width:100%;min-width:0;cursor:pointer;"
+                                    style="display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; cursor: pointer"
                                     @click="isOpenSubprocess[key] = true"
                                 >
-                                <div class="text-body-1"
-                                    style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                    {{ key }} {{ $t('ProcessInstanceChat.subprocessCreating') }}
-                                </div>
-                                <v-btn icon variant="text" @click.stop="isOpenSubprocess[key] = true" :aria-label="$t('common.open')">
-                                    <v-icon>mdi-chevron-down</v-icon>
-                                </v-btn>
+                                    <div
+                                        class="text-body-1"
+                                        style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"
+                                    >
+                                        {{ key }} {{ $t('ProcessInstanceChat.subprocessCreating') }}
+                                    </div>
+                                    <v-btn icon variant="text" @click.stop="isOpenSubprocess[key] = true" :aria-label="$t('common.open')">
+                                        <v-icon>mdi-chevron-down</v-icon>
+                                    </v-btn>
                                 </div>
                             </v-sheet>
                         </template>
@@ -78,12 +99,7 @@
                     </v-btn>
                 </div>
                 <div class="pr-4">
-                    <ProcessFeedback 
-                        v-if="showFeedbackInput"
-                        :lastMessage="lastMessage"
-                        :task="lastTask"
-                        @closeFeedback="closeFeedback"
-                    />
+                    <ProcessFeedback v-if="showFeedbackInput" :lastMessage="lastMessage" :task="lastTask" @closeFeedback="closeFeedback" />
                 </div>
             </template>
         </Chat>
@@ -94,26 +110,26 @@
 import ChatModule from '@/components/ChatModule.vue';
 import ChatGenerator from './ai/ProcessInstanceGenerator.js';
 
-import Chat from "@/components/ui/Chat.vue";
-import ProcessFeedback from "@/components/ui/ProcessFeedback.vue";
+import Chat from '@/components/ui/Chat.vue';
+import ProcessFeedback from '@/components/ui/ProcessFeedback.vue';
 
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
     mixins: [ChatModule],
     components: {
         Chat,
-        ProcessFeedback,
+        ProcessFeedback
     },
-    props:{
+    props: {
         isComplete: Boolean,
-        useThreadId: Boolean,
+        useThreadId: Boolean
     },
     data: () => ({
         processDefinition: null,
         processInstance: null,
-        
+
         chatInfo: null,
         imgKeyList: [],
 
@@ -121,7 +137,7 @@ export default {
         onLoad: false,
         bpmn: null,
         currentActivities: null,
-        
+
         isTaskMode: false,
 
         // mcp agent
@@ -135,13 +151,13 @@ export default {
         showFeedbackInput: false,
         lastMessage: null,
         lastTask: null,
-        
+
         // child streaming text
         childStreamingText: {},
         // childStreamingText: { "4003a495-b591-4aed-baf9-fc08b37536aa": { "name": "VIP 뉴스레터 작성 시작:0", "log": "```json\n{\n \"completedActivities\": [\n {\n \"completedActivityId\": \"Event_1ttnk4r\",\n \"completedActivityName\": \"VIP 뉴스레터 작성 시작\",\n \"completedUserEmail\": \"827ac44b-1435-4ad8-ab14-8b28c3f64ef2\",\n \"type\": \"event\",\n \"expression\": \"\",\n \"dueDate\": \"2025-09-05\",\n \"result\": \"DONE\",\n \"description\": \"VIP 뉴스레터 작성 시작 이벤트\",\n \"cannotProceedErrors\": []\n }\n ],\n " }, "bea1984c-a95d-492f-a9d4-34d3d2810a82": { "name": "VIP 뉴스레터 작성 시작:1", "log": "```json\n{\n \"completedActivities\": [\n {\n \"completedActivityId\": \"Event_1ttnk4r\",\n \"completedActivityName\": \"VIP 뉴스레터 작성 시작\",\n \"completedUserEmail\": \"827ac44b-1435-4ad8-ab14-8b28c3f64ef2\",\n \"type\": \"event\",\n \"expression\": \"\",\n \"dueDate\": \"2025-09-05\",\n \"result\": \"DONE\",\n \"description\": \"VIP 뉴스레터 작성 시작 이벤트\",\n \"cannotProceedErrors\": []\n }\n ],\n " } },
         childSubscription: {},
         childTasks: [],
-        isOpenSubprocess: {},
+        isOpenSubprocess: {}
     }),
     computed: {
         chatName() {
@@ -156,13 +172,19 @@ export default {
             }
             this.$refs.chatComponent.scrollToBottom();
             // ```json 마크다운 표시 제거 (줄바꿈 포함)
-            return this.streamingText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+            return this.streamingText
+                .replace(/```json\s*/g, '')
+                .replace(/```\s*/g, '')
+                .trim();
         },
         filteredChildStreamingText() {
             let result = {};
             if (this.childStreamingText) {
-                Object.keys(this.childStreamingText).forEach(key => {
-                    result[this.childStreamingText[key].name] = this.childStreamingText[key].log.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+                Object.keys(this.childStreamingText).forEach((key) => {
+                    result[this.childStreamingText[key].name] = this.childStreamingText[key].log
+                        .replace(/```json\s*/g, '')
+                        .replace(/```\s*/g, '')
+                        .trim();
                 });
             }
             return result;
@@ -177,15 +199,15 @@ export default {
         });
         this.chatInfo = {
             title: 'processExecution.cardTitle',
-            text: "processExecution.processDefinitionExplanation"
-        }
+            text: 'processExecution.processDefinitionExplanation'
+        };
 
         if (!this.isTaskMode) {
             const worklist = await backend.getWorkListByInstId(this.chatRoomId);
-            const workItem = worklist.find(item => item.task.status == 'SUBMITTED');
+            const workItem = worklist.find((item) => item.task.status == 'SUBMITTED');
             this.streamingText = '';
             if (workItem) {
-                this.runningTaskId = workItem.taskId;;
+                this.runningTaskId = workItem.taskId;
                 await this.getTaskLog(true);
             }
         }
@@ -197,7 +219,7 @@ export default {
         }
     },
     watch: {
-        "$route": {
+        $route: {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal.params.taskId && newVal.params.taskId !== oldVal.params.taskId) {
@@ -216,7 +238,7 @@ export default {
         },
         messages(newVal) {
             if (newVal.length > 0) {
-                const systemMessages = newVal.filter(item => item.role == 'system');
+                const systemMessages = newVal.filter((item) => item.role == 'system');
                 if (systemMessages.length > 0) {
                     this.lastMessage = systemMessages[systemMessages.length - 1];
                 }
@@ -225,20 +247,20 @@ export default {
     },
     methods: {
         requestDraftAgent(newVal) {
-            var me = this
+            var me = this;
             me.$try({
                 context: me,
                 action() {
-                    if (newVal) me.agentInfo.draftPrompt = newVal
-                    me.messages.push(me.createMessageObj(newVal))
+                    if (newVal) me.agentInfo.draftPrompt = newVal;
+                    me.messages.push(me.createMessageObj(newVal));
 
                     if (!me.agentInfo.draftPrompt) return;
-                    me.agentInfo.isRunning = true
-                    me.requestAgent(me.agentInfo.draftPrompt)
-                },
+                    me.agentInfo.isRunning = true;
+                    me.requestAgent(me.agentInfo.draftPrompt);
+                }
                 // onFail() {
                 // }
-            })
+            });
         },
         async loadProcess() {
             this.onLoad = false;
@@ -256,7 +278,7 @@ export default {
                 }
                 await this.getLastTask(id);
             }
-            var bpmn = await backend.getRawDefinition(defId, { type: "bpmn"});
+            var bpmn = await backend.getRawDefinition(defId, { type: 'bpmn' });
             if (bpmn) {
                 this.bpmn = bpmn;
             }
@@ -266,11 +288,11 @@ export default {
             const me = this;
             me.processInstance = null;
             me.bpmn = null;
-            
+
             let id;
             if (me.$route.params.taskId) {
                 const taskId = me.$route.params.taskId;
-                const workitem = await backend.getWorkItem(taskId);     
+                const workitem = await backend.getWorkItem(taskId);
                 if (workitem) {
                     id = workitem.worklist.instId;
                     this.chatRoomId = id;
@@ -290,8 +312,8 @@ export default {
                     me.checkDisableChat();
                 }
                 await me.loadProcess();
-                
-                await me.getMessages(me.chatRoomId)
+
+                await me.getMessages(me.chatRoomId);
                 await me.getLastTask(id);
             }
 
@@ -309,7 +331,8 @@ export default {
             }
 
             if (this.processInstance) {
-                if (this.processInstance.participants &&
+                if (
+                    this.processInstance.participants &&
                     this.processInstance.participants.length > 0 &&
                     !this.processInstance.participants.includes(this.userInfo.email)
                 ) {
@@ -347,15 +370,14 @@ export default {
         async putMessage(msg) {
             const uuid = this.uuid();
             const message = {
-                "messages": msg,
-                "id": this.chatRoomId,
-                "uuid": uuid,
-                "thread_id": this.threadId || null
-            }
+                messages: msg,
+                id: this.chatRoomId,
+                uuid: uuid,
+                thread_id: this.threadId || null
+            };
             this.putObject(`chats/${uuid}`, message);
         },
-        afterModelCreated(response) {
-        },
+        afterModelCreated(response) {},
         async afterGenerationFinished(response) {
             var me = this;
             let messageWriting = me.messages[me.messages.length - 1];
@@ -367,7 +389,7 @@ export default {
                     me.processInstance = await backend.getInstance(jsonData.instanceId);
                 }
                 if (jsonData.nextActivities && jsonData.nextActivities.length > 0) {
-                    messageWriting.content = jsonData.nextActivities.map(item => item.messageToUser).join('\n\n');
+                    messageWriting.content = jsonData.nextActivities.map((item) => item.messageToUser).join('\n\n');
                 }
             }
 
@@ -391,7 +413,7 @@ export default {
             } else {
                 this.lastMessage.jsonContent = {
                     executionResult: type
-                }
+                };
             }
             if (type == 'good') {
                 await backend.saveFeedback(type, this.lastTask.taskId);
@@ -405,17 +427,21 @@ export default {
                 await this.getTaskLog();
             }
             this.showFeedbackInput = false;
-
         },
         async getLastTask(instId) {
             const worklist = await backend.getWorkListByInstId(instId);
             if (!this.lastMessage) {
                 this.lastMessage = this.messages[this.messages.length - 1];
             }
-            if (this.lastMessage && this.lastMessage.jsonContent && this.lastMessage.jsonContent.completedActivities && this.lastMessage.jsonContent.completedActivities.length > 0) {
+            if (
+                this.lastMessage &&
+                this.lastMessage.jsonContent &&
+                this.lastMessage.jsonContent.completedActivities &&
+                this.lastMessage.jsonContent.completedActivities.length > 0
+            ) {
                 const completedActivities = this.lastMessage.jsonContent.completedActivities;
-                const completedActivityIds = completedActivities.map(item => item.completedActivityId);
-                const workItems = worklist.filter(item => item.status == 'DONE' && completedActivityIds.includes(item.tracingTag));
+                const completedActivityIds = completedActivities.map((item) => item.completedActivityId);
+                const workItems = worklist.filter((item) => item.status == 'DONE' && completedActivityIds.includes(item.tracingTag));
                 if (workItems.length > 0) {
                     const workItem = workItems.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
                     this.lastTask = workItem;
@@ -425,10 +451,10 @@ export default {
 
         async getMessages(chatRoomId) {
             var me = this;
-            me.messages = []
-            let messages = await this.backend.getMessages(chatRoomId)
+            me.messages = [];
+            let messages = await this.backend.getMessages(chatRoomId);
             if (messages) {
-                let allMessages = messages.map(message => {
+                let allMessages = messages.map((message) => {
                     let newMessage = message.messages;
                     newMessage.thread_id = message.thread_id || null;
                     newMessage.uuid = message.uuid;
@@ -446,13 +472,13 @@ export default {
                 if (task.log) {
                     this.streamingText = task.log;
                 }
-                if (task.status == "DONE") {
+                if (task.status == 'DONE') {
                     this.streamingText = '';
                     if (this.subscription) {
                         // console.log('Unsubscribing from task log for taskId:', this.runningTaskId);
                         window.$supabase.removeChannel(this.subscription);
                     }
-                    this.childTasks.forEach(childTaskId => {
+                    this.childTasks.forEach((childTaskId) => {
                         this.removeChildTaskLog(childTaskId);
                     });
                     this.childStreamingText = {};
@@ -461,7 +487,7 @@ export default {
                     await this.loadData();
                     this.$refs.chatComponent.scrollToBottom();
                 }
-                if (task.status == "PENDING") {
+                if (task.status == 'PENDING') {
                     await this.getChildTaskLog(this.processInstance.instId);
                 }
             });
@@ -475,9 +501,9 @@ export default {
                         this.childSubscription[childTaskId] = await backend.getTaskLog(childTaskId, async (childTask) => {
                             if (childTask.log) {
                                 this.childStreamingText[childTaskId] = {
-                                    name: item.task.activity_name + ":" + item.task.execution_scope,
-                                    log: childTask.log,
-                                }
+                                    name: item.task.activity_name + ':' + item.task.execution_scope,
+                                    log: childTask.log
+                                };
                             }
                         });
                         this.childTasks.push(childTaskId);
@@ -495,7 +521,7 @@ export default {
                 this.lastMessage.jsonContent.appliedFeedback = false;
                 await backend.updateInstanceChat(this.chatRoomId, this.lastMessage, this.lastMessage.thread_id, this.lastMessage.uuid);
             }
-        },
+        }
     }
 };
 </script>
@@ -506,7 +532,7 @@ export default {
     height: 100%;
 }
 
-@media only screen and (max-width:1279px) {
+@media only screen and (max-width: 1279px) {
 }
 
 :deep(.left-part) {

@@ -5,7 +5,6 @@ const AuthRoutes = {
         requiresAuth: false
     },
     children: [
-
         {
             name: 'Landing Page',
             path: '/',
@@ -52,7 +51,7 @@ const AuthRoutes = {
             name: 'Side Initial Setting',
             path: '/auth/initial-setting',
             component: () => import('@/views/authentication/SideInitialSetting.vue')
-        },
+        }
         // {
         //     name: 'Boxed Forgot Password',
         //     path: '/auth/forgot-password2',

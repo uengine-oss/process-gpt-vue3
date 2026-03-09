@@ -28,19 +28,12 @@
             <v-col cols="12" class="ma-0 pa-0 pt-2" v-if="showTutorial">
                 <!-- 튜토리얼 로딩 중일 때 스켈레톤 표시 -->
                 <div v-if="isTutorialLoading">
-                    <v-skeleton-loader
-                        type="card"
-                        class="mb-4 tutorial-main-skeleton"
-                        elevation="2"
-                    />
+                    <v-skeleton-loader type="card" class="mb-4 tutorial-main-skeleton" elevation="2" />
                 </div>
-                
+
                 <!-- 튜토리얼 로딩 완료 후 실제 컨텐츠 표시 -->
                 <div v-show="!isTutorialLoading">
-                    <TutorialMain 
-                        @close-tutorial="closeTutorial" 
-                        @tutorial-loaded="onTutorialLoaded"
-                    />
+                    <TutorialMain @close-tutorial="closeTutorial" @tutorial-loaded="onTutorialLoaded" />
                 </div>
             </v-col>
         </v-row>
@@ -48,15 +41,15 @@
 </template>
 
 <script>
-import HeroSection from './sections/HeroSection.vue'
-import NecessitySection from './sections/NecessitySection.vue'
-import AI3StepsSection from './sections/AI3StepsSection.vue'
-import HowSection from './sections/HowSection.vue'
-import TutorialMain from './tutorial/TutorialMain.vue'
-import MovieGallerySection from './sections/MovieGallerySection.vue'
+import HeroSection from './sections/HeroSection.vue';
+import NecessitySection from './sections/NecessitySection.vue';
+import AI3StepsSection from './sections/AI3StepsSection.vue';
+import HowSection from './sections/HowSection.vue';
+import TutorialMain from './tutorial/TutorialMain.vue';
+import MovieGallerySection from './sections/MovieGallerySection.vue';
 // import ExtensibilitySection from './sections/ExtensibilitySection.vue'
-import CTASection from './sections/CTASection.vue'
-import DownloadSection from './sections/DownloadSection.vue'
+import CTASection from './sections/CTASection.vue';
+import DownloadSection from './sections/DownloadSection.vue';
 
 export default {
     name: 'HomeView',
@@ -69,7 +62,7 @@ export default {
     data() {
         return {
             isTutorialLoading: false
-        }
+        };
     },
     components: {
         HeroSection,
@@ -100,12 +93,7 @@ export default {
             this.isTutorialLoading = false;
         }
     }
-}
-</script> 
+};
+</script>
 
-<style scoped>
-</style>
-
-
-
-
+<style scoped></style>

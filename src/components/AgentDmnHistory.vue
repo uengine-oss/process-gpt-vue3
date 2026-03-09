@@ -2,9 +2,7 @@
     <div class="agent-dmn-history">
         <div class="d-flex justify-start align-center pa-4">
             <h4 class="text-h5">비즈니스 규칙 변경 이력</h4>
-            <p class="text-body-1 text-medium-emphasis ml-4">
-                에이전트의 비즈니스 규칙 변경 내역을 확인할 수 있습니다.
-            </p>
+            <p class="text-body-1 text-medium-emphasis ml-4">에이전트의 비즈니스 규칙 변경 내역을 확인할 수 있습니다.</p>
         </div>
         <div>
             <div v-if="historyList.length === 0 && !isLoading" class="text-center py-8">
@@ -16,7 +14,7 @@
             <div v-else-if="historyList.length === 0 && isLoading">
                 <v-skeleton-loader type="card"></v-skeleton-loader>
             </div>
-            
+
             <div v-else class="agent-dmn-history-table">
                 <v-data-table
                     :headers="headers"
@@ -40,11 +38,7 @@
 
                     <!-- 작업 컬럼 -->
                     <template v-slot:item.operation="{ item }">
-                        <v-chip 
-                            :color="getOperationColor(item.operation)" 
-                            size="small" 
-                            variant="flat"
-                        >
+                        <v-chip :color="getOperationColor(item.operation)" size="small" variant="flat">
                             {{ getOperationText(item.operation) }}
                         </v-chip>
                     </template>
@@ -55,7 +49,11 @@
                             <div v-if="item.previous_content || item.new_content || item.feedback_content" class="d-flex flex-column ga-1">
                                 <div v-if="item.previous_content" class="text-truncate" :title="item.previous_content">
                                     <span class="text-caption text-medium-emphasis">이전: </span>
-                                    {{ item.previous_content.length > 50 ? item.previous_content.substring(0, 50) + '...' : item.previous_content }}
+                                    {{
+                                        item.previous_content.length > 50
+                                            ? item.previous_content.substring(0, 50) + '...'
+                                            : item.previous_content
+                                    }}
                                 </div>
                                 <div v-if="item.new_content" class="text-truncate" :title="item.new_content">
                                     <span class="text-caption text-medium-emphasis">새: </span>
@@ -86,15 +84,12 @@
                                 <div v-if="item.operation === 'UPDATE' && item.previous_content && item.new_content">
                                     <!-- 사용자 친화적인 DMN 변경사항 표시 -->
                                     <div v-if="getParsedDmn(item, 'previous') && getParsedDmn(item, 'current')">
-                                        <dmn-diff-view 
-                                            :previous="getParsedDmn(item, 'previous')" 
-                                            :current="getParsedDmn(item, 'current')"
-                                        >
+                                        <dmn-diff-view :previous="getParsedDmn(item, 'previous')" :current="getParsedDmn(item, 'current')">
                                             <template v-slot:actions>
                                                 <div v-if="item.operation === 'UPDATE'" class="d-flex ga-2">
-                                                    <v-btn 
-                                                        color="orange" 
-                                                        variant="tonal" 
+                                                    <v-btn
+                                                        color="orange"
+                                                        variant="tonal"
                                                         size="small"
                                                         :loading="item.restoring"
                                                         @click="restoreVersion(item)"
@@ -102,9 +97,9 @@
                                                         <v-icon start>mdi-undo</v-icon>
                                                         변경 사항 되돌리기
                                                     </v-btn>
-                                                    <v-btn 
-                                                        color="primary" 
-                                                        variant="tonal" 
+                                                    <v-btn
+                                                        color="primary"
+                                                        variant="tonal"
                                                         size="small"
                                                         :loading="item.reapplying"
                                                         @click="reapplyVersion(item)"
@@ -118,7 +113,11 @@
                                     </div>
                                     <!-- XML 파싱 실패 시 원본 XML 표시 -->
                                     <div v-else>
-                                        <v-tabs :model-value="getXmlViewTab(item)" @update:model-value="setXmlViewTab(item, $event)" class="mb-2">
+                                        <v-tabs
+                                            :model-value="getXmlViewTab(item)"
+                                            @update:model-value="setXmlViewTab(item, $event)"
+                                            class="mb-2"
+                                        >
                                             <v-tab value="structured">구조화된 변경사항</v-tab>
                                             <v-tab value="raw">원본 XML</v-tab>
                                         </v-tabs>
@@ -147,7 +146,7 @@
                                         </v-window>
                                     </div>
                                 </div>
-                                
+
                                 <!-- CREATE 작업: 새 내용만 표시 -->
                                 <div v-else-if="item.operation === 'CREATE' && item.new_content">
                                     <!-- 사용자 친화적인 DMN 표시 -->
@@ -162,7 +161,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- DELETE 작업: 이전 내용만 표시 -->
                                 <div v-else-if="item.operation === 'DELETE' && item.previous_content">
                                     <!-- 사용자 친화적인 DMN 표시 -->
@@ -177,13 +176,11 @@
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- MOVE 작업: 이동 정보 및 내용 표시 -->
                                 <div v-else-if="item.operation === 'MOVE'" class="mt-2">
                                     <div class="text-caption text-medium-emphasis mb-1">이동 정보</div>
-                                    <div class="text-body-2 mb-2">
-                                        {{ item.moved_from_storage }} → {{ item.moved_to_storage }}
-                                    </div>
+                                    <div class="text-body-2 mb-2">{{ item.moved_from_storage }} → {{ item.moved_to_storage }}</div>
                                     <div v-if="item.previous_content || item.new_content">
                                         <v-row class="ma-0">
                                             <v-col cols="6" class="pa-2">
@@ -203,11 +200,9 @@
                                         </v-row>
                                     </div>
                                 </div>
-                                
+
                                 <!-- 내용이 없는 경우 -->
-                                <div v-else class="mt-2 text-body-2 text-medium-emphasis">
-                                    변경 내용이 없습니다.
-                                </div>
+                                <div v-else class="mt-2 text-body-2 text-medium-emphasis">변경 내용이 없습니다.</div>
                             </v-card>
                         </td>
                     </template>
@@ -276,7 +271,7 @@ export default {
                     this.loadHistory();
                 }
             }
-        },
+        }
     },
     created() {
         this.backend = BackendFactory.createBackend();
@@ -289,7 +284,7 @@ export default {
     methods: {
         async loadHistory() {
             if (!this.agentId || !this.backend) return;
-            
+
             this.isLoading = true;
             this.historyList = [];
 
@@ -306,20 +301,20 @@ export default {
 
         getOperationColor(operation) {
             const colors = {
-                'CREATE': 'success',
-                'UPDATE': 'info',
-                'DELETE': 'error',
-                'MOVE': 'warning'
+                CREATE: 'success',
+                UPDATE: 'info',
+                DELETE: 'error',
+                MOVE: 'warning'
             };
             return colors[operation] || 'default';
         },
 
         getOperationText(operation) {
             const texts = {
-                'CREATE': '생성',
-                'UPDATE': '수정',
-                'DELETE': '삭제',
-                'MOVE': '이동'
+                CREATE: '생성',
+                UPDATE: '수정',
+                DELETE: '삭제',
+                MOVE: '이동'
             };
             return texts[operation] || operation;
         },
@@ -404,11 +399,7 @@ export default {
             item.restoring = true;
 
             try {
-                const result = await this.backend.restoreDmnVersion(
-                    item.id,
-                    item.knowledge_id,
-                    this.agentId
-                );
+                const result = await this.backend.restoreDmnVersion(item.id, item.knowledge_id, this.agentId);
 
                 this.$try({
                     context: this,
@@ -449,11 +440,7 @@ export default {
             item.reapplying = true;
 
             try {
-                const result = await this.backend.reapplyDmnVersion(
-                    item.id,
-                    item.knowledge_id,
-                    this.agentId
-                );
+                const result = await this.backend.reapplyDmnVersion(item.id, item.knowledge_id, this.agentId);
 
                 this.$try({
                     context: this,
@@ -474,7 +461,6 @@ export default {
                 item.reapplying = false;
             }
         }
-
     }
 };
 </script>

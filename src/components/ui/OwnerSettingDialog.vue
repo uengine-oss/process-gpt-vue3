@@ -27,18 +27,10 @@
 
             <v-card-actions class="pa-4 pt-0">
                 <v-spacer />
-                <v-btn
-                    variant="text"
-                    @click="close"
-                >
+                <v-btn variant="text" @click="close">
                     {{ $t('ownerSettingDialog.cancel') }}
                 </v-btn>
-                <v-btn
-                    color="primary"
-                    variant="flat"
-                    :loading="saving"
-                    @click="save"
-                >
+                <v-btn color="primary" variant="flat" :loading="saving" @click="save">
                     {{ $t('ownerSettingDialog.save') }}
                 </v-btn>
             </v-card-actions>
@@ -80,13 +72,16 @@ export default defineComponent({
         });
 
         // modelValue 변경 감지
-        watch(() => props.modelValue, async (newVal) => {
-            isOpen.value = newVal;
-            if (newVal && props.process?.id) {
-                // 기존 owner 로드
-                await loadCurrentOwner();
+        watch(
+            () => props.modelValue,
+            async (newVal) => {
+                isOpen.value = newVal;
+                if (newVal && props.process?.id) {
+                    // 기존 owner 로드
+                    await loadCurrentOwner();
+                }
             }
-        });
+        );
 
         // isOpen 변경 시 emit
         watch(isOpen, (newVal) => {

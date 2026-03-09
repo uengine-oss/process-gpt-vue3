@@ -1,9 +1,15 @@
 <template>
     <v-row v-if="!isCompleted && showButtonByStatus" class="ma-0 pa-0 task-btn" style="right: 10px">
         <v-spacer></v-spacer>
-        <v-btn v-if="claimButtonType === 'claim'" @click="assignTask()" color="primary" rounded class="mr-1">{{ $t('DefaultWorkItem.assignTask') }}</v-btn>
-        <v-btn v-if="claimButtonType === 'unclaim'" @click="unAssignTask()" color="primary" rounded class="mr-1">{{ $t('DefaultWorkItem.unAssignTask') }}</v-btn>
-        <v-btn v-if="showTaskReturnButton" @click="openTaskReturnDialog" color="warning" rounded class="mr-1"> {{ $t('DefaultWorkItem.returnTask') }}</v-btn>
+        <v-btn v-if="claimButtonType === 'claim'" @click="assignTask()" color="primary" rounded class="mr-1">{{
+            $t('DefaultWorkItem.assignTask')
+        }}</v-btn>
+        <v-btn v-if="claimButtonType === 'unclaim'" @click="unAssignTask()" color="primary" rounded class="mr-1">{{
+            $t('DefaultWorkItem.unAssignTask')
+        }}</v-btn>
+        <v-btn v-if="showTaskReturnButton" @click="openTaskReturnDialog" color="warning" rounded class="mr-1">
+            {{ $t('DefaultWorkItem.returnTask') }}</v-btn
+        >
         <v-tooltip v-if="showTaskSkipButton" location="bottom">
             <template #activator="{ props }">
                 <span v-bind="props" class="mr-1 d-inline-flex">
@@ -21,7 +27,9 @@
             </template>
             <span>{{ taskSkipTooltip }}</span>
         </v-tooltip>
-        <v-btn v-if="!isDryRun" @click="intermediateSave" color="primary" rounded class="mr-1">{{ $t('DefaultWorkItem.intermediateSave') }}</v-btn>
+        <v-btn v-if="!isDryRun" @click="intermediateSave" color="primary" rounded class="mr-1">{{
+            $t('DefaultWorkItem.intermediateSave')
+        }}</v-btn>
         <v-btn @click="executeProcess" color="primary" rounded>{{ $t('DefaultWorkItem.complete') }}</v-btn>
     </v-row>
     <div class="pa-4" style="height: 100%">
@@ -81,14 +89,7 @@
             <v-card-actions class="pa-4">
                 <v-spacer></v-spacer>
                 <v-btn variant="text" @click="closeSkipDialog">{{ $t('DefaultWorkItem.skipCancel') }}</v-btn>
-                <v-btn
-                    color="primary"
-                    rounded
-                    variant="flat"
-                    :disabled="!canSubmitSkip"
-                    :loading="isSkipping"
-                    @click="submitSkip"
-                >
+                <v-btn color="primary" rounded variant="flat" :disabled="!canSubmitSkip" :loading="isSkipping" @click="submitSkip">
                     {{ $t('DefaultWorkItem.skipSubmit') }}
                 </v-btn>
             </v-card-actions>
@@ -109,7 +110,7 @@ export default {
     components: {
         DefaultForm,
         Instruction,
-        TaskReturnForm,
+        TaskReturnForm
     },
     props: {
         definitionId: String,
@@ -135,7 +136,7 @@ export default {
         },
         isSimulate: {
             type: String,
-            default: "false"
+            default: 'false'
         }
     },
     data: () => ({
@@ -153,7 +154,7 @@ export default {
         skipReason: ''
     }),
     computed: {
-        isAdmin(){
+        isAdmin() {
             return localStorage.getItem('isAdmin');
         },
         simulate() {
@@ -162,8 +163,8 @@ export default {
         isCompleted() {
             return this.workItemStatus == 'COMPLETED' || this.workItemStatus == 'DONE';
         },
-        showButtonByStatus(){
-            return this.workItemStatus != 'DELEGATED' 
+        showButtonByStatus() {
+            return this.workItemStatus != 'DELEGATED';
         },
         mode() {
             return window.$mode;
@@ -206,38 +207,40 @@ export default {
             return String(this.skipReason || '').trim().length > 0;
         },
         inputKeys() {
-            const parameters = this.workItem && this.workItem.activity && this.workItem.activity.parameters ? this.workItem.activity.parameters : [];
+            const parameters =
+                this.workItem && this.workItem.activity && this.workItem.activity.parameters ? this.workItem.activity.parameters : [];
             if (parameters.length > 0) {
-                const inputs = parameters.filter(parameter => parameter.direction.includes("IN"));
-                return inputs.map(input => input.argument.text);
+                const inputs = parameters.filter((parameter) => parameter.direction.includes('IN'));
+                return inputs.map((input) => input.argument.text);
             }
             return [];
         },
         outputKeys() {
-            const parameters = this.workItem && this.workItem.activity && this.workItem.activity.parameters ? this.workItem.activity.parameters : [];
+            const parameters =
+                this.workItem && this.workItem.activity && this.workItem.activity.parameters ? this.workItem.activity.parameters : [];
             if (parameters.length > 0) {
-                const outputs = parameters.filter(parameter => parameter.direction.includes("OUT"));
-                return outputs.map(output => output.argument.text);
+                const outputs = parameters.filter((parameter) => parameter.direction.includes('OUT'));
+                return outputs.map((output) => output.argument.text);
             }
             return [];
         }
     },
     watch: {
-        "$route.params.taskId": {
+        '$route.params.taskId': {
             handler(newVal, oldVal) {
                 if (newVal && newVal != oldVal) {
                     this.init();
                     this.checkSkipAvailability();
                 }
-            },
+            }
         },
-        'workItem': {
+        workItem: {
             handler() {
                 this.checkClaimButton();
                 this.checkSkipAvailability();
             },
             deep: true
-        },
+        }
     },
     created() {
         this.init();
@@ -253,8 +256,7 @@ export default {
         },
         onTaskReturned() {
             // 반송 성공 시, 워크아이템 화면을 종료하고 인스턴스 목록으로 이동
-            const route =
-                window.$mode == 'ProcessGPT' ? btoa(this.workItem.worklist.instId) : this.workItem.worklist.instId;
+            const route = window.$mode == 'ProcessGPT' ? btoa(this.workItem.worklist.instId) : this.workItem.worklist.instId;
             this.taskReturnDialog = false;
             this.$router.push(`/instancelist/${route}`);
         },
@@ -267,12 +269,14 @@ export default {
             } else {
                 me.inputItems = parameterValues ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
                 if (me.inputKeys.length > 0) {
-                    me.inputItems = me.inputItems.filter(item => me.inputKeys.includes(item.key));
+                    me.inputItems = me.inputItems.filter((item) => me.inputKeys.includes(item.key));
                 }
-                
+
                 if (me.outputKeys.length > 0) {
-                    me.outputItems = parameterValues ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value })) : [];
-                    me.outputItems = me.outputItems.filter(item => me.outputKeys.includes(item.key));
+                    me.outputItems = parameterValues
+                        ? Object.entries(parameterValues).map(([key, value]) => ({ name: key, key, value }))
+                        : [];
+                    me.outputItems = me.outputItems.filter((item) => me.outputKeys.includes(item.key));
                 }
             }
         },
@@ -322,8 +326,7 @@ export default {
                     try {
                         await backend.skipTask(taskId, { reason: String(me.skipReason || '').trim() });
                         me.skipDialog = false;
-                        const route =
-                            window.$mode == 'ProcessGPT' ? btoa(me.workItem.worklist.instId) : me.workItem.worklist.instId;
+                        const route = window.$mode == 'ProcessGPT' ? btoa(me.workItem.worklist.instId) : me.workItem.worklist.instId;
                         me.$router.push(`/instancelist/${route}`);
                     } finally {
                         me.isSkipping = false;
@@ -332,29 +335,29 @@ export default {
                 successMsg: this.$t('successMsg.taskSkipped')
             });
         },
-        checkClaimButton(){
+        checkClaimButton() {
             var me = this;
             me.$try({
                 context: me,
                 action: async () => {
-                    if(me.isDryRun) return;
+                    if (me.isDryRun) return;
                     me.claimButtonType = null;
-                    
-                    if(me.mode == 'uEngine' && !me.isCompleted && me.workItem && me.workItem.activity && me.workItem.activity.role){
+
+                    if (me.mode == 'uEngine' && !me.isCompleted && me.workItem && me.workItem.activity && me.workItem.activity.role) {
                         const roleName = me.workItem.activity.role.name;
                         const instanceId = me.workItem.worklist.instId;
                         const dispatchingOption = me.workItem.activity.role.dispatchingOption;
-                        
+
                         // dispatchingOption이 1인 경우만 처리
-                        if(dispatchingOption == 1){
+                        if (dispatchingOption == 1) {
                             const roleMapping = await backend.getRoleMapping(instanceId, roleName);
-                            
+
                             // 선점하기 조건: roleMapping.endpoint == null
-                            if(roleMapping.endpoint == null){
+                            if (roleMapping.endpoint == null) {
                                 me.claimButtonType = 'claim';
                             }
                             // 선점해제 조건: roleMapping.endpoint != null
-                            else if(roleMapping.endpoint != null){
+                            else if (roleMapping.endpoint != null) {
                                 me.claimButtonType = 'unclaim';
                             }
                         }
@@ -401,7 +404,7 @@ export default {
             if (this.newMessage && this.newMessage.length > 0) {
                 value.parameterValues['user_input_text'] = this.newMessage;
             }
-            if (this.isDryRun && this.mode == 'ProcessGPT' || this.simulate) {
+            if ((this.isDryRun && this.mode == 'ProcessGPT') || this.simulate) {
                 this.$emit('executeProcess', value);
             } else {
                 this.completeTask(value);
@@ -428,7 +431,7 @@ export default {
                 action: async () => {
                     // 현재 사용자 ID 가져오기 (email 우선, 없으면 uid)
                     const currentUserId = localStorage.getItem('email') || localStorage.getItem('uid');
-                    
+
                     if (!currentUserId) {
                         throw new Error('사용자 정보를 찾을 수 없습니다.');
                     }
@@ -441,19 +444,19 @@ export default {
                     if (!me.workItem.worklist.instId) {
                         throw new Error('인스턴스 ID가 없습니다.');
                     }
-                    
+
                     // instance role mapping 업데이트
                     const instanceId = me.workItem.worklist.instId;
-                    const roleName = me.workItem.activity.role.name
+                    const roleName = me.workItem.activity.role.name;
                     await backend.putRoleMapping(instanceId, roleName, {
                         endpoint: currentUserId
                     });
 
                     // workitem 업데이트
-                    await backend.claimWorkItem(me.workItem.worklist.taskId,{
+                    await backend.claimWorkItem(me.workItem.worklist.taskId, {
                         endpoint: currentUserId
                     });
-                    
+
                     // 로컬 workItem 객체도 업데이트
                     if (me.workItem.worklist) {
                         me.workItem.worklist.endpoint = currentUserId;
@@ -478,24 +481,24 @@ export default {
                     if (!me.workItem.worklist.instId) {
                         throw new Error('인스턴스 ID가 없습니다.');
                     }
-                    
+
                     const instanceId = me.workItem.worklist.instId;
-                    const roleName = me.workItem.activity.role.name
-                    
+                    const roleName = me.workItem.activity.role.name;
+
                     // POST /instance/{instanceId}/role-mapping/reviewer 호출
                     await backend.setRoleMapping(instanceId, roleName, {
                         endpoint: null
                     });
                     // workitem 업데이트
-                    await backend.claimWorkItem(me.workItem.worklist.taskId,{
+                    await backend.claimWorkItem(me.workItem.worklist.taskId, {
                         endpoint: null
                     });
-                    
+
                     // 로컬 workItem 객체도 업데이트
                     if (me.workItem.worklist) {
                         me.workItem.worklist.endpoint = null;
                     }
-                    
+
                     // 부모 컴포넌트에 업데이트 알림
                     me.$emit('workItemUpdated', me.workItem);
                 },

@@ -1,22 +1,22 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class WorkAssistantGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
 
         this.contexts = null;
         // this.model = "gpt-4"
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
 
         var date = new Date();
         this.timeStamp = date.toString();
-        
+
         // const organizationChart = JSON.stringify(client.organizationChart);
 
-        this.previousMessages = [{
-            role: 'system', 
-            content: `너는 사용자의 의도를 파악하여 적절한 작업 유형을 분류하는 시스템이야. 
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `너는 사용자의 의도를 파악하여 적절한 작업 유형을 분류하는 시스템이야. 
 사용자의 메시지를 분석하고, 다음 3가지 유형 중 하나로 분류하여 JSON 형식으로 답변해야 해.
 
 중요 정보:
@@ -79,18 +79,22 @@ export default class WorkAssistantGenerator extends AIGenerator {
    - "조회하다", "알려줘", "보여줘", "뭐가 있어?" → CompanyQuery
 4. 반드시 위의 JSON 형식을 준수해야 하며, 추가 설명은 하지 않아
 `
-        }];
+            }
+        ];
     }
 
     setContexts(contexts) {
         this.contexts = contexts;
         // 간소화된 프로세스 목록 생성 (이름, ID, 설명만)
-        const simplifiedProcesses = contexts.map(context => ({
+        const simplifiedProcesses = contexts.map((context) => ({
             id: context.id,
             name: context.name,
             description: context.description || ''
         }));
-        this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 전체 프로세스 정보 }}`, JSON.stringify(simplifiedProcesses));
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(
+            `{{ 전체 프로세스 정보 }}`,
+            JSON.stringify(simplifiedProcesses)
+        );
     }
 
     setUserInfo(userInfo) {
@@ -105,7 +109,10 @@ export default class WorkAssistantGenerator extends AIGenerator {
 
     setToday() {
         const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')} (${['일', '월', '화', '수', '목', '금', '토'][today.getDay()]}요일)`;
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(
+            2,
+            '0'
+        )} (${['일', '월', '화', '수', '목', '금', '토'][today.getDay()]}요일)`;
         this.previousMessages[0].content = this.previousMessages[0].content.replace(`{{ 오늘 날짜 }}`, todayStr);
     }
 
@@ -120,5 +127,4 @@ export default class WorkAssistantGenerator extends AIGenerator {
         }
         return this.client.newMessage;
     }
-
 }

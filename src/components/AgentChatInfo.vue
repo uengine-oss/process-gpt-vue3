@@ -6,34 +6,33 @@
                 <v-row class="align-center pa-4 ma-0">
                     <v-avatar size="24" class="mr-2 flex-shrink-0">
                         <!-- 프로필 이미지가 있고 로딩 성공했을 때만 표시 -->
-                        <v-img 
+                        <v-img
                             v-if="agentInfo?.profile && imageLoaded && !isDefaultImage(agentInfo?.profile)"
-                            :src="agentInfo?.profile" 
+                            :src="agentInfo?.profile"
                             :alt="agentInfo?.username || $t('AgentChatInfo.defaultAgentName')"
                             cover
                             @error="handleImageError"
                             @load="handleImageLoad"
                         />
-                        
+
                         <!-- 기본 이미지 (프로필 이미지가 없거나 로딩 실패 시) -->
-                        <v-img 
-                            v-else
-                            src="/images/chat-icon.png" 
-                            :alt="agentInfo?.username || $t('AgentChatInfo.defaultAgentName')"
-                            cover
-                        >
+                        <v-img v-else src="/images/chat-icon.png" :alt="agentInfo?.username || $t('AgentChatInfo.defaultAgentName')" cover>
                             <template v-slot:error>
-                                <v-icon size="large" style="color: #666;">mdi-account</v-icon>
+                                <v-icon size="large" style="color: #666">mdi-account</v-icon>
                             </template>
                         </v-img>
                     </v-avatar>
                     <div class="agent-name-wrapper flex-grow-1 min-width-0">
-                        <h5 v-if="!isMobile" class="text-h6 font-weight-bold agent-name-text">{{ agentInfo?.username || $t('AgentChatInfo.defaultAgentName') }}</h5>
-                        <h6 v-else class="text-subtitle-1 font-weight-bold agent-name-text">{{ agentInfo?.username || $t('AgentChatInfo.defaultAgentName') }}</h6>
+                        <h5 v-if="!isMobile" class="text-h6 font-weight-bold agent-name-text">
+                            {{ agentInfo?.username || $t('AgentChatInfo.defaultAgentName') }}
+                        </h5>
+                        <h6 v-else class="text-subtitle-1 font-weight-bold agent-name-text">
+                            {{ agentInfo?.username || $t('AgentChatInfo.defaultAgentName') }}
+                        </h6>
                     </div>
-                    
+
                     <!-- 수정 버튼 -->
-                    <v-btn 
+                    <v-btn
                         v-if="!agentInfo?.is_default"
                         @click="openEditDialog"
                         variant="text"
@@ -41,10 +40,10 @@
                         icon
                         class="rounded-pill flex-shrink-0 mr-1"
                     >
-                        <Icons :icon="'pencil'" :size="14"/>
+                        <Icons :icon="'pencil'" :size="14" />
                     </v-btn>
                     <!-- 도구 우선순위 지정 버튼 -->
-                    <v-btn 
+                    <v-btn
                         v-if="!agentInfo?.is_default && !gs"
                         @click="openToolPriorityDialog"
                         variant="text"
@@ -65,7 +64,7 @@
                         {{ $t('AgentChatInfo.knowledgeSetupInProgress') }}
                     </div>
                 </template>
-                
+
                 <div class="agent-chat-info-content pa-4">
                     <!-- Goal Section (agent only) -->
                     <div v-if="isSectionVisible('goal')" class="pa-0 mb-1">
@@ -81,7 +80,7 @@
                             size="small"
                             color="primary"
                             class="pa-0 text-caption ml-1"
-                            style="min-width: auto; height: auto; vertical-align: baseline;"
+                            style="min-width: auto; height: auto; vertical-align: baseline"
                         >
                             {{ expandedTexts.goal ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
                         </v-btn>
@@ -101,12 +100,12 @@
                             size="small"
                             color="primary"
                             class="pa-0 text-caption ml-1"
-                            style="min-width: auto; height: auto; vertical-align: baseline;"
+                            style="min-width: auto; height: auto; vertical-align: baseline"
                         >
                             {{ expandedTexts.persona ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
                         </v-btn>
                     </p>
-                    
+
                     <!-- Tools Section (agent only) -->
                     <div v-if="isSectionVisible('tools')">
                         <div class="pa-0 mb-1">
@@ -115,8 +114,8 @@
                         </div>
                         <div v-if="parsedTools && parsedTools.length > 0" class="mb-3">
                             <v-chip-group class="tools-chips">
-                                <v-chip 
-                                    v-for="tool in getDisplayTools()" 
+                                <v-chip
+                                    v-for="tool in getDisplayTools()"
                                     :key="tool"
                                     size="small"
                                     color="success"
@@ -132,7 +131,7 @@
                                     size="small"
                                     color="primary"
                                     class="pa-0 text-caption ma-1"
-                                    style="min-width: auto; height: auto; vertical-align: middle;"
+                                    style="min-width: auto; height: auto; vertical-align: middle"
                                 >
                                     {{ expandedTexts.tools ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
                                 </v-btn>
@@ -155,7 +154,7 @@
                             size="small"
                             color="primary"
                             class="pa-0 text-caption ml-1"
-                            style="min-width: auto; height: auto; vertical-align: baseline;"
+                            style="min-width: auto; height: auto; vertical-align: baseline"
                         >
                             {{ expandedTexts.endpoint ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
                         </v-btn>
@@ -171,7 +170,12 @@
                         <v-btn
                             v-if="shouldShowToggleButton(agentInfo?.description, 50)"
                             @click="toggleTextExpansion('description')"
-                            variant="text" size="small" color="primary" class="pa-0 text-caption ml-1" style="min-width: auto; height: auto; vertical-align: baseline;">
+                            variant="text"
+                            size="small"
+                            color="primary"
+                            class="pa-0 text-caption ml-1"
+                            style="min-width: auto; height: auto; vertical-align: baseline"
+                        >
                             {{ expandedTexts.description ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
                         </v-btn>
                     </p>
@@ -192,13 +196,7 @@
                             <span class="text-body-2 font-weight-medium">{{ $t('AgentSkills.skills') }}</span>
                         </div>
                         <v-chip-group v-if="parsedSkills && parsedSkills.length > 0" class="mb-3">
-                            <v-chip
-                                v-for="skill in parsedSkills"
-                                :key="skill"
-                                size="small"
-                                variant="outlined"
-                                class="ma-1"
-                            >
+                            <v-chip v-for="skill in parsedSkills" :key="skill" size="small" variant="outlined" class="ma-1">
                                 {{ skill }}
                             </v-chip>
                         </v-chip-group>
@@ -216,9 +214,9 @@
                         </p>
                         <p v-else class="text-body-2 text-medium-emphasis mb-3">{{ $t('AgentChatInfo.empty.model') }}</p>
                     </div>
-                    
+
                     <v-divider class="mb-4"></v-divider>
-                    
+
                     <!-- Tab Navigation - 편집 모드가 아닐 때만 표시 (클릭으로만 전환, 해시/쿼리 미사용) -->
                     <v-tabs
                         :model-value="activeTab"
@@ -250,9 +248,7 @@
                                 @click="openDmnHistory"
                             >
                                 <v-icon>mdi-history</v-icon>
-                                <v-tooltip activator="parent" location="left">
-                                    비즈니스 규칙 변경 이력
-                                </v-tooltip>
+                                <v-tooltip activator="parent" location="left"> 비즈니스 규칙 변경 이력 </v-tooltip>
                             </v-btn>
                         </div>
                         <v-tabs
@@ -269,7 +265,7 @@
                                 class="text-left justify-start"
                                 @click="handleDmnClick(dmn.id)"
                             >
-                                <Icons :icon="dmn.icon" :size="16" class="mr-2"/>
+                                <Icons :icon="dmn.icon" :size="16" class="mr-2" />
                                 {{ dmn.label }}
                             </v-tab>
                         </v-tabs>
@@ -391,7 +387,7 @@ export default {
             backend: null,
             knowledgeSetupChannel: null,
             isKnowledgeSetupInProgress: false
-        }
+        };
     },
     created() {
         this.backend = BackendFactory.createBackend();
@@ -414,33 +410,33 @@ export default {
                     { label: this.$t('AgentChatInfo.tabs.learning'), value: 'learning', icon: 'mdi-school' },
                     { label: this.$t('AgentChatInfo.tabs.question'), value: 'question', icon: 'mdi-chat' },
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' },
-                    { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' },
-                ]
+                    { label: this.$t('AgentChatInfo.tabs.knowledge'), value: 'knowledge', icon: 'mdi-database' }
+                ];
             } else {
                 this.agentType = this.agentInfo?.agent_type;
                 return [
                     { label: this.$t('AgentChatInfo.tabs.chat'), value: 'chat', icon: 'mdi-message-text-outline' },
                     { label: this.$t('AgentChatInfo.tabs.actions'), value: 'actions', icon: 'mdi-tools' }
-                ]
+                ];
             }
         },
-        
+
         parsedTools() {
             if (!this.agentInfo?.tools) return [];
-            
+
             // tools가 문자열인 경우 (쉼표로 구분된 값들)
             if (typeof this.agentInfo?.tools === 'string') {
                 return this.agentInfo?.tools
                     .split(',')
-                    .map(tool => tool.trim())
-                    .filter(tool => tool.length > 0);
+                    .map((tool) => tool.trim())
+                    .filter((tool) => tool.length > 0);
             }
-            
+
             // tools가 배열인 경우
             if (Array.isArray(this.agentInfo?.tools)) {
-                return this.agentInfo?.tools.filter(tool => tool && tool.trim().length > 0);
+                return this.agentInfo?.tools.filter((tool) => tool && tool.trim().length > 0);
             }
-            
+
             return [];
         },
 
@@ -451,8 +447,8 @@ export default {
                 if (this.agentInfo?.skills.includes(',')) {
                     return this.agentInfo?.skills
                         .split(',')
-                        .map(skill => skill.trim())
-                        .filter(skill => skill.length > 0);
+                        .map((skill) => skill.trim())
+                        .filter((skill) => skill.length > 0);
                 } else {
                     return [this.agentInfo?.skills.trim()];
                 }
@@ -460,7 +456,7 @@ export default {
         },
 
         dmnTabList() {
-            return this.dmnList.map(dmn => ({
+            return this.dmnList.map((dmn) => ({
                 id: dmn.id,
                 label: dmn.name,
                 icon: 'sidebarDMN'
@@ -506,19 +502,24 @@ export default {
             if (!agentId || !this.backend?.watchData || !this.backend?.getAgentKnowledgeSetupLog) return;
             try {
                 const log = await this.backend.getAgentKnowledgeSetupLog(agentId);
-                if (log && (log.status === 'DONE' || log.status === 'FAILED')) return;
+                if (!log || log.status === 'DONE' || log.status === 'FAILED') return;
                 this.isKnowledgeSetupInProgress = true;
                 const channel = `agent-knowledge-setup-${agentId}-${Date.now()}`;
-                this.knowledgeSetupChannel = await this.backend.watchData('agent_knowledge_setup_log', channel, (payload) => {
-                    if (!payload?.new || (payload.eventType !== 'INSERT' && payload.eventType !== 'UPDATE')) return;
-                    const row = payload.new;
-                    if (row.agent_id !== agentId) return;
-                    if (row.status === 'DONE' || row.status === 'FAILED') {
-                        this.isKnowledgeSetupInProgress = false;
-                        this.$emit('knowledgeSetupDone');
-                        this.unsubscribeKnowledgeSetup();
-                    }
-                }, { filter: `agent_id=eq.${agentId}` });
+                this.knowledgeSetupChannel = await this.backend.watchData(
+                    'agent_knowledge_setup_log',
+                    channel,
+                    (payload) => {
+                        if (!payload?.new || (payload.eventType !== 'INSERT' && payload.eventType !== 'UPDATE')) return;
+                        const row = payload.new;
+                        if (row.agent_id !== agentId) return;
+                        if (row.status === 'DONE' || row.status === 'FAILED') {
+                            this.isKnowledgeSetupInProgress = false;
+                            this.$emit('knowledgeSetupDone');
+                            this.unsubscribeKnowledgeSetup();
+                        }
+                    },
+                    { filter: `agent_id=eq.${agentId}` }
+                );
             } catch (e) {
                 this.isKnowledgeSetupInProgress = false;
                 console.warn('[AgentChatInfo] 초기 지식 셋업 구독 실패:', e);
@@ -532,50 +533,50 @@ export default {
             this.knowledgeSetupChannel = null;
             this.isKnowledgeSetupInProgress = false;
         },
-        
+
         initializeImage() {
             const profileUrl = this.agentInfo?.profile;
-            
+
             // 기본 이미지이거나 URL이 없으면 바로 기본 이미지 표시
             if (this.isDefaultImage(profileUrl)) {
                 this.imageLoaded = false;
                 this.currentProfileUrl = profileUrl;
                 return;
             }
-            
+
             // 새로운 프로필 이미지인 경우 로딩 시도
             if (profileUrl && profileUrl !== this.currentProfileUrl) {
                 this.imageLoaded = false;
                 this.currentProfileUrl = profileUrl;
-                
+
                 // 이미지가 이미 캐시되어 있는지 확인
                 this.checkImageCache(profileUrl);
             }
         },
-        
+
         isDefaultImage(url) {
             return !url || url === '/images/chat-icon.png';
         },
-        
+
         checkImageCache(url) {
             const img = new Image();
-            
+
             img.onload = () => {
                 this.imageLoaded = true;
             };
-            
+
             img.onerror = () => {
                 this.imageLoaded = false;
             };
-            
+
             // 이미지 로딩 시작
             img.src = url;
         },
-        
+
         handleImageError() {
             this.imageLoaded = false;
         },
-        
+
         handleImageLoad() {
             this.imageLoaded = true;
         },
@@ -617,7 +618,7 @@ export default {
                     isAgent: true
                 }
             };
-            
+
             this.editDialog = true;
         },
 
@@ -651,7 +652,7 @@ export default {
 
         getDisplayText(text, textType, maxLength) {
             if (!text) return '';
-            
+
             const isExpanded = this.expandedTexts[textType];
             return isExpanded ? text : this.getTruncatedText(text, maxLength);
         },
@@ -677,7 +678,7 @@ export default {
             this.$emit('agentUpdated', updatedData);
         }
     }
-}
+};
 </script>
 
 <style scoped>

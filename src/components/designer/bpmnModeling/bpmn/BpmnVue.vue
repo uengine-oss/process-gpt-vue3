@@ -1,13 +1,30 @@
 <template>
     <div>
-        <opengraph focus-canvas-on-select wheelScalable :dragPageMovable="dragPageMovable" :enableContextmenu="false"
-            :enableRootContextmenu="false" :enableHotkeyCtrlC="false" :enableHotkeyCtrlV="false"
-            :enableHotkeyDelete="false" :slider="false" :movable="!monitor" :resizable="!monitor" :selectable="!monitor"
-            :connectable="!monitor" :width="1500" :height="1000" v-if="data.definition" ref="bpmnOpengraph"
-            v-on:canvasReady="bpmnReady" v-on:userAction="onUserAction" v-on:connectShape="onConnectShape"
-            v-on:removeShape="onRemoveShape" v-on:divideLane="onDivideLane"
-            v-on:beforeDestroyElement="onBeforeDestroyElement">
-
+        <opengraph
+            focus-canvas-on-select
+            wheelScalable
+            :dragPageMovable="dragPageMovable"
+            :enableContextmenu="false"
+            :enableRootContextmenu="false"
+            :enableHotkeyCtrlC="false"
+            :enableHotkeyCtrlV="false"
+            :enableHotkeyDelete="false"
+            :slider="false"
+            :movable="!monitor"
+            :resizable="!monitor"
+            :selectable="!monitor"
+            :connectable="!monitor"
+            :width="1500"
+            :height="1000"
+            v-if="data.definition"
+            ref="bpmnOpengraph"
+            v-on:canvasReady="bpmnReady"
+            v-on:userAction="onUserAction"
+            v-on:connectShape="onConnectShape"
+            v-on:removeShape="onRemoveShape"
+            v-on:divideLane="onDivideLane"
+            v-on:beforeDestroyElement="onBeforeDestroyElement"
+        >
             <!--롤은 Lane 형식의 큰 틀-->
             <div v-for="(role, idx) in data.definition.roles" :key="idx">
                 <bpmn-role v-if="role != null" :role="role"></bpmn-role>
@@ -21,19 +38,23 @@
                 <!--ex) :status="???"-->
                 <!--그러기 위해서는 SvgGraph(데이터 불러오는 부분) 에서, definition 가져온 이후에, definition 안에 있는 childActivities 를 까서-->
                 <!--그 안에 tracingTag 가 동일한 것들에 대해 status 를 매핑시켜주어야 한다.-->
-                <component v-if="activity != null" :is="getComponentByClassName(activity._type)" :activity="activity"
-                    :definition="data.definition" :status="activity.status" :faultMessage="activity.faultMessage">
+                <component
+                    v-if="activity != null"
+                    :is="getComponentByClassName(activity._type)"
+                    :activity="activity"
+                    :definition="data.definition"
+                    :status="activity.status"
+                    :faultMessage="activity.faultMessage"
+                >
                 </component>
             </div>
 
             <!--릴레이션은 액티비티간 연결선(흐름)-->
             <div v-for="(relation, idx) in data.definition.sequenceFlows" :key="idx">
-                <bpmn-relation v-if="relation != null" :relation="relation"
-                    :definition="data.definition"></bpmn-relation>
+                <bpmn-relation v-if="relation != null" :relation="relation" :definition="data.definition"></bpmn-relation>
             </div>
             <div v-for="(relation, idx) in data.definition.messageFlows" :key="idx">
-                <bpmn-message-flow v-if="relation != null" :relation="relation"
-                    :definition="data.definition"></bpmn-message-flow>
+                <bpmn-message-flow v-if="relation != null" :relation="relation" :definition="data.definition"></bpmn-message-flow>
             </div>
         </opengraph>
 
@@ -60,16 +81,24 @@
                 <v-card-text>
                     <v-form novalidate @submit.stop.prevent="submit">
                         <v-container>
-                            <v-text-field v-model="defintionSettings.shortDescription.text"
-                                label="Description"></v-text-field>
-                            <v-text-field v-model="data.definition.instanceNamePattern"
-                                label="Instance Name Pattern"></v-text-field>
+                            <v-text-field v-model="defintionSettings.shortDescription.text" label="Description"></v-text-field>
+                            <v-text-field v-model="data.definition.instanceNamePattern" label="Instance Name Pattern"></v-text-field>
                         </v-container>
 
-                        <v-switch v-model="data.definition.initiateByFirstWorkitem" id="my-test1" name="my-test1"
-                            color="primary" label="Initiate by event"></v-switch>
-                        <v-switch v-model="data.definition.volatile" id="my-test1" name="my-test1" color="primary"
-                            label=" Volatile"></v-switch>
+                        <v-switch
+                            v-model="data.definition.initiateByFirstWorkitem"
+                            id="my-test1"
+                            name="my-test1"
+                            color="primary"
+                            label="Initiate by event"
+                        ></v-switch>
+                        <v-switch
+                            v-model="data.definition.volatile"
+                            id="my-test1"
+                            name="my-test1"
+                            color="primary"
+                            label=" Volatile"
+                        ></v-switch>
                     </v-form>
                 </v-card-text>
                 <v-card-actions>
@@ -82,7 +111,7 @@
 </template>
 
 <script>
-import BpmnObjectGrid from '../BpmnObjectGrid.vue'
+import BpmnObjectGrid from '../BpmnObjectGrid.vue';
 
 /**
  * 디자이너를 그리는 부분.
@@ -113,14 +142,12 @@ export default {
         if (!shortDescription) {
             shortDescription = new Object();
             shortDescription._type = 'org.uengine.contexts.TextContext';
-            shortDescription.text = "";
+            shortDescription.text = '';
         }
 
-        if (!this.data.definition.initiateByFirstWorkitem)
-            this.data.definition.initiateByFirstWorkitem = false;
+        if (!this.data.definition.initiateByFirstWorkitem) this.data.definition.initiateByFirstWorkitem = false;
 
-        if (!this.data.definition.volatile)
-            this.data.definition.volatile = false;
+        if (!this.data.definition.volatile) this.data.definition.volatile = false;
 
         // mount시 현재 locale 값으로 text 처리 - 프로세스 정의
         if (shortDescription.localedTexts && shortDescription.localedTexts[this.preLocale]) {
@@ -139,10 +166,10 @@ export default {
                 if (variable.displayName) {
                     if (variable.displayName.localedTexts && variable.displayName.localedTexts[me.data.definition._selectedLocale]) {
                         variable.displayName = variable.displayName.localedTexts[me.data.definition._selectedLocale];
-                        variable.displayName._type = "org.uengine.contexts.TextContext"
+                        variable.displayName._type = 'org.uengine.contexts.TextContext';
                     } else {
                         variable.displayName = variable.displayName.text;
-                        variable.displayName._type = "org.uengine.contexts.TextContext"
+                        variable.displayName._type = 'org.uengine.contexts.TextContext';
                     }
                 }
             });
@@ -160,7 +187,7 @@ export default {
             //timer end
             this.$refs.bpmnOpengraph.printTimer(startTime, new Date().getTime());
 
-            this.$emit('update:loaded', true)
+            this.$emit('update:loaded', true);
         });
     },
 
@@ -171,7 +198,7 @@ export default {
             processVariables: [],
             data: {
                 definition: null,
-                trigger: {},
+                trigger: {}
                 // pv: {
                 //     name: ''
                 // }
@@ -188,7 +215,7 @@ export default {
             preLocale: null,
             defintionSettings: null,
             definitionSettings: false,
-            processVariablesDialog: false,
+            processVariablesDialog: false
         };
     },
 
@@ -200,7 +227,8 @@ export default {
                         _type: 'java.util.HashMap'
                     };
                 }
-                this.defintionSettings.shortDescription.localedTexts[this.data.definition._selectedLocale] = this.defintionSettings.shortDescription.text;
+                this.defintionSettings.shortDescription.localedTexts[this.data.definition._selectedLocale] =
+                    this.defintionSettings.shortDescription.text;
             },
             deep: true
         },
@@ -225,10 +253,10 @@ export default {
                         }
                         localedTexts[me.data.definition._selectedLocale] = c.displayName;
                         c.displayName = {
-                            _type: "org.uengine.contexts.TextContext",
+                            _type: 'org.uengine.contexts.TextContext',
                             text: c.displayName,
                             localedTexts: localedTexts
-                        }
+                        };
                     });
                     this.data.definition.processVariableDescriptors = copy;
                 }
@@ -249,21 +277,24 @@ export default {
                         this.enableHistoryAdd = false;
                     } else {
                         if (this.preLocale != after.definition._selectedLocale) {
-
                             // locale change시 defintionSettings locale 변경
                             if (this.defintionSettings.shortDescription.localedTexts[after.definition._selectedLocale]) {
-                                this.defintionSettings.shortDescription.text = this.defintionSettings.shortDescription.localedTexts[after.definition._selectedLocale];
+                                this.defintionSettings.shortDescription.text =
+                                    this.defintionSettings.shortDescription.localedTexts[after.definition._selectedLocale];
                             }
 
                             // locale change시 processVariable locale 변경
                             var copy = JSON.parse(JSON.stringify(after.definition.processVariableDescriptors));
                             $.each(copy, function (i, variable) {
                                 if (variable.displayName) {
-                                    if (variable.displayName.localedTexts && variable.displayName.localedTexts[after.definition._selectedLocale]) {
-                                        variable.displayName._type = "org.uengine.contexts.TextContext"
+                                    if (
+                                        variable.displayName.localedTexts &&
+                                        variable.displayName.localedTexts[after.definition._selectedLocale]
+                                    ) {
+                                        variable.displayName._type = 'org.uengine.contexts.TextContext';
                                         variable.displayName.text = variable.displayName.localedTexts[after.definition._selectedLocale];
                                     } else {
-                                        variable.displayName._type = "org.uengine.contexts.TextContext"
+                                        variable.displayName._type = 'org.uengine.contexts.TextContext';
                                         variable.displayName.text = variable.displayName.text;
                                     }
                                 }
@@ -278,7 +309,8 @@ export default {
 
                 if (!this.undoing) {
                     console.log('definition updated, we will add history.', after.definition);
-                    if (this.undoed) { //if undoed just before, clear the history from the current historyIndex
+                    if (this.undoed) {
+                        //if undoed just before, clear the history from the current historyIndex
                         this.history.splice(this.historyIndex, this.history.length - this.historyIndex);
                         this.undoed = false;
                     }
@@ -295,35 +327,34 @@ export default {
 
     computed: {
         canUndo: function () {
-            return this.historyIndex > 0
+            return this.historyIndex > 0;
         },
         canRedo: function () {
-            return this.history.length - 1 - this.historyIndex > 0
+            return this.history.length - 1 - this.historyIndex > 0;
         },
         bpmnRole: function () {
             return 'bpmn-vue';
-        },
-
+        }
     },
 
     methods: {
         openProcessVariables() {
             // this.$refs['processVariables'].open();
-            this.processVariablesDialog = true
+            this.processVariablesDialog = true;
         },
         closeProcessVariables() {
             // this.$refs['processVariables'].close();
-            this.processVariablesDialog = false
+            this.processVariablesDialog = false;
         },
         openDefinitionSettings() {
             // this.$refs['definitionSettings'].open();
             // this.$refs['definitionSettings'].open();
-            this.definitionSettings = true
+            this.definitionSettings = true;
         },
         closeDefinitionSettings() {
             // this.$refs['definitionSettings'].close();
             // this.$refs['definitionSettings'].hide();
-            this.definitionSettings = false
+            this.definitionSettings = false;
         },
         getRelativeFlowsByOpengraphId: function (id) {
             var me = this;
@@ -337,21 +368,21 @@ export default {
                         if (relation && (relation.sourceRef == id || relation.targetRef == id)) {
                             relations.push(relation);
                         }
-                    })
+                    });
                 }
                 if (activity.sequenceFlows && activity.sequenceFlows.length) {
                     $.each(activity.sequenceFlows, function (i, relation) {
                         if (relation && (relation.sourceRef == id || relation.targetRef == id)) {
                             relations.push(relation);
                         }
-                    })
+                    });
                 }
                 if (activity.childActivities && activity.childActivities[1] && activity.childActivities[1].length) {
                     $.each(activity.childActivities[1], function (i, child) {
                         recursiveCheck(child);
-                    })
+                    });
                 }
-            }
+            };
             recursiveCheck(me.data.definition);
             return relations;
         },
@@ -374,23 +405,23 @@ export default {
                         if (relation && relation.sourceRef + '-' + relation.targetRef + '' == id) {
                             selected = relation;
                         }
-                    })
+                    });
                 }
                 if (activity.messageFlows && activity.messageFlows.length) {
                     $.each(activity.messageFlows, function (i, relation) {
                         if (relation && relation.sourceRef + '-' + relation.targetRef + '' == id) {
                             selected = relation;
                         }
-                    })
+                    });
                 }
                 if (!selected) {
                     if (activity.childActivities && activity.childActivities[1] && activity.childActivities[1].length) {
                         $.each(activity.childActivities[1], function (i, child) {
                             recursiveCheck(child);
-                        })
+                        });
                     }
                 }
-            }
+            };
             recursiveCheck(me.data.definition);
             return selected;
         },
@@ -425,7 +456,6 @@ export default {
             } else {
                 return laneElement.shape.label;
             }
-
         },
 
         /**
@@ -446,23 +476,23 @@ export default {
                         if (relation && relation.sourceRef + '-' + relation.targetRef + '' == id) {
                             selected = parent;
                         }
-                    })
+                    });
                 }
                 if (activity.messageFlows && activity.messageFlows.length) {
                     $.each(activity.messageFlows, function (i, relation) {
                         if (relation && relation.sourceRef + '-' + relation.targetRef + '' == id) {
                             selected = parent;
                         }
-                    })
+                    });
                 }
                 if (!selected) {
                     if (activity.childActivities && activity.childActivities[1] && activity.childActivities[1].length) {
                         $.each(activity.childActivities[1], function (i, child) {
                             recursiveCheck(child, activity);
-                        })
+                        });
                     }
                 }
-            }
+            };
             recursiveCheck(me.data.definition, null);
             if (selected._type && selected._type == 'org.uengine.kernel.ProcessDefinition') {
                 return null;
@@ -482,35 +512,30 @@ export default {
 
             var activityOrRelation = this.getActAndRelByOpengraphId(id);
             if (activityOrRelation) {
-                console.log('onBeforeDestroyElement!!', id)
+                console.log('onBeforeDestroyElement!!', id);
                 callback(false);
             }
         },
 
         addChild: function (child, parent, isRelation) {
             if (isRelation) {
-                if (child._type == "org.uengine.kernel.bpmn.MessageFlow") {
+                if (child._type == 'org.uengine.kernel.bpmn.MessageFlow') {
                     this.data.definition.messageFlows.push(child);
                 } else if (parent) {
                     console.log('parent.tracingTag', parent.tracingTag);
                     if (!parent.sequenceFlows) {
-                        parent.sequenceFlows = []
+                        parent.sequenceFlows = [];
                     }
                     parent.sequenceFlows.push(child);
                 } else {
                     console.log('parent is root');
                     this.data.definition.sequenceFlows.push(child);
                 }
-
-
             } else {
                 if (parent) {
                     console.log('parent.tracingTag', parent.tracingTag);
                     if (!parent.childActivities) {
-                        parent.childActivities = [
-                            'java.util.ArrayList',
-                            []
-                        ]
+                        parent.childActivities = ['java.util.ArrayList', []];
                     }
                     parent.childActivities[1].push(child);
                 } else {
@@ -599,7 +624,9 @@ export default {
          * 값을 채우지 않고 null 이 흘러간다면, 뒤이은 컴포넌트에서 값을 업데이트하여도 Vue 라이프사이클은 이를 감지하지 못한다.
          **/
         validateDefinition: function (value) {
-            var bpmnComponent, required, me = this;
+            var bpmnComponent,
+                required,
+                me = this;
             var definition = JSON.parse(JSON.stringify(value));
 
             //롤 검증.
@@ -617,14 +644,11 @@ export default {
                 if (!role.elementView.style) {
                     role.elementView.style = JSON.stringify({});
                 }
-            })
+            });
 
             //기본 액티비티 검증.
             if (!definition.childActivities) {
-                definition.childActivities = [
-                    'java.util.ArrayList',
-                    []
-                ]
+                definition.childActivities = ['java.util.ArrayList', []];
             }
             if (!definition.childActivities[1]) {
                 definition.childActivities[1] = [];
@@ -671,7 +695,7 @@ export default {
                         if (!relation.relationView.style) {
                             relation.relationView.style = JSON.stringify({});
                         }
-                    })
+                    });
                 }
 
                 if (activity.childActivities && activity.childActivities[1] && activity.childActivities[1].length) {
@@ -679,7 +703,7 @@ export default {
                         recursiveCheck(child);
                     });
                 }
-            }
+            };
             recursiveCheck(definition);
 
             //processVariableDescriptors 검증
@@ -708,7 +732,8 @@ export default {
                 boundary.getCentroid().x,
                 boundary.getCentroid().y,
                 boundary.getWidth(),
-                boundary.getHeight());
+                boundary.getHeight()
+            );
 
             additionalData.elementView.id = dividedLane.id;
             additionalData.elementView.parent = me.canvas.getParent(dividedLane).id;
@@ -736,11 +761,11 @@ export default {
             if (edgeElement && from && to) {
                 var vertices = '[' + edgeElement.shape.geom.vertices.toString() + ']';
                 var componentInfo = {
-                    component: "bpmn-relation",
+                    component: 'bpmn-relation',
                     from: from.id,
                     to: to.id,
                     vertices: vertices
-                }
+                };
 
                 if (isComponent) {
                     me.canvas.removeShape(edgeElement, true);
@@ -797,18 +822,15 @@ export default {
                 var fromAct = this.getActAndRelByOpengraphId(componentInfo.from);
                 var toAct = this.getActAndRelByOpengraphId(componentInfo.to);
 
-                var fromPool = this.getWherePoolAmIByTracingTag(fromAct.tracingTag)
-                var toPool = this.getWherePoolAmIByTracingTag(toAct.tracingTag)
+                var fromPool = this.getWherePoolAmIByTracingTag(fromAct.tracingTag);
+                var toPool = this.getWherePoolAmIByTracingTag(toAct.tracingTag);
 
-                console.log({ formRole: fromPool, toRole: toPool })
+                console.log({ formRole: fromPool, toRole: toPool });
 
-                var relationComponentTag = (fromPool == toPool || toPool == null ? "bpmn-relation" : "bpmn-message-flow")
+                var relationComponentTag = fromPool == toPool || toPool == null ? 'bpmn-relation' : 'bpmn-message-flow';
 
                 var bpmnComponent = me.getComponentByName(relationComponentTag);
-                additionalData = bpmnComponent.default.computed.createNew(
-                    componentInfo.from,
-                    componentInfo.to,
-                    componentInfo.vertices);
+                additionalData = bpmnComponent.default.computed.createNew(componentInfo.from, componentInfo.to, componentInfo.vertices);
 
                 if (originalData) {
                     for (var key in originalData) {
@@ -839,9 +861,7 @@ export default {
                     if (me.$root.$children[0] && me.$root.$children[0].snackbar) {
                         me.$root.$children[0].error('동일한 서브프로세스에 위치한 액티비티가 아닐 경우 연결할 수 없습니다.');
                     }
-                    console.log('Can not create relation between other subprocess.',
-                        componentInfo.from,
-                        componentInfo.to);
+                    console.log('Can not create relation between other subprocess.', componentInfo.from, componentInfo.to);
                 }
             }
             //롤 추가인 경우
@@ -852,7 +872,8 @@ export default {
                     componentInfo.x,
                     componentInfo.y,
                     componentInfo.width,
-                    componentInfo.height);
+                    componentInfo.height
+                );
                 me.data.definition.roles.push(additionalData);
             }
             //액티비티 추가인 경우
@@ -868,16 +889,16 @@ export default {
                     componentInfo.x,
                     componentInfo.y,
                     componentInfo.width,
-                    componentInfo.height);
+                    componentInfo.height
+                );
 
-                var envelope = new OG.geometry.Envelope([
-                    componentInfo.x - componentInfo.width / 2,
-                    componentInfo.y - componentInfo.height / 2
-                ], componentInfo.width,
+                var envelope = new OG.geometry.Envelope(
+                    [componentInfo.x - componentInfo.width / 2, componentInfo.y - componentInfo.height / 2],
+                    componentInfo.width,
                     componentInfo.height
                 );
                 var frontGroupElement = me.canvas.getRenderer().getFrontForBoundary(envelope);
-                console.log(frontGroupElement)
+                console.log(frontGroupElement);
                 if (frontGroupElement) {
                     var parent = this.getActAndRelByOpengraphId(frontGroupElement.id);
                     this.addChild(additionalData, parent);
@@ -893,7 +914,11 @@ export default {
         getComponentByClassName: function (className) {
             var componentByClassName;
             $.each(window.Vue.bpmnComponents, function (i, component) {
-                if (component.default.computed && component.default.computed.className && component.default.computed.className() == className) {
+                if (
+                    component.default.computed &&
+                    component.default.computed.className &&
+                    component.default.computed.className() == className
+                ) {
                     componentByClassName = component.default;
                 }
             });
@@ -916,7 +941,7 @@ export default {
         undo: function () {
             if (this.canUndo) {
                 this.canvas._CONFIG.FAST_LOADING = true;
-                this.historyIndex -= 1
+                this.historyIndex -= 1;
                 this.undoing = true;
                 this.undoed = true;
                 this.data.definition = this.history[this.historyIndex];
@@ -924,22 +949,22 @@ export default {
                 this.$nextTick(function () {
                     this.canvas._CONFIG.FAST_LOADING = false;
                     this.canvas.updateSlider();
-                })
+                });
             }
         },
 
         redo: function () {
             if (this.canRedo) {
                 this.canvas._CONFIG.FAST_LOADING = true;
-                this.historyIndex += 1
+                this.historyIndex += 1;
                 this.undoing = true;
                 this.undoed = true;
-                this.data.definition = this.history[this.historyIndex]
+                this.data.definition = this.history[this.historyIndex];
                 console.log('length: ' + this.history.length, ' historyIndex : ', this.historyIndex, this.data.definition);
                 this.$nextTick(function () {
                     this.canvas._CONFIG.FAST_LOADING = false;
                     this.canvas.updateSlider();
-                })
+                });
             }
         },
 
@@ -949,11 +974,11 @@ export default {
          * 기본으로 히스토리를 검색하며, 주어진 데피니션이 있을 경우 추가로 검색한다.
          **/
         createNewTracingTag: function (additionalDefinition) {
-            var me = this, maxTracingTag = 0,
+            var me = this,
+                maxTracingTag = 0,
                 isInt = function (value) {
-                    return !isNaN(value) &&
-                        parseInt(Number(value)) == value && !isNaN(parseInt(value, 10));
-                }
+                    return !isNaN(value) && parseInt(Number(value)) == value && !isNaN(parseInt(value, 10));
+                };
             var me = this;
             var selected;
             var recursiveCheck = function (activity) {
@@ -966,14 +991,14 @@ export default {
                 if (activity.childActivities && activity.childActivities[1] && activity.childActivities[1].length) {
                     $.each(activity.childActivities[1], function (i, child) {
                         recursiveCheck(child);
-                    })
+                    });
                 }
-            }
+            };
             //히스토리에 있는 데이터도 참조하여, 충돌되는 트레이싱 태그가 없도록 한다. (가장 큰 트레이싱 태그 +1)
             if (me.history && me.history.length) {
                 $.each(me.history, function (i, definition) {
                     recursiveCheck(definition);
-                })
+                });
             }
             if (additionalDefinition) {
                 recursiveCheck(additionalDefinition);
@@ -985,7 +1010,8 @@ export default {
          * 데피니션에 트레이싱 태그가 있는지 확인한다.
          **/
         checkExistTracingTag: function (tracingTag) {
-            var me = this, isExist = false;
+            var me = this,
+                isExist = false;
             var recursiveCheck = function (activity) {
                 if (!activity) {
                     return;
@@ -996,9 +1022,9 @@ export default {
                 if (activity.childActivities && activity.childActivities[1] && activity.childActivities[1].length) {
                     $.each(activity.childActivities[1], function (i, child) {
                         recursiveCheck(child);
-                    })
+                    });
                 }
-            }
+            };
             if (me.data.definition) {
                 recursiveCheck(me.data.definition);
             }
@@ -1042,9 +1068,9 @@ export default {
                             //재귀호출
                             recursiveRemove(child);
                         }
-                    })
+                    });
                 }
-            }
+            };
 
             //롤 삭제
             $.each(me.data.definition.roles, function (i, role) {
@@ -1069,11 +1095,10 @@ export default {
                     .substring(1);
             }
 
-            return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-                s4() + '-' + s4() + s4() + s4();
+            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
         }
     }
-}
+};
 </script>
 
 <style lang="scss" rel="stylesheet/scss"></style>

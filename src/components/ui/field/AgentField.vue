@@ -12,22 +12,19 @@
             @generation-started="onGenerationStarted"
             @generation-finished="onGenerationFinished"
         />
-        
+
         <!-- 생성 중일 때 스켈레톤 표시 (A2A, PGAGENT 타입이 아닐 때만) -->
         <div v-if="isGenerating && !isEdit && type !== 'a2a' && type !== 'pgagent'" class="agent-field-skeleton">
-            <v-skeleton-loader
-                type="image"
-                class="mx-auto"
-            ></v-skeleton-loader>
+            <v-skeleton-loader type="image" class="mx-auto"></v-skeleton-loader>
         </div>
-        
+
         <!-- 데이터가 생성되었고 생성 중이 아닐 때만 나머지 필드 표시 -->
         <div v-if="showDetailFields">
             <ProfileField v-model="agent.img" />
 
             <div v-if="type === 'a2a'">
-                <v-text-field 
-                    v-model="agent.endpoint" 
+                <v-text-field
+                    v-model="agent.endpoint"
                     :label="$t('agentField.agentEndpoint')"
                     class="mb-2"
                     @click:append-inner="fetchAgentData"
@@ -45,76 +42,29 @@
                         </v-btn>
                     </template>
                 </v-text-field>
-                <v-text-field 
-                    v-model="agent.name" 
-                    :label="$t('agentField.agentName')" 
-                    :rules="nameRules"
-                    class="mb-2"
-                ></v-text-field>
-                <v-textarea
-                    v-model="agent.description" 
-                    :label="$t('agentField.agentDescription')"
-                    class="mb-2"
-                    rows="3"
-                ></v-textarea>
-                <v-textarea
-                    v-model="agent.skills"
-                    :label="$t('agentField.agentSkills')"
-                    rows="3"
-                ></v-textarea>
+                <v-text-field v-model="agent.name" :label="$t('agentField.agentName')" :rules="nameRules" class="mb-2"></v-text-field>
+                <v-textarea v-model="agent.description" :label="$t('agentField.agentDescription')" class="mb-2" rows="3"></v-textarea>
+                <v-textarea v-model="agent.skills" :label="$t('agentField.agentSkills')" rows="3"></v-textarea>
             </div>
 
             <div v-else-if="type === 'pgagent'">
-                <v-text-field 
-                    v-model="agent.name" 
-                    :label="$t('agentField.agentName')" 
-                    :rules="nameRules"
-                    class="mb-2"
-                ></v-text-field>
-                <v-text-field 
-                    v-model="agent.alias" 
-                    :label="$t('agentField.alias')" 
+                <v-text-field v-model="agent.name" :label="$t('agentField.agentName')" :rules="nameRules" class="mb-2"></v-text-field>
+                <v-text-field
+                    v-model="agent.alias"
+                    :label="$t('agentField.alias')"
                     :rules="aliasRules"
                     @blur="checkAlias(agent.id)"
                     class="mb-2"
                 ></v-text-field>
-                <v-textarea
-                    v-model="agent.description" 
-                    :label="$t('agentField.agentDescription')"
-                    class="mb-2"
-                    rows="3"
-                ></v-textarea>
-                <v-textarea
-                    v-model="agent.skills" 
-                    :label="$t('agentField.agentSkills')"
-                    class="mb-2"
-                    rows="3"
-                ></v-textarea>
+                <v-textarea v-model="agent.description" :label="$t('agentField.agentDescription')" class="mb-2" rows="3"></v-textarea>
+                <v-textarea v-model="agent.skills" :label="$t('agentField.agentSkills')" class="mb-2" rows="3"></v-textarea>
             </div>
 
             <div v-else>
-                <v-text-field 
-                    v-model="agent.name" 
-                    :label="$t('agentField.agentName')" 
-                    :rules="nameRules"
-                    class="mb-2"
-                ></v-text-field>
-                <v-text-field 
-                    v-model="agent.role" 
-                    :label="$t('agentField.agentRole')" 
-                    class="mb-2"
-                ></v-text-field>
-                <v-text-field 
-                    v-model="agent.goal" 
-                    :label="$t('agentField.agentGoal')" 
-                    class="mb-2"
-                ></v-text-field>
-                <v-textarea
-                    v-model="agent.persona" 
-                    :label="$t('agentField.agentPersona')" 
-                    class="mb-2"
-                    rows="3"
-                ></v-textarea>
+                <v-text-field v-model="agent.name" :label="$t('agentField.agentName')" :rules="nameRules" class="mb-2"></v-text-field>
+                <v-text-field v-model="agent.role" :label="$t('agentField.agentRole')" class="mb-2"></v-text-field>
+                <v-text-field v-model="agent.goal" :label="$t('agentField.agentGoal')" class="mb-2"></v-text-field>
+                <v-textarea v-model="agent.persona" :label="$t('agentField.agentPersona')" class="mb-2" rows="3"></v-textarea>
                 <v-combobox
                     v-if="!gs"
                     v-model="selectedTools"
@@ -146,12 +96,8 @@
                         <v-list-item v-else v-bind="props" :title="item.raw?.title"></v-list-item>
                     </template>
                 </v-combobox>
-                <v-row dense
-                    class="ma-0 pa-0"
-                >
-                    <v-col class="pa-0"
-                        cols="5"
-                    >
+                <v-row dense class="ma-0 pa-0">
+                    <v-col class="pa-0" cols="5">
                         <v-select
                             v-model="selectedProvider"
                             :items="availableProviders"
@@ -164,9 +110,7 @@
                             @update:model-value="onProviderChange"
                         ></v-select>
                     </v-col>
-                    <v-col class="pa-0 pl-2"
-                        cols="7"
-                    >
+                    <v-col class="pa-0 pl-2" cols="7">
                         <v-select
                             v-model="selectedModel"
                             :items="availableModels"
@@ -181,7 +125,6 @@
                 </v-row>
             </div>
         </div>
-        
     </div>
 </template>
 
@@ -216,7 +159,7 @@ export default {
         },
         teamInfo: {
             type: Object,
-            default: () => ({}),
+            default: () => ({})
         },
         idRules: {
             type: Array,
@@ -329,16 +272,14 @@ export default {
             },
             selectedProvider: '',
             selectedModel: '',
-            aliasRules: [
-                (value) => !!value || this.$t('organizationChartDefinition.aliasRequired'),
-            ]
-        }
+            aliasRules: [(value) => !!value || this.$t('organizationChartDefinition.aliasRequired')]
+        };
     },
     setup() {
         const defaultSetting = useDefaultSetting();
         return {
             defaultSetting
-        }
+        };
     },
     computed: {
         gs() {
@@ -416,12 +357,14 @@ export default {
         selectedSkills: {
             deep: true,
             handler(newVal) {
-                const normalized = (newVal || []).map((s) =>
-                    typeof s === 'object' && s != null && s.value != null ? s.value : String(s ?? '')
-                ).filter(Boolean);
+                const normalized = (newVal || [])
+                    .map((s) => (typeof s === 'object' && s != null && s.value != null ? s.value : String(s ?? '')))
+                    .filter(Boolean);
                 this.agent.skills = normalized.join(',');
                 if (newVal?.some((s) => typeof s === 'object')) {
-                    this.$nextTick(() => { this.selectedSkills = normalized; });
+                    this.$nextTick(() => {
+                        this.selectedSkills = normalized;
+                    });
                 }
             }
         },
@@ -464,37 +407,36 @@ export default {
         },
         onInputGenerated(generatedData) {
             console.log('원시 생성 데이터:', generatedData);
-            
+
             try {
                 if (!generatedData.id) {
                     generatedData.id = this.uuid();
                 }
-                
+
                 if (this.type === 'agent') {
                     if (generatedData.id) this.agent.id = generatedData.id;
                     if (generatedData.name) this.agent.name = generatedData.name;
                     if (generatedData.role) this.agent.role = generatedData.role;
                     if (generatedData.goal) this.agent.goal = generatedData.goal;
                     if (generatedData.persona) this.agent.persona = generatedData.persona;
-                    
+
                     if (generatedData.tools) {
-                        this.selectedTools = generatedData.tools.split(',').map(tool => tool.trim());
+                        this.selectedTools = generatedData.tools.split(',').map((tool) => tool.trim());
                     }
                 } else if (this.type === 'a2a' || this.type === 'pgagent') {
                     if (generatedData.id) this.agent.id = generatedData.id;
                     if (generatedData.name) this.agent.name = generatedData.name;
                     if (generatedData.alias) this.agent.alias = generatedData.alias;
                     if (generatedData.description) this.agent.description = generatedData.description;
-                    
+
                     if (generatedData.skills) {
-                        this.selectedSkills = generatedData.skills.split(',').map(skill => skill.trim());
+                        this.selectedSkills = generatedData.skills.split(',').map((skill) => skill.trim());
                     }
                 }
-                
+
                 this.isDataGenerated = true;
-                
+
                 console.log('에이전트 정보가 성공적으로 적용되었습니다');
-                
             } catch (error) {
                 console.error('생성된 데이터 처리 중 오류 발생:', error);
             }
@@ -521,10 +463,8 @@ export default {
         async getSkills() {
             const normalize = (result) => {
                 const raw = result?.skills ?? result;
-                const list = Array.isArray(raw) ? raw : (raw?.skills || []);
-                return list
-                    .map((s) => (typeof s === 'string' ? s : (s.name || s.skill_name || '')))
-                    .filter(Boolean);
+                const list = Array.isArray(raw) ? raw : raw?.skills || [];
+                return list.map((s) => (typeof s === 'string' ? s : s.name || s.skill_name || '')).filter(Boolean);
             };
             try {
                 const [uploadedResult, builtinResult] = await Promise.all([
@@ -550,8 +490,7 @@ export default {
                 const data = await this.backend.fetchAgentData(this.agent.endpoint);
                 if (data.name) this.agent.name = data.name;
                 if (data.description) this.agent.description = data.description;
-                if (data.skills) this.selectedSkills = data.skills.map(skill => skill.id);
-
+                if (data.skills) this.selectedSkills = data.skills.map((skill) => skill.id);
             } catch (error) {
                 console.error('Error fetching agent data:', error);
             } finally {
@@ -578,5 +517,5 @@ export default {
             ];
         }
     }
-}
+};
 </script>

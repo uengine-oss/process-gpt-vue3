@@ -1,11 +1,5 @@
 <template>
-    <v-dialog
-        v-model="dialogVisible"
-        fullscreen
-        persistent
-        transition="dialog-bottom-transition"
-        class="full-screen-chat-dialog"
-    >
+    <v-dialog v-model="dialogVisible" fullscreen persistent transition="dialog-bottom-transition" class="full-screen-chat-dialog">
         <v-card class="full-screen-chat-card">
             <!-- 헤더 -->
             <div class="chat-header">
@@ -14,12 +8,7 @@
                     <h3 class="header-title">{{ $t('fullScreenChat.title') }}</h3>
                 </div>
                 <div class="header-right">
-                    <v-btn
-                        icon
-                        variant="text"
-                        size="small"
-                        @click="closeDialog"
-                    >
+                    <v-btn icon variant="text" size="small" @click="closeDialog">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </div>
@@ -47,20 +36,11 @@
                             {{ intentResult.processDefinitionName || '프로세스 실행' }}
                         </v-card-title>
                         <v-card-text v-if="firstActivityForm">
-                            <DynamicForm
-                                ref="dynamicForm"
-                                :formHTML="firstActivityForm.formHtml"
-                                v-model="formValues"
-                            />
+                            <DynamicForm ref="dynamicForm" :formHTML="firstActivityForm.formHtml" v-model="formValues" />
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
-                            <v-btn
-                                color="primary"
-                                variant="elevated"
-                                @click="executeProcess"
-                                :loading="executing"
-                            >
+                            <v-btn color="primary" variant="elevated" @click="executeProcess" :loading="executing">
                                 <v-icon class="mr-1">mdi-play</v-icon>
                                 {{ $t('fullScreenChat.executeProcess') }}
                             </v-btn>
@@ -78,17 +58,9 @@
                         <v-card-text class="text-center pa-6">
                             <div class="create-mode-info mb-4">
                                 <p class="text-grey-darken-1">{{ $t('mainChat.createMode.description') }}</p>
-                                <p v-if="intentResult.messageForUser" class="intent-message mt-3">
-                                    "{{ intentResult.messageForUser }}"
-                                </p>
+                                <p v-if="intentResult.messageForUser" class="intent-message mt-3">"{{ intentResult.messageForUser }}"</p>
                             </div>
-                            <v-btn
-                                color="primary"
-                                variant="elevated"
-                                size="large"
-                                @click="goToProcessDesigner"
-                                class="go-designer-btn"
-                            >
+                            <v-btn color="primary" variant="elevated" size="large" @click="goToProcessDesigner" class="go-designer-btn">
                                 <v-icon class="mr-2">mdi-pencil-outline</v-icon>
                                 {{ $t('fullScreenChat.goToDefinition') }}
                             </v-btn>
@@ -101,8 +73,8 @@
 </template>
 
 <script>
-import AgentChatActions from "@/components/AgentChatActions.vue";
-import DynamicForm from "@/components/designer/DynamicForm.vue";
+import AgentChatActions from '@/components/AgentChatActions.vue';
+import DynamicForm from '@/components/designer/DynamicForm.vue';
 import BackendFactory from '@/components/api/BackendFactory';
 
 const backend = BackendFactory.createBackend();
@@ -197,18 +169,18 @@ export default {
 
                 // 첫 번째 액티비티 폼 찾기
                 const definition = processDef.definition;
-                const startEvent = definition?.events?.find(event => event.type === 'startEvent');
+                const startEvent = definition?.events?.find((event) => event.type === 'startEvent');
 
                 if (startEvent) {
-                    const firstSequence = definition?.sequences?.find(seq => seq.source === startEvent.id);
-                    
+                    const firstSequence = definition?.sequences?.find((seq) => seq.source === startEvent.id);
+
                     if (firstSequence?.target) {
-                        const firstActivity = definition?.activities?.find(act => act.id === firstSequence.target);
-                        
+                        const firstActivity = definition?.activities?.find((act) => act.id === firstSequence.target);
+
                         if (firstActivity?.tool?.startsWith('formHandler:')) {
                             const formKey = firstActivity.tool.replace('formHandler:', '');
                             const formInfo = await backend.getFormFields(formKey);
-                            
+
                             if (formInfo) {
                                 this.firstActivityForm = {
                                     formKey: formKey,
@@ -237,16 +209,12 @@ export default {
 
                 if (!activityId || !formKey) return;
 
-                const roleMappings = JSON.parse(JSON.stringify(
-                    this.intentResult.processDefinition?.definition?.roles || []
-                ));
-                
-                const firstActivity = this.intentResult.processDefinition?.definition?.activities?.find(
-                    act => act.id === activityId
-                );
+                const roleMappings = JSON.parse(JSON.stringify(this.intentResult.processDefinition?.definition?.roles || []));
+
+                const firstActivity = this.intentResult.processDefinition?.definition?.activities?.find((act) => act.id === activityId);
 
                 if (firstActivity?.role) {
-                    const roleMapping = roleMappings.find(r => r.name === firstActivity.role);
+                    const roleMapping = roleMappings.find((r) => r.name === firstActivity.role);
                     if (roleMapping) {
                         roleMapping.endpoint = [this.userId];
                         roleMapping.default = [this.userId];
@@ -256,7 +224,7 @@ export default {
                 const input = {
                     process_definition_id: this.intentResult.processDefinitionId,
                     activity_id: activityId,
-                    answer: "",
+                    answer: '',
                     form_values: { [formKey]: this.formValues || {} },
                     role_mappings: roleMappings,
                     version_tag: this.intentResult.processDefinition?.definition?.version_tag || 'major',
@@ -282,7 +250,7 @@ export default {
         goToProcessDesigner() {
             if (this.intentResult) {
                 const chatMessages = [];
-                
+
                 if (this.pendingMessage) {
                     chatMessages.push({
                         role: 'user',
@@ -290,7 +258,7 @@ export default {
                         timeStamp: new Date().toISOString()
                     });
                 }
-                
+
                 if (this.intentResult.messageForUser) {
                     chatMessages.push({
                         role: 'system',
@@ -298,10 +266,10 @@ export default {
                         timeStamp: new Date().toISOString()
                     });
                 }
-                
+
                 this.$store.dispatch('updateMessages', chatMessages);
             }
-            
+
             this.$router.push('/definitions/chat');
             this.closeDialog();
         }
@@ -373,7 +341,7 @@ export default {
 }
 
 .create-card-title {
-    background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%);
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
     color: white;
     font-size: 16px;
     font-weight: 600;

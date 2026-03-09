@@ -1,7 +1,7 @@
 <template>
     <div class="form-boolean-field">
-        <v-checkbox 
-            :label="(localAlias && localAlias.length > 0) ? localAlias : localName" 
+        <v-checkbox
+            :label="localAlias && localAlias.length > 0 ? localAlias : localName"
             v-model="localModelValue"
             :disabled="localDisabled"
             :readonly="localReadonly"
@@ -12,13 +12,13 @@
 </template>
 
 <script>
-import { commonSettingInfos } from "./CommonSettingInfos.vue"
+import { commonSettingInfos } from './CommonSettingInfos.vue';
 
 export default {
-    name: "BooleanField",
-    
+    name: 'BooleanField',
+
     props: {
-        // UI 관련 설정 props 시작 
+        // UI 관련 설정 props 시작
         hideDetails: {
             type: Boolean,
             default: false
@@ -42,16 +42,16 @@ export default {
         return {
             localModelValue: false,
 
-            localName: "",
-            localAlias: "",
+            localName: '',
+            localAlias: '',
             localDisabled: false,
             localReadonly: false,
 
             settingInfos: [
-                commonSettingInfos["localName"],
-                commonSettingInfos["localAlias"],
-                commonSettingInfos["localDisabled"],
-                commonSettingInfos["localReadonly"]
+                commonSettingInfos['localName'],
+                commonSettingInfos['localAlias'],
+                commonSettingInfos['localDisabled'],
+                commonSettingInfos['localReadonly']
             ]
         };
     },
@@ -59,7 +59,7 @@ export default {
     watch: {
         modelValue: {
             handler() {
-                this.localModelValue = this.modelValue ?? false
+                this.localModelValue = this.modelValue ?? false;
             },
             deep: true,
             immediate: true
@@ -67,7 +67,7 @@ export default {
 
         localModelValue: {
             handler() {
-                this.$emit('update:modelValue', this.localModelValue)
+                this.$emit('update:modelValue', this.localModelValue);
             },
             deep: true,
             immediate: true
@@ -75,14 +75,14 @@ export default {
     },
 
     created() {
-        this.localModelValue = this.modelValue ?? false
-        
-        this.localName = this.name ?? "name"
-        this.localAlias = this.alias ?? ""
-        this.localDisabled = this.disabled === "true"
-        this.localReadonly = this.readonly === "true"
+        this.localModelValue = this.modelValue ?? false;
+
+        this.localName = this.name ?? 'name';
+        this.localAlias = this.alias ?? '';
+        this.localDisabled = this.disabled === 'true';
+        this.localReadonly = this.readonly === 'true';
     }
-}
+};
 </script>
 
 <style lang="scss">

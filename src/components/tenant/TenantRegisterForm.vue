@@ -3,22 +3,14 @@
         <v-label class="text-subtitle-1 font-weight-medium pb-2">
             {{ $t('createAccount.tenantRegister') }}
         </v-label>
-        <v-divider class="mb-4" />       
-       
+        <v-divider class="mb-4" />
+
         <!-- #region 테넌트 가입 정보 입력 -->
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
-        <VTextField 
-            v-model="accountInfo.username" 
-            :rules="accountInfoRules.username" 
-            required 
-        ></VTextField>
+        <VTextField v-model="accountInfo.username" :rules="accountInfoRules.username" required></VTextField>
 
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.email') }}</v-label>
-        <VTextField 
-            v-model="accountInfo.email" 
-            :rules="accountInfoRules.email" 
-            required 
-        ></VTextField>
+        <VTextField v-model="accountInfo.email" :rules="accountInfoRules.email" required></VTextField>
 
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.password') }}</v-label>
         <VTextField
@@ -32,15 +24,7 @@
         ></VTextField>
         <!-- #endregion -->
 
-        <v-btn 
-            size="large" 
-            class="mt-2" 
-            color="primary" 
-            block 
-            rounded="pill"
-            :loading="isSubmitting"
-            type="submit"
-        >Sign up</v-btn>
+        <v-btn size="large" class="mt-2" color="primary" block rounded="pill" :loading="isSubmitting" type="submit">Sign up</v-btn>
     </Form>
 </template>
 
@@ -62,14 +46,9 @@ export default {
             password: ''
         },
         accountInfoRules: {
-            username: [
-                (v) => !!v || 'Name is required',
-                (v) => (v && v.length <= 10) || 'Name must be less than 10 characters'
-            ],
+            username: [(v) => !!v || 'Name is required', (v) => (v && v.length <= 10) || 'Name must be less than 10 characters'],
             email: [(v) => !!v || 'E-mail is required', (v) => /.+@.+\..+/.test(v) || 'E-mail must be valid'],
-            password: [
-                (v) => !!v || 'Password is required',
-            ],
+            password: [(v) => !!v || 'Password is required']
         }
     }),
 

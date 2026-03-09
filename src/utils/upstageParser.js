@@ -1,7 +1,7 @@
 /**
  * Upstage AI Document Parsing Utility
  * Reference: https://console.upstage.ai/docs/getting-started?api=document-parsing
- * 
+ *
  * 전역에서 사용 가능한 Upstage AI 문서 파싱 유틸리티
  */
 
@@ -26,10 +26,9 @@ export async function parseDocumentWithUpstage(file, options = {}) {
         }
 
         // API 키 가져오기
-        const UPSTAGE_API_KEY = import.meta.env.VITE_UPSTAGE_API_KEY || 
-                                 window._env_?.VITE_UPSTAGE_API_KEY || 
-                                 localStorage.getItem('upstageApiKey');
-        
+        const UPSTAGE_API_KEY =
+            import.meta.env.VITE_UPSTAGE_API_KEY || window._env_?.VITE_UPSTAGE_API_KEY || localStorage.getItem('upstageApiKey');
+
         if (!UPSTAGE_API_KEY) {
             console.warn('⚠️ Upstage API 키가 설정되지 않았습니다.');
             return {
@@ -75,7 +74,7 @@ export async function parseDocumentWithUpstage(file, options = {}) {
         const response = await fetch('https://api.upstage.ai/v1/document-digitization', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${UPSTAGE_API_KEY}`
+                Authorization: `Bearer ${UPSTAGE_API_KEY}`
             },
             body: formData
         });
@@ -113,10 +112,8 @@ export async function parseDocumentWithUpstage(file, options = {}) {
             textContent = content.html;
             textSource = 'html';
         } else if (elements.length > 0) {
-            const elementTexts = elements
-                .filter(elem => elem && elem.text)
-                .map(elem => elem.text);
-            
+            const elementTexts = elements.filter((elem) => elem && elem.text).map((elem) => elem.text);
+
             if (elementTexts.length > 0) {
                 textContent = elementTexts.join('\n');
                 textSource = 'elements';
@@ -125,7 +122,7 @@ export async function parseDocumentWithUpstage(file, options = {}) {
 
         if (textContent) {
             console.log(`📝 [Upstage] 텍스트 추출 성공: ${textSource} (${textContent.length.toLocaleString()} 문자)`);
-            
+
             return {
                 success: true,
                 text: textContent,
@@ -148,7 +145,6 @@ export async function parseDocumentWithUpstage(file, options = {}) {
                 rawResponse: result
             };
         }
-
     } catch (error) {
         console.error('❌ [Upstage] 파싱 중 오류:', error);
         return {
@@ -174,13 +170,11 @@ export async function parseMultipleDocuments(files, options = {}) {
     console.log(`🚀 [Upstage] 일괄 파싱 시작: ${files.length}개 파일`);
     const startTime = Date.now();
 
-    const results = await Promise.all(
-        files.map(file => parseDocumentWithUpstage(file, options))
-    );
+    const results = await Promise.all(files.map((file) => parseDocumentWithUpstage(file, options)));
 
     const elapsed = (Date.now() - startTime) / 1000;
-    const successCount = results.filter(r => r.success).length;
-    
+    const successCount = results.filter((r) => r.success).length;
+
     console.log(`✅ [Upstage] 일괄 파싱 완료: ${successCount}/${files.length} 성공 (${elapsed.toFixed(2)}초)`);
 
     return results;
@@ -219,20 +213,17 @@ export async function parseFileDocument(fileObject, fileData = null, options = {
         }
 
         // 텍스트 파일인지 확인 (text/plain, text/markdown, text/html 등)
-        const isTextFile = fileObject.type && (
-            fileObject.type.startsWith('text/') ||
-            fileObject.type === 'application/json'
-        );
+        const isTextFile = fileObject.type && (fileObject.type.startsWith('text/') || fileObject.type === 'application/json');
 
         if (isTextFile) {
             console.log(`📄 [Upstage] 텍스트 파일 직접 읽기: ${fileObject.name} (${fileObject.type})`);
-            
+
             try {
                 // 텍스트 파일은 직접 읽기
                 const text = await fileObject.text();
-                
+
                 console.log(`✅ [Upstage] 텍스트 파일 읽기 성공: ${fileObject.name} (${text.length} 문자)`);
-                
+
                 return {
                     success: true,
                     text: text,
@@ -254,18 +245,17 @@ export async function parseFileDocument(fileObject, fileData = null, options = {
         }
 
         console.log(`[Upstage] 파싱 시작: ${fileObject.name}`);
-        
+
         // Upstage AI로 문서 파싱
         const parseResult = await parseDocumentWithUpstage(fileObject, options);
-        
+
         if (parseResult.success) {
             console.log(`✅ [Upstage] 파싱 성공: ${fileObject.name} (${parseResult.text.length} 문자)`);
         } else {
             console.warn(`⚠️ [Upstage] 파싱 실패: ${fileObject.name} - ${parseResult.error}`);
         }
-        
+
         return parseResult;
-        
     } catch (error) {
         console.error(`❌ [Upstage] 파싱 중 오류: ${fileObject.name}`, error);
         return {
@@ -285,17 +275,17 @@ export async function parseFileDocument(fileObject, fileData = null, options = {
 export async function parseDocumentFromUrl(url, fileName, options = {}) {
     try {
         console.log(`🌐 [Upstage] URL에서 파일 가져오기: ${url}`);
-        
+
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const blob = await response.blob();
         const file = new File([blob], fileName || 'document', {
             type: blob.type || 'application/octet-stream'
         });
-        
+
         return await parseDocumentWithUpstage(file, options);
     } catch (error) {
         console.error('❌ [Upstage] URL에서 파일 가져오기 실패:', error);
@@ -315,7 +305,7 @@ function formatFileSize(bytes) {
     if (!bytes) return '0 Bytes';
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
 /**
@@ -349,9 +339,24 @@ export function isSupportedFileType(file) {
     ];
 
     const supportedExtensions = [
-        '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.hwp',
-        '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff',
-        '.txt', '.html', '.csv'
+        '.pdf',
+        '.doc',
+        '.docx',
+        '.xls',
+        '.xlsx',
+        '.ppt',
+        '.pptx',
+        '.hwp',
+        '.png',
+        '.jpg',
+        '.jpeg',
+        '.gif',
+        '.webp',
+        '.bmp',
+        '.tiff',
+        '.txt',
+        '.html',
+        '.csv'
     ];
 
     // MIME 타입으로 확인
@@ -361,7 +366,7 @@ export function isSupportedFileType(file) {
 
     // 확장자로 확인
     const fileName = file.name.toLowerCase();
-    return supportedExtensions.some(ext => fileName.endsWith(ext));
+    return supportedExtensions.some((ext) => fileName.endsWith(ext));
 }
 
 // 기본 export
@@ -372,4 +377,3 @@ export default {
     parseDocumentFromUrl,
     isSupportedFileType
 };
-

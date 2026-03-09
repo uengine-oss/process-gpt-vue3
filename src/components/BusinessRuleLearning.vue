@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import DmnChat from "@/components/DmnChat.vue";
+import DmnChat from '@/components/DmnChat.vue';
 
 export default {
     name: 'BusinessRuleLearning',
@@ -14,5 +14,5 @@ export default {
         ownerInfo: Object,
         dmnId: String
     }
-}
+};
 </script>

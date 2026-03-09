@@ -5,7 +5,7 @@ import * as directives from 'vuetify/directives';
 import colors from 'vuetify/util/colors';
 
 //DragScroll
-import { VueDraggableNext } from 'vue-draggable-next'
+import { VueDraggableNext } from 'vue-draggable-next';
 //Data tables
 // import { VDataTable } from 'vuetify/components/VDataTable';
 import { BLUE_THEME, AQUA_THEME, PURPLE_THEME, GREEN_THEME, CYAN_THEME, ORANGE_THEME } from '@/theme/LightTheme';
@@ -51,8 +51,8 @@ const addMaterialColors = (theme: any) => ({
 export default createVuetify({
     components: {
         // VDataTable,
-        draggable: VueDraggableNext,
-      },
+        draggable: VueDraggableNext
+    },
     directives,
 
     theme: {

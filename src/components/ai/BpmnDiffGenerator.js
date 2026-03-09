@@ -1,4 +1,4 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 /**
  * BpmnDiffGenerator
@@ -24,30 +24,29 @@ import AIGenerator from "./AIGenerator";
  *   }
  */
 export default class BpmnDiffGenerator extends AIGenerator {
+    constructor(client, options) {
+        super(client, options);
 
-  constructor(client, options) {
-    super(client, options);
+        this.model = 'gpt-4o';
+        this.options = options ?? {};
 
-    this.model = "gpt-4o";
-    this.options = options ?? {};
+        // ---- 입력 파라미터 직렬화 ----
+        const previousXml = typeof this.options.previousXml === 'string' ? this.options.previousXml : '';
+        const currentXml = typeof this.options.currentXml === 'string' ? this.options.currentXml : '';
+        const processId = typeof this.options.processId === 'string' ? this.options.processId : '';
+        const language = typeof this.options.language === 'string' ? this.options.language : 'Korean';
 
-    // ---- 입력 파라미터 직렬화 ----
-    const previousXml = typeof this.options.previousXml === "string" ? this.options.previousXml : "";
-    const currentXml  = typeof this.options.currentXml === "string"  ? this.options.currentXml  : "";
-    const processId   = typeof this.options.processId === "string"   ? this.options.processId   : "";
-    const language    = typeof this.options.language === "string"    ? this.options.language    : "Korean";
-
-    /**
-     * 기본 규칙:
-     * - BPMN 2.0 XML 다이어그램의 구조적 변경점을 비교한다.
-     * - 단순 들여쓰기 / 공백 / id 자동생성 등 의미 없는 변경은 무시한다.
-     * - 활동/게이트웨이/시작/종료 이벤트/시퀀스 플로우/조건/레이블 등의
-     *   비즈니스 관점에서 의미 있는 변경만 요약한다.
-     */
-    this.previousMessages = [
-      {
-        role: "system",
-        content: `You are an expert BPMN 2.0 diff explainer for non-technical business users.
+        /**
+         * 기본 규칙:
+         * - BPMN 2.0 XML 다이어그램의 구조적 변경점을 비교한다.
+         * - 단순 들여쓰기 / 공백 / id 자동생성 등 의미 없는 변경은 무시한다.
+         * - 활동/게이트웨이/시작/종료 이벤트/시퀀스 플로우/조건/레이블 등의
+         *   비즈니스 관점에서 의미 있는 변경만 요약한다.
+         */
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `You are an expert BPMN 2.0 diff explainer for non-technical business users.
 
 GOAL
 - Compare the previous BPMN XML and the current BPMN XML.
@@ -112,9 +111,7 @@ DETAIL GUIDELINES
   - 새로 생긴 시작/종료 타이밍이나 알림/예약 발송 등의 변화만 간단히 설명한다.
 - 절대 XML/BPMN 기술 용어(태그명, 속성명 등)를 직접 언급하지 말고, 항상 업무/사용자 관점의 자연어 설명으로 작성한다.
 - Use the target_language for summary and changes (e.g., Korean if target_language = "Korean").`
-      }
-    ];
-  }
+            }
+        ];
+    }
 }
-
-

@@ -57,9 +57,9 @@ export function collectAllProcessIds(map: any): Set<string> {
     if (!map?.mega_proc_list) return ids;
     for (const mega of map.mega_proc_list) {
         if (mega.id) ids.add(mega.id);
-        for (const major of (mega.major_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
             if (major.id) ids.add(major.id);
-            for (const sub of (major.sub_proc_list || [])) {
+            for (const sub of major.sub_proc_list || []) {
                 if (sub.id) ids.add(sub.id);
             }
         }
@@ -86,8 +86,8 @@ export function findHierarchyPath(map: any, procDefId: string): string {
     if (!map?.mega_proc_list || !procDefId) return '';
 
     for (const mega of map.mega_proc_list) {
-        for (const major of (mega.major_proc_list || [])) {
-            for (const sub of (major.sub_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
+            for (const sub of major.sub_proc_list || []) {
                 if (sub.id === procDefId || sub.proc_def_id === procDefId) {
                     return sub.id || '';
                 }
@@ -113,17 +113,13 @@ export function findHierarchyPath(map: any, procDefId: string): string {
  * @param prefix        - task prefix, default "T"
  * @returns e.g. "A.1.2.1-T03"
  */
-export function generateBusinessId(
-    hierarchyPath: string,
-    existingIds: Set<string>,
-    prefix: string = 'T'
-): string {
+export function generateBusinessId(hierarchyPath: string, existingIds: Set<string>, prefix = 'T'): string {
     if (!hierarchyPath) return '';
 
     const pattern = `${hierarchyPath}-${prefix}`;
     let maxNum = 0;
 
-    existingIds.forEach(id => {
+    existingIds.forEach((id) => {
         if (id.startsWith(pattern)) {
             const suffix = id.slice(pattern.length);
             const n = parseInt(suffix, 10);

@@ -4,12 +4,14 @@
             <v-row class="ma-0 pa-4">
                 <v-tooltip location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-btn v-bind="props"
+                        <v-btn
+                            v-bind="props"
                             @click="$router.push('/admin')"
-                            icon variant="text"
+                            icon
+                            variant="text"
                             type="file"
-                            class="text-medium-emphasis mr-3" 
-                            density="comfortable" 
+                            class="text-medium-emphasis mr-3"
+                            density="comfortable"
                             size="28"
                         >
                             <v-icon left>mdi-arrow-left</v-icon>
@@ -19,30 +21,32 @@
                 </v-tooltip>
                 <v-card-title class="ma-0 pa-0">Instance - {{ instanceId }}</v-card-title>
                 <div v-for="event in eventList" :key="event">
-                    <v-btn 
-                        @click="$try({
-                            context: this, 
-                            action: () => fireMessage(event.tracingTag), 
-                            successMsg: `${event.name} ${this.$t('adminDetail.success')}`
-                        })"
+                    <v-btn
+                        @click="
+                            $try({
+                                context: this,
+                                action: () => fireMessage(event.tracingTag),
+                                successMsg: `${event.name} ${this.$t('adminDetail.success')}`
+                            })
+                        "
                         color="primary"
                         rounded
-                        style="font-size:12px;"
+                        style="font-size: 12px"
                         density="comfortable"
                         class="ml-3"
-                    > {{ event.name ? event.name : event.tracingTag }} {{ $t('adminDetail.send') }} 
+                    >
+                        {{ event.name ? event.name : event.tracingTag }} {{ $t('adminDetail.send') }}
                     </v-btn>
                 </div>
             </v-row>
             <v-row class="ma-0 pa-0 pb-2">
-                <v-col class="ma-0 pa-0" 
+                <v-col
+                    class="ma-0 pa-0"
                     cols="12"
                     lg="6"
                     md="12"
                     sm="12"
-                    style="height:69vh;
-                    overflow: auto;
-                    border-right:solid 1px #ADADAD"
+                    style="height: 69vh; overflow: auto; border-right: solid 1px #adadad"
                 >
                     <BpmnUengine
                         v-if="loaded"
@@ -64,22 +68,9 @@
                     ></BpmnUengine>
                     <div v-else class="pa-6">{{ $t('adminDetail.noProcessDefinition') }}</div>
                 </v-col>
-                <v-col class="ma-0 pa-4 pt-0" 
-                    cols="12"
-                    lg="6"
-                    md="12"
-                    sm="12"
-                    style="height:69vh;
-                    overflow: auto;"
-                >
+                <v-col class="ma-0 pa-4 pt-0" cols="12" lg="6" md="12" sm="12" style="height: 69vh; overflow: auto">
                     <!-- Back To Here 확인 다이얼로그 -->
-                    <v-dialog
-                        v-model="backToHereDialog"
-                        :fullscreen="isMobile"
-                        width="90vw"
-                        max-width="480px"
-                        persistent
-                    >
+                    <v-dialog v-model="backToHereDialog" :fullscreen="isMobile" width="90vw" max-width="480px" persistent>
                         <v-card class="pa-4">
                             <v-card-title class="pa-0 d-flex align-center">
                                 되돌리기 (Back To Here)
@@ -89,19 +80,10 @@
                                 </v-btn>
                             </v-card-title>
                             <v-card-text class="pa-0 pt-4">
-                                <v-alert
-                                    v-if="backToHereError"
-                                    type="error"
-                                    variant="tonal"
-                                    density="compact"
-                                    class="mb-4"
-                                    closable
-                                >
+                                <v-alert v-if="backToHereError" type="error" variant="tonal" density="compact" class="mb-4" closable>
                                     {{ backToHereError }}
                                 </v-alert>
-                                <p class="text-body-2 mb-2">
-                                    선택한 활동으로 인스턴스를 되돌리시겠습니까?
-                                </p>
+                                <p class="text-body-2 mb-2">선택한 활동으로 인스턴스를 되돌리시겠습니까?</p>
                                 <p v-if="backToHerePendingItem" class="text-caption text-medium-emphasis">
                                     {{ backToHerePendingItem.title || backToHerePendingItem.taskId || '-' }}
                                 </p>
@@ -126,20 +108,14 @@
                         <v-tab>{{ $t('adminDetail.properties') }}</v-tab>
                         <v-tab>{{ $t('adminDetail.history') }}</v-tab>
                         <v-tab>{{ $t('adminDetail.participants') }}</v-tab>
-                        
                     </v-tabs>
                     <v-window v-model="tab">
                         <v-window-item>
-                            <v-data-table
-                                :items="processVariables"
-                                :headers="headers"
-                                item-value="key"
-                                class="elevation-1 custom-table"
-                            >
+                            <v-data-table :items="processVariables" :headers="headers" item-value="key" class="elevation-1 custom-table">
                                 <template v-slot:[`item.key`]="{ item }">
                                     <span>{{ item.key }}</span>
                                 </template>
-                                <template  v-slot:[`item.value`]="{ item }">
+                                <template v-slot:[`item.value`]="{ item }">
                                     <v-text-field
                                         v-if="item.editMode"
                                         v-model="item.value"
@@ -147,26 +123,19 @@
                                         dense
                                         hide-details="true"
                                     ></v-text-field>
-                                    <span v-else style="white-space: pre-wrap;">{{ formatJsonValue(item.value) }}</span>
+                                    <span v-else style="white-space: pre-wrap">{{ formatJsonValue(item.value) }}</span>
                                 </template>
                                 <template v-slot:[`item.save`]="{ item }">
                                     <v-tooltip v-if="item.editMode" :text="$t('adminDetail.save')">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn
-                                                @click="updateItem(item)"
-                                                v-bind="props"
-                                                icon variant="text"
-                                                density="comfortable"
-                                            >
-                                                <Icons :icon="'save'" :size="18" class="text-primary"/>
+                                            <v-btn @click="updateItem(item)" v-bind="props" icon variant="text" density="comfortable">
+                                                <Icons :icon="'save'" :size="18" class="text-primary" />
                                             </v-btn>
                                         </template>
                                     </v-tooltip>
                                     <v-tooltip v-else :text="$t('adminDetail.edit')">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click="item.editMode = true"
-                                                v-bind="props" density="comfortable" icon flat 
-                                            >
+                                            <v-btn @click="item.editMode = true" v-bind="props" density="comfortable" icon flat>
                                                 <PencilIcon stroke-width="1.5" size="18" class="text-primary" />
                                             </v-btn>
                                         </template>
@@ -185,7 +154,7 @@
                                 <template v-slot:[`item.key`]="{ item }">
                                     <span>{{ item.key }}</span>
                                 </template>
-                                <template  v-slot:[`item.value`]="{ item }">
+                                <template v-slot:[`item.value`]="{ item }">
                                     <v-text-field
                                         v-if="item.editMode"
                                         v-model="item.value"
@@ -193,26 +162,19 @@
                                         dense
                                         hide-details="true"
                                     ></v-text-field>
-                                    <span v-else style="white-space: pre-wrap;">{{ item.value }}</span>
+                                    <span v-else style="white-space: pre-wrap">{{ item.value }}</span>
                                 </template>
                                 <template v-slot:[`item.save`]="{ item }">
                                     <v-tooltip v-if="item.editMode" :text="$t('adminDetail.save')">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn
-                                                @click="updateItem(item)"
-                                                v-bind="props"
-                                                icon variant="text"
-                                                density="comfortable"
-                                            >
-                                                <Icons :icon="'save'" :size="18" class="text-primary"/>
+                                            <v-btn @click="updateItem(item)" v-bind="props" icon variant="text" density="comfortable">
+                                                <Icons :icon="'save'" :size="18" class="text-primary" />
                                             </v-btn>
                                         </template>
                                     </v-tooltip>
                                     <v-tooltip v-else :text="$t('adminDetail.edit')">
                                         <template v-slot:activator="{ props }">
-                                            <v-btn @click="item.editMode = true"
-                                                v-bind="props" density="comfortable" icon flat 
-                                            >
+                                            <v-btn @click="item.editMode = true" v-bind="props" density="comfortable" icon flat>
                                                 <PencilIcon stroke-width="1.5" size="18" class="text-primary" />
                                             </v-btn>
                                         </template>
@@ -221,13 +183,19 @@
                             </v-data-table>
                         </v-window-item>
                         <v-window-item>
-                            <div style="height: 62vh;">
+                            <div style="height: 62vh">
                                 <InstanceHistory :instId="instanceId" :instance="instanceDetail">
                                     <template #header>
                                         <div></div>
                                     </template>
                                     <template #actions="{ item }">
-                                        <v-btn v-if="isBackToHereAllowedFor(item)" icon variant="text" density="comfortable" @click="openBackToHere(item)">
+                                        <v-btn
+                                            v-if="isBackToHereAllowedFor(item)"
+                                            icon
+                                            variant="text"
+                                            density="comfortable"
+                                            @click="openBackToHere(item)"
+                                        >
                                             <v-icon>mdi-undo</v-icon>
                                         </v-btn>
                                     </template>
@@ -244,13 +212,7 @@
                                     clearable
                                     :label="$t('adminDetail.participantsSearch')"
                                 />
-                                <v-alert
-                                    v-if="!filteredRoles.length"
-                                    type="info"
-                                    variant="tonal"
-                                    density="compact"
-                                    class="mt-3"
-                                >
+                                <v-alert v-if="!filteredRoles.length" type="info" variant="tonal" density="compact" class="mt-3">
                                     {{ $t('adminDetail.noParticipants') }}
                                 </v-alert>
                                 <v-data-table
@@ -267,27 +229,27 @@
                                         <span>{{ item.name }}</span>
                                     </template>
                                     <template v-slot:[`item.endpoint`]="{ item }">
-                                        <span style="white-space: pre-wrap;">{{ item.endpoint || '-' }}</span>
+                                        <span style="white-space: pre-wrap">{{ item.endpoint || '-' }}</span>
                                     </template>
                                     <template v-slot:[`item.resourceName`]="{ item }">
-                                        <span style="white-space: pre-wrap;">{{ item.resourceName || '-' }}</span>
+                                        <span style="white-space: pre-wrap">{{ item.resourceName || '-' }}</span>
                                     </template>
                                 </v-data-table>
                             </div>
                         </v-window-item>
                     </v-window>
 
-                    <v-dialog v-model="rollbackDialog"
-                        width="500"
-                        style="z-index: 9999;"
-                        :key="rollbackElement"
-                    >
+                    <v-dialog v-model="rollbackDialog" width="500" style="z-index: 9999" :key="rollbackElement">
                         <v-card class="pa-4">
                             <v-row class="ma-0 pa-0">
                                 <v-card-title class="ma-0 pa-0">{{ $t('adminDetail.rollback') }}</v-card-title>
                                 <v-spacer></v-spacer>
-                                <v-btn @click="showRollbackDialog(false, null)" icon variant="text" density="comfortable"
-                                    style="margin-top:-8px;"
+                                <v-btn
+                                    @click="showRollbackDialog(false, null)"
+                                    icon
+                                    variant="text"
+                                    density="comfortable"
+                                    style="margin-top: -8px"
                                 >
                                     <Icons :icon="'close'" :size="16" />
                                 </v-btn>
@@ -338,7 +300,7 @@ export default {
         currentActivities: [],
         activityVariables: {},
         selectedExecutionScope: null,
-        taskStatus:{},
+        taskStatus: {},
         rollbackDialog: false,
         rollbackElement: null,
         participantHeaders: [],
@@ -359,18 +321,18 @@ export default {
                 title: this.$t('adminDetail.key'),
                 align: 'start',
                 key: 'key',
-                sortable: false,
+                sortable: false
             },
             {
                 title: this.$t('adminDetail.value'),
                 align: 'start',
-                key: 'value',
+                key: 'value'
             },
             {
                 title: this.$t('adminDetail.tools'),
                 align: 'start',
-                key: 'save',
-            },
+                key: 'save'
+            }
         ];
 
         this.participantHeaders = [
@@ -391,12 +353,7 @@ export default {
         isInstanceInProgress() {
             if (this.instanceDetail && this.instanceDetail.status != null) {
                 const s = String(this.instanceDetail.status).toUpperCase();
-                return (
-                    s.includes('RUN') ||
-                    s === 'IN_PROGRESS' ||
-                    s === 'NEW' ||
-                    s === 'ACTIVE'
-                );
+                return s.includes('RUN') || s === 'IN_PROGRESS' || s === 'NEW' || s === 'ACTIVE';
             }
             // finishedDate가 있으면 완료로 간주
             if (this.instanceDetail && (this.instanceDetail.finishedDate || this.instanceDetail.endDate)) return false;
@@ -410,27 +367,34 @@ export default {
             if (!this.instanceId) return null;
             return { instId: this.instanceId, name: '' };
         },
-        rollbackElementName(){
-            if(this.rollbackElement){
+        rollbackElementName() {
+            if (this.rollbackElement) {
                 return this.rollbackElement.businessObject ? this.rollbackElement.businessObject.name : '';
             }
             return null;
         },
         filteredRoles() {
-            const q = String(this.participantSearch || '').trim().toLowerCase();
+            const q = String(this.participantSearch || '')
+                .trim()
+                .toLowerCase();
             if (!q) return this.roles || [];
             return (this.roles || []).filter((r) => {
                 return (
-                    String(r?.name || '').toLowerCase().includes(q) ||
-                    String(r?.endpoint || '').toLowerCase().includes(q) ||
-                    String(r?.resourceName || '').toLowerCase().includes(q)
+                    String(r?.name || '')
+                        .toLowerCase()
+                        .includes(q) ||
+                    String(r?.endpoint || '')
+                        .toLowerCase()
+                        .includes(q) ||
+                    String(r?.resourceName || '')
+                        .toLowerCase()
+                        .includes(q)
                 );
             });
         }
     },
     watch: {
-        processDefinition() {
-        },
+        processDefinition() {},
         async $route(before, after) {
             await this.init();
         },
@@ -441,10 +405,10 @@ export default {
     },
     methods: {
         isBackToHereAllowedFor(item) {
-            if(!item) return false;
-            if(!item.raw) return false;
-            if(!item.raw.task) return false;
-            if(item.raw.task.actType) return false;
+            if (!item) return false;
+            if (!item.raw) return false;
+            if (!item.raw.task) return false;
+            if (item.raw.task.actType) return false;
 
             return item?.status === 'COMPLETED';
         },
@@ -525,12 +489,12 @@ export default {
                 return value; // JSON 파싱 실패 시 원래 값 반환
             }
         },
-        async init() {  
+        async init() {
             let me = this;
             let startTime = performance.now();
             this.loaded = false;
             this.instanceId = this.$route.params.id;
-            if(this.instanceId) {
+            if (this.instanceId) {
                 this.eventList = await backend.getEventList(this.instanceId);
                 me.taskStatus = await backend.getActivitiesStatus(this.instanceId);
                 await this.getInstanceDetail();
@@ -587,7 +551,6 @@ export default {
                 let endTime = performance.now();
                 console.log(`getProcessVariables Result Time :  ${endTime - startTime} ms`);
             });
-            
         },
         // getCurrentActivities() {
         //     let me = this;
@@ -600,8 +563,8 @@ export default {
         //         }
         //     }
         // },
-        showRollbackDialog(isOpen, ele){
-            this.rollbackDialog = isOpen
+        showRollbackDialog(isOpen, ele) {
+            this.rollbackDialog = isOpen;
             this.rollbackElement = ele;
         },
         async rollback(ele) {
@@ -636,8 +599,8 @@ export default {
                 if (key.includes('_executionScopes')) {
                     const executionScopes = variables[key];
                     let result = {};
-                    for(let scope of executionScopes) {
-                    // executionScopes.forEach((scope) => {
+                    for (let scope of executionScopes) {
+                        // executionScopes.forEach((scope) => {
                         if (!result[scope.rootActivityTracingTag]) {
                             result[scope.rootActivityTracingTag] = {};
                         }
@@ -661,27 +624,27 @@ export default {
                     };
                     me.roles.push(tmp);
                 } else if (key.startsWith(':')) {
-                    if(key.includes('_executionScopes')) {
+                    if (key.includes('_executionScopes')) {
                         continue;
                     }
                     let newStr = key.slice(1);
                     let validateText = newStr.split(':')[0];
                     if (!isNaN(validateText)) {
                         // executionScope
-                        if(me.selectedExecutionScope) {
+                        if (me.selectedExecutionScope) {
                             if (validateText != me.selectedExecutionScope.executionScope) {
                                 continue;
                             }
                         }
-                        let tmp = { key: key.split(':').slice(1).join(':'), value: JSON.stringify(variables[key]) }; 
-                        if(key.includes(':prop')) {
+                        let tmp = { key: key.split(':').slice(1).join(':'), value: JSON.stringify(variables[key]) };
+                        if (key.includes(':prop')) {
                             me.properties.push(tmp);
                         } else {
                             me.processVariables.push(tmp);
                         }
                     } else {
                         let tmp = { key: key.split(':').slice(1).join(':'), value: JSON.stringify(variables[key]) };
-                        if(key.includes(':prop')) {
+                        if (key.includes(':prop')) {
                             me.properties.push(tmp);
                         } else {
                             me.processVariables.push(tmp);
@@ -694,7 +657,7 @@ export default {
                     if (variables[key] != 'Running' && variables[key] != 'Cancelled' && variables[key] != 'Ready') {
                         if (count == 3) {
                             let executionScope = key.split(':')[1];
-                            if(me.selectedExecutionScope) { 
+                            if (me.selectedExecutionScope) {
                                 if (me.selectedExecutionScope.executionScope == executionScope) {
                                     me.currentActivities.push(key.split(':')[0]);
                                 }

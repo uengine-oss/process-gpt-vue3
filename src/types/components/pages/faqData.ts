@@ -1,6 +1,6 @@
 /*Faq page data*/
 type faqPageType = {
-    question:string;
+    question: string;
     answer: string;
 };
 

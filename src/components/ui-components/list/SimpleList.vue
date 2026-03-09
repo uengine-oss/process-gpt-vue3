@@ -30,19 +30,16 @@ const list1 = shallowRef([
         link: ''
     }
 ]);
-
 </script>
 <template>
-    
     <v-list>
         <v-card variant="outlined" class="py-2">
-        <v-list-item class="mb-2" v-for="(list, i) in list1" :value="list" rounded="md" :key="i" color="primary">
-            <template v-slot:prepend>
-                <component :is="list.icon" size="20" stroke-width="1.5" class="mr-2" />
-            </template>
-            <v-list-item-title v-text="list.name"></v-list-item-title>
-        </v-list-item>
-    </v-card>
+            <v-list-item class="mb-2" v-for="(list, i) in list1" :value="list" rounded="md" :key="i" color="primary">
+                <template v-slot:prepend>
+                    <component :is="list.icon" size="20" stroke-width="1.5" class="mr-2" />
+                </template>
+                <v-list-item-title v-text="list.name"></v-list-item-title>
+            </v-list-item>
+        </v-card>
     </v-list>
-
 </template>

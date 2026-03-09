@@ -1,12 +1,6 @@
 <template>
-    <v-card elevation="10"
-        :style="$globalState.state.isZoomed ? 'height: 100vh' : ''"
-        style="overflow: auto;"
-        class="is-work-height"
-    >
-        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center"
-            :style="isMobile ? 'display: block !important;' : ''"
-        >
+    <v-card elevation="10" :style="$globalState.state.isZoomed ? 'height: 100vh' : ''" style="overflow: auto" class="is-work-height">
+        <div class="pa-0 pl-4 pt-4 pr-4 d-flex align-center" :style="isMobile ? 'display: block !important;' : ''">
             <div class="d-flex">
                 <!-- Back button for subprocess navigation -->
                 <v-btn
@@ -22,20 +16,25 @@
                         {{ $t('subProcessDetail.backToParent') || 'Back' }}
                     </v-tooltip>
                 </v-btn>
-                <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis"
-                    @click="goProcess()">
+                <div v-if="selectedProc.mega" class="d-flex align-center cursor-pointer mega-text-ellipsis" @click="goProcess()">
                     <h6 class="text-h6 font-weight-semibold">{{ selectedProc.mega.name }}</h6>
                     <v-icon>mdi-chevron-right</v-icon>
                 </div>
-                <div v-if="selectedProc.major" class="d-flex align-center cursor-pointer major-text-ellipsis"
-                    @click="goProcess(selectedProc.mega.name, 'mega')">
+                <div
+                    v-if="selectedProc.major"
+                    class="d-flex align-center cursor-pointer major-text-ellipsis"
+                    @click="goProcess(selectedProc.mega.name, 'mega')"
+                >
                     <h6 class="text-h6 font-weight-semibold">{{ selectedProc.major.name }}</h6>
                     <div>
                         <v-icon class="cursor-pointer">mdi-chevron-right</v-icon>
                         <v-menu activator="parent">
                             <v-list v-if="selectedProc.major.sub_proc_list" density="compact" class="cursor-pointer">
-                                <v-list-item v-for="sub in selectedProc.major.sub_proc_list" :key="sub.id"
-                                    @click="goProcess(sub.id, 'sub')">
+                                <v-list-item
+                                    v-for="sub in selectedProc.major.sub_proc_list"
+                                    :key="sub.id"
+                                    @click="goProcess(sub.id, 'sub')"
+                                >
                                     <v-list-item-title>
                                         {{ sub.name }}
                                     </v-list-item-title>
@@ -46,7 +45,7 @@
                 </div>
                 <div v-if="processDefinition" class="d-flex align-center">
                     <div class="text-h4 font-weight-semibold">
-                        {{ processDefinition ? processDefinition.name : "" }}
+                        {{ processDefinition ? processDefinition.name : '' }}
                     </div>
                 </div>
                 <div v-for="(subProcess, idx) in subProcessBreadCrumb" :key="idx">
@@ -64,11 +63,12 @@
                     <v-row class="sub-process-start-btn ma-0 pa-0">
                         <v-spacer></v-spacer>
                         <template v-if="!JMS && !Pal">
-                            <v-btn @click="executeProcess('simulate')"
+                            <v-btn
+                                @click="executeProcess('simulate')"
                                 class="mr-2"
                                 rounded
                                 density="comfortable"
-                                style="background-color: #808080; color: white;"
+                                style="background-color: #808080; color: white"
                             >
                                 {{ $t('subProcessDetail.simulation') }}
                             </v-btn>
@@ -78,16 +78,11 @@
                                 class="mr-2"
                                 rounded
                                 density="comfortable"
-                                style="background-color: #808080; color: white;"
+                                style="background-color: #808080; color: white"
                             >
                                 {{ isViewMode ? $t('subProcessDetail.edit') : $t('subProcessDetail.save') }}
                             </v-btn>
-                            <v-btn @click="executeProcess('execute')"
-                                color="primary"
-                                variant="flat"
-                                rounded
-                                density="comfortable"
-                            >
+                            <v-btn @click="executeProcess('execute')" color="primary" variant="flat" rounded density="comfortable">
                                 {{ $t('subProcessDetail.execute') }}
                             </v-btn>
                         </template>
@@ -96,11 +91,7 @@
                     <v-tooltip v-if="isEditable" location="bottom">
                         <template v-slot:activator="{ props }">
                             <div v-bind="props" class="mr-2">
-                                <v-btn @click="jumpToProcessDefintionChat()"
-                                    :size="30"
-                                    density="comfortable"
-                                    variant="text"
-                                >
+                                <v-btn @click="jumpToProcessDefintionChat()" :size="30" density="comfortable" variant="text">
                                     <v-icon>mdi-pencil</v-icon>
                                 </v-btn>
                             </div>
@@ -110,18 +101,17 @@
                         </span> -->
                         <span>{{ $t('processDefinition.edit') }}</span>
                     </v-tooltip>
-                    
+
                     <div class="pdf-download-btn">
-                        <v-tooltip location="bottom" 
-                            :text="$t('processDefinition.savePDF')"
-                        >
+                        <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
                             <template v-slot:activator="{ props }">
                                 <div v-bind="props" class="mr-2">
-                                    <v-btn @click="savePDF"
+                                    <v-btn
+                                        @click="savePDF"
                                         :size="30"
-                                        icon 
-                                        variant="text" 
-                                        class="text-medium-emphasis" 
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
                                         density="comfortable"
                                     >
                                         <v-icon :size="26">mdi-file-pdf-box</v-icon>
@@ -132,30 +122,24 @@
                     </div>
 
                     <div class="image-download-btn">
-                        <v-tooltip location="bottom" 
-                            :text="$t('processDefinition.capture')"
-                        >
+                        <v-tooltip location="bottom" :text="$t('processDefinition.capture')">
                             <template v-slot:activator="{ props }">
                                 <div v-bind="props" class="mr-2">
-                                    <v-btn @click="capture"
-                                        icon :size="30" 
-                                        variant="text"
-                                        density="comfortable"
-                                    >
-                                        <Icons :icon="'image-download'"  />
+                                    <v-btn @click="capture" icon :size="30" variant="text" density="comfortable">
+                                        <Icons :icon="'image-download'" />
                                     </v-btn>
                                 </div>
                             </template>
                         </v-tooltip>
                     </div>
-                    
+
                     <div class="zoom-btn">
                         <v-tooltip :text="$t('processDefinition.zoom')">
                             <template v-slot:activator="{ props }">
                                 <div v-bind="props">
                                     <v-btn :size="30" icon variant="text" @click="$globalState.methods.toggleZoom()">
                                         <!-- zoom-out(캔버스 확대), zoom-in(캔버스 축소) -->
-                                        <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'"/>
+                                        <Icons :icon="!$globalState.state.isZoomed ? 'zoom-out' : 'zoom-in'" />
                                     </v-btn>
                                 </div>
                             </template>
@@ -165,16 +149,22 @@
             </div>
         </div>
 
-        <v-card-text style="width: 100%;"
+        <v-card-text
+            style="width: 100%"
             :style="isMobile ? 'height: calc(100vh - 94px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 180px); padding: 10px;'"
         >
-            <ProcessDefinition ref="processDefinitionRef" v-if="onLoad && bpmn" style="width: 100%; height: 100%;" :bpmn="bpmn" :key="defCnt"
+            <ProcessDefinition
+                ref="processDefinitionRef"
+                v-if="onLoad && bpmn"
+                style="width: 100%; height: 100%"
+                :bpmn="bpmn"
+                :key="defCnt"
                 :processDefinition="processDefinitionData"
                 :isViewMode="isViewMode"
                 :isAdmin="isAdmin"
                 :isPreviewPDFDialog="isPreviewPDFDialog"
                 @closePDFDialog="isPreviewPDFDialog = false"
-                v-on:openSubProcess="ele => openSubProcess(ele)"
+                v-on:openSubProcess="(ele) => openSubProcess(ele)"
             >
             </ProcessDefinition>
             <div v-else-if="onLoad && !bpmn" style="height: 90%; text-align: center">
@@ -185,13 +175,12 @@
             </div>
             <div v-else></div>
         </v-card-text>
-        <v-dialog v-model="executeDialog" persistent
-            fullscreen
-        >
-            <process-gpt-execute v-if="mode === 'ProcessGPT'"
+        <v-dialog v-model="executeDialog" persistent fullscreen>
+            <process-gpt-execute
+                v-if="mode === 'ProcessGPT'"
                 class="process-gpt-execute-component-dialog"
                 :definitionId="processDefinition.id"
-                :processDefinition="processDefinitionData"    
+                :processDefinition="processDefinitionData"
                 :definition="processDefinition"
                 :isSimulate="isSimulate"
                 :disableAdvancedResearch="true"
@@ -199,7 +188,7 @@
             ></process-gpt-execute>
             <div v-else>
                 <!-- <process-execute-dialog :definitionId="processDefinition.id" @close="executeDialog = false"></process-execute-dialog> -->
-                <dry-run-process :definitionId="processDefinition.id"  @close="executeDialog = false"></dry-run-process>
+                <dry-run-process :definitionId="processDefinition.id" @close="executeDialog = false"></dry-run-process>
             </div>
         </v-dialog>
     </v-card>
@@ -207,11 +196,10 @@
 
 <script>
 import ProcessDefinition from '@/components/ProcessDefinition.vue';
-import ProcessExecuteDialog from '@/components/apps/definition-map/ProcessExecuteDialog.vue';
 import DryRunProcess from '@/components/apps/definition-map/DryRunProcess.vue';
 import ProcessGPTExecute from '@/components/apps/definition-map/ProcessGPTExecute.vue';
 import ProcessDefinitionModule from '@/components/ProcessDefinitionModule.vue';
-import BaseProcess from './BaseProcess.vue'
+import BaseProcess from './BaseProcess.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 import { useBpmnStore } from '@/stores/bpmn';
@@ -222,7 +210,6 @@ const backend = BackendFactory.createBackend();
 export default {
     components: {
         ProcessDefinition,
-        ProcessExecuteDialog,
         'dry-run-process': DryRunProcess,
         'process-gpt-execute': ProcessGPTExecute
     },
@@ -230,7 +217,7 @@ export default {
     props: {
         value: Object,
         enableEdit: Boolean,
-        isAdmin: Boolean,
+        isAdmin: Boolean
     },
     data: () => ({
         onLoad: false,
@@ -239,7 +226,7 @@ export default {
         processDefinitionData: null,
         selectedProc: {
             mega: null,
-            major: null,
+            major: null
         },
         selectedSubProcess: null,
         subProcessBreadCrumb: [],
@@ -265,7 +252,7 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
-        },
+        }
     },
     watch: {
         '$route.params': {
@@ -276,8 +263,8 @@ export default {
                 if (id !== oldId) {
                     this.init({ id, name: id });
                 }
-            },
-        },
+            }
+        }
     },
     created() {
         const params = this.$route.params;
@@ -295,17 +282,17 @@ export default {
                         this.isEditable = false;
                     }
                 } catch (error) {
-                    console.error("Error checking permissions:", error);
+                    console.error('Error checking permissions:', error);
                     this.isEditable = false;
                 }
             }
         },
-        jumpToProcessDefintionChat(){
+        jumpToProcessDefintionChat() {
             this.$router.push(`/definitions/${this.processDefinition.id}`);
         },
         goHistory(idx) {
             this.updateBpmn(this.subProcessBreadCrumb[idx].xml);
-            this.removeHistoryAfterIndex(idx)
+            this.removeHistoryAfterIndex(idx);
         },
         goBack() {
             // Navigate back to previous subprocess or main process
@@ -325,14 +312,14 @@ export default {
         },
         removeHistoryAfterIndex(index) {
             if (index < 0 || index >= this.subProcessBreadCrumb.length) {
-                console.error("Invalid index");
+                console.error('Invalid index');
                 return;
             }
             this.subProcessBreadCrumb.splice(index + 1);
         },
         updateBpmn(bpmn) {
-            this.bpmn = bpmn
-            this.defCnt++
+            this.bpmn = bpmn;
+            this.defCnt++;
         },
         async openSubProcess(e) {
             let me = this;
@@ -341,10 +328,10 @@ export default {
                     let json = {};
                     try {
                         const raw = e.extensionElements.values[0];
-                        json = raw.$children?.[0]?.$body
-                            ? JSON.parse(raw.$children[0].$body)
-                            : JSON.parse(raw.json || '{}');
-                    } catch (_) {}
+                        json = raw.$children?.[0]?.$body ? JSON.parse(raw.$children[0].$body) : JSON.parse(raw.json || '{}');
+                    } catch (_) {
+                        // ignore
+                    }
                     if (json.definitionId) {
                         const rawId = String(json.definitionId).trim();
                         const normalizedId = rawId.replace(/\.bpmn$/i, '');
@@ -360,10 +347,10 @@ export default {
                     const defId = e.extensionElements.values[0].definition;
                     const defInfo = await backend.getRawDefinition(defId, null);
                     if (defInfo) {
-                        let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn }
-                        me.subProcessBreadCrumb.push(obj)
-                        me.selectedSubProcess = e.extensionElements.values[0].definition
-                        me.updateBpmn(defInfo.bpmn)
+                        let obj = { processName: e.extensionElements.values[0].definition, xml: defInfo.bpmn };
+                        me.subProcessBreadCrumb.push(obj);
+                        me.selectedSubProcess = e.extensionElements.values[0].definition;
+                        me.updateBpmn(defInfo.bpmn);
                     }
                 }
             }
@@ -378,28 +365,28 @@ export default {
         async init(obj) {
             var me = this;
             me.$try({
-               action: async () => {
-                    const backend = BackendFactory.createBackend();  
+                action: async () => {
+                    const backend = BackendFactory.createBackend();
 
                     me.onLoad = false;
-                    if(!obj.name) obj.name = obj.id;
+                    if (!obj.name) obj.name = obj.id;
                     let processMap;
                     if (me.value && me.value.mega_proc_list && me.value.mega_proc_list.length > 0) {
                         processMap = me.value;
                     } else {
                         processMap = await backend.getProcessDefinitionMap();
                     }
-                    processMap.mega_proc_list.forEach(mega => {
-                        mega.major_proc_list.forEach(major => {
-                            major.sub_proc_list.forEach(sub => {
+                    processMap.mega_proc_list.forEach((mega) => {
+                        mega.major_proc_list.forEach((major) => {
+                            major.sub_proc_list.forEach((sub) => {
                                 if (sub.id == obj.id) {
                                     obj = sub;
                                     this.selectedProc.mega = mega;
                                     this.selectedProc.major = major;
                                 }
-                            })
-                        })
-                    })
+                            });
+                        });
+                    });
                     if (obj.id) {
                         let path = obj.id;
 
@@ -416,7 +403,7 @@ export default {
                         me.bpmn = null;
                     }
                     me.processDefinition = obj;
-                    
+
                     if (!me.processDefinitionData && me.processDefinition.id) {
                         const value = await backend.getRawDefinition(me.processDefinition.id);
                         if (value) {
@@ -455,7 +442,7 @@ export default {
             this.isPreviewPDFDialog = true;
         },
         executeProcess(mode) {
-            if(mode == 'simulate') {
+            if (mode == 'simulate') {
                 this.isSimulate = 'true';
             } else {
                 this.isSimulate = 'false';
@@ -468,9 +455,9 @@ export default {
                 action: async () => {
                     const backend = BackendFactory.createBackend();
                     const input = {
-                        process_instance_id: "new",
-                        process_definition_id: me.processDefinition.id,
-                    }
+                        process_instance_id: 'new',
+                        process_definition_id: me.processDefinition.id
+                    };
                     const data = await backend.start(input);
                     if (data.instanceId) {
                         const route = window.$mode == 'ProcessGPT' ? btoa(data.instanceId) : data.instanceId;
@@ -479,13 +466,13 @@ export default {
                     me.EventBus.emit('instances-updated');
                 },
                 successMsg: me.$t('successMsg.processExecutionCompleted')
-            })
+            });
         },
         goEdit() {
             this.$router.push(`/definitions/${this.processDefinition.id}?edit=true`);
         }
-    },
-}
+    }
+};
 </script>
 <style>
 .sub-process-detail-btn-box {
@@ -521,5 +508,4 @@ export default {
         margin-top: 8px;
     }
 }
-
 </style>

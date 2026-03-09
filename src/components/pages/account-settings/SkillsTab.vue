@@ -22,14 +22,13 @@ export default {
     data() {
         return {
             skillFile: null
-        }
+        };
     },
-    watch: {
-    },
+    watch: {},
     methods: {
         selectedSkillFile(skillFile) {
             this.skillFile = skillFile;
         }
     }
-}
+};
 </script>

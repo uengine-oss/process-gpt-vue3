@@ -7,22 +7,17 @@
 const UENGINE_NS = 'http://uengine';
 
 function escapeXmlAttr(str) {
-  if (str == null) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\r/g, '&#13;');
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r/g, '&#13;');
 }
 
 function unescapeXmlAttr(str) {
-  if (str == null) return '';
-  return String(str)
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+    if (str == null) return '';
+    return String(str)
+        .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
 }
 
 /**
@@ -31,33 +26,33 @@ function unescapeXmlAttr(str) {
  * → <uengine:properties json="...">
  */
 export function uengineJsonElementToAttr(xmlString) {
-  if (typeof xmlString !== 'string' || !xmlString.includes('uengine:json')) {
-    return xmlString;
-  }
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlString, 'text/xml');
-    if (doc.querySelector('parsererror')) return xmlString;
-
-    const jsonElements = doc.getElementsByTagNameNS(UENGINE_NS, 'json');
-    const toRemove = [];
-    for (let i = 0; i < jsonElements.length; i++) {
-      const el = jsonElements[i];
-      const text = (el.textContent || '').trim();
-      const parent = el.parentNode;
-      if (parent && parent.namespaceURI === UENGINE_NS) {
-        parent.setAttribute('json', text);
-        toRemove.push(el);
-      }
+    if (typeof xmlString !== 'string' || !xmlString.includes('uengine:json')) {
+        return xmlString;
     }
-    toRemove.forEach((el) => el.parentNode?.removeChild(el));
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlString, 'text/xml');
+        if (doc.querySelector('parsererror')) return xmlString;
 
-    const serializer = new XMLSerializer();
-    return serializer.serializeToString(doc);
-  } catch (e) {
-    console.warn('[uengineXmlTransform] elementToAttr failed:', e);
-    return xmlString;
-  }
+        const jsonElements = doc.getElementsByTagNameNS(UENGINE_NS, 'json');
+        const toRemove = [];
+        for (let i = 0; i < jsonElements.length; i++) {
+            const el = jsonElements[i];
+            const text = (el.textContent || '').trim();
+            const parent = el.parentNode;
+            if (parent && parent.namespaceURI === UENGINE_NS) {
+                parent.setAttribute('json', text);
+                toRemove.push(el);
+            }
+        }
+        toRemove.forEach((el) => el.parentNode?.removeChild(el));
+
+        const serializer = new XMLSerializer();
+        return serializer.serializeToString(doc);
+    } catch (e) {
+        console.warn('[uengineXmlTransform] elementToAttr failed:', e);
+        return xmlString;
+    }
 }
 
 /**
@@ -65,42 +60,42 @@ export function uengineJsonElementToAttr(xmlString) {
  * <uengine:properties json="..."> → <uengine:properties><uengine:json>...</uengine:json></uengine:properties>
  */
 export function uengineJsonAttrToElement(xmlString) {
-  if (typeof xmlString !== 'string' || !xmlString.includes('uengine')) {
-    return xmlString;
-  }
-  try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xmlString, 'text/xml');
-    if (doc.querySelector('parsererror')) return xmlString;
+    if (typeof xmlString !== 'string' || !xmlString.includes('uengine')) {
+        return xmlString;
+    }
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(xmlString, 'text/xml');
+        if (doc.querySelector('parsererror')) return xmlString;
 
-    const all = doc.getElementsByTagNameNS(UENGINE_NS, 'properties');
-    const list = [];
-    for (let i = 0; i < all.length; i++) list.push(all[i]);
-    const variables = doc.getElementsByTagNameNS(UENGINE_NS, 'variable');
-    for (let i = 0; i < variables.length; i++) list.push(variables[i]);
+        const all = doc.getElementsByTagNameNS(UENGINE_NS, 'properties');
+        const list = [];
+        for (let i = 0; i < all.length; i++) list.push(all[i]);
+        const variables = doc.getElementsByTagNameNS(UENGINE_NS, 'variable');
+        for (let i = 0; i < variables.length; i++) list.push(variables[i]);
 
-    list.forEach((el) => {
-      const jsonAttr = el.getAttribute('json');
-      if (jsonAttr == null) return;
-      const text = unescapeXmlAttr(jsonAttr);
-      const child = doc.createElementNS(UENGINE_NS, 'json');
-      child.textContent = text;
-      el.removeAttribute('json');
-      el.appendChild(child);
-    });
+        list.forEach((el) => {
+            const jsonAttr = el.getAttribute('json');
+            if (jsonAttr == null) return;
+            const text = unescapeXmlAttr(jsonAttr);
+            const child = doc.createElementNS(UENGINE_NS, 'json');
+            child.textContent = text;
+            el.removeAttribute('json');
+            el.appendChild(child);
+        });
 
-    const serializer = new XMLSerializer();
-    let out = serializer.serializeToString(doc);
-    // 직렬화 시 uengine 접두어 복원 (일부 환경에서 <json xmlns="http://uengine"> 로 나옴)
-    out = out.replace(/<json\s+xmlns="http:\/\/uengine">/gi, '<uengine:json>');
-    out = out.replace(/(<uengine:json>)([\s\S]*?)<\/json>/gi, '$1$2</uengine:json>');
-    return out;
-  } catch (e) {
-    console.warn('[uengineXmlTransform] attrToElement failed:', e);
-    return xmlString;
-  }
+        const serializer = new XMLSerializer();
+        let out = serializer.serializeToString(doc);
+        // 직렬화 시 uengine 접두어 복원 (일부 환경에서 <json xmlns="http://uengine"> 로 나옴)
+        out = out.replace(/<json\s+xmlns="http:\/\/uengine">/gi, '<uengine:json>');
+        out = out.replace(/(<uengine:json>)([\s\S]*?)<\/json>/gi, '$1$2</uengine:json>');
+        return out;
+    } catch (e) {
+        console.warn('[uengineXmlTransform] attrToElement failed:', e);
+        return xmlString;
+    }
 }
 
 export function isUengineMode() {
-  return typeof window !== 'undefined' && window.$mode === 'uEngine';
+    return typeof window !== 'undefined' && window.$mode === 'uEngine';
 }

@@ -1,9 +1,6 @@
 <template>
-    <div style="height: 100%; width:100%; background-color:white;">
-        <v-icon @click="$router.push('/tenant/manage')" size="24"
-            class="tenant-back-btn"
-        >mdi-arrow-left
-        </v-icon>
+    <div style="height: 100%; width: 100%; background-color: white">
+        <v-icon @click="$router.push('/tenant/manage')" size="24" class="tenant-back-btn">mdi-arrow-left </v-icon>
 
         <v-row v-if="!tenantCreated" no-gutters justify="center">
             <h1 class="text-grey200">회사 생성</h1>
@@ -13,10 +10,11 @@
                 주어진 정보를 통해서 새로운 회사를 생성합니다.
             </p>
         </v-row> -->
-        <TenantInfoField v-model="tenantInfo"
+        <TenantInfoField
+            v-model="tenantInfo"
             ref="tenantInfoField"
             :isEdit="false"
-            :isLoading='isLoading'
+            :isLoading="isLoading"
             @stopLoading="stopLoading"
             @beforeCreateTenant="beforeCreateTenant"
             v-if="!tenantCreated"
@@ -26,7 +24,7 @@
         <div v-if="tenantCreated" class="tenant-success-section">
             <!-- 성공 메시지 -->
             <v-row justify="center" class="mb-8 mt-4">
-                <v-col  cols="12" md="10" lg="8">
+                <v-col cols="12" md="10" lg="8">
                     <v-card class="success-card" elevation="3">
                         <v-card-text class="text-center pa-8">
                             <v-icon color="success" size="64" class="mb-4">mdi-check-circle</v-icon>
@@ -35,7 +33,7 @@
                                 <strong>"{{ tenantInfo.id }}"</strong> 회사가 성공적으로 생성되었습니다.
                             </p>
                             <p class="text-body-1 text-grey-darken-2">
-                                이제 팀원들을 초대하여 함께 작업을 시작해보세요.<br>
+                                이제 팀원들을 초대하여 함께 작업을 시작해보세요.<br />
                                 지금 초대하지 않더라도 언제든 새로운 사용자를 초대할 수 있습니다.
                             </p>
                         </v-card-text>
@@ -63,19 +61,19 @@ export default {
     },
     data: () => ({
         tenantInfo: {
-            id: '',
+            id: ''
         },
         isLoading: false,
         tenantCreated: false
     }),
     async created() {
         const isLogin = await backend.checkDBConnection();
-        if(!isLogin) {
-            this.$router.push('/auth/login')
+        if (!isLogin) {
+            this.$router.push('/auth/login');
         }
     },
     methods: {
-        stopLoading(){
+        stopLoading() {
             this.isLoading = false;
         },
         async beforeCreateTenant() {
@@ -86,7 +84,7 @@ export default {
             if (!isExistTenant) {
                 await this.createTenant();
             } else {
-                alert("이미 존재하는 회사 아이디입니다.");
+                alert('이미 존재하는 회사 아이디입니다.');
                 this.isLoading = false;
             }
         },
@@ -117,7 +115,7 @@ export default {
     .tenant-success-section {
         padding: 1rem 0.5rem;
     }
-    
+
     .mb-8 {
         margin-bottom: 3rem !important;
     }

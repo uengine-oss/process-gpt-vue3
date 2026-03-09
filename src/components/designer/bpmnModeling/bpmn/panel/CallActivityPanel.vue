@@ -7,18 +7,17 @@
                     {{ $t('CallActivityPanel.move') }}
                 </v-btn>
             </div>
-            <ProcessDefinitionDisplay 
-                v-model="copyUengineProperties.definitionId" 
+            <ProcessDefinitionDisplay
+                v-model="copyUengineProperties.definitionId"
                 :disabled="isViewMode"
                 :file-extensions="['.bpmn']"
                 :options="{ hideDetails: true, itemTitle: 'name', itemValue: 'path' }"
             ></ProcessDefinitionDisplay>
         </div>
         <div :key="definitionCnt" v-if="copyUengineProperties.definitionId">
-            
             <div>
                 <v-row class="ma-0 pa-0">
-                    <div class="mb-1 mt-4">{{$t('SubProcessPanel.forEachVariable')}}</div>
+                    <div class="mb-1 mt-4">{{ $t('SubProcessPanel.forEachVariable') }}</div>
                 </v-row>
                 <v-row class="ma-0 pa-0 align-center pb-4">
                     <v-autocomplete
@@ -31,7 +30,8 @@
                         :label="$t('SubProcessPanel.variable')"
                         variant="outlined"
                     ></v-autocomplete>
-                    <DetailComponent class="ml-2"
+                    <DetailComponent
+                        class="ml-2"
                         :title="$t('SubProcessPanel.forEachVariableDescriptionTitle')"
                         :details="forEachVariableDescription"
                         :iconSize="24"
@@ -81,7 +81,18 @@
         <div class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
             <div class="d-flex flex-wrap gap-2 mb-3">
-                <v-btn v-for="color in presetColors" :key="color.value" :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }" size="small" icon :disabled="isViewMode" @click="setTaskColor(color.value)">
+                <v-btn
+                    v-for="color in presetColors"
+                    :key="color.value"
+                    :style="{
+                        backgroundColor: color.value,
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                    }"
+                    size="small"
+                    icon
+                    :disabled="isViewMode"
+                    @click="setTaskColor(color.value)"
+                >
                     <v-icon v-if="copyUengineProperties.taskColor === color.value" size="small" color="white">mdi-check</v-icon>
                 </v-btn>
             </div>
@@ -100,12 +111,28 @@
                         </v-card-actions>
                     </v-card>
                 </v-menu>
-                <v-btn v-if="copyUengineProperties.taskColor" variant="text" size="small" color="error" :disabled="isViewMode" @click="resetTaskColor">
+                <v-btn
+                    v-if="copyUengineProperties.taskColor"
+                    variant="text"
+                    size="small"
+                    color="error"
+                    :disabled="isViewMode"
+                    @click="resetTaskColor"
+                >
                     <v-icon size="small">mdi-close</v-icon>{{ $t('BpmnPropertyPanel.resetColor') || '초기화' }}
                 </v-btn>
             </v-row>
             <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
-                <div :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }" class="mr-2"></div>
+                <div
+                    :style="{
+                        backgroundColor: copyUengineProperties.taskColor,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc'
+                    }"
+                    class="mr-2"
+                ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
             </div>
         </div>
@@ -116,7 +143,6 @@ import { useBpmnStore } from '@/stores/bpmn';
 import BackendFactory from '@/components/api/BackendFactory';
 import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDisplay.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
-
 
 export default {
     name: 'call-activity-panel',
@@ -143,7 +169,7 @@ export default {
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
+        if (!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
     },
     data() {
         return {
@@ -202,7 +228,7 @@ export default {
             console.error('bpmn:Process element not found');
             return;
         }
-        
+
         if (this.copyUengineProperties.forEachVariable) {
             this.selectedVariable = this.copyUengineProperties.forEachVariable.name;
         }
@@ -221,7 +247,6 @@ export default {
             me.definitions = value;
         }
         if (me.copyUengineProperties.definitionId) me.setDefinitionInfo(me.copyUengineProperties.definitionId);
-   
     },
     computed: {
         inputData() {
@@ -261,21 +286,21 @@ export default {
         }
     },
     methods: {
-        moveDefinition(){
-            if(!this.copyUengineProperties.definitionId) return;
+        moveDefinition() {
+            if (!this.copyUengineProperties.definitionId) return;
             window.open(`/definitions/${this.copyUengineProperties.definitionId.replace('.bpmn', '')}`, '_blank');
         },
         async beforeSave() {
             const backend = BackendFactory.createBackend();
-            if(this.copyUengineProperties.definitionId) {
+            if (this.copyUengineProperties.definitionId) {
                 let result = await backend.getDefinitionVersions(this.copyUengineProperties.definitionId.replace('.bpmn', ''), {
                     key: 'version, message',
                     sort: 'asc',
                     orderBy: 'timeStamp',
                     type: 'bpmn'
                 });
-                if(result) {
-                    this.lists = result.map(item => ({ ...item, xml: null }));
+                if (result) {
+                    this.lists = result.map((item) => ({ ...item, xml: null }));
                     this.copyUengineProperties.version = this.lists[this.lists.length - 1].version;
                 } else {
                     delete this.copyUengineProperties.version;
@@ -297,7 +322,7 @@ export default {
         },
         async setDefinitionInfo(definitionId) {
             const backend = BackendFactory.createBackend();
-            if(!definitionId) return;
+            if (!definitionId) return;
             // definition 정보 호출
             if (definitionId.includes('.bpmn')) {
                 definitionId = definitionId.split('.bpmn')[0];
@@ -368,7 +393,7 @@ export default {
             this.copyUengineProperties.variableBindings.push({ key: this.paramKey, value: this.paramValue });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);
@@ -399,9 +424,13 @@ export default {
                     const element = elementRegistry.get(this.element?.id);
                     if (element) {
                         const gfx = elementRegistry.getGraphics(element);
-                        if (gfx) { graphicsFactory.update('shape', element, gfx); }
+                        if (gfx) {
+                            graphicsFactory.update('shape', element, gfx);
+                        }
                     }
-                } catch (e) { console.warn('Could not refresh task visual:', e); }
+                } catch (e) {
+                    console.warn('Could not refresh task visual:', e);
+                }
             }
         }
     }

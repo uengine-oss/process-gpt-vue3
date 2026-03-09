@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue';
 const dialog = ref(false);
 </script>
 
@@ -9,12 +9,11 @@ const dialog = ref(false);
         <v-dialog v-model="dialog" max-width="800">
             <v-card>
                 <v-card-text>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-                    eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna
+                    aliqua.
                 </v-card-text>
                 <v-card-actions>
-                    <v-btn color="secondary" class="px-4 rounded-pill mx-auto" @click="dialog = false"
-                        variant="tonal">Close Dialog</v-btn>
+                    <v-btn color="secondary" class="px-4 rounded-pill mx-auto" @click="dialog = false" variant="tonal">Close Dialog</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

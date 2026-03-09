@@ -11,7 +11,7 @@ export const useClassesStore = defineStore({
     id: 'Classes',
 
     state: (): classesType => ({
-        classinfo: [],
+        classinfo: []
     }),
     getters: {
         // Get Post from Getters

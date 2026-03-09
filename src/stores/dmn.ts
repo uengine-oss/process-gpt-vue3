@@ -15,12 +15,11 @@ export const useDmnStore = defineStore({
         }
     },
     getters: {
-        getModeler: state => {
+        getModeler: (state) => {
             return state.dmnModeler;
         },
-        getDefinition: state => {
+        getDefinition: (state) => {
             return state.decisionDefinition;
         }
     }
 });
-

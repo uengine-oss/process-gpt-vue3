@@ -28,78 +28,77 @@ import img17 from '@/assets/images/landingpage/apps/app-kanban.jpg';
 
 const productsSlider: ProductsSliderTypes[] = [
     {
-        type:false,
+        type: false,
         img: img6,
         name: 'Calandar App',
         link: '/apps/calendar'
     },
     {
-        type:false,
+        type: false,
         img: img7,
         name: 'Chat App',
         link: '/apps/chats'
     },
     {
-        type:false,
+        type: false,
         img: img8,
         name: 'Contact App',
         link: '/apps/contacts'
     },
     {
-        type:false,
+        type: false,
         img: img9,
         name: 'User Profile App',
         link: '/apps/user/profileone'
     },
     {
-        type:false,
+        type: false,
         img: img10,
         name: 'Notes App',
         link: '/apps/notes'
     },
     {
-        type:false,
+        type: false,
         img: img11,
         name: 'Blog App',
         link: '/apps/blog/posts'
     },
     {
-        type:false,
+        type: false,
         img: img15,
         name: 'Blog Detail App',
         link: '/apps/blog/garmins-instinct-crossover-is-a-rugged-hybrid-smartwatch'
     },
     {
-        type:false,
+        type: false,
         img: img12,
         name: 'eCommerce Shop App',
         link: '/ecommerce/products-one'
     },
     {
-        type:false,
+        type: false,
         img: img16,
         name: 'eCommerce Product Detail App',
         link: '/ecommerce/product/detail/one/1'
     },
     {
-        type:false,
+        type: false,
         img: img13,
         name: 'eCommerce Product List App',
         link: '/ecommerce/productlist'
     },
     {
-        type:false,
+        type: false,
         img: img14,
         name: 'eCommerce Checkout App',
         link: '/ecommerce/checkout'
     },
     {
-        type:false,
+        type: false,
         img: img17,
         name: 'Kanban Application',
         link: '/apps/kanban'
-    },
-
+    }
 ];
 
 /*User Review Section*/
@@ -125,7 +124,7 @@ const userReview: UserReviewTypes[] = [
         title: 'Minshan Cui',
         subtitle: 'Features avaibility',
         review: 'The quality of design is excellent, customizability and flexibility much better than the other products available in the market.I strongly recommend the wrappixel to other.'
-    },
+    }
 ];
 
 /*Feature Section*/
@@ -153,105 +152,103 @@ const listFeature: ListFeatureTypes[] = [
         icon: WandIcon,
         title: '6 Theme Colors',
         subtitle: 'We have included 6 pre-defined Theme Colors with Modernize Admin.',
-        bgcolor:'primary'
+        bgcolor: 'primary'
     },
     {
         icon: ShieldLockIcon,
         title: 'Authguard',
         subtitle: 'We have AUTH guard functionality which is based on JWT.',
-        bgcolor:'error'
+        bgcolor: 'error'
     },
     {
         icon: ArchiveIcon,
         title: '65+ Page Templates',
         subtitle: 'Yes, we have 5 demos & 65+ Pages per demo to make it easier.',
-        bgcolor:'info'
+        bgcolor: 'info'
     },
     {
         icon: AdjustmentsIcon,
         title: '45+ UI Components',
         subtitle: 'Almost 45+ UI Components being given with Modernize Admin Pack.',
-        bgcolor:'success'
+        bgcolor: 'success'
     },
     {
         icon: TagIcon,
         title: 'Vuetify',
         subtitle: 'It is made with Vuetify which is a powerful UI Component Framework.',
-        bgcolor:'warning'
+        bgcolor: 'warning'
     },
     {
         icon: DiamondIcon,
         title: '3400+ Font Icons',
         subtitle: 'Lots of Icon Fonts are included here in the package of Modernize Admin.',
-        bgcolor:'success'
+        bgcolor: 'success'
     },
     {
         icon: DatabaseIcon,
         title: 'Axios',
         subtitle: 'Axios is a promise-based HTTP Client for node.js and the browser.',
-        bgcolor:'indigo'
+        bgcolor: 'indigo'
     },
     {
         icon: LanguageKatakanaIcon,
         title: 'i18n Vue',
         subtitle: 'Vue i18n is a powerful internationalization framework for Vue.',
-        bgcolor:'primary'
-        
+        bgcolor: 'primary'
     },
     {
         icon: BuildingCarouselIcon,
         title: 'Vue3 Carousel',
         // subtitle: 'The Last Vue3 Carousel You will Ever Need!'
         subtitle: 'Flexible, responsive, and highly customizable Vue carousel component',
-        bgcolor:'error'
+        bgcolor: 'error'
     },
     {
         icon: ArrowsShuffleIcon,
         title: 'Easy to Customize',
         subtitle: 'Customization will be easy as we understand your pain.',
-        bgcolor:'info'
+        bgcolor: 'info'
     },
     {
         icon: ChartPieIcon,
         title: 'Lots of Chart Options',
         subtitle: 'You name it and we have it, Yes lots of variations for Charts.',
-        bgcolor:'success'
+        bgcolor: 'success'
     },
     {
         icon: LayersIntersectIcon,
         title: 'Lots of Table Examples',
         subtitle: 'Data Tables are initial requirement and we added them.',
-        bgcolor:'warning'
+        bgcolor: 'warning'
     },
     {
         icon: RefreshIcon,
         title: 'Regular Updates',
         subtitle: 'We are constantly updating our pack with new features.',
-        bgcolor:'warning'
+        bgcolor: 'warning'
     },
     {
         icon: BookIcon,
         title: 'Detailed Documentation',
         subtitle: 'We have made detailed documentation, so it will easy to use.',
-        bgcolor:'indigo'
+        bgcolor: 'indigo'
     },
     {
         icon: CalendarIcon,
         title: 'Calendar Design',
         subtitle: 'Calendar is available with our package & in nice design.',
-        bgcolor:'primary'
+        bgcolor: 'primary'
     },
     {
         icon: MessageIcon,
         title: 'Dedicated Support',
         subtitle: 'We believe in supreme support is key and we offer that.',
-        bgcolor:'error'
+        bgcolor: 'error'
     }
 ];
 
 /*Demos Megamenu*/
-const demosMegamenu: DemosMegaMenuTypes[] = [
-];
+const demosMegamenu: DemosMegaMenuTypes[] = [];
 const appsMegamenu: AppsMegaMenuTypes[] = [
     {
         img: img6,

@@ -7,198 +7,216 @@
                         {{ skillDisplayName || skillId }}
                     </h6>
                     <div class="skill-detail-left pa-2">
-                    <div v-if="loadError" class="text-caption text-error py-4 text-center">
-                        {{ $t('SkillDetail.loadError') }}
-                    </div>
-                    <div v-else-if="isLoading" class="d-flex align-center justify-center py-4">
-                        <v-progress-circular indeterminate size="24" color="primary"></v-progress-circular>
-                        <span class="ml-2 text-caption">{{ $t('SkillDetail.loading') }}</span>
-                    </div>
-                    <template v-else>
-                        <!-- 위: 트리뷰 / 그래프 -->
-                        <div class="left-tree-section">
-                            <div class="d-flex align-center mb-1">
-                                <v-btn-toggle
-                                    v-model="leftViewMode"
-                                    density="compact"
-                                    variant="outlined"
-                                    divided
-                                    color="primary"
-                                    class="mr-1"
-                                    mandatory
-                                >
-                                    <v-btn value="files" size="small">
-                                        <v-icon size="small">mdi-file-tree-outline</v-icon>
-                                        <span class="ml-1 d-none d-sm-inline">{{ $t('SkillDetail.filesTab') }}</span>
-                                    </v-btn>
-                                    <v-btn value="graph" size="small">
-                                        <v-icon size="small">mdi-graph-outline</v-icon>
-                                        <span class="ml-1 d-none d-sm-inline">{{ $t('SkillDetail.graphTab') }}</span>
-                                    </v-btn>
-                                </v-btn-toggle>
-                                <v-tooltip v-if="!isBuiltinSkill" location="bottom" :text="$t('SkillDetail.addFolder')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-bind="props"
-                                            variant="text"
-                                            icon
-                                            size="small"
-                                            :disabled="selectedNodeId === null || leftViewMode !== 'files'"
-                                            @click="addNode('folder')"
-                                        >
-                                            <v-icon>mdi-folder-plus-outline</v-icon>
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                                <v-tooltip v-if="!isBuiltinSkill" location="bottom" :text="$t('SkillDetail.addFile')">
-                                    <template v-slot:activator="{ props }">
-                                        <v-btn
-                                            v-bind="props"
-                                            variant="text"
-                                            icon
-                                            size="small"
-                                            :disabled="selectedNodeId === null || isFileNode || leftViewMode !== 'files'"
-                                            @click="addNode('file')"
-                                        >
-                                            <v-icon>mdi-file-document-plus-outline</v-icon>
-                                        </v-btn>
-                                    </template>
-                                </v-tooltip>
-                            </div>
-                            <v-card flat class="skill-tree-card">
-                                <template v-if="leftViewMode === 'files'">
-                                    <v-treeview
-                                        v-if="config.roots.length > 0"
-                                        :config="config"
-                                        :nodes="nodes"
-                                        style="user-select: none; width: 100%;"
+                        <div v-if="loadError" class="text-caption text-error py-4 text-center">
+                            {{ $t('SkillDetail.loadError') }}
+                        </div>
+                        <div v-else-if="isLoading" class="d-flex align-center justify-center py-4">
+                            <v-progress-circular indeterminate size="24" color="primary"></v-progress-circular>
+                            <span class="ml-2 text-caption">{{ $t('SkillDetail.loading') }}</span>
+                        </div>
+                        <template v-else>
+                            <!-- 위: 트리뷰 / 그래프 -->
+                            <div class="left-tree-section">
+                                <div class="d-flex align-center mb-1">
+                                    <v-btn-toggle
+                                        v-model="leftViewMode"
+                                        density="compact"
+                                        variant="outlined"
+                                        divided
+                                        color="primary"
+                                        class="mr-1"
+                                        mandatory
                                     >
-                                        <template #before-input="{ node }">
-                                            <div
-                                                @click="handleNodeClick(node)"
-                                                class="skill-tree-node d-inline-flex align-center justify-space-between cursor-pointer w-100"
-                                                :class="{
-                                                    'text-primary': selectedNodeId === node.id,
-                                                    'selected-node-background': selectedNodeId === node.id
-                                                }"
+                                        <v-btn value="files" size="small">
+                                            <v-icon size="small">mdi-file-tree-outline</v-icon>
+                                            <span class="ml-1 d-none d-sm-inline">{{ $t('SkillDetail.filesTab') }}</span>
+                                        </v-btn>
+                                        <v-btn value="graph" size="small">
+                                            <v-icon size="small">mdi-graph-outline</v-icon>
+                                            <span class="ml-1 d-none d-sm-inline">{{ $t('SkillDetail.graphTab') }}</span>
+                                        </v-btn>
+                                    </v-btn-toggle>
+                                    <v-tooltip v-if="!isBuiltinSkill" location="bottom" :text="$t('SkillDetail.addFolder')">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                variant="text"
+                                                icon
+                                                size="small"
+                                                :disabled="selectedNodeId === null || leftViewMode !== 'files'"
+                                                @click="addNode('folder')"
                                             >
-                                                <div v-if="isBuiltinSkill || editingNodeId !== node.id || node.data.type !== 'folder'" class="d-inline-flex align-center text-subtitle-1 font-weight-medium text-truncate ml-1">
-                                                    <span class="text-truncate">
-                                                        {{ node.text }}
-                                                        <v-tooltip activator="parent" location="bottom">
+                                                <v-icon>mdi-folder-plus-outline</v-icon>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                    <v-tooltip v-if="!isBuiltinSkill" location="bottom" :text="$t('SkillDetail.addFile')">
+                                        <template v-slot:activator="{ props }">
+                                            <v-btn
+                                                v-bind="props"
+                                                variant="text"
+                                                icon
+                                                size="small"
+                                                :disabled="selectedNodeId === null || isFileNode || leftViewMode !== 'files'"
+                                                @click="addNode('file')"
+                                            >
+                                                <v-icon>mdi-file-document-plus-outline</v-icon>
+                                            </v-btn>
+                                        </template>
+                                    </v-tooltip>
+                                </div>
+                                <v-card flat class="skill-tree-card">
+                                    <template v-if="leftViewMode === 'files'">
+                                        <v-treeview
+                                            v-if="config.roots.length > 0"
+                                            :config="config"
+                                            :nodes="nodes"
+                                            style="user-select: none; width: 100%"
+                                        >
+                                            <template #before-input="{ node }">
+                                                <div
+                                                    @click="handleNodeClick(node)"
+                                                    class="skill-tree-node d-inline-flex align-center justify-space-between cursor-pointer w-100"
+                                                    :class="{
+                                                        'text-primary': selectedNodeId === node.id,
+                                                        'selected-node-background': selectedNodeId === node.id
+                                                    }"
+                                                >
+                                                    <div
+                                                        v-if="isBuiltinSkill || editingNodeId !== node.id || node.data.type !== 'folder'"
+                                                        class="d-inline-flex align-center text-subtitle-1 font-weight-medium text-truncate ml-1"
+                                                    >
+                                                        <span class="text-truncate">
                                                             {{ node.text }}
-                                                        </v-tooltip>
-                                                    </span>
+                                                            <v-tooltip activator="parent" location="bottom">
+                                                                {{ node.text }}
+                                                            </v-tooltip>
+                                                        </span>
+                                                    </div>
+                                                    <v-text-field
+                                                        v-else-if="!isBuiltinSkill"
+                                                        v-model="editingFolderName"
+                                                        variant="plain"
+                                                        density="compact"
+                                                        hide-details
+                                                        class="ml-1"
+                                                        style="min-width: 80px; max-width: 160px"
+                                                        @keyup.enter="finishEditFolder(node)"
+                                                        @keyup.esc="cancelEditFolder"
+                                                        ref="folderNameInput"
+                                                        autofocus
+                                                    ></v-text-field>
+                                                    <v-btn
+                                                        v-if="!isBuiltinSkill && node.data.type === 'folder' && editingNodeId !== node.id"
+                                                        variant="text"
+                                                        icon
+                                                        size="x-small"
+                                                        @click.stop="startEditFolder(node)"
+                                                    >
+                                                        <v-icon>mdi-pencil-outline</v-icon>
+                                                    </v-btn>
+                                                    <v-btn
+                                                        v-else-if="
+                                                            !isBuiltinSkill && node.data.type === 'folder' && editingNodeId === node.id
+                                                        "
+                                                        variant="text"
+                                                        icon
+                                                        size="x-small"
+                                                        color="primary"
+                                                        @click.stop="finishEditFolder(node)"
+                                                    >
+                                                        <v-icon>mdi-check</v-icon>
+                                                    </v-btn>
                                                 </div>
-                                                <v-text-field
-                                                    v-else-if="!isBuiltinSkill"
-                                                    v-model="editingFolderName"
-                                                    variant="plain"
-                                                    density="compact"
-                                                    hide-details
-                                                    class="ml-1"
-                                                    style="min-width: 80px; max-width: 160px;"
-                                                    @keyup.enter="finishEditFolder(node)"
-                                                    @keyup.esc="cancelEditFolder"
-                                                    ref="folderNameInput"
-                                                    autofocus
-                                                ></v-text-field>
+                                            </template>
+                                        </v-treeview>
+                                        <div v-else class="text-caption text-medium-emphasis py-4 text-center">
+                                            {{ $t('SkillDetail.noFiles') }}
+                                        </div>
+                                    </template>
+
+                                    <template v-else>
+                                        <div v-if="isGraphLoading" class="d-flex align-center justify-center py-4 text-medium-emphasis">
+                                            <v-progress-circular indeterminate size="20" width="2" color="primary" class="mr-2" />
+                                            <span class="text-caption">{{ $t('SkillDetail.graphLoading') }}</span>
+                                        </div>
+                                        <div v-else-if="graphLoadError" class="text-caption text-error py-4 text-center">
+                                            {{ $t('SkillDetail.graphLoadError') }}
+                                        </div>
+                                        <div
+                                            v-else-if="graphElements.length === 0"
+                                            class="text-caption text-medium-emphasis py-4 text-center"
+                                        >
+                                            {{ $t('SkillDetail.graphEmpty') }}
+                                        </div>
+                                        <Teleport to="body" :disabled="!isGraphExpanded">
+                                            <div v-if="isGraphExpanded" class="graph-overlay" @click.self="toggleGraphExpand"></div>
+                                            <div class="skill-graph-wrap" :class="{ 'skill-graph-expanded': isGraphExpanded }">
+                                                <div ref="cyContainer" class="skill-graph-canvas"></div>
                                                 <v-btn
-                                                    v-if="!isBuiltinSkill && node.data.type === 'folder' && editingNodeId !== node.id"
-                                                    variant="text"
                                                     icon
-                                                    size="x-small"
-                                                    @click.stop="startEditFolder(node)"
-                                                >
-                                                    <v-icon>mdi-pencil-outline</v-icon>
-                                                </v-btn>
-                                                <v-btn
-                                                    v-else-if="!isBuiltinSkill && node.data.type === 'folder' && editingNodeId === node.id"
                                                     variant="text"
-                                                    icon
                                                     size="x-small"
-                                                    color="primary"
-                                                    @click.stop="finishEditFolder(node)"
+                                                    class="graph-fullscreen-btn"
+                                                    @click="toggleGraphExpand"
                                                 >
-                                                    <v-icon>mdi-check</v-icon>
+                                                    <v-icon size="18">{{
+                                                        isGraphExpanded ? 'mdi-fullscreen-exit' : 'mdi-fullscreen'
+                                                    }}</v-icon>
                                                 </v-btn>
                                             </div>
-                                        </template>
-                                    </v-treeview>
-                                    <div v-else class="text-caption text-medium-emphasis py-4 text-center">
-                                        {{ $t('SkillDetail.noFiles') }}
-                                    </div>
-                                </template>
-
-                                <template v-else>
-                                    <div v-if="isGraphLoading" class="d-flex align-center justify-center py-4 text-medium-emphasis">
-                                        <v-progress-circular indeterminate size="20" width="2" color="primary" class="mr-2" />
-                                        <span class="text-caption">{{ $t('SkillDetail.graphLoading') }}</span>
-                                    </div>
-                                    <div v-else-if="graphLoadError" class="text-caption text-error py-4 text-center">
-                                        {{ $t('SkillDetail.graphLoadError') }}
-                                    </div>
-                                    <div v-else-if="graphElements.length === 0" class="text-caption text-medium-emphasis py-4 text-center">
-                                        {{ $t('SkillDetail.graphEmpty') }}
-                                    </div>
-                                    <Teleport to="body" :disabled="!isGraphExpanded">
-                                        <div v-if="isGraphExpanded" class="graph-overlay" @click.self="toggleGraphExpand"></div>
-                                        <div class="skill-graph-wrap" :class="{ 'skill-graph-expanded': isGraphExpanded }">
-                                            <div ref="cyContainer" class="skill-graph-canvas"></div>
-                                            <v-btn
-                                                icon
-                                                variant="text"
-                                                size="x-small"
-                                                class="graph-fullscreen-btn"
-                                                @click="toggleGraphExpand"
-                                            >
-                                                <v-icon size="18">{{ isGraphExpanded ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
-                                            </v-btn>
-                                        </div>
-                                    </Teleport>
-                                </template>
-                            </v-card>
-                        </div>
-                        <v-divider class="mt-3" />
-                        <!-- 아래: 사용 중인 에이전트 -->
-                        <div class="used-by-block mt-3 pa-4">
-                            <div class="d-flex align-center justify-space-between cursor-pointer" @click="showUsedBy = !showUsedBy">
-                                <span class="text-caption font-weight-medium text-medium-emphasis">
-                                    {{ $t('SkillDetail.usedByTitle') }} ({{ usedByAgents.length }})
-                                </span>
-                                <v-icon size="18" class="text-medium-emphasis">{{ showUsedBy ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+                                        </Teleport>
+                                    </template>
+                                </v-card>
                             </div>
-                            <div v-if="showUsedBy" class="pt-2 used-by-list-wrap">
-                                <div v-if="isUsageLoading" class="d-flex align-center justify-center py-3 text-medium-emphasis">
-                                    <v-progress-circular indeterminate size="16" width="2" color="primary" class="mr-2" />
-                                    <span class="text-caption">{{ $t('SkillDetail.usedByLoading') }}</span>
+                            <v-divider class="mt-3" />
+                            <!-- 아래: 사용 중인 에이전트 -->
+                            <div class="used-by-block mt-3 pa-4">
+                                <div class="d-flex align-center justify-space-between cursor-pointer" @click="showUsedBy = !showUsedBy">
+                                    <span class="text-caption font-weight-medium text-medium-emphasis">
+                                        {{ $t('SkillDetail.usedByTitle') }} ({{ usedByAgents.length }})
+                                    </span>
+                                    <v-icon size="18" class="text-medium-emphasis">{{
+                                        showUsedBy ? 'mdi-chevron-up' : 'mdi-chevron-down'
+                                    }}</v-icon>
                                 </div>
-                                <div v-else-if="usedByAgents.length === 0" class="text-caption text-medium-emphasis py-3 text-center">
-                                    {{ $t('SkillDetail.usedByEmpty') }}
+                                <div v-if="showUsedBy" class="pt-2 used-by-list-wrap">
+                                    <div v-if="isUsageLoading" class="d-flex align-center justify-center py-3 text-medium-emphasis">
+                                        <v-progress-circular indeterminate size="16" width="2" color="primary" class="mr-2" />
+                                        <span class="text-caption">{{ $t('SkillDetail.usedByLoading') }}</span>
+                                    </div>
+                                    <div v-else-if="usedByAgents.length === 0" class="text-caption text-medium-emphasis py-3 text-center">
+                                        {{ $t('SkillDetail.usedByEmpty') }}
+                                    </div>
+                                    <v-list v-else density="compact" class="used-by-list pa-0">
+                                        <v-list-item
+                                            v-for="agent in usedByAgents"
+                                            :key="agent.id"
+                                            class="used-by-item"
+                                            @click="goToAgent(agent.id)"
+                                        >
+                                            <template v-slot:prepend>
+                                                <v-avatar size="24" class="mr-2">
+                                                    <img
+                                                        v-if="agent.profile"
+                                                        :src="agent.profile"
+                                                        :alt="agent.name"
+                                                        width="24"
+                                                        height="24"
+                                                    />
+                                                    <v-icon v-else size="24">mdi-robot-outline</v-icon>
+                                                </v-avatar>
+                                            </template>
+                                            <v-list-item-title class="text-body-2 text-truncate">{{ agent.name }}</v-list-item-title>
+                                            <template v-slot:append>
+                                                <v-icon size="16" class="text-medium-emphasis">mdi-open-in-new</v-icon>
+                                            </template>
+                                        </v-list-item>
+                                    </v-list>
                                 </div>
-                                <v-list v-else density="compact" class="used-by-list pa-0">
-                                    <v-list-item
-                                        v-for="agent in usedByAgents"
-                                        :key="agent.id"
-                                        class="used-by-item"
-                                        @click="goToAgent(agent.id)"
-                                    >
-                                        <template v-slot:prepend>
-                                            <v-avatar size="24" class="mr-2">
-                                                <img v-if="agent.profile" :src="agent.profile" :alt="agent.name" width="24" height="24" />
-                                                <v-icon v-else size="24">mdi-robot-outline</v-icon>
-                                            </v-avatar>
-                                        </template>
-                                        <v-list-item-title class="text-body-2 text-truncate">{{ agent.name }}</v-list-item-title>
-                                        <template v-slot:append>
-                                            <v-icon size="16" class="text-medium-emphasis">mdi-open-in-new</v-icon>
-                                        </template>
-                                    </v-list-item>
-                                </v-list>
                             </div>
-                        </div>
-                    </template>
-                </div>
+                        </template>
+                    </div>
                 </div>
             </template>
 
@@ -236,11 +254,14 @@
                                     v-if="config.roots.length > 0"
                                     :config="config"
                                     :nodes="nodes"
-                                    style="user-select: none; width: 100%;"
+                                    style="user-select: none; width: 100%"
                                 >
                                     <template #before-input="{ node }">
                                         <div
-                                            @click="handleNodeClick(node); closeDrawer && closeDrawer();"
+                                            @click="
+                                                handleNodeClick(node);
+                                                closeDrawer && closeDrawer();
+                                            "
                                             class="skill-tree-node d-inline-flex align-center cursor-pointer w-100"
                                             :class="{
                                                 'text-primary': selectedNodeId === node.id,
@@ -268,13 +289,7 @@
                                     </template>
                                     {{ usedByAgents.length }}
                                 </v-chip>
-                                <v-btn
-                                    icon
-                                    variant="text"
-                                    size="x-small"
-                                    density="compact"
-                                    @click="showUsedBy = !showUsedBy"
-                                >
+                                <v-btn icon variant="text" size="x-small" density="compact" @click="showUsedBy = !showUsedBy">
                                     <v-icon size="18">{{ showUsedBy ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
                                 </v-btn>
                             </div>
@@ -292,7 +307,10 @@
                                         v-for="agent in usedByAgents"
                                         :key="agent.id"
                                         class="used-by-item"
-                                        @click="goToAgent(agent.id); closeDrawer && closeDrawer();"
+                                        @click="
+                                            goToAgent(agent.id);
+                                            closeDrawer && closeDrawer();
+                                        "
                                     >
                                         <template v-slot:prepend>
                                             <v-avatar size="24" class="mr-2">
@@ -441,7 +459,7 @@ export default {
                     this.backend.getAgentList()
                 ]);
 
-                const mappingList = Array.isArray(mappings) ? mappings : (mappings || []);
+                const mappingList = Array.isArray(mappings) ? mappings : mappings || [];
                 const agentList = Array.isArray(agents) ? agents : [];
                 const matched = [];
 
@@ -514,8 +532,8 @@ export default {
                 try {
                     const builtinResult = this.backend.getTenantBuiltinSkills ? await this.backend.getTenantBuiltinSkills() : [];
                     const raw = builtinResult?.skills ?? builtinResult;
-                    const builtinList = Array.isArray(raw) ? raw : (raw?.skills || []);
-                    const builtinNames = builtinList.map((s) => (typeof s === 'string' ? s : (s.name || s.skill_name || ''))).filter(Boolean);
+                    const builtinList = Array.isArray(raw) ? raw : raw?.skills || [];
+                    const builtinNames = builtinList.map((s) => (typeof s === 'string' ? s : s.name || s.skill_name || '')).filter(Boolean);
                     this.isBuiltinSkill = builtinNames.includes(skill.skill_name);
                 } catch (e) {
                     this.isBuiltinSkill = false;
@@ -526,11 +544,13 @@ export default {
                 const files = Array.isArray(skill.files) ? skill.files : [];
 
                 // 그래프는 API 파일 목록 기준으로 항상 전체 파일 포함 (SKILL.md 루트 포함)
-                this.skillFilesFromApi = files.map((f) => ({
-                    path: String(f.path || f.file_name || f.name || '').replace(/\\/g, '/'),
-                    size: f.size ?? null,
-                    modified: f.modified ?? null
-                })).filter((f) => f.path && f.path.trim());
+                this.skillFilesFromApi = files
+                    .map((f) => ({
+                        path: String(f.path || f.file_name || f.name || '').replace(/\\/g, '/'),
+                        size: f.size ?? null,
+                        modified: f.modified ?? null
+                    }))
+                    .filter((f) => f.path && f.path.trim());
 
                 this.config.roots = [skillId];
                 this.nodes[skillId] = {
@@ -549,9 +569,7 @@ export default {
                 files.forEach((file, index) => {
                     const rawPath = (file.path || file.file_name || file.name || '').replace(/\\/g, '/');
                     const fallbackName = file.file_name || file.name || `file_${index + 1}`;
-                    const segments = (rawPath ? rawPath.split('/') : [fallbackName]).filter(
-                        (s) => s && s.trim().length > 0
-                    );
+                    const segments = (rawPath ? rawPath.split('/') : [fallbackName]).filter((s) => s && s.trim().length > 0);
                     if (segments.length === 0) segments.push(fallbackName);
 
                     let parentId = skillId;
@@ -572,8 +590,8 @@ export default {
                                     type: isFile ? 'file' : 'folder',
                                     originalId: segment,
                                     path: accumulatedPath,
-                                    size: isFile ? (file.size ?? null) : null,
-                                    modified: isFile ? (file.modified ?? null) : null
+                                    size: isFile ? file.size ?? null : null,
+                                    modified: isFile ? file.modified ?? null : null
                                 },
                                 exists: true
                             };
@@ -801,9 +819,7 @@ export default {
                 }
 
                 // 현재 스킬이 tenant 목록에 없으면 (기본 내장 스킬 등) 단일 스킬 경로 사용
-                const currentSkillInList = skills.some(
-                    (s) => (s.name || s.skill_name || '').trim() === skillName
-                );
+                const currentSkillInList = skills.some((s) => (s.name || s.skill_name || '').trim() === skillName);
 
                 let graph;
                 if (tenantResult && skills.length > 0 && currentSkillInList) {
@@ -823,11 +839,13 @@ export default {
                         }
                         if (!skillMeta || !skillMeta.skill_name) continue;
                         const files = Array.isArray(skillMeta.files) ? skillMeta.files : [];
-                        const filesMeta = files.map((f) => ({
-                            path: String(f.path || f.file_name || f.name || '').replace(/\\/g, '/'),
-                            size: f.size ?? null,
-                            modified: f.modified ?? null
-                        })).filter((f) => f.path && f.path.trim());
+                        const filesMeta = files
+                            .map((f) => ({
+                                path: String(f.path || f.file_name || f.name || '').replace(/\\/g, '/'),
+                                size: f.size ?? null,
+                                modified: f.modified ?? null
+                            }))
+                            .filter((f) => f.path && f.path.trim());
 
                         const mdPaths = filesMeta
                             .map((f) => (f.path || '').trim())
@@ -1050,11 +1068,26 @@ export default {
             };
 
             const extPrefixMap = {
-                md: 'MD', py: 'PY', js: 'JS', ts: 'TS',
-                json: 'JSON', yaml: 'YAML', yml: 'YAML', toml: 'TOML',
-                txt: 'TXT', csv: 'CSV', html: 'HTML', css: 'CSS',
-                sh: 'SH', sql: 'SQL', xml: 'XML', vue: 'VUE',
-                java: 'JAVA', go: 'GO', rs: 'RS', rb: 'RB'
+                md: 'MD',
+                py: 'PY',
+                js: 'JS',
+                ts: 'TS',
+                json: 'JSON',
+                yaml: 'YAML',
+                yml: 'YAML',
+                toml: 'TOML',
+                txt: 'TXT',
+                csv: 'CSV',
+                html: 'HTML',
+                css: 'CSS',
+                sh: 'SH',
+                sql: 'SQL',
+                xml: 'XML',
+                vue: 'VUE',
+                java: 'JAVA',
+                go: 'GO',
+                rs: 'RS',
+                rb: 'RB'
             };
 
             const elements = (this.graphElements || []).map((el) => {
@@ -1093,7 +1126,16 @@ export default {
                     container,
                     elements,
                     style,
-                    layout: { name: 'cose', animate: false, fit: true, padding: 20, nodeRepulsion: 8000, idealEdgeLength: 80, edgeElasticity: 100, gravity: 0.25 }
+                    layout: {
+                        name: 'cose',
+                        animate: false,
+                        fit: true,
+                        padding: 20,
+                        nodeRepulsion: 8000,
+                        idealEdgeLength: 80,
+                        edgeElasticity: 100,
+                        gravity: 0.25
+                    }
                 });
                 fitToCurrentSkill();
 
@@ -1112,7 +1154,18 @@ export default {
                 window.addEventListener('resize', this.onGraphResize, { passive: true });
             } else {
                 this.cy.json({ elements, style });
-                this.cy.layout({ name: 'cose', animate: false, fit: true, padding: 20, nodeRepulsion: 8000, idealEdgeLength: 80, edgeElasticity: 100, gravity: 0.25 }).run();
+                this.cy
+                    .layout({
+                        name: 'cose',
+                        animate: false,
+                        fit: true,
+                        padding: 20,
+                        nodeRepulsion: 8000,
+                        idealEdgeLength: 80,
+                        edgeElasticity: 100,
+                        gravity: 0.25
+                    })
+                    .run();
                 fitToCurrentSkill();
                 this.onGraphResize();
             }
@@ -1160,7 +1213,9 @@ export default {
                 const refSkillName = normalized.slice(0, slashIdx);
                 const filePath = normalized.slice(slashIdx + 1);
                 if (refSkillName !== currentSkill) {
-                    this.$router.push('/skills/' + encodeURIComponent(refSkillName) + (filePath ? '?file=' + encodeURIComponent(filePath) : ''));
+                    this.$router.push(
+                        '/skills/' + encodeURIComponent(refSkillName) + (filePath ? '?file=' + encodeURIComponent(filePath) : '')
+                    );
                     return;
                 }
             }

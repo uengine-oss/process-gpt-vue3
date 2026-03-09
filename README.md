@@ -21,7 +21,7 @@ Process-GPT **프론트엔드(Vue 3)** 프로젝트입니다. 이 저장소는 �
 1. **저장소 클론 & 이동 🧩**
    ```bash
    git clone https://github.com/uengine-oss/process-gpt-vue3.git
-   cd process-gpt-vue3
+   cd process-gpt-vue3 
    ```
 
 2. **Docker용 환경 변수 설정 🔐**

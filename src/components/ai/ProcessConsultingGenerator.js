@@ -1,16 +1,16 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class ProcessConsultingGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
 
         const processDefinitionMap = JSON.stringify(client.processDefinitionMap);
 
-        this.previousMessages = [{
-            role: 'system', 
-            content: `너는 비즈니스 프로세스 분석과 자동화 영역의 전문가야. 특히 BPMN과 프로세스 병목 분석 등을 잘해. 지금부터 넌 고객과 인터뷰를 할 거야.
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: `너는 비즈니스 프로세스 분석과 자동화 영역의 전문가야. 특히 BPMN과 프로세스 병목 분석 등을 잘해. 지금부터 넌 고객과 인터뷰를 할 거야.
 
             질문할때는 고객님 + 질문내용 이런식으로 명시해줘야해. 
             고객이 한 말을 정확히 인지하고 이해해야해. 동일한 질문을 하거나 불필요한 질문을 해선 안돼. 불필요한 질문이라는건 bpmn 모델 생성에 필요한 프로세스 정의를 생성할때 필요하지 않은 질문이야.
@@ -67,22 +67,17 @@ export default class ProcessConsultingGenerator extends AIGenerator {
             고객님의 말도 듣지 않고 바로 프로세스를 생성하려고 해선 않돼. 예를 들어 고객님이 "영업이익 10퍼 늘리고싶다" -> 현재 어떤 영업을 하는지부터 알아야하기 때문에 그에 관련된 질문을 해야지.
             고객님이 본인의 프로세스에 대하여 질문한 경우는 그 프로세스에 대하여 컨설팅을 하는게 맞지만 예시에서 본 것처럼 어느정도 정보도 없는 경우에 바로 프로세스를 생성하려고 해선 안돼. 컨설팅을 하는 것이기 때문에 고객님의 말을 듣고 그에 맞는 프로세스를 생성해야해.
 `
-        }];
+            }
+        ];
     }
 
-    setContexts() {
-    }
+    setContexts() {}
 
-    setChatRoomData() {
-    }
+    setChatRoomData() {}
 
-    setCalendarData() {
-    }
+    setCalendarData() {}
 
-    setWorkList() {
-    }
+    setWorkList() {}
 
-    createPrompt() {
-    }
-
+    createPrompt() {}
 }

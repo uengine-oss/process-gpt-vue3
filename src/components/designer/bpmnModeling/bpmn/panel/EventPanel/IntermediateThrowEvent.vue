@@ -23,11 +23,11 @@ export default {
         isViewMode: Boolean
     },
     created() {
-        console.log(this.element)
+        console.log(this.element);
         if (this.element.eventDefinitions.length > 0) {
             this.eventType = this.element.eventDefinitions[0].$type;
         }
-        this.copyUengineProperties = this.uengineProperties
+        this.copyUengineProperties = this.uengineProperties;
         // Object.keys(this.requiredKeyLists).forEach((key) => {
         //     this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         // });
@@ -137,7 +137,7 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uEngineProperties', this.copyUengineProperties);

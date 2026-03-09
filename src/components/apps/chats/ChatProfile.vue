@@ -22,16 +22,16 @@ export default {
     name: 'ChatProfile',
     data() {
         return {
-            name: localStorage.getItem("userName"),
-            email: localStorage.getItem("email"),
-            picture: localStorage.getItem("picture")
+            name: localStorage.getItem('userName'),
+            email: localStorage.getItem('email'),
+            picture: localStorage.getItem('picture')
         };
     },
     methods: {
         getProfile(profile) {
-            let basePath = window.location.port == '' ? window.location.origin:'' 
-            if(profile){
-                if(profile.includes("defaultUser.png")){
+            let basePath = window.location.port == '' ? window.location.origin : '';
+            if (profile) {
+                if (profile.includes('defaultUser.png')) {
                     return `${basePath}/images/defaultUser.png`;
                 } else {
                     const img = new Image();
@@ -48,4 +48,3 @@ export default {
     }
 };
 </script>
-

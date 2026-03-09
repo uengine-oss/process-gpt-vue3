@@ -1,63 +1,49 @@
 import PopupMenu from 'diagram-js/lib/features/popup-menu/PopupMenu';
-import {
-  forEach,
-  isFunction,
-  omit,
-} from 'min-dash';
+import { forEach, isFunction, omit } from 'min-dash';
 
 export default class CustomPopupMenu extends PopupMenu {
-  constructor(
-    config, eventBus, canvas
-  ) {
-    super(config, eventBus, canvas);
-  }
-  // Note: _getEntries is handled by the modified PopupMenu.prototype._getEntries below
-  // Do NOT override it here as it would shadow the prototype method
+    constructor(config, eventBus, canvas) {
+        super(config, eventBus, canvas);
+    }
+    // Note: _getEntries is handled by the modified PopupMenu.prototype._getEntries below
+    // Do NOT override it here as it would shadow the prototype method
 }
 
+CustomPopupMenu.$inject = ['config', 'eventBus', 'canvas'];
 
+PopupMenu.prototype._getEntries = function (target, providers) {
+    var entries = {};
+    var removedEntries = ['replace-with-conditional-intermediate-catch'];
 
-CustomPopupMenu.$inject = [
-  'config',
-  'eventBus',
-  'canvas'
-];
+    providers.forEach((provider) => {
+        if (!provider.getPopupMenuEntries) {
+            forEach(provider.getEntries(target), function (entry) {
+                var id = entry.id;
 
+                if (!id) {
+                    throw new Error('entry ID is missing');
+                }
 
-PopupMenu.prototype._getEntries = function(target, providers) {
-  var entries = {};
-  var removedEntries = ['replace-with-conditional-intermediate-catch'];
+                entries[id] = omit(entry, ['id']);
+            });
 
-  providers.forEach(provider => {
-    if (!provider.getPopupMenuEntries) {
-      forEach(provider.getEntries(target), function(entry) {
-        var id = entry.id;
-
-        if (!id) {
-          throw new Error('entry ID is missing');
+            return;
         }
 
-        entries[id] = omit(entry, [ 'id' ]);
-      });
+        var entriesOrUpdater = provider.getPopupMenuEntries(target);
 
-      return;
-    }
+        if (isFunction(entriesOrUpdater)) {
+            entries = entriesOrUpdater(entries);
+        } else {
+            forEach(entriesOrUpdater, function (entry, id) {
+                entries[id] = entry;
+            });
+        }
+    });
 
-    
-    var entriesOrUpdater = provider.getPopupMenuEntries(target);
+    removedEntries.forEach((id) => {
+        delete entries[id];
+    });
 
-    if (isFunction(entriesOrUpdater)) {
-      entries = entriesOrUpdater(entries);
-    } else {
-      forEach(entriesOrUpdater, function(entry, id) {
-        entries[id] = entry;
-      });
-    }
-  });
-
-  removedEntries.forEach(id => {
-    delete entries[id];
-  });
-
-  return entries;
+    return entries;
 };

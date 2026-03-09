@@ -27,9 +27,9 @@ axiosInstance.interceptors.request.use(
         //   uEngine API 호출에 Supabase JWT가 실릴 수 있다.
         // - 따라서 uEngine 모드에서는 keycloak 토큰을 최우선으로 사용한다.
         const token =
-            (typeof window !== 'undefined' && (window as any).$mode === 'uEngine'
-                ? (localStorage.getItem('keycloak') || localStorage.getItem('accessToken'))
-                : (localStorage.getItem('accessToken') || localStorage.getItem('keycloak')));
+            typeof window !== 'undefined' && (window as any).$mode === 'uEngine'
+                ? localStorage.getItem('keycloak') || localStorage.getItem('accessToken')
+                : localStorage.getItem('accessToken') || localStorage.getItem('keycloak');
         if (token) {
             // Axios v1에서는 config.headers 타입이 AxiosHeaders일 수 있어 단순 {} 할당이 타입에러를 유발할 수 있음
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -188,15 +188,15 @@ class UEngineBackend implements Backend {
 
     async getUserList(options: any) {
         const users = await getAllUsers(options);
-        return users.map(user => {
+        return users.map((user) => {
             return {
                 id: user.id,
                 profile: user.profile || null,
                 username: user.username,
                 email: user.email,
-                is_admin: user.is_admin || false 
-            }
-        })
+                is_admin: user.is_admin || false
+            };
+        });
     }
 
     async getGroupList() {
@@ -246,13 +246,13 @@ class UEngineBackend implements Backend {
             .map((item) => ({
                 title: item.name,
                 href: `/definitions/${encodeURIComponent(item.id)}`,
-                matches: [item.name, item.path, item.id].filter(Boolean),
+                matches: [item.name, item.path, item.id].filter(Boolean)
             }));
 
         result.push({
             type: 'definition',
             header: '프로세스 정의',
-            list,
+            list
         });
         if (callback) callback(result);
         return result;
@@ -261,10 +261,14 @@ class UEngineBackend implements Backend {
     private __normalizeListDefinitionItem(item: any): { path: string; name: string; directory: boolean; id?: string; isDeleted?: boolean } {
         const path =
             (item.path ??
-                (item._links?.self?.href ? String(item._links.self.href).replace(/.*\/definition\/?/, '').replace(/\/$/, '') : '')) ||
+                (item._links?.self?.href
+                    ? String(item._links.self.href)
+                          .replace(/.*\/definition\/?/, '')
+                          .replace(/\/$/, '')
+                    : '')) ||
             item.id ||
             '';
-        const name = item.name ?? (path ? (path.split('/').pop()?.split('.')[0] ?? path) : '');
+        const name = item.name ?? (path ? path.split('/').pop()?.split('.')[0] ?? path : '');
         const directory = item.directory ?? (typeof path === 'string' && !path.match(/\.(bpmn|form|rule|json)$/i));
         const isDeleted = item.isDeleted ?? item.isdeleted ?? false;
         return { path, name, directory, id: path, isDeleted };
@@ -327,9 +331,7 @@ class UEngineBackend implements Backend {
     async getDefinitionVersions(defId: string, options: any) {
         const type = options?.type ?? 'bpmn';
         // defId에 이미 .bpmn/.dmn이 붙어 있으면 제거 (ProcessHierarchy 등에서 selectedProcessId 그대로 넘길 수 있음)
-        const normalizedId = typeof defId === 'string'
-            ? defId.replace(/\.(bpmn|dmn)$/i, '').trim()
-            : defId;
+        const normalizedId = typeof defId === 'string' ? defId.replace(/\.(bpmn|dmn)$/i, '').trim() : defId;
         const path = `/versions/${normalizedId}.${type}`;
 
         if (options?.key === 'snapshot') {
@@ -348,15 +350,15 @@ class UEngineBackend implements Backend {
                 const version =
                     item.version != null && item.version !== ''
                         ? String(item.version)
-                        : (item.name && typeof item.name === 'string'
-                            ? item.name.replace(/\.(bpmn|dmn)$/i, '')
-                            : item?.id ?? '0.0');
+                        : item.name && typeof item.name === 'string'
+                        ? item.name.replace(/\.(bpmn|dmn)$/i, '')
+                        : item?.id ?? '0.0';
                 return {
                     ...item,
                     version,
                     name: item.name,
                     path: item.path,
-                    _links: item._links,
+                    _links: item._links
                 };
             });
         } catch (e) {
@@ -413,13 +415,13 @@ class UEngineBackend implements Backend {
         document.body.removeChild(link);
     }
     async putRawDefinition(definition: any, requestPath: string, options: any) {
-        var config = {
+        const config = {
             headers: {
                 'Content-Type': 'application/json'
             }
         };
         const body = {
-            definition: typeof definition === 'string' ? definition : (definition?.bpmn ?? (definition && JSON.stringify(definition))),
+            definition: typeof definition === 'string' ? definition : definition?.bpmn ?? (definition && JSON.stringify(definition)),
             version: options?.releaseName ?? options?.version ?? null
         };
         let pathToUse = requestPath;
@@ -450,7 +452,7 @@ class UEngineBackend implements Backend {
         if (options?.version) path = path + `/version/${options.version}`;
 
         const response = await axiosInstance.get(path, options ?? {});
-        let data = response?.data;
+        const data = response?.data;
         if (data == null) return null;
 
         if (type === 'bpmn' && typeof data === 'object' && 'bpmn' in data) return data.bpmn;
@@ -460,7 +462,7 @@ class UEngineBackend implements Backend {
 
     // Process Service Impl API
     async start(command: object) {
-        console.log(command)
+        console.log(command);
         const response = await axiosInstance.post('/instance', command);
         return response.data;
     }
@@ -489,9 +491,9 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/instance/${instanceId}`);
         if (!response) return null;
 
-        let _links = response.data._links;
-        let def_href = _links.definition.href;
-        let def_id = def_href.split('/definition/')[1];
+        const _links = response.data._links;
+        const def_href = _links.definition.href;
+        const def_id = def_href.split('/definition/')[1];
 
         // parse defId
         response.data.defId = def_id;
@@ -543,22 +545,12 @@ class UEngineBackend implements Backend {
         tracingTag: string,
         body?: { payloadMapping?: Record<string, Record<string, any>>; maxAttempts?: number }
     ) {
-        const response = await axiosInstance.post(
-            `/instance/${instanceId}/advance-to-activity/${tracingTag}`,
-            body || {}
-        );
+        const response = await axiosInstance.post(`/instance/${instanceId}/advance-to-activity/${tracingTag}`, body || {});
         return response.data;
     }
 
-    async startFromActivity(
-        instanceId: string,
-        tracingTag: string,
-        body?: { variables?: Record<string, any> }
-    ) {
-        const response = await axiosInstance.post(
-            `/instance/${instanceId}/state/start-from-activity/${tracingTag}`,
-            body || {}
-        );
+    async startFromActivity(instanceId: string, tracingTag: string, body?: { variables?: Record<string, any> }) {
+        const response = await axiosInstance.post(`/instance/${instanceId}/state/start-from-activity/${tracingTag}`, body || {});
         return response.data;
     }
 
@@ -577,7 +569,7 @@ class UEngineBackend implements Backend {
     }
 
     async setVariable(instanceId: string, varName: string, varValue: any) {
-        var config = {
+        const config = {
             headers: {
                 'Content-Type': 'text/plain'
             },
@@ -589,7 +581,7 @@ class UEngineBackend implements Backend {
     }
 
     async setVariableWithTaskId(instanceId: string, taskId: string, varName: string, varValue: any) {
-        var config = {
+        const config = {
             headers: {
                 'Content-Type': 'text/plain'
             },
@@ -638,7 +630,9 @@ class UEngineBackend implements Backend {
         return response.data;
     }
     async delegateWorkItem(taskId: string, delegatedRoleMapping: any, delegateOnlyForWorkitem = false) {
-        const response = await axiosInstance.post(`/work-item/${taskId}/delegate`, delegatedRoleMapping, { params: { delegateOnlyForWorkitem } });
+        const response = await axiosInstance.post(`/work-item/${taskId}/delegate`, delegatedRoleMapping, {
+            params: { delegateOnlyForWorkitem }
+        });
         return response.data;
     }
 
@@ -648,7 +642,7 @@ class UEngineBackend implements Backend {
     }
 
     async putWorkItemComplete(taskId: string, workItem: any, isSimulate: string) {
-        let config = {
+        const config = {
             headers: {
                 isSimulate: isSimulate ? isSimulate : 'false'
             }
@@ -673,7 +667,6 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/test/${path}/record`);
         return response.data;
     }
-
 
     async getEventList(instanceId: string) {
         const response = await axiosInstance.get(`/instance/${instanceId}/eventList`);
@@ -759,7 +752,7 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/worklist`);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        let result = response.data._embedded.worklist;
+        const result = response.data._embedded.worklist;
         return result;
     }
     async getWorkList(options?: any) {
@@ -780,21 +773,17 @@ class UEngineBackend implements Backend {
             tool: task.tool,
             description: task.description || '', // description이 null일 경우 빈 문자열로 처리
             adhoc: task.adhoc,
-            task: task,
+            task: task
         }));
 
         if (options && options.instId !== undefined && options.instId !== null && options.instId !== '') {
             const rawInstId = options.instId;
-            const instId =
-                typeof rawInstId === 'number'
-                    ? rawInstId
-                    : parseInt(String(rawInstId).replace(/_DOT_/g, '.'), 10);
+            const instId = typeof rawInstId === 'number' ? rawInstId : parseInt(String(rawInstId).replace(/_DOT_/g, '.'), 10);
 
             if (!Number.isNaN(instId)) {
                 mappedResult = mappedResult.filter((w: any) => {
                     const wInstId = typeof w.instId === 'number' ? w.instId : parseInt(String(w.instId), 10);
-                    const wRootInstId =
-                        typeof w.rootInstId === 'number' ? w.rootInstId : parseInt(String(w.rootInstId), 10);
+                    const wRootInstId = typeof w.rootInstId === 'number' ? w.rootInstId : parseInt(String(w.rootInstId), 10);
                     return wInstId === instId || wRootInstId === instId;
                 });
             }
@@ -809,7 +798,7 @@ class UEngineBackend implements Backend {
 
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+        const mappedResult = response.data._embedded.worklist.map((task: any) => ({
             defId: task.defId,
             endpoint: task.endpoint,
             instId: task.instId,
@@ -834,7 +823,7 @@ class UEngineBackend implements Backend {
         const response = await axiosInstance.get(`/instance/${instId}/worklists`);
 
         if (!response.data) return null;
-        let mappedResult = response.data.map((task: any) => ({
+        const mappedResult = response.data.map((task: any) => ({
             defId: task.defId,
             endpoint: task.endpoint,
             instId: task.instId,
@@ -856,7 +845,7 @@ class UEngineBackend implements Backend {
 
     // get Completed WorkList API
     async getCompletedList(options?: any) {
-        let basePath = '/worklist/search/findCompleted';
+        const basePath = '/worklist/search/findCompleted';
         if (!options) options = {};
         if (!options.page) options.page = 0;
         if (!options.size) options.size = 20;
@@ -888,7 +877,7 @@ class UEngineBackend implements Backend {
 
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+        const mappedResult = response.data._embedded.worklist.map((task: any) => ({
             defId: task.defId,
             endpoint: task.endpoint,
             instId: task.instId,
@@ -912,7 +901,7 @@ class UEngineBackend implements Backend {
 
         if (!response.data) return null;
         if (!response.data._embedded) return null;
-        let mappedResult = response.data._embedded.worklist.map((task: any) => ({
+        const mappedResult = response.data._embedded.worklist.map((task: any) => ({
             defId: task.defId,
             endpoint: task.endpoint,
             instId: task.instId,
@@ -943,7 +932,7 @@ class UEngineBackend implements Backend {
 
     private __normalizeProcessDefinitionMap(data: any): { mega_proc_list: any[] } {
         if (!data || typeof data !== 'object') return { mega_proc_list: [] };
-        const ensureName = (o: any) => (o && ('name' in o ? o : { ...o, name: o.label ?? o.id ?? '' }));
+        const ensureName = (o: any) => o && ('name' in o ? o : { ...o, name: o.label ?? o.id ?? '' });
         const ensureList = (arr: any[] | undefined) => (Array.isArray(arr) ? arr : []);
 
         const megaList = ensureList(data.mega_proc_list ?? data.megaProcList ?? data.content);
@@ -1001,9 +990,7 @@ class UEngineBackend implements Backend {
     }
 
     async putProcessDefinitionMap(definitionMap: any) {
-        const body = typeof definitionMap === 'object' && definitionMap?.mega_proc_list
-            ? definitionMap
-            : definitionMap;
+        const body = typeof definitionMap === 'object' && definitionMap?.mega_proc_list ? definitionMap : definitionMap;
         definitionMap = JSON.stringify(body);
         const response = await axiosInstance.put(`/definition/map`, definitionMap, { headers: { 'Content-Type': 'text/plain' } });
         return response.data;
@@ -1033,9 +1020,11 @@ class UEngineBackend implements Backend {
 
     /** PUT /definition/metrics — definition/map과 동일한 방식으로 metrics 저장 (metrics.json 등) */
     async putMetricsMap(metricsMap: any) {
-        const body = typeof metricsMap === 'object' && (metricsMap?.domains != null || metricsMap?.mega_processes != null || metricsMap?.processes != null)
-            ? metricsMap
-            : metricsMap;
+        const body =
+            typeof metricsMap === 'object' &&
+            (metricsMap?.domains != null || metricsMap?.mega_processes != null || metricsMap?.processes != null)
+                ? metricsMap
+                : metricsMap;
         const payload = typeof body === 'object' ? JSON.stringify(body) : body;
         const response = await axiosInstance.put(`/definition/metrics`, payload, { headers: { 'Content-Type': 'text/plain' } });
         return response?.data;
@@ -1067,9 +1056,9 @@ class UEngineBackend implements Backend {
         }
         let patternText = '';
         if (roles) {
-            let pattern = roles
+            const pattern = roles
                 .split(',')
-                .map(item => {
+                .map((item) => {
                     const trimmedItem = item.trim();
                     return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
                 })
@@ -1078,9 +1067,9 @@ class UEngineBackend implements Backend {
         }
 
         if (names) {
-            let namePattern = names
+            const namePattern = names
                 .split(',')
-                .map(item => {
+                .map((item) => {
                     const trimmedItem = item.trim();
                     return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
                 })
@@ -1101,9 +1090,9 @@ class UEngineBackend implements Backend {
     }
 
     async getInstanceListByGroup(groups: string) {
-        let pattern = groups
+        const pattern = groups
             .split(',')
-            .map(item => {
+            .map((item) => {
                 const trimmedItem = item.trim();
                 return `(^|,)${trimmedItem}(,|$)|^${trimmedItem}$`;
             })
@@ -1122,7 +1111,6 @@ class UEngineBackend implements Backend {
         }));
     }
 
-
     // 관리자 페이지 필터링 관련  API
     async getFilteredInstanceList(filters: object, page: number, size: number) {
         const queryParams = new URLSearchParams();
@@ -1135,7 +1123,7 @@ class UEngineBackend implements Backend {
             }
         });
 
-        const request = `/instances/search/findFilterICanSee?${queryParams.toString()}`
+        const request = `/instances/search/findFilterICanSee?${queryParams.toString()}`;
         const response = await axiosInstance.get(request);
         if (!response.data) return null;
         if (!response.data._embedded) return null;
@@ -1151,8 +1139,8 @@ class UEngineBackend implements Backend {
                 subProcess: inst.subProcess
             })),
             totalElements: response.data.page.totalElements, // totalElements 반환
-            totalPages: response.data.page.totalPages,  // totalPages 반환
-            currentPage: response.data.page.number      // currentPage 반환
+            totalPages: response.data.page.totalPages, // totalPages 반환
+            currentPage: response.data.page.number // currentPage 반환
         };
     }
 
@@ -1177,7 +1165,7 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-    async getActivitiesStatus(instId: string, executionScope: String = "0") {
+    async getActivitiesStatus(instId: string, executionScope = '0') {
         const response = await axiosInstance.get(`/instance/${instId}/status/${executionScope}`);
 
         return response.data;
@@ -1185,7 +1173,7 @@ class UEngineBackend implements Backend {
 
     async dryRun(isSimulate: string, command: object) {
         // command를 object json으로 변경
-        let config = {
+        const config = {
             headers: {
                 isSimulate: isSimulate ? isSimulate : 'false'
             }
@@ -1198,9 +1186,8 @@ class UEngineBackend implements Backend {
         return response.data;
     }
 
-
     async startAndComplete(command: object, isSimulate: string) {
-        let config = {
+        const config = {
             headers: {
                 isSimulate: isSimulate ? isSimulate : 'false'
             }
@@ -1235,7 +1222,7 @@ class UEngineBackend implements Backend {
     //     return response.data._embedded.definitions;
     // }
 
-    async getSystem(systemId: String) {
+    async getSystem(systemId: string) {
         const response = await axiosInstance.get(`/definition/system/${systemId}`);
         return response.data;
     }
@@ -1315,28 +1302,27 @@ class UEngineBackend implements Backend {
     }
 
     async saveTask(id: string, name: string, type: string, json: any) {
-        console.warn("method is not implemented only use PalModeBackend");
+        console.warn('method is not implemented only use PalModeBackend');
         return null;
     }
 
     async getTaskList() {
-        console.warn("method is not implemented only use PalModeBackend");
+        console.warn('method is not implemented only use PalModeBackend');
         return null;
     }
 
-
     async fetchNotifications() {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return [];
     }
 
     async getBSCard() {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async putBSCard(card: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
@@ -1352,7 +1338,10 @@ class UEngineBackend implements Backend {
             // ignore
         }
         // fallback (UUID v4 유사)
-        const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        const s4 = () =>
+            Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
         return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
     }
 
@@ -1379,14 +1368,14 @@ class UEngineBackend implements Backend {
 
             for (const item of lists) {
                 if (!item) continue;
-                
+
                 // versions 폴더는 제외
                 const itemPath = typeof item?.path === 'string' ? item.path : '';
                 const itemName = typeof item?.name === 'string' ? item.name : '';
                 if (itemPath.includes('/versions/') || itemPath.endsWith('/versions') || itemName === 'versions') {
                     continue;
                 }
-                
+
                 if (item.directory) {
                     // 하위 폴더는 item.path 기준으로 내려간다. (name만 쓰면 상위 경로를 잃을 수 있음)
                     const childPath = typeof item?.path === 'string' ? item.path : '';
@@ -1436,9 +1425,7 @@ class UEngineBackend implements Backend {
         );
 
         // id/name 없는 항목 방어 + 정렬(이름 기준)
-        return results
-            .filter((r: any) => r && r.id)
-            .sort((a: any, b: any) => String(a?.name ?? '').localeCompare(String(b?.name ?? '')));
+        return results.filter((r: any) => r && r.id).sort((a: any, b: any) => String(a?.name ?? '').localeCompare(String(b?.name ?? '')));
     }
 
     async getBusinessRule(ruleId: string) {
@@ -1489,11 +1476,9 @@ class UEngineBackend implements Backend {
         };
 
         // raw definition에는 "JSON 문자열"로 저장해 (서버/리소스매니저 직렬화 편차를 최소화)
-        await this.putRawDefinition(
-            JSON.stringify(versionedPayload),
-            `businessRules/${encodeURIComponent(String(toSave.id))}`,
-            { type: 'rule' }
-        );
+        await this.putRawDefinition(JSON.stringify(versionedPayload), `businessRules/${encodeURIComponent(String(toSave.id))}`, {
+            type: 'rule'
+        });
 
         return { id: toSave.id };
     }
@@ -1511,12 +1496,9 @@ class UEngineBackend implements Backend {
         if (!ruleId) {
             throw new Error('룰 ID가 필요합니다.');
         }
-        
+
         try {
-            const response = await axiosInstance.post(
-                `/business-rules/${encodeURIComponent(ruleId)}/execute`,
-                { inputs }
-            );
+            const response = await axiosInstance.post(`/business-rules/${encodeURIComponent(ruleId)}/execute`, { inputs });
             return response.data;
         } catch (error: any) {
             console.error('룰 실행 실패:', error);
@@ -1528,7 +1510,7 @@ class UEngineBackend implements Backend {
         if (!ruleId || !testCase) {
             throw new Error('룰 ID와 테스트 케이스가 필요합니다.');
         }
-        
+
         try {
             const testCaseId = testCase.id || this.__uuid();
             const testCaseData = {
@@ -1538,7 +1520,7 @@ class UEngineBackend implements Backend {
                 updatedAt: new Date().toISOString(),
                 createdAt: testCase.createdAt || new Date().toISOString()
             };
-            
+
             await this.putRawDefinition(
                 JSON.stringify(testCaseData),
                 `businessRules/${encodeURIComponent(ruleId)}/testCases/${encodeURIComponent(testCaseId)}`,
@@ -1552,15 +1534,15 @@ class UEngineBackend implements Backend {
 
     async getRuleTestCases(ruleId: string): Promise<any[]> {
         if (!ruleId) return [];
-        
+
         try {
             const testCasesPath = `businessRules/${encodeURIComponent(ruleId)}/testCases`;
             const testCaseFiles = await this.listDefinition(testCasesPath);
-            
+
             if (!Array.isArray(testCaseFiles) || testCaseFiles.length === 0) {
                 return [];
             }
-            
+
             const results = await Promise.all(
                 testCaseFiles
                     .filter((f: any) => !f.directory && f.name?.endsWith('.json'))
@@ -1569,7 +1551,7 @@ class UEngineBackend implements Backend {
                             const fileName = f.name?.replace(/\.json$/i, '') || '';
                             const raw = await this.getRawDefinition(`${testCasesPath}/${fileName}`, { type: 'json' });
                             if (!raw) return null;
-                            
+
                             const testCase = typeof raw === 'string' ? JSON.parse(raw) : raw;
                             return {
                                 id: testCase.id || fileName,
@@ -1586,12 +1568,14 @@ class UEngineBackend implements Backend {
                         }
                     })
             );
-            
-            return results.filter((r: any) => r !== null).sort((a: any, b: any) => {
-                const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
-                const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
-                return dateB - dateA; // 최신순
-            });
+
+            return results
+                .filter((r: any) => r !== null)
+                .sort((a: any, b: any) => {
+                    const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                    const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                    return dateB - dateA; // 최신순
+                });
         } catch (error) {
             console.error('테스트 케이스 목록 조회 실패:', error);
             return [];
@@ -1602,7 +1586,7 @@ class UEngineBackend implements Backend {
         if (!ruleId || !testCaseId) {
             throw new Error('룰 ID와 테스트 케이스 ID가 필요합니다.');
         }
-        
+
         try {
             await this.deleteDefinition(`businessRules/${encodeURIComponent(ruleId)}/testCases/${encodeURIComponent(testCaseId)}.json`);
         } catch (error: any) {
@@ -1638,13 +1622,13 @@ class UEngineBackend implements Backend {
 
         try {
             const historyList: any[] = [];
-            
+
             // 현재 룰의 DMN XML 가져오기
             const currentRaw = await this.getRawDefinition(`businessRules/${encodeURIComponent(targetRuleId)}`, { type: 'rule' });
             if (currentRaw) {
                 const currentDto = typeof currentRaw === 'string' ? JSON.parse(currentRaw) : currentRaw;
                 const currentDmnXml = currentDto?.ruleJson?.dmnXml || '';
-                
+
                 if (currentDmnXml) {
                     historyList.push({
                         knowledge_id: targetRuleId,
@@ -1663,18 +1647,18 @@ class UEngineBackend implements Backend {
             try {
                 const versionsPath = `businessRules/${encodeURIComponent(targetRuleId)}/versions`;
                 const versionFiles = await this.listDefinition(versionsPath);
-                
+
                 if (Array.isArray(versionFiles)) {
                     for (const file of versionFiles) {
                         if (file.directory || !file.name?.endsWith('.rule')) continue;
-                        
+
                         try {
                             const versionName = file.name.replace(/\.rule$/i, '');
                             const versionRaw = await this.getRawDefinition(`${versionsPath}/${versionName}`, { type: 'rule' });
                             if (versionRaw) {
                                 const versionDto = typeof versionRaw === 'string' ? JSON.parse(versionRaw) : versionRaw;
                                 const versionDmnXml = versionDto?.ruleJson?.dmnXml || '';
-                                
+
                                 if (versionDmnXml) {
                                     historyList.push({
                                         knowledge_id: targetRuleId,
@@ -1715,7 +1699,7 @@ class UEngineBackend implements Backend {
 
         try {
             const versions: any[] = [];
-            
+
             // 현재 룰 파일의 버전 정보 조회 (isCurrent 플래그 설정용)
             let currentVersion = null;
             try {
@@ -1732,47 +1716,53 @@ class UEngineBackend implements Backend {
             try {
                 const versionsPath = `businessRules/${encodeURIComponent(ruleId)}/versions`;
                 const versionFiles = await this.listDefinition(versionsPath);
-                
+
                 console.log('[getBusinessRuleVersions] versionsPath:', versionsPath);
                 console.log('[getBusinessRuleVersions] versionFiles:', versionFiles);
-                
+
                 if (Array.isArray(versionFiles) && versionFiles.length > 0) {
                     for (const file of versionFiles) {
                         // 디렉토리는 제외, .rule 파일만 처리
                         if (file.directory || !file.name?.endsWith('.rule')) {
-                            console.log('[getBusinessRuleVersions] 파일 스킵:', file.name, 'directory:', file.directory, 'endsWith .rule:', file.name?.endsWith('.rule'));
+                            console.log(
+                                '[getBusinessRuleVersions] 파일 스킵:',
+                                file.name,
+                                'directory:',
+                                file.directory,
+                                'endsWith .rule:',
+                                file.name?.endsWith('.rule')
+                            );
                             continue;
                         }
-                        
+
                         try {
                             const versionName = file.name.replace(/\.rule$/i, '');
                             const versionRaw = await this.getRawDefinition(`${versionsPath}/${versionName}`, { type: 'rule' });
-                            
+
                             // 파일이 실제로 존재하고 읽을 수 있는지 확인
                             if (!versionRaw) {
                                 console.warn('[getBusinessRuleVersions] 파일이 존재하지 않음, 스킵:', versionName);
                                 continue;
                             }
-                            
+
                             // 빈 문자열이나 잘못된 데이터인지 확인
-                            const versionDto = typeof versionRaw === 'string' 
-                                ? (versionRaw.trim() ? JSON.parse(versionRaw) : null)
-                                : versionRaw;
-                            
+                            const versionDto =
+                                typeof versionRaw === 'string' ? (versionRaw.trim() ? JSON.parse(versionRaw) : null) : versionRaw;
+
                             if (!versionDto || typeof versionDto !== 'object') {
                                 console.warn('[getBusinessRuleVersions] 유효하지 않은 데이터, 스킵:', versionName);
                                 continue;
                             }
-                            
+
                             // 버전 정보가 있는지 확인
                             if (!versionDto.version && !versionName) {
                                 console.warn('[getBusinessRuleVersions] 버전 정보가 없음, 스킵:', versionName);
                                 continue;
                             }
-                            
+
                             // 현재 룰 파일의 버전과 비교하여 isCurrent 설정
-                            const isCurrent = (currentVersion && versionName === currentVersion);
-                            
+                            const isCurrent = currentVersion && versionName === currentVersion;
+
                             versions.push({
                                 version: versionName, // 파일명 기준 버전 사용
                                 name: versionDto?.name || ruleId, // 룰 이름 추가
@@ -1874,7 +1864,7 @@ class UEngineBackend implements Backend {
     __fromBusinessRuleDto(dto: any) {
         if (!dto) return null;
         // 서버가 { id, name, description, ruleJson } 형태로 주는 경우를 UI 모델(conditions/result)로 펼친다.
-        if (dto.ruleJson && (dto.conditions === undefined && dto.result === undefined)) {
+        if (dto.ruleJson && dto.conditions === undefined && dto.result === undefined) {
             const flattened: any = {
                 ...dto,
                 ...(dto.ruleJson || {})
@@ -1930,118 +1920,118 @@ class UEngineBackend implements Backend {
     }
 
     async getSchedule(id: string, version: string) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async setSchedule(json: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteSchedule(defId: string, eventId: string) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getDataSourceList() {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return [];
     }
 
     async addDataSource(dataSource: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async updateDataSource(dataSource: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteDataSource(dataSource: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async extractDatasourceSchema(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         // 호출부에서 this.datasourceSchema.map(...)을 수행하므로 null 대신 빈 배열을 반환해
         // UI/모델러 렌더링 흐름이 끊기지 않도록 한다.
         return [];
     }
 
     async callDataSource(dataSource: any, bodyData: any) {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getEnvByTenant(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getSecretByTenant(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteEnvByTenant(name: string): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteSecretByTenant(name: string): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async createEnvByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async createSecretByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async updateEnvByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async updateSecretByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getBrowserUseSecretByTenant(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async createBrowserUseSecretByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async updateBrowserUseSecretByTenant(data: any): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async deleteBrowserUseSecretByTenant(name: string): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
     async getMCPLists(): Promise<any> {
-        console.warn("method is not implemented only use Process-GPT Mode");
+        console.warn('method is not implemented only use Process-GPT Mode');
         return null;
     }
 
-    async claimWorkItem(taskId: string, data: any){
+    async claimWorkItem(taskId: string, data: any) {
         const response = await axiosInstance.post(`/work-item/${taskId}/claim`, data);
         return response.data;
     }
@@ -2050,50 +2040,50 @@ class UEngineBackend implements Backend {
     // ============================================
 
     async getTaskSystems(): Promise<any> {
-        console.warn("getTaskSystems is not implemented - only use Process-GPT Mode");
+        console.warn('getTaskSystems is not implemented - only use Process-GPT Mode');
         return [];
     }
 
     async saveTaskSystem(system: any): Promise<any> {
-        console.warn("saveTaskSystem is not implemented - only use Process-GPT Mode");
+        console.warn('saveTaskSystem is not implemented - only use Process-GPT Mode');
         return system;
     }
 
     async deleteTaskSystem(id: string): Promise<void> {
-        console.warn("deleteTaskSystem is not implemented - only use Process-GPT Mode");
+        console.warn('deleteTaskSystem is not implemented - only use Process-GPT Mode');
     }
 
     async getTaskCatalogList(options?: any): Promise<any> {
-        console.warn("getTaskCatalogList is not implemented - only use Process-GPT Mode");
+        console.warn('getTaskCatalogList is not implemented - only use Process-GPT Mode');
         return [];
     }
 
     async getTaskCatalog(id: string): Promise<any> {
-        console.warn("getTaskCatalog is not implemented - only use Process-GPT Mode");
+        console.warn('getTaskCatalog is not implemented - only use Process-GPT Mode');
         return null;
     }
 
     async saveTaskCatalog(item: any): Promise<any> {
-        console.warn("saveTaskCatalog is not implemented - only use Process-GPT Mode");
+        console.warn('saveTaskCatalog is not implemented - only use Process-GPT Mode');
         return item;
     }
 
     async deleteTaskCatalog(id: string): Promise<void> {
-        console.warn("deleteTaskCatalog is not implemented - only use Process-GPT Mode");
+        console.warn('deleteTaskCatalog is not implemented - only use Process-GPT Mode');
     }
 
     async getPropertySchemas(taskType?: string): Promise<any> {
-        console.warn("getPropertySchemas is not implemented - only use Process-GPT Mode");
+        console.warn('getPropertySchemas is not implemented - only use Process-GPT Mode');
         return [];
     }
 
     async savePropertySchema(schema: any): Promise<any> {
-        console.warn("savePropertySchema is not implemented - only use Process-GPT Mode");
+        console.warn('savePropertySchema is not implemented - only use Process-GPT Mode');
         return schema;
     }
 
     async deletePropertySchema(id: string): Promise<void> {
-        console.warn("deletePropertySchema is not implemented - only use Process-GPT Mode");
+        console.warn('deletePropertySchema is not implemented - only use Process-GPT Mode');
     }
 
     async getPaletteSettings(): Promise<any> {
@@ -2102,23 +2092,23 @@ class UEngineBackend implements Backend {
     }
 
     async savePaletteSettings(settings: any): Promise<any> {
-        console.warn("savePaletteSettings is not implemented - only use Process-GPT Mode");
+        console.warn('savePaletteSettings is not implemented - only use Process-GPT Mode');
         return settings;
     }
 
     async getPaletteTaskTypes(): Promise<any> {
-        console.warn("getPaletteTaskTypes is not implemented - only use Process-GPT Mode");
+        console.warn('getPaletteTaskTypes is not implemented - only use Process-GPT Mode');
         return [];
     }
 
     async updatePaletteTaskType(id: string, isEnabled: boolean): Promise<any> {
-        console.warn("updatePaletteTaskType is not implemented - only use Process-GPT Mode");
+        console.warn('updatePaletteTaskType is not implemented - only use Process-GPT Mode');
         return null;
     }
 
     // Task Execution Properties - Not implemented in UEngine mode
     async getUserInfo(): Promise<any> {
-        console.warn("getUserInfo is not implemented - only use Process-GPT Mode");
+        console.warn('getUserInfo is not implemented - only use Process-GPT Mode');
         return null;
     }
 
@@ -2132,17 +2122,17 @@ class UEngineBackend implements Backend {
         properties: any;
         executorEmail?: string;
     }): Promise<any> {
-        console.warn("saveTaskExecutionProperties is not implemented - only use Process-GPT Mode");
+        console.warn('saveTaskExecutionProperties is not implemented - only use Process-GPT Mode');
         return null;
     }
 
     async updateTaskExecutionCompletion(params: any): Promise<any> {
-        console.warn("updateTaskExecutionCompletion is not implemented - only use Process-GPT Mode");
+        console.warn('updateTaskExecutionCompletion is not implemented - only use Process-GPT Mode');
         return null;
     }
 
     async getTaskExecutionProperties(options?: any): Promise<any[]> {
-        console.warn("getTaskExecutionProperties is not implemented - only use Process-GPT Mode");
+        console.warn('getTaskExecutionProperties is not implemented - only use Process-GPT Mode');
         return [];
     }
 
@@ -2224,19 +2214,18 @@ class UEngineBackend implements Backend {
     /**
      * 댓글 해결/미해결 처리
      */
-    async resolveElementComment(commentId: string, resolved: boolean = true, resolveActionText?: string): Promise<any> {
-        const response = await axiosInstance.patch(
-            `/definition/element-comments/${encodeURIComponent(commentId)}/resolve`,
-            { resolved, resolve_action_text: resolveActionText }
-        );
+    async resolveElementComment(commentId: string, resolved = true, resolveActionText?: string): Promise<any> {
+        const response = await axiosInstance.patch(`/definition/element-comments/${encodeURIComponent(commentId)}/resolve`, {
+            resolved,
+            resolve_action_text: resolveActionText
+        });
         return response?.data;
     }
 
     async setupAgentKnowledge(params: any): Promise<any> {
-        console.warn("setupAgentKnowledge is not implemented - only use Process-GPT Mode");
+        console.warn('setupAgentKnowledge is not implemented - only use Process-GPT Mode');
         return null;
     }
-
 }
 
 export default UEngineBackend;

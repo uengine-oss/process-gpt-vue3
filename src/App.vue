@@ -8,29 +8,25 @@
             class="my-progress-linear"
         ></v-progress-linear>
         <v-overlay v-model="loading" :scrim="true" :persistent="true"></v-overlay>
-        <v-snackbar
-            v-model="snackbar"
-            class="custom-snackbar"
-            :timeout="5000"
-            :color="snackbarColor"
-            elevation="24"
-            location="top"
-        ><span v-html="snackbarMessage"></span>
+        <v-snackbar v-model="snackbar" class="custom-snackbar" :timeout="5000" :color="snackbarColor" elevation="24" location="top"
+            ><span v-html="snackbarMessage"></span>
             <v-btn v-if="snackbarMessageDetail" variant="plain" @click="show = !show">
                 {{ show ? $t('App.view') : $t('App.view') }}
             </v-btn>
             <v-expand-transition>
-                <div v-if="snackbarMessageDetail && show" style="text-align: left;">{{ snackbarMessageDetail }}</div>
+                <div v-if="snackbarMessageDetail && show" style="text-align: left">{{ snackbarMessageDetail }}</div>
             </v-expand-transition>
             <template v-slot:actions>
                 <v-btn variant="text" @click="snackbar = false">x</v-btn>
             </template>
         </v-snackbar>
         <!-- v-if="!loadScreen" -->
-        <div v-if="!loadScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white;"
+        <div
+            v-if="!loadScreen"
+            style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: white"
             class="main-page-skeleton"
         >
-            <v-row class="ma-0 pa-0" style="height: 100%;">
+            <v-row class="ma-0 pa-0" style="height: 100%">
                 <v-col cols="2" class="pa-4">
                     <v-skeleton-loader type="card"></v-skeleton-loader>
                 </v-col>
@@ -47,9 +43,9 @@
 <script>
 // import { createClient } from '@supabase/supabase-js';
 import { RouterView } from 'vue-router';
-import BackendFactory from "@/components/api/BackendFactory";
-import partialParse from "partial-json-parser";
-import { getMainDomainUrl } from "@/utils/domainUtils";
+import BackendFactory from '@/components/api/BackendFactory';
+import partialParse from 'partial-json-parser';
+import { getMainDomainUrl } from '@/utils/domainUtils';
 import { useDefaultSetting } from '@/stores/defaultSetting';
 
 export default {
@@ -70,11 +66,11 @@ export default {
         notificationChannel: null,
         backend: null,
         clickCount: 0,
-        defaultSetting: useDefaultSetting(),
+        defaultSetting: useDefaultSetting()
     }),
     watch: {
         $route(to, from) {
-            if(to.query.code && to.query.state && to.query.scope && this.backend) {
+            if (to.query.code && to.query.state && to.query.scope && this.backend) {
                 this.backend.callbackOAuth();
             }
             // if(window.$mode == 'ProcessGPT' && localStorage.getItem('email')) {
@@ -91,7 +87,7 @@ export default {
                 this.loadScreen = true;
             }
         });
-        
+
         // 클릭 이벤트로 스낵바 닫기
         document.addEventListener('click', this.closeSnackbarOnEvent);
     },
@@ -134,9 +130,9 @@ export default {
                     return;
                 }
                 const tenantId = await this.backend.getTenant(window.$tenantName);
-                if(window.$tenantName !== 'localhost') {
+                if (window.$tenantName !== 'localhost') {
                     if (!tenantId) {
-                        if(localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
+                        if (localStorage.getItem('tenantId') && localStorage.getItem('tenantId') === window.$tenantName) {
                             localStorage.removeItem('tenantId');
                         }
                         alert(this.$t('App.tenantNotFound', { tenant: window.$tenantName }));
@@ -151,16 +147,18 @@ export default {
                         return;
                     } else {
                         // 루트 페이지 및 인증 관련 페이지인 경우 로그인 체크 건너뛰기
-                        const skipLoginCheck = window.location.pathname === '/' || window.location.pathname.startsWith('/auth/') 
-                        || window.location.port === '8088';
+                        const skipLoginCheck =
+                            window.location.pathname === '/' ||
+                            window.location.pathname.startsWith('/auth/') ||
+                            window.location.port === '8088';
                         const userInfo = await this.backend.getUserInfo();
-                        if(!skipLoginCheck) {
-                            if(userInfo) {
+                        if (!skipLoginCheck) {
+                            if (userInfo) {
                                 const res = await this.backend.setTenant(window.$tenantName);
                                 if (!res) {
                                     this.$try({}, null, {
                                         errorMsg: this.$t('StorageBaseSupabase.unRegisteredTenant')
-                                    })
+                                    });
                                     localStorage.removeItem('tenantId');
                                     window.location.href = getMainDomainUrl('/tenant/manage?clear=true');
                                 }
@@ -178,7 +176,6 @@ export default {
             }
 
             if (localStorage.getItem('email')) {
-
                 this.EventBus.on('chat-room-selected', (chatRoomId) => {
                     this.currentChatRoomId = chatRoomId;
                 });
@@ -190,7 +187,7 @@ export default {
                 this.EventBus.on('show-notification', (notification) => {
                     this.showNotifications(notification);
                 });
-                
+
                 // 페이지 로드 시 브라우저 알림 권한 요청
                 this.requestNotificationPermission();
             }
@@ -199,7 +196,7 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
-        },
+        }
     },
     methods: {
         getChatRoomIdFromUrl(url) {
@@ -256,9 +253,11 @@ export default {
                 await this.$router.push({ path: '/chat', query: { roomId: room.id || roomId }, hash: '' });
 
                 // 상단 채팅 noti badge에서 제거
-                window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                    detail: { type: 'chat', value: false, id: room.id || roomId }
-                }));
+                window.dispatchEvent(
+                    new CustomEvent('update-notification-badge', {
+                        detail: { type: 'chat', value: false, id: room.id || roomId }
+                    })
+                );
                 // NOTE: new 해제는 실제로 방이 열려 선택(chat-room-selected)된 시점에만 처리
 
                 // DB 알림 체크 처리(가능한 경우)
@@ -274,29 +273,35 @@ export default {
                 } catch (e2) {}
             }
         },
-        showNotifications(notification){
+        showNotifications(notification) {
             const email = localStorage.getItem('email');
-            if (notification.user_id === email && (Notification && Notification.permission === 'granted')) {
+            if (notification.user_id === email && Notification && Notification.permission === 'granted') {
                 let notiHeader = null;
                 let notiBody = null;
-                if(notification.type === 'workitem_bpm') {
+                if (notification.type === 'workitem_bpm') {
                     notiHeader = 'New Todo';
                     notiBody = notification.title || '새 할 일 목록 추가';
-                } else if(notification.type === 'chat') {
+                } else if (notification.type === 'chat') {
                     const notiChatRoomId = this.getChatRoomIdFromUrl(notification.url);
-                    if (!this.currentChatRoomId || !notiChatRoomId || (this.currentChatRoomId && notiChatRoomId !== this.currentChatRoomId)) {
+                    if (
+                        !this.currentChatRoomId ||
+                        !notiChatRoomId ||
+                        (this.currentChatRoomId && notiChatRoomId !== this.currentChatRoomId)
+                    ) {
                         notiHeader = notification.from_user_id || '알 수 없는 사용자';
                         const chatRoomName = notification.description || '채팅방';
                         const messageContent = notification.title || '새 메시지';
                         notiBody = `${chatRoomName}\n${messageContent}`;
 
-                        window.dispatchEvent(new CustomEvent('update-notification-badge', {
-                            detail: { type: 'chat', value: true, id: notiChatRoomId || notification.url.replace('/chats?id=', '')}
-                        }));
+                        window.dispatchEvent(
+                            new CustomEvent('update-notification-badge', {
+                                detail: { type: 'chat', value: true, id: notiChatRoomId || notification.url.replace('/chats?id=', '') }
+                            })
+                        );
                     }
                 }
-                if(notiHeader && notiBody) {
-                    if(notiBody.includes('"messageForUser":')) {
+                if (notiHeader && notiBody) {
+                    if (notiBody.includes('"messageForUser":')) {
                         try {
                             let contentObj = partialParse(notiBody);
                             notiBody = contentObj.messageForUser || notiBody;
@@ -313,7 +318,9 @@ export default {
                     });
                     browserNoti.onclick = async () => {
                         // 클릭 시에도 닫기 버튼과 동일하게 즉시 닫기
-                        try { browserNoti.close(); } catch (e) {}
+                        try {
+                            browserNoti.close();
+                        } catch (e) {}
                         window.focus();
                         // 새로고침/전체 이동 금지: 좌측 채팅목록 클릭과 동일 동작
                         if (notification?.type === 'chat') {
@@ -334,7 +341,7 @@ export default {
             }
 
             // 이미 권한이 결정되지 않은 경우에만 요청
-            if (Notification && (Notification.permission !== 'granted' && Notification.permission !== 'denied')) {
+            if (Notification && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                 // 브라우저 내장 알림 허용 UI가 표시됨
                 Notification.requestPermission();
             }
@@ -404,7 +411,7 @@ export default {
         // 이벤트 리스너 정리
         document.removeEventListener('click', this.closeSnackbarOnEvent);
         window.removeEventListener('androidBackButton', this.handleAndroidBackButton);
-        
+
         if (window.$mode == 'ProcessGPT') {
             // 구독 정리
             if (this.notificationChannel) {
@@ -538,11 +545,11 @@ export default {
     .terms-links {
         gap: 20px;
     }
-    
+
     .social-icons {
         gap: 10px;
     }
-    
+
     .social-icon {
         width: 35px !important;
         height: 35px !important;

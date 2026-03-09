@@ -13,69 +13,29 @@
                     hide-details
                     class="event-type-single flex-grow-1 mr-2"
                 />
-                <v-btn
-                    size="small"
-                    color="primary"
-                    variant="tonal"
-                    @click="addEventSync"
-                >
+                <v-btn size="small" color="primary" variant="tonal" @click="addEventSync">
                     <v-icon start size="small">mdi-plus</v-icon>
                     {{ $t('EventSynchronizationForm.addEvent') }}
                 </v-btn>
             </template>
             <template v-else>
-                <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    :disabled="selectedEventIndex <= 0"
-                    @click="selectPrevTab"
-                >
+                <v-btn icon size="small" variant="text" :disabled="selectedEventIndex <= 0" @click="selectPrevTab">
                     <v-icon>mdi-chevron-left</v-icon>
                 </v-btn>
                 <div class="event-tabs-scroll flex-grow-1" ref="tabsScrollRef">
-                    <v-tabs
-                        v-model="selectedEventIndex"
-                        density="compact"
-                        hide-slider
-                        class="event-sync-tabs"
-                        align-tabs="start"
-                    >
-                        <v-tab
-                            v-for="(sync, i) in eventList"
-                            :key="'tab-' + i"
-                            :value="i"
-                            class="text-none"
-                        >
+                    <v-tabs v-model="selectedEventIndex" density="compact" hide-slider class="event-sync-tabs" align-tabs="start">
+                        <v-tab v-for="(sync, i) in eventList" :key="'tab-' + i" :value="i" class="text-none">
                             <span class="tab-label">{{ tabLabel(sync, i) }}</span>
-                            <v-btn
-                                icon
-                                size="x-small"
-                                variant="text"
-                                class="ml-1 tab-remove"
-                                @click.stop="removeEventSync(i)"
-                            >
+                            <v-btn icon size="x-small" variant="text" class="ml-1 tab-remove" @click.stop="removeEventSync(i)">
                                 <v-icon size="small">mdi-close</v-icon>
                             </v-btn>
                         </v-tab>
                     </v-tabs>
                 </div>
-                <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    :disabled="selectedEventIndex >= eventList.length - 1"
-                    @click="selectNextTab"
-                >
+                <v-btn icon size="small" variant="text" :disabled="selectedEventIndex >= eventList.length - 1" @click="selectNextTab">
                     <v-icon>mdi-chevron-right</v-icon>
                 </v-btn>
-                <v-btn
-                    size="small"
-                    color="primary"
-                    variant="tonal"
-                    class="ml-2"
-                    @click="addEventSync"
-                >
+                <v-btn size="small" color="primary" variant="tonal" class="ml-2" @click="addEventSync">
                     <v-icon start size="small">mdi-plus</v-icon>
                     {{ $t('EventSynchronizationForm.addEvent') }}
                 </v-btn>
@@ -223,9 +183,7 @@ export default {
             this.$emit('update:modelValue', payload);
         },
         onEventTypeInput(value) {
-            const list = this.eventList.map((sync, i) =>
-                i === this.selectedEventIndex ? { ...sync, eventType: value ?? '' } : sync
-            );
+            const list = this.eventList.map((sync, i) => (i === this.selectedEventIndex ? { ...sync, eventType: value ?? '' } : sync));
             this.syncBack(list);
         },
         onFormUpdate(updated) {

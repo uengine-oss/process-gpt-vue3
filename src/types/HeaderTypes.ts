@@ -1,15 +1,15 @@
-import type { TablerIconComponent } from "vue-tabler-icons";
+import type { TablerIconComponent } from 'vue-tabler-icons';
 
 type notificationType = {
     avatar: string;
     title: string;
     subtitle: string;
-    time:string;
+    time: string;
 };
 
 type profileType = {
     avatar: string;
-    bgcolor:string;
+    bgcolor: string;
     title: string;
     subtitle: string;
     href: string;
@@ -44,5 +44,4 @@ type optionIcon = {
     iconcolor: string;
 };
 
-
-export type { notificationType, profileType, languageType, appsLinkType, quickLinksType,searchType,optionIcon }
+export type { notificationType, profileType, languageType, appsLinkType, quickLinksType, searchType, optionIcon };

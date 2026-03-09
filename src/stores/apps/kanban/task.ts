@@ -6,7 +6,6 @@ import { uniqueId } from 'lodash';
 import { sub } from 'date-fns';
 import type { Ref } from 'vue';
 
-
 interface TaskType {
     id?: string | any;
     title?: string;
@@ -59,14 +58,14 @@ export const useTaskStore = defineStore({
             });
             this.tasks = taskObj;
         },
-        addTask(columnId:string, title:string, subtitle:string, category:string, categorybg:string) {
+        addTask(columnId: string, title: string, subtitle: string, category: string, categorybg: string) {
             const newTask = {
                 id: uniqueId('#task_'),
                 title: title,
                 subtitle: subtitle,
-                category:category,
+                category: category,
                 date: sub(new Date(), { seconds: 1 }),
-                categorybg:categorybg
+                categorybg: categorybg
             };
             this.tasks = map(this.tasks, (task: any) => {
                 if (task.id === columnId) {

@@ -1,0 +1,135 @@
+rules:
+  # Source: Javascript 시큐어코딩 가이드(2023년 개정본)
+  # Scope: 자동 정적탐지가 가능한 항목 중심
+
+  - id: kisa.js.code-injection.no-eval
+    message: "[KISA JS Guide] 코드 삽입: eval 사용 금지"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > 코드 삽입"
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: window.eval(...)
+      - pattern: setTimeout("...", ...)
+      - pattern: setTimeout('...', ...)
+      - pattern: setInterval("...", ...)
+      - pattern: setInterval('...', ...)
+
+  - id: kisa.js.code-injection.no-function-constructor
+    message: "[KISA JS Guide] 코드 삽입: Function 생성자 사용 금지"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > 코드 삽입"
+    pattern: new Function(...)
+
+  - id: kisa.js.command-injection.no-child-process-exec
+    message: "[KISA JS Guide] 운영체제 명령어 삽입: child_process exec/execSync 주의"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > 운영체제 명령어 삽입"
+    pattern-either:
+      - pattern: require("child_process").exec(...)
+      - pattern: require("child_process").execSync(...)
+      - pattern: require('child_process').exec(...)
+      - pattern: require('child_process').execSync(...)
+
+  - id: kisa.js.xss.no-innerhtml-assignment
+    message: "[KISA JS Guide] XSS: innerHTML 직접 대입 시 입력값 검증/인코딩 필요"
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > XSS"
+    patterns:
+      - pattern: $EL.innerHTML = $VALUE
+      - pattern-not: $EL.innerHTML = DOMPurify.sanitize(...)
+      - pattern-not: $EL.innerHTML = DOMPurify.sanitize($VALUE)
+
+  - id: kisa.js.xss.no-dangerously-set-inner-html
+    message: "[KISA JS Guide] XSS: React dangerouslySetInnerHTML 사용 시 엄격한 필터링 필요"
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > XSS"
+    pattern: dangerouslySetInnerHTML
+
+  - id: kisa.js.xss.no-document-write
+    message: "[KISA JS Guide] XSS: document.write 사용 지양"
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "입력데이터 검증 및 표현 > XSS"
+    pattern-either:
+      - pattern: document.write(...)
+      - pattern: document.writeln(...)
+
+  - id: kisa.js.crypto.no-md5-sha1
+    message: "[KISA JS Guide] 취약한 암호화 알고리즘(MD5/SHA1) 사용 금지"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 취약한 암호화 알고리즘 사용"
+    pattern-either:
+      - pattern: crypto.createHash("md5")
+      - pattern: crypto.createHash("sha1")
+      - pattern: crypto.createHmac("md5", ...)
+      - pattern: crypto.createHmac("sha1", ...)
+
+  - id: kisa.js.random.no-math-random-for-secrets
+    message: "[KISA JS Guide] 적절하지 않은 난수 값: 보안 토큰/패스워드에 Math.random 사용 금지"
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 적절하지 않은 난수 값 사용"
+    patterns:
+      - pattern: $X = Math.random(...)
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i).*(token|secret|password|passwd|otp|nonce|session).*
+
+  - id: kisa.js.secrets.no-hardcoded-secrets
+    message: "[KISA JS Guide] 하드코드된 중요정보 탐지"
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 하드코드된 중요정보"
+    patterns:
+      - pattern-either:
+          - pattern: const $K = "$V"
+          - pattern: let $K = "$V"
+          - pattern: var $K = "$V"
+      - metavariable-regex:
+          metavariable: $K
+          regex: (?i).*(password|passwd|pwd|secret|token|apikey|api_key|access[_-]?key|private[_-]?key).*
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^(?!\s*$)(?!changeme$)(?!example$)(?!test$).+
+
+  - id: kisa.js.tls.no-insecure-tls
+    message: "[KISA JS Guide] 부적절한 인증서 유효성 검증: rejectUnauthorized=false 금지"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 부적절한 인증서 유효성 검증"
+    pattern: "rejectUnauthorized: false"
+
+  - id: kisa.js.supplychain.no-download-without-integrity
+    message: "[KISA JS Guide] 무결성 검사 없는 코드 다운로드 위험(import from URL)"
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      guide: "Javascript_시큐어코딩_가이드(2023)"
+      section: "보안기능 > 무결성 검사없는 코드 다운로드"
+    pattern-regex: import\\s+.*from\\s+['\"]https?://

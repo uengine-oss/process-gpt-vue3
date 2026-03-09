@@ -1,17 +1,12 @@
-
-
 <template>
     <div>
         <div class="included pa-4 pt-0" style="margin-bottom: 22px">
             <v-row class="ma-0 pa-0 align-center">
-                <div>{{$t('LanePanel.selectRoleType')}}</div>
+                <div>{{ $t('LanePanel.selectRoleType') }}</div>
 
-                <DetailComponent
-                    :title="$t('LanePanel.radioDescriptionTitle')"
-                    :details="radioDescription"
-                />
+                <DetailComponent :title="$t('LanePanel.radioDescriptionTitle')" :details="radioDescription" />
             </v-row>
-            <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
+            <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
                 <v-radio-group v-model="type" row style="margin-top: 0px !important">
                     <v-radio
                         v-for="option in roleOptions"
@@ -34,8 +29,8 @@
                     v-model="dispatchingOption"
                     persistent-hint
                     :items="availableDispatchingOptions"
-                    :item-title="item => item.title ? $t(item.title) : ''"
-                    :item-value="item => item.value"
+                    :item-title="(item) => (item.title ? $t(item.title) : '')"
+                    :item-value="(item) => item.value"
                     :label="$t('LanePanel.dispatchingOption')"
                     variant="outlined"
                     density="compact"
@@ -44,7 +39,9 @@
                 >
                     <template v-slot:item="{ props, item }">
                         <v-list-item v-bind="props">
-                            <v-list-item-subtitle v-if="item.raw && item.raw.description">{{ $t(item.raw.description) }}</v-list-item-subtitle>
+                            <v-list-item-subtitle v-if="item.raw && item.raw.description">{{
+                                $t(item.raw.description)
+                            }}</v-list-item-subtitle>
                         </v-list-item>
                     </template>
                 </v-autocomplete>
@@ -55,8 +52,8 @@
                         v-model="userRoleContext.endpoint"
                         :label="$t('LanePanel.userIds')"
                         :items="candidateUsers"
-                        :item-title="item => item.title"
-                        :item-value="item => item.value"
+                        :item-title="(item) => item.title"
+                        :item-value="(item) => item.value"
                         chips
                         closable-chips
                         variant="outlined"
@@ -81,8 +78,8 @@
                         v-model="roleContext.group"
                         :label="$t('LanePanel.groupName')"
                         :items="candidateGroups"
-                        :item-title="item => item.title"
-                        :item-value="item => item.value"
+                        :item-title="(item) => item.title"
+                        :item-value="(item) => item.value"
                         variant="outlined"
                         density="compact"
                         hide-details="auto"
@@ -96,15 +93,14 @@
                         v-model="roleContext.scope"
                         :label="$t('LanePanel.scopeName')"
                         :items="candidateRoles"
-                        :item-title="item => item.title"
-                        :item-value="item => item.value"
+                        :item-title="(item) => item.title"
+                        :item-value="(item) => item.value"
                         variant="outlined"
                         density="compact"
                         hide-details="auto"
                         class="mt-4"
                     ></v-autocomplete>
                 </div>
-
             </v-card>
         </div>
     </div>
@@ -125,11 +121,9 @@ export default {
         processDefinitionId: String,
         isViewMode: Boolean,
         processDefinition: Object,
-        element: Object,
+        element: Object
     },
-    created() {
-
-    },
+    created() {},
     data() {
         return {
             definitions: [],
@@ -168,7 +162,7 @@ export default {
             dispatchingOption: 1, // 0: All, 1: Racing, 2: LoadBalanced, -1: Auto, 7: Direct
             dispatchingOptions: [
                 // { value: 0, title: 'LanePanel.dispatchingOptionAll', description: 'LanePanel.dispatchingOptionAllDescription' },
-                { value: 1, title: 'LanePanel.dispatchingOptionRacing', description: 'LanePanel.dispatchingOptionRacingDescription' },
+                { value: 1, title: 'LanePanel.dispatchingOptionRacing', description: 'LanePanel.dispatchingOptionRacingDescription' }
                 // { value: 2, title: 'LanePanel.dispatchingOptionLoadBalanced', description: 'LanePanel.dispatchingOptionLoadBalancedDescription' },
                 // { value: -1, title: 'LanePanel.dispatchingOptionAuto', description: 'LanePanel.dispatchingOptionAutoDescription' },
             ],
@@ -183,7 +177,7 @@ export default {
             candidateUsers: [],
             candidateRoles: [],
             candidateDepartments: [],
-            candidateGroups: [],
+            candidateGroups: []
         };
     },
     async mounted() {
@@ -223,11 +217,11 @@ export default {
                 return this.dispatchingOptions;
             }
             // 나머지는 Auto 제외
-            return this.dispatchingOptions.filter(opt => opt.value !== -1);
+            return this.dispatchingOptions.filter((opt) => opt.value !== -1);
         },
         showDispatchingOption() {
             if (this.type === 'org.uengine.kernel.DirectRoleResolutionContext') {
-                return false
+                return false;
             }
             // 나머지는 항상 표시
             return true;
@@ -235,8 +229,8 @@ export default {
     },
     watch: {
         type(after, before) {
-            if(!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {}
-         
+            if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};
+
             if (after == 'org.uengine.kernel.DirectRoleResolutionContext') {
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.DirectRoleResolutionContext';
 
@@ -245,32 +239,32 @@ export default {
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.five.overriding.GroupRoleResolutionContext';
 
                 this.dispatchingOption = 1; // Racing
-            } else if (after == 'org.uengine.five.overriding.IAMRoleResolutionContext') {        
+            } else if (after == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
 
                 this.dispatchingOption = 1; // Racing
             } else if (after == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
-                this.copyUengineProperties.roleResolutionContext.endpoint = 'external_customer'
+                this.copyUengineProperties.roleResolutionContext.endpoint = 'external_customer';
 
                 this.dispatchingOption = 0;
             }
             this.updateRoleResolutionContext();
         },
-        'userRoleContext': {
+        userRoleContext: {
             handler() {
                 this.updateRoleResolutionContext();
             },
             deep: true,
             immediate: false
         },
-        'roleContext': {
+        roleContext: {
             handler() {
                 this.updateRoleResolutionContext();
             },
             deep: true
         },
-        'dispatchingOption': {
+        dispatchingOption: {
             handler() {
                 this.updateRoleResolutionContext();
             },
@@ -294,7 +288,7 @@ export default {
     },
     methods: {
         initialize() {
-            if(!this.copyUengineProperties.roleResolutionContext) {
+            if (!this.copyUengineProperties.roleResolutionContext) {
                 // 기본값 설정 (DirectRoleResolutionContext)
                 this.type = 'org.uengine.kernel.DirectRoleResolutionContext';
                 this.userRoleContext.endpoint = null;
@@ -309,22 +303,26 @@ export default {
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.GroupRoleResolutionContext') {
                 this.type = 'org.uengine.five.overriding.GroupRoleResolutionContext';
                 this.roleContext.group = this.copyUengineProperties.roleResolutionContext.scope;
-                this.dispatchingOption = this.copyUengineProperties.dispatchingOption == undefined ? 1 : this.copyUengineProperties.dispatchingOption;
+                this.dispatchingOption =
+                    this.copyUengineProperties.dispatchingOption == undefined ? 1 : this.copyUengineProperties.dispatchingOption;
             } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.five.overriding.IAMRoleResolutionContext') {
                 this.type = 'org.uengine.five.overriding.IAMRoleResolutionContext';
                 this.roleContext.scope = this.copyUengineProperties.roleResolutionContext.scope;
-                this.dispatchingOption = this.copyUengineProperties.dispatchingOption == undefined ? 1 : this.copyUengineProperties.dispatchingOption;
-            } else if (this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
+                this.dispatchingOption =
+                    this.copyUengineProperties.dispatchingOption == undefined ? 1 : this.copyUengineProperties.dispatchingOption;
+            } else if (
+                this.copyUengineProperties.roleResolutionContext._type == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext'
+            ) {
                 this.type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
                 this.userRoleContext.endpoint = 'external_customer';
-            }        
+            }
         },
         handleUserSelectionChange(newValue) {
             // 사용자 선택 변경 시 반응성 보장 (Vue 3에서는 직접 할당)
             this.userRoleContext.endpoint = newValue || null;
             this.updateRoleResolutionContext();
         },
-        
+
         updateRoleResolutionContext() {
             if (!this.copyUengineProperties.roleResolutionContext) this.copyUengineProperties.roleResolutionContext = {};
 
@@ -350,7 +348,7 @@ export default {
             } else if (this.type == 'org.uengine.kernel.ExternalCustomerRoleResolutionContext') {
                 this.copyUengineProperties.roleResolutionContext._type = 'org.uengine.kernel.ExternalCustomerRoleResolutionContext';
                 this.copyUengineProperties.roleResolutionContext.endpoint = 'external_customer';
-                
+
                 // delete dispatchingOption and scope
                 delete this.copyUengineProperties.dispatchingOption;
                 delete this.copyUengineProperties.roleResolutionContext.scope;
@@ -370,7 +368,7 @@ export default {
                     });
                 }
                 if (n.children) {
-                    n.children.forEach(child => traverse(child));
+                    n.children.forEach((child) => traverse(child));
                 }
             };
             traverse(node);
@@ -400,7 +398,7 @@ export default {
 
             return obj;
         },
-        
+
         addCheckpoint() {
             if (!this.copyUengineProperties.checkpoints) {
                 this.copyUengineProperties.checkpoints = [];
@@ -412,7 +410,7 @@ export default {
             try {
                 const users = await getAllUsers({ max: 100 });
                 // SelectBox 형식으로 변환
-                this.candidateUsers = users.map(user => ({
+                this.candidateUsers = users.map((user) => ({
                     title: user.username,
                     value: user.email || user.id
                 }));
@@ -426,7 +424,7 @@ export default {
             try {
                 const roles = await getAllRoles({ max: 100 });
                 // SelectBox 형식으로 변환
-                this.candidateRoles = roles.map(role => ({
+                this.candidateRoles = roles.map((role) => ({
                     title: role.name,
                     value: role.name
                 }));
@@ -440,7 +438,7 @@ export default {
             try {
                 const departments = await getAllDepartments();
                 // SelectBox 형식으로 변환
-                this.candidateDepartments = departments.map(dept => ({
+                this.candidateDepartments = departments.map((dept) => ({
                     title: dept.name,
                     value: dept.name
                 }));
@@ -454,7 +452,7 @@ export default {
             try {
                 const groups = await getAllGroups();
                 // SelectBox 형식으로 변환
-                this.candidateGroups = groups.map(group => ({
+                this.candidateGroups = groups.map((group) => ({
                     title: group,
                     value: group
                 }));
@@ -463,7 +461,7 @@ export default {
                 console.error('Failed to load candidate groups:', error);
                 this.candidateGroups = [];
             }
-        },
+        }
     }
 };
 </script>

@@ -1,14 +1,17 @@
 <template>
-    <div class="summary-wrapper" 
-         :class="isSummaryExpanded ? 'expanded pa-0 mb-4' : ''"
-         :style="isSummaryExpanded ? 
-             'height: auto; overflow: visible; transition: all 0.3s ease;' : 
-             'height: 110px; overflow: hidden; transition: all 0.3s ease;'"
+    <div
+        class="summary-wrapper"
+        :class="isSummaryExpanded ? 'expanded pa-0 mb-4' : ''"
+        :style="
+            isSummaryExpanded
+                ? 'height: auto; overflow: visible; transition: all 0.3s ease;'
+                : 'height: 110px; overflow: hidden; transition: all 0.3s ease;'
+        "
     >
-        <div class="summary-button-container" @click.stop="toggleExpanded"
-            :style="isSummaryExpanded ? 
-                'width: 100%; padding: 0px;' : 
-                'padding: 0px;'"
+        <div
+            class="summary-button-container"
+            @click.stop="toggleExpanded"
+            :style="isSummaryExpanded ? 'width: 100%; padding: 0px;' : 'padding: 0px;'"
         >
             <div class="summary-document" :class="isSummaryExpanded ? 'expanded pa-4' : ''">
                 <div class="document-content" :class="isSummaryExpanded ? '' : 'collapsed'">
@@ -27,15 +30,15 @@ export default {
     data() {
         return {
             isSummaryExpanded: false
-        }
+        };
     },
     methods: {
         toggleExpanded() {
-            this.isSummaryExpanded = !this.isSummaryExpanded
-            this.$emit('expanded', this.isSummaryExpanded)
+            this.isSummaryExpanded = !this.isSummaryExpanded;
+            this.$emit('expanded', this.isSummaryExpanded);
         }
     }
-}
+};
 </script>
 
 <style scoped>
@@ -60,7 +63,7 @@ export default {
     border-radius: 8px;
     transform: rotate(5deg);
     background-color: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
     padding: 0px;
     display: flex;
@@ -71,7 +74,7 @@ export default {
 
 .summary-document:hover {
     transform: rotate(5deg) translateY(-4px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 .summary-document.expanded {
@@ -86,7 +89,6 @@ export default {
     line-height: 1.6;
     overflow: auto;
 }
-
 
 .document-content {
     width: 100%;

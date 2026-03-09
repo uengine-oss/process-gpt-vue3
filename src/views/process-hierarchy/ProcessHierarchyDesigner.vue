@@ -5,37 +5,19 @@
             <div class="toolbar-left">
                 <template v-if="processName">
                     <span class="process-name font-weight-bold">{{ processName }}</span>
-                    <ProgressBadge
-                        v-if="currentStatus"
-                        type="status"
-                        :status="currentStatus"
-                        size="x-small"
-                        class="ml-2"
-                    />
-                    <span v-if="currentVersion" class="text-caption text-medium-emphasis ml-2">
-                        v{{ currentVersion }}
-                    </span>
+                    <ProgressBadge v-if="currentStatus" type="status" :status="currentStatus" size="x-small" class="ml-2" />
+                    <span v-if="currentVersion" class="text-caption text-medium-emphasis ml-2"> v{{ currentVersion }} </span>
                 </template>
                 <span v-else class="text-medium-emphasis">
                     {{ $t('processHierarchy.selectProcess') || '왼쪽 트리에서 프로세스를 선택하세요' }}
                 </span>
             </div>
             <div class="toolbar-right">
-                <v-btn
-                    variant="text"
-                    size="small"
-                    :disabled="!processName"
-                    @click="$emit('save')"
-                >
+                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('save')">
                     <v-icon start size="16">mdi-content-save</v-icon>
                     {{ $t('processHierarchy.save') || 'Save' }}
                 </v-btn>
-                <v-btn
-                    variant="text"
-                    size="small"
-                    :disabled="!processName"
-                    @click="handleValidate"
-                >
+                <v-btn variant="text" size="small" :disabled="!processName" @click="handleValidate">
                     <v-icon start size="16">mdi-check-circle-outline</v-icon>
                     {{ $t('processHierarchy.validate') || 'Validate' }}
                 </v-btn>
@@ -48,24 +30,14 @@
                     @click="$emit('toggleWip')"
                 >
                     <v-icon start size="16">{{ isWip ? 'mdi-progress-wrench' : 'mdi-progress-wrench' }}</v-icon>
-                    {{ isWip ? ($t('processHierarchy.wipOn') || 'WIP 해제') : ($t('processHierarchy.wipOff') || 'WIP 설정') }}
+                    {{ isWip ? $t('processHierarchy.wipOn') || 'WIP 해제' : $t('processHierarchy.wipOff') || 'WIP 설정' }}
                 </v-btn>
                 <v-divider vertical class="mx-1" />
-                <v-btn
-                    variant="text"
-                    size="small"
-                    :disabled="!processName"
-                    @click="$emit('clone')"
-                >
+                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('clone')">
                     <v-icon start size="16">mdi-content-copy</v-icon>
                     {{ $t('processHierarchy.clone') || 'Clone Process' }}
                 </v-btn>
-                <v-btn
-                    variant="text"
-                    size="small"
-                    :disabled="!processName"
-                    @click="$emit('versionHistory')"
-                >
+                <v-btn variant="text" size="small" :disabled="!processName" @click="$emit('versionHistory')">
                     <v-icon start size="16">mdi-history</v-icon>
                     {{ $t('processHierarchy.versionHistory') || 'Version History' }}
                 </v-btn>
@@ -157,7 +129,7 @@ export default {
         processDefinition: { type: Object, default: null },
         definitionPath: { type: String, default: '' },
         definitionList: { type: Array, default: () => [] },
-        loading: { type: Boolean, default: false },
+        loading: { type: Boolean, default: false }
     },
     emits: ['openPanel', 'updateXml', 'save', 'clone', 'versionHistory', 'definition', 'toggleWip'],
     data() {
@@ -166,31 +138,25 @@ export default {
             validationDialog: false,
             validationResults: [],
             validationOverlayIds: [],
-            validationMarkerIds: [],
+            validationMarkerIds: []
         };
     },
     computed: {
         currentStatus() {
             if (!this.definitionPath || !this.definitionList) return '';
-            const def = this.definitionList.find(
-                d => (d.file_name || d.id) === this.definitionPath
-            );
+            const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.approval_state || def?.status || '';
         },
         currentVersion() {
             if (!this.definitionPath || !this.definitionList) return '';
-            const def = this.definitionList.find(
-                d => (d.file_name || d.id) === this.definitionPath
-            );
+            const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.version || def?.version_tag || '';
         },
         isWip() {
             if (!this.definitionPath || !this.definitionList) return false;
-            const def = this.definitionList.find(
-                d => (d.file_name || d.id) === this.definitionPath
-            );
+            const def = this.definitionList.find((d) => (d.file_name || d.id) === this.definitionPath);
             return def?.approval_state === 'wip' || def?.status === 'wip';
-        },
+        }
     },
     watch: {
         bpmn(newVal, oldVal) {
@@ -200,7 +166,7 @@ export default {
                 this.validationOverlayIds = [];
                 this.validationMarkerIds = [];
             }
-        },
+        }
     },
     methods: {
         onBpmnDone() {
@@ -241,13 +207,29 @@ export default {
                 const elementRegistry = modeler.get('elementRegistry');
 
                 // 타입 기반으로 모든 validation 오버레이 일괄 제거 (ID 추적 실패 방지)
-                try { overlays.remove({ type: 'validation-error' }); } catch (e) { /* ignore */ }
-                try { overlays.remove({ type: 'validation-warning' }); } catch (e) { /* ignore */ }
+                try {
+                    overlays.remove({ type: 'validation-error' });
+                } catch (e) {
+                    /* ignore */
+                }
+                try {
+                    overlays.remove({ type: 'validation-warning' });
+                } catch (e) {
+                    /* ignore */
+                }
 
                 // 모든 요소에서 validation 마커 제거
-                elementRegistry.getAll().forEach(el => {
-                    try { canvas.removeMarker(el.id, 'validation-error-element'); } catch (e) { /* ignore */ }
-                    try { canvas.removeMarker(el.id, 'validation-warning-element'); } catch (e) { /* ignore */ }
+                elementRegistry.getAll().forEach((el) => {
+                    try {
+                        canvas.removeMarker(el.id, 'validation-error-element');
+                    } catch (e) {
+                        /* ignore */
+                    }
+                    try {
+                        canvas.removeMarker(el.id, 'validation-warning-element');
+                    } catch (e) {
+                        /* ignore */
+                    }
                 });
 
                 this.validationOverlayIds = [];
@@ -286,13 +268,13 @@ export default {
         },
 
         createOverlayHtml(errors) {
-            const isWarningOnly = errors.length > 0 && errors.every(e => e.level === 'warning');
+            const isWarningOnly = errors.length > 0 && errors.every((e) => e.level === 'warning');
             const borderColor = isWarningOnly ? '#ffb74d' : '#ffcdd2';
             const dotColor = isWarningOnly ? '#ff9800' : '#f44336';
             const titleColor = isWarningOnly ? '#ed6c02' : '#f44336';
             const titleText = isWarningOnly
-                ? (this.$t('validation.validationWarning') || '검증 경고')
-                : (this.$t('validation.validationError') || '검증 오류');
+                ? this.$t('validation.validationWarning') || '검증 경고'
+                : this.$t('validation.validationError') || '검증 오류';
 
             const container = document.createElement('div');
             container.style.cssText = `
@@ -329,7 +311,7 @@ export default {
             title.textContent = titleText;
             content.appendChild(title);
 
-            errors.forEach(err => {
+            errors.forEach((err) => {
                 const msg = document.createElement('div');
                 msg.style.cssText = 'font-size: 11px; color: #666; line-height: 1.4;';
                 msg.textContent = err.shortMessage || err.message;
@@ -355,26 +337,24 @@ export default {
                 const overlays = modeler.get('overlays');
                 const canvas = modeler.get('canvas');
                 // label 요소와 root 요소를 필터링하여 중복 오버레이 방지
-                const allElements = elementRegistry.getAll().filter(el =>
-                    el.type !== 'label' && !el.labelTarget
-                );
+                const allElements = elementRegistry.getAll().filter((el) => el.type !== 'label' && !el.labelTarget);
 
                 let hasStartEvent = false;
                 let hasEndEvent = false;
 
                 // connections map 생성
                 const connections = new Map();
-                allElements.forEach(el => {
+                allElements.forEach((el) => {
                     if (el.id) {
                         connections.set(el.id, {
-                            incoming: (el.incoming || []).map(c => c.source?.id).filter(Boolean),
-                            outgoing: (el.outgoing || []).map(c => c.target?.id).filter(Boolean)
+                            incoming: (el.incoming || []).map((c) => c.source?.id).filter(Boolean),
+                            outgoing: (el.outgoing || []).map((c) => c.target?.id).filter(Boolean)
                         });
                     }
                 });
 
                 const processedIds = new Set();
-                allElements.forEach(element => {
+                allElements.forEach((element) => {
                     // 같은 ID 중복 처리 방지
                     if (processedIds.has(element.id)) return;
                     processedIds.add(element.id);
@@ -391,7 +371,7 @@ export default {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.unnamedTask') || 'Task has no name.',
-                                shortMessage: this.$t('validation.nameRequired') || 'Name Required',
+                                shortMessage: this.$t('validation.nameRequired') || 'Name Required'
                             });
                         }
                     }
@@ -403,7 +383,7 @@ export default {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.noIncomingConnection') || 'No incoming connection.',
-                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing',
+                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing'
                             });
                         }
                     }
@@ -415,7 +395,7 @@ export default {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.noOutgoingConnection') || 'No outgoing connection.',
-                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing',
+                                shortMessage: this.$t('validation.connectionMissing') || 'Connection Missing'
                             });
                         }
                     }
@@ -430,7 +410,7 @@ export default {
                                 elementErrors.push({
                                     level: 'warning',
                                     message: this.$t('validation.gatewayNeedsBranches') || 'Gateway needs at least 2 branches.',
-                                    shortMessage: this.$t('validation.branchingRequired') || 'Branching Required',
+                                    shortMessage: this.$t('validation.branchingRequired') || 'Branching Required'
                                 });
                             }
                         }
@@ -443,7 +423,7 @@ export default {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.noLaneAssignee') || 'Lane has no assignee.',
-                                shortMessage: this.$t('validation.assigneeRequired') || 'Assignee Required',
+                                shortMessage: this.$t('validation.assigneeRequired') || 'Assignee Required'
                             });
                         }
                     }
@@ -459,7 +439,7 @@ export default {
                                     elementErrors.push({
                                         level: 'warning',
                                         message: this.$t('validation.missingCondition') || 'Condition expression is missing.',
-                                        shortMessage: this.$t('validation.conditionMissing') || 'Condition Missing',
+                                        shortMessage: this.$t('validation.conditionMissing') || 'Condition Missing'
                                     });
                                 }
                             }
@@ -473,19 +453,21 @@ export default {
                         const bo = element.businessObject;
                         if (bo?.documentation?.[0]?.text) description = bo.documentation[0].text;
                         if (!description?.trim() && bo?.extensionElements?.values) {
-                            const uengineProps = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                            const uengineProps = bo.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
                             if (uengineProps?.json) {
                                 try {
                                     const parsed = JSON.parse(uengineProps.json);
-                                    description = (parsed && parsed.description) ? String(parsed.description) : '';
-                                } catch (e) { /* ignore */ }
+                                    description = parsed && parsed.description ? String(parsed.description) : '';
+                                } catch (e) {
+                                    /* ignore */
+                                }
                             }
                         }
                         if (!description?.trim()) {
                             elementErrors.push({
                                 level: 'warning',
                                 message: this.$t('validation.noManual') || '매뉴얼이 없습니다.',
-                                shortMessage: this.$t('validation.noManual') || '매뉴얼이 없습니다.',
+                                shortMessage: this.$t('validation.noManual') || '매뉴얼이 없습니다.'
                             });
                         }
                     }
@@ -496,26 +478,28 @@ export default {
                         let definitionId = '';
                         const bo = element.businessObject;
                         if (bo?.extensionElements?.values) {
-                            const uengineProps = bo.extensionElements.values.find(v => v.$type === 'uengine:Properties');
+                            const uengineProps = bo.extensionElements.values.find((v) => v.$type === 'uengine:Properties');
                             if (uengineProps?.json) {
                                 try {
                                     const parsed = JSON.parse(uengineProps.json);
-                                    definitionId = (parsed && parsed.definitionId) ? String(parsed.definitionId).trim() : '';
-                                } catch (e) { /* ignore */ }
+                                    definitionId = parsed && parsed.definitionId ? String(parsed.definitionId).trim() : '';
+                                } catch (e) {
+                                    /* ignore */
+                                }
                             }
                         }
                         if (!definitionId) {
                             elementErrors.push({
                                 level: 'error',
                                 message: this.$t('validation.callActivityNoProcess') || '선택된 프로세스가 없습니다.',
-                                shortMessage: this.$t('validation.callActivityNoProcess') || '선택된 프로세스가 없습니다.',
+                                shortMessage: this.$t('validation.callActivityNoProcess') || '선택된 프로세스가 없습니다.'
                             });
                         }
                     }
 
                     // element에 에러/경고가 있으면 오버레이 추가
                     if (elementErrors.length > 0) {
-                        const isWarningOnly = elementErrors.every(e => e.level === 'warning');
+                        const isWarningOnly = elementErrors.every((e) => e.level === 'warning');
                         const markerClass = isWarningOnly ? 'validation-warning-element' : 'validation-error-element';
                         const overlayType = isWarningOnly ? 'validation-warning' : 'validation-error';
 
@@ -523,7 +507,9 @@ export default {
                         try {
                             canvas.addMarker(element.id, markerClass);
                             this.validationMarkerIds.push(element.id);
-                        } catch (e) { /* ignore */ }
+                        } catch (e) {
+                            /* ignore */
+                        }
 
                         // 오버레이 추가 (에러/경고 메시지 말풍선)
                         try {
@@ -541,11 +527,11 @@ export default {
                         }
 
                         // 결과 목록에 추가
-                        elementErrors.forEach(err => {
+                        elementErrors.forEach((err) => {
                             results.push({
                                 ...err,
                                 elementName: element.businessObject?.name || element.id,
-                                elementId: element.id,
+                                elementId: element.id
                             });
                         });
                     }
@@ -555,13 +541,13 @@ export default {
                 if (!hasStartEvent) {
                     results.push({
                         level: 'error',
-                        message: this.$t('validation.noStartEvent') || 'No start event found.',
+                        message: this.$t('validation.noStartEvent') || 'No start event found.'
                     });
                 }
                 if (!hasEndEvent) {
                     results.push({
                         level: 'error',
-                        message: this.$t('validation.noEndEvent') || 'No end event found.',
+                        message: this.$t('validation.noEndEvent') || 'No end event found.'
                     });
                 }
             } catch (e) {
@@ -576,8 +562,8 @@ export default {
                     this.$toast.success(this.$t('processHierarchy.validationPassed') || '검증 통과');
                 }
             }
-        },
-    },
+        }
+    }
 };
 </script>
 

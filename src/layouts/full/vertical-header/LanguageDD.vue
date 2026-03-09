@@ -12,7 +12,7 @@ import flag4 from '@/assets/images/flag/icon-flag-fr.svg';
     <!-- ---------------------------------------------- -->
     <v-menu :close-on-content-click="false" location="bottom" class="language_dropdown">
         <template v-slot:activator="{ props }">
-            <v-btn icon  size="x-small" v-bind="props">
+            <v-btn icon size="x-small" v-bind="props">
                 <v-avatar size="22">
                     <img v-if="$i18n.locale === 'en'" :src="flag1" :alt="$i18n.locale" width="24" height="24" class="obj-cover" />
                     <img v-if="$i18n.locale === 'fr'" :src="flag4" :alt="$i18n.locale" width="24" height="24" class="obj-cover" />
@@ -21,7 +21,7 @@ import flag4 from '@/assets/images/flag/icon-flag-fr.svg';
                 </v-avatar>
             </v-btn>
         </template>
-        <v-sheet rounded="md" width="200" elevation="10" >
+        <v-sheet rounded="md" width="200" elevation="10">
             <v-list class="theme-list">
                 <v-list-item
                     v-for="(item, index) in languageDD"

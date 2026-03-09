@@ -11,7 +11,7 @@ export default {
         startPos: Object,
         endPos: Object,
         isNew: Boolean,
-        onclick: Function,
+        onclick: Function
     },
     computed: {
         startHandle() {

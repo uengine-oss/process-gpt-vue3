@@ -1,36 +1,31 @@
-
 <script setup lang="ts">
 import { ref } from 'vue';
 import { computed } from 'vue';
-import { getPrimary, getLightborder,getTextGrey100 } from '@/utils/UpdateColors';
+import { getPrimary, getLightborder, getTextGrey100 } from '@/utils/UpdateColors';
 import { DotsVerticalIcon } from 'vue-tabler-icons';
 import { Icon } from '@iconify/vue';
-const items = ref([
-    { title: "Action" },
-    { title: "Another action" },
-    { title: "Something else here" },
-]);
+const items = ref([{ title: 'Action' }, { title: 'Another action' }, { title: 'Something else here' }]);
 
 /* Chart */
 const chartOptions = computed(() => {
     return {
         series: [
             {
-                name: "Test Results",
-                data: [13, 15, 14, 17, 16, 19, 17],
-            },
+                name: 'Test Results',
+                data: [13, 15, 14, 17, 16, 19, 17]
+            }
         ],
         chart: {
             height: 240,
-            type: "area",
+            type: 'area',
             fontFamily: `inherit`,
-            foreColor: "#626b81",
+            foreColor: '#626b81',
             toolbar: {
-                show: false,
-            },
+                show: false
+            }
         },
         dataLabels: {
-            enabled: false,
+            enabled: false
         },
         grid: {
             borderColor: getLightborder.value,
@@ -40,47 +35,46 @@ const chartOptions = computed(() => {
                 top: 0,
                 right: 0,
                 bottom: 0,
-                left: 0,
-            },
+                left: 0
+            }
         },
         colors: [getPrimary.value],
         fill: {
-            type: "gradient",
+            type: 'gradient',
             gradient: {
-                shadeIntensity:0,
+                shadeIntensity: 0,
                 inverseColors: false,
                 opacityFrom: 0.5,
                 opacityTo: 0,
-                stops: [20,180],
-            },
+                stops: [20, 180]
+            }
         },
         stroke: {
-            curve: "smooth",
-            width: "2",
+            curve: 'smooth',
+            width: '2'
         },
         xaxis: {
-            categories: ["2016", "2017", "2018", "2019", "2020", "2021", "2022"],
+            categories: ['2016', '2017', '2018', '2019', '2020', '2021', '2022'],
             axisBorder: {
-                show: false,
+                show: false
             },
             axisTicks: {
-                show: false,
-            },
+                show: false
+            }
         },
         yaxis: {
             labels: {
                 show: false,
                 style: {
-                    colors: getTextGrey100.value,
+                    colors: getTextGrey100.value
                 }
-            },
+            }
         },
         tooltip: {
-            theme: "dark",
-        },
+            theme: 'dark'
+        }
     };
 });
-
 </script>
 <template>
     <v-card elevation="10">
@@ -112,7 +106,9 @@ const chartOptions = computed(() => {
                             <Icons :icon="'user-circle-linear'" class="text-primary" />
                         </v-avatar>
                         <div>
-                            <h6 class="text-h6 font-weight-semibold d-flex align-center">36,436 <v-chip color="success" class="bg-lightsuccess ml-1" variant="outlined" size="x-small">+12%</v-chip></h6>
+                            <h6 class="text-h6 font-weight-semibold d-flex align-center">
+                                36,436 <v-chip color="success" class="bg-lightsuccess ml-1" variant="outlined" size="x-small">+12%</v-chip>
+                            </h6>
                             <p class="text-subtitle-1 text-grey100 font-weight-medium">New Customer</p>
                         </div>
                     </div>

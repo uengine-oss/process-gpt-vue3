@@ -23,12 +23,12 @@ import ProcessDefinitionDisplay from '@/components/designer/ProcessDefinitionDis
 export default {
     name: 'pal-call-activity-panel',
     components: {
-        ProcessDefinitionDisplay,
+        ProcessDefinitionDisplay
     },
     props: {
         uengineProperties: { type: Object, default: null },
         isViewMode: { type: Boolean, default: false },
-        element: { type: Object, default: null },
+        element: { type: Object, default: null }
     },
     emits: ['update:uengineProperties'],
     created() {
@@ -41,7 +41,7 @@ export default {
     },
     data() {
         return {
-            copyUengineProperties: {},
+            copyUengineProperties: {}
         };
     },
     watch: {
@@ -49,8 +49,8 @@ export default {
             deep: true,
             handler(val) {
                 this.$emit('update:uengineProperties', val ? { ...val } : {});
-            },
-        },
+            }
+        }
     },
     methods: {
         ensureKeyExists(obj, key, defaultValue) {
@@ -60,8 +60,8 @@ export default {
         },
         async beforeSave() {
             this.$emit('update:uengineProperties', { ...this.copyUengineProperties });
-        },
-    },
+        }
+    }
 };
 </script>
 

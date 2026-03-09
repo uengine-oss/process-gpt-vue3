@@ -25,7 +25,7 @@ const TenantRoutes = {
             name: 'Tenant Edit',
             path: '/tenant/edit/:tenantId',
             component: () => import('@/components/tenant/TenantEditPage.vue')
-        },
+        }
     ]
 };
 

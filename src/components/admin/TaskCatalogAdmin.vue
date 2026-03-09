@@ -12,10 +12,7 @@
             <!-- 로딩 완료 -->
             <template v-else>
                 <!-- Tabs -->
-                <v-tabs v-model="activeTab" color="primary"
-                    :direction="isMobile ? 'vertical' : 'horizontal'"
-                    class="pa-0"
-                >
+                <v-tabs v-model="activeTab" color="primary" :direction="isMobile ? 'vertical' : 'horizontal'" class="pa-0">
                     <v-tab v-for="tab in tabs" :key="tab.value" :value="tab.value">
                         <v-icon size="18" class="mr-2">{{ tab.icon }}</v-icon>
                         <span>{{ $t(tab.label) }}</span>
@@ -75,12 +72,7 @@ export default defineComponent({
 
         onMounted(async () => {
             try {
-                await Promise.all([
-                    store.loadPaletteSettings(),
-                    store.loadSystems(),
-                    store.loadSchemas(),
-                    store.loadCatalog()
-                ]);
+                await Promise.all([store.loadPaletteSettings(), store.loadSystems(), store.loadSchemas(), store.loadCatalog()]);
             } catch (error) {
                 console.error('Failed to load task catalog data:', error);
             } finally {

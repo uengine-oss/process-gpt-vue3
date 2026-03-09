@@ -846,6 +846,7 @@ async function syncDepartments() {
             <v-card-text class="pa-5">
               <div class="d-flex justify-space-between align-center mb-4">
                 <h3 class="text-h6 font-weight-semibold text-textPrimary">Domain별 Sub Process</h3>
+                <v-chip size="small" color="primary" variant="tonal">
                   {{ $t('analyticsDashboard.totalCount', { count: domainData.reduce((a, b) => a + b.subProcessCount, 0) }) }}
                 </v-chip>
               </div>

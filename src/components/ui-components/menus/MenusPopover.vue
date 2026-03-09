@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue';
 const fav = ref(true);
 const menu = ref(false);
 const message = ref(false);
@@ -15,11 +15,13 @@ const hints = ref(true);
 
             <v-card min-width="300">
                 <v-list>
-                    <v-list-item prepend-avatar="https://cdn.vuetifyjs.com/images/john.jpg" title="John Leider"
-                        subtitle="Founder of Vuetify">
+                    <v-list-item
+                        prepend-avatar="https://cdn.vuetifyjs.com/images/john.jpg"
+                        title="John Leider"
+                        subtitle="Founder of Vuetify"
+                    >
                         <template v-slot:append>
-                            <v-btn variant="text" :class="fav ? 'text-primary' : ''" icon="mdi-heart"
-                                @click="fav = !fav" flat></v-btn>
+                            <v-btn variant="text" :class="fav ? 'text-primary' : ''" icon="mdi-heart" @click="fav = !fav" flat></v-btn>
                         </template>
                     </v-list-item>
                 </v-list>
@@ -28,13 +30,11 @@ const hints = ref(true);
 
                 <v-list>
                     <v-list-item>
-                        <v-switch v-model="message" color="primary" label="Enable messages" hide-details
-                            class="pl-2"></v-switch>
+                        <v-switch v-model="message" color="primary" label="Enable messages" hide-details class="pl-2"></v-switch>
                     </v-list-item>
 
                     <v-list-item>
-                        <v-switch v-model="hints" color="primary" label="Enable hints" hide-details
-                            class="pl-2"></v-switch>
+                        <v-switch v-model="hints" color="primary" label="Enable hints" hide-details class="pl-2"></v-switch>
                     </v-list-item>
                 </v-list>
 

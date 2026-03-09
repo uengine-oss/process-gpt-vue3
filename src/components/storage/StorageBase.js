@@ -1,4 +1,4 @@
-import StorageBaseComposition from "./StorageBaseComposition";
+import StorageBaseComposition from './StorageBaseComposition';
 
 export default class StorageBase extends StorageBaseComposition {
     constructor(client) {

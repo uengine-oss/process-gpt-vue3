@@ -1,94 +1,100 @@
 // Reference to '/public/snippets/default/snippets.html' to provide container layouts and component information for AI form generation
 const formDesignGeneratorPromptSnipptsData = {
-  // Container layout combinations that AI can use (col-sm-{number} combinations)
-  // The sum of numbers in each array must equal 12 to maintain proper grid layout
-  containerSpaceSets: [
-      [12],           // Full width
-      [6, 6],         // Two equal columns
-      [4, 8],         // Left narrow, right wide
-      [8, 4],         // Left wide, right narrow
-      [4, 4, 4],      // Three equal columns
-      [3, 6, 3],      // Narrow, wide, narrow
-      [3, 3, 3, 3]    // Four equal columns
-  ],
+    // Container layout combinations that AI can use (col-sm-{number} combinations)
+    // The sum of numbers in each array must equal 12 to maintain proper grid layout
+    containerSpaceSets: [
+        [12], // Full width
+        [6, 6], // Two equal columns
+        [4, 8], // Left narrow, right wide
+        [8, 4], // Left wide, right narrow
+        [4, 4, 4], // Three equal columns
+        [3, 6, 3], // Narrow, wide, narrow
+        [3, 3, 3, 3] // Four equal columns
+    ],
 
-  // Component details for AI to use when generating forms
-  // Tag attribute syntax rules:
-  // 1. Attributes in "<>" will be replaced by AI with appropriate values
-  // 2. Attributes in "<value1|value2>" format indicate AI should select one option
-  // 3. Attributes without "<>" are constants and must be used as written
-  componentInfos: [
-      {
-          tagName: "boolean-field",
-          tag: `<boolean-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></boolean-field>`,
-          purpose: "To select either 'true' or 'false'",
-          limit: ""
-      },
-      ,
-      {
-          tagName: "user-select-field",
-          tag: `<user-select-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></user-select-field>`,
-          purpose: "To select users from the system",
-          limit: ""
-      },
-      {
-          tagName: "select-field",
-          tag: `<select-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` + 
-               `items='<options_list_when_is_dynamic_load_is_false>' ` + 
-               `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
-               `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
-               `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
-               `disabled='<true|false>' readonly='<true|false>'></select-field>`,
-          purpose: "To select one option from multiple choices",
-          limit: `When is_dynamic_load is fixed, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
-                 `When is_dynamic_load is urlBinding, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
-      },
+    // Component details for AI to use when generating forms
+    // Tag attribute syntax rules:
+    // 1. Attributes in "<>" will be replaced by AI with appropriate values
+    // 2. Attributes in "<value1|value2>" format indicate AI should select one option
+    // 3. Attributes without "<>" are constants and must be used as written
+    componentInfos: [
+        {
+            tagName: 'boolean-field',
+            tag: `<boolean-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></boolean-field>`,
+            purpose: "To select either 'true' or 'false'",
+            limit: ''
+        },
+        ,
+        {
+            tagName: 'user-select-field',
+            tag: `<user-select-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></user-select-field>`,
+            purpose: 'To select users from the system',
+            limit: ''
+        },
+        {
+            tagName: 'select-field',
+            tag:
+                `<select-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` +
+                `items='<options_list_when_is_dynamic_load_is_false>' ` +
+                `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
+                `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` +
+                `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
+                `disabled='<true|false>' readonly='<true|false>'></select-field>`,
+            purpose: 'To select one option from multiple choices',
+            limit:
+                `When is_dynamic_load is fixed, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
+                `When is_dynamic_load is urlBinding, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
+        },
 
-      {
-          tagName: "checkbox-field",
-          tag: `<checkbox-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` + 
-               `items='<options_list_when_is_dynamic_load_is_false>' ` + 
-               `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
-               `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
-               `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
-               `disabled='<true|false>' readonly='<true|false>'></checkbox-field>`,
-          purpose: "To select multiple options from a list of choices",
-          limit: `When is_dynamic_load is fixed, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
-                 `When is_dynamic_load is urlBinding, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
-      },
+        {
+            tagName: 'checkbox-field',
+            tag:
+                `<checkbox-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` +
+                `items='<options_list_when_is_dynamic_load_is_false>' ` +
+                `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
+                `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` +
+                `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
+                `disabled='<true|false>' readonly='<true|false>'></checkbox-field>`,
+            purpose: 'To select multiple options from a list of choices',
+            limit:
+                `When is_dynamic_load is fixed, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
+                `When is_dynamic_load is urlBinding, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
+        },
 
-      {
-          tagName: "radio-field",
-          tag: `<radio-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` + 
-               `items='<options_list_when_is_dynamic_load_is_false>' ` + 
-               `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
-               `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` + 
-               `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
-               `disabled='<true|false>' readonly='<true|false>'></radio-field>`,
-          purpose: "To select one option from multiple listed choices (displayed as radio buttons)",
-          limit: `When is_dynamic_load is fixed, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
-                 `When is_dynamic_load is urlBinding, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
-      },
+        {
+            tagName: 'radio-field',
+            tag:
+                `<radio-field name='<unique_identifier>' alias='<display_label>' is_dynamic_load='<fixed|urlBinding>' ` +
+                `items='<options_list_when_is_dynamic_load_is_false>' ` +
+                `dynamic_load_url='<JSON_data_load_URL_when_is_dynamic_load_is_urlBinding>' ` +
+                `dynamic_load_key_json_path='<JSON_PATH_for_key_array_when_is_dynamic_load_is_urlBinding>' ` +
+                `dynamic_load_value_json_path='<JSON_PATH_for_value_array_when_is_dynamic_load_is_urlBinding>' ` +
+                `disabled='<true|false>' readonly='<true|false>'></radio-field>`,
+            purpose: 'To select one option from multiple listed choices (displayed as radio buttons)',
+            limit:
+                `When is_dynamic_load is fixed, items is required and must be formatted as '[{"key1": "label1"}, {"key2": "label2"}]'. ` +
+                `When is_dynamic_load is urlBinding, dynamic_load_url, dynamic_load_key_json_path, and dynamic_load_value_json_path are all required.`
+        },
 
-      {
-          tagName: "file-field",
-          tag: `<file-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></file-field>`,
-          purpose: "To upload files",
-          limit: ""
-      },
+        {
+            tagName: 'file-field',
+            tag: `<file-field name='<unique_identifier>' alias='<display_label>' disabled='<true|false>' readonly='<true|false>'></file-field>`,
+            purpose: 'To upload files',
+            limit: ''
+        },
 
-      {
-          tagName: "label-field",
-          tag: `<label-field label='<label_text>'></label-field>`,
-          purpose: "To provide descriptive text for components",
-          limit: "Not needed for components that already have name and alias attributes (which automatically generate labels)"
-      },
+        {
+            tagName: 'label-field',
+            tag: `<label-field label='<label_text>'></label-field>`,
+            purpose: 'To provide descriptive text for components',
+            limit: 'Not needed for components that already have name and alias attributes (which automatically generate labels)'
+        },
 
-      {
-          tagName: "code-field",
-          tag: `<code-field name='<unique_identifier>' alias='<display_label>' event_type='<click|initialize|validate|watch>' watch_name='<name_attribute_to_watch_when_event_type_is_watch>'>JavaScript code to execute</code-field>`,
-          purpose: "To execute JavaScript code when specified events occur",
-          limit: `\
+        {
+            tagName: 'code-field',
+            tag: `<code-field name='<unique_identifier>' alias='<display_label>' event_type='<click|initialize|validate|watch>' watch_name='<name_attribute_to_watch_when_event_type_is_watch>'>JavaScript code to execute</code-field>`,
+            purpose: 'To execute JavaScript code when specified events occur',
+            limit: `\
 code-field must be placed inside a div with 'col-sm-*' class. 
 The row containing code-field must have is_multidata_mode='false'. 
 Detailed guidelines: 
@@ -104,12 +110,12 @@ Detailed guidelines:
 4. For watch event_type, previous values are accessed via this.oldFormValues[<name_attribute>] 
 5. For validate event_type, set the error variable with an error message if validation fails
 6. When declaring a string, use single quotes like 'text'`
-      },
-      {
-          tagName: "report-field",
-          tag: `<report-field name='<unique_identifier>' alias='<display_label>'></report-field>`,
-          purpose: "To collect markdown input",
-          limit: `
+        },
+        {
+            tagName: 'report-field',
+            tag: `<report-field name='<unique_identifier>' alias='<display_label>'></report-field>`,
+            purpose: 'To collect markdown input',
+            limit: `
     다음 요구사항에 맞춰 새로운 마크다운 문서를 작성하십시오.
     
     규칙:
@@ -120,12 +126,12 @@ Detailed guidelines:
     - 불필요한 반복이나 형식 오류 없이 명확하고 간결하게 작성하십시오.
     - 출력은 반드시 마크다운 문서 본문만 포함하고, 그 외의 설명이나 해설은 절대 포함하지 마십시오.
     `.trim()
-      },
-      {
-          tagName: "slide-field",
-          tag: `<slide-field name='<unique_identifier>' alias='<display_label>'></slide-field>`,
-          purpose: "To collect slide input",
-          limit: `
+        },
+        {
+            tagName: 'slide-field',
+            tag: `<slide-field name='<unique_identifier>' alias='<display_label>'></slide-field>`,
+            purpose: 'To collect slide input',
+            limit: `
     다음 요구사항에 맞춰 새로운 마크다운 문서를 작성하십시오.
     
     규칙:
@@ -136,36 +142,37 @@ Detailed guidelines:
     - 불필요한 반복이나 형식 오류 없이 명확하고 간결하게 작성하십시오.
     - 출력은 반드시 마크다운 문서 본문만 포함하고, 그 외의 설명이나 해설은 절대 포함하지 마십시오.
     `.trim()
-      },
-      {
-          tagName: "bpmn-uengine-field",
-          tag: `<bpmn-uengine-field name='<unique_identifier>' alias='<display_label>'></bpmn-uengine-field>`,
-          purpose: "To collect BPMN process definitions as XML",
-          limit: "Use this field when the user explicitly asks for a BPMN process editor or diagram input."
-      },
-      
-      {
-        tagName: "text-field",
-        tag: `<text-field name='<unique_identifier>' alias='<display_label>' type='<text|number|email|url|date|datetime-local|month|week|time|password|tel|color>' disabled='<true|false>' readonly='<true|false>'></text-field>`,
-        purpose: "To collect various types of text input",
-        limit: "For selections with many options (like years), use text-field instead of select-field"
-      },
+        },
+        {
+            tagName: 'bpmn-uengine-field',
+            tag: `<bpmn-uengine-field name='<unique_identifier>' alias='<display_label>'></bpmn-uengine-field>`,
+            purpose: 'To collect BPMN process definitions as XML',
+            limit: 'Use this field when the user explicitly asks for a BPMN process editor or diagram input.'
+        },
 
-      {
-          tagName: "textarea-field",
-          tag: `<textarea-field name='<unique_identifier>' alias='<display_label>' rows='<number_of_rows>' disabled='<true|false>' readonly='<true|false>'></textarea-field>`,
-          purpose: "To collect multi-line text input",
-          limit: ""
-      }
-  ],
+        {
+            tagName: 'text-field',
+            tag: `<text-field name='<unique_identifier>' alias='<display_label>' type='<text|number|email|url|date|datetime-local|month|week|time|password|tel|color>' disabled='<true|false>' readonly='<true|false>'></text-field>`,
+            purpose: 'To collect various types of text input',
+            limit: 'For selections with many options (like years), use text-field instead of select-field'
+        },
 
-  examples: [
-      {
-          input: {
-              requestType: "Create",
-              request: "Create an employee registration form with personal, contact, and job information sections. Include fields for name, email, department, position, hire date, and emergency contact. Add salary field that calculates and displays annual amount when monthly salary is entered. Use different column layouts for each section."
-          },
-          output: `
+        {
+            tagName: 'textarea-field',
+            tag: `<textarea-field name='<unique_identifier>' alias='<display_label>' rows='<number_of_rows>' disabled='<true|false>' readonly='<true|false>'></textarea-field>`,
+            purpose: 'To collect multi-line text input',
+            limit: ''
+        }
+    ],
+
+    examples: [
+        {
+            input: {
+                requestType: 'Create',
+                request:
+                    'Create an employee registration form with personal, contact, and job information sections. Include fields for name, email, department, position, hire date, and emergency contact. Add salary field that calculates and displays annual amount when monthly salary is entered. Use different column layouts for each section.'
+            },
+            output: `
 \`\`\`json
 {
   "htmlOutput": "<section>
@@ -247,12 +254,13 @@ Detailed guidelines:
 </section>"
 }
 \`\`\``
-      },
-      {
-          input: {
-              requestType: "Modify",
-              request: "Add a performance evaluation section to the employee form with fields for evaluation date, evaluator (user selection), performance rating (1-5), strengths, areas for improvement, and goals. Make the evaluation date required and validate it.",
-              existingForm: `\
+        },
+        {
+            input: {
+                requestType: 'Modify',
+                request:
+                    'Add a performance evaluation section to the employee form with fields for evaluation date, evaluator (user selection), performance rating (1-5), strengths, areas for improvement, and goals. Make the evaluation date required and validate it.',
+                existingForm: `\
 <section>
   <div class='row' name='personal_info' alias='Personal Information' is_multidata_mode='false'>
       <div class='col-sm-6'>
@@ -289,8 +297,8 @@ Detailed guidelines:
       </div>
   </div>
 </section>`
-          },
-          output: `
+            },
+            output: `
 \`\`\`json
 {
   "modifications": [
@@ -347,8 +355,8 @@ if(this.formValues['evaluation_date'] === '') error = 'Evaluation date is requir
   ]
 }
 \`\`\``
-      }
-  ]
-}
+        }
+    ]
+};
 
 export default formDesignGeneratorPromptSnipptsData;

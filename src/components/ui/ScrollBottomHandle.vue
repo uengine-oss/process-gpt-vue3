@@ -1,16 +1,13 @@
-<template>
-</template>
+<template></template>
 <script>
-  export default {
-    components: {
-    },
-    props: {
-    },
+export default {
+    components: {},
+    props: {},
     data() {
         return {
             isAtBottom: true,
             // 상단에서 히스토리 더 불러오기 트리거 throttle
-            _lastTopFetchAt: 0,
+            _lastTopFetchAt: 0
         };
     },
     watch: {
@@ -20,11 +17,9 @@
             } else {
                 this.showNewMessage();
             }
-        },
+        }
     },
-    computed: {
-        
-    },
+    computed: {},
     methods: {
         getScrollContainerElement() {
             const scrollRef = this.$refs?.scrollContainer;
@@ -33,9 +28,10 @@
         },
         scrollToBottom() {
             setTimeout(() => {
-                const container = this.getScrollContainerElement();
-                if (!container || typeof container.scrollHeight === 'undefined') return;
-                container.scrollTop = container.scrollHeight;
+                if (this.$refs.scrollContainer) {
+                    const container = this.$refs.scrollContainer.$el;
+                    container.scrollTop = container.scrollHeight;
+                }
             }, 300);
             // this.$nextTick(() => {
             //     const container = this.$refs.scrollContainer.$el;
@@ -43,8 +39,8 @@
             // });
         },
         handleScroll() {
-            const container = this.getScrollContainerElement();
-            if (container && typeof container.scrollHeight !== 'undefined') {
+            if (this.$refs.scrollContainer) {
+                const container = this.$refs.scrollContainer.$el;
                 clearTimeout(this.scrollTimeout);
                 this.scrollTimeout = setTimeout(() => {
                     const scrollPosition = Math.round(container.scrollTop + container.clientHeight) + 1;
@@ -57,7 +53,7 @@
                     const isNearTop = (container.scrollTop || 0) <= 20;
                     if (isNearTop) {
                         const now = Date.now();
-                        if (!this._lastTopFetchAt || (now - this._lastTopFetchAt) > 800) {
+                        if (!this._lastTopFetchAt || now - this._lastTopFetchAt > 800) {
                             this._lastTopFetchAt = now;
                             try {
                                 if (typeof this.getMoreChat === 'function') {
@@ -70,11 +66,9 @@
                     }
                 }, 200);
             }
-            
-        },
+        }
     }
 };
 </script>
-  
-<style>
-</style>
+
+<style></style>

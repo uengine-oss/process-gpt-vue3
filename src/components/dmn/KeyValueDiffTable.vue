@@ -42,47 +42,55 @@ export default {
     },
     computed: {
         tableMode() {
-            const rows = (this.diffs || []).filter((d) => !((d.previous === undefined || d.previous === null) && (d.current === undefined || d.current === null)));
+            const rows = (this.diffs || []).filter(
+                (d) => !((d.previous === undefined || d.previous === null) && (d.current === undefined || d.current === null))
+            );
             if (rows.length === 0) return 'one';
 
-            const isPrevOnly = rows.every((d) => (d.current === undefined || d.current === null) && !(d.previous === undefined || d.previous === null));
-            const isCurrOnly = rows.every((d) => (d.previous === undefined || d.previous === null) && !(d.current === undefined || d.current === null));
+            const isPrevOnly = rows.every(
+                (d) => (d.current === undefined || d.current === null) && !(d.previous === undefined || d.previous === null)
+            );
+            const isCurrOnly = rows.every(
+                (d) => (d.previous === undefined || d.previous === null) && !(d.current === undefined || d.current === null)
+            );
 
             if (isPrevOnly || isCurrOnly) return 'one';
             return 'two';
         },
         normalizedRows() {
-            return (this.diffs || []).filter((d) => !((d.previous === undefined || d.previous === null) && (d.current === undefined || d.current === null))).map((d) => {
-                const prevUndef = d.previous === undefined || d.previous === null;
-                const currUndef = d.current === undefined || d.current === null;
+            return (this.diffs || [])
+                .filter((d) => !((d.previous === undefined || d.previous === null) && (d.current === undefined || d.current === null)))
+                .map((d) => {
+                    const prevUndef = d.previous === undefined || d.previous === null;
+                    const currUndef = d.current === undefined || d.current === null;
 
-                let prevClass = '';
-                let currClass = '';
-                if (prevUndef && !currUndef) {
-                    currClass = 'dmn-cell-added';
-                } else if (!prevUndef && currUndef) {
-                    prevClass = 'dmn-cell-removed';
-                } else {
-                    prevClass = 'dmn-cell-modified';
-                    currClass = 'dmn-cell-modified';
-                }
+                    let prevClass = '';
+                    let currClass = '';
+                    if (prevUndef && !currUndef) {
+                        currClass = 'dmn-cell-added';
+                    } else if (!prevUndef && currUndef) {
+                        prevClass = 'dmn-cell-removed';
+                    } else {
+                        prevClass = 'dmn-cell-modified';
+                        currClass = 'dmn-cell-modified';
+                    }
 
-                const oneValue = !currUndef ? d.current : d.previous;
-                let oneClass = '';
-                if (prevUndef && !currUndef) oneClass = 'dmn-cell-added';
-                else if (!prevUndef && currUndef) oneClass = 'dmn-cell-removed';
-                else oneClass = 'dmn-cell-modified';
+                    const oneValue = !currUndef ? d.current : d.previous;
+                    let oneClass = '';
+                    if (prevUndef && !currUndef) oneClass = 'dmn-cell-added';
+                    else if (!prevUndef && currUndef) oneClass = 'dmn-cell-removed';
+                    else oneClass = 'dmn-cell-modified';
 
-                return {
-                    label: this.labels[d.field] || d.field,
-                    previous: d.previous,
-                    current: d.current,
-                    prevClass,
-                    currClass,
-                    oneValue,
-                    oneClass
-                };
-            });
+                    return {
+                        label: this.labels[d.field] || d.field,
+                        previous: d.previous,
+                        current: d.current,
+                        prevClass,
+                        currClass,
+                        oneValue,
+                        oneClass
+                    };
+                });
         }
     },
     methods: {
@@ -150,5 +158,3 @@ export default {
     opacity: 0.8;
 }
 </style>
-
-

@@ -1,11 +1,12 @@
 <template>
     <div>
-        <ExpandableList 
-            :items="instanceList" 
-            :limit="10"
-            @expanded="onInstancesExpanded"
-            @collapsed="onInstancesCollapsed"
-        >
+        <div v-if="isLoading" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{ $t('ProcessInstanceList.loading') || '인스턴스 로딩 중...' }}
+        </div>
+        <div v-else-if="instanceList.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{ $t('ProcessInstanceList.empty') || '실행 중인 인스턴스가 없습니다' }}
+        </div>
+        <ExpandableList v-else :items="instanceList" :limit="10" @expanded="onInstancesExpanded" @collapsed="onInstancesCollapsed">
             <template #items="{ displayedItems }">
                 <template v-for="item in displayedItems" :key="item.title">
                     <div v-if="item.isNew" class="d-flex">
@@ -17,10 +18,9 @@
             </template>
         </ExpandableList>
     </div>
-    <div v-if="myGroupInstanceList.length > 0"
-                style="font-size:14px;"
-        class="text-medium-emphasis cp-menu mt-3 ml-2"
-    >{{ $t('VerticalSidebar.instanceMyGroup') }}</div>
+    <div v-if="myGroupInstanceList.length > 0" style="font-size: 14px" class="text-medium-emphasis cp-menu mt-3 ml-2">
+        {{ $t('VerticalSidebar.instanceMyGroup') }}
+    </div>
     <div>
         <template v-for="item in myGroupInstanceList" :key="item.title">
             <NavItem v-if="!JMS" class="leftPadding pl-2" :item="item" :use-i18n="false" />
@@ -41,15 +41,15 @@ export default {
         ExpandableList
     },
     data: () => ({
+        isLoading: true,
         instanceList: [],
         //
         myGroupInstanceList: [],
         // intervalId: null,
         runningInstances: {
-            header: 'runningInstance.title',
+            header: 'runningInstance.title'
         },
-        watchRef: null,
-        
+        watchRef: null
     }),
     async created() {
         await this.init();
@@ -58,31 +58,39 @@ export default {
         this.EventBus.on('instances-updated', async () => {
             await this.init();
         });
-        
+
         // this.intervalId = setInterval(() => {
         //     this.init();
         // }, 10000);
 
-        this.watchRef = await backend.watchInstanceList((callback => {
-            this.loadInstances();           
-        }),{status: ['NEW', 'RUNNING']});
+        this.watchRef = await backend.watchInstanceList(
+            (callback) => {
+                this.loadInstances();
+            },
+            { status: ['NEW', 'RUNNING'] }
+        );
     },
     computed: {
         JMS() {
             return window.$jms;
-        },
+        }
     },
     methods: {
         async init() {
-            if(window.$mode == 'ProcessGPT') {
-                await this.loadInstances();
-            } else {
-                await this.loadInstancesByRole();
-                await this.loadGroupInstances();
+            this.isLoading = true;
+            try {
+                if (window.$mode == 'ProcessGPT') {
+                    await this.loadInstances();
+                } else {
+                    await this.loadInstancesByRole();
+                    await this.loadGroupInstances();
+                }
+            } finally {
+                this.isLoading = false;
             }
         },
         async loadInstances() {
-            let result = await backend.getInstanceListByStatus(["NEW", "RUNNING"]);
+            let result = await backend.getInstanceListByStatus(['NEW', 'RUNNING']);
             if (!result) result = [];
             const processedInstances = result.map((item) => {
                 const title = item.name;
@@ -91,7 +99,7 @@ export default {
                     instId: item.instId,
                     title: item.status == 'NEW' ? title + this.$t('runningInstance.running') : title,
                     to: `/instancelist/${item.instId.replace(/\./g, '_DOT_')}`,
-                    BgColor:'primary',
+                    BgColor: 'primary',
                     updatedAt: item.updatedAt,
                     isNew: item.status == 'NEW',
                     isDeleted: item.is_deleted,
@@ -99,9 +107,9 @@ export default {
                 };
                 return item;
             });
-            
+
             this.instanceList = processedInstances;
-            
+
             // isDeleted 항목을 마지막으로 정렬하고, 삭제된 항목들은 삭제일자 기준 내림차순 정렬
             this.instanceList.sort((a, b) => {
                 if (a.isDeleted === b.isDeleted) {
@@ -115,30 +123,30 @@ export default {
             });
             this.$emit('update:instanceList', this.instanceList);
         },
-        async loadInstancesByRole(){
+        async loadInstancesByRole() {
             const roles = window.localStorage.getItem('roles');
-            if(!roles) return;
+            if (!roles) return;
             const roleList = await backend.getInstanceListByRole(roles);
-            if(!roleList) return;
+            if (!roleList) return;
             this.instanceList = roleList.map((item) => {
                 const title = item.instName;
                 return {
                     title: title,
                     to: `/instancelist/${item.instId.replace(/\./g, '_DOT_')}`,
-                    BgColor:'primary'
+                    BgColor: 'primary'
                 };
             });
         },
-        async loadGroupInstances(){
+        async loadGroupInstances() {
             const groups = window.localStorage.getItem('groups');
-            if(!groups) return;
+            if (!groups) return;
             const groupList = await backend.getInstanceListByGroup(groups);
             this.myGroupInstanceList = groupList.map((item) => {
                 const title = item.instName;
                 return {
                     title: title,
                     to: `/instancelist/${item.instId.replace(/\./g, '_DOT_')}`,
-                    BgColor:'primary'
+                    BgColor: 'primary'
                 };
             });
         },
@@ -148,8 +156,15 @@ export default {
         onInstancesCollapsed() {
             // 축소 시 필요한 로직이 있다면 여기에 추가
         }
-        
-        
     }
 };
 </script>
+
+<style scoped>
+.empty-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+}
+</style>

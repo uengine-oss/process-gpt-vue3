@@ -1,64 +1,61 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class ProcessDefinitionGenerator extends AIGenerator {
-  constructor(client, language) {
-    super(client, language);
+    constructor(client, language) {
+        super(client, language);
 
-    const externalSystems = JSON.stringify(client.externalSystems);
-    const jsonStructure = this.getJsonStructure();
-    const systemInstructions = this.buildSystemInstructions(jsonStructure, externalSystems);
+        const externalSystems = JSON.stringify(client.externalSystems);
+        const jsonStructure = this.getJsonStructure();
+        const systemInstructions = this.buildSystemInstructions(jsonStructure, externalSystems);
 
-    this.previousMessages = [
-      {
-        role: "system",
-        content: systemInstructions,
-      },
-    ];
-  }
+        this.previousMessages = [
+            {
+                role: 'system',
+                content: systemInstructions
+            }
+        ];
+    }
 
-  createPrompt() {
-    return this.client.newMessage;
-  }
+    createPrompt() {
+        return this.client.newMessage;
+    }
 
-  setOrganizationChart(organizationChart) {
-    this.previousMessages[0].content = this.previousMessages[0].content.replace(
-      "{{ 회사 조직도 정보 }}",
-      JSON.stringify(organizationChart)
-    );
-  }
+    setOrganizationChart(organizationChart) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(
+            '{{ 회사 조직도 정보 }}',
+            JSON.stringify(organizationChart)
+        );
+    }
 
-  setProcessDefinitionMap(processDefinitionMap) {
-    this.previousMessages[0].content = this.previousMessages[0].content.replace(
-      "{{ 프로세스 정의 체계도 정보 }}",
-      JSON.stringify(processDefinitionMap)
-    );
-  }
+    setProcessDefinitionMap(processDefinitionMap) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(
+            '{{ 프로세스 정의 체계도 정보 }}',
+            JSON.stringify(processDefinitionMap)
+        );
+    }
 
-  setProcessDefinition(processDefinition) {
-    this.previousMessages[0].content = this.previousMessages[0].content.replace(
-      "{{ 기존 프로세스 정보 }}",
-      JSON.stringify(processDefinition)
-    );
-  }
+    setProcessDefinition(processDefinition) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace(
+            '{{ 기존 프로세스 정보 }}',
+            JSON.stringify(processDefinition)
+        );
+    }
 
-  setStrategy(strategy) {
-    this.previousMessages[0].content = this.previousMessages[0].content.replace(
-      "{{ 전략 맵 }}",
-      JSON.stringify(strategy)
-    );
-  }
+    setStrategy(strategy) {
+        this.previousMessages[0].content = this.previousMessages[0].content.replace('{{ 전략 맵 }}', JSON.stringify(strategy));
+    }
 
-  buildSystemInstructions(jsonStructure, externalSystems) {
-    return [
-      this.getDefinitionGuideSection(jsonStructure),
-      this.getModificationRulesSection(),
-      this.getExternalSystemGuideSection(externalSystems),
-      // this.getRoleDefinitionSection()
-    ].join("\n\n");
-  }
+    buildSystemInstructions(jsonStructure, externalSystems) {
+        return [
+            this.getDefinitionGuideSection(jsonStructure),
+            this.getModificationRulesSection(),
+            this.getExternalSystemGuideSection(externalSystems)
+            // this.getRoleDefinitionSection()
+        ].join('\n\n');
+    }
 
-  getDefinitionGuideSection(jsonStructure) {
-    return `
+    getDefinitionGuideSection(jsonStructure) {
+        return `
     ### 프로세스 정의
 
     자 지금부터 너는 우리 회사의 다양한 프로세스를 이해하고 직원들이 프로세스를 시작하거나 프로세스의 다음 단계가 궁금할 거 같을 때 다음의 액션을 취하는 BPM 시스템과 같은 대화형의 시스템을 만들거야.
@@ -101,15 +98,19 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     - UserActivity (사용자 태스크)**: 사람이 소프트웨어 애플리케이션을 통해 수행하는 작업
       - 예시: 폼 작성, 승인, 검토, 의사결정, 데이터 입력 등
       - 특징: 사용자 인터페이스를 통해 사람이 직접 처리하는 작업
-      ${window.$mode !== 'ProcessGPT' ? `
+      ${
+          window.$mode !== 'ProcessGPT'
+              ? `
     - EmailActivity (발송 태스크)**: 다른 풀(Pool)에 메시지를 전송하는 작업
       - 예시: 알림 발송, 공지사항 전달, 승인 결과 통보 등
       - 특징: 메시지가 전송되면 작업이 완료됨
       
     - ManualActivity (수동 태스크)**: 비즈니스 프로세스 실행 엔진이나 애플리케이션의 도움 없이 수행되는 작업
       - 예시: 물리적 배송, 수동 검사, 전화 통화, 문서 스캔, 현장 작업 등
-      - 특징: 시스템이 자동화할 수 없는 사람의 직접적인 물리적 작업` : `
-    - 중요: 현재 모드에서는 UserActivity만 사용 가능합니다. EmailActivity와 ManualActivity는 지원되지 않습니다.`}
+      - 특징: 시스템이 자동화할 수 없는 사람의 직접적인 물리적 작업`
+              : `
+    - 중요: 현재 모드에서는 UserActivity만 사용 가능합니다. EmailActivity와 ManualActivity는 지원되지 않습니다.`
+      }
     - 서브(하위)프로세스가 필요하다고 판단되는 경우:
       - 하나의 단계 자체가 Task 가 아닌 "subProcesses" 항목이 된다. 
         - 예를 들어 사용자의 요청이 
@@ -210,10 +211,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     ${jsonStructure}
     \`\`\`
     `.trim();
-  }
+    }
 
-  getModificationRulesSection() {
-    return `
+    getModificationRulesSection() {
+        return `
     ### 프로세스 변경
       프로세스 정의의 일 부분이 변경될 때는 다음과 같이 변경된 부분만 리턴해줘:
 
@@ -227,10 +228,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
           }   
         ]
       }`.trim();
-  }
+    }
 
-  getExternalSystemGuideSection(externalSystems) {
-    return `
+    getExternalSystemGuideSection(externalSystems) {
+        return `
     ### 외부 시스템 가이드
       외부 시스템 목록:
       \`\`\`
@@ -259,18 +260,18 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
       }
       \`\`\`
       `.trim();
-  }
+    }
 
-  getRoleDefinitionSection() {
-    return `
+    getRoleDefinitionSection() {
+        return `
     사용자들의 역할은 다음과 같아:
     - 직원: 업무를 지시 받고 처리하는 사람
     - 프로세스 관리자: 프로세스 정의의 변경 권한을 갖고 있는 사람
     - BPM시스템: 이 시스템은 Business Process Management 기능을 수행하는 바로 너가 해야 할 일이야.`.trim();
-  }
+    }
 
-  getJsonStructure() {
-    const baseStructure = `
+    getJsonStructure() {
+        const baseStructure = `
         {
             "megaProcessId": "메가 프로세스 ID(한글)",
             "majorProcessId": "메이저 프로세스 ID(한글)",
@@ -325,11 +326,15 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
                     "name": "시퀀스명(한글)",
                     "source": "시작_컴포넌트_id",
                     "target": "도착_컴포넌트_id",
-                    "condition": ${window.$mode !== 'ProcessGPT' ? `{
+                    "condition": ${
+                        window.$mode !== 'ProcessGPT'
+                            ? `{
                       "key": "데이터변수명",
                       "condition": "==", // ==, !=, >, <, >=, <= 중 하나
                       "value": "비교값"
-                    }` : '"조건문(한글)"'}
+                    }`
+                            : '"조건문(한글)"'
+                    }
                   }
               # Activity
                   {
@@ -425,7 +430,7 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
               }
             ]
           }
-        `
-    return baseStructure;
-  }
+        `;
+        return baseStructure;
+    }
 }

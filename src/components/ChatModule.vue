@@ -1,11 +1,11 @@
 <script>
 import jp from 'jsonpath';
 
-import partialParse from "partial-json-parser";
+import partialParse from 'partial-json-parser';
 import BackendFactory from '@/components/api/BackendFactory';
-import { encodingForModel } from "js-tiktoken";
+import { encodingForModel } from 'js-tiktoken';
 import _ from 'lodash';
-import GeneratorAgent from "./GeneratorAgent.vue";
+import GeneratorAgent from './GeneratorAgent.vue';
 import JSON5 from 'json5';
 
 export default {
@@ -21,7 +21,7 @@ export default {
         agentInfo: {
             draftPrompt: '',
             isRunning: false,
-            isConnection: false,
+            isConnection: false
         },
         backend: null,
         lastSendMessage: null,
@@ -40,11 +40,11 @@ export default {
         activeBackgroundRequests: new Map(),
         beforeUnloadHandler: null,
         routerBeforeEach: null,
-        chatsWatchRef: null,
+        chatsWatchRef: null
     }),
     computed: {
         useLock() {
-            if (window.$mode == "ProcessGPT") {
+            if (window.$mode == 'ProcessGPT') {
                 return true;
             } else {
                 return false;
@@ -52,28 +52,30 @@ export default {
         },
         isMobile() {
             return window.innerWidth <= 768;
-        },
+        }
     },
     mounted() {
-        var me = this
-        me.connectAgent()
+        var me = this;
+        me.connectAgent();
         me.receiveAgent(function (callback) {
             if (callback.connection) {
-                me.agentInfo.isConnection = true
+                me.agentInfo.isConnection = true;
                 if (callback.data) {
-                    let message = callback.data
-                    let duplication = me.messages.find(mes => mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content))
+                    let message = callback.data;
+                    let duplication = me.messages.find(
+                        (mes) => mes.role == message.role && JSON.stringify(mes.content) === JSON.stringify(message.content)
+                    );
                     if (duplication) return;
 
-                    message['_template'] = 'agent'
-                    me.messages.push(message)
+                    message['_template'] = 'agent';
+                    me.messages.push(message);
                 }
 
                 if (callback.isFinished) {
-                    me.agentInfo.isRunning = false
+                    me.agentInfo.isRunning = false;
                     const now = Date.now();
-                    if (now - me.lastFinishedTime > 3000) { 
-                        me.lastFinishedTime = now; 
+                    if (now - me.lastFinishedTime > 3000) {
+                        me.lastFinishedTime = now;
                         if (me.processInstanceId) {
                             let putObj = {
                                 id: me.processInstanceId,
@@ -83,13 +85,13 @@ export default {
                         }
                     }
                 } else {
-                    me.agentInfo.isRunning = true
+                    me.agentInfo.isRunning = true;
                 }
             } else {
-                me.agentInfo.isConnection = false
-                me.agentInfo.isRunning = false
+                me.agentInfo.isConnection = false;
+                me.agentInfo.isRunning = false;
             }
-        })
+        });
     },
     beforeUnmount() {
         try {
@@ -107,8 +109,8 @@ export default {
     },
     methods: {
         getModifiedPrevFormOutput(modifications, currentFormData) {
-            let dom
-            if(currentFormData){
+            let dom;
+            if (currentFormData) {
                 dom = new DOMParser().parseFromString(currentFormData, 'text/html');
             } else {
                 dom = new DOMParser().parseFromString(this.prevFormOutput, 'text/html');
@@ -133,26 +135,26 @@ export default {
                 }
             });
 
-            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
+            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace('<br>', '\n');
             console.log('### 수정된 이전 폼 출력 ###');
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;
         },
         requestDraftAgent(newVal) {
-            var me = this
+            var me = this;
             me.$try({
                 context: me,
                 action() {
-                    if (newVal) me.agentInfo.draftPrompt = newVal
+                    if (newVal) me.agentInfo.draftPrompt = newVal;
 
                     if (!me.agentInfo.draftPrompt) return;
-                    me.agentInfo.isRunning = true
-                    me.requestAgent(me.agentInfo.draftPrompt)
+                    me.agentInfo.isRunning = true;
+                    me.requestAgent(me.agentInfo.draftPrompt);
                 },
                 onFail() {
-                    me.agentInfo.isRunning = false
+                    me.agentInfo.isRunning = false;
                 }
-            })
+            });
         },
         async init() {
             this.disableChat = false;
@@ -175,71 +177,86 @@ export default {
             // 감시할 방이 없으면 구독하지 않음
             if (!Array.isArray(chatRoomIds) || chatRoomIds.length === 0) return;
 
-            me.chatsWatchRef = await this.backend.watchChats((data) => {
-                if(data && data.new){
-                    if(data.eventType == "DELETE"){
-                        let messageIndex = me.messages.findIndex(msg => msg.uuid === data.old.uuid);
-                        if (messageIndex !== -1) {
-                            me.messages.splice(messageIndex, 1);
-                        }
-                    } else {
-                        if (!me.currentChatRoom && me.chatRoomId) {
-                            me.currentChatRoom = {
-                                id: me.chatRoomId
+            me.chatsWatchRef = await this.backend.watchChats(
+                (data) => {
+                    if (data && data.new) {
+                        if (data.eventType == 'DELETE') {
+                            let messageIndex = me.messages.findIndex((msg) => msg.uuid === data.old.uuid);
+                            if (messageIndex !== -1) {
+                                me.messages.splice(messageIndex, 1);
                             }
-                        }
-                        if (data.new.messages.email != me.userInfo.email) {
-                            if(data.new.id == me.currentChatRoom.id){
-                                if ((me.messages && me.messages.length > 0) 
-                                && (data.new.messages.role == 'system' && me.messages[me.messages.length - 1].role == 'system') 
-                                // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
-                                && (me.messages[me.messages.length - 1].content == 'AI 생성중...' || me.messages[me.messages.length - 1].content == '테이블 생성 중...' || me.messages[me.messages.length - 1].content.replace(/\s+/g, '').includes(data.new.messages.content.replace(/\s+/g, '')))
-                                ) {
-                                    me.messages[me.messages.length - 1] = data.new.messages
-                                    me.messages[me.messages.length - 1].isLoading = false
-                                    me.EventBus.emit('instances-updated');
-                                } else {
-                                    // 중복 메시지 체크: uuid 또는 내용+시간으로 확인
-                                    const isDuplicate = me.messages.some(msg => 
-                                        (data.new.uuid && msg.uuid === data.new.uuid) ||
-                                        (msg.content === data.new.messages.content && 
-                                         msg.role === data.new.messages.role && 
-                                         Math.abs(msg.timeStamp - data.new.messages.timeStamp) < 1000)
-                                    );
-                                    
-                                    if (!isDuplicate) {
-                                        me.messages.push(data.new.messages)
+                        } else {
+                            if (!me.currentChatRoom && me.chatRoomId) {
+                                me.currentChatRoom = {
+                                    id: me.chatRoomId
+                                };
+                            }
+                            if (data.new.messages.email != me.userInfo.email) {
+                                if (data.new.id == me.currentChatRoom.id) {
+                                    if (
+                                        me.messages &&
+                                        me.messages.length > 0 &&
+                                        data.new.messages.role == 'system' &&
+                                        me.messages[me.messages.length - 1].role == 'system' &&
+                                        // &&  me.messages[me.messages.length - 1].content.replace(/\s+/g, '') === data.new.messages.content.replace(/\s+/g, '')) {
+                                        (me.messages[me.messages.length - 1].content == 'AI 생성중...' ||
+                                            me.messages[me.messages.length - 1].content == '테이블 생성 중...' ||
+                                            me.messages[me.messages.length - 1].content
+                                                .replace(/\s+/g, '')
+                                                .includes(data.new.messages.content.replace(/\s+/g, '')))
+                                    ) {
+                                        me.messages[me.messages.length - 1] = data.new.messages;
+                                        me.messages[me.messages.length - 1].isLoading = false;
+                                        me.EventBus.emit('instances-updated');
+                                    } else {
+                                        // 중복 메시지 체크: uuid 또는 내용+시간으로 확인
+                                        const isDuplicate = me.messages.some(
+                                            (msg) =>
+                                                (data.new.uuid && msg.uuid === data.new.uuid) ||
+                                                (msg.content === data.new.messages.content &&
+                                                    msg.role === data.new.messages.role &&
+                                                    Math.abs(msg.timeStamp - data.new.messages.timeStamp) < 1000)
+                                        );
+
+                                        if (!isDuplicate) {
+                                            me.messages.push(data.new.messages);
+                                        }
                                     }
+                                    me.newMessageInfo = data.new.messages;
                                 }
-                                me.newMessageInfo = data.new.messages
-                            }
-                            
-                            let idx = me.chatRoomList.findIndex(x => x.id == data.new.id)
-                            if(idx != -1){
-                                me.chatRoomList[idx].message.msg = data.new.messages.messageForUser ? data.new.messages.messageForUser : data.new.messages.content
-                                me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp
-    
-                                if(me.chatRoomList[idx].id != me.currentChatRoom.id){
-                                    const participantWithEmail = me.chatRoomList[idx].participants.find(participant => participant.email === me.userInfo.email);
-                                    participantWithEmail.isExistUnReadMessage = true
+
+                                let idx = me.chatRoomList.findIndex((x) => x.id == data.new.id);
+                                if (idx != -1) {
+                                    me.chatRoomList[idx].message.msg = data.new.messages.messageForUser
+                                        ? data.new.messages.messageForUser
+                                        : data.new.messages.content;
+                                    me.chatRoomList[idx].message.createdAt = data.new.messages.timeStamp;
+
+                                    if (me.chatRoomList[idx].id != me.currentChatRoom.id) {
+                                        const participantWithEmail = me.chatRoomList[idx].participants.find(
+                                            (participant) => participant.email === me.userInfo.email
+                                        );
+                                        participantWithEmail.isExistUnReadMessage = true;
+                                    }
                                 }
                             }
                         }
                     }
+                },
+                {
+                    filter: `id=in.(${chatRoomIds.join(',')})`
                 }
-            }, {
-                filter: `id=in.(${chatRoomIds.join(',')})`
-            });
+            );
         },
         async getMessages(chatRoomId) {
             var me = this;
             if (!me.backend || me.backend == null) {
                 me.backend = BackendFactory.createBackend();
             }
-            me.messages = []
-            let messages = await me.backend.getMessages(chatRoomId)
+            me.messages = [];
+            let messages = await me.backend.getMessages(chatRoomId);
             if (messages) {
-                let allMessages = messages.map(message => {
+                let allMessages = messages.map((message) => {
                     let newMessage = message.messages;
                     newMessage.thread_id = message.thread_id || null;
                     return newMessage;
@@ -251,7 +268,6 @@ export default {
                 me.EventBus.emit('messages-updated');
             }
             me.isInitDone = true;
-
         },
 
         getDataPath() {
@@ -268,10 +284,10 @@ export default {
 
         async loadAgentMessages(path, options) {
             const callPath = path ? path : this.path;
-            
+
             const value = await this.getData(callPath, options);
             if (value && value.agent_messages) {
-                this.messages = value.agent_messages
+                this.messages = value.agent_messages;
             }
         },
         getData(path, options) {
@@ -287,21 +303,26 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: role ? JSON.stringify(message) : message.text,
-                    image: (message.images && message.images.length > 0) ? message.images[0].url : (message.image || ""),
+                    image: message.images && message.images.length > 0 ? message.images[0].url : message.image || '',
                     images: message.images || null,
                     replyUserName: this.replyUser.name,
                     replyContent: this.replyUser.content,
-                    replyUserEmail: this.replyUser.email,
+                    replyUserEmail: this.replyUser.email
                 };
-            } else if(message.specific){
+            } else if (message.specific) {
                 obj = {
                     name: role ? role : this.userInfo.name,
                     email: role ? role + '@uengine.org' : this.userInfo.email,
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
-                    image: typeof message == 'string' ? "" : ((message.images && message.images.length > 0) ? message.images[0].url : (message.image || "")),
-                    images: typeof message == 'string' ? null : (message.images || null),
+                    image:
+                        typeof message == 'string'
+                            ? ''
+                            : message.images && message.images.length > 0
+                            ? message.images[0].url
+                            : message.image || '',
+                    images: typeof message == 'string' ? null : message.images || null,
                     descriptions: message.descriptions,
                     checkPoints: message.checkPoints,
                     attainable: message.attainable,
@@ -309,7 +330,7 @@ export default {
                     relevant: message.relevant,
                     specific: message.specific,
                     time_bound: message.time_bound,
-                    title: message.title,
+                    title: message.title
                 };
             } else {
                 obj = {
@@ -318,10 +339,14 @@ export default {
                     role: role ? role : 'user',
                     timeStamp: Date.now(),
                     content: role ? (typeof message == 'string' ? message : JSON.stringify(message)) : message.text,
-                    image: typeof message == 'string' ? "" : ((message.images && message.images.length > 0) ? message.images[0].url : (message.image || "")),
-                    images: typeof message == 'string' ? null : (message.images || null),
+                    image:
+                        typeof message == 'string'
+                            ? ''
+                            : message.images && message.images.length > 0
+                            ? message.images[0].url
+                            : message.image || '',
+                    images: typeof message == 'string' ? null : message.images || null
                 };
-
             }
 
             return obj;
@@ -352,44 +377,43 @@ export default {
                 let chatObj = {
                     role: 'user'
                 };
-                if(this.generator){
-                    this.generator.model = "gpt-4o";
+                if (this.generator) {
+                    this.generator.model = 'gpt-4o';
                 }
                 if ((message.images && message.images.length > 0) || (message.image && message.image != '')) {
                     // 텍스트 컨텐츠 추가
                     chatObj.content = [
                         {
-                            "type": "text",
-                            "text": message.text
+                            type: 'text',
+                            text: message.text
                         }
                     ];
-                    
+
                     // 다중 이미지 처리
                     if (message.images && message.images.length > 0) {
                         message.images.forEach((image, index) => {
                             chatObj.content.push({
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": image.url
+                                type: 'image_url',
+                                image_url: {
+                                    url: image.url
                                 }
                             });
                         });
                     } else if (message.image && message.image != '') {
                         // 기존 단일 이미지 호환성
                         chatObj.content.push({
-                            "type": "image_url",
-                            "image_url": {
-                                "url": message.image
+                            type: 'image_url',
+                            image_url: {
+                                url: message.image
                             }
                         });
                     }
 
-                    this.generator.model = "gpt-4o-mini";
-
+                    this.generator.model = 'gpt-4o-mini';
                 } else {
-                    chatObj.content= message.text;
+                    chatObj.content = message.text;
                 }
-                
+
                 chatMsgs.push(chatObj);
                 this.generator.previousMessages = [this.generator.previousMessages[0], ...chatMsgs];
 
@@ -399,16 +423,17 @@ export default {
                     chatObj['image'] = imageToUse;
                 }
 
-                if(!this.messages){
-                    this.messages = []
+                if (!this.messages) {
+                    this.messages = [];
                 }
 
                 // 중복 메시지 체크: 동일한 내용의 메시지가 최근에 추가되었는지 확인
-                const isDuplicate = this.messages.some(msg => 
-                    msg.content === chatObj.content && 
-                    msg.role === chatObj.role && 
-                    msg.email === chatObj.email &&
-                    Math.abs(msg.timeStamp - chatObj.timeStamp) < 1000  // 1초 이내
+                const isDuplicate = this.messages.some(
+                    (msg) =>
+                        msg.content === chatObj.content &&
+                        msg.role === chatObj.role &&
+                        msg.email === chatObj.email &&
+                        Math.abs(msg.timeStamp - chatObj.timeStamp) < 1000 // 1초 이내
                 );
 
                 if (!isDuplicate) {
@@ -423,24 +448,28 @@ export default {
                     //     this.startGenerate();
                     // }
                     // if(message.mentionedUsers){
-                        if(this.ProcessGPTActive){
-                            // this.debouncedGenerate();
-                            this.startGenerate();
-                        } else if(message.mentionedUsers.some(user => user.id === 'system_id') || message.text.startsWith('>') || message.text.startsWith('!')){
-                            this.ProcessGPTActive = false
-                            this.startGenerate();
-                        }
+                    if (this.ProcessGPTActive) {
+                        // this.debouncedGenerate();
+                        this.startGenerate();
+                    } else if (
+                        message.mentionedUsers.some((user) => user.id === 'system_id') ||
+                        message.text.startsWith('>') ||
+                        message.text.startsWith('!')
+                    ) {
+                        this.ProcessGPTActive = false;
+                        this.startGenerate();
+                    }
                     // }
                 } else {
                     // this.debouncedGenerate();
                     this.startGenerate();
                 }
-                
+
                 this.replyUser = null;
             }
         },
         async startGenerate() {
-            if((!this.ProcessGPTActive || this.isSystemChat) && !this.isAgentChat){
+            if ((!this.ProcessGPTActive || this.isSystemChat) && !this.isAgentChat) {
                 this.messages.push({
                     role: 'system',
                     content: 'AI 생성중...',
@@ -454,28 +483,28 @@ export default {
                 this.prepareBackgroundMode(requestId);
             }
 
-            if(JSON.stringify(this.generator.previousMessages).length/2 > 128000){
-                const encoding = encodingForModel("gpt-4");
+            if (JSON.stringify(this.generator.previousMessages).length / 2 > 128000) {
+                const encoding = encodingForModel('gpt-4');
                 let totalTokenLength = 0;
                 const messages = this.generator.previousMessages;
-                const essentialMessage = messages[0]; 
+                const essentialMessage = messages[0];
                 let validMessages = [];
-    
+
                 const firstMessageTokens = encoding.encode(JSON.stringify(essentialMessage));
                 totalTokenLength += firstMessageTokens.length;
-    
+
                 for (let i = messages.length - 1; i > 0; i--) {
                     const message = messages[i];
                     const messageTokens = encoding.encode(JSON.stringify(message));
                     totalTokenLength += messageTokens.length;
                     // gpt-4 8192, gpt-4o 128000
                     if (totalTokenLength - 2000 > 128000) {
-                        break; 
+                        break;
                     }
-    
-                    validMessages.push(message); 
+
+                    validMessages.push(message);
                 }
-                
+
                 validMessages.reverse();
                 this.generator.previousMessages = [essentialMessage, ...validMessages];
             }
@@ -596,71 +625,72 @@ export default {
         onModelCreated(response) {
             this.$try({
                 context: this,
-                action: async () => { // Changed to arrow function
-                    if(!this.isVisionMode){
+                action: async () => {
+                    // Changed to arrow function
+                    if (!this.isVisionMode) {
                         // if(!this.ProcessGPTActive){
-                            if(this.messages && this.messages.length == 0){
-                                this.messages.push({
-                                    role: 'system',
-                                    content: 'AI 생성중...',
-                                    isLoading: true
-                                });
-                            }
-                            if(this.messages[this.messages.length - 1].role == 'user'){
-                                this.messages.push({
-                                    role: 'system',
-                                    content: 'AI 생성중...',
-                                    isLoading: true
-                                });
-                            }
-                            let messageWriting = this.messages[this.messages.length - 1];
-                            // let tmp;
-                            // try {
-                            //     tmp = JSON.parse(response);
-                            // } catch(e){
-                            //     try {
-                            //         tmp = partialParse(response);
-                            //         if(!tmp || Object.keys(tmp).length === 0){
-                            //             tmp = partialParse(response + '"');
-                            //         }
-                            //     } catch(e){
-                            //         tmp = this.extractJSON(response);
-                            //         try {
-                            //             tmp = JSON.parse(tmp);
-                            //         } catch(e){
-                            //             tmp = partialParse(tmp)
-                            //         }
-                            //     }
-                            // }
-                            messageWriting.content = response;
+                        if (this.messages && this.messages.length == 0) {
+                            this.messages.push({
+                                role: 'system',
+                                content: 'AI 생성중...',
+                                isLoading: true
+                            });
+                        }
+                        if (this.messages[this.messages.length - 1].role == 'user') {
+                            this.messages.push({
+                                role: 'system',
+                                content: 'AI 생성중...',
+                                isLoading: true
+                            });
+                        }
+                        let messageWriting = this.messages[this.messages.length - 1];
+                        // let tmp;
+                        // try {
+                        //     tmp = JSON.parse(response);
+                        // } catch(e){
+                        //     try {
+                        //         tmp = partialParse(response);
+                        //         if(!tmp || Object.keys(tmp).length === 0){
+                        //             tmp = partialParse(response + '"');
+                        //         }
+                        //     } catch(e){
+                        //         tmp = this.extractJSON(response);
+                        //         try {
+                        //             tmp = JSON.parse(tmp);
+                        //         } catch(e){
+                        //             tmp = partialParse(tmp)
+                        //         }
+                        //     }
+                        // }
+                        messageWriting.content = response;
 
-                            if(!this.isMentoMode && response) {
-                                if(!response.includes("}")){
-                                    messageWriting.jsonContent = this.extractJSON(response + "}");
-                                } else {
-                                    messageWriting.jsonContent = this.extractJSON(response);
-                                }
+                        if (!this.isMentoMode && response) {
+                            if (!response.includes('}')) {
+                                messageWriting.jsonContent = this.extractJSON(response + '}');
+                            } else {
+                                messageWriting.jsonContent = this.extractJSON(response);
                             }
-        
-                            if (messageWriting.jsonContent) {
-                                let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
-                                const match = messageWriting.jsonContent.match(regex);
-                                if (match) {
-                                    messageWriting.content = messageWriting.jsonContent.replace(match[1], '');
-                                    regex = /`{3}(?:json|markdown)?\s?\n/g;
-                                    messageWriting.content = messageWriting.jsonContent.replace(regex, '');
-                                    messageWriting.content = messageWriting.jsonContent.replace(/\s?\n?`{3}?\s?\n/g, '');
-                                    messageWriting.content = messageWriting.jsonContent.replace(/`{3}/g, '');
-                                }
+                        }
+
+                        if (messageWriting.jsonContent) {
+                            let regex = /^.*?`{3}(?:json|markdown)?\n(.*?)`{3}.*?$/s;
+                            const match = messageWriting.jsonContent.match(regex);
+                            if (match) {
+                                messageWriting.content = messageWriting.jsonContent.replace(match[1], '');
+                                regex = /`{3}(?:json|markdown)?\s?\n/g;
+                                messageWriting.content = messageWriting.jsonContent.replace(regex, '');
+                                messageWriting.content = messageWriting.jsonContent.replace(/\s?\n?`{3}?\s?\n/g, '');
+                                messageWriting.content = messageWriting.jsonContent.replace(/`{3}/g, '');
                             }
-                            this.afterModelCreated(response);
+                        }
+                        this.afterModelCreated(response);
                         // }
                     }
                 },
                 onFail: () => {
                     this.onModelStopped();
                 }
-            })
+            });
         },
         deleteVectorStorage(id) {
             let db;
@@ -671,58 +701,55 @@ export default {
             request.onsuccess = (event) => {
                 const db = event.target.result;
                 db.transaction(['documents'], 'readwrite').objectStore('documents').delete(id);
-                
 
                 db.close();
             };
         },
         onGenerationFinished(response, chatRoomId = null) {
-            var me = this
-            if(this.isVisionMode){
-                this.generateAgentAI(response)
+            var me = this;
+            if (this.isVisionMode) {
+                this.generateAgentAI(response);
             } else {
                 // if(!this.ProcessGPTActive){
-                    if(this.messages && this.messages.length == 0){
-                        this.messages.push({
-                            role: 'system',
-                            content: 'AI 생성중...',
-                            isLoading: true
-                        });
-                    }
-                    let messageWriting = this.messages[this.messages.length - 1];
-                    messageWriting.timeStamp = Date.now();
-    
-                    this.messages.forEach((message) => {
-                        if (message.role == 'system') {
-                            delete message.isLoading;
-                        }
+                if (this.messages && this.messages.length == 0) {
+                    this.messages.push({
+                        role: 'system',
+                        content: 'AI 생성중...',
+                        isLoading: true
                     });
+                }
+                let messageWriting = this.messages[this.messages.length - 1];
+                messageWriting.timeStamp = Date.now();
+
+                this.messages.forEach((message) => {
+                    if (message.role == 'system') {
+                        delete message.isLoading;
+                    }
+                });
                 // }
-    
+
                 let jsonData = response;
                 if (typeof response == 'string' && !this.isMentoMode) {
                     jsonData = this.extractJSON(response);
-                    if(jsonData && jsonData.includes('{')){
+                    if (jsonData && jsonData.includes('{')) {
                         try {
                             jsonData = JSON.parse(jsonData);
-                        } catch(e) {
+                        } catch (e) {
                             try {
-                                jsonData = partialParse(jsonData)
-                            } catch(e) {
-                                
-                            }
+                                jsonData = partialParse(jsonData);
+                            } catch (e) {}
                         }
                     } else {
-                        jsonData = null
+                        jsonData = null;
                     }
                 }
-                
-                if(jsonData){
+
+                if (jsonData) {
                     this.afterGenerationFinished(jsonData, chatRoomId);
                 } else {
                     this.afterGenerationFinished(response, chatRoomId);
                 }
-                
+
                 this.EventBus.emit('scroll_update');
             }
         },
@@ -741,7 +768,7 @@ export default {
 
         async onError(error) {
             console.log('error', error);
-            if (error.message)  {
+            if (error.message) {
                 let messageWriting = this.messages[this.messages.length - 1];
                 if (messageWriting.role == 'system' && messageWriting.isLoading) {
                     delete messageWriting.isLoading;
@@ -786,7 +813,7 @@ export default {
             // 정규 표현식 정의
             //const regex = /^.*?`{3}(?:json)?\n(.*?)`{3}.*?$/s;
             let regex = /```(?:json)?\s*([\s\S]*?)\s*```/;
-            
+
             // 정규 표현식을 사용하여 입력 문자열에서 JSON 부분 추출
             let match = inputString.match(regex);
             // 매치된 결과가 있다면, 첫 번째 캡쳐 그룹(즉, JSON 부분)을 반환
@@ -799,7 +826,7 @@ export default {
                     });
                 else return match[1];
             } else {
-                regex = /\{[\s\S]*\}/
+                regex = /\{[\s\S]*\}/;
                 match = inputString.match(regex);
                 return match && match[0] ? match[0] : null;
             }
@@ -895,10 +922,9 @@ export default {
 
         // 채팅방 변경 시 백그라운드 모드 처리
         handleChatRoomChange() {
-            
             // 현재 채팅방 ID 백업 (새로운 채팅방으로 변경되기 전의 ID)
             const currentChatRoomId = this.chatRoomId;
-            
+
             // 진행 중인 모든 요청을 백그라운드로 전환
             this.activeBackgroundRequests.forEach((request, requestId) => {
                 if (this.generator && this.generator.state === 'running') {
@@ -914,7 +940,7 @@ export default {
 
         createTest() {
             return null;
-        },
+        }
         // createUEngine(process) {
         //     const elements = {};
         //     const relations = {};

@@ -11,7 +11,7 @@ import ProcessInstanceChat from '@/components/ProcessInstanceChat.vue';
 export default {
     components: {
         WorkItem,
-        ProcessInstanceChat,
+        ProcessInstanceChat
     },
     computed: {
         componentName() {
@@ -20,8 +20,7 @@ export default {
             } else {
                 return 'work-item';
             }
-        },
-    },
-}
+        }
+    }
+};
 </script>
-

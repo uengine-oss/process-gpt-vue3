@@ -14,14 +14,21 @@
                         </v-btn>
                     </template>
 
-                    <v-card style="padding:30px;">
+                    <v-card style="padding: 30px">
                         <v-row>
                             <v-col>
                                 <v-row>
-                                    <img v-for="(profileImage, name) in profileImages"
-                                        @click="() => imageChange(profileImage)" class="change-profile-image"
-                                        :key="name" :src="profileImage" width="100" height="100" alt="Mathew"
-                                        style="border-radius: 50%; padding:10px;" />
+                                    <img
+                                        v-for="(profileImage, name) in profileImages"
+                                        @click="() => imageChange(profileImage)"
+                                        class="change-profile-image"
+                                        :key="name"
+                                        :src="profileImage"
+                                        width="100"
+                                        height="100"
+                                        alt="Mathew"
+                                        style="border-radius: 50%; padding: 10px"
+                                    />
                                 </v-row>
                             </v-col>
                         </v-row>
@@ -29,7 +36,7 @@
                 </v-dialog>
             </div>
         </v-card-item>
-    </div>    
+    </div>
 </template>
 
 <script>
@@ -48,7 +55,7 @@ export default {
             profile: '',
             imageDialog: false,
             profileImages
-        }
+        };
     },
     watch: {
         modelValue: {
@@ -62,7 +69,7 @@ export default {
                 this.$emit('update:modelValue', newVal);
             },
             deep: true
-        },
+        }
     },
     mounted() {
         this.profile = this.modelValue;
@@ -73,5 +80,5 @@ export default {
             this.imageDialog = false;
         }
     }
-}
+};
 </script>

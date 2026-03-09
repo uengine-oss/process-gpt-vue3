@@ -1,4 +1,4 @@
-import StorageBase from "./StorageBase";
+import StorageBase from './StorageBase';
 
 export default class CommonStorageBase extends StorageBase {
     constructor(client) {

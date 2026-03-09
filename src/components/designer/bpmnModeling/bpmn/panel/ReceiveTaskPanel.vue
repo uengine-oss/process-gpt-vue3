@@ -80,12 +80,11 @@
                     <div>{{ $t('BpmnPropertyPanel.checkPoints') }}</div>
                     <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts>
                 </v-row> -->
-                <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
+                <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{
+                    $t('ReceiveTaskPanel.dataMapping')
+                }}</v-btn>
                 <v-row class="ma-0 pa-0 mb-4">
-                    <v-checkbox
-                        v-model="copyUengineProperties.skipIfNotFound"
-                        :label="$t('ReceiveTaskPanel.skipIfNotFound')"
-                    ></v-checkbox>
+                    <v-checkbox v-model="copyUengineProperties.skipIfNotFound" :label="$t('ReceiveTaskPanel.skipIfNotFound')"></v-checkbox>
                 </v-row>
             </div>
         </div>
@@ -106,15 +105,13 @@
             <v-row class="ma-0 pa-0 mb-4">
                 <v-text-field v-model="copyUengineProperties.from" :label="$t('ReceiveTaskPanel.descriptionFrom')"></v-text-field>
             </v-row>
-            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
+            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{
+                $t('ReceiveTaskPanel.dataMapping')
+            }}</v-btn>
         </div>
         <!-- Lead Time -->
         <div class="mt-4">
-            <LeadTimeInput
-                v-model="copyUengineProperties.leadTime"
-                :label="$t('leadTime.title') || 'Lead Time'"
-                :disabled="isViewMode"
-            />
+            <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
 
         <div class="mt-3">
@@ -129,7 +126,18 @@
         <div class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
             <div class="d-flex flex-wrap gap-2 mb-3">
-                <v-btn v-for="color in presetColors" :key="color.value" :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }" size="small" icon :disabled="isViewMode" @click="setTaskColor(color.value)">
+                <v-btn
+                    v-for="color in presetColors"
+                    :key="color.value"
+                    :style="{
+                        backgroundColor: color.value,
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                    }"
+                    size="small"
+                    icon
+                    :disabled="isViewMode"
+                    @click="setTaskColor(color.value)"
+                >
                     <v-icon v-if="copyUengineProperties.taskColor === color.value" size="small" color="white">mdi-check</v-icon>
                 </v-btn>
             </div>
@@ -148,12 +156,28 @@
                         </v-card-actions>
                     </v-card>
                 </v-menu>
-                <v-btn v-if="copyUengineProperties.taskColor" variant="text" size="small" color="error" :disabled="isViewMode" @click="resetTaskColor">
+                <v-btn
+                    v-if="copyUengineProperties.taskColor"
+                    variant="text"
+                    size="small"
+                    color="error"
+                    :disabled="isViewMode"
+                    @click="resetTaskColor"
+                >
                     <v-icon size="small">mdi-close</v-icon>{{ $t('BpmnPropertyPanel.resetColor') || '초기화' }}
                 </v-btn>
             </v-row>
             <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
-                <div :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }" class="mr-2"></div>
+                <div
+                    :style="{
+                        backgroundColor: copyUengineProperties.taskColor,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc'
+                    }"
+                    class="mr-2"
+                ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
             </div>
         </div>
@@ -202,7 +226,7 @@ export default {
         LeadTimeInput
     },
     created() {
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
+        if (!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
     },
     data() {
         return {
@@ -321,7 +345,7 @@ export default {
                     if (nodeKey.indexOf(`${key}.`) != -1) {
                         return nodeKey.replace(`${key}.`, `[${key}].`);
                     }
-                    
+
                     return null;
                 };
 
@@ -432,7 +456,7 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uengineProperties', this.copyUengineProperties);
@@ -466,9 +490,13 @@ export default {
                     const element = elementRegistry.get(this.element?.id);
                     if (element) {
                         const gfx = elementRegistry.getGraphics(element);
-                        if (gfx) { graphicsFactory.update('shape', element, gfx); }
+                        if (gfx) {
+                            graphicsFactory.update('shape', element, gfx);
+                        }
                     }
-                } catch (e) { console.warn('Could not refresh task visual:', e); }
+                } catch (e) {
+                    console.warn('Could not refresh task visual:', e);
+                }
             }
         }
     }

@@ -36,14 +36,13 @@ function handleResize() {
 }
 
 onMounted(() => {
-  window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize);
 });
 
 // 컴포넌트가 언마운트될 때 이벤트 리스너 제거
 onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
+    window.removeEventListener('resize', handleResize);
 });
-
 
 // 현재 인스턴스를 가져옵니다.
 const instance = getCurrentInstance();
@@ -64,25 +63,20 @@ const isChatHidden = computed(() => {
 });
 const canvasReSize = computed(() => {
     // globalState의 isZoomed 또는 isChatHidden 상태에 따라 width 스타일 속성을 반환합니다.
-    if(globalState?.state.isZoomed || globalState?.state.isChatHidden) {
+    if (globalState?.state.isZoomed || globalState?.state.isChatHidden) {
         return 'width: 100%;';
     } else if (globalState?.state.isRightZoomed) {
         return 'display:none';
     }
-    return ""
+    return '';
 });
 // 조건에 따라 슬롯 이름을 결정하는 계산된 속성
 const slotName = computed(() => {
     const path = route.path;
     // 1279px 이하일 때 특정 경로에서는 leftpart를 right-part에 표시
-    if (isWidthUnder1279.value && (
-        path === '/definition-map' || 
-        /^\/definitions\//.test(path) || 
-        /^\/dmn\//.test(path)
-    )) {
+    if (isWidthUnder1279.value && (path === '/definition-map' || /^\/definitions\//.test(path) || /^\/dmn\//.test(path))) {
         return 'leftpart';
-    }
-    else {
+    } else {
         return 'rightpart';
     }
 });
@@ -107,7 +101,7 @@ const menuName = computed(() => {
     if (props.customMenuName) {
         return props.customMenuName;
     }
-    
+
     const path = route.path;
     if (path === '/chats') {
         return proxy.$t('AppBaseCard.friends');
@@ -123,7 +117,7 @@ const menuName = computed(() => {
 const heightClass = computed(() => {
     const path = route.path;
     const isTargetPath = path === '/' || path.includes('instancelist');
-    
+
     if (isTargetPath) {
         return isMobile.value ? 'app-base-card-is-mobile-height' : 'app-base-card-is-pc-height';
     }
@@ -135,7 +129,7 @@ const menuButtonStyle = computed(() => {
     const path = route.path;
     const isTargetPath = path === '/' || path.includes('instancelist');
     const shouldHideForMobile = isTargetPath && isMobile.value;
-    
+
     if (globalState?.state.isRightZoomed || shouldHideForMobile) {
         return 'display:none;';
     }
@@ -147,25 +141,25 @@ const startResize = (e: MouseEvent) => {
     isResizing.value = true;
     startX.value = e.clientX;
     startWidth.value = leftPartWidth.value;
-    
+
     document.addEventListener('mousemove', doResize);
     document.addEventListener('mouseup', stopResize);
-    
+
     // 드래그 중 텍스트 선택 방지
     e.preventDefault();
 };
 
 const doResize = (e: MouseEvent) => {
     if (!isResizing.value) return;
-    
+
     const container = document.querySelector('.mainbox');
     if (!container) return;
-    
+
     const containerWidth = container.clientWidth;
     const deltaX = e.clientX - startX.value;
     const deltaPercent = (deltaX / containerWidth) * 100;
     const newWidth = startWidth.value + deltaPercent;
-    
+
     // 최소 20%, 최대 70%로 제한
     if (newWidth >= 20 && newWidth <= 70) {
         leftPartWidth.value = newWidth;
@@ -188,13 +182,13 @@ const leftPartStyle = computed(() => {
     if (isChatPage.value) {
         return `width: ${leftPartWidth.value}%;`;
     }
-    
+
     const path = route.path;
     // /definitions/:id, /dmn/:id 같은 BPMN 편집 페이지에서는 width 지정 안 함
     if (/^\/definitions\//.test(path) || /^\/dmn\//.test(path)) {
         return '';
     }
-    
+
     return 'width: 320px;'; // 기본 고정 너비
 });
 
@@ -210,9 +204,11 @@ const rightPartStyle = computed(() => {
 
 <template>
     <!---/Left chat list -->
-    <div class="d-flex mainbox is-work-height" :class="[heightClass]"
+    <div
+        class="d-flex mainbox is-work-height"
+        :class="[heightClass]"
         :style="!$globalState.state.isRightZoomed ? '' : 'height:100vh;'"
-        style="overflow: auto;"
+        style="overflow: auto"
     >
         <div class="left-part" v-if="lgAndUp && !props.isInstanceChat" :style="[canvasReSize, leftPartStyle]">
             <!-- <perfect-scrollbar style="height: calc(100vh - 290px)"> -->
@@ -221,7 +217,7 @@ const rightPartStyle = computed(() => {
         </div>
 
         <!-- 리사이즈 핸들 (/chats 페이지에서만 표시) -->
-        <div 
+        <div
             v-if="lgAndUp && !props.isInstanceChat && !$globalState.state.isZoomed && !$globalState.state.isRightZoomed && isChatPage"
             class="resize-handle"
             @mousedown="startResize"
@@ -241,10 +237,7 @@ const rightPartStyle = computed(() => {
                         :style="menuButtonStyle"
                         v-bind="tooltipProps"
                     >
-                        <Icons :icon="'list-bold-duotone'"
-                            :size="16"
-                            :color="'#ffffff'"
-                        />
+                        <Icons :icon="'list-bold-duotone'" :size="16" :color="'#ffffff'" />
                     </v-btn>
                 </template>
                 <span>{{ menuName }}</span>
@@ -255,9 +248,7 @@ const rightPartStyle = computed(() => {
         <!---right chat conversation -->
     </div>
 
-    <v-navigation-drawer temporary v-model="sDrawer" top v-if="!lgAndUp"
-        class="mobile-menu-nav mobile-drawer-flex"
-    >
+    <v-navigation-drawer temporary v-model="sDrawer" top v-if="!lgAndUp" class="mobile-menu-nav mobile-drawer-flex">
         <div v-if="isMobile" class="mobile-drawer-header-bar">
             <span class="mobile-drawer-header-title">{{ menuName }}</span>
             <v-btn variant="text" density="compact" icon @click="closeDrawer">
@@ -265,10 +256,7 @@ const rightPartStyle = computed(() => {
             </v-btn>
         </div>
         <v-card-text class="pa-0 mobile-left-menu mobile-drawer-content">
-            <slot 
-                :name="route.path === '/definition-map' ? 'rightpart' : 'mobileLeftContent'" 
-                :closeDrawer="handleCloseDrawer"
-            ></slot>
+            <slot :name="route.path === '/definition-map' ? 'rightpart' : 'mobileLeftContent'" :closeDrawer="handleCloseDrawer"></slot>
         </v-card-text>
     </v-navigation-drawer>
 </template>

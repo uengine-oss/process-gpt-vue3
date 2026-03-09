@@ -12,7 +12,12 @@ import InitialSettingForm from '@/components/auth/InitialSettingForm.vue';
                     <div class="position-relative"><Logo /></div>
                 </div>
                 <div class="">
-                    <img src="@/assets/images/backgrounds/login-bg.svg" height="450" class="position-relative d-none d-lg-flex" alt="login-background" />
+                    <img
+                        src="@/assets/images/backgrounds/login-bg.svg"
+                        height="450"
+                        class="position-relative d-none d-lg-flex"
+                        alt="login-background"
+                    />
                 </div>
             </v-col>
             <v-col cols="12" lg="4" xl="4" xxl="3" class="d-flex align-center justify-center bg-surface">
@@ -26,4 +31,4 @@ import InitialSettingForm from '@/components/auth/InitialSettingForm.vue';
             </v-col>
         </v-row>
     </div>
-</template> 
+</template>

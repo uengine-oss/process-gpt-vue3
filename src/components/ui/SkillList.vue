@@ -5,30 +5,22 @@
             <span class="ml-2 text-caption">{{ $t('SkillList.loading') }}</span>
         </div>
 
-        <div v-else-if="skillList.length === 0" class="empty-state">
-            <v-icon size="32" color="grey-lighten-1">mdi-lightning-bolt-outline</v-icon>
-            <span class="text-caption text-grey">{{ $t('SkillList.empty') }}</span>
+        <div v-else-if="skillList.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{ $t('SkillList.empty') || '등록된 스킬이 없습니다' }}
         </div>
 
-        <ExpandableList
-            v-else
-            :items="skillList"
-            :limit="5"
-            @expanded="onExpanded"
-            @collapsed="onCollapsed"
-        >
+        <ExpandableList v-else :items="skillList" :limit="5" @expanded="onExpanded" @collapsed="onCollapsed">
             <template #items="{ displayedItems }">
                 <div class="skill-items">
-                    <v-tooltip
-                        v-for="skill in displayedItems"
-                        bottom
-                        :key="skill.name"
-                        :text="skill.name || 'Unnamed Skill'"
-                    >
+                    <v-tooltip v-for="skill in displayedItems" bottom :key="skill.name" :text="skill.name || 'Unnamed Skill'">
                         <template v-slot:activator="{ props }">
                             <div
                                 v-bind="props"
-                                :class="['skill-item', 'sidebar-list-hover-bg', { 'sidebar-list-hover-bg--active': isSkillSelected(skill.name) }]"
+                                :class="[
+                                    'skill-item',
+                                    'sidebar-list-hover-bg',
+                                    { 'sidebar-list-hover-bg--active': isSkillSelected(skill.name) }
+                                ]"
                                 @click="goToSkillDetail(skill.name)"
                             >
                                 <v-icon size="20">mdi-lightning-bolt-outline</v-icon>
@@ -68,7 +60,7 @@ export default {
         this.updateSelectedSkill();
     },
     watch: {
-        '$route'() {
+        $route() {
             this.updateSelectedSkill();
         }
     },
@@ -78,12 +70,14 @@ export default {
             try {
                 const result = await backend.getTenantSkills(window.$tenantName);
                 const tenantSkills = result.skills;
-                const list = Array.isArray(tenantSkills) ? tenantSkills : (tenantSkills?.skills || []);
+                const list = Array.isArray(tenantSkills) ? tenantSkills : tenantSkills?.skills || [];
 
-                this.skillList = list.map(skill => ({
-                    name: skill.name || skill.skill_name,
-                    description: skill.description || ''
-                })).filter(s => s.name);
+                this.skillList = list
+                    .map((skill) => ({
+                        name: skill.name || skill.skill_name,
+                        description: skill.description || ''
+                    }))
+                    .filter((s) => s.name);
             } catch (error) {
                 console.error(this.$t('SkillList.loadFailed'), error);
                 this.skillList = [];

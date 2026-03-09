@@ -6,8 +6,23 @@ const ROOT = process.cwd();
 const SRC_DIR = path.join(ROOT, "src");
 const OUT_DIR = path.join(ROOT, ".tmp", "semgrep-vue-src");
 const REPORTS_DIR = path.join(ROOT, "reports");
+const CACHE_DIR = path.join(ROOT, ".cache");
 const MAP_FILE = path.join(REPORTS_DIR, "semgrep-vue-map.json");
 const SEMGREP_REPORT = path.join(REPORTS_DIR, "semgrep-vue.json");
+const SEMGREP_LOG_FILE = path.join(REPORTS_DIR, "sast-vue-logs", "semgrep-internal.log");
+const SEMGREP_SETTINGS_FILE = path.join(CACHE_DIR, "semgrep", "settings.yml");
+const SEMGREP_VERSION_CACHE_PATH = path.join(CACHE_DIR, "semgrep", "version-check");
+
+function resolveCertFile() {
+  const candidates = [
+    process.env.SSL_CERT_FILE,
+    "/etc/ssl/cert.pem",
+    "/usr/local/etc/openssl@3/cert.pem",
+    "/opt/homebrew/etc/openssl@3/cert.pem",
+  ].filter(Boolean);
+
+  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
 
 function walkVueFiles(dir, acc = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -75,23 +90,50 @@ function writeExtractedScripts(vueFiles) {
 }
 
 function runSemgrep() {
+  if (fs.existsSync(SEMGREP_REPORT)) {
+    fs.rmSync(SEMGREP_REPORT, { force: true });
+  }
+
+  fs.mkdirSync(path.dirname(SEMGREP_LOG_FILE), { recursive: true });
+  fs.mkdirSync(path.dirname(SEMGREP_SETTINGS_FILE), { recursive: true });
+  fs.mkdirSync(path.dirname(SEMGREP_VERSION_CACHE_PATH), { recursive: true });
+
+  const certFile = resolveCertFile();
+  const env = {
+    ...process.env,
+    SEMGREP_LOG_FILE,
+    SEMGREP_SETTINGS_FILE,
+    SEMGREP_VERSION_CACHE_PATH,
+  };
+
+  if (certFile) {
+    env.SSL_CERT_FILE = certFile;
+  }
+
   const args = [
     "scan",
     "--config",
     "./semgrep-rules",
+    "--metrics",
+    "off",
     "--exclude",
     "node_modules",
     "--exclude",
     "dist",
     "--exclude",
     "public",
+    "--no-git-ignore",
     "--json",
     "--output",
     SEMGREP_REPORT,
     OUT_DIR,
   ];
 
-  const result = spawnSync("semgrep", args, { stdio: "inherit", cwd: ROOT });
+  const result = spawnSync("semgrep", args, {
+    stdio: "inherit",
+    cwd: ROOT,
+    env,
+  });
   if (result.error) {
     console.error(`Failed to run semgrep: ${result.error.message}`);
     process.exit(2);

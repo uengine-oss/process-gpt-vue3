@@ -70,9 +70,8 @@ const filteredCards = computed(() => {
                                     </span>
                                 </div>
                                 <div class="ml-auto">
-
                                     <v-btn v-if="card.follow == 1" variant="outlined" color="primary"> Followed</v-btn>
-                                    <v-btn v-else  color="primary"> Follow</v-btn>
+                                    <v-btn v-else color="primary"> Follow</v-btn>
                                 </div>
                             </div>
                         </v-card-text>

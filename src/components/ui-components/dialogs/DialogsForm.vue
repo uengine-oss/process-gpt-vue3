@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue';
 const dialog = ref(false);
 </script>
 
@@ -18,18 +18,20 @@ const dialog = ref(false);
                         <span class="text-h5">User Profile</span>
                     </v-card-title>
                     <v-card-text>
-
                         <v-row>
                             <v-col cols="12" sm="6" md="4">
                                 <v-text-field label="Legal first name*" required></v-text-field>
                             </v-col>
                             <v-col cols="12" sm="6" md="4">
-                                <v-text-field label="Legal middle name"
-                                    hint="example of helper text only on focus"></v-text-field>
+                                <v-text-field label="Legal middle name" hint="example of helper text only on focus"></v-text-field>
                             </v-col>
                             <v-col cols="12" sm="6" md="4">
-                                <v-text-field label="Legal last name*" hint="example of persistent helper text"
-                                    persistent-hint required></v-text-field>
+                                <v-text-field
+                                    label="Legal last name*"
+                                    hint="example of persistent helper text"
+                                    persistent-hint
+                                    required
+                                ></v-text-field>
                             </v-col>
                             <v-col cols="12">
                                 <v-text-field label="Email*" required></v-text-field>
@@ -41,17 +43,23 @@ const dialog = ref(false);
                                 <v-select :items="['0-17', '18-29', '30-54', '54+']" label="Age*" required></v-select>
                             </v-col>
                             <v-col cols="12" sm="6">
-                                <v-autocomplete :items="[
-            'Skiing',
-            'Ice hockey',
-            'Soccer',
-            'Basketball',
-            'Hockey',
-            'Reading',
-            'Writing',
-            'Coding',
-            'Basejump',
-        ]" label="Interests" multiple density="comfortable" variant="outlined"></v-autocomplete>
+                                <v-autocomplete
+                                    :items="[
+                                        'Skiing',
+                                        'Ice hockey',
+                                        'Soccer',
+                                        'Basketball',
+                                        'Hockey',
+                                        'Reading',
+                                        'Writing',
+                                        'Coding',
+                                        'Basejump'
+                                    ]"
+                                    label="Interests"
+                                    multiple
+                                    density="comfortable"
+                                    variant="outlined"
+                                ></v-autocomplete>
                             </v-col>
                         </v-row>
 
@@ -60,12 +68,8 @@ const dialog = ref(false);
 
                     <v-card-actions>
                         <v-spacer></v-spacer>
-                        <v-btn color="error" text @click="dialog = false" variant="tonal" class="px-4 rounded-pill">
-                            Close
-                        </v-btn>
-                        <v-btn color="success" text @click="dialog = false" variant="tonal" class="px-4 rounded-pill">
-                            Save
-                        </v-btn>
+                        <v-btn color="error" text @click="dialog = false" variant="tonal" class="px-4 rounded-pill"> Close </v-btn>
+                        <v-btn color="success" text @click="dialog = false" variant="tonal" class="px-4 rounded-pill"> Save </v-btn>
                     </v-card-actions>
                 </v-container>
             </v-card>

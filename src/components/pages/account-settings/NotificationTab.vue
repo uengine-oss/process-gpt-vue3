@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import {notificationTb} from '@/_mockApis/components/pages/accountNotification';
+import { notificationTb } from '@/_mockApis/components/pages/accountNotification';
 const switchoff3 = ref(false);
 </script>
 <template>
@@ -29,7 +29,7 @@ const switchoff3 = ref(false);
                             <h5 class="text-subtitle-1 text-grey100">{{ list.subtitle }}</h5>
                         </div>
                         <div class="ml-auto mr-1 pa-sm-0 pl-sm-1 pa-6 pl-7">
-                            <v-switch  :model-value="list.switch" hide-details color="primary"></v-switch>
+                            <v-switch :model-value="list.switch" hide-details color="primary"></v-switch>
                         </div>
                     </div>
                 </v-card-item>

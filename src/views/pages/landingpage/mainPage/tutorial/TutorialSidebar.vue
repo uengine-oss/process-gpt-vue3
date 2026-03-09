@@ -4,56 +4,44 @@
 
         <div class="tutorial-mobile-menu-button" @click="toggleMobileSidebar" v-show="isMobileView">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
         </div>
 
         <!-- 모바일 오버레이 -->
-        <div 
-            class="mobile-overlay"
-            v-if="isMobileSidebarOpen && isMobileView"
-            @click="closeMobileSidebar"
-        ></div>
+        <div class="mobile-overlay" v-if="isMobileSidebarOpen && isMobileView" @click="closeMobileSidebar"></div>
 
         <!-- 사이드바 -->
-        <div 
+        <div
             class="tutorial-sidebar"
-            :class="{ 
+            :class="{
                 'mobile-open': isMobileSidebarOpen && isMobileView,
                 'mobile-closed': !isMobileSidebarOpen && isMobileView
             }"
         >
             <div class="sidebar-content">
-            <div
-                v-for="(section, index) in tutorialSections"
-                :key="section.title"
-                class="section-group"
-                :class="{ 'border-bottom': index < tutorialSections.length - 1 }"
-            >
-                <h3 class="section-title">{{ section.title }}</h3>
-                
-                <ul class="page-list">
-                    <li
-                        v-for="page in section.items"
-                        :key="page.path"
-                        :class="getClassesForItem(page)"
-                        @click="selectPage(page)"
-                    >
-                        <span
-                            class="active-indicator"
-                            :class="{ 'active': currentPage?.path === page.path }"
-                        ></span>
-                        <span class="page-title">{{ page.title }}</span>
-                    </li>
-                </ul>
-            </div>
+                <div
+                    v-for="(section, index) in tutorialSections"
+                    :key="section.title"
+                    class="section-group"
+                    :class="{ 'border-bottom': index < tutorialSections.length - 1 }"
+                >
+                    <h3 class="section-title">{{ section.title }}</h3>
+
+                    <ul class="page-list">
+                        <li v-for="page in section.items" :key="page.path" :class="getClassesForItem(page)" @click="selectPage(page)">
+                            <span class="active-indicator" :class="{ active: currentPage?.path === page.path }"></span>
+                            <span class="page-title">{{ page.title }}</span>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import markdownLoader from './utils/markdownLoader.js'
+import markdownLoader from './utils/markdownLoader.js';
 
 export default {
     name: 'TutorialSidebar',
@@ -71,7 +59,7 @@ export default {
         return {
             isMobileSidebarOpen: false,
             windowWidth: window.innerWidth
-        }
+        };
     },
     computed: {
         isMobileView() {
@@ -79,20 +67,20 @@ export default {
         },
         tutorialSections() {
             const sections = [];
-            Object.keys(this.sectionsData).forEach(sectionTitle => {
-                const items = this.sectionsData[sectionTitle].map(item => ({
+            Object.keys(this.sectionsData).forEach((sectionTitle) => {
+                const items = this.sectionsData[sectionTitle].map((item) => ({
                     path: item.path, // 라우트 구조에서 정의된 path 사용
                     title: item.title,
                     markdownFile: item.fileName,
                     order: item.order
                 }));
-                
+
                 sections.push({
                     title: sectionTitle,
                     items: items.sort((a, b) => a.order - b.order)
                 });
             });
-            
+
             // 이미 정렬된 순서로 온다 (라우트 구조에서 정의된 순서)
             return sections;
         }
@@ -109,8 +97,8 @@ export default {
         getClassesForItem(page) {
             return {
                 'page-item': true,
-                'active': this.currentPage?.path === page.path,
-                'inactive': this.currentPage?.path !== page.path
+                active: this.currentPage?.path === page.path,
+                inactive: this.currentPage?.path !== page.path
             };
         },
 
@@ -118,27 +106,27 @@ export default {
         selectPageByPath(targetPath) {
             // 모든 섹션에서 해당 경로의 페이지 찾기
             for (const section of this.tutorialSections) {
-                const foundPage = section.items.find(item => {
+                const foundPage = section.items.find((item) => {
                     // 1. 정확한 경로 매칭
                     if (item.path === targetPath) {
                         return true;
                     }
-                    
+
                     // 2. 파일명 기반 매칭 (admin-guide.md -> admin-guide)
                     const fileBasedPath = item.markdownFile.replace('.md', '');
                     if (fileBasedPath === targetPath) {
                         return true;
                     }
-                    
+
                     // 3. 경로 끝부분 매칭 (/process-gpt/admin-guide/ -> admin-guide)
                     const pathEndMatch = item.path.replace('/process-gpt/', '').replace(/\/+$/, '');
                     if (pathEndMatch === targetPath) {
                         return true;
                     }
-                    
+
                     return false;
                 });
-                
+
                 if (foundPage) {
                     this.selectPage(foundPage);
                     return true;
@@ -168,17 +156,17 @@ export default {
     },
 
     emits: ['page-selected', 'tutorial-link-clicked'],
-    
+
     mounted() {
         // 윈도우 리사이즈 이벤트 리스너 등록
         window.addEventListener('resize', this.handleResize);
     },
 
-    beforeDestroy() {
+    beforeUnmount() {
         // 윈도우 리사이즈 이벤트 리스너 제거
         window.removeEventListener('resize', this.handleResize);
     }
-}
+};
 </script>
 
 <style scoped>
@@ -207,8 +195,6 @@ export default {
     font-weight: 600;
     color: #1f2937;
 }
-
-
 
 .sidebar-content {
     flex: 1;
@@ -336,18 +322,16 @@ export default {
         height: 100vh;
         z-index: 1001;
         transition: left 0.3s ease;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     }
-    
+
     .tutorial-sidebar.mobile-open {
         left: 0;
     }
-    
+
     .tutorial-sidebar.mobile-closed {
         left: -300px;
     }
-
-
 
     .sidebar-content {
         flex: 1;
@@ -355,7 +339,7 @@ export default {
         padding: 16px 0;
         max-height: 100vh;
     }
-    
+
     .section-group {
         padding: 0 16px 12px 16px;
     }

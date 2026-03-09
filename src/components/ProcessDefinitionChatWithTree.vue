@@ -19,17 +19,8 @@
 
                     <!-- 도메인 필터 탭 -->
                     <div v-if="domains && domains.length > 0" class="domain-filter-tabs mb-3">
-                        <v-chip-group
-                            v-model="selectedDomainFilter"
-                            selected-class="bg-primary text-white"
-                            mandatory
-                        >
-                            <v-chip
-                                :value="null"
-                                size="small"
-                                variant="outlined"
-                                filter
-                            >
+                        <v-chip-group v-model="selectedDomainFilter" selected-class="bg-primary text-white" mandatory>
+                            <v-chip :value="null" size="small" variant="outlined" filter>
                                 {{ $t('processDefinitionTree.allDomains') || '전체' }}
                             </v-chip>
                             <v-chip
@@ -48,20 +39,9 @@
                     </div>
 
                     <!-- TreeView -->
-                    <v-treeview
-                        v-if="Object.keys(nodes).length > 0"
-                        :config="config"
-                        :nodes="nodes"
-                        class="process-tree"
-                    >
+                    <v-treeview v-if="Object.keys(nodes).length > 0" :config="config" :nodes="nodes" class="process-tree">
                         <template #text="{ node }">
-                            <div 
-                                @click="handleNodeClick(node)"
-                                :class="[
-                                    'tree-node-text',
-                                    { 'is-sub': node.id.startsWith('sub_') }
-                                ]"
-                            >
+                            <div @click="handleNodeClick(node)" :class="['tree-node-text', { 'is-sub': node.id.startsWith('sub_') }]">
                                 <v-icon size="small" class="mr-2">
                                     <template v-if="node.id.startsWith('mega_')">mdi-folder-network</template>
                                     <template v-else-if="node.id.startsWith('major_')">mdi-folder</template>
@@ -72,10 +52,8 @@
                             </div>
                         </template>
                     </v-treeview>
-                    
-                    <v-alert v-else type="info" variant="tonal" class="mt-3">
-                        프로세스 정의가 없습니다.
-                    </v-alert>
+
+                    <v-alert v-else type="info" variant="tonal" class="mt-3"> 프로세스 정의가 없습니다. </v-alert>
                 </v-card>
             </v-col>
 
@@ -86,69 +64,43 @@
                         <!-- 검색창 -->
                         <v-row class="align-center flex-fill border border-borderColor header-search rounded-pill px-5 ma-0 pa-0">
                             <Icons :icon="'magnifer-linear'" :size="22" />
-                            <v-text-field v-model="searchValue" variant="plain" density="compact"
-                                class="position-relative pt-0 ml-3 custom-placeholer-color" :placeholder="$t('chatListing.search')"
-                                single-line hide-details
+                            <v-text-field
+                                v-model="searchValue"
+                                variant="plain"
+                                density="compact"
+                                class="position-relative pt-0 ml-3 custom-placeholer-color"
+                                :placeholder="$t('chatListing.search')"
+                                single-line
+                                hide-details
                                 @keyup.enter="handleSearch"
                             ></v-text-field>
-                            <v-btn 
-                                v-if="searchValue" 
-                                icon 
-                                variant="text" 
-                                size="small"
-                                @click="handleSearch"
-                                class="ml-2"
-                            >
+                            <v-btn v-if="searchValue" icon variant="text" size="small" @click="handleSearch" class="ml-2">
                                 <v-icon>mdi-magnify</v-icon>
                             </v-btn>
                         </v-row>
                         <v-spacer></v-spacer>
-                        
+
                         <!-- 버튼들 -->
                         <div class="d-flex ga-2">
-                            <v-btn 
-                                color="success" 
-                                variant="flat"
-                                @click="openFileDialog"
-                                :loading="isParsingExcel"
-                            >
+                            <v-btn color="success" variant="flat" @click="openFileDialog" :loading="isParsingExcel">
                                 <v-icon class="mr-2">mdi-file-excel</v-icon>
                                 {{ uploadedFileName || $t('processDefinitionTree.uploadExcel') }}
                             </v-btn>
-                            <v-btn 
-                                color="primary" 
-                                variant="flat"
-                                @click="handleCreateMap"
-                                :disabled="!parsedExcelData"
-                            >
+                            <v-btn color="primary" variant="flat" @click="handleCreateMap" :disabled="!parsedExcelData">
                                 {{ $t('processDefinitionTree.createMap') }}
                             </v-btn>
-                            <v-btn 
-                                color="info" 
-                                variant="flat"
-                                @click="handleDownloadExcel"
-                            >
+                            <v-btn color="info" variant="flat" @click="handleDownloadExcel">
                                 <v-icon class="mr-2">mdi-download</v-icon>
                                 엑셀 다운로드
                             </v-btn>
                         </div>
-                        
+
                         <!-- 숨겨진 파일 입력 -->
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            accept=".xlsx"
-                            style="display: none"
-                            @change="handleFileSelect"
-                        />
+                        <input ref="fileInput" type="file" accept=".xlsx,.xls" style="display: none" @change="handleFileSelect" />
                     </div>
                 </v-card>
-                
-                <ProcessDefinitionChat
-                    ref="processDefinitionChat"
-                    :chatMode="chatMode"
-                    :key="$route.fullPath"
-                />
+
+                <ProcessDefinitionChat ref="processDefinitionChat" :chatMode="chatMode" :key="$route.fullPath" />
             </v-col>
         </v-row>
     </div>
@@ -167,11 +119,9 @@ export default {
     name: 'ProcessDefinitionChatWithTree',
     components: {
         ProcessDefinitionChat,
-        VTreeview,
+        VTreeview
     },
-    props: {
-        
-    },
+    props: {},
     data: () => ({
         nodes: {},
         config: {
@@ -189,7 +139,7 @@ export default {
         // 도메인 필터 관련
         domains: [],
         selectedDomainFilter: null,
-        metricsMap: null,
+        metricsMap: null
     }),
     async created() {
         await this.loadProcessDefinitionMap();
@@ -198,7 +148,7 @@ export default {
     },
     watch: {
         // 라우트 변경 감지 - 프로세스 정의 체계도 새로고침
-        '$route': {
+        $route: {
             deep: true,
             async handler(newVal, oldVal) {
                 // definitions 페이지 내에서 이동할 때만 체계도 새로고침
@@ -257,7 +207,7 @@ export default {
          * 도메인 ID로 도메인 정보 조회
          */
         getDomainById(domainId) {
-            return this.domains.find(d => d.id === domainId);
+            return this.domains.find((d) => d.id === domainId);
         },
 
         /**
@@ -265,7 +215,7 @@ export default {
          */
         getMajorDomainId(majorId) {
             if (!this.metricsMap || !this.metricsMap.processes) return null;
-            const proc = this.metricsMap.processes.find(p => p.id === majorId);
+            const proc = this.metricsMap.processes.find((p) => p.id === majorId);
             return proc ? proc.domain_id : null;
         },
 
@@ -284,7 +234,7 @@ export default {
             // 도메인 필터가 선택된 경우 필터링 적용
             const selectedDomain = this.selectedDomainFilter;
 
-            megaProcList.forEach(mega => {
+            megaProcList.forEach((mega) => {
                 const megaId = `mega_${mega.id}`;
                 let hasMajorInDomain = false;
 
@@ -297,7 +247,7 @@ export default {
                 };
 
                 if (mega.major_proc_list && Array.isArray(mega.major_proc_list)) {
-                    mega.major_proc_list.forEach(major => {
+                    mega.major_proc_list.forEach((major) => {
                         // 도메인 필터링: 선택된 도메인과 major의 도메인이 일치하는지 확인
                         const majorDomainId = this.getMajorDomainId(major.id);
 
@@ -325,7 +275,7 @@ export default {
                             };
 
                             if (major.sub_proc_list && Array.isArray(major.sub_proc_list)) {
-                                major.sub_proc_list.forEach(sub => {
+                                major.sub_proc_list.forEach((sub) => {
                                     const subId = `sub_${sub.id}`;
                                     this.nodes[majorId].children.push(subId);
 
@@ -360,7 +310,7 @@ export default {
          */
         handleNodeClick(node) {
             console.log('🖱️ 노드 클릭:', node);
-            
+
             if (!node || !node.id) {
                 return;
             }
@@ -385,11 +335,11 @@ export default {
         navigateToProcess(processId) {
             console.log('📍 navigateToProcess 실행');
             console.log('📍 Process ID:', processId);
-            
+
             // ProcessDefinitionChat 컴포넌트가 라우팅을 통해 로드되도록 함
             const currentPath = this.$route.path;
             const newPath = `/definitions-tree/${processId}`;
-            
+
             console.log('📍 Current Path:', currentPath);
             console.log('📍 New Path:', newPath);
 
@@ -462,7 +412,7 @@ export default {
             if (!file) return;
 
             await this.processExcelFile(file);
-            
+
             // 파일 입력 초기화 (같은 파일을 다시 선택할 수 있도록)
             event.target.value = '';
         },
@@ -472,27 +422,27 @@ export default {
          */
         async processExcelFile(file) {
             console.log('📄 엑셀 파일 처리 시작:', file.name);
-            
+
             this.isParsingExcel = true;
             this.uploadedFileName = null;
-            
+
             try {
                 // ExcelJS 라이브러리로 파싱
                 const result = await this.parseWithExcelJS(file);
-                
+
                 if (result.success) {
                     this.uploadedFileName = file.name;
                     this.parsedExcelData = result;
-                    
+
                     console.log('✅ 엑셀 파싱 성공:', result);
                     console.log('📊 시트 목록:', result.sheetNames);
                     console.log('📊 시트 수:', result.sheetCount);
-                    
+
                     // 파싱된 데이터 출력 (디버깅용)
-                    result.sheetNames.forEach(sheetName => {
+                    result.sheetNames.forEach((sheetName) => {
                         console.log(`📋 시트 "${sheetName}":`, result.data[sheetName]);
                     });
-                    
+
                     console.log(`엑셀 파일이 성공적으로 파싱되었습니다. (${result.sheetCount}개 시트)`);
                 } else {
                     console.error('❌ 엑셀 파싱 실패:', result.error);
@@ -513,7 +463,7 @@ export default {
                     return this.normalizeExcelCellValue(value.result);
                 }
                 if (Array.isArray(value.richText)) {
-                    return value.richText.map(item => item?.text || '').join('');
+                    return value.richText.map((item) => item?.text || '').join('');
                 }
                 if (typeof value.text === 'string') return value.text;
                 if (typeof value.hyperlink === 'string' && typeof value.tooltip === 'string') return value.tooltip;
@@ -542,7 +492,7 @@ export default {
             const result = [];
             for (let i = 1; i < rows.length; i += 1) {
                 const row = rows[i] || [];
-                if (row.every(cell => String(cell || '').trim() === '')) continue;
+                if (row.every((cell) => String(cell || '').trim() === '')) continue;
                 const obj = {};
                 headers.forEach((header, idx) => {
                     obj[header] = row[idx] ?? '';
@@ -553,7 +503,7 @@ export default {
         },
         setWorksheetColumns(worksheet, widths) {
             if (!Array.isArray(widths) || widths.length === 0) return;
-            worksheet.columns = widths.map(width => ({ width }));
+            worksheet.columns = widths.map((width) => ({ width }));
         },
         async downloadWorkbook(workbook, fileName) {
             const buffer = await workbook.xlsx.writeBuffer();
@@ -575,20 +525,17 @@ export default {
         parseWithExcelJS(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
-                
                 reader.onload = async (e) => {
                     try {
                         const data = e.target.result;
                         const startTime = Date.now();
-                        
+
                         const workbook = new ExcelJS.Workbook();
                         await workbook.xlsx.load(data);
-                        
                         const elapsed = (Date.now() - startTime) / 1000;
                         console.log(`⏱️ ExcelJS 파싱 시간: ${elapsed.toFixed(2)}초`);
-                        
                         const result = {};
-                        const sheetNames = workbook.worksheets.map(ws => ws.name);
+                        const sheetNames = workbook.worksheets.map((ws) => ws.name);
                         workbook.worksheets.forEach((worksheet) => {
                             const sheetName = worksheet.name;
                             const jsonArray = this.worksheetToArray(worksheet);
@@ -598,7 +545,7 @@ export default {
                                 objects: jsonObjects
                             };
                         });
-                        
+
                         resolve({
                             success: true,
                             data: result,
@@ -606,7 +553,6 @@ export default {
                             sheetCount: sheetNames.length,
                             workbook
                         });
-                        
                     } catch (parseError) {
                         console.error('❌ ExcelJS 파싱 중 오류:', parseError);
                         resolve({
@@ -615,7 +561,7 @@ export default {
                         });
                     }
                 };
-                
+
                 reader.onerror = (error) => {
                     console.error('❌ 파일 읽기 중 오류:', error);
                     resolve({
@@ -623,7 +569,7 @@ export default {
                         error: '파일 읽기 실패'
                     });
                 };
-                
+
                 reader.readAsArrayBuffer(file);
             });
         },
@@ -639,10 +585,10 @@ export default {
 
             try {
                 console.log('🚀 프로세스 맵 생성 시작');
-                
+
                 // 파싱된 엑셀 데이터를 문자열로 변환
                 let excelContent = '';
-                this.parsedExcelData.sheetNames.forEach(sheetName => {
+                this.parsedExcelData.sheetNames.forEach((sheetName) => {
                     const sheetData = this.parsedExcelData.data[sheetName];
                     excelContent += `\n\n[시트: ${sheetName}]\n`;
                     excelContent += JSON.stringify(sheetData.objects, null, 2);
@@ -664,7 +610,6 @@ export default {
                 } else {
                     console.error('ProcessDefinitionChat 컴포넌트를 찾을 수 없습니다.');
                 }
-                
             } catch (error) {
                 console.error('❌ 프로세스 맵 생성 실패:', error);
             }
@@ -685,7 +630,7 @@ export default {
             const chatComponent = this.$refs.processDefinitionChat;
             if (chatComponent && chatComponent.searchAndFocusActivity) {
                 const found = chatComponent.searchAndFocusActivity(this.searchValue);
-                
+
                 if (found) {
                     console.log('✅ 액티비티를 찾아 포커싱했습니다.');
                 } else {
@@ -736,16 +681,10 @@ export default {
 
                 // 2. 프로세스 변수(Data) 시트
                 if (processDefinition.data && processDefinition.data.length > 0) {
-                    const dataSheetData = [
-                        ['변수명', '설명', '타입']
-                    ];
-                    
-                    processDefinition.data.forEach(variable => {
-                        dataSheetData.push([
-                            variable.name || '',
-                            variable.description || '',
-                            variable.type || ''
-                        ]);
+                    const dataSheetData = [['변수명', '설명', '타입']];
+
+                    processDefinition.data.forEach((variable) => {
+                        dataSheetData.push([variable.name || '', variable.description || '', variable.type || '']);
                     });
 
                     const dataSheet = workbook.addWorksheet('2.프로세스변수');
@@ -755,11 +694,9 @@ export default {
 
                 // 3. Roles(역할/Lane) 시트
                 if (processDefinition.roles && processDefinition.roles.length > 0) {
-                    const rolesData = [
-                        ['역할 이름', 'Endpoint', '담당 업무', 'X좌표', 'Y좌표', '너비', '높이']
-                    ];
-                    
-                    processDefinition.roles.forEach(role => {
+                    const rolesData = [['역할 이름', 'Endpoint', '담당 업무', 'X좌표', 'Y좌표', '너비', '높이']];
+
+                    processDefinition.roles.forEach((role) => {
                         rolesData.push([
                             role.name || '',
                             role.endpoint || '',
@@ -778,16 +715,32 @@ export default {
 
                 // 4. Elements에서 Activity만 추출
                 if (processDefinition.elements && processDefinition.elements.length > 0) {
-                    const activities = processDefinition.elements.filter(el => el.elementType === 'Activity');
-                    
+                    const activities = processDefinition.elements.filter((el) => el.elementType === 'Activity');
+
                     if (activities.length > 0) {
                         const activitiesData = [
-                            ['ID', '이름', '타입', '역할', '설명', '지시사항', 
-                             '소요시간(일)', '체크포인트', '입력데이터', '출력데이터', 
-                             '도구', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
+                            [
+                                'ID',
+                                '이름',
+                                '타입',
+                                '역할',
+                                '설명',
+                                '지시사항',
+                                '소요시간(일)',
+                                '체크포인트',
+                                '입력데이터',
+                                '출력데이터',
+                                '도구',
+                                'Layer',
+                                'Order',
+                                'X좌표',
+                                'Y좌표',
+                                '너비',
+                                '높이'
+                            ]
                         ];
-                        
-                        activities.forEach(activity => {
+
+                        activities.forEach((activity) => {
                             activitiesData.push([
                                 activity.id || '',
                                 activity.name || '',
@@ -817,15 +770,14 @@ export default {
 
                 // 5. Elements에서 Event만 추출
                 if (processDefinition.elements && processDefinition.elements.length > 0) {
-                    const events = processDefinition.elements.filter(el => el.elementType === 'Event');
-                    
+                    const events = processDefinition.elements.filter((el) => el.elementType === 'Event');
+
                     if (events.length > 0) {
                         const eventsData = [
-                            ['ID', '이름', '타입', '역할', '설명', '트리거', 
-                             'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
+                            ['ID', '이름', '타입', '역할', '설명', '트리거', 'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
                         ];
-                        
-                        events.forEach(event => {
+
+                        events.forEach((event) => {
                             eventsData.push([
                                 event.id || '',
                                 event.name || '',
@@ -851,15 +803,14 @@ export default {
 
                 // 6. Elements에서 Gateway만 추출
                 if (processDefinition.elements && processDefinition.elements.length > 0) {
-                    const gateways = processDefinition.elements.filter(el => el.elementType === 'Gateway');
-                    
+                    const gateways = processDefinition.elements.filter((el) => el.elementType === 'Gateway');
+
                     if (gateways.length > 0) {
                         const gatewaysData = [
-                            ['ID', '이름', '타입', '역할', '설명', '조건', 
-                             'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
+                            ['ID', '이름', '타입', '역할', '설명', '조건', 'BPMN타입', 'Layer', 'Order', 'X좌표', 'Y좌표', '너비', '높이']
                         ];
-                        
-                        gateways.forEach(gateway => {
+
+                        gateways.forEach((gateway) => {
                             gatewaysData.push([
                                 gateway.id || '',
                                 gateway.name || '',
@@ -885,18 +836,17 @@ export default {
 
                 // 7. Elements에서 Sequence만 추출 (순서/흐름)
                 if (processDefinition.elements && processDefinition.elements.length > 0) {
-                    const sequences = processDefinition.elements.filter(el => el.elementType === 'Sequence');
-                    
+                    const sequences = processDefinition.elements.filter((el) => el.elementType === 'Sequence');
+
                     if (sequences.length > 0) {
-                        const sequencesData = [
-                            ['ID', '이름', '시작(Source)', '종료(Target)', '조건', 'Waypoints']
-                        ];
-                        
-                        sequences.forEach(seq => {
-                            const waypoints = seq.waypoints && Array.isArray(seq.waypoints) 
-                                ? seq.waypoints.map(wp => `(${wp.x},${wp.y})`).join(' → ')
-                                : '';
-                            
+                        const sequencesData = [['ID', '이름', '시작(Source)', '종료(Target)', '조건', 'Waypoints']];
+
+                        sequences.forEach((seq) => {
+                            const waypoints =
+                                seq.waypoints && Array.isArray(seq.waypoints)
+                                    ? seq.waypoints.map((wp) => `(${wp.x},${wp.y})`).join(' → ')
+                                    : '';
+
                             sequencesData.push([
                                 seq.id || '',
                                 seq.name || '',
@@ -915,17 +865,10 @@ export default {
 
                 // 8. SubProcesses 시트
                 if (processDefinition.subProcesses && processDefinition.subProcesses.length > 0) {
-                    const subProcessesData = [
-                        ['ID', '이름', '설명', '타입']
-                    ];
-                    
-                    processDefinition.subProcesses.forEach(subProc => {
-                        subProcessesData.push([
-                            subProc.id || '',
-                            subProc.name || '',
-                            subProc.description || '',
-                            subProc.type || ''
-                        ]);
+                    const subProcessesData = [['ID', '이름', '설명', '타입']];
+
+                    processDefinition.subProcesses.forEach((subProc) => {
+                        subProcessesData.push([subProc.id || '', subProc.name || '', subProc.description || '', subProc.type || '']);
                     });
 
                     const subProcessesSheet = workbook.addWorksheet('8.서브프로세스');
@@ -940,7 +883,6 @@ export default {
                 await this.downloadWorkbook(workbook, fileName);
 
                 console.log('✅ 엑셀 파일 다운로드 완료:', fileName);
-                
             } catch (error) {
                 console.error('❌ 엑셀 다운로드 실패:', error);
                 alert('엑셀 파일 다운로드에 실패했습니다.');
@@ -1027,4 +969,3 @@ export default {
     border-color: var(--chip-color) !important;
 }
 </style>
-

@@ -44,14 +44,14 @@
                                             color="error"
                                             @click="removeUser(index)"
                                         >
-                                            <TrashIcon size="24"/>
+                                            <TrashIcon size="24" />
                                         </v-btn>
                                     </v-col>
                                 </v-row>
                                 <!-- 에러 메시지를 별도 행으로 표시 -->
                                 <v-row v-if="!isValidEmail(user.email) && user.email !== ''" no-gutters>
                                     <v-col cols="12" sm="8" class="pr-sm-3">
-                                        <div class="text-caption mt-1 ml-3" style="color: #f44336 !important;">
+                                        <div class="text-caption mt-1 ml-3" style="color: #f44336 !important">
                                             {{ getEmailErrorMessage(user.email) }}
                                         </div>
                                     </v-col>
@@ -60,16 +60,10 @@
                         </v-card>
                     </div>
                 </v-card-text>
-                
-                <v-card @click="addUser"
-                    class="pa-0"
-                    elevation="10"
-                >
-                    <v-row justify="center"
-                        class="my-4 align-center"
-                        style="font-size: 20px;"    
-                    >
-                        <v-icon class="mr-2" style="padding-top: 1px;">mdi-plus</v-icon>
+
+                <v-card @click="addUser" class="pa-0" elevation="10">
+                    <v-row justify="center" class="my-4 align-center" style="font-size: 20px">
+                        <v-icon class="mr-2" style="padding-top: 1px">mdi-plus</v-icon>
                         <div>{{ $t('accountTab.addUser') }}</div>
                     </v-row>
                 </v-card>
@@ -78,24 +72,20 @@
 
                 <v-row class="ma-0 pa-0 pt-4">
                     <v-spacer></v-spacer>
-                    <v-btn v-if="type === 'createTenant'"
-                        @click="skipInvitation"
-                        color="grey"
-                        variant="flat" 
-                        class="rounded-pill mr-2"
-                    >
-                        <v-icon class="mr-2" style="padding-top: 3px;">mdi-skip-next</v-icon>
+                    <v-btn v-if="type === 'createTenant'" @click="skipInvitation" color="grey" variant="flat" class="rounded-pill mr-2">
+                        <v-icon class="mr-2" style="padding-top: 3px">mdi-skip-next</v-icon>
                         {{ $t('accountTab.skipAndStart') }}
                     </v-btn>
 
-                    <v-btn @click="inviteUsers"
+                    <v-btn
+                        @click="inviteUsers"
                         :loading="isInviteLoading"
                         :disabled="hasInvalidEmails()"
                         color="primary"
-                        variant="flat" 
+                        variant="flat"
                         class="rounded-pill"
                     >
-                        <v-icon class="mr-2" style="padding-top: 3px;">mdi-send</v-icon>
+                        <v-icon class="mr-2" style="padding-top: 3px">mdi-send</v-icon>
                         {{ $t('accountTab.sendInvitation') }}
                     </v-btn>
                 </v-row>
@@ -139,10 +129,10 @@ export default {
             if (!email) return true; // 빈 값은 유효한 것으로 처리
             const emailRegex = /.+@.+\..+/;
             if (!emailRegex.test(email)) return false;
-            
+
             // userList가 있고 이메일이 입력된 경우에만 중복 체크
             if (this.userList && this.userList.length > 0 && email) {
-                return !this.userList.some(user => user.email === email);
+                return !this.userList.some((user) => user.email === email);
             }
             return true;
         },
@@ -153,16 +143,14 @@ export default {
                 return '올바른 이메일 형식이 아닙니다';
             }
             if (this.userList && this.userList.length > 0) {
-                if (this.userList.some(user => user.email === email)) {
+                if (this.userList.some((user) => user.email === email)) {
                     return '이미 등록된 이메일입니다';
                 }
             }
             return '';
         },
         hasInvalidEmails() {
-            return this.inviteUserlist.some(user => 
-                !this.isValidEmail(user.email) || user.email === ''
-            );
+            return this.inviteUserlist.some((user) => !this.isValidEmail(user.email) || user.email === '');
         },
         addUser() {
             this.inviteUserlist.push({
@@ -177,25 +165,30 @@ export default {
         },
         async inviteUsers() {
             this.isInviteLoading = true;
-            var me = this
+            var me = this;
             me.$try({
                 action: async () => {
-                    const tenantId = this.tenantInfo && this.tenantInfo.id ? this.tenantInfo.id : (window.location.host.includes('.process-gpt.io') ? window.location.host.split('.')[0] : window.location.host.split(':')[0]);
+                    const tenantId =
+                        this.tenantInfo && this.tenantInfo.id
+                            ? this.tenantInfo.id
+                            : window.location.host.includes('.process-gpt.io')
+                            ? window.location.host.split('.')[0]
+                            : window.location.host.split(':')[0];
                     for (const user of this.inviteUserlist) {
                         let userInfo = {
                             email: user.email,
                             is_admin: user.is_admin,
                             tenant_id: tenantId
-                        }
+                        };
                         const result = await backend.inviteUser(userInfo);
-                        if(result) {
-                            user.id = result.user_id ? result.user_id : ''
-                            user.profile = "/images/defaultUser.png"
-                            user.name = user.email.split('@')[0]
+                        if (result) {
+                            user.id = result.user_id ? result.user_id : '';
+                            user.profile = '/images/defaultUser.png';
+                            user.name = user.email.split('@')[0];
                         }
                     }
                     this.isInviteLoading = false;
-                    if(this.type === 'createTenant') {
+                    if (this.type === 'createTenant') {
                         window.location.href = getTenantUrl(this.tenantInfo.id, '/definition-map');
                     } else {
                         this.$emit('close', this.inviteUserlist);
@@ -205,7 +198,7 @@ export default {
                     this.isInviteLoading = false;
                 },
                 successMsg: me.$t('organizationChartDefinition.addUserSuccess'),
-                errorMsg: me.$t('organizationChartDefinition.addUserFailed'),
+                errorMsg: me.$t('organizationChartDefinition.addUserFailed')
             });
         },
         skipInvitation() {

@@ -1,5 +1,5 @@
 <template>
-    <v-card elevation="0" class="process-architecture" style="overflow: auto; height: 100%;">
+    <v-card elevation="0" class="process-architecture" style="overflow: auto; height: 100%">
         <!-- Header -->
         <div class="pa-6 pb-0">
             <div class="d-flex align-center justify-space-between mb-1">
@@ -29,13 +29,7 @@
                                 <p class="text-caption text-grey font-weight-bold mb-1 text-uppercase">
                                     {{ $t('processArchitecture.exportMenu.scope') }}
                                 </p>
-                                <v-btn-toggle
-                                    v-model="exportScope"
-                                    mandatory
-                                    density="compact"
-                                    color="primary"
-                                    class="w-100"
-                                >
+                                <v-btn-toggle v-model="exportScope" mandatory density="compact" color="primary" class="w-100">
                                     <v-btn value="visible" size="x-small" class="flex-grow-1">
                                         {{ $t('processArchitecture.exportMenu.visibleOnly') }}
                                     </v-btn>
@@ -85,13 +79,7 @@
                             </div>
                         </v-card>
                     </v-menu>
-                    <v-btn
-                        v-if="isAdmin"
-                        color="primary"
-                        size="small"
-                        prepend-icon="mdi-plus"
-                        @click="showNewProcessDialog = true"
-                    >
+                    <v-btn v-if="isAdmin" color="primary" size="small" prepend-icon="mdi-plus" @click="showNewProcessDialog = true">
                         {{ $t('processArchitecture.newProcess') }}
                     </v-btn>
                 </div>
@@ -99,13 +87,7 @@
 
             <!-- Toolbar: View Toggle + To-Be Toggle -->
             <div class="d-flex align-center justify-space-between mt-4 mb-3 flex-wrap ga-2">
-                <v-btn-toggle
-                    v-model="activeView"
-                    mandatory
-                    density="compact"
-                    color="primary"
-                    class="view-toggle"
-                >
+                <v-btn-toggle v-model="activeView" mandatory density="compact" color="primary" class="view-toggle">
                     <v-btn value="card" size="small">
                         <v-icon start size="16">mdi-view-grid-outline</v-icon>
                         {{ $t('processArchitecture.views.card') }}
@@ -149,15 +131,12 @@
                         density="compact"
                         hide-details
                         clearable
-                        style="max-width: 320px; min-width: 200px;"
+                        style="max-width: 320px; min-width: 200px"
                         @focus="onSearchFocus"
                         @input="onSearchInput"
                     />
                     <!-- Smart Dropdown -->
-                    <div
-                        v-if="showSearchDropdown && topRecentlyViewed.length > 0 && !searchQuery"
-                        class="search-dropdown elevation-4"
-                    >
+                    <div v-if="showSearchDropdown && topRecentlyViewed.length > 0 && !searchQuery" class="search-dropdown elevation-4">
                         <div class="search-dropdown-header">
                             {{ $t('processArchitecture.search.recentlyViewed') }}
                         </div>
@@ -333,22 +312,16 @@
             <!-- Empty State -->
             <div v-if="isFilteredEmpty" class="empty-state">
                 <svg class="empty-state-illustration" viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="30" y="40" width="140" height="90" rx="8" fill="#f0f4ff" stroke="#c5cae9" stroke-width="2"/>
-                    <rect x="50" y="60" width="60" height="8" rx="4" fill="#c5cae9"/>
-                    <rect x="50" y="76" width="100" height="6" rx="3" fill="#e8eaf6"/>
-                    <rect x="50" y="90" width="80" height="6" rx="3" fill="#e8eaf6"/>
-                    <circle cx="155" cy="50" r="22" fill="#fff" stroke="#c5cae9" stroke-width="2"/>
-                    <line x1="148" y1="43" x2="162" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round"/>
-                    <line x1="162" y1="43" x2="148" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round"/>
+                    <rect x="30" y="40" width="140" height="90" rx="8" fill="#f0f4ff" stroke="#c5cae9" stroke-width="2" />
+                    <rect x="50" y="60" width="60" height="8" rx="4" fill="#c5cae9" />
+                    <rect x="50" y="76" width="100" height="6" rx="3" fill="#e8eaf6" />
+                    <rect x="50" y="90" width="80" height="6" rx="3" fill="#e8eaf6" />
+                    <circle cx="155" cy="50" r="22" fill="#fff" stroke="#c5cae9" stroke-width="2" />
+                    <line x1="148" y1="43" x2="162" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round" />
+                    <line x1="162" y1="43" x2="148" y2="57" stroke="#9fa8da" stroke-width="2.5" stroke-linecap="round" />
                 </svg>
                 <p class="empty-state-message">{{ $t('processArchitecture.emptyState.message') }}</p>
-                <v-btn
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                    prepend-icon="mdi-filter-remove"
-                    @click="resetAllFilters"
-                >
+                <v-btn color="primary" variant="outlined" size="small" prepend-icon="mdi-filter-remove" @click="resetAllFilters">
                     {{ $t('processArchitecture.emptyState.resetFilters') }}
                 </v-btn>
             </div>
@@ -403,12 +376,7 @@
         </div>
 
         <!-- New Process Dialog -->
-        <NewProcessDialog
-            v-model="showNewProcessDialog"
-            :procMap="procMap"
-            :domains="domains"
-            @created="onProcessCreated"
-        />
+        <NewProcessDialog v-model="showNewProcessDialog" :procMap="procMap" :domains="domains" @created="onProcessCreated" />
 
         <!-- Advanced Filter Panel -->
         <AdvancedFilterPanel
@@ -462,20 +430,9 @@
         </v-dialog>
 
         <!-- Export notification snackbar -->
-        <v-snackbar
-            v-model="exportSnackbar.show"
-            :color="exportSnackbar.color"
-            :timeout="exportSnackbar.timeout"
-            location="bottom right"
-        >
+        <v-snackbar v-model="exportSnackbar.show" :color="exportSnackbar.color" :timeout="exportSnackbar.timeout" location="bottom right">
             <div class="d-flex align-center ga-2">
-                <v-progress-circular
-                    v-if="exportSnackbar.loading"
-                    size="16"
-                    width="2"
-                    indeterminate
-                    color="white"
-                />
+                <v-progress-circular v-if="exportSnackbar.loading" size="16" width="2" indeterminate color="white" />
                 <span>{{ exportSnackbar.message }}</span>
             </div>
         </v-snackbar>
@@ -543,9 +500,18 @@ const domainAddDialog = ref({
     color: null as string | null
 });
 const domainColors = [
-    '#E53935', '#D81B60', '#8E24AA', '#5E35B1',
-    '#3949AB', '#1E88E5', '#00ACC1', '#00897B',
-    '#43A047', '#7CB342', '#FB8C00', '#6D4C41'
+    '#E53935',
+    '#D81B60',
+    '#8E24AA',
+    '#5E35B1',
+    '#3949AB',
+    '#1E88E5',
+    '#00ACC1',
+    '#00897B',
+    '#43A047',
+    '#7CB342',
+    '#FB8C00',
+    '#6D4C41'
 ];
 
 function openDomainAddDialog() {
@@ -592,11 +558,17 @@ let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 // Advanced filter helpers
 const hasAdvancedFilters = computed(() => {
     const af = advancedFilters.value;
-    return af.statuses.length > 0 || af.dateMode !== 'none' ||
-        af.owners.length > 0 || af.tags.length > 0 ||
-        af.fteRange[0] !== 0 || af.fteRange[1] !== 10 ||
-        af.leadTimeRange[0] !== 0 || af.leadTimeRange[1] !== 365 ||
-        af.systems.length > 0;
+    return (
+        af.statuses.length > 0 ||
+        af.dateMode !== 'none' ||
+        af.owners.length > 0 ||
+        af.tags.length > 0 ||
+        af.fteRange[0] !== 0 ||
+        af.fteRange[1] !== 10 ||
+        af.leadTimeRange[0] !== 0 ||
+        af.leadTimeRange[1] !== 365 ||
+        af.systems.length > 0
+    );
 });
 
 const advancedFilterCount = computed(() => {
@@ -618,14 +590,14 @@ const ownerOptionsForFilter = computed(() => {
     for (const def of allProcDefs.value) {
         if (def.owner) emails.add(def.owner);
     }
-    return [...emails].map(email => ({ email, label: email }));
+    return [...emails].map((email) => ({ email, label: email }));
 });
 
 // Tags from all proc definitions
 const availableTagsForFilter = computed(() => {
     const tags = new Set<string>();
     for (const def of allProcDefs.value) {
-        for (const tag of (def.tags || [])) {
+        for (const tag of def.tags || []) {
             tags.add(tag);
         }
     }
@@ -638,9 +610,9 @@ const availableSystemsForFilter = computed(() => {
     const map = procMap.value;
     if (map?.mega_proc_list) {
         for (const mega of map.mega_proc_list) {
-            for (const major of (mega.major_proc_list || [])) {
-                for (const sub of (major.sub_proc_list || [])) {
-                    for (const s of (sub.systems || sub.oss || [])) {
+            for (const major of mega.major_proc_list || []) {
+                for (const sub of major.sub_proc_list || []) {
+                    for (const s of sub.systems || sub.oss || []) {
                         systems.add(s);
                     }
                 }
@@ -673,7 +645,7 @@ function resetAdvancedFilters() {
 function toggleDomain(name: string) {
     const idx = selectedDomains.value.indexOf(name);
     if (idx >= 0) {
-        selectedDomains.value = selectedDomains.value.filter(d => d !== name);
+        selectedDomains.value = selectedDomains.value.filter((d) => d !== name);
     } else {
         selectedDomains.value = [...selectedDomains.value, name];
     }
@@ -690,14 +662,21 @@ function toggleMyProcessChip(key: 'favorites' | 'myCreation' | 'myOrganization')
 
 // Empty state: true when filters/search are active but no results
 const isFilteredEmpty = computed(() => {
-    const hasFilter = searchQuery.value || selectedDomain.value || (selectedDomains.value?.length ?? 0) > 0 || quickFilterNeedFeedback.value || quickFilterWIL.value || myProcessFilter.value.enabled || hasAdvancedFilters.value;
+    const hasFilter =
+        searchQuery.value ||
+        selectedDomain.value ||
+        (selectedDomains.value?.length ?? 0) > 0 ||
+        quickFilterNeedFeedback.value ||
+        quickFilterWIL.value ||
+        myProcessFilter.value.enabled ||
+        hasAdvancedFilters.value;
     if (!hasFilter) return false;
 
     // Check if filteredProcMap has any sub processes
     const map = filteredProcMap.value;
     if (map && map.mega_proc_list) {
         for (const mega of map.mega_proc_list) {
-            for (const major of (mega.major_proc_list || [])) {
+            for (const major of mega.major_proc_list || []) {
                 if ((major.sub_proc_list || []).length > 0) return false;
             }
         }
@@ -825,7 +804,7 @@ function countSubProcesses(map: any): number {
     let count = 0;
     if (!map?.mega_proc_list) return count;
     for (const mega of map.mega_proc_list) {
-        for (const major of (mega.major_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
             count += (major.sub_proc_list || []).length;
         }
     }
@@ -852,16 +831,18 @@ function flattenProcMap(map: any): any[] {
         defLookup.set(def.id, def);
     }
     for (const mega of map.mega_proc_list) {
-        for (const major of (mega.major_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
             const domain = major.domain || major.domain_id || '';
-            for (const sub of (major.sub_proc_list || [])) {
+            for (const sub of major.sub_proc_list || []) {
                 const status = processStatuses.value.get(sub.id);
                 const def = defLookup.get(sub.id);
                 // FTE: from proc definition fte field or fte_config
                 const fte = def?.fte ?? def?.fte_value ?? sub.fte ?? '';
                 // OSS/System: from proc definition systems or oss fields
-                const oss = (def?.systems || def?.oss_list || sub.systems || [])
-                    .map((s: any) => (typeof s === 'string' ? s : s.name || s.id || '')).join(', ') || '';
+                const oss =
+                    (def?.systems || def?.oss_list || sub.systems || [])
+                        .map((s: any) => (typeof s === 'string' ? s : s.name || s.id || ''))
+                        .join(', ') || '';
                 rows.push({
                     pid: sub.id,
                     domain,
@@ -887,10 +868,10 @@ function buildMermaidText(map: any): string {
     for (const mega of map.mega_proc_list) {
         const megaId = `mega_${mega.id}`.replace(/[^a-zA-Z0-9_]/g, '_');
         lines.push(`    ${megaId}["${mega.name || mega.id}"]`);
-        for (const major of (mega.major_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
             const majorId = `major_${major.id}`.replace(/[^a-zA-Z0-9_]/g, '_');
             lines.push(`    ${megaId} --> ${majorId}["[${major.id}] ${major.name}"]`);
-            for (const sub of (major.sub_proc_list || [])) {
+            for (const sub of major.sub_proc_list || []) {
                 const subId = `sub_${sub.id}`.replace(/[^a-zA-Z0-9_]/g, '_');
                 lines.push(`    ${majorId} --> ${subId}["[${sub.id}] ${sub.name}"]`);
             }
@@ -951,14 +932,9 @@ async function runExport(format: ExportFormat) {
     const isLargeData = subCount > LARGE_DATA_THRESHOLD;
 
     if (isLargeData) {
-        showExportNotification(
-            t('processArchitecture.exportMenu.processingLargeData'),
-            'primary',
-            true,
-            -1
-        );
+        showExportNotification(t('processArchitecture.exportMenu.processingLargeData'), 'primary', true, -1);
         // Run the heavy export work asynchronously so the UI can update first
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
             const idle = (window as any).requestIdleCallback || ((cb: () => void) => setTimeout(cb, 0));
             idle(() => resolve());
         });
@@ -972,10 +948,21 @@ async function runExport(format: ExportFormat) {
                 return;
             }
             const rows = flattenProcMap(map);
-            const headers = ['PID', 'Domain', 'Mega Process', 'Major Process', 'Sub Process', 'Status', 'Version', 'Owner', 'FTE', 'OSS/System'];
+            const headers = [
+                'PID',
+                'Domain',
+                'Mega Process',
+                'Major Process',
+                'Sub Process',
+                'Status',
+                'Version',
+                'Owner',
+                'FTE',
+                'OSS/System'
+            ];
             const wsData = [
                 headers,
-                ...rows.map(r => [r.pid, r.domain, r.mega, r.major, r.sub, r.status, r.version, r.owner, r.fte, r.oss])
+                ...rows.map((r) => [r.pid, r.domain, r.mega, r.major, r.sub, r.status, r.version, r.owner, r.fte, r.oss])
             ];
             const workbook = new ExcelJS.Workbook();
             const worksheet = workbook.addWorksheet('Processes');
@@ -986,17 +973,14 @@ async function runExport(format: ExportFormat) {
                 type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
             downloadBlob(blob, `process-architecture-${ts}.xlsx`);
-
         } else if (format === 'json') {
             const json = JSON.stringify(map, null, 2);
             const blob = new Blob([json], { type: 'application/json' });
             downloadBlob(blob, `process-architecture-${ts}.json`);
-
         } else if (format === 'mermaid') {
             const text = buildMermaidText(map);
             const blob = new Blob([text], { type: 'text/plain' });
             downloadBlob(blob, `process-architecture-${ts}.mmd`);
-
         } else if (format === 'png' || format === 'pdf') {
             const el = document.getElementById('processArchView');
             if (!el) return;
@@ -1007,7 +991,9 @@ async function runExport(format: ExportFormat) {
                 // Overlay logo watermark on canvas
                 const img = new Image();
                 img.src = dataUrl;
-                await new Promise(res => { img.onload = res; });
+                await new Promise((res) => {
+                    img.onload = res;
+                });
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
@@ -1030,14 +1016,14 @@ async function runExport(format: ExportFormat) {
                 const tsText = `Exported: ${new Date().toLocaleString()}`;
                 const tsWidth = ctx.measureText(tsText).width;
                 ctx.fillText(tsText, img.width - tsWidth - padding, img.height - padding);
-                canvas.toBlob(blob => {
+                canvas.toBlob((blob) => {
                     if (blob) downloadBlob(blob, `process-architecture-${ts}.png`);
                 }, 'image/png');
             } else {
                 // PDF: render to PNG then embed in PDF via jsPDF (dynamic import)
                 // NOTE: requires 'jspdf' package: npm install jspdf
                 const dataUrl = await domtoimage.toPng(el, { bgcolor: '#ffffff' });
-                const jsPDF = await import('jspdf').then(m => m.default || m.jsPDF).catch(() => null);
+                const jsPDF = await import('jspdf').then((m) => m.default || m.jsPDF).catch(() => null);
                 if (!jsPDF) {
                     // Fallback: open PNG in new tab for manual PDF print
                     const win = window.open('', '_blank');
@@ -1049,7 +1035,9 @@ async function runExport(format: ExportFormat) {
                 }
                 const img = new Image();
                 img.src = dataUrl;
-                await new Promise(res => { img.onload = res; });
+                await new Promise((res) => {
+                    img.onload = res;
+                });
                 const pdf = new (jsPDF as any)({
                     orientation: img.width > img.height ? 'landscape' : 'portrait',
                     unit: 'px',
@@ -1071,22 +1059,12 @@ async function runExport(format: ExportFormat) {
         const rows = flattenProcMap(map);
         await logExport(format, scope, rows.length);
         if (isLargeData) {
-            showExportNotification(
-                t('processArchitecture.exportMenu.exportComplete'),
-                'success',
-                false,
-                3000
-            );
+            showExportNotification(t('processArchitecture.exportMenu.exportComplete'), 'success', false, 3000);
         }
     } catch (e) {
         console.error(`[Export] ${format} failed:`, e);
         if (isLargeData) {
-            showExportNotification(
-                t('processArchitecture.exportMenu.exportFailed'),
-                'error',
-                false,
-                3000
-            );
+            showExportNotification(t('processArchitecture.exportMenu.exportFailed'), 'error', false, 3000);
         }
     } finally {
         exporting.value = false;

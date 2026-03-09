@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 const authStore = useAuthStore();
 
 const props = defineProps({
-  type: String
+    type: String
 });
 const { proxy } = getCurrentInstance();
 
@@ -15,13 +15,15 @@ const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) 
 const password = ref('');
 const passwordRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterPassword'),
-    (v: string) => (v.length >= 8 && /[a-zA-Z]/.test(v) && /[0-9]/.test(v) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v)) || proxy.$t('createAccount.passwordRequirement'),
+    (v: string) =>
+        (v.length >= 8 && /[a-zA-Z]/.test(v) && /[0-9]/.test(v) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v)) ||
+        proxy.$t('createAccount.passwordRequirement')
 ]);
 
 const confirmPassword = ref('');
 const confirmPasswordRules = computed(() => [
     (v: string) => !!v || 'Password confirmation is required',
-    (v: string) => v === password.value || proxy.$t('forgotPassword.passwordMismatch'),
+    (v: string) => v === password.value || proxy.$t('forgotPassword.passwordMismatch')
 ]);
 
 const showPassword = ref(false);

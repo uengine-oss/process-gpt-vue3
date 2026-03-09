@@ -17,41 +17,25 @@
 
         <div v-if="isLoading" class="loading-state">
             <v-progress-circular indeterminate size="24" color="primary"></v-progress-circular>
-            <span class="ml-2 text-caption">{{ $t('UserList.loading') || '유저 목록을 불러오는 중...' }}</span>
+            <span class="ml-2 text-caption">{{ $t('UserList.loading') }}</span>
         </div>
 
-        <div v-else-if="filteredUsers.length === 0" class="empty-state">
-            <v-icon size="32" color="grey-lighten-1">mdi-account-outline</v-icon>
-            <span class="text-caption text-grey">
-                {{
-                    users.length === 0
-                        ? ($t('UserList.empty') || '표시할 유저가 없습니다.')
-                        : ((searchValue || '').trim()
-                            ? '검색 > 검색결과 없음'
-                            : ($t('userListing.search') || '검색'))
-                }}
-            </span>
+        <div v-else-if="filteredUsers.length === 0" class="pl-4 pr-4 py-2 text-caption text-grey">
+            {{
+                users.length === 0
+                    ? $t('UserList.empty')
+                    : (searchValue || '').trim()
+                    ? $t('UserList.searchEmpty')
+                    : $t('UserList.empty')
+            }}
         </div>
 
-        <ExpandableList
-            v-else
-            :items="filteredUsers"
-            :limit="5"
-        >
+        <ExpandableList v-else :items="filteredUsers" :limit="5">
             <template #items="{ displayedItems }">
                 <div class="user-items">
-                    <v-tooltip
-                        v-for="user in displayedItems"
-                        bottom
-                        :key="user.id"
-                        :text="user.username || user.email || 'User'"
-                    >
+                    <v-tooltip v-for="user in displayedItems" bottom :key="user.id" :text="user.username || user.email || 'User'">
                         <template v-slot:activator="{ props }">
-                            <div
-                                v-bind="props"
-                                class="user-item sidebar-list-hover-bg"
-                                @click="openUserConversation(user)"
-                            >
+                            <div v-bind="props" class="user-item sidebar-list-hover-bg" @click="openUserConversation(user)">
                                 <div class="user-avatar">
                                     <img
                                         v-if="user.profile"
@@ -137,8 +121,8 @@ export default {
                 const meEmail = this.userInfo?.email || null;
 
                 const filtered = onlyUsers
-                    .filter(u => !u?.is_agent)
-                    .filter(u => {
+                    .filter((u) => !u?.is_agent)
+                    .filter((u) => {
                         if (!u) return false;
                         if (meId && u.id && u.id === meId) return false;
                         if (meEmail && u.email && u.email === meEmail) return false;
@@ -152,7 +136,7 @@ export default {
                     return aName.localeCompare(bName, 'ko');
                 });
 
-                this.users = filtered.map(u => ({
+                this.users = filtered.map((u) => ({
                     id: u.id,
                     username: u.username || u.name,
                     email: u.email,
@@ -169,7 +153,9 @@ export default {
             const id = user?.id || user?.uid || null;
             if (!id) return;
             // 에이전트 화면에서 넘어올 때 남아있는 hash(#chat) 제거
-            try { if (window.location.hash) window.location.hash = ''; } catch (e) {}
+            try {
+                if (window.location.hash) window.location.hash = '';
+            } catch (e) {}
             await this.$router.push({ path: '/chat', query: { userId: id }, hash: '' });
         },
 

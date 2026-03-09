@@ -1,15 +1,16 @@
 <template>
     <div>
         <v-row class="ma-0 pa-0 form-definition-chat-box">
-            <v-col v-if="type === 'edit'"
-                class="pa-0 overflow-y-auto"
-                style="height: calc(100vh - 260px);"
-            >
+            <v-col v-if="type === 'edit'" class="pa-0 overflow-y-auto" style="height: calc(100vh - 260px)">
                 <div v-if="isShowMashup">
-                    <mashup ref="mashup" v-model="kEditorInput" :key="mashupKey"  
+                    <mashup
+                        ref="mashup"
+                        v-model="kEditorInput"
+                        :key="mashupKey"
                         @onInitKEditorContent="updateKEditorContentBeforeSave"
                         @onChangeKEditorContent="changedKEditorContent"
-                        @update:modelValue="(val) => (modelValue = val)" />
+                        @update:modelValue="(val) => (modelValue = val)"
+                    />
                 </div>
                 <div v-else class="align-self-center">
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
@@ -18,12 +19,14 @@
             <!-- 오른쪽 세로선 추가 (한글 주석) -->
             <v-divider vertical v-if="type !== 'preview'"></v-divider>
 
-            <v-col v-if="type === 'preview'" 
-                class="pa-0 pl-4 overflow-y-auto"
-                style="height: calc(100vh - 260px);"
-            >
+            <v-col v-if="type === 'preview'" class="pa-0 pl-4 overflow-y-auto" style="height: calc(100vh - 260px)">
                 <template v-if="isShowPreview">
-                    <DynamicForm class="form-definition-preview-form" ref="dynamicForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                    <DynamicForm
+                        class="form-definition-preview-form"
+                        ref="dynamicForm"
+                        :formHTML="previewHTML"
+                        v-model="previewFormValues"
+                    ></DynamicForm>
                     <!-- <template v-if="dev.isDevMode">
                         <v-textarea label="previewFormValuesToTest" rows="10" v-model="dev.previewFormValues"></v-textarea>
                         <v-btn color="primary" class="full-width my-5" @click="onClickPreviewApplyButton">적용</v-btn>
@@ -38,15 +41,17 @@
                     <v-progress-circular color="primary" indeterminate></v-progress-circular>
                 </div>
             </v-col>
-            <v-col v-if="type != 'preview'"
-                :class="type == 'simulation' ? '':'ml-auto'"
+            <v-col
+                v-if="type != 'preview'"
+                :class="type == 'simulation' ? '' : 'ml-auto'"
                 :style="type == 'simulation' ? '' : 'max-width: 250px; height: calc(100vh - 260px) !important; overflow: auto;'"
                 class="pa-0 form-definition-simulation-chat-box"
             >
-                <Chat :chatInfo="chatInfo"
+                <Chat
+                    :chatInfo="chatInfo"
                     :messages="messages"
                     :userInfo="userInfo"
-                    :type="type == 'simulation' ? 'form_simulation':'form'"
+                    :type="type == 'simulation' ? 'form_simulation' : 'form'"
                     @sendMessage="beforeSendMessage"
                     @sendEditedMessage="sendEditedMessage"
                     @stopMessage="stopMessage"
@@ -113,9 +118,9 @@ export default {
         prevFormOutput: '', // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         prevMessageFormat: '', // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메시지를 재구축해서 보내기 위해서
 
-        formHTML: "",
+        formHTML: '',
         isShowMashup: false,
-        
+
         previewHTML: '',
         previewFormValues: {},
         isShowPreview: false,
@@ -128,7 +133,7 @@ export default {
         isAIUpdated: false,
         isRoutedWithUnsaved: false,
         datasourceURL: null,
-        datasourceSchema: null,
+        datasourceSchema: null
     }),
     async created() {
         // const reloadOnConnectionFailure = async () => {
@@ -149,13 +154,13 @@ export default {
         }
 
         const isUseDataSource = localStorage.getItem('isUseDataSource');
-        if(isUseDataSource == 'true') {
+        if (isUseDataSource == 'true') {
             this.$try({
                 context: this,
                 action: async () => {
                     const schema = await backend.extractDatasourceSchema();
                     this.datasourceSchema = Array.isArray(schema) ? schema : [];
-                    this.datasourceURL = this.datasourceSchema.map(item => item.endpoint);
+                    this.datasourceURL = this.datasourceSchema.map((item) => item.endpoint);
                 },
                 errorMsg: '데이터소스 스키마 연동 실패'
             });
@@ -170,7 +175,7 @@ export default {
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
-        },
+        }
     },
     watch: {
         type(newVal, oldVal) {
@@ -183,9 +188,9 @@ export default {
         previewHTML: {
             handler(newVal) {
                 this.EventBus.emit('updatePreviewHTML', newVal);
-            },  
+            },
             immediate: true
-        },
+        }
     },
     methods: {
         getFormHTML() {
@@ -210,81 +215,88 @@ export default {
         dynamicFormHTMLToKeditorContentHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
 
-
             const rows = dom.querySelectorAll('row-layout');
-            rows.forEach(row => {
+            rows.forEach((row) => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
-                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                if (!isMultiDataMode || isMultiDataMode === 'false') {
                     const newRow = document.createElement('div');
-                    
 
-                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
-                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
-                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+                    newRow.setAttribute('name', row.getAttribute('name') ?? '');
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? '');
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? 'false');
 
                     newRow.setAttribute('class', 'row');
 
-
-                    Array.from(row.firstChild.children).forEach(child => {
+                    Array.from(row.firstChild.children).forEach((child) => {
                         newRow.appendChild(child);
                     });
 
-                    $(newRow).children('[class^="col-sm-"]').children('[v-model]').each(function () {
-                        var field = ($(this))[0];
-                        
-                        field.removeAttribute('v-model');
-                    });
+                    $(newRow)
+                        .children('[class^="col-sm-"]')
+                        .children('[v-model]')
+                        .each(function () {
+                            var field = $(this)[0];
 
-                    $(newRow).children('[class^="col-sm-"]').children('*').each(function () {
-                        var field = ($(this))[0];
-                        
-                        Array.from(field.attributes).forEach(attr => {
-                            if (attr.name.startsWith('v-on:')) {
-                                field.removeAttribute(attr.name);
-                            }
+                            field.removeAttribute('v-model');
                         });
-                    });
 
+                    $(newRow)
+                        .children('[class^="col-sm-"]')
+                        .children('*')
+                        .each(function () {
+                            var field = $(this)[0];
+
+                            Array.from(field.attributes).forEach((attr) => {
+                                if (attr.name.startsWith('v-on:')) {
+                                    field.removeAttribute(attr.name);
+                                }
+                            });
+                        });
 
                     row.parentNode.replaceChild(newRow, row);
                 } else {
                     const newRow = document.createElement('div');
-                    
 
-                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
-                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
-                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+                    newRow.setAttribute('name', row.getAttribute('name') ?? '');
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? '');
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? 'false');
 
                     newRow.setAttribute('class', 'row');
 
-
-                    $(row).children('div').children('div.row')
-                        .children('[class^="col-sm-"]').each(function () {
-                        var field = ($(this))[0];
-                        newRow.appendChild(field);
-                    })
-
-                    $(newRow).children('[class^="col-sm-"]').children('[v-model]').each(function () {
-                        var field = ($(this))[0];
-                        field.removeAttribute('v-model');
-                    })
-
-                    $(newRow).children('[class^="col-sm-"]').children('*').each(function () {
-                        var field = ($(this))[0];
-                        Array.from(field.attributes).forEach(attr => {
-                            if (attr.name.startsWith('v-on:')) {
-                                field.removeAttribute(attr.name);
-                            }
+                    $(row)
+                        .children('div')
+                        .children('div.row')
+                        .children('[class^="col-sm-"]')
+                        .each(function () {
+                            var field = $(this)[0];
+                            newRow.appendChild(field);
                         });
-                    })
 
+                    $(newRow)
+                        .children('[class^="col-sm-"]')
+                        .children('[v-model]')
+                        .each(function () {
+                            var field = $(this)[0];
+                            field.removeAttribute('v-model');
+                        });
+
+                    $(newRow)
+                        .children('[class^="col-sm-"]')
+                        .children('*')
+                        .each(function () {
+                            var field = $(this)[0];
+                            Array.from(field.attributes).forEach((attr) => {
+                                if (attr.name.startsWith('v-on:')) {
+                                    field.removeAttribute(attr.name);
+                                }
+                            });
+                        });
 
                     row.parentNode.replaceChild(newRow, row);
                 }
             });
 
-
-            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace('<br>', '\n');
         },
 
         /**
@@ -298,8 +310,8 @@ export default {
                     type: 'form',
                     proc_def_id: this.simulation_data.proc_def_id ? this.simulation_data.proc_def_id : null,
                     activity_id: this.simulation_data.element_id ? this.simulation_data.element_id : null
-                }
-                if(window.location.pathname == '/definition-map'){
+                };
+                if (window.location.pathname == '/definition-map') {
                     localStorage.setItem(this.formId, this.previewHTML);
                 } else {
                     await this.backend.putRawDefinition(this.previewHTML, this.formId, options);
@@ -310,8 +322,8 @@ export default {
         },
 
         onClickPreviewSubmitButton() {
-            const error = this.$refs.dynamicForm.validate()
-            if (error && error.length > 0) alert(error)
+            const error = this.$refs.dynamicForm.validate();
+            if (error && error.length > 0) alert(error);
 
             if (this.dev.isDevMode) this.dev.previewFormValues = JSON.stringify(this.previewFormValues);
             else alert(JSON.stringify(this.previewFormValues));
@@ -327,9 +339,9 @@ export default {
          */
         async loadData(path) {
             this.isShowMashup = false;
-            this.formHTML = (await this.backend.getRawDefinition(this.formId, { type: 'form' }));
+            this.formHTML = await this.backend.getRawDefinition(this.formId, { type: 'form' });
 
-            let tempHTML = ''
+            let tempHTML = '';
             if (this.modelValue) {
                 tempHTML = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
             } else {
@@ -347,7 +359,7 @@ export default {
          * @param {*} newMessage
          */
         beforeSendMessage(newMessage) {
-            if(this.type == 'simulation'){
+            if (this.type == 'simulation') {
                 this.prevFormOutput = this.dynamicFormHTMLToKeditorContentHTML(this.modelValue);
             } else {
                 this.prevFormOutput = this.$refs.mashup.getKEditorContentHtml();
@@ -370,7 +382,7 @@ export default {
          */
         afterGenerationFinished(response) {
             this.processResponse(response);
-            if(this.type == 'simulation'){
+            if (this.type == 'simulation') {
                 this.saveFormDefinition('afterGenerationFinished');
             }
         },
@@ -386,8 +398,7 @@ export default {
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
 
                 // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메시지가 표시되지 않기때문에 추가함
-                if(messageWriting.content.length == 0) messageWriting.content = " "
-                
+                if (messageWriting.content.length == 0) messageWriting.content = ' ';
 
                 // 생성된 HTML을 보여주기 위해서
                 if (messageWriting.jsonContent) {
@@ -399,14 +410,14 @@ export default {
                         const modifiedPrevFormOutput = this.getModifiedPrevFormOutput(messageWriting.jsonContent.modifications);
                         this.applyNewSrcToMashup(this.loadHTMLToKEditorContent(modifiedPrevFormOutput));
                         this.previewHTML = this.keditorContentHTMLToDynamicFormHTML(modifiedPrevFormOutput);
-                        messageWriting.content = "요청하신 폼 수정이 완료되었습니다."
+                        messageWriting.content = '요청하신 폼 수정이 완료되었습니다.';
                     } else console.error('알 수 없는 JSON 결과: ', JSON.stringify(messageWriting.jsonContent));
                     this.isAIUpdated = true;
                 }
             } catch (error) {
                 console.log(error);
                 let messageWriting = this.messages[this.messages.length - 1];
-                messageWriting.content = "폼 수정중 오류가 발생하였습니다. 잠시 후 다시 시도해주세요."
+                messageWriting.content = '폼 수정중 오류가 발생하였습니다. 잠시 후 다시 시도해주세요.';
             }
         },
 
@@ -429,78 +440,79 @@ export default {
                 const s4 = () => {
                     return Math.floor((1 + Math.random()) * 0x10000)
                         .toString(16)
-                    .substring(1);
-                }
+                        .substring(1);
+                };
 
-                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
-            }
+                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+            };
 
             // console.log('### 로드시킬 HTML 텍스트 ###');
             // console.log(htmlTextToLoad);
 
             const dom = new DOMParser().parseFromString(htmlTextToLoad, 'text/html');
 
-
             // 만약 AI 생성오류 등으로 row안에 있는 col-sm-{숫자}의 총합이 12가 아니라면 모든 내용을 col-sm-12에 담아버림
             dom.querySelectorAll('div.row').forEach((row) => {
+                let totalColSpaceSum = 0;
+                $(row)
+                    .children('[class^="col-sm-"]')
+                    .each(function () {
+                        var col = $(this)[0];
 
-                let totalColSpaceSum = 0
-                $(row).children('[class^="col-sm-"]').each(function () {
-                    var col = ($(this))[0];
+                        const colClassMatch = col.className.match(/col-sm-(\d+)/);
+                        if (colClassMatch) {
+                            const colSize = parseInt(colClassMatch[1], 10);
+                            totalColSpaceSum += colSize;
+                        }
+                    });
 
-                    const colClassMatch = col.className.match(/col-sm-(\d+)/);
-                    if (colClassMatch) {
-                        const colSize = parseInt(colClassMatch[1], 10);
-                        totalColSpaceSum += colSize;
-                    }
-                });
-
-                if(totalColSpaceSum !== 12) {
+                if (totalColSpaceSum !== 12) {
                     const newCol = document.createElement('div');
                     newCol.setAttribute('class', 'col-sm-12');
 
-                    $(row).children('[class^="col-sm-"]').each(function () {
-                        var col = ($(this))[0];
-                        Array.from(col.children).forEach(child => {
-                            newCol.appendChild(child);
+                    $(row)
+                        .children('[class^="col-sm-"]')
+                        .each(function () {
+                            var col = $(this)[0];
+                            Array.from(col.children).forEach((child) => {
+                                newCol.appendChild(child);
+                            });
                         });
-                    });
 
                     row.innerHTML = '';
                     row.appendChild(newCol);
                 }
-
             });
 
             // 만약, AI가 class='row' 바깥에 section으로 감싸라는 지시를 제대로 따르지 못했을 경우, 적절하게 처리하기 위해서
-            let isInvalidSectionParsing = false
+            let isInvalidSectionParsing = false;
             dom.querySelectorAll('div.row').forEach((row) => {
                 if (row.parentElement.tagName.toLowerCase() !== 'section') {
-                    isInvalidSectionParsing = true
+                    isInvalidSectionParsing = true;
                 }
             });
 
             dom.querySelectorAll('section').forEach((section) => {
-                if(section.children.length !== 1) {
-                    isInvalidSectionParsing = true
+                if (section.children.length !== 1) {
+                    isInvalidSectionParsing = true;
                 }
             });
 
-            if(isInvalidSectionParsing) {
+            if (isInvalidSectionParsing) {
                 // 특정 컴포넌트 안의 내용을 남겨주고, 그 컴포넌트를 제거 시킴
                 const removeParentComponent = (parentComponent) => {
                     const parentSection = parentComponent.parentElement;
                     while (parentComponent.firstChild) {
                         parentSection.insertBefore(parentComponent.firstChild, parentComponent);
                     }
-                        parentSection.removeChild(parentComponent);
-                }
+                    parentSection.removeChild(parentComponent);
+                };
 
                 const removeParentComponentByQuerySelector = (query) => {
-                    dom.querySelectorAll(query).forEach(parentComponent => {
-                        removeParentComponent(parentComponent)
-                    })
-                }
+                    dom.querySelectorAll(query).forEach((parentComponent) => {
+                        removeParentComponent(parentComponent);
+                    });
+                };
 
                 removeParentComponentByQuerySelector('section');
 
@@ -532,11 +544,9 @@ export default {
 
                 // 속성중에서 items인 경우, 키와 값 각각이 [가-힣a-zA-Z0-9_\-. ]에 해당하는 문자가 아닌 경우, 전부 제거함
                 if (component.hasAttribute('items')) {
-                    if(component.getAttribute('items').length == 0) {
+                    if (component.getAttribute('items').length == 0) {
                         component.setAttribute('items', '[]');
-                    }
-                    else if(component.getAttribute('items') !== "[]") {
-                     
+                    } else if (component.getAttribute('items') !== '[]') {
                         try {
                             // AI가 메뉴얼을 따르지 않고, '[A, B, ..., C]'와 같이 나열 연산자를 사용할 경우, 제거시켜버름
                             let items = JSON.parse(
@@ -564,7 +574,6 @@ export default {
                             console.log(error);
                             component.setAttribute('items', '[]');
                         }
-
                     }
                 }
 
@@ -606,20 +615,27 @@ export default {
             });
 
             // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
-            if(dom.body.querySelectorAll("section").length == 0) {
+            if (dom.body.querySelectorAll('section').length == 0) {
                 const rows = Array.from(dom.body.querySelectorAll('.row'));
-                dom.body.innerHTML = rows.map(row => {
-                    const section = document.createElement('section');
-                    section.innerHTML = row.outerHTML;
-                    return section.outerHTML;
-                }).join('').replace(/&quot;/g, `'`);
+                dom.body.innerHTML = rows
+                    .map((row) => {
+                        const section = document.createElement('section');
+                        section.innerHTML = row.outerHTML;
+                        return section.outerHTML;
+                    })
+                    .join('')
+                    .replace(/&quot;/g, `'`);
             }
 
             // KEdtior에서 인식할 수 있도록 클래스 추가하기
-            Array.from(dom.body.querySelectorAll("section")).forEach(section => {
+            Array.from(dom.body.querySelectorAll('section')).forEach((section) => {
                 section.setAttribute('class', 'keditor-container');
             });
-            const loadedValidHTML = Array.from(dom.body.children).map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
+            const loadedValidHTML = Array.from(dom.body.children)
+                .map((section) => section.outerHTML)
+                .join('')
+                .replace(/&quot;/g, `'`)
+                .replace('<br>', '\n');
 
             // console.log('### 로드된 유효 HTML 텍스트 ###');
             // console.log(loadedValidHTML);
@@ -639,7 +655,7 @@ export default {
          */
         getModifiedPrevFormOutput(modifications) {
             const dom = new DOMParser().parseFromString(this.prevFormOutput, 'text/html');
-            
+
             modifications.forEach((modification) => {
                 if (modification.action === 'addAsChild') {
                     const parent = dom.querySelector(modification.targetCSSSelector);
@@ -658,12 +674,12 @@ export default {
                     target.parentNode.removeChild(target);
                 }
 
-                if(modification.action === 'addAsChild' || modification.action === 'addAfter'){
-                    this.$emit('addedNewForm')
+                if (modification.action === 'addAsChild' || modification.action === 'addAfter') {
+                    this.$emit('addedNewForm');
                 }
             });
 
-            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
+            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace('<br>', '\n');
             console.log('### 수정된 이전 폼 출력 ###');
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;
@@ -691,20 +707,19 @@ export default {
                 }
             });
             me.previewFormValues = {};
-            
+
             me.$nextTick(() => {
                 me.isShowPreview = true;
                 me.dev.previewFormValues = JSON.stringify(me.previewFormValues);
             });
-        },
-        
+        }
     },
 
     async beforeRouteLeave(to, from, next) {
         // 에러로 인해서 로드가 되지 않을 경우, 별도의 검사를 수행하지 않음
-        if(!(this.$refs.mashup)) return next();
+        if (!this.$refs.mashup) return next();
 
-        if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContent)) {
+        if (this.isAIUpdated || this.$refs.mashup.getKEditorContentHtml() != this.kEditorContent) {
             const answer = window.confirm(this.$t('changePath'));
             if (answer) {
                 next();
@@ -714,7 +729,7 @@ export default {
         } else {
             next();
         }
-    },
+    }
 };
 </script>
 

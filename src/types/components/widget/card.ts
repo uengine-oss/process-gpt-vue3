@@ -1,4 +1,4 @@
-import type { TablerIconComponent } from "vue-tabler-icons";
+import type { TablerIconComponent } from 'vue-tabler-icons';
 
 /*Card types*/
 type cardsType = {
@@ -15,21 +15,21 @@ type cardsType = {
 };
 
 /*Follow card types*/
-type followCard={
+type followCard = {
     title: string;
     location: string;
     avatar: string;
 };
 
 /*Music card types*/
-type musicCards={
+type musicCards = {
     title: string;
     subheader: string;
     img: string;
-}
+};
 
 /*Products card types*/
-type productsCards= {
+type productsCards = {
     title: string;
     link: string;
     photo: string;
@@ -39,21 +39,21 @@ type productsCards= {
 };
 
 /*Social Icon card types*/
-type socialiconCards={
+type socialiconCards = {
     name: string;
     icon: TablerIconComponent;
     color: string;
 };
 
 /*Profile card types*/
-type profileCard={
+type profileCard = {
     title: string;
     subtitle: string;
     avatar: string;
 };
 
 /*Upcomming List card types*/
-type upcommingLists={
+type upcommingLists = {
     icon: TablerIconComponent;
     title: string;
     subtitle: string;
@@ -62,14 +62,14 @@ type upcommingLists={
 };
 
 /*User card types*/
-type userGroupType={
-    icon:string;
-}
-type userCard ={
+type userGroupType = {
+    icon: string;
+};
+type userCard = {
     title: string;
     subtitle: string;
     avatar: string;
-    userGroup: userGroupType[]
+    userGroup: userGroupType[];
 };
 
 /*Payment Gatway*/
@@ -94,7 +94,7 @@ type recentTrans = {
 };
 
 /*background icon  card*/
-type backIcon={
+type backIcon = {
     color: string;
     icon: TablerIconComponent;
     title: string;
@@ -102,13 +102,13 @@ type backIcon={
 };
 
 /*image card*/
-type imgCard={
+type imgCard = {
     image: string;
     color: string;
 };
 
 /*Top Cards*/
-type topCards={
+type topCards = {
     link: string;
     img: string;
     title: string;
@@ -117,4 +117,18 @@ type topCards={
     textcolor: string;
 };
 
-export type{cardsType, followCard,musicCards,productsCards, socialiconCards,profileCard,upcommingLists,userCard,paymentGateway,recentTrans,backIcon,imgCard,topCards}
+export type {
+    cardsType,
+    followCard,
+    musicCards,
+    productsCards,
+    socialiconCards,
+    profileCard,
+    upcommingLists,
+    userCard,
+    paymentGateway,
+    recentTrans,
+    backIcon,
+    imgCard,
+    topCards
+};

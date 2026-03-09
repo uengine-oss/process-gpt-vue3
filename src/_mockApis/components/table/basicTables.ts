@@ -1,5 +1,15 @@
-
-import type { basicTable1, basicTable2, basicTable3, basicTable4, basicTable5, tableDark, tableDensity, tableFixedHeader, heightTable, tableAction } from '@/types/components/table/index';
+import type {
+    basicTable1,
+    basicTable2,
+    basicTable3,
+    basicTable4,
+    basicTable5,
+    tableDark,
+    tableDensity,
+    tableFixedHeader,
+    heightTable,
+    tableAction
+} from '@/types/components/table/index';
 /*import tabler icons*/
 import { PlusIcon, EditIcon, TrashIcon, CheckIcon, XIcon, ArrowBackUpIcon } from 'vue-tabler-icons';
 import img1 from '@/assets/images/profile/user1.jpg';
@@ -240,7 +250,7 @@ const basicTableData3: basicTable3[] = [
         handle: '@rhye',
         status: 'active',
         statuscolor: 'success',
-        statusoffline:false,
+        statusoffline: false,
         email: 'olivia@ui.com',
         teams: [
             {
@@ -258,7 +268,7 @@ const basicTableData3: basicTable3[] = [
         name: 'Barbara Steele',
         handle: '@steele',
         status: 'offline',
-        statusoffline:true,
+        statusoffline: true,
         statuscolor: 'dark',
         email: 'steele@ui.com',
         teams: [
@@ -277,7 +287,7 @@ const basicTableData3: basicTable3[] = [
         name: 'Leonard Gordon',
         handle: '@gordon',
         status: 'active',
-        statusoffline:false,
+        statusoffline: false,
         statuscolor: 'success',
         email: 'olivia@ui.com',
         teams: [
@@ -296,7 +306,7 @@ const basicTableData3: basicTable3[] = [
         name: 'Evelyn Pope',
         handle: '@pope',
         status: 'offline',
-        statusoffline:true,
+        statusoffline: true,
         statuscolor: 'dark',
         email: 'steele@ui.com',
         teams: [
@@ -315,7 +325,7 @@ const basicTableData3: basicTable3[] = [
         name: 'Tommy Garza',
         handle: '@garza',
         status: 'active',
-        statusoffline:false,
+        statusoffline: false,
         statuscolor: 'success',
         email: 'olivia@ui.com',
         teams: [
@@ -330,7 +340,7 @@ const basicTableData3: basicTable3[] = [
         name: 'Isabel Vasquez',
         handle: '@vasquez',
         status: 'active',
-        statusoffline:false,
+        statusoffline: false,
         statuscolor: 'success',
         email: 'steele@ui.com',
         teams: [
@@ -480,9 +490,7 @@ const basicTableData5: basicTable5[] = [
             }
         ]
     }
-
 ];
-
 
 /*Dark Table*/
 const darkTableData: tableDark[] = [
@@ -731,7 +739,7 @@ const tableFixedHeaderData: tableFixedHeader[] = [
         name: 'Barbara Steele',
         handle: '@steele',
         status: 'offline',
-        statusoffline:true,
+        statusoffline: true,
         statuscolor: 'dark',
         email: 'steele@ui.com',
         teams: [
@@ -750,7 +758,7 @@ const tableFixedHeaderData: tableFixedHeader[] = [
         name: 'Leonard Gordon',
         handle: '@gordon',
         status: 'active',
-        statusoffline:false,
+        statusoffline: false,
         statuscolor: 'success',
         email: 'olivia@ui.com',
         teams: [
@@ -769,7 +777,7 @@ const tableFixedHeaderData: tableFixedHeader[] = [
         name: 'Olivia Rhye',
         handle: '@rhye',
         status: 'active',
-        statusoffline:false,
+        statusoffline: false,
         statuscolor: 'success',
         email: 'olivia@ui.com',
         teams: [
@@ -797,7 +805,7 @@ const tableFixedHeaderData: tableFixedHeader[] = [
         name: 'Evelyn Pope',
         handle: '@pope',
         status: 'offline',
-        statusoffline:true,
+        statusoffline: true,
         statuscolor: 'dark',
         email: 'steele@ui.com',
         teams: [
@@ -816,7 +824,7 @@ const tableFixedHeaderData: tableFixedHeader[] = [
         name: 'Tommy Garza',
         handle: '@garza',
         status: 'active',
-        statusoffline:false,
+        statusoffline: false,
         statuscolor: 'success',
         email: 'olivia@ui.com',
         teams: [
@@ -831,7 +839,7 @@ const tableFixedHeaderData: tableFixedHeader[] = [
         name: 'Isabel Vasquez',
         handle: '@vasquez',
         status: 'active',
-        statusoffline:false,
+        statusoffline: false,
         statuscolor: 'success',
         email: 'steele@ui.com',
         teams: [
@@ -939,8 +947,7 @@ const heightTableData: heightTable[] = [
             }
         ]
     }
-]
-
+];
 
 /*Table Action*/
 const tableActionData: tableAction[] = [
@@ -956,5 +963,16 @@ const tableActionData: tableAction[] = [
         icon: TrashIcon,
         listtitle: 'Delete'
     }
-]
-export { basicTableData1, basicTableData2, basicTableData3, basicTableData4, basicTableData5, darkTableData, tableDensityData, tableFixedHeaderData, heightTableData, tableActionData };
+];
+export {
+    basicTableData1,
+    basicTableData2,
+    basicTableData3,
+    basicTableData4,
+    basicTableData5,
+    darkTableData,
+    tableDensityData,
+    tableFixedHeaderData,
+    heightTableData,
+    tableActionData
+};

@@ -1,16 +1,10 @@
 <template>
     <div class="card-view-container">
-        <div v-if="!procMap.mega_proc_list || procMap.mega_proc_list.length === 0"
-            class="text-center text-grey pa-10"
-        >
+        <div v-if="!procMap.mega_proc_list || procMap.mega_proc_list.length === 0" class="text-center text-grey pa-10">
             {{ $t('processArchitecture.noData') }}
         </div>
         <div v-else class="columns-wrapper">
-            <div
-                v-for="col in columns"
-                :key="col.key"
-                class="board-column"
-            >
+            <div v-for="col in columns" :key="col.key" class="board-column">
                 <!-- Column Header -->
                 <div class="column-header" :style="{ borderBottomColor: col.color }">
                     <div class="column-header-top">
@@ -24,7 +18,7 @@
                                     variant="underlined"
                                     hide-details
                                     autofocus
-                                    style="max-width: 140px; font-size: 0.95rem;"
+                                    style="max-width: 140px; font-size: 0.95rem"
                                     @keyup.enter="saveColumnName(col.key)"
                                     @keyup.escape="cancelEditColumn"
                                     @blur="saveColumnName(col.key)"
@@ -44,11 +38,7 @@
                                 </v-btn>
                             </template>
                         </div>
-                        <v-chip
-                            :color="col.color"
-                            size="x-small"
-                            variant="tonal"
-                        >
+                        <v-chip :color="col.color" size="x-small" variant="tonal">
                             {{ getMajorCountForColumn(col.key) }}
                         </v-chip>
                     </div>
@@ -59,18 +49,14 @@
                         </span>
                         <span class="stat-divider">·</span>
                         <span class="stat-text text-orange">
-                            {{ $t('processArchitecture.board.reviewing') }}:
-                            <strong>{{ getReviewingCount(col.key) }}</strong>{{ $t('processArchitecture.board.countUnit') }}
+                            {{ $t('processArchitecture.board.reviewing') }}: <strong>{{ getReviewingCount(col.key) }}</strong
+                            >{{ $t('processArchitecture.board.countUnit') }}
                         </span>
                     </div>
                 </div>
 
                 <!-- Major Process Cards with Infinite Scroll -->
-                <div
-                    class="cards-list"
-                    :ref="el => setColumnRef(el as HTMLElement | null, col.key)"
-                    @scroll="onColumnScroll(col.key)"
-                >
+                <div class="cards-list" :ref="el => setColumnRef(el as HTMLElement | null, col.key)" @scroll="onColumnScroll(col.key)">
                     <v-card
                         v-for="major in getVisibleMajors(col.key)"
                         :key="major.id"
@@ -91,10 +77,7 @@
                                     {{ major.domain || major.domain_id }}
                                 </v-chip>
                                 <span v-else class="invisible-spacer" />
-                                <span
-                                    v-if="major.id"
-                                    class="text-caption text-grey-darken-1 font-weight-medium process-id"
-                                >
+                                <span v-if="major.id" class="text-caption text-grey-darken-1 font-weight-medium process-id">
                                     [{{ major.id }}]
                                 </span>
                             </div>
@@ -124,10 +107,7 @@
                                     :class="['fav-btn ml-1', { 'is-fav': favorites?.has(sub.id) }]"
                                     @click.stop="emit('toggleFavorite', sub.id)"
                                 >
-                                    <v-icon
-                                        size="14"
-                                        :color="favorites?.has(sub.id) ? 'amber' : 'grey-lighten-1'"
-                                    >
+                                    <v-icon size="14" :color="favorites?.has(sub.id) ? 'amber' : 'grey-lighten-1'">
                                         {{ favorites?.has(sub.id) ? 'mdi-star' : 'mdi-star-outline' }}
                                     </v-icon>
                                 </v-btn>
@@ -140,14 +120,12 @@
                                     size="x-small"
                                     class="ml-1"
                                 />
-                                <span
-                                    v-if="getStatus(sub.id)?.version"
-                                    class="text-caption text-grey ml-1"
-                                >
+                                <span v-if="getStatus(sub.id)?.version" class="text-caption text-grey ml-1">
                                     v{{ getStatus(sub.id).version }}
                                 </span>
                             </div>
-                            <div v-if="!major.sub_proc_list || major.sub_proc_list.length === 0"
+                            <div
+                                v-if="!major.sub_proc_list || major.sub_proc_list.length === 0"
                                 class="text-caption text-grey-lighten-1 pa-2 text-center"
                             >
                                 {{ $t('processArchitecture.noSubProcesses') }}
@@ -156,10 +134,7 @@
                     </v-card>
 
                     <!-- Loading indicator when more items available -->
-                    <div
-                        v-if="hasMoreMajors(col.key)"
-                        class="load-more-trigger pa-2 text-center"
-                    >
+                    <div v-if="hasMoreMajors(col.key)" class="load-more-trigger pa-2 text-center">
                         <v-progress-circular size="20" width="2" indeterminate color="grey" />
                     </div>
 
@@ -279,7 +254,7 @@ function cancelEditColumn() {
 }
 
 const columns = computed(() =>
-    COLUMN_DEFS.map(col => ({
+    COLUMN_DEFS.map((col) => ({
         ...col,
         label: customColumnNames.value[col.key] || t(col.labelKey)
     }))
@@ -336,7 +311,7 @@ const allMajors = computed(() => {
     const map = props.procMap;
     if (!map || !map.mega_proc_list) return list;
     for (const mega of map.mega_proc_list) {
-        for (const major of (mega.major_proc_list || [])) {
+        for (const major of mega.major_proc_list || []) {
             list.push({ ...major, _megaId: mega.id, _megaName: mega.name });
         }
     }
@@ -353,7 +328,7 @@ const allMajors = computed(() => {
 });
 
 function getMajorsForColumn(colKey: string): any[] {
-    return allMajors.value.filter(major => getColumnKey(major) === colKey);
+    return allMajors.value.filter((major) => getColumnKey(major) === colKey);
 }
 
 function getVisibleMajors(colKey: string): any[] {
@@ -378,7 +353,7 @@ function getTotalSubProcessCount(colKey: string): number {
 function getReviewingCount(colKey: string): number {
     let count = 0;
     for (const major of getMajorsForColumn(colKey)) {
-        for (const sub of (major.sub_proc_list || [])) {
+        for (const sub of major.sub_proc_list || []) {
             const status = props.processStatuses.get(sub.id);
             if (status?.status === 'review') count++;
         }
@@ -556,7 +531,6 @@ function getDomainColor(domainName: string): string {
     opacity: 1;
 }
 
-
 .load-more-trigger {
     min-height: 40px;
     display: flex;
@@ -571,19 +545,24 @@ function getDomainColor(domainName: string): string {
 
 /* To-Be view styles */
 @keyframes wip-pulse {
-    0%, 100% { background-color: transparent; }
-    50% { background-color: rgba(123, 31, 162, 0.08); }
+    0%,
+    100% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(123, 31, 162, 0.08);
+    }
 }
 
 .wip-item {
     animation: wip-pulse 2s ease-in-out infinite;
-    border-left: 3px solid #7B1FA2;
+    border-left: 3px solid #7b1fa2;
     padding-left: 9px !important;
 }
 
 .sunset-item {
     opacity: 0.7;
-    border-left: 3px solid #C62828;
+    border-left: 3px solid #c62828;
     padding-left: 9px !important;
 }
 </style>

@@ -140,11 +140,15 @@ export declare class ConnectionSettings {
 /**
  * Settings to connect to a remote AceBase server
  */
-export declare type AceBaseClientConnectionSettings = Omit<Partial<ConnectionSettings>, 'dbname' | 'host' | 'port' | 'sync' | 'network' | 'cache'> & Pick<ConnectionSettings, 'dbname' | 'host' | 'port'> & {
-    sync?: Partial<ConnectionSettings['sync']>;
-    network?: Partial<ConnectionSettings['network']>;
-    cache?: Partial<ConnectionSettings['cache']>;
-};
+export declare type AceBaseClientConnectionSettings = Omit<
+    Partial<ConnectionSettings>,
+    'dbname' | 'host' | 'port' | 'sync' | 'network' | 'cache'
+> &
+    Pick<ConnectionSettings, 'dbname' | 'host' | 'port'> & {
+        sync?: Partial<ConnectionSettings['sync']>;
+        network?: Partial<ConnectionSettings['network']>;
+        cache?: Partial<ConnectionSettings['cache']>;
+    };
 /**
  * Cache settings to enable offline access and synchronization
  */
@@ -180,7 +184,7 @@ export declare class AceBaseClient extends AceBaseBase {
     /**
      * Current connection state
      */
-    get connectionState(): "disconnected" | "connecting" | "connected" | "disconnecting";
+    get connectionState(): 'disconnected' | 'connecting' | 'connected' | 'disconnecting';
     /**
      * Manually connects to the server: use this if you have `autoConnect` disabled in your client config
      * @param retry Whether to keep retrying to connect if the connection fails. Default is `true`
@@ -214,7 +218,10 @@ export declare class AceBaseClient extends AceBaseBase {
      */
     get cache(): {
         clear: (path?: string) => Promise<void>;
-        update: (path?: string, cursor?: string | null) => Promise<{
+        update: (
+            path?: string,
+            cursor?: string | null
+        ) => Promise<{
             path: string;
             used_cursor: string | null;
             new_cursor: string;

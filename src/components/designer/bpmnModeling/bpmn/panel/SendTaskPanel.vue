@@ -21,7 +21,7 @@
             <v-row class="ma-0 pa-0 mb-4">
                 <v-text-field v-model="copyUengineProperties.from" :label="$t('ReceiveTaskPanel.descriptionFrom')"></v-text-field>
             </v-row>
-            
+
             <div>{{ $t('ReceiveTaskPanel.toRole') }}</div>
             <v-row class="ma-0 pa-0 mb-4">
                 <v-text-field v-model="copyUengineProperties.toRole" :label="$t('ReceiveTaskPanel.descriptionToRole')"></v-text-field>
@@ -30,27 +30,38 @@
             <v-row class="ma-0 pa-0 mb-4">
                 <v-text-field v-model="copyUengineProperties.fromRole" :label="$t('ReceiveTaskPanel.descriptionFromRole')"></v-text-field>
             </v-row>
-            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ReceiveTaskPanel.dataMapping') }}</v-btn>
+            <v-btn block text rounded color="primary" variant="flat" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{
+                $t('ReceiveTaskPanel.dataMapping')
+            }}</v-btn>
         </div>
         <div v-if="sendType == 'rest_api'">
             <div class="mb-1 mt-4">
                 <v-col class="pa-0 pr-2" style="margin-bottom: 10px">
                     <div>Headers</div>
-                    <v-row v-for="(header, idx) in copyUengineProperties.headers" :key="idx" style="margin-left: 13px; margin-top: 10px;">
-                        <v-row style="align-self: center;">
-                            <div style="font-size: 15px; width: 50%;"> {{ header.name }}</div>
-                            <div style="font-size: 15px; width: 40%;"> {{ header.value }}</div>
+                    <v-row v-for="(header, idx) in copyUengineProperties.headers" :key="idx" style="margin-left: 13px; margin-top: 10px">
+                        <v-row style="align-self: center">
+                            <div style="font-size: 15px; width: 50%">{{ header.name }}</div>
+                            <div style="font-size: 15px; width: 40%">{{ header.value }}</div>
                         </v-row>
-                        <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeHeader(header)" style="margin-right: 7px;"></v-btn>
+                        <v-btn
+                            variant="text"
+                            density="comfortable"
+                            size="x-small"
+                            icon="mdi-delete"
+                            @click="removeHeader(header)"
+                            style="margin-right: 7px"
+                        ></v-btn>
                     </v-row>
-                    <v-row style="margin-left: 0px; margin-top: 20px; margin-bottom: 20px;">
-                        <v-text-field class="delete-input-details"
+                    <v-row style="margin-left: 0px; margin-top: 20px; margin-bottom: 20px">
+                        <v-text-field
+                            class="delete-input-details"
                             v-model="newHeader.name"
                             label="Key"
                             required
                             hide-details
                         ></v-text-field>
-                        <v-text-field class="delete-input-details"
+                        <v-text-field
+                            class="delete-input-details"
                             v-model="newHeader.value"
                             label="value"
                             required
@@ -58,7 +69,7 @@
                         ></v-text-field>
                         <v-btn variant="text" density="comfortable" icon="mdi-plus" @click="addHeader()"></v-btn>
                     </v-row>
-                </v-col>   
+                </v-col>
                 <v-row class="ma-0 pa-0 align-center pb-4">
                     <v-col cols="3" class="pa-0 pr-2">
                         <v-autocomplete
@@ -78,7 +89,7 @@
                         :details="methodTypeDescription"
                         :detailUrl="'https://www.youtube.com/watch?v=bxkB-pkOpTQ'"
                         :iconSize="24"
-                        style="margin-left: 3px; margin-right: -3px;"
+                        style="margin-left: 3px; margin-right: -3px"
                     />
                 </v-row>
             </div>
@@ -96,7 +107,7 @@
             <div align="right" @click="generateAPI">
                 <v-btn prepend-icon rounded color="primary" variant="flat">
                     <template v-slot:prepend>
-                        <Icons :icon="'magic'"  />
+                        <Icons :icon="'magic'" />
                     </template>
                     {{ $t('SendTaskPanel.generation') }}
                 </v-btn>
@@ -113,21 +124,14 @@
                         density="comfortable"
                         variant="outlined"
                     ></v-autocomplete>
-                    <DetailComponent class="ml-2"
-                        :title="$t('SendTaskPanel.returnTitle')"
-                        :iconSize="24"
-                    />
+                    <DetailComponent class="ml-2" :title="$t('SendTaskPanel.returnTitle')" :iconSize="24" />
                     <!-- <bpmn-parameter-contexts :parameter-contexts="copyUengineProperties.parameters"></bpmn-parameter-contexts> -->
                 </v-row>
             </div>
         </div>
         <!-- Lead Time -->
         <div class="mt-4">
-            <LeadTimeInput
-                v-model="copyUengineProperties.leadTime"
-                :label="$t('leadTime.title') || 'Lead Time'"
-                :disabled="isViewMode"
-            />
+            <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
         <div class="mt-3">
             <KeyValueField
@@ -141,7 +145,18 @@
         <div class="mt-4">
             <div class="text-subtitle-2 mb-2">{{ $t('BpmnPropertyPanel.taskColor') || '작업 색상' }}</div>
             <div class="d-flex flex-wrap gap-2 mb-3">
-                <v-btn v-for="color in presetColors" :key="color.value" :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }" size="small" icon :disabled="isViewMode" @click="setTaskColor(color.value)">
+                <v-btn
+                    v-for="color in presetColors"
+                    :key="color.value"
+                    :style="{
+                        backgroundColor: color.value,
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                    }"
+                    size="small"
+                    icon
+                    :disabled="isViewMode"
+                    @click="setTaskColor(color.value)"
+                >
                     <v-icon v-if="copyUengineProperties.taskColor === color.value" size="small" color="white">mdi-check</v-icon>
                 </v-btn>
             </div>
@@ -160,12 +175,28 @@
                         </v-card-actions>
                     </v-card>
                 </v-menu>
-                <v-btn v-if="copyUengineProperties.taskColor" variant="text" size="small" color="error" :disabled="isViewMode" @click="resetTaskColor">
+                <v-btn
+                    v-if="copyUengineProperties.taskColor"
+                    variant="text"
+                    size="small"
+                    color="error"
+                    :disabled="isViewMode"
+                    @click="resetTaskColor"
+                >
                     <v-icon size="small">mdi-close</v-icon>{{ $t('BpmnPropertyPanel.resetColor') || '초기화' }}
                 </v-btn>
             </v-row>
             <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
-                <div :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }" class="mr-2"></div>
+                <div
+                    :style="{
+                        backgroundColor: copyUengineProperties.taskColor,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc'
+                    }"
+                    class="mr-2"
+                ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
             </div>
         </div>
@@ -203,8 +234,8 @@ export default {
         Object.keys(this.requiredKeyLists).forEach((key) => {
             this.ensureKeyExists(this.copyUengineProperties, key, this.requiredKeyLists[key]);
         });
-        if(!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{"name": "Content-Type", "value":"application/json"}]
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = []
+        if (!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json' }];
+        if (!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [];
     },
     data() {
         return {
@@ -223,7 +254,7 @@ export default {
                 $type: 'uengine:Checkpoint',
                 checkpoint: ''
             },
-            newHeader:{
+            newHeader: {
                 name: '',
                 value: ''
             },
@@ -243,8 +274,8 @@ export default {
             sendType: 'email',
             methodTypeDescription: [
                 {
-                    title: 'SendTaskPanel.methodTypeDescriptionSubTitle1',
-                },
+                    title: 'SendTaskPanel.methodTypeDescriptionSubTitle1'
+                }
             ],
             selectedActivity: 'Message',
             // Color picker
@@ -275,7 +306,7 @@ export default {
             }));
         const store = useBpmnStore();
         this.bpmnModeler = store.getModeler;
-        if(this.copyUengineProperties._type == 'org.uengine.kernel.LocalEMailActivity') {
+        if (this.copyUengineProperties._type == 'org.uengine.kernel.LocalEMailActivity') {
             this.selectedActivity = 'email';
         } else {
             this.selectedActivity = 'rest_api';
@@ -283,7 +314,7 @@ export default {
     },
     computed: {},
     watch: {
-        'sendType'(newType) {
+        sendType(newType) {
             if (newType === 'email') {
                 this.copyUengineProperties._type = 'org.uengine.kernel.LocalEMailActivity';
             } else {
@@ -293,7 +324,7 @@ export default {
     },
     methods: {
         beforeSave() {
-            if(this.sendType == 'email') {
+            if (this.sendType == 'email') {
                 delete this.copyUengineProperties.inputPayloadTemplate;
                 delete this.copyUengineProperties.method;
                 delete this.copyUengineProperties.headers;
@@ -360,7 +391,7 @@ export default {
                 context: this,
                 action: async () => {
                     // Changed to arrow function
-                    if(this.sendType != 'email') {
+                    if (this.sendType != 'email') {
                         this.copyUengineProperties.API = response.API;
                         this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(response.inputPayloadTemplateJSON);
                         this.copyUengineProperties.method = response.method;
@@ -413,15 +444,15 @@ export default {
             // 매치된 결과가 없으면 null 반환
             return null;
         },
-        addHeader(){
+        addHeader() {
             this.copyUengineProperties.headers.push(this.newHeader);
             this.newHeader = {
                 name: '',
                 value: ''
             };
         },
-        removeHeader(header){
-            if(!header) return;
+        removeHeader(header) {
+            if (!header) return;
             this.copyUengineProperties.headers.splice(this.copyUengineProperties.headers.indexOf(header), 1);
         },
         setTaskColor(color) {
@@ -450,11 +481,15 @@ export default {
                     const element = elementRegistry.get(this.element?.id);
                     if (element) {
                         const gfx = elementRegistry.getGraphics(element);
-                        if (gfx) { graphicsFactory.update('shape', element, gfx); }
+                        if (gfx) {
+                            graphicsFactory.update('shape', element, gfx);
+                        }
                     }
-                } catch (e) { console.warn('Could not refresh task visual:', e); }
+                } catch (e) {
+                    console.warn('Could not refresh task visual:', e);
+                }
             }
-        },
+        }
     }
 };
 </script>

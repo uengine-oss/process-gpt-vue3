@@ -1,11 +1,7 @@
 <template>
     <div class="w-100">
         <v-card flat class="log-card ma-0 pa-0 w-100">
-            <v-skeleton-loader
-                v-if="isLoading"
-                :type="isMobile ? 'card' : 'table'"
-                class="w-100"
-            ></v-skeleton-loader>
+            <v-skeleton-loader v-if="isLoading" :type="isMobile ? 'card' : 'table'" class="w-100"></v-skeleton-loader>
 
             <v-data-table
                 v-else-if="!isMobile"
@@ -25,7 +21,7 @@
                     <div class="d-flex justify-center">
                         <v-tooltip v-if="item.status" location="top">
                             <template #activator="{ props }">
-                                <v-icon 
+                                <v-icon
                                     v-bind="props"
                                     :color="getStatusColor(item.status)"
                                     :class="{ 'rotating-icon': item.status === 'PROCESSING' }"
@@ -45,11 +41,7 @@
                         <div class="work-name">{{ item.completedActivityName }}</div>
                         <div v-if="item.performer" class="work-performer">
                             <v-avatar size="16" class="mr-1">
-                                <v-img 
-                                    v-if="item.performerProfile" 
-                                    :src="item.performerProfile"
-                                    alt="profile"
-                                />
+                                <v-img v-if="item.performerProfile" :src="item.performerProfile" alt="profile" />
                                 <v-icon v-else size="x-small">mdi-account</v-icon>
                             </v-avatar>
                             <span>{{ item.performer }}</span>
@@ -64,11 +56,7 @@
                         <div class="work-name">{{ item.nextActivityName }}</div>
                         <div v-if="item.nextPerformer" class="work-performer">
                             <v-avatar size="16" class="mr-1">
-                                <v-img 
-                                    v-if="item.nextPerformerProfile" 
-                                    :src="item.nextPerformerProfile"
-                                    alt="profile"
-                                />
+                                <v-img v-if="item.nextPerformerProfile" :src="item.nextPerformerProfile" alt="profile" />
                                 <v-icon v-else size="x-small">mdi-account</v-icon>
                             </v-avatar>
                             <span>{{ item.nextPerformer }}</span>
@@ -100,7 +88,7 @@
                                                 {{ item.performer }}
                                             </v-chip>
                                         </div>
-                                        <DynamicForm 
+                                        <DynamicForm
                                             v-if="item.userMessage.htmlContent"
                                             :formHTML="item.userMessage.htmlContent"
                                             :readonly="true"
@@ -111,14 +99,22 @@
                                         </div>
 
                                         <!-- Feedback for this item -->
-                                        <div class="mt-2 pt-2" style="border-top: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));">
+                                        <div
+                                            class="mt-2 pt-2"
+                                            style="border-top: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity))"
+                                        >
                                             <div v-if="!getRowFeedbackState(item.id).showInput">
-                                                <div class="d-flex align-center justify-space-between pa-2 bg-grey-lighten-4" style="border-radius: 6px;">
+                                                <div
+                                                    class="d-flex align-center justify-space-between pa-2 bg-grey-lighten-4"
+                                                    style="border-radius: 6px"
+                                                >
                                                     <div class="d-flex align-center">
                                                         <v-icon size="small" class="mr-2">mdi-comment-question-outline</v-icon>
-                                                        <span class="text-body-2 font-weight-medium">{{ $t('ProcessInstanceTable.stepFeedback') }}</span>
+                                                        <span class="text-body-2 font-weight-medium">{{
+                                                            $t('ProcessInstanceTable.stepFeedback')
+                                                        }}</span>
                                                     </div>
-                                                    <div class="d-flex" style="gap: 6px;">
+                                                    <div class="d-flex" style="gap: 6px">
                                                         <v-btn
                                                             variant="tonal"
                                                             size="small"
@@ -153,7 +149,10 @@
                                 </div>
 
                                 <!-- Streaming Message -->
-                                <div v-if="item.streaming && (item.streamingLog || (item.systemMessage && item.systemMessage.log))" class="pa-4 bg-amber-lighten-5">
+                                <div
+                                    v-if="item.streaming && (item.streamingLog || (item.systemMessage && item.systemMessage.log))"
+                                    class="pa-4 bg-amber-lighten-5"
+                                >
                                     <div class="d-flex align-center mb-2">
                                         <v-icon size="small" color="warning" class="mr-2 rotating-icon">mdi-loading</v-icon>
                                         <span class="font-weight-bold text-body-1">{{ $t('ProcessInstanceTable.processing') }}</span>
@@ -220,36 +219,32 @@
                             </v-icon>
                         </div>
                         <div class="process-instance-mobile-card-row">
-                            <span class="process-instance-mobile-card-label text-caption text-medium-emphasis">{{ $t('ProcessInstanceTable.completedWork') }}</span>
+                            <span class="process-instance-mobile-card-label text-caption text-medium-emphasis">{{
+                                $t('ProcessInstanceTable.completedWork')
+                            }}</span>
                             <div v-if="item.completedActivityName" class="work-name">
                                 {{ item.completedActivityName }}
                             </div>
                             <div v-else class="text-medium-emphasis text-caption">-</div>
                             <div v-if="item.performer" class="work-performer mt-1">
                                 <v-avatar size="16" class="mr-1">
-                                    <v-img
-                                        v-if="item.performerProfile"
-                                        :src="item.performerProfile"
-                                        alt="profile"
-                                    />
+                                    <v-img v-if="item.performerProfile" :src="item.performerProfile" alt="profile" />
                                     <v-icon v-else size="x-small">mdi-account</v-icon>
                                 </v-avatar>
                                 <span>{{ item.performer }}</span>
                             </div>
                         </div>
                         <div class="process-instance-mobile-card-row mt-2 pt-2">
-                            <span class="process-instance-mobile-card-label text-caption text-medium-emphasis">{{ $t('ProcessInstanceTable.nextWork') }}</span>
+                            <span class="process-instance-mobile-card-label text-caption text-medium-emphasis">{{
+                                $t('ProcessInstanceTable.nextWork')
+                            }}</span>
                             <div v-if="item.nextActivityName" class="work-name">
                                 {{ item.nextActivityName }}
                             </div>
                             <div v-else class="text-medium-emphasis text-caption">-</div>
                             <div v-if="item.nextPerformer" class="work-performer mt-1">
                                 <v-avatar size="16" class="mr-1">
-                                    <v-img
-                                        v-if="item.nextPerformerProfile"
-                                        :src="item.nextPerformerProfile"
-                                        alt="profile"
-                                    />
+                                    <v-img v-if="item.nextPerformerProfile" :src="item.nextPerformerProfile" alt="profile" />
                                     <v-icon v-else size="x-small">mdi-account</v-icon>
                                 </v-avatar>
                                 <span>{{ item.nextPerformer }}</span>
@@ -278,14 +273,22 @@
                                         <div v-else class="text-medium-emphasis text-caption">
                                             {{ $t('ProcessInstanceTable.noFormContent') }}
                                         </div>
-                                        <div class="mt-2 pt-2" style="border-top: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity));">
+                                        <div
+                                            class="mt-2 pt-2"
+                                            style="border-top: 1px dashed rgba(var(--v-border-color), var(--v-border-opacity))"
+                                        >
                                             <div v-if="!getRowFeedbackState(item.id).showInput">
-                                                <div class="d-flex align-center justify-space-between flex-wrap pa-2 bg-grey-lighten-4" style="border-radius: 6px; gap: 8px;">
+                                                <div
+                                                    class="d-flex align-center justify-space-between flex-wrap pa-2 bg-grey-lighten-4"
+                                                    style="border-radius: 6px; gap: 8px"
+                                                >
                                                     <div class="d-flex align-center">
                                                         <v-icon size="small" class="mr-2">mdi-comment-question-outline</v-icon>
-                                                        <span class="text-body-2 font-weight-medium">{{ $t('ProcessInstanceTable.stepFeedback') }}</span>
+                                                        <span class="text-body-2 font-weight-medium">{{
+                                                            $t('ProcessInstanceTable.stepFeedback')
+                                                        }}</span>
                                                     </div>
-                                                    <div class="d-flex" style="gap: 6px;">
+                                                    <div class="d-flex" style="gap: 6px">
                                                         <v-btn
                                                             variant="tonal"
                                                             size="small"
@@ -318,13 +321,18 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div v-if="item.streaming && (item.streamingLog || (item.systemMessage && item.systemMessage.log))" class="pa-4 bg-amber-lighten-5">
+                                <div
+                                    v-if="item.streaming && (item.streamingLog || (item.systemMessage && item.systemMessage.log))"
+                                    class="pa-4 bg-amber-lighten-5"
+                                >
                                     <div class="d-flex align-center mb-2">
                                         <v-icon size="small" color="warning" class="mr-2 rotating-icon">mdi-loading</v-icon>
                                         <span class="font-weight-bold text-body-1">{{ $t('ProcessInstanceTable.processing') }}</span>
                                     </div>
                                     <v-card variant="tonal" color="warning" class="pa-3">
-                                        <pre class="text-body-2 ma-0 process-instance-mobile-pre">{{ item.streamingLog || item.systemMessage.log }}</pre>
+                                        <pre class="text-body-2 ma-0 process-instance-mobile-pre">{{
+                                            item.streamingLog || item.systemMessage.log
+                                        }}</pre>
                                     </v-card>
                                 </div>
                             </div>
@@ -338,40 +346,40 @@
 
 <script>
 import ChatModule from '@/components/ChatModule.vue';
-import ProcessFeedback from "@/components/ui/ProcessFeedback.vue";
-import DynamicForm from "@/components/designer/DynamicForm.vue";
+import ProcessFeedback from '@/components/ui/ProcessFeedback.vue';
+import DynamicForm from '@/components/designer/DynamicForm.vue';
 
 export default {
     mixins: [ChatModule],
-    name: "ProcessInstanceLog",
+    name: 'ProcessInstanceLog',
     components: {
         ProcessFeedback,
-        DynamicForm,
+        DynamicForm
     },
     props: {
         isComplete: Boolean,
         useThreadId: Boolean,
         messages: {
             type: Array,
-            default: null,
+            default: null
         },
-        isCompleted: Boolean,
+        isCompleted: Boolean
     },
     data: () => ({
         processInstance: null,
-        chatRoomId: "",
+        chatRoomId: '',
         isTaskMode: false,
         isLoading: false,
         internalMessages: [],
 
         // streaming
-        streamingText: "",
+        streamingText: '',
         childStreamingText: {},
         childSubscription: {},
         childTasks: [],
         subscription: null,
         runningTaskId: null,
-        threadId: "",
+        threadId: '',
 
         // feedback
         showFeedbackInput: false,
@@ -380,9 +388,9 @@ export default {
 
         // table expansion
         expandedRows: [],
-        
+
         // per-row feedback
-        rowFeedbackStates: {}, // { rowId: { showInput: false, task: null } }
+        rowFeedbackStates: {} // { rowId: { showInput: false, task: null } }
     }),
     computed: {
         isMobile() {
@@ -390,10 +398,16 @@ export default {
         },
         tableHeaders() {
             return [
-                { title: this.$t('ProcessInstanceTable.status'), key: "status", sortable: false, width: "100", align: "center" },
-                { title: this.$t('ProcessInstanceTable.completedWork'), key: "completedWork", sortable: false, width: "35%", align: "start" },
-                { title: this.$t('ProcessInstanceTable.nextWork'), key: "nextWork", sortable: false, width: "30%", align: "start" },
-                { title: this.$t('ProcessInstanceTable.time'), key: "time", sortable: true, width: "130", align: "start" },
+                { title: this.$t('ProcessInstanceTable.status'), key: 'status', sortable: false, width: '100', align: 'center' },
+                {
+                    title: this.$t('ProcessInstanceTable.completedWork'),
+                    key: 'completedWork',
+                    sortable: false,
+                    width: '35%',
+                    align: 'start'
+                },
+                { title: this.$t('ProcessInstanceTable.nextWork'), key: 'nextWork', sortable: false, width: '30%', align: 'start' },
+                { title: this.$t('ProcessInstanceTable.time'), key: 'time', sortable: true, width: '130', align: 'start' }
             ];
         },
         effectiveMessages() {
@@ -420,13 +434,14 @@ export default {
                     // Find the next system message with matching completedActivityId
                     for (let j = i + 1; j < this.effectiveMessages.length; j++) {
                         if (processedIndices.has(j)) continue;
-                        
+
                         const nextMsg = this.effectiveMessages[j];
-                        if (nextMsg.role === 'system' && 
-                            nextMsg.jsonContent && 
+                        if (
+                            nextMsg.role === 'system' &&
+                            nextMsg.jsonContent &&
                             nextMsg.jsonContent.completedActivities &&
-                            nextMsg.jsonContent.completedActivities.length > 0) {
-                            
+                            nextMsg.jsonContent.completedActivities.length > 0
+                        ) {
                             const completedActivityId = nextMsg.jsonContent.completedActivities[0].completedActivityId;
                             if (completedActivityId === msg.activityId) {
                                 systemMessage = nextMsg;
@@ -442,10 +457,10 @@ export default {
                         processedIndices.add(systemIndex);
 
                         const completedActivity = systemMessage.jsonContent.completedActivities[0];
-                        const nextActivity = systemMessage.jsonContent.nextActivities && 
-                                           systemMessage.jsonContent.nextActivities.length > 0 
-                            ? systemMessage.jsonContent.nextActivities[0] 
-                            : null;
+                        const nextActivity =
+                            systemMessage.jsonContent.nextActivities && systemMessage.jsonContent.nextActivities.length > 0
+                                ? systemMessage.jsonContent.nextActivities[0]
+                                : null;
 
                         rows.push({
                             id: `${msg.uuid}-${systemMessage.uuid}`,
@@ -453,7 +468,7 @@ export default {
                             status: completedActivity.result,
                             completedActivityName: completedActivity.completedActivityName,
                             completedActivityId: completedActivity.completedActivityId,
-                            performer: msg.name || msg.email || this.$t("ProcessInstanceLog.unknownSender"),
+                            performer: msg.name || msg.email || this.$t('ProcessInstanceLog.unknownSender'),
                             performerProfile: msg.profile || null,
                             nextActivityName: nextActivity ? nextActivity.nextActivityName : null,
                             nextActivityId: nextActivity ? nextActivity.nextActivityId : null,
@@ -461,7 +476,7 @@ export default {
                             nextPerformerProfile: nextActivity ? nextActivity.nextUserProfile : null,
                             userMessage: msg,
                             systemMessage: systemMessage,
-                            type: 'workflow-step',
+                            type: 'workflow-step'
                         });
                     } else {
                         // User message without system response yet
@@ -472,7 +487,7 @@ export default {
                             status: 'SUBMITTED',
                             completedActivityName: msg.activityId,
                             completedActivityId: msg.activityId,
-                            performer: msg.name || msg.email || this.$t("ProcessInstanceLog.unknownSender"),
+                            performer: msg.name || msg.email || this.$t('ProcessInstanceLog.unknownSender'),
                             performerProfile: msg.profile || null,
                             nextActivityName: null,
                             nextActivityId: null,
@@ -480,19 +495,19 @@ export default {
                             nextPerformerProfile: null,
                             userMessage: msg,
                             systemMessage: null,
-                            type: 'workflow-step',
+                            type: 'workflow-step'
                         });
                     }
                 }
                 // System message without preceding user message
                 else if (msg.role === 'system' && msg.jsonContent && msg.jsonContent.completedActivities) {
                     processedIndices.add(i);
-                    
+
                     const completedActivity = msg.jsonContent.completedActivities[0];
-                    const nextActivity = msg.jsonContent.nextActivities && 
-                                       msg.jsonContent.nextActivities.length > 0 
-                        ? msg.jsonContent.nextActivities[0] 
-                        : null;
+                    const nextActivity =
+                        msg.jsonContent.nextActivities && msg.jsonContent.nextActivities.length > 0
+                            ? msg.jsonContent.nextActivities[0]
+                            : null;
 
                     rows.push({
                         id: msg.uuid || `${msg.timeStamp}-system`,
@@ -508,7 +523,7 @@ export default {
                         nextPerformerProfile: nextActivity ? nextActivity.nextUserProfile : null,
                         userMessage: null,
                         systemMessage: msg,
-                        type: 'workflow-step',
+                        type: 'workflow-step'
                     });
                 }
             }
@@ -542,7 +557,7 @@ export default {
                     userMessage: null,
                     systemMessage: { log: this.filteredChildStreamingText[key] },
                     type: 'streaming',
-                    streaming: true,
+                    streaming: true
                 });
             });
 
@@ -550,22 +565,25 @@ export default {
         },
         filteredStreamingText() {
             if (!this.streamingText) {
-                return "";
+                return '';
             }
-            return this.streamingText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+            return this.streamingText
+                .replace(/```json\s*/g, '')
+                .replace(/```\s*/g, '')
+                .trim();
         },
         filteredChildStreamingText() {
             const result = {};
             if (this.childStreamingText) {
                 Object.keys(this.childStreamingText).forEach((key) => {
                     result[this.childStreamingText[key].name] = this.childStreamingText[key].log
-                        .replace(/```json\s*/g, "")
-                        .replace(/```\s*/g, "")
+                        .replace(/```json\s*/g, '')
+                        .replace(/```\s*/g, '')
                         .trim();
                 });
             }
             return result;
-        },
+        }
     },
     watch: {
         $route: {
@@ -578,13 +596,13 @@ export default {
                 if (newVal.params.taskId !== oldVal.params.taskId || newVal.params.instId !== oldVal.params.instId) {
                     await this.loadData();
                 }
-            },
+            }
         },
         messages: {
             deep: true,
             handler() {
                 this.updateLastMessageAndTask();
-            },
+            }
         },
         streamingText: {
             handler(newVal) {
@@ -600,16 +618,16 @@ export default {
                         }
                     }
                 }
-            },
-        },
+            }
+        }
     },
     async mounted() {
         await this.loadData();
 
         if (!this.isTaskMode && this.chatRoomId) {
             const worklist = await this.backend.getWorkListByInstId(this.chatRoomId);
-            const workItem = worklist ? worklist.find((item) => item.task.status === "SUBMITTED") : null;
-            this.streamingText = "";
+            const workItem = worklist ? worklist.find((item) => item.task.status === 'SUBMITTED') : null;
+            this.streamingText = '';
             if (workItem) {
                 this.runningTaskId = workItem.taskId;
                 await this.getTaskLog();
@@ -631,8 +649,8 @@ export default {
             this.isLoading = true;
             this.internalMessages = [];
             this.processInstance = null;
-            this.chatRoomId = "";
-            this.streamingText = "";
+            this.chatRoomId = '';
+            this.streamingText = '';
             this.childStreamingText = {};
 
             if (this.subscription) {
@@ -660,7 +678,7 @@ export default {
                 }
                 this.isTaskMode = true;
             } else if (this.$route.params.instId) {
-                id = this.$route.params.instId.replace(/_DOT_/g, ".");
+                id = this.$route.params.instId.replace(/_DOT_/g, '.');
                 this.chatRoomId = id;
                 this.isTaskMode = false;
             }
@@ -685,34 +703,36 @@ export default {
         async getMessages(chatRoomId) {
             const messages = await this.backend.getMessages(chatRoomId);
             if (messages) {
-                const allMessages = await Promise.all(messages.map(async (message) => {
-                    const newMessage = message.messages;
-                    
-                    // System message: fetch next user name and profile
-                    if (newMessage.role === "system" && newMessage.jsonContent && newMessage.jsonContent.nextActivities) {
-                        for (const activity of newMessage.jsonContent.nextActivities) {
-                            if (activity.nextUserEmail) {
-                                try {
-                                    const user = await this.backend.getUserById(activity.nextUserEmail);
-                                    if (user) {
-                                        if (user.username) {
-                                            activity.nextUserName = user.username;
+                const allMessages = await Promise.all(
+                    messages.map(async (message) => {
+                        const newMessage = message.messages;
+
+                        // System message: fetch next user name and profile
+                        if (newMessage.role === 'system' && newMessage.jsonContent && newMessage.jsonContent.nextActivities) {
+                            for (const activity of newMessage.jsonContent.nextActivities) {
+                                if (activity.nextUserEmail) {
+                                    try {
+                                        const user = await this.backend.getUserById(activity.nextUserEmail);
+                                        if (user) {
+                                            if (user.username) {
+                                                activity.nextUserName = user.username;
+                                            }
+                                            if (user.profile) {
+                                                activity.nextUserProfile = user.profile;
+                                            }
                                         }
-                                        if (user.profile) {
-                                            activity.nextUserProfile = user.profile;
-                                        }
+                                    } catch (e) {
+                                        console.error('Failed to get user:', e);
                                     }
-                                } catch (e) {
-                                    console.error('Failed to get user:', e);
                                 }
                             }
                         }
-                    }
-                    
-                    newMessage.thread_id = message.thread_id || null;
-                    newMessage.uuid = message.uuid;
-                    return newMessage;
-                }));
+
+                        newMessage.thread_id = message.thread_id || null;
+                        newMessage.uuid = message.uuid;
+                        return newMessage;
+                    })
+                );
                 allMessages.sort((a, b) => new Date(a.timeStamp) - new Date(b.timeStamp));
                 this.internalMessages = allMessages;
             }
@@ -724,7 +744,7 @@ export default {
                 this.lastTask = null;
                 return;
             }
-            const systemMessages = msgs.filter((item) => item.role === "system");
+            const systemMessages = msgs.filter((item) => item.role === 'system');
             if (systemMessages.length > 0) {
                 this.lastMessage = systemMessages[systemMessages.length - 1];
             } else {
@@ -735,16 +755,16 @@ export default {
             }
         },
         normalizeMessage(msg) {
-            if (!msg) return "";
+            if (!msg) return '';
             if (msg.messageForUser) {
                 return msg.messageForUser;
             }
 
-            if (typeof msg.content === "string") {
+            if (typeof msg.content === 'string') {
                 return msg.content;
             }
 
-            if (msg.contentType === "html" || msg.contentType === "markdown" || msg.contentType === "json") {
+            if (msg.contentType === 'html' || msg.contentType === 'markdown' || msg.contentType === 'json') {
                 return msg.content;
             }
 
@@ -764,63 +784,63 @@ export default {
                 }
             }
 
-            return "";
+            return '';
         },
         formatTimestamp(timeStamp) {
-            if (!timeStamp) return "-";
+            if (!timeStamp) return '-';
             try {
                 const date = new Date(timeStamp);
                 const today = new Date();
                 const isToday = date.toDateString() === today.toDateString();
-                
+
                 if (isToday) {
                     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 }
-                return date.toLocaleString([], { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                return date.toLocaleString([], {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
             } catch (e) {
-                return "-";
+                return '-';
             }
         },
         getRoleColor(role) {
             const colorMap = {
-                'user': 'blue',
-                'system': 'green',
-                'assistant': 'purple',
-                'error': 'red',
+                user: 'blue',
+                system: 'green',
+                assistant: 'purple',
+                error: 'red'
             };
             return colorMap[role?.toLowerCase()] || 'grey';
         },
         getSenderIcon(role) {
             const iconMap = {
-                'user': 'mdi-account',
-                'system': 'mdi-cog',
-                'assistant': 'mdi-robot',
-                'error': 'mdi-alert-circle',
+                user: 'mdi-account',
+                system: 'mdi-cog',
+                assistant: 'mdi-robot',
+                error: 'mdi-alert-circle'
             };
             return iconMap[role?.toLowerCase()] || 'mdi-message';
         },
         getStatusColor(status) {
             const colorMap = {
-                'DONE': 'success',
-                'IN_PROGRESS': 'primary',
-                'SUBMITTED': 'info',
-                'PENDING': 'warning',
-                'ERROR': 'error',
+                DONE: 'success',
+                IN_PROGRESS: 'primary',
+                SUBMITTED: 'info',
+                PENDING: 'warning',
+                ERROR: 'error'
             };
             return colorMap[status] || 'grey';
         },
         getStatusIcon(status) {
             const iconMap = {
-                'DONE': 'mdi-check-circle',
-                'IN_PROGRESS': 'mdi-progress-clock',
-                'SUBMITTED': 'mdi-send',
-                'PENDING': 'mdi-clock-outline',
-                'ERROR': 'mdi-alert-circle',
+                DONE: 'mdi-check-circle',
+                IN_PROGRESS: 'mdi-progress-clock',
+                SUBMITTED: 'mdi-send',
+                PENDING: 'mdi-clock-outline',
+                ERROR: 'mdi-alert-circle'
             };
             return iconMap[status] || 'mdi-help-circle';
         },
@@ -831,14 +851,14 @@ export default {
                 this.lastMessage.jsonContent.executionResult = type;
             } else {
                 this.lastMessage.jsonContent = {
-                    executionResult: type,
+                    executionResult: type
                 };
             }
-            if (type === "good") {
+            if (type === 'good') {
                 if (this.lastTask && this.lastTask.taskId) {
                     await this.backend.saveFeedback(type, this.lastTask.taskId);
                 }
-            } else if (type === "bad") {
+            } else if (type === 'bad') {
                 this.showFeedbackInput = true;
             }
         },
@@ -865,13 +885,9 @@ export default {
             ) {
                 const completedActivities = this.lastMessage.jsonContent.completedActivities;
                 const completedActivityIds = completedActivities.map((item) => item.completedActivityId);
-                const workItems = worklist.filter(
-                    (item) => item.status === "DONE" && completedActivityIds.includes(item.tracingTag)
-                );
+                const workItems = worklist.filter((item) => item.status === 'DONE' && completedActivityIds.includes(item.tracingTag));
                 if (workItems.length > 0) {
-                    const workItem = workItems.sort(
-                        (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
-                    )[0];
+                    const workItem = workItems.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
                     this.lastTask = workItem;
                 }
             }
@@ -887,8 +903,8 @@ export default {
                         hasLoadedMessages = true;
                     }
                 }
-                if (task.status === "DONE") {
-                    this.streamingText = "";
+                if (task.status === 'DONE') {
+                    this.streamingText = '';
                     if (this.subscription) {
                         window.$supabase.removeChannel(this.subscription);
                     }
@@ -900,7 +916,7 @@ export default {
                     await this.getMessages(this.chatRoomId);
                     hasLoadedMessages = false;
                 }
-                if (task.status === "PENDING" && this.processInstance) {
+                if (task.status === 'PENDING' && this.processInstance) {
                     await this.getChildTaskLog(this.processInstance.instId);
                 }
             });
@@ -909,14 +925,14 @@ export default {
             const rootWorklist = await this.backend.getWorkListByRootInstId(instId);
             if (rootWorklist) {
                 rootWorklist.forEach(async (item) => {
-                    if (item.task.status === "SUBMITTED") {
+                    if (item.task.status === 'SUBMITTED') {
                         const childTaskId = item.taskId;
                         if (this.childSubscription[childTaskId]) return;
                         this.childSubscription[childTaskId] = await this.backend.getTaskLog(childTaskId, async (childTask) => {
                             if (childTask.log) {
                                 this.childStreamingText[childTaskId] = {
-                                    name: item.task.activity_name + ":" + item.task.execution_scope,
-                                    log: childTask.log,
+                                    name: item.task.activity_name + ':' + item.task.execution_scope,
+                                    log: childTask.log
                                 };
                             }
                         });
@@ -926,7 +942,7 @@ export default {
             }
         },
         removeChildTaskLog(childTaskId) {
-            this.childStreamingText[childTaskId] = "";
+            this.childStreamingText[childTaskId] = '';
             if (this.childSubscription[childTaskId]) {
                 window.$supabase.removeChannel(this.childSubscription[childTaskId]);
             }
@@ -937,19 +953,14 @@ export default {
         },
         async cancelAppliedFeedback() {
             if (this.lastMessage && this.lastMessage.jsonContent) {
-                await this.backend.updateInstanceChat(
-                    this.chatRoomId,
-                    this.lastMessage,
-                    this.lastMessage.thread_id,
-                    this.lastMessage.uuid
-                );
+                await this.backend.updateInstanceChat(this.chatRoomId, this.lastMessage, this.lastMessage.thread_id, this.lastMessage.uuid);
             }
         },
         getRowFeedbackState(rowId) {
             if (!this.rowFeedbackStates[rowId]) {
                 this.rowFeedbackStates[rowId] = {
                     showInput: false,
-                    task: null,
+                    task: null
                 };
             }
             return this.rowFeedbackStates[rowId];
@@ -977,14 +988,14 @@ export default {
             } else if (type === 'bad') {
                 this.rowFeedbackStates[item.id] = {
                     showInput: true,
-                    task: task,
+                    task: task
                 };
             }
         },
         closeRowFeedback(item) {
             this.rowFeedbackStates[item.id] = {
                 showInput: false,
-                task: null,
+                task: null
             };
         },
         async applyRowFeedback(task) {
@@ -993,10 +1004,10 @@ export default {
             }
 
             // 피드백 입력 닫기
-            Object.keys(this.rowFeedbackStates).forEach(rowId => {
+            Object.keys(this.rowFeedbackStates).forEach((rowId) => {
                 if (this.rowFeedbackStates[rowId].task && this.rowFeedbackStates[rowId].task.id === task.id) {
                     this.rowFeedbackStates[rowId].showInput = false;
-                    const index = this.expandedRows.findIndex(row => row === rowId);
+                    const index = this.expandedRows.findIndex((row) => row === rowId);
                     if (index > -1) {
                         this.expandedRows.splice(index, 1);
                     }
@@ -1009,13 +1020,13 @@ export default {
                 role: 'user',
                 activityId: task.activityId,
                 timeStamp: new Date().toISOString(),
-                name: this.$t("ProcessInstanceLog.system"),
+                name: this.$t('ProcessInstanceLog.system'),
                 email: null,
                 profile: null,
                 workitemId: task.id,
-                content: this.$t("ProcessFeedback.feedbackApplied"),
+                content: this.$t('ProcessFeedback.feedbackApplied'),
                 jsonContent: null,
-                thread_id: this.threadId || null,
+                thread_id: this.threadId || null
             };
 
             this.internalMessages.push(tempMessage);
@@ -1024,14 +1035,14 @@ export default {
             await this.getTaskLog();
         },
         toggleRow(event, { item }) {
-            const index = this.expandedRows.findIndex(row => row === item.id);
+            const index = this.expandedRows.findIndex((row) => row === item.id);
             if (index > -1) {
                 this.expandedRows.splice(index, 1);
             } else {
                 this.expandedRows.push(item.id);
             }
-        },
-    },
+        }
+    }
 };
 </script>
 

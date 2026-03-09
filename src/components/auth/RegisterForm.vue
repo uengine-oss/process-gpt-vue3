@@ -18,16 +18,16 @@ const showConfirmPassword = ref(false);
 const email = ref('');
 const passwordRules = ref([
     (v: string) => !!v || proxy.$t('createAccount.enterPassword'),
-    (v: string) => (v.length >= 8 && /[a-zA-Z]/.test(v) && /[0-9]/.test(v) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v)) || proxy.$t('createAccount.passwordRequirement'),
+    (v: string) =>
+        (v.length >= 8 && /[a-zA-Z]/.test(v) && /[0-9]/.test(v) && /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v)) ||
+        proxy.$t('createAccount.passwordRequirement')
 ]);
 const emailRules = ref([
-    (v: string) => !!v || proxy.$t('createAccount.enterEmail'), 
+    (v: string) => !!v || proxy.$t('createAccount.enterEmail'),
     (v: string) => /.+@.+\..+/.test(v) || proxy.$t('createAccount.invalidEmailFormat')
 ]);
 const username = ref('');
-const usernameRules = ref([
-    (v: string) => !!v || proxy.$t('createAccount.enterName'),
-]);
+const usernameRules = ref([(v: string) => !!v || proxy.$t('createAccount.enterName')]);
 
 // 비밀번호 일치 여부 검증 함수
 const confirmPasswordRules = ref([
@@ -60,7 +60,12 @@ function validate(values: any, { setErrors }: any) {
     if (!password.value) {
         setErrors({ password: proxy.$t('createAccount.enterPassword') });
         hasError = true;
-    } else if (password.value.length < 8 || !/[a-zA-Z]/.test(password.value) || !/[0-9]/.test(password.value) || !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value)) {
+    } else if (
+        password.value.length < 8 ||
+        !/[a-zA-Z]/.test(password.value) ||
+        !/[0-9]/.test(password.value) ||
+        !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password.value)
+    ) {
         setErrors({ password: proxy.$t('createAccount.passwordRequirement') });
         hasError = true;
     }
@@ -104,17 +109,9 @@ function validate(values: any, { setErrors }: any) {
         <v-divider class="mb-4" />
 
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.userName') }}</v-label>
-        <VTextField 
-            v-model="username" 
-            :rules="usernameRules" 
-            required 
-        ></VTextField>
+        <VTextField v-model="username" :rules="usernameRules" required></VTextField>
         <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.email') }}</v-label>
-        <VTextField 
-            v-model="email" 
-            :rules="emailRules" 
-            required 
-        ></VTextField>
+        <VTextField v-model="email" :rules="emailRules" required></VTextField>
         <!-- 암호 확인 부분 -->
         <div>
             <v-label class="text-subtitle-1 font-weight-medium pb-2">{{ $t('createAccount.password') }}</v-label>
@@ -141,16 +138,17 @@ function validate(values: any, { setErrors }: any) {
                 @click:append-inner="showConfirmPassword = !showConfirmPassword"
             ></VTextField>
         </div>
-        
-        <v-btn 
-            size="large" 
-            class="mt-2" 
-            color="primary" 
-            block 
+
+        <v-btn
+            size="large"
+            class="mt-2"
+            color="primary"
+            block
             rounded="pill"
             :loading="isSubmitting"
             :disabled="!isRegisterFormValid"
             type="submit"
-        >{{ $t('createAccount.signUp') }}</v-btn>
+            >{{ $t('createAccount.signUp') }}</v-btn
+        >
     </Form>
 </template>

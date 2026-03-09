@@ -1,50 +1,29 @@
 <template>
     <div class="detail-component-wrapper">
-        <v-menu
-            location="bottom"
-            max-width="400"
-            :close-on-content-click="false"
-        >
+        <v-menu location="bottom" max-width="400" :close-on-content-click="false">
             <template v-slot:activator="{ props }">
-                <v-btn
-                    v-bind="props"
-                    icon
-                    size="x-small"
-                    variant="text"
-                    color="grey"
-                    class="detail-info-button"
-                >
+                <v-btn v-bind="props" icon size="x-small" variant="text" color="grey" class="detail-info-button">
                     <v-icon :size="iconSize">mdi-help-circle-outline</v-icon>
                 </v-btn>
             </template>
 
             <v-card class="detail-popup-card">
                 <v-card-title class="pa-4 pb-2 d-flex align-center">
-                    <v-icon color="primary" class="mr-2 mt-1" style="flex-shrink: 0;">mdi-information</v-icon>
+                    <v-icon color="primary" class="mr-2 mt-1" style="flex-shrink: 0">mdi-information</v-icon>
                     <span class="detail-title-text">{{ title }}</span>
                 </v-card-title>
 
                 <template v-if="details">
                     <v-divider class="my-1"></v-divider>
 
-                    <v-card-text class="pa-4 pt-2" style="max-height: 400px; overflow-y: auto;">
+                    <v-card-text class="pa-4 pt-2" style="max-height: 400px; overflow-y: auto">
                         <div v-for="(item, index) in details" :key="index">
                             <div class="mb-3">
                                 <div v-if="item.title" class="detail-item-content d-flex align-start">
-                                    <Icons 
-                                        v-if="item.icon" 
-                                        :icon="item.icon" 
-                                        :size="20" 
-                                        class="mr-2 mt-1" 
-                                        style="flex-shrink: 0;"
-                                    />
+                                    <Icons v-if="item.icon" :icon="item.icon" :size="20" class="mr-2 mt-1" style="flex-shrink: 0" />
                                     <span>{{ $t(item.title) }}</span>
                                 </div>
-                                <v-img 
-                                    v-if="item.image"
-                                    :src="getImagePath(item.image)" 
-                                    class="detail-item-image mt-2"
-                                />
+                                <v-img v-if="item.image" :src="getImagePath(item.image)" class="detail-item-image mt-2" />
                             </div>
                         </div>
 
@@ -75,19 +54,14 @@ export default {
             default: 'default'
         }
     },
-    created() {
-    },
-    components: {
-    },
+    created() {},
+    components: {},
     data() {
         return {};
     },
-    async mounted() {
-    },
-    computed: {
-    },
-    watch: {
-    },
+    async mounted() {},
+    computed: {},
+    watch: {},
     methods: {
         getImagePath(imgName) {
             return `/assets/images/detailImage/${imgName}`;
@@ -134,7 +108,7 @@ export default {
 }
 
 .detail-link {
-    font-size: 14px; 
+    font-size: 14px;
     font-weight: 600;
     color: #1976d2;
     text-decoration: none;

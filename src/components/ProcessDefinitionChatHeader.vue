@@ -1,18 +1,21 @@
 <template>
     <div class="chat-info-header">
         <div>
-            <div class="align-right gap-3 justify-space-between" 
+            <div
+                class="align-right gap-3 justify-space-between"
                 :style="modelValueStyle ? 'padding: 12px 16px 2px 16px;' : 'padding: 9px 16px 9px 16px;'"
             >
-                <v-row class="ma-0 pa-0 align-center"
-                    style="min-height: 48px;"
-                >
+                <v-row class="ma-0 pa-0 align-center" style="min-height: 48px">
                     <div class="d-flex justify-space-between align-start flex-grow-1 mb-2">
-                        <div style="flex: 1; min-width: 0;" class="d-flex align-center">
-                            <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center flex-grow-1"
-                            >
-                                <v-text-field v-if="isEditableTitle" v-model="processName"
-                                    :label="$t('ProcessDefinitionChatHeader.processDefinitionName')" variant="underlined" hide-details class="pa-0 ma-0"
+                        <div style="flex: 1; min-width: 0" class="d-flex align-center">
+                            <div v-if="fullPath != 'chat'" class="d-flex gap-2 align-center flex-grow-1">
+                                <v-text-field
+                                    v-if="isEditableTitle"
+                                    v-model="processName"
+                                    :label="$t('ProcessDefinitionChatHeader.processDefinitionName')"
+                                    variant="underlined"
+                                    hide-details
+                                    class="pa-0 ma-0"
                                 ></v-text-field>
                                 <div v-else-if="!isMobile">
                                     <v-tooltip location="bottom">
@@ -20,7 +23,7 @@
                                             <h5
                                                 v-bind="props"
                                                 :class="['text-h5', 'mb-n1', { 'process-title-truncate': !expandedTexts.title }]"
-                                                style="white-space: normal; word-break: break-word;"
+                                                style="white-space: normal; word-break: break-word"
                                             >
                                                 {{ getDisplayText(modelValue, 'title', 24) }}
                                                 <v-btn
@@ -30,7 +33,7 @@
                                                     size="small"
                                                     color="primary"
                                                     class="pa-0 text-caption ml-1"
-                                                    style="min-width: auto; height: auto; vertical-align: baseline;"
+                                                    style="min-width: auto; height: auto; vertical-align: baseline"
                                                 >
                                                     {{ expandedTexts.title ? $t('AgentChatInfo.collapse') : $t('AgentChatInfo.expand') }}
                                                 </v-btn>
@@ -45,7 +48,10 @@
                         </div>
 
                         <!-- 삭제 아이콘 -->
-                        <div v-if="chatMode != 'consulting' && fullPath != 'chat'" class="playwright-chat-header-delete-icon ml-4 flex-shrink-0  align-start">
+                        <div
+                            v-if="chatMode != 'consulting' && fullPath != 'chat'"
+                            class="playwright-chat-header-delete-icon ml-4 flex-shrink-0 align-start"
+                        >
                             <v-tooltip v-if="isDeleted" location="bottom">
                                 <template v-slot:activator="{ props }">
                                     <v-btn
@@ -79,17 +85,21 @@
                         </div>
                     </div>
                 </v-row>
-                
+
                 <div class="custom-tools">
-                    <v-row class="ma-0 pa-0 pt-1"
-                        :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : ''"
-                    >
-                    
+                    <v-row class="ma-0 pa-0 pt-1" :style="modelValueStyle ? 'margin: 5px 0 5.5px 0;' : ''">
                         <div class="mr-0 d-flex" v-if="Pal">
                             <!-- PDF 저장 아이콘 -->
                             <v-tooltip location="bottom" :text="$t('processDefinition.savePDF')">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" @click="savePDF" icon variant="text" class="text-medium-emphasis" density="comfortable">
+                                    <v-btn
+                                        v-bind="props"
+                                        @click="savePDF"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                    >
                                         <v-icon>mdi-file-pdf-box</v-icon>
                                     </v-btn>
                                 </template>
@@ -102,7 +112,13 @@
                                 <template v-slot:activator="{ props }">
                                     <v-tooltip location="bottom">
                                         <template v-slot:activator="{ props: tooltipProps }">
-                                            <v-btn v-bind="{ ...props, ...tooltipProps }" icon variant="text" class="text-medium-emphasis" density="comfortable">
+                                            <v-btn
+                                                v-bind="{ ...props, ...tooltipProps }"
+                                                icon
+                                                variant="text"
+                                                class="text-medium-emphasis"
+                                                density="comfortable"
+                                            >
                                                 <Icons :icon="'upload'" />
                                             </v-btn>
                                         </template>
@@ -114,37 +130,57 @@
                                     <v-list-item @click="triggerExcelFileInput" :title="$t('chat.importFromExcel')" />
                                 </v-list>
                             </v-menu>
-                            <input type="file" ref="fileInput" @change="onBpmnFileChange" accept=".bpmn,.jsonold,.csv" style="display: none" />
+                            <input
+                                type="file"
+                                ref="fileInput"
+                                @change="onBpmnFileChange"
+                                accept=".bpmn,.jsonold,.csv"
+                                style="display: none"
+                            />
                             <input type="file" ref="excelFileInput" @change="onExcelFileChange" accept=".xlsx" style="display: none" />
-                    
                             <div v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map' && !isMobile">
                                 <!-- ProcessDefinitionChatHeader.vue 프로세스 정의 수정 및 저장 아이콘 -->
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
                                         <div v-bind="props">
-                                            <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
-                                                density="comfortable" @click="toggleLock">
+                                            <v-btn
+                                                icon
+                                                variant="text"
+                                                type="file"
+                                                class="text-medium-emphasis"
+                                                density="comfortable"
+                                                @click="toggleLock"
+                                            >
                                                 <!-- lock 값에 따라 아이콘과 사이즈 분리 -->
-                                                <Icons v-if="effectiveLock" :icon="'pencil'" :size="18"/>
-                                                <Icons v-else :icon="'save'" :size="24"/>
+                                                <Icons v-if="effectiveLock" :icon="'pencil'" :size="18" />
+                                                <Icons v-else :icon="'save'" :size="24" />
                                             </v-btn>
                                         </div>
                                     </template>
                                     <span v-if="effectiveLock">
-                                        {{ editUser != '' && editUser != userInfo.name
-                                            ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
-                                            : $t('chat.unlock') }}
+                                        {{
+                                            editUser != '' && editUser != userInfo.name
+                                                ? `현재 ${editUser} 님께서 수정 중입니다. 체크아웃 하는 경우 ${editUser} 님이 수정한 내용은 손상되어 저장되지 않습니다. 체크아웃 하시겠습니까?`
+                                                : $t('chat.unlock')
+                                        }}
                                     </span>
                                     <span v-else>{{ $t('chat.lock') }}</span>
                                 </v-tooltip>
                             </div>
-                    
+
                             <!-- 저장아이콘 -->
                             <div v-else>
-                                <v-tooltip location="bottom">   
+                                <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                            density="comfortable" @click="toggleLock">
+                                        <v-btn
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            type="file"
+                                            class="text-medium-emphasis"
+                                            density="comfortable"
+                                            @click="toggleLock"
+                                        >
                                             <Icons :icon="'save'" />
                                         </v-btn>
                                     </template>
@@ -157,10 +193,15 @@
                             <!-- 히스토리 아이콘 -->
                             <v-tooltip v-if="bpmn && fullPath != 'chat' && fullPath != 'definition-map'" location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <div v-bind="props" style="display: inline-block;">
-                                        <v-btn icon variant="text" type="file" class="text-medium-emphasis" 
-                                            density="comfortable" @click="toggleVerMangerDialog"
-                                            :disabled="isHistoryButtonDisabled"    
+                                    <div v-bind="props" style="display: inline-block">
+                                        <v-btn
+                                            icon
+                                            variant="text"
+                                            type="file"
+                                            class="text-medium-emphasis"
+                                            density="comfortable"
+                                            @click="toggleVerMangerDialog"
+                                            :disabled="isHistoryButtonDisabled"
                                         >
                                             <HistoryIcon size="24" />
                                         </v-btn>
@@ -171,21 +212,34 @@
                             <!-- xml보기 아이콘 -->
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="showXmlMode">
-                                        <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'"/>
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        type="file"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="showXmlMode"
+                                    >
+                                        <Icons :icon="'code-xml'" :color="isXmlMode ? '#1976D2' : '#666666'" />
                                     </v-btn>
                                 </template>
                                 <span>{{ isXmlMode ? $t('processDefinition.showModeling') : $t('processDefinition.showXML') }}</span>
                             </v-tooltip>
                         </div>
-                        
+
                         <!-- 실행 관련 버튼  -->
                         <div class="mr-4 d-flex">
                             <!-- 시뮬레이션 아이콘 -->
                             <v-tooltip v-if="useSimulate" location="bottom" :text="$t('processDefinition.simulate')">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" @click="executeSimulate" icon variant="text" class="text-medium-emphasis" density="comfortable"
+                                    <v-btn
+                                        v-bind="props"
+                                        @click="executeSimulate"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
                                     >
                                         <Icons :icon="'bug-play'" />
                                     </v-btn>
@@ -195,7 +249,13 @@
                             <!-- 실행 아이콘 -->
                             <v-tooltip v-if="useExecute" location="bottom" :text="$t('processDefinition.execution')">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" @click="executeProcess" icon variant="text" class="text-medium-emphasis" density="comfortable"
+                                    <v-btn
+                                        v-bind="props"
+                                        @click="executeProcess"
+                                        icon
+                                        variant="text"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
                                     >
                                         <Icons :icon="'play'" />
                                     </v-btn>
@@ -207,8 +267,15 @@
                         <div class="mr-4 d-flex" v-if="bpmn && hasExternalCustomerRole">
                             <v-tooltip location="bottom" :text="$t('processDefinition.webFormUrl')">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="createFormUrl">
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        type="file"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="createFormUrl"
+                                    >
                                         <Icons :icon="'document'" />
                                     </v-btn>
                                 </template>
@@ -219,10 +286,16 @@
                         <div class="mr-4 d-flex" v-if="bpmn && useMarketplace">
                             <v-tooltip location="bottom" :text="$t('ProcessDefinitionChatHeader.addMarketplace')">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props" icon variant="text" type="file" class="text-medium-emphasis" 
-                                        density="comfortable" @click="openMarketplaceDialog"
+                                    <v-btn
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
+                                        type="file"
+                                        class="text-medium-emphasis"
+                                        density="comfortable"
+                                        @click="openMarketplaceDialog"
                                     >
-                                        <Icons :icon="'addMarketplace'" style="margin-top: 4px;" />
+                                        <Icons :icon="'addMarketplace'" style="margin-top: 4px" />
                                     </v-btn>
                                 </template>
                             </v-tooltip>
@@ -252,26 +325,26 @@ export default {
     },
     data() {
         return {
-            processName: "",
+            processName: '',
             expandedTexts: {
                 title: false
             },
             hasVersionsToCompare: true
-        }
+        };
     },
     async created() {
-        this.processName = this.modelValue
-        await this.checkVersionsAvailability()
+        this.processName = this.modelValue;
+        await this.checkVersionsAvailability();
     },
     watch: {
         modelValue(newVal) {
-            this.processName = newVal
+            this.processName = newVal;
         },
         processName(newVal) {
             this.$emit('update:modelValue', newVal);
         },
         fullPath() {
-            this.checkVersionsAvailability()
+            this.checkVersionsAvailability();
         }
     },
     computed: {
@@ -285,14 +358,20 @@ export default {
             return this.lock && window.$mode !== 'uEngine';
         },
         modelValueStyle() {
-            if(this.modelValue && this.modelValue !== '' && !this.effectiveLock && this.editUser != '' && this.editUser == this.userInfo.name) {
-                return true
+            if (
+                this.modelValue &&
+                this.modelValue !== '' &&
+                !this.effectiveLock &&
+                this.editUser != '' &&
+                this.editUser == this.userInfo.name
+            ) {
+                return true;
             } else {
-                return false
+                return false;
             }
         },
         isEditableTitle() {
-            const checkGPT =  this.mode === 'ProcessGPT' ? ( this.editUser != '' && this.editUser == this.userInfo.name) : true;
+            const checkGPT = this.mode === 'ProcessGPT' ? this.editUser != '' && this.editUser == this.userInfo.name : true;
             return !this.effectiveLock && checkGPT;
         },
         hasExternalCustomerRole() {
@@ -304,7 +383,7 @@ export default {
             // } else {
             //     return false;
             // }
-            return !this.Pal
+            return !this.Pal;
         },
         useExecute() {
             if (this.mode == 'ProcessGPT') {
@@ -336,10 +415,10 @@ export default {
     },
     methods: {
         executeProcess() {
-            this.$emit("executeProcess");
+            this.$emit('executeProcess');
         },
         executeSimulate() {
-            console.log("simulate")
+            console.log('simulate');
             this.$emit('executeSimulate');
         },
         triggerBpmnFileInput() {
@@ -394,7 +473,7 @@ export default {
         },
         getDisplayText(text, textType, maxLength) {
             if (!text) return '';
-            
+
             const isExpanded = this.expandedTexts[textType];
             return isExpanded ? text : this.getTruncatedText(text, maxLength);
         },
@@ -403,18 +482,18 @@ export default {
                 this.hasVersionsToCompare = true;
                 return;
             }
-            
+
             try {
                 const BackendFactory = (await import('@/components/api/BackendFactory')).default;
                 const backend = BackendFactory.createBackend();
-                
+
                 const result = await backend.getDefinitionVersions(this.fullPath, {
                     key: 'version',
                     sort: 'asc',
                     orderBy: 'timeStamp',
                     type: 'bpmn'
                 });
-                
+
                 // 버전이 2개 이상이어야 비교 가능
                 this.hasVersionsToCompare = result && result.length > 1;
             } catch (error) {

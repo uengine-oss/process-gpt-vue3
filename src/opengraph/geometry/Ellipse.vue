@@ -1,57 +1,51 @@
-<template>
-
-</template>
+<template></template>
 
 <script>
-  //center, radiusX, radiusY, angle
-  import Geometry from './Geometry.vue'
-  export default {
+//center, radiusX, radiusY, angle
+import Geometry from './Geometry.vue';
+export default {
     mixins: [Geometry],
     name: 'geometry-ellipse',
     props: {
-      center: {
-        default: function () {
-          return [10, 10];
+        center: {
+            default: function () {
+                return [10, 10];
+            },
+            type: Array
         },
-        type: Array
-      },
-      radiusX: {
-        default: function () {
-          return 10;
+        radiusX: {
+            default: function () {
+                return 10;
+            },
+            type: Number
         },
-        type: Number
-      },
-      radiusY: {
-        default: function () {
-          return 5;
+        radiusY: {
+            default: function () {
+                return 5;
+            },
+            type: Number
         },
-        type: Number
-      },
-      angle: {
-        default: function () {
-          return 0;
+        angle: {
+            default: function () {
+                return 0;
+            },
+            type: Number
         },
-        type: Number
-      },
-      _style: {
-        default: function () {
-          return {};
-        },
-        type: Object
-      }
+        _style: {
+            default: function () {
+                return {};
+            },
+            type: Object
+        }
     },
     methods: {
-      createGeometry: function () {
-        this.geom = new OG.geometry.Ellipse(this.center, this.radiusX, this.radiusY, this.angle);
-        this.geom.style = new OG.geometry.Style(JSON.parse(JSON.stringify(this._style)));
-        return this.geom;
-      }
+        createGeometry: function () {
+            this.geom = new OG.geometry.Ellipse(this.center, this.radiusX, this.radiusY, this.angle);
+            this.geom.style = new OG.geometry.Style(JSON.parse(JSON.stringify(this._style)));
+            return this.geom;
+        }
     }
-  }
+};
 </script>
 
-
-<style scoped lang="scss" rel="stylesheet/scss">
-
-</style>
-
+<style scoped lang="scss" rel="stylesheet/scss"></style>

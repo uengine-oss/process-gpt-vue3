@@ -1,36 +1,56 @@
 <template>
-     <div>
-        <v-card elevation="10" class="cursor-pointer pa-2 pt-1" @click="executeTask"
+    <div>
+        <v-card
+            elevation="10"
+            class="cursor-pointer pa-2 pt-1"
+            @click="executeTask"
             :class="[
-                { 'choice-background-color': isMyTask && !isTodolistPath && task.status !== 'DONE'},
+                { 'choice-background-color': isMyTask && !isTodolistPath && task.status !== 'DONE' },
                 { 'todo-status-opacity': task.status === 'TODO' },
-                { 'dot-border-animation': isStartedStatus },
+                { 'dot-border-animation': isStartedStatus }
             ]"
         >
-            <div class="ma-0 pa-0 mt-1" style="line-height:100%;">
+            <div class="ma-0 pa-0 mt-1" style="line-height: 100%">
                 <!-- 가로배치 -->
                 <div class="pa-0">
-                    <v-row class="ma-0 pa-0" style="width: 100%;">
+                    <v-row class="ma-0 pa-0" style="width: 100%">
                         <v-col class="pa-0 d-flex align-center" cols="9">
-                            <span style="font-size:16px; font-weight:500; line-height: 20px;">{{ displayTitle }}</span>
-                            <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{ reworkCount }}</v-chip>
-                            <v-chip v-if="task.status === 'SUBMITTED'" class="ml-1" size="small" color="success" variant="flat" density="comfortable">
+                            <span style="font-size: 16px; font-weight: 500; line-height: 20px">{{ displayTitle }}</span>
+                            <v-chip v-if="reworkCount" class="ml-1" size="small" color="info" variant="flat" density="comfortable">{{
+                                reworkCount
+                            }}</v-chip>
+                            <v-chip
+                                v-if="task.status === 'SUBMITTED'"
+                                class="ml-1"
+                                size="small"
+                                color="success"
+                                variant="flat"
+                                density="comfortable"
+                            >
                                 {{ $t('kanbanColumnCard.submitted') }}
                             </v-chip>
                         </v-col>
                         <v-col class="pa-0" cols="3">
-                            <v-row class="ma-0 pa-0 justify-end align-start"
-                                style="margin-top: 1px !important;"
-                            >
-                                <v-chip v-if="category"
-                                    :color="task.status === 'DONE' ? category.color : (isMyTask && !isTodolistPath && task.status !== 'DONE' ? 'white' : 'black')"
-                                    size="small" variant="outlined"
+                            <v-row class="ma-0 pa-0 justify-end align-start" style="margin-top: 1px !important">
+                                <v-chip
+                                    v-if="category"
+                                    :color="
+                                        task.status === 'DONE'
+                                            ? category.color
+                                            : isMyTask && !isTodolistPath && task.status !== 'DONE'
+                                            ? 'white'
+                                            : 'black'
+                                    "
+                                    size="small"
+                                    variant="outlined"
                                     density="comfortable"
-                                >{{ category.name }}</v-chip>
-                
-                                <RouterLink v-if="managed" to="" class="px-0 ml-1" >
-                                    <DotsVerticalIcon size="15"
-                                        :style="isMyTask && !isTodolistPath &&  task.status !== 'DONE' ? 'color: white;' : 'color: black;'"
+                                    >{{ category.name }}</v-chip
+                                >
+
+                                <RouterLink v-if="managed" to="" class="px-0 ml-1">
+                                    <DotsVerticalIcon
+                                        size="15"
+                                        :style="isMyTask && !isTodolistPath && task.status !== 'DONE' ? 'color: white;' : 'color: black;'"
                                     />
                                     <v-menu activator="parent">
                                         <v-list density="compact">
@@ -47,21 +67,18 @@
                         </v-col>
                     </v-row>
                 </div>
-               <!-- 세로배치 -->
-               <div class="mt-1">
-                    <div v-if="mode == 'uEngine'" 
-                        class="pa-0"
-                        style="font-size:12px; margin-top: 5px;"
-                    >
+                <!-- 세로배치 -->
+                <div class="mt-1">
+                    <div v-if="mode == 'uEngine'" class="pa-0" style="font-size: 12px; margin-top: 5px">
                         TaskId : {{ task.taskId }} / InstId: {{ task.instId }}
                     </div>
                     <div v-else-if="isMyTask && isTodolistPath" class="pa-0">
-                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%">
                             {{ task.procInstName }}
                         </div>
                     </div>
                     <div v-else class="pa-0">
-                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%;">
+                        <div class="text-caption" style="white-space: pre-wrap; word-break: break-word; max-width: 100%">
                             {{ task.instName }}
                         </div>
                     </div>
@@ -73,16 +90,16 @@
                             </div>
                         </div>
                         <div v-if="isDueTodayOrTomorrow" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert" style="color: #FF9800;" />
-                            <span class="text-caption ml-1" style="color: #FF9800;">{{ $t('kanbanColumnCard.overdue') }}</span>
+                            <v-icon size="16" icon="mdi-alert" style="color: #ff9800" />
+                            <span class="text-caption ml-1" style="color: #ff9800">{{ $t('kanbanColumnCard.overdue') }}</span>
                         </div>
                         <div v-else-if="isPastDue" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336; padding-top: 3px;" />
-                            <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.pastDue') }}</span>
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: #f44336; padding-top: 3px" />
+                            <span class="text-caption ml-1" style="color: #f44336">{{ $t('kanbanColumnCard.pastDue') }}</span>
                         </div>
                         <div v-if="isPending" class="d-flex align-center ml-auto">
-                            <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
-                            <span class="text-caption ml-1" style="color: #F44336;">{{ errorMessage }}</span>
+                            <v-icon size="16" icon="mdi-alert-circle" style="color: #f44336" />
+                            <span class="text-caption ml-1" style="color: #f44336">{{ errorMessage }}</span>
                         </div>
                     </div>
                 </div>
@@ -93,10 +110,10 @@
                             {{ formattedDate }}
                         </div>
                         <v-spacer></v-spacer>
-                        <v-chip 
+                        <v-chip
                             v-if="isDueTodayOrTomorrow || isPastDue"
-                            size="x-small" 
-                            :color="isDueTodayOrTomorrow ? 'warning' : 'error'" 
+                            size="x-small"
+                            :color="isDueTodayOrTomorrow ? 'warning' : 'error'"
                             variant="tonal"
                             class="ml-auto"
                         >
@@ -105,11 +122,11 @@
                         <v-tooltip v-if="isPending" location="right">
                             <template v-slot:activator="{ props }">
                                 <div class="d-flex align-center ml-2" v-bind="props">
-                                    <v-icon size="16" icon="mdi-alert-circle" style="color: #F44336;" />
-                                    <span class="text-caption ml-1" style="color: #F44336;">{{ $t('kanbanColumnCard.error') }}</span>
+                                    <v-icon size="16" icon="mdi-alert-circle" style="color: #f44336" />
+                                    <span class="text-caption ml-1" style="color: #f44336">{{ $t('kanbanColumnCard.error') }}</span>
                                 </div>
                             </template>
-                            <div class="text-caption text-wrap" style="max-width: 200px;">{{ errorMessage }}</div>
+                            <div class="text-caption text-wrap" style="max-width: 200px">{{ errorMessage }}</div>
                         </v-tooltip>
                     </div>
                 </div>
@@ -118,18 +135,17 @@
                         {{ task.description }}
                     </div>
                 </div>
-                <div v-if="currentDraftStatus"
-                    class="my-2"
-                >
+                <div v-if="currentDraftStatus" class="my-2">
                     <div v-if="currentDraftStatus === 'STARTED'">
-                        <div v-if="!detailContent"
-                            class="text-subtitle-2"
-                        >
+                        <div v-if="!detailContent" class="text-subtitle-2">
                             <div class="thinking-wave-text">
-                                <div v-for="(char, index) in $t('kanbanColumnCard.agentWorking')" :key="index" 
+                                <div
+                                    v-for="(char, index) in $t('kanbanColumnCard.agentWorking')"
+                                    :key="index"
                                     :style="{ animationDelay: `${index * 0.1}s` }"
                                     class="thinking-char"
-                                >{{ char === ' ' ? '\u00A0' : char }}
+                                >
+                                    {{ char === ' ' ? '\u00A0' : char }}
                                 </div>
                             </div>
                             <span class="loading-dots">
@@ -141,23 +157,21 @@
                             </span>
                         </div>
                     </div>
-                    <div v-else
-                        class="text-subtitle-2"
-                    >{{ $t('kanbanColumnCard.agentCompleted') }}
-                    </div>
+                    <div v-else class="text-subtitle-2">{{ $t('kanbanColumnCard.agentCompleted') }}</div>
                 </div>
-                <div v-if="isSubmittedStatus && !currentDraftStatus"
-                    class="my-2"
-                >
+                <div v-if="isSubmittedStatus && !currentDraftStatus" class="my-2">
                     <div class="text-subtitle-2">
                         <div class="thinking-wave-text">
-                            <div v-for="(char, index) in $t('kanbanColumnCard.submitProcessing')" :key="'submit-' + index" 
+                            <div
+                                v-for="(char, index) in $t('kanbanColumnCard.submitProcessing')"
+                                :key="'submit-' + index"
                                 :style="{ animationDelay: `${index * 0.1}s` }"
                                 class="submit-processing-char"
-                            >{{ char === ' ' ? '\u00A0' : char }}
+                            >
+                                {{ char === ' ' ? '\u00A0' : char }}
                             </div>
                         </div>
-                        <span class="loading-dots" style="color: #ffffff;">
+                        <span class="loading-dots" style="color: #ffffff">
                             <span>.</span>
                             <span>.</span>
                             <span>.</span>
@@ -167,36 +181,44 @@
                     </div>
                 </div>
                 <v-row v-if="!isTodolistPath" class="pa-0 ma-0 mt-1 d-flex align-center">
-                    <div v-if="isMultiUser || isMyTask || userInfoForTask" class="mr-1" style="width: 24px;" :class="{'mr-4': isMultiUser}">
-                        <div v-if="isMultiUser" class="d-flex"> 
-                            <v-img v-for="user in userInfoForTask"
+                    <div
+                        v-if="isMultiUser || isMyTask || userInfoForTask"
+                        class="mr-1"
+                        style="width: 24px"
+                        :class="{ 'mr-4': isMultiUser }"
+                    >
+                        <div v-if="isMultiUser" class="d-flex">
+                            <v-img
+                                v-for="user in userInfoForTask"
                                 :key="user.id || user.email"
                                 :src="user.profile ? user.profile : '/images/defaultUser.png'"
                                 alt="profile"
                                 width="24"
                                 height="24"
-                                style="border-radius: 50%; margin-right: -8px;"
+                                style="border-radius: 50%; margin-right: -8px"
                             />
                         </div>
-                        <v-img v-else-if="isMyTask"
+                        <v-img
+                            v-else-if="isMyTask"
                             :src="userInfoForTask && userInfoForTask.profile ? userInfoForTask.profile : '/images/defaultUser.png'"
                             alt="profile"
                             width="24"
                             height="24"
                             class="mr-2"
-                            style="border-radius: 50%;"
+                            style="border-radius: 50%"
                         />
-                        <v-img v-else-if="userInfoForTask"
+                        <v-img
+                            v-else-if="userInfoForTask"
                             :src="userInfoForTask.profile ? userInfoForTask.profile : '/images/defaultUser.png'"
                             alt="profile"
                             width="24"
                             height="24"
-                            style="border-radius: 50%;"
+                            style="border-radius: 50%"
                         />
                     </div>
                     <!-- 텍스트를 세로 기준 중앙정렬하기 위해 flex와 align-center 적용 -->
                     <div class="body-text-2 text-dark mr-2">
-                        <span v-if="isMultiUser">{{ userInfoForTask.map(user => user.username || user.name).join(', ') }}</span>
+                        <span v-if="isMultiUser">{{ userInfoForTask.map((user) => user.username || user.name).join(', ') }}</span>
                         <span v-else-if="isMyTask">{{ $t('TodoTaskItemCard.myTask') }}</span>
                         <span v-else-if="userInfoForTask">{{ userInfoForTask.username || userInfoForTask.name }}</span>
                         <span v-else>{{ $t('TodoTaskItemCard.noAssignee') }}</span>
@@ -206,11 +228,7 @@
             </div>
 
             <v-dialog v-model="dialog" max-width="500" persistent>
-                <TodoDialog 
-                    :type="dialogType"
-                    :task="task"
-                    @close="closeDialog"
-                />
+                <TodoDialog :type="dialogType" :task="task" @close="closeDialog" />
             </v-dialog>
         </v-card>
     </div>
@@ -218,13 +236,13 @@
 
 <script>
 import { format } from 'date-fns';
-import TodoDialog from './TodoDialog.vue'
+import TodoDialog from './TodoDialog.vue';
 
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 export default {
     components: {
-        TodoDialog,
+        TodoDialog
     },
     props: {
         task: Object,
@@ -296,30 +314,30 @@ export default {
             return dueDate < today && this.task.status !== 'DONE';
         },
         formattedDate() {
-            let dateString = "";
+            let dateString = '';
             if (this.task.startDate) {
-                dateString += format(new Date(this.task.startDate), "yyyy.MM.dd") + " ~";
-            } 
+                dateString += format(new Date(this.task.startDate), 'yyyy.MM.dd') + ' ~';
+            }
             if (this.task.dueDate) {
-                if (!dateString.includes("~")) dateString += "~ "
-                dateString += format(new Date(this.task.dueDate), "yyyy.MM.dd");
+                if (!dateString.includes('~')) dateString += '~ ';
+                dateString += format(new Date(this.task.dueDate), 'yyyy.MM.dd');
             }
             return dateString;
         },
         category() {
-            if(!this.task.adhoc && this.task.defId) {
+            if (!this.task.adhoc && this.task.defId) {
                 return { name: 'BPM', color: 'primary' };
             }
-            return null
+            return null;
         },
         allTaskDependencies() {
             if (!this.tasks || !Array.isArray(this.tasks)) {
                 return [];
             }
-            
+
             return this.tasks.reduce((dependencies, task) => {
                 if (task.referenceIds && task.referenceIds.length > 0) {
-                    const taskDeps = task.referenceIds.map(refId => ({
+                    const taskDeps = task.referenceIds.map((refId) => ({
                         id: this.generateUUID(),
                         taskId: task.taskId,
                         depends_id: refId
@@ -331,20 +349,20 @@ export default {
         },
         userInfoForTask() {
             if (!this.userList || !this.task || !this.task.endpoint) return null;
-            
+
             if (this.task.endpoint.includes(',')) {
-                const endpoints = this.task.endpoint.split(',').map(e => e.trim());
+                const endpoints = this.task.endpoint.split(',').map((e) => e.trim());
                 let users = [];
                 let user = null;
                 for (const endpoint of endpoints) {
-                    user = this.userList.find(user => (user.email && user.email === endpoint) || user.id == endpoint);
+                    user = this.userList.find((user) => (user.email && user.email === endpoint) || user.id == endpoint);
                     if (user) {
                         users.push(user);
                     } else {
                         // 사용자를 못 찾은 경우 역할명인지 체크
                         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(endpoint);
                         const isEmail = endpoint.includes('@');
-                        
+
                         if (!isUUID && !isEmail) {
                             users.push({
                                 username: `[${this.$t('Common.role')}] ${endpoint}`,
@@ -362,22 +380,22 @@ export default {
                 }
                 return users.length > 0 ? users : null;
             } else {
-                let user = this.userList.find(user => (user.email && user.email === this.task.endpoint) || user.id == this.task.endpoint);
+                let user = this.userList.find((user) => (user.email && user.email === this.task.endpoint) || user.id == this.task.endpoint);
                 if (!user) {
                     // UUID나 email 형식이 아니면 역할명으로 판단
                     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(this.task.endpoint);
                     const isEmail = this.task.endpoint.includes('@');
-                    
+
                     if (!isUUID && !isEmail) {
                         user = {
                             username: `[${this.$t('Common.role')}] ${this.task.endpoint}`,
                             name: `[${this.$t('Common.role')}] ${this.task.endpoint}`
-                        }
+                        };
                     } else {
                         user = {
                             username: this.task.endpoint,
                             name: this.task.endpoint
-                        }
+                        };
                     }
                 }
                 return user;
@@ -390,11 +408,11 @@ export default {
             // localStorage의 uid와 task의 endpoint가 일치하는지 확인 (uid 또는 이메일 비교)
             const myUid = localStorage.getItem('uid');
             if (!myUid || !this.task || !this.task.endpoint) return false;
-            
+
             // 현재 사용자의 이메일 정보 가져오기 (userList에서)
-            const myUserInfo = this.userList.find(user => user.id === myUid);
+            const myUserInfo = this.userList.find((user) => user.id === myUid);
             const myEmail = myUserInfo ? myUserInfo.email : null;
-            
+
             if (this.task.endpoint.includes(',')) {
                 const endpoints = this.task.endpoint.split(',');
                 return endpoints.includes(myUid) || (myEmail && endpoints.includes(myEmail));
@@ -411,8 +429,10 @@ export default {
         },
         errorMessage() {
             if (this.task.status === 'PENDING' && this.task.log && this.task.log.length > 0) {
-                if (this.task.log.includes('PROCEED_CONDITION_NOT_MET') ||
-                    this.task.log.includes('SYSTEM_ERROR') || this.task.log.includes('DATA_FIELD_NOT_EXIST')
+                if (
+                    this.task.log.includes('PROCEED_CONDITION_NOT_MET') ||
+                    this.task.log.includes('SYSTEM_ERROR') ||
+                    this.task.log.includes('DATA_FIELD_NOT_EXIST')
                 ) {
                     return this.task.log;
                 }
@@ -430,23 +450,21 @@ export default {
                 return this.task.task.rework_count;
             }
             return null;
-        },
+        }
     },
     async mounted() {
         this.managed = this.task.adhoc;
         // 초기 draft_status 설정
         this.currentDraftStatus = this.task.task?.draft_status;
-        
+
         try {
             // 인스턴스 목록 가져오기
-            const result = await backend.getInstanceListByStatus(["NEW", "RUNNING"]);
+            const result = await backend.getInstanceListByStatus(['NEW', 'RUNNING']);
             if (!result) return;
-            
+
             // 현재 task의 instId와 일치하는 인스턴스 찾기
             if (this.task.instId) {
-                const matchingInstance = result.find(
-                    inst => inst.instId === this.task.instId
-                );
+                const matchingInstance = result.find((inst) => inst.instId === this.task.instId);
                 if (matchingInstance) {
                     this.task.procInstName = matchingInstance.name;
                 }
@@ -469,24 +487,24 @@ export default {
     },
     methods: {
         async subscribeToTaskLog() {
-            if (!this.task.taskId || this.task.status == "DONE") return;
+            if (!this.task.taskId || this.task.status == 'DONE') return;
             const originalStatus = this.task.status;
             const subscription = await backend.getTaskLog(this.task.taskId, async (task) => {
-                if (task.status == "DONE" || task.status !== originalStatus) {
+                if (task.status == 'DONE' || task.status !== originalStatus) {
                     window.$supabase.removeChannel(subscription);
                     this.EventBus.emit('todolist-updated');
                 }
             });
         },
         generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = (Math.random() * 16) | 0;
+                const v = c === 'x' ? r : (r & 0x3) | 0x8;
                 return v.toString(16);
             });
         },
         executeTask() {
-            this.$router.push(`/todolist/${this.task.taskId}`)
+            this.$router.push(`/todolist/${this.task.taskId}`);
         },
         closeDialog() {
             this.dialog = false;
@@ -494,7 +512,7 @@ export default {
         deleteTask() {
             this.$emit('deleteTask', this.task);
         },
-        editTask(){
+        editTask() {
             this.dialogType = 'edit';
             this.dialog = true;
         },
@@ -505,19 +523,23 @@ export default {
                     console.error('Supabase 클라이언트를 찾을 수 없음');
                     return;
                 }
-                
+
                 const channel = window.$supabase
                     .channel(`task-${this.task.taskId}`)
-                    .on('postgres_changes', {
-                        event: 'INSERT',
-                        schema: 'public', 
-                        table: 'events',
-                        filter: `todo_id=eq.${this.task.taskId}`
-                    }, (payload) => {
-                        this.handleBackendEvent(payload.new);
-                    })
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'INSERT',
+                            schema: 'public',
+                            table: 'events',
+                            filter: `todo_id=eq.${this.task.taskId}`
+                        },
+                        (payload) => {
+                            this.handleBackendEvent(payload.new);
+                        }
+                    )
                     .subscribe();
-                
+
                 this.eventSubscription = channel;
             } catch (error) {
                 console.error('이벤트 구독 실패:', error);
@@ -532,10 +554,9 @@ export default {
         },
         updateDraftStatus(newStatus) {
             this.currentDraftStatus = newStatus;
-        },
-
-    },
-}
+        }
+    }
+};
 </script>
 
 <style scoped>

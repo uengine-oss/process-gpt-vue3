@@ -7,7 +7,7 @@
  * 유효한 JWT 토큰을 가져옵니다.
  * - 세션이 만료 임박(5분 이내)이면 자동으로 갱신
  * - 세션이 없거나 갱신 실패 시 null 반환
- * 
+ *
  * @returns {Promise<string|null>} 유효한 access_token 또는 null
  */
 export async function getValidToken() {
@@ -18,8 +18,11 @@ export async function getValidToken() {
     }
 
     try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const {
+            data: { session },
+            error
+        } = await supabase.auth.getSession();
+
         if (error) {
             console.error('[supabaseAuth] 세션 조회 실패:', error.message);
             return null;
@@ -46,12 +49,12 @@ export async function getValidToken() {
         if (timeUntilExpiry < 300) {
             const status = timeUntilExpiry <= 0 ? '만료됨' : '만료 임박';
             console.log(`[supabaseAuth] 토큰 ${status} (${timeUntilExpiry}초), 갱신 시도...`);
-            
+
             // refresh_token을 명시적으로 전달하여 갱신
             const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession({
                 refresh_token: session.refresh_token
             });
-            
+
             if (refreshError) {
                 console.error('[supabaseAuth] 토큰 갱신 실패:', refreshError.message);
                 // 갱신 실패해도 현재 토큰이 아직 유효하면 사용
@@ -96,7 +99,9 @@ export async function getCurrentSession() {
     if (!supabase) return null;
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+            data: { session }
+        } = await supabase.auth.getSession();
         return session;
     } catch (error) {
         console.error('[supabaseAuth] 세션 조회 실패:', error);
@@ -116,7 +121,9 @@ export function onAuthStateChange(callback) {
         return () => {};
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const {
+        data: { subscription }
+    } = supabase.auth.onAuthStateChange((event, session) => {
         callback(event, session);
     });
 

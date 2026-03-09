@@ -5,7 +5,10 @@
             <div v-for="field in inputFields" :key="field.formId">
                 <v-row class="ma-0 pa-4 pb-0">
                     <div>
-                        <v-card-title class="text-h6 cursor-pointer d-flex align-center justify-space-between pa-0 mb-2" @click="toggleExpanded">
+                        <v-card-title
+                            class="text-h6 cursor-pointer d-flex align-center justify-space-between pa-0 mb-2"
+                            @click="toggleExpanded"
+                        >
                             <div class="d-flex align-center">
                                 {{ $t('ActivityInputData.previousInput') }}
                                 <DetailComponent
@@ -21,19 +24,9 @@
                         </div>
                     </div>
                     <v-spacer></v-spacer>
-                    <div
-                        v-if="formHtmlData[field.formId]"
-                        :class="['summary-container', { 'w-100': isSummaryExpanded[field.formId] }]"
-                    >
-                         <SummaryButton 
-                             class="activity-input-data-summary-button"
-                             @expanded="handleSummaryExpanded(field.formId, $event)"
-                         >
-                            <DynamicForm 
-                                :formHTML="formHtmlData[field.formId]" 
-                                v-model="field.formValue"
-                                :readonly="true"
-                            ></DynamicForm>
+                    <div v-if="formHtmlData[field.formId]" :class="['summary-container', { 'w-100': isSummaryExpanded[field.formId] }]">
+                        <SummaryButton class="activity-input-data-summary-button" @expanded="handleSummaryExpanded(field.formId, $event)">
+                            <DynamicForm :formHTML="formHtmlData[field.formId]" v-model="field.formValue" :readonly="true"></DynamicForm>
                         </SummaryButton>
                     </div>
                 </v-row>
@@ -72,7 +65,7 @@
 </template>
 
 <script>
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 import DynamicForm from '@/components/designer/DynamicForm.vue';
 import SummaryButton from '@/components/ui/SummaryButton.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
@@ -85,7 +78,7 @@ export default {
     },
     props: {
         inputFields: Array,
-        workItem: Object, // workItem에서 procDefId 추출용
+        workItem: Object // workItem에서 procDefId 추출용
     },
     data() {
         return {
@@ -100,22 +93,22 @@ export default {
                     title: 'ActivityInputData.previousInputDetail'
                 }
             ]
-        }
+        };
     },
     async mounted() {
         this.backend = BackendFactory.createBackend();
-        
+
         // 백그라운드에서 비동기로 메타데이터 로딩 (UI 블로킹 없음)
         if (this.inputFields && Array.isArray(this.inputFields)) {
-            const formIds = [...new Set(this.inputFields.map(field => field.formId))];
-            
+            const formIds = [...new Set(this.inputFields.map((field) => field.formId))];
+
             // 비동기로 로딩하여 UI 블로킹하지 않음
-            formIds.forEach(formId => {
+            formIds.forEach((formId) => {
                 this.fetchFieldsMetadata(formId);
                 this.fetchFormHtml(formId);
             });
         }
-        
+
         // proc_def의 activities 정보도 백그라운드에서 로딩
         if (this.workItem && this.workItem.worklist && this.workItem.worklist.defId) {
             this.fetchActivityMetadata();
@@ -125,10 +118,10 @@ export default {
         // inputFields가 변경될 때 새로운 formId에 대해 메타데이터 로딩
         inputFields(newFields) {
             if (newFields && Array.isArray(newFields)) {
-                const formIds = [...new Set(newFields.map(field => field.formId))];
-                
+                const formIds = [...new Set(newFields.map((field) => field.formId))];
+
                 // 새로운 formId만 비동기로 로딩
-                formIds.forEach(formId => {
+                formIds.forEach((formId) => {
                     if (!this.fieldMetadata[formId]) {
                         this.fetchFieldsMetadata(formId);
                     }
@@ -163,7 +156,7 @@ export default {
             try {
                 // backend의 getData 메서드를 활용
                 const formObject = await this.backend.getData(`form_def/${formDefId}`, { key: 'id' });
-                
+
                 if (formObject && formObject.fields_json) {
                     // Vue 3에서는 직접 할당으로 반응성 자동 처리
                     this.fieldMetadata[formDefId] = formObject.fields_json;
@@ -187,7 +180,7 @@ export default {
 
             try {
                 const html = await this.backend.getRawDefinition(formDefId, { type: 'form' });
-                
+
                 if (html) {
                     this.formHtmlData[formDefId] = html;
                 } else {
@@ -209,9 +202,9 @@ export default {
 
             try {
                 const procDefId = this.workItem.worklist.defId;
-                
+
                 const process = await this.backend.getRawDefinition(procDefId);
-                
+
                 if (process && process.definition && process.definition.activities) {
                     this.activityMetadata = process.definition.activities;
                 } else {
@@ -228,16 +221,14 @@ export default {
             if (!this.activityMetadata || !Array.isArray(this.activityMetadata)) {
                 return formId;
             }
-            
+
             // activities에서 tool이 "formHandler:formId"와 일치하는 항목 찾기
-            const activity = this.activityMetadata.find(activity => 
-                activity.tool === `formHandler:${formId}`
-            );
-            
+            const activity = this.activityMetadata.find((activity) => activity.tool === `formHandler:${formId}`);
+
             if (activity && activity.name) {
                 return activity.name;
             }
-            
+
             // 찾을 수 없는 경우 원래 formId 반환
             return formId;
         },
@@ -245,18 +236,18 @@ export default {
         // key 값으로 해당하는 text를 찾는 헬퍼 함수 (레이지 방식)
         // getFieldText(key, formDefId) {
         //     const metadata = this.fieldMetadata[formDefId];
-        //     
+        //
         //     // 메타데이터가 아직 로딩되지 않았거나 로딩 중인 경우 key 반환
         //     if (!metadata || !Array.isArray(metadata) || metadata.length === 0) {
         //         return key;
         //     }
-        //     
+        //
         //     // 메타데이터에서 해당 key의 text 찾기
         //     const field = metadata.find(item => item.key === key);
         //     if (field && field.text) {
         //         return field.text;
         //     }
-        //     
+        //
         //     // 해당 키를 찾을 수 없는 경우 원래 key 값 반환
         //     return key;
         // },
@@ -294,5 +285,5 @@ export default {
             };
         }
     }
-}
+};
 </script>

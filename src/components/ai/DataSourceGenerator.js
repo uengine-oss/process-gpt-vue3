@@ -1,16 +1,15 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class DataSourceGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
         this.contexts = null;
         this.model = 'gpt-4o';
-        
+
         this.previousMessagesFormat = [
-          {
-            role: 'system',
-            content: `
+            {
+                role: 'system',
+                content: `
         # Role
         You are an intelligent dataSource selection and mapping system. You handle four types of tasks:
         
@@ -164,7 +163,7 @@ export default class DataSourceGenerator extends AIGenerator {
         - **Partial Matches**: If only one field (like 'name') exists, use it for both key and value
         - **Empty Data**: Return empty mappings array if no valid data is available
         `
-          }
+            }
         ];
     }
 }

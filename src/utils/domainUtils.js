@@ -8,14 +8,14 @@
  */
 export function getBaseDomain() {
     const hostname = window.location.hostname;
-    
+
     // www가 있는 경우 제거
     let domain = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
-    
+
     // process-gpt가 포함된 도메인인지 확인
     if (domain.includes('process-gpt')) {
         const parts = domain.split('.');
-        
+
         // process-gpt가 첫 번째 부분인 경우 (process-gpt.xxx.xxx 형태) - 메인 도메인
         if (parts[0] === 'process-gpt') {
             return domain;
@@ -26,7 +26,7 @@ export function getBaseDomain() {
             return parts.slice(1).join('.');
         }
     }
-    
+
     return domain;
 }
 
@@ -40,14 +40,14 @@ export function getTenantUrl(tenantId, path = '/definition-map') {
     const baseDomain = getBaseDomain();
     const protocol = window.location.protocol;
     const port = window.location.port;
-    
+
     let url = `${protocol}//${tenantId}.${baseDomain}${path}`;
-    
+
     // 포트가 있는 경우 추가
     if (port) {
         url = `${protocol}//${tenantId}.${baseDomain}:${port}${path}`;
     }
-    
+
     return url;
 }
 
@@ -60,13 +60,13 @@ export function getMainDomainUrl(path = '/tenant/manage') {
     const baseDomain = getBaseDomain();
     const protocol = window.location.protocol;
     const port = window.location.port;
-    
+
     let url = `${protocol}//${baseDomain}${path}`;
-    
+
     // 포트가 있는 경우 추가
     if (port) {
         url = `${protocol}//${baseDomain}:${port}${path}`;
     }
-    
+
     return url;
 }

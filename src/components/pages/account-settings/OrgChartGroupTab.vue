@@ -27,12 +27,7 @@
             </div>
 
             <div v-else class="groups-list">
-                <div
-                    v-for="group in groups"
-                    :key="group.id"
-                    class="group-card"
-                    :class="{ expanded: expandedGroupId === group.id }"
-                >
+                <div v-for="group in groups" :key="group.id" class="group-card" :class="{ expanded: expandedGroupId === group.id }">
                     <div class="group-header" @click="toggleGroup(group.id)">
                         <div class="group-info">
                             <v-icon size="20" color="primary" class="mr-2">mdi-account-group</v-icon>
@@ -66,11 +61,7 @@
                                 </button>
                             </div>
                             <div class="teams-list">
-                                <div
-                                    v-for="team in getGroupTeams(group.id)"
-                                    :key="team.id"
-                                    class="team-chip"
-                                >
+                                <div v-for="team in getGroupTeams(group.id)" :key="team.id" class="team-chip">
                                     <v-icon size="14" class="mr-1">mdi-account-multiple</v-icon>
                                     {{ team.team_name }}
                                     <button class="chip-remove" @click="removeTeamFromGroup(group.id, team.id)">
@@ -131,12 +122,7 @@
                 <div class="dialog-content">
                     <div class="search-field">
                         <v-icon size="18" color="grey">mdi-magnify</v-icon>
-                        <input
-                            v-model="teamSearchQuery"
-                            type="text"
-                            :placeholder="$t('orgChartGroup.searchTeams')"
-                            class="flat-input"
-                        />
+                        <input v-model="teamSearchQuery" type="text" :placeholder="$t('orgChartGroup.searchTeams')" class="flat-input" />
                     </div>
                     <div class="team-selector-list">
                         <div
@@ -226,12 +212,12 @@ export default defineComponent({
 
         // Computed
         const filteredAvailableTeams = computed(() => {
-            const assignedTeamIds = getGroupTeams(selectedGroupForTeams.value?.id).map(t => t.team_id);
-            let teams = availableTeams.value.filter(t => !assignedTeamIds.includes(t.id));
+            const assignedTeamIds = getGroupTeams(selectedGroupForTeams.value?.id).map((t) => t.team_id);
+            let teams = availableTeams.value.filter((t) => !assignedTeamIds.includes(t.id));
 
             if (teamSearchQuery.value) {
                 const query = teamSearchQuery.value.toLowerCase();
-                teams = teams.filter(t => t.name.toLowerCase().includes(query));
+                teams = teams.filter((t) => t.name.toLowerCase().includes(query));
             }
 
             return teams;
@@ -259,9 +245,7 @@ export default defineComponent({
 
         const loadGroupTeams = async () => {
             try {
-                const { data, error } = await supabase
-                    .from('org_chart_group_teams')
-                    .select('*');
+                const { data, error } = await supabase.from('org_chart_group_teams').select('*');
 
                 if (error) throw error;
                 groupTeams.value = data || [];
@@ -308,7 +292,7 @@ export default defineComponent({
                 }
 
                 if (n.children) {
-                    n.children.forEach(child => traverse(child));
+                    n.children.forEach((child) => traverse(child));
                 }
             };
 
@@ -317,11 +301,11 @@ export default defineComponent({
         };
 
         const getTeamCount = (groupId) => {
-            return groupTeams.value.filter(t => t.group_id === groupId).length;
+            return groupTeams.value.filter((t) => t.group_id === groupId).length;
         };
 
         const getGroupTeams = (groupId) => {
-            return groupTeams.value.filter(t => t.group_id === groupId);
+            return groupTeams.value.filter((t) => t.group_id === groupId);
         };
 
         const toggleGroup = (groupId) => {
@@ -330,9 +314,7 @@ export default defineComponent({
 
         const openGroupDialog = (group = null) => {
             editingGroup.value = group;
-            groupForm.value = group
-                ? { name: group.name, description: group.description || '' }
-                : { name: '', description: '' };
+            groupForm.value = group ? { name: group.name, description: group.description || '' } : { name: '', description: '' };
             groupDialog.value = true;
         };
 
@@ -350,13 +332,11 @@ export default defineComponent({
 
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase
-                        .from('org_chart_groups')
-                        .insert({
-                            name: groupForm.value.name,
-                            description: groupForm.value.description,
-                            tenant_id: window.$tenantName || 'default'
-                        });
+                    const { error } = await supabase.from('org_chart_groups').insert({
+                        name: groupForm.value.name,
+                        description: groupForm.value.description,
+                        tenant_id: window.$tenantName || 'default'
+                    });
 
                     if (error) throw error;
                 }
@@ -375,10 +355,7 @@ export default defineComponent({
 
         const deleteGroup = async () => {
             try {
-                const { error } = await supabase
-                    .from('org_chart_groups')
-                    .delete()
-                    .eq('id', deletingGroup.value.id);
+                const { error } = await supabase.from('org_chart_groups').delete().eq('id', deletingGroup.value.id);
 
                 if (error) throw error;
 
@@ -409,16 +386,14 @@ export default defineComponent({
         const addSelectedTeams = async () => {
             try {
                 const teamsToAdd = availableTeams.value
-                    .filter(t => selectedTeams.value.includes(t.id))
-                    .map(t => ({
+                    .filter((t) => selectedTeams.value.includes(t.id))
+                    .map((t) => ({
                         group_id: selectedGroupForTeams.value.id,
                         team_id: t.id,
                         team_name: t.name
                     }));
 
-                const { error } = await supabase
-                    .from('org_chart_group_teams')
-                    .insert(teamsToAdd);
+                const { error } = await supabase.from('org_chart_group_teams').insert(teamsToAdd);
 
                 if (error) throw error;
 
@@ -431,10 +406,7 @@ export default defineComponent({
 
         const removeTeamFromGroup = async (groupId, teamRecordId) => {
             try {
-                const { error } = await supabase
-                    .from('org_chart_group_teams')
-                    .delete()
-                    .eq('id', teamRecordId);
+                const { error } = await supabase.from('org_chart_group_teams').delete().eq('id', teamRecordId);
 
                 if (error) throw error;
                 await loadGroupTeams();
@@ -444,11 +416,7 @@ export default defineComponent({
         };
 
         onMounted(async () => {
-            await Promise.all([
-                loadGroups(),
-                loadGroupTeams(),
-                loadAvailableTeams()
-            ]);
+            await Promise.all([loadGroups(), loadGroupTeams(), loadAvailableTeams()]);
         });
 
         return {
@@ -483,7 +451,6 @@ export default defineComponent({
 </script>
 
 <style scoped>
-
 /* Info Banner */
 .info-banner {
     display: flex;

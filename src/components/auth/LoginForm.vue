@@ -13,9 +13,7 @@ const isCapsLockOn = ref(false);
 const storedEmail = localStorage.getItem('email') || '';
 const username = ref(storedEmail);
 
-const passwordRules = ref([
-    (v: string) => !!v || 'Password is required',
-]);
+const passwordRules = ref([(v: string) => !!v || 'Password is required']);
 const emailRules = ref([(v: string) => !!v || 'E-mail is required', (v: string) => /.+@.+\..+/.test(v) || 'E-mail must be valid']);
 
 function validate(values: any, { setErrors }: any) {
@@ -29,26 +27,16 @@ function checkCapsLock(event: KeyboardEvent | FocusEvent) {
 }
 
 // 컴포넌트 마운트 시 전역 이벤트 리스너 추가
-onMounted(() => {
-    
-});
+onMounted(() => {});
 
 // 컴포넌트 언마운트 시 리스너 제거
-onBeforeUnmount(() => {
-    
-});
+onBeforeUnmount(() => {});
 </script>
 
 <template>
     <Form @submit="validate" v-slot="{ errors, isSubmitting }" class="mt-5">
         <v-label class="text-subtitle-1 font-weight-semibold pb-2 text-grey200">{{ $t('loginPage.userName') }}</v-label>
-        <VTextField
-            v-model="username"
-            :rules="emailRules"
-            class="mb-8 cp-id"
-            required
-            hide-details="auto"
-        ></VTextField>
+        <VTextField v-model="username" :rules="emailRules" class="mb-8 cp-id" required hide-details="auto"></VTextField>
         <v-label class="text-subtitle-1 font-weight-semibold pb-2 text-grey200">{{ $t('loginPage.password') }}</v-label>
         <div class="position-relative">
             <VTextField
@@ -63,7 +51,7 @@ onBeforeUnmount(() => {
                 @keydown="checkCapsLock"
                 @keyup="checkCapsLock"
                 @focus="checkCapsLock"
-                style="background: #E8F0FE;"
+                style="background: #e8f0fe"
             ></VTextField>
             <div v-if="isCapsLockOn" class="caps-lock-warning">
                 <v-chip size="small" color="warning" class="mt-1">
@@ -77,7 +65,9 @@ onBeforeUnmount(() => {
                 <template v-slot:label>{{ $t('loginPage.remeber') }}</template>
             </v-checkbox>
         </div>
-        <v-btn class="cp-login" size="large" rounded="pill" :loading="isSubmitting" color="primary" block type="submit" flat>{{ $t('loginPage.login') }}</v-btn>
+        <v-btn class="cp-login" size="large" rounded="pill" :loading="isSubmitting" color="primary" block type="submit" flat>{{
+            $t('loginPage.login')
+        }}</v-btn>
         <div v-if="errors.apiError" class="mt-2">
             <v-alert color="error">{{ errors.apiError }}</v-alert>
         </div>

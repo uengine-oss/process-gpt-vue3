@@ -6,7 +6,7 @@ export function parseDmnXml(xmlString) {
     try {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-        
+
         // 파싱 에러 확인
         const parserError = xmlDoc.querySelector('parsererror');
         if (parserError) {
@@ -258,18 +258,18 @@ export function parseDmnXml(xmlString) {
 export function isRuleEqual(rule1, rule2) {
     if (!rule1 && !rule2) return true;
     if (!rule1 || !rule2) return false;
-    
+
     if (rule1.inputs.length !== rule2.inputs.length) return false;
     if (rule1.outputs.length !== rule2.outputs.length) return false;
-    
+
     for (let i = 0; i < rule1.inputs.length; i++) {
         if (rule1.inputs[i].value !== rule2.inputs[i].value) return false;
     }
-    
+
     for (let i = 0; i < rule1.outputs.length; i++) {
         if (rule1.outputs[i].value !== rule2.outputs[i].value) return false;
     }
-    
+
     return true;
 }
 
@@ -379,15 +379,35 @@ export function diffDmn(previous, current) {
         const p = decPrev[key];
         const c = decCurr[key];
         if (!p && c) {
-            decisionChanges.push({ key, type: 'added', previous: null, current: c, diffs: [], tableDiff: c.decisionTable ? diffDecisionTable(null, c.decisionTable) : null });
+            decisionChanges.push({
+                key,
+                type: 'added',
+                previous: null,
+                current: c,
+                diffs: [],
+                tableDiff: c.decisionTable ? diffDecisionTable(null, c.decisionTable) : null
+            });
         } else if (p && !c) {
-            decisionChanges.push({ key, type: 'removed', previous: p, current: null, diffs: [], tableDiff: p.decisionTable ? diffDecisionTable(p.decisionTable, null) : null });
+            decisionChanges.push({
+                key,
+                type: 'removed',
+                previous: p,
+                current: null,
+                diffs: [],
+                tableDiff: p.decisionTable ? diffDecisionTable(p.decisionTable, null) : null
+            });
         } else if (p && c) {
             const diffs = diffKeyFields(p, c, ['name', 'informationRequirements', 'literalExpression']);
-            const tableDiff = (p.decisionTable || c.decisionTable) ? diffDecisionTable(p.decisionTable, c.decisionTable) : null;
-            const type = diffs.length || (tableDiff && (tableDiff.summary.addedRules || tableDiff.summary.modifiedRules || tableDiff.summary.removedRules || tableDiff.metaDiffs.length))
-                ? 'modified'
-                : 'unchanged';
+            const tableDiff = p.decisionTable || c.decisionTable ? diffDecisionTable(p.decisionTable, c.decisionTable) : null;
+            const type =
+                diffs.length ||
+                (tableDiff &&
+                    (tableDiff.summary.addedRules ||
+                        tableDiff.summary.modifiedRules ||
+                        tableDiff.summary.removedRules ||
+                        tableDiff.metaDiffs.length))
+                    ? 'modified'
+                    : 'unchanged';
             decisionChanges.push({ key, type, previous: p, current: c, diffs, tableDiff });
         }
     }
@@ -406,8 +426,20 @@ export function diffDmn(previous, current) {
                 previous: null,
                 current: c,
                 diffs: [],
-                shapeChanges: (c.shapes || []).map((s, idx) => ({ key: s.id || `__idx_${idx}`, type: 'added', previous: null, current: s, diffs: [] })),
-                edgeChanges: (c.edges || []).map((e, idx) => ({ key: e.id || `__idx_${idx}`, type: 'added', previous: null, current: e, diffs: [] }))
+                shapeChanges: (c.shapes || []).map((s, idx) => ({
+                    key: s.id || `__idx_${idx}`,
+                    type: 'added',
+                    previous: null,
+                    current: s,
+                    diffs: []
+                })),
+                edgeChanges: (c.edges || []).map((e, idx) => ({
+                    key: e.id || `__idx_${idx}`,
+                    type: 'added',
+                    previous: null,
+                    current: e,
+                    diffs: []
+                }))
             });
         } else if (p && !c) {
             diagramChanges.push({
@@ -416,8 +448,20 @@ export function diffDmn(previous, current) {
                 previous: p,
                 current: null,
                 diffs: [],
-                shapeChanges: (p.shapes || []).map((s, idx) => ({ key: s.id || `__idx_${idx}`, type: 'removed', previous: s, current: null, diffs: [] })),
-                edgeChanges: (p.edges || []).map((e, idx) => ({ key: e.id || `__idx_${idx}`, type: 'removed', previous: e, current: null, diffs: [] }))
+                shapeChanges: (p.shapes || []).map((s, idx) => ({
+                    key: s.id || `__idx_${idx}`,
+                    type: 'removed',
+                    previous: s,
+                    current: null,
+                    diffs: []
+                })),
+                edgeChanges: (p.edges || []).map((e, idx) => ({
+                    key: e.id || `__idx_${idx}`,
+                    type: 'removed',
+                    previous: e,
+                    current: null,
+                    diffs: []
+                }))
             });
         } else if (p && c) {
             const shapePrev = indexById(p.shapes || []);
@@ -450,7 +494,10 @@ export function diffDmn(previous, current) {
                 }
             }
 
-            const type = shapeChanges.some((s) => s.type !== 'unchanged') || edgeChanges.some((e) => e.type !== 'unchanged') ? 'modified' : 'unchanged';
+            const type =
+                shapeChanges.some((s) => s.type !== 'unchanged') || edgeChanges.some((e) => e.type !== 'unchanged')
+                    ? 'modified'
+                    : 'unchanged';
             diagramChanges.push({
                 key,
                 type,
@@ -466,9 +513,19 @@ export function diffDmn(previous, current) {
     const defDiffs = diffKeyFields(prev.definitions || null, curr.definitions || null, ['id', 'name', 'namespace']);
 
     const summary = {
-        added: inputChanges.filter((c) => c.type === 'added').length + decisionChanges.filter((c) => c.type === 'added').length + diagramChanges.filter((c) => c.type === 'added').length,
-        modified: inputChanges.filter((c) => c.type === 'modified').length + decisionChanges.filter((c) => c.type === 'modified').length + diagramChanges.filter((c) => c.type === 'modified').length + (defDiffs.length ? 1 : 0),
-        removed: inputChanges.filter((c) => c.type === 'removed').length + decisionChanges.filter((c) => c.type === 'removed').length + diagramChanges.filter((c) => c.type === 'removed').length
+        added:
+            inputChanges.filter((c) => c.type === 'added').length +
+            decisionChanges.filter((c) => c.type === 'added').length +
+            diagramChanges.filter((c) => c.type === 'added').length,
+        modified:
+            inputChanges.filter((c) => c.type === 'modified').length +
+            decisionChanges.filter((c) => c.type === 'modified').length +
+            diagramChanges.filter((c) => c.type === 'modified').length +
+            (defDiffs.length ? 1 : 0),
+        removed:
+            inputChanges.filter((c) => c.type === 'removed').length +
+            decisionChanges.filter((c) => c.type === 'removed').length +
+            diagramChanges.filter((c) => c.type === 'removed').length
     };
 
     return {
@@ -479,4 +536,3 @@ export function diffDmn(previous, current) {
         summary
     };
 }
-

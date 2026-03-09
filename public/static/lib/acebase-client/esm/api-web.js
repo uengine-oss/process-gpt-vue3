@@ -26,7 +26,12 @@ const _websocketRequest = (socket, event, data, accessToken) => {
                     return send(retry + 1);
                 }
                 socket.off('result', handle);
-                const err = new AceBaseRequestError(request, null, 'timeout', `Server did not respond to "${event}" request after ${retry + 1} tries`);
+                const err = new AceBaseRequestError(
+                    request,
+                    null,
+                    'timeout',
+                    `Server did not respond to "${event}" request after ${retry + 1} tries`
+                );
                 reject(err);
             }, 1000);
         };
@@ -81,7 +86,7 @@ const CONNECTION_STATE_CONNECTING = 'connecting';
 const CONNECTION_STATE_CONNECTED = 'connected';
 const CONNECTION_STATE_DISCONNECTING = 'disconnecting';
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const NOOP = () => { };
+const NOOP = () => {};
 /**
  * Api to connect to a remote AceBase server over http(s)
  */
@@ -99,7 +104,7 @@ export class WebApi extends Api {
             /** Last cursor received by the server */
             current: null,
             /** Last cursor received before client went offline, will be used for sync. */
-            sync: null,
+            sync: null
         };
         this._eventTimeline = { init: Date.now(), connect: 0, signIn: 0, sync: 0, disconnect: 0 };
         this._subscriptions = {};
@@ -113,7 +118,7 @@ export class WebApi extends Api {
         if (settings.cache.enabled !== false) {
             this._cache = {
                 db: settings.cache.db,
-                priority: settings.cache.priority,
+                priority: settings.cache.priority
             };
         }
         if (settings.network.monitor) {
@@ -133,8 +138,7 @@ export class WebApi extends Api {
         if (this._autoConnect) {
             if (this._autoConnectDelay) {
                 setTimeout(() => this.connect().catch(NOOP), this._autoConnectDelay);
-            }
-            else {
+            } else {
                 this.connect().catch(NOOP);
             }
         }
@@ -148,15 +152,21 @@ export class WebApi extends Api {
     getSyncCursor() {
         return this._cursor.sync;
     }
-    get host() { return this.settings.url; }
-    get url() { return `${this.settings.url}${this.settings.rootPath ? `/${this.settings.rootPath}` : ''}`; }
+    get host() {
+        return this.settings.url;
+    }
+    get url() {
+        return `${this.settings.url}${this.settings.rootPath ? `/${this.settings.rootPath}` : ''}`;
+    }
     async _updateCursor(cursor) {
         if (!cursor || (this._cursor.current && cursor < this._cursor.current)) {
             return; // Just in case this ever happens, ignore events with earlier cursors.
         }
         this._cursor.current = cursor;
     }
-    get hasCache() { return !!this._cache; }
+    get hasCache() {
+        return !!this._cache;
+    }
     get cache() {
         if (!this._cache) {
             throw new Error('DEV ERROR: no cache db is used');
@@ -169,7 +179,10 @@ export class WebApi extends Api {
             // socket.io handles reconnects, we don't have to monitor
             return;
         }
-        if (!this.settings.network?.realtime && ![CONNECTION_STATE_CONNECTING, CONNECTION_STATE_CONNECTED].includes(this._connectionState)) {
+        if (
+            !this.settings.network?.realtime &&
+            ![CONNECTION_STATE_CONNECTING, CONNECTION_STATE_CONNECTED].includes(this._connectionState)
+        ) {
             // No websocket connection. Do not check if we're not connecting or connected
             return;
         }
@@ -180,8 +193,7 @@ export class WebApi extends Api {
             if (!wasConnected) {
                 this.manualConnectionMonitor.emit('connect');
             }
-        }
-        catch (err) {
+        } catch (err) {
             // No need to handle error here, _request will have handled the disconnect by calling this._handleDetectedDisconnect
         }
     }
@@ -191,12 +203,10 @@ export class WebApi extends Api {
             this._connectionState === CONNECTION_STATE_DISCONNECTED;
             this.connect().catch(NOOP);
             // console.assert(this._connectionState === CONNECTION_STATE_CONNECTING, 'wrong connection state');
-        }
-        else {
+        } else {
             if (this._connectionState === CONNECTION_STATE_CONNECTING) {
                 this.manualConnectionMonitor.emit('connect_error', err);
-            }
-            else if (this._connectionState === CONNECTION_STATE_CONNECTED) {
+            } else if (this._connectionState === CONNECTION_STATE_CONNECTED) {
                 this.manualConnectionMonitor.emit('disconnect');
             }
         }
@@ -208,16 +218,18 @@ export class WebApi extends Api {
         this._connectionState = CONNECTION_STATE_CONNECTING;
         this.debug.log(`Connecting to AceBase server "${this.url}"`);
         if (!this.url.startsWith('https')) {
-            this.debug.warn(`WARNING: The server you are connecting to does not use https, any data transferred may be intercepted!`.colorize(ColorStyle.red));
+            this.debug.warn(
+                `WARNING: The server you are connecting to does not use https, any data transferred may be intercepted!`.colorize(
+                    ColorStyle.red
+                )
+            );
         }
         // Change default socket.io (engine.io) transports setting of ['polling', 'websocket']
         // We should only use websocket (it's almost 2022!), because if an AceBaseServer is running in a cluster,
         // polling should be disabled entirely because the server is not stateless: the client might reach
         // a different node on a next long-poll connection.
         // For backward compatibility the transports setting is allowed to be overriden with a setting:
-        const transports = this.settings.network?.transports instanceof Array
-            ? this.settings.network.transports
-            : ['websocket'];
+        const transports = this.settings.network?.transports instanceof Array ? this.settings.network.transports : ['websocket'];
         this.debug.log(`Using ${transports.join(',')} transport${transports.length > 1 ? 's' : ''} for socket.io`);
         return new Promise((resolve, reject) => {
             if (!this.settings.network?.realtime) {
@@ -248,8 +260,7 @@ export class WebApi extends Api {
                         this.manualConnectionMonitor.off('connect');
                         this.manualConnectionMonitor.off('disconnect');
                         this.manualConnectionMonitor.off('connect_error');
-                    }
-                    else {
+                    } else {
                         // Disconnect was not requested.
                         this._connectionState = CONNECTION_STATE_CONNECTING;
                         this._eventTimeline.disconnect = Date.now();
@@ -259,7 +270,7 @@ export class WebApi extends Api {
                 this._connectionState = CONNECTION_STATE_CONNECTING;
                 return setTimeout(() => this.checkConnection(), 0);
             }
-            const socket = this.socket = connectSocket(this.host, {
+            const socket = (this.socket = connectSocket(this.host, {
                 // Use default socket.io connection settings:
                 path: `/${this.settings.rootPath ? `${this.settings.rootPath}/` : ''}socket.io`,
                 autoConnect: true,
@@ -269,8 +280,8 @@ export class WebApi extends Api {
                 reconnectionDelayMax: 5000,
                 timeout: 20000,
                 randomizationFactor: 0.5,
-                transports, // Override default setting of ['polling', 'websocket']
-            });
+                transports // Override default setting of ['polling', 'websocket']
+            }));
             socket.on('connect_error', (err) => {
                 // New connection failed to establish. Attempts will be made to reconnect, but fail for now
                 this.debug.error(`Websocket connection error: ${err}`);
@@ -285,34 +296,40 @@ export class WebApi extends Api {
                     const isFirstSignIn = this._eventTimeline.signIn === 0;
                     try {
                         await this.signInWithToken(this.accessToken, isFirstSignIn);
-                    }
-                    catch (err) {
-                        this.debug.error(`Could not automatically sign in user with access token upon reconnect: ${err.code || err.message}`);
+                    } catch (err) {
+                        this.debug.error(
+                            `Could not automatically sign in user with access token upon reconnect: ${err.code || err.message}`
+                        );
                     }
                 }
                 const subscribeTo = async (sub) => {
                     // Function is called for each unique path/event combination
                     // We must activate or cancel all subscriptions with this combination
-                    const subs = this._subscriptions[sub.path].filter(s => s.event === sub.event);
+                    const subs = this._subscriptions[sub.path].filter((s) => s.event === sub.event);
                     try {
-                        const result = await _websocketRequest(this.socket, 'subscribe', { path: sub.path, event: sub.event }, this.accessToken);
-                        subs.forEach(s => s.activate());
-                    }
-                    catch (err) {
+                        const result = await _websocketRequest(
+                            this.socket,
+                            'subscribe',
+                            { path: sub.path, event: sub.event },
+                            this.accessToken
+                        );
+                        subs.forEach((s) => s.activate());
+                    } catch (err) {
                         if (err.code === 'access_denied' && !this.accessToken) {
-                            this.debug.error(`Could not subscribe to event "${sub.event}" on path "${sub.path}" because you are not signed in. If you added this event while offline and have a user access token, you can prevent this by using client.auth.setAccessToken(token) to automatically try signing in after connecting`);
-                        }
-                        else {
+                            this.debug.error(
+                                `Could not subscribe to event "${sub.event}" on path "${sub.path}" because you are not signed in. If you added this event while offline and have a user access token, you can prevent this by using client.auth.setAccessToken(token) to automatically try signing in after connecting`
+                            );
+                        } else {
                             this.debug.error(err);
                         }
-                        subs.forEach(s => s.cancel(err));
+                        subs.forEach((s) => s.cancel(err));
                     }
                 };
                 // (re)subscribe to any active subscriptions
                 const subscribePromises = [];
-                Object.keys(this._subscriptions).forEach(path => {
+                Object.keys(this._subscriptions).forEach((path) => {
                     const events = [];
-                    this._subscriptions[path].forEach(sub => {
+                    this._subscriptions[path].forEach((sub) => {
                         if (sub.event === 'mutated') {
                             return;
                         } // Skip mutated events for now
@@ -328,19 +345,19 @@ export class WebApi extends Api {
                 const subscribeToMutatedEvents = async () => {
                     let retry = false;
                     const promises = Object.keys(this._subscriptions)
-                        .filter(path => this._subscriptions[path].some(sub => sub.event === 'mutated' && sub.state !== 'canceled'))
-                        .filter((path, i, arr) => !arr.some(otherPath => PathInfo.get(otherPath).isAncestorOf(path)))
+                        .filter((path) => this._subscriptions[path].some((sub) => sub.event === 'mutated' && sub.state !== 'canceled'))
+                        .filter((path, i, arr) => !arr.some((otherPath) => PathInfo.get(otherPath).isAncestorOf(path)))
                         .reduce((topPaths, path) => (topPaths.includes(path) || topPaths.push(path)) && topPaths, [])
-                        .map(topEventPath => {
-                        const sub = this._subscriptions[topEventPath].find(s => s.event === 'mutated');
-                        const promise = subscribeTo(sub).then(() => {
-                            if (sub.state === 'canceled') {
-                                // Oops, could not subscribe to 'mutated' event on topEventPath, other event(s) at child path(s) should now take over
-                                retry = true;
-                            }
+                        .map((topEventPath) => {
+                            const sub = this._subscriptions[topEventPath].find((s) => s.event === 'mutated');
+                            const promise = subscribeTo(sub).then(() => {
+                                if (sub.state === 'canceled') {
+                                    // Oops, could not subscribe to 'mutated' event on topEventPath, other event(s) at child path(s) should now take over
+                                    retry = true;
+                                }
+                            });
+                            return promise;
                         });
-                        return promise;
-                    });
                     await Promise.all(promises);
                     if (retry) {
                         await subscribeToMutatedEvents();
@@ -357,15 +374,14 @@ export class WebApi extends Api {
                 if (this._connectionState === CONNECTION_STATE_DISCONNECTING) {
                     // disconnect was requested by us: reason === 'client namespace disconnect'
                     this._connectionState = CONNECTION_STATE_DISCONNECTED;
-                }
-                else {
+                } else {
                     // Automatic reconnect should be done by socket.io
                     this._connectionState = CONNECTION_STATE_CONNECTING;
                     this._eventTimeline.disconnect = Date.now();
                     if (reason === 'io server disconnect') {
                         // if the server has shut down and disconnected all clients, we have to reconnect manually
                         this.socket = null;
-                        this.connect().catch(err => {
+                        this.connect().catch((err) => {
                             // Immediate reconnect failed, which is ok.
                             // socket.io will retry now
                         });
@@ -447,39 +463,46 @@ export class WebApi extends Api {
                         // Don't cache private data. This happens when the admin user is signed in
                         // and has an event subscription on the root, or private path.
                         // NOTE: fireThisEvent === true, because it is impossible that this mutation was caused by us (well, it should be!)
-                    }
-                    else if (data.event === 'mutations') {
+                    } else if (data.event === 'mutations') {
                         // Apply all mutations
                         const mutations = val.current;
-                        mutations.forEach(m => {
-                            const path = m.target.reduce((path, key) => PathInfo.getChildPath(path, key), PathInfo.getChildPath(`${this.dbname}/cache`, data.path));
+                        mutations.forEach((m) => {
+                            const path = m.target.reduce(
+                                (path, key) => PathInfo.getChildPath(path, key),
+                                PathInfo.getChildPath(`${this.dbname}/cache`, data.path)
+                            );
                             this.cache.db.api.set(path, m.val, { suppress_events: !fireCacheEvents, context });
                         });
-                    }
-                    else if (data.event === 'notify_child_removed') {
-                        this.cache.db.api.set(PathInfo.getChildPath(`${this.dbname}/cache`, data.path), null, { suppress_events: !fireCacheEvents, context }); // Remove cached value
-                    }
-                    else if (!data.event.startsWith('notify_')) {
-                        this.cache.db.api.set(PathInfo.getChildPath(`${this.dbname}/cache`, data.path), val.current, { suppress_events: !fireCacheEvents, context }); // Update cached value
+                    } else if (data.event === 'notify_child_removed') {
+                        this.cache.db.api.set(PathInfo.getChildPath(`${this.dbname}/cache`, data.path), null, {
+                            suppress_events: !fireCacheEvents,
+                            context
+                        }); // Remove cached value
+                    } else if (!data.event.startsWith('notify_')) {
+                        this.cache.db.api.set(PathInfo.getChildPath(`${this.dbname}/cache`, data.path), val.current, {
+                            suppress_events: !fireCacheEvents,
+                            context
+                        }); // Update cached value
                     }
                 }
                 if (!fireThisEvent) {
                     return;
                 }
                 // The cache db will not have fired any events (const fireCacheEvents = false), so we can fire them here now.
-                const targetSubs = data.event === 'mutated'
-                    ? Object.keys(this._subscriptions)
-                        .filter(path => {
-                        const pathInfo = PathInfo.get(path);
-                        return path === data.path || pathInfo.equals(data.subscr_path) || pathInfo.isAncestorOf(data.path);
-                    })
-                        .reduce((subs, path) => {
-                        const add = this._subscriptions[path].filter(sub => sub.event === 'mutated');
-                        subs.push(...add);
-                        return subs;
-                    }, [])
-                    : pathSubs.filter(sub => sub.event === data.event);
-                targetSubs.forEach(subscr => {
+                const targetSubs =
+                    data.event === 'mutated'
+                        ? Object.keys(this._subscriptions)
+                              .filter((path) => {
+                                  const pathInfo = PathInfo.get(path);
+                                  return path === data.path || pathInfo.equals(data.subscr_path) || pathInfo.isAncestorOf(data.path);
+                              })
+                              .reduce((subs, path) => {
+                                  const add = this._subscriptions[path].filter((sub) => sub.event === 'mutated');
+                                  subs.push(...add);
+                                  return subs;
+                              }, [])
+                        : pathSubs.filter((sub) => sub.event === data.event);
+                targetSubs.forEach((subscr) => {
                     subscr.lastEvent = Date.now();
                     subscr.cursor = context.acebase_cursor;
                     subscr.callback(null, data.path, val.current, val.previous, context);
@@ -491,8 +514,7 @@ export class WebApi extends Api {
                 let keepMonitoring = true;
                 try {
                     keepMonitoring = query.options.eventHandler(data);
-                }
-                catch (err) {
+                } catch (err) {
                     keepMonitoring = false;
                 }
                 if (keepMonitoring === false) {
@@ -508,8 +530,7 @@ export class WebApi extends Api {
             this._connectionState = CONNECTION_STATE_DISCONNECTING;
             this._eventTimeline.disconnect = Date.now();
             this.manualConnectionMonitor.emit('disconnect');
-        }
-        else if (this.socket !== null && typeof this.socket === 'object') {
+        } else if (this.socket !== null && typeof this.socket === 'object') {
             if (this._connectionState === CONNECTION_STATE_CONNECTED) {
                 this._eventTimeline.disconnect = Date.now();
             }
@@ -526,14 +547,21 @@ export class WebApi extends Api {
         if (!pathSubs) {
             pathSubs = this._subscriptions[path] = [];
         }
-        const serverAlreadyNotifying = pathSubs.some(sub => sub.event === event)
-            || (event === 'mutated' && Object.keys(this._subscriptions).some(otherPath => PathInfo.get(otherPath).isAncestorOf(path) && this._subscriptions[otherPath].some(sub => sub.event === event && sub.state === 'active')));
+        const serverAlreadyNotifying =
+            pathSubs.some((sub) => sub.event === event) ||
+            (event === 'mutated' &&
+                Object.keys(this._subscriptions).some(
+                    (otherPath) =>
+                        PathInfo.get(otherPath).isAncestorOf(path) &&
+                        this._subscriptions[otherPath].some((sub) => sub.event === event && sub.state === 'active')
+                ));
         const subscr = new EventSubscription(path, event, callback, settings);
         // { path, event, callback, settings, added: Date.now(), activate() { this.activated = Date.now() }, activated: null, lastEvent: null, cursor: null };
         pathSubs.push(subscr);
         if (this.hasCache) {
             // Events are also handled by cache db
-            subscr.cacheCallback = (err, path, newValue, oldValue, context) => subscr.callback(err, path.slice(`${this.dbname}/cache/`.length), newValue, oldValue, context);
+            subscr.cacheCallback = (err, path, newValue, oldValue, context) =>
+                subscr.callback(err, path.slice(`${this.dbname}/cache/`.length), newValue, oldValue, context);
             this.cache.db.api.subscribe(PathInfo.getChildPath(`${this.dbname}/cache`, path), event, subscr.cacheCallback);
         }
         if (serverAlreadyNotifying || !this.isConnected) {
@@ -543,10 +571,13 @@ export class WebApi extends Api {
         if (event === 'mutated') {
             // Unsubscribe from 'mutated' events set on descendant paths of current path
             Object.keys(this._subscriptions)
-                .filter(otherPath => PathInfo.get(otherPath).isDescendantOf(path)
-                && this._subscriptions[otherPath].some(sub => sub.event === 'mutated'))
-                .map(path => _websocketRequest(this.socket, 'unsubscribe', { path, event: 'mutated' }, this.accessToken))
-                .map(promise => promise.catch(err => console.error(err)));
+                .filter(
+                    (otherPath) =>
+                        PathInfo.get(otherPath).isDescendantOf(path) &&
+                        this._subscriptions[otherPath].some((sub) => sub.event === 'mutated')
+                )
+                .map((path) => _websocketRequest(this.socket, 'unsubscribe', { path, event: 'mutated' }, this.accessToken))
+                .map((promise) => promise.catch((err) => console.error(err)));
         }
         const result = await _websocketRequest(this.socket, 'subscribe', { path, event }, this.accessToken);
         subscr.activate();
@@ -561,7 +592,7 @@ export class WebApi extends Api {
             return Promise.resolve();
         }
         const unsubscribeFrom = (subscriptions) => {
-            subscriptions.forEach(subscr => {
+            subscriptions.forEach((subscr) => {
                 pathSubs.splice(pathSubs.indexOf(subscr), 1);
                 if (this.hasCache) {
                     // Events are also handled by cache db, also remove those
@@ -572,42 +603,50 @@ export class WebApi extends Api {
                 }
             });
         };
-        const hadMutatedEvents = pathSubs.some(sub => sub.event === 'mutated');
+        const hadMutatedEvents = pathSubs.some((sub) => sub.event === 'mutated');
         if (!event) {
             // Unsubscribe from all events on path
             unsubscribeFrom(pathSubs);
-        }
-        else if (!callback) {
+        } else if (!callback) {
             // Unsubscribe from specific event on path
-            const subscriptions = pathSubs.filter(subscr => subscr.event === event);
+            const subscriptions = pathSubs.filter((subscr) => subscr.event === event);
             unsubscribeFrom(subscriptions);
-        }
-        else {
+        } else {
             // Unsubscribe from a specific callback on path event
-            const subscriptions = pathSubs.filter(subscr => subscr.event === event && subscr.callback === callback);
+            const subscriptions = pathSubs.filter((subscr) => subscr.event === event && subscr.callback === callback);
             unsubscribeFrom(subscriptions);
         }
-        const hasMutatedEvents = pathSubs.some(sub => sub.event === 'mutated');
+        const hasMutatedEvents = pathSubs.some((sub) => sub.event === 'mutated');
         let promise = Promise.resolve();
         if (pathSubs.length === 0) {
             // Unsubscribed from all events on path
             delete this._subscriptions[path];
             if (this.isConnected) {
-                promise = _websocketRequest(this.socket, 'unsubscribe', { path, access_token: this.accessToken }, this.accessToken)
-                    .catch(err => this.debug.error(`Failed to unsubscribe from event(s) on "${path}": ${err.message}`));
+                promise = _websocketRequest(this.socket, 'unsubscribe', { path, access_token: this.accessToken }, this.accessToken).catch(
+                    (err) => this.debug.error(`Failed to unsubscribe from event(s) on "${path}": ${err.message}`)
+                );
             }
-        }
-        else if (this.isConnected && !pathSubs.some(subscr => subscr.event === event)) {
+        } else if (this.isConnected && !pathSubs.some((subscr) => subscr.event === event)) {
             // No callbacks left for specific event
-            promise = _websocketRequest(this.socket, 'unsubscribe', { path: path, event, access_token: this.accessToken }, this.accessToken)
-                .catch(err => this.debug.error(`Failed to unsubscribe from event "${event}" on "${path}": ${err.message}`));
+            promise = _websocketRequest(
+                this.socket,
+                'unsubscribe',
+                { path: path, event, access_token: this.accessToken },
+                this.accessToken
+            ).catch((err) => this.debug.error(`Failed to unsubscribe from event "${event}" on "${path}": ${err.message}`));
         }
         if (this.isConnected && hadMutatedEvents && !hasMutatedEvents) {
             // If any descendant paths have mutated events, resubscribe those
             const promises = Object.keys(this._subscriptions)
-                .filter(otherPath => PathInfo.get(otherPath).isDescendantOf(path) && this._subscriptions[otherPath].some(sub => sub.event === 'mutated'))
-                .map(path => _websocketRequest(this.socket, 'subscribe', { path: path, event: 'mutated' }, this.accessToken))
-                .map(promise => promise.catch(err => this.debug.error(`Failed to subscribe to event "${event}" on path "${path}": ${err.message}`)));
+                .filter(
+                    (otherPath) =>
+                        PathInfo.get(otherPath).isDescendantOf(path) &&
+                        this._subscriptions[otherPath].some((sub) => sub.event === 'mutated')
+                )
+                .map((path) => _websocketRequest(this.socket, 'subscribe', { path: path, event: 'mutated' }, this.accessToken))
+                .map((promise) =>
+                    promise.catch((err) => this.debug.error(`Failed to subscribe to event "${event}" on path "${path}": ${err.message}`))
+                );
             promise = Promise.all([promise, ...promises]);
         }
         await promise;
@@ -621,7 +660,7 @@ export class WebApi extends Api {
             id,
             op: 'transaction',
             path,
-            flow: 'server',
+            flow: 'server'
         };
         const cachePath = PathInfo.getChildPath(`${this.dbname}/cache`, path);
         return new Promise(async (resolve, reject) => {
@@ -644,7 +683,13 @@ export class WebApi extends Api {
                         if (newValue instanceof Promise) {
                             newValue = await newValue;
                         }
-                        socket.emit('transaction', { action: 'finish', id: id, path, value: Transport.serialize(newValue), access_token: this.accessToken });
+                        socket.emit('transaction', {
+                            action: 'finish',
+                            id: id,
+                            path,
+                            value: Transport.serialize(newValue),
+                            access_token: this.accessToken
+                        });
                         if (this.hasCache) {
                             cacheUpdateVal = newValue;
                         }
@@ -670,12 +715,17 @@ export class WebApi extends Api {
                 socket.on('tx_error', errorCallback);
                 // TODO: socket.on('disconnect', disconnectedCallback);
                 socket.emit('transaction', { action: 'start', id, path, access_token: this.accessToken, context: options.context });
-            }
-            else {
+            } else {
                 // Websocket not connected. Try http call instead
                 const startData = JSON.stringify({ path });
                 try {
-                    const tx = await this._request({ ignoreConnectionState: true, method: 'POST', url: `${this.url}/transaction/${this.dbname}/start`, data: startData, context: options.context });
+                    const tx = await this._request({
+                        ignoreConnectionState: true,
+                        method: 'POST',
+                        url: `${this.url}/transaction/${this.dbname}/start`,
+                        data: startData,
+                        context: options.context
+                    });
                     const id = tx.id;
                     const currentValue = Transport.deserialize(tx.value);
                     let newValue = callback(currentValue);
@@ -686,10 +736,16 @@ export class WebApi extends Api {
                         cacheUpdateVal = newValue;
                     }
                     const finishData = JSON.stringify({ id, value: Transport.serialize(newValue) });
-                    const { context } = await this._request({ ignoreConnectionState: true, method: 'POST', url: `${this.url}/transaction/${this.dbname}/finish`, data: finishData, context: options.context, includeContext: true });
+                    const { context } = await this._request({
+                        ignoreConnectionState: true,
+                        method: 'POST',
+                        url: `${this.url}/transaction/${this.dbname}/finish`,
+                        data: finishData,
+                        context: options.context,
+                        includeContext: true
+                    });
                     await handleSuccess(context);
-                }
-                catch (err) {
+                } catch (err) {
                     if (['ETIMEDOUT', 'ENOTFOUND', 'ECONNRESET', 'ECONNREFUSED', 'EPIPE', 'fetch_failed'].includes(err.code)) {
                         err.message = NOT_CONNECTED_ERROR_MESSAGE;
                     }
@@ -705,9 +761,14 @@ export class WebApi extends Api {
         if (this.isConnected || options.ignoreConnectionState === true) {
             const result = await (async () => {
                 try {
-                    return await _request(options.method || 'GET', options.url, { data: options.data, accessToken: this.accessToken, dataReceivedCallback: options.dataReceivedCallback, dataRequestCallback: options.dataRequestCallback, context: options.context });
-                }
-                catch (err) {
+                    return await _request(options.method || 'GET', options.url, {
+                        data: options.data,
+                        accessToken: this.accessToken,
+                        dataReceivedCallback: options.dataReceivedCallback,
+                        dataRequestCallback: options.dataRequestCallback,
+                        context: options.context
+                    });
+                } catch (err) {
                     if (this.isConnected && err.isNetworkError) {
                         // This is a network error, but the websocket thinks we are still connected.
                         this.debug.warn(`A network error occurred loading ${options.url}`);
@@ -726,12 +787,10 @@ export class WebApi extends Api {
                     result.context = {};
                 }
                 return result;
-            }
-            else {
+            } else {
                 return result.data;
             }
-        }
-        else {
+        } else {
             // We're not connected. We can wait for the connection to be established,
             // or fail the request now. Because we have now implemented caching, live requests
             // are only executed if they are not allowed to use cached responses. Wait for a
@@ -741,8 +800,8 @@ export class WebApi extends Api {
                 // Fail now
                 throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
             }
-            const connectPromise = new Promise(resolve => this.socket?.once('connect', resolve));
-            await promiseTimeout(connectPromise, 1000, 'Waiting for connection').catch(err => {
+            const connectPromise = new Promise((resolve) => this.socket?.once('connect', resolve));
+            await promiseTimeout(connectPromise, 1000, 'Waiting for connection').catch((err) => {
                 throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
             });
             return this._request(options); // Retry
@@ -760,21 +819,35 @@ export class WebApi extends Api {
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
         }
-        const result = await this._request({ method: 'POST', url: `${this.url}/auth/${this.dbname}/signin`, data: { method: 'account', username, password, client_id: this.socket && this.socket.id } });
+        const result = await this._request({
+            method: 'POST',
+            url: `${this.url}/auth/${this.dbname}/signin`,
+            data: { method: 'account', username, password, client_id: this.socket && this.socket.id }
+        });
         return this.handleSignInResult(result);
     }
     async signInWithEmail(email, password) {
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
         }
-        const result = await this._request({ method: 'POST', url: `${this.url}/auth/${this.dbname}/signin`, data: { method: 'email', email, password, client_id: this.socket && this.socket.id } });
+        const result = await this._request({
+            method: 'POST',
+            url: `${this.url}/auth/${this.dbname}/signin`,
+            data: { method: 'email', email, password, client_id: this.socket && this.socket.id }
+        });
         return this.handleSignInResult(result);
     }
     async signInWithToken(token, emitEvent = true) {
         if (!this.isConnected) {
-            throw new Error('Cannot sign in because client is not connected to the server. If you want to automatically sign in the user with this access token once a connection is established, use client.auth.setAccessToken(token)');
+            throw new Error(
+                'Cannot sign in because client is not connected to the server. If you want to automatically sign in the user with this access token once a connection is established, use client.auth.setAccessToken(token)'
+            );
         }
-        const result = await this._request({ method: 'POST', url: `${this.url}/auth/${this.dbname}/signin`, data: { method: 'token', access_token: token, client_id: this.socket && this.socket.id } });
+        const result = await this._request({
+            method: 'POST',
+            url: `${this.url}/auth/${this.dbname}/signin`,
+            data: { method: 'token', access_token: token, client_id: this.socket && this.socket.id }
+        });
         return this.handleSignInResult(result, emitEvent);
     }
     setAccessToken(token) {
@@ -784,18 +857,23 @@ export class WebApi extends Api {
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
         }
-        const optionParams = typeof options === 'object'
-            ? '&' + Object.keys(options).map(key => `option_${key}=${encodeURIComponent(options[key])}`).join('&')
-            : '';
-        const result = await this._request({ url: `${this.url}/oauth2/${this.dbname}/init?provider=${providerName}&callbackUrl=${callbackUrl}${optionParams}` });
+        const optionParams =
+            typeof options === 'object'
+                ? '&' +
+                  Object.keys(options)
+                      .map((key) => `option_${key}=${encodeURIComponent(options[key])}`)
+                      .join('&')
+                : '';
+        const result = await this._request({
+            url: `${this.url}/oauth2/${this.dbname}/init?provider=${providerName}&callbackUrl=${callbackUrl}${optionParams}`
+        });
         return { redirectUrl: result.redirectUrl };
     }
     async finishAuthProviderSignIn(callbackResult) {
         let result;
         try {
             result = JSON.parse(Base64.decode(callbackResult));
-        }
-        catch (err) {
+        } catch (err) {
             throw new Error(`Invalid result`);
         }
         if (!result.user) {
@@ -815,15 +893,16 @@ export class WebApi extends Api {
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
         }
-        const result = await this._request({ url: `${this.url}/oauth2/${this.dbname}/refresh?provider=${providerName}&refresh_token=${refreshToken}` });
+        const result = await this._request({
+            url: `${this.url}/oauth2/${this.dbname}/refresh?provider=${providerName}&refresh_token=${refreshToken}`
+        });
         return result;
     }
     async signOut(options) {
         if (typeof options === 'boolean') {
             // Old signature signOut(everywhere:boolean = false)
             options = { everywhere: options };
-        }
-        else if (typeof options !== 'object') {
+        } else if (typeof options !== 'object') {
             throw new TypeError('options must be an object');
         }
         if (typeof options.everywhere !== 'boolean') {
@@ -838,12 +917,16 @@ export class WebApi extends Api {
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
         }
-        const result = await this._request({ method: 'POST', url: `${this.url}/auth/${this.dbname}/signout`, data: { client_id: this.socket && this.socket.id, everywhere: options.everywhere } });
+        const result = await this._request({
+            method: 'POST',
+            url: `${this.url}/auth/${this.dbname}/signout`,
+            data: { client_id: this.socket && this.socket.id, everywhere: options.everywhere }
+        });
         this.socket && this.socket.emit('signout', this.accessToken); // Make sure the connected websocket server knows we signed out as well.
         this.accessToken = null;
         if (this.hasCache && options.clearCache) {
             // Clear cache, but don't wait for it to finish
-            this.clearCache().catch(err => {
+            this.clearCache().catch((err) => {
                 console.error(`Could not clear cache:`, err);
             });
         }
@@ -856,7 +939,11 @@ export class WebApi extends Api {
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
         }
-        const result = await this._request({ method: 'POST', url: `${this.url}/auth/${this.dbname}/change_password`, data: { uid, password: currentPassword, new_password: newPassword } });
+        const result = await this._request({
+            method: 'POST',
+            url: `${this.url}/auth/${this.dbname}/change_password`,
+            data: { uid, password: currentPassword, new_password: newPassword }
+        });
         this.accessToken = result.access_token;
         return { accessToken: this.accessToken };
     }
@@ -871,14 +958,22 @@ export class WebApi extends Api {
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
         }
-        const result = await this._request({ method: 'POST', url: `${this.url}/auth/${this.dbname}/verify_email`, data: { code: verificationCode } });
+        const result = await this._request({
+            method: 'POST',
+            url: `${this.url}/auth/${this.dbname}/verify_email`,
+            data: { code: verificationCode }
+        });
         return result;
     }
     async resetPassword(resetCode, newPassword) {
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
         }
-        const result = await this._request({ method: 'POST', url: `${this.url}/auth/${this.dbname}/reset_password`, data: { code: resetCode, password: newPassword } });
+        const result = await this._request({
+            method: 'POST',
+            url: `${this.url}/auth/${this.dbname}/reset_password`,
+            data: { code: resetCode, password: newPassword }
+        });
         return result;
     }
     async signUp(details, signIn = true) {
@@ -922,11 +1017,13 @@ export class WebApi extends Api {
     stats(options) {
         return this._request({ url: `${this.url}/stats/${this.dbname}` });
     }
-    async sync(options = {
-        firstSync: false,
-        fetchFreshData: true,
-        eventCallback: null,
-    }) {
+    async sync(
+        options = {
+            firstSync: false,
+            fetchFreshData: true,
+            eventCallback: null
+        }
+    ) {
         // Sync cache
         if (!this.isConnected) {
             throw new Error(NOT_CONNECTED_ERROR_MESSAGE);
@@ -951,51 +1048,60 @@ export class WebApi extends Api {
                 cacheApi.set(`${this.dbname}/stats/last_sync_start`, new Date()).catch(handleStatsUpdateError);
                 try {
                     const ids = Object.keys(pendingChanges || {}).sort(); // sort a-z, process oldest mutation first
-                    const compatibilityMode = ids.map(id => pendingChanges[id]).some(m => m.type === 'update');
+                    const compatibilityMode = ids.map((id) => pendingChanges[id]).some((m) => m.type === 'update');
                     const mutations = compatibilityMode
-                        ? ids.map(id => {
-                            // If any "update" mutations are in the db, these are old mutations. Process them unaltered. This is for backward compatibility only, can be removed later. (if code was able to update, mutations could have already been synced too, right?)
-                            const mutation = pendingChanges[id];
-                            mutation.ids = [id];
-                            return mutation;
-                        })
+                        ? ids.map((id) => {
+                              // If any "update" mutations are in the db, these are old mutations. Process them unaltered. This is for backward compatibility only, can be removed later. (if code was able to update, mutations could have already been synced too, right?)
+                              const mutation = pendingChanges[id];
+                              mutation.ids = [id];
+                              return mutation;
+                          })
                         : ids.reduce((mutations, id) => {
-                            const change = pendingChanges[id];
-                            console.assert(['set', 'remove'].includes(change.type), 'Only "set" and "remove" mutations should be present');
-                            if (change.path === '') {
-                                // 'set' on the root path - can't turn this into an update on the parent.
-                                // With new approach, there should be no previous 'set' or 'remove' mutation on any node because they
-                                // have been removed by _addCacheSetMutation. But... if there are old mutations in the db
-                                // without 'update' mutations (because then we'd have been in compatibilityMode above) - we'll filter
-                                // them out here. In the future we could just add this change without checking, but code below doesn't
-                                // harm the process, so it's ok to stay.
-                                const rootUpdate = mutations.find(u => u.path === '');
-                                if (rootUpdate) {
-                                    rootUpdate.data = change.data;
-                                }
-                                else {
-                                    change.ids = [id];
-                                    mutations.push(change);
-                                }
-                            }
-                            else {
-                                const pathInfo = PathInfo.get(change.path);
-                                const parentPath = pathInfo.parentPath;
-                                const parentUpdate = mutations.find(u => u.path === parentPath);
-                                const value = change.type === 'remove' || change.data === null || typeof change.data === 'undefined' ? null : change.data;
-                                if (!parentUpdate) {
-                                    // Create new parent update
-                                    // change.context.acebase_sync = { }; // TODO: Think about what context we could add to let receivers know why this merged update happens
-                                    mutations.push({ ids: [id], type: 'update', path: parentPath, data: { [pathInfo.key]: value }, context: change.context });
-                                }
-                                else {
-                                    // Add this change to parent update
-                                    parentUpdate.data[pathInfo.key] = value;
-                                    parentUpdate.ids.push(id);
-                                }
-                            }
-                            return mutations;
-                        }, []);
+                              const change = pendingChanges[id];
+                              console.assert(
+                                  ['set', 'remove'].includes(change.type),
+                                  'Only "set" and "remove" mutations should be present'
+                              );
+                              if (change.path === '') {
+                                  // 'set' on the root path - can't turn this into an update on the parent.
+                                  // With new approach, there should be no previous 'set' or 'remove' mutation on any node because they
+                                  // have been removed by _addCacheSetMutation. But... if there are old mutations in the db
+                                  // without 'update' mutations (because then we'd have been in compatibilityMode above) - we'll filter
+                                  // them out here. In the future we could just add this change without checking, but code below doesn't
+                                  // harm the process, so it's ok to stay.
+                                  const rootUpdate = mutations.find((u) => u.path === '');
+                                  if (rootUpdate) {
+                                      rootUpdate.data = change.data;
+                                  } else {
+                                      change.ids = [id];
+                                      mutations.push(change);
+                                  }
+                              } else {
+                                  const pathInfo = PathInfo.get(change.path);
+                                  const parentPath = pathInfo.parentPath;
+                                  const parentUpdate = mutations.find((u) => u.path === parentPath);
+                                  const value =
+                                      change.type === 'remove' || change.data === null || typeof change.data === 'undefined'
+                                          ? null
+                                          : change.data;
+                                  if (!parentUpdate) {
+                                      // Create new parent update
+                                      // change.context.acebase_sync = { }; // TODO: Think about what context we could add to let receivers know why this merged update happens
+                                      mutations.push({
+                                          ids: [id],
+                                          type: 'update',
+                                          path: parentPath,
+                                          data: { [pathInfo.key]: value },
+                                          context: change.context
+                                      });
+                                  } else {
+                                      // Add this change to parent update
+                                      parentUpdate.data[pathInfo.key] = value;
+                                      parentUpdate.ids.push(id);
+                                  }
+                              }
+                              return mutations;
+                          }, []);
                     for (const m of mutations) {
                         const ids = m.ids;
                         this.debug.verbose(`SYNC pushing mutations ${ids.join(',')}: `, m);
@@ -1003,24 +1109,20 @@ export class WebApi extends Api {
                         try {
                             if (m.type === 'update') {
                                 await this.update(m.path, m.data, { allow_cache: false, context: m.context });
-                            }
-                            else if (m.type === 'set') {
+                            } else if (m.type === 'set') {
                                 if (!m.data) {
                                     m.data = null;
                                 } // Before type 'remove' was implemented
                                 await this.set(m.path, m.data, { allow_cache: false, context: m.context });
-                            }
-                            else if (m.type === 'remove') {
+                            } else if (m.type === 'remove') {
                                 await this.set(m.path, null, { allow_cache: false, context: m.context });
-                            }
-                            else {
+                            } else {
                                 throw new Error(`unsupported mutation type "${m.type}"`);
                             }
                             this.debug.verbose(`SYNC mutation ${ids.join(',')} processed ok`);
-                            const updates = ids.reduce((updates, id) => (updates[id] = null, updates), {});
+                            const updates = ids.reduce((updates, id) => ((updates[id] = null), updates), {});
                             cacheApi.update(`${this.dbname}/pending`, updates); // delete from cache db
-                        }
-                        catch (err) {
+                        } catch (err) {
                             // Updating remote db failed
                             this.debug.error(`SYNC mutations ${ids.join(',')} failed: ${err.message}`);
                             if (!this.isConnected) {
@@ -1033,16 +1135,15 @@ export class WebApi extends Api {
                             }
                             // Store error report
                             const errorReport = { date: new Date(), code: err.code || 'unknown', message: err.message, stack: err.stack };
-                            ids.forEach(id => {
-                                cacheApi.transaction(`${this.dbname}/pending/${id}`, m => {
+                            ids.forEach((id) => {
+                                cacheApi.transaction(`${this.dbname}/pending/${id}`, (m) => {
                                     if (!m.error) {
                                         m.error = {
                                             first: errorReport,
                                             last: errorReport,
-                                            retries: 0,
+                                            retries: 0
                                         };
-                                    }
-                                    else {
+                                    } else {
                                         m.error.last = errorReport;
                                         m.error.retries++;
                                     }
@@ -1063,14 +1164,20 @@ export class WebApi extends Api {
                     this.debug.verbose(`SYNC push done`);
                     // Update stats
                     cacheApi.set(`${this.dbname}/stats/last_sync_end`, new Date()).catch(handleStatsUpdateError);
-                }
-                catch (err) {
+                } catch (err) {
                     // 1 or more pending changes could not be processed.
                     this.debug.error(`SYNC push error: ${err.message}`);
                     if (typeof err === 'string') {
                         err = { code: 'unknown', message: err, stack: 'n/a' };
                     }
-                    cacheApi.set(`${this.dbname}/stats/last_sync_error`, { date: new Date(), code: err.code || 'unknown', message: err.message, stack: err.stack }).catch(handleStatsUpdateError);
+                    cacheApi
+                        .set(`${this.dbname}/stats/last_sync_error`, {
+                            date: new Date(),
+                            code: err.code || 'unknown',
+                            message: err.message,
+                            stack: err.stack
+                        })
+                        .catch(handleStatsUpdateError);
                     throw err;
                 }
             }
@@ -1095,18 +1202,20 @@ export class WebApi extends Api {
             // --------------------------------------------------------------
             // * only if sub.newOnly === false, warn otherwise
             // --------------------------------------------------------------
-            let totalRemoteChanges = 0, usedSyncMethod = 'reload';
+            let totalRemoteChanges = 0,
+                usedSyncMethod = 'reload';
             const subscriptionPaths = Object.keys(this._subscriptions);
             const subscriptions = subscriptionPaths.reduce((subs, path) => {
-                this._subscriptions[path].forEach(sub => subs.push(sub));
+                this._subscriptions[path].forEach((sub) => subs.push(sub));
                 return subs;
             }, []);
-            const subscriptionsFor = (path) => subscriptions.filter(sub => sub.path === path);
-            if (this.hasCache) { //  && options.fetchFreshData
+            const subscriptionsFor = (path) => subscriptions.filter((sub) => sub.path === path);
+            if (this.hasCache) {
+                //  && options.fetchFreshData
                 // Part 2: PULL remote changes / fresh data
                 const cacheApi = this.cache.db.api;
                 // Attach temp events to cache db so they will fire for data changes (just for counting)
-                subscriptions.forEach(sub => {
+                subscriptions.forEach((sub) => {
                     sub.tempCallback = () => {
                         totalRemoteChanges++;
                     };
@@ -1122,7 +1231,7 @@ export class WebApi extends Api {
                     /** Event targets to warn about */
                     warn: [],
                     /** Subscriptions that require no action because they were added after last connect event */
-                    noop: [],
+                    noop: []
                 };
                 // const wasAddedOffline = sub => {
                 //     return sub.lastSynced === 0 && sub.added > this._eventTimeline.disconnect && sub.added < this._eventTimeline.connect;
@@ -1149,83 +1258,87 @@ export class WebApi extends Api {
                     return false;
                 };
                 strategy.reload = subscriptionPaths
-                    .filter(path => {
-                    if (path.includes('*') || path.includes('$')) {
-                        return false;
-                    } // Can't load wildcard paths
-                    return subscriptionsFor(path).some(sub => {
-                        if (hasStaleValue(sub)) {
-                            if (typeof sub.settings.syncFallback === 'function') {
-                                return false;
+                    .filter((path) => {
+                        if (path.includes('*') || path.includes('$')) {
+                            return false;
+                        } // Can't load wildcard paths
+                        return subscriptionsFor(path).some((sub) => {
+                            if (hasStaleValue(sub)) {
+                                if (typeof sub.settings.syncFallback === 'function') {
+                                    return false;
+                                }
+                                if (sub.settings.syncFallback === 'reload') {
+                                    return true;
+                                }
+                                if (sub.event === 'value') {
+                                    return true;
+                                }
+                                if (sub.event === 'child_added' && !sub.settings.newOnly) {
+                                    return true;
+                                }
                             }
-                            if (sub.settings.syncFallback === 'reload') {
-                                return true;
-                            }
-                            if (sub.event === 'value') {
-                                return true;
-                            }
-                            if (sub.event === 'child_added' && !sub.settings.newOnly) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    });
-                })
+                            return false;
+                        });
+                    })
                     .reduce((reloadPaths, path) => {
-                    !reloadPaths.some(p => p === path || PathInfo.get(p).isAncestorOf(path)) && reloadPaths.push(path);
-                    return reloadPaths;
-                }, []);
+                        !reloadPaths.some((p) => p === path || PathInfo.get(p).isAncestorOf(path)) && reloadPaths.push(path);
+                        return reloadPaths;
+                    }, []);
                 strategy.fallback = subscriptionPaths
-                    .filter(path => !strategy.reload.some(p => p === path || PathInfo.get(p).isAncestorOf(path)))
+                    .filter((path) => !strategy.reload.some((p) => p === path || PathInfo.get(p).isAncestorOf(path)))
                     .reduce((fallbackItems, path) => {
-                    subscriptionsFor(path).forEach(sub => {
-                        if (hasStaleValue(sub) && typeof sub.settings.syncFallback === 'function') {
-                            fallbackItems.push(sub);
-                        }
-                    });
-                    return fallbackItems;
-                }, []);
-                strategy.cursor = !cursor ? [] : subscriptionPaths
-                    .filter(path => !strategy.reload.some(p => p === path || PathInfo.get(p).isAncestorOf(path)))
-                    .reduce((cursorItems, path) => {
-                    const subs = subscriptionsFor(path);
-                    const events = subs.filter(sub => !hasStaleValue(sub) && !strategy.fallback.includes(sub))
-                        .reduce((events, sub) => (events.includes(sub.event) || events.push(sub.event)) && events, []);
-                    events.length > 0 && cursorItems.push({ path, events });
-                    return cursorItems;
-                }, []);
+                        subscriptionsFor(path).forEach((sub) => {
+                            if (hasStaleValue(sub) && typeof sub.settings.syncFallback === 'function') {
+                                fallbackItems.push(sub);
+                            }
+                        });
+                        return fallbackItems;
+                    }, []);
+                strategy.cursor = !cursor
+                    ? []
+                    : subscriptionPaths
+                          .filter((path) => !strategy.reload.some((p) => p === path || PathInfo.get(p).isAncestorOf(path)))
+                          .reduce((cursorItems, path) => {
+                              const subs = subscriptionsFor(path);
+                              const events = subs
+                                  .filter((sub) => !hasStaleValue(sub) && !strategy.fallback.includes(sub))
+                                  .reduce((events, sub) => (events.includes(sub.event) || events.push(sub.event)) && events, []);
+                              events.length > 0 && cursorItems.push({ path, events });
+                              return cursorItems;
+                          }, []);
                 strategy.warn = subscriptionPaths
-                    .filter(path => !strategy.reload.some(p => p === path || PathInfo.get(p).isAncestorOf(path)))
+                    .filter((path) => !strategy.reload.some((p) => p === path || PathInfo.get(p).isAncestorOf(path)))
                     .reduce((warnItems, path) => {
-                    const subs = subscriptionsFor(path).filter(sub => !strategy.fallback.includes(sub));
-                    subs.forEach(sub => {
-                        if (typeof sub.settings.syncFallback === 'function' || sub.added > this._eventTimeline.connect) {
-                            strategy.noop.push(sub);
-                        }
-                        else if (!strategy.cursor.some(item => item.path === sub.path && item.events.includes(sub.event))) {
-                            const item = warnItems.find(item => item.path === sub.path);
-                            if (!item) {
-                                warnItems.push({ path: sub.path, events: [sub.event] });
+                        const subs = subscriptionsFor(path).filter((sub) => !strategy.fallback.includes(sub));
+                        subs.forEach((sub) => {
+                            if (typeof sub.settings.syncFallback === 'function' || sub.added > this._eventTimeline.connect) {
+                                strategy.noop.push(sub);
+                            } else if (!strategy.cursor.some((item) => item.path === sub.path && item.events.includes(sub.event))) {
+                                const item = warnItems.find((item) => item.path === sub.path);
+                                if (!item) {
+                                    warnItems.push({ path: sub.path, events: [sub.event] });
+                                } else if (!item.events.includes(sub.event)) {
+                                    item.events.push(sub.event);
+                                }
                             }
-                            else if (!item.events.includes(sub.event)) {
-                                item.events.push(sub.event);
-                            }
-                        }
-                    });
-                    return warnItems;
-                }, []);
+                        });
+                        return warnItems;
+                    }, []);
                 console.log(`SYNC strategy`, strategy);
                 const syncPromises = [];
                 if (strategy.cursor.length > 0) {
-                    this.debug.log(`SYNC using cursor "${cursor}" for event(s) ${strategy.cursor.map(item => `${item.events.join(', ')} on "/${item.path}"`).join(', ')}`);
+                    this.debug.log(
+                        `SYNC using cursor "${cursor}" for event(s) ${strategy.cursor
+                            .map((item) => `${item.events.join(', ')} on "/${item.path}"`)
+                            .join(', ')}`
+                    );
                     const cursorPromise = (async () => {
                         let remoteMutations;
                         try {
                             const result = await this.getChanges({ for: strategy.cursor, cursor });
                             remoteMutations = result.changes;
                             this._updateCursor(result.new_cursor);
-                        }
-                        catch (err) {
+                        } catch (err) {
                             this.debug.error(`SYNC: Could not load remote changes`, err);
                             options.eventCallback && options.eventCallback('sync_cursor_error', err);
                             if (err.code === 'no_transaction_logging') {
@@ -1234,11 +1347,10 @@ export class WebApi extends Api {
                                 this._updateCursor(null);
                             }
                             // Check which subscriptions we'll be able to reload, and which we'll have to issue warnings for
-                            strategy.cursor.forEach(item => {
+                            strategy.cursor.forEach((item) => {
                                 if (item.events.includes('value')) {
                                     strategy.reload.push(item.path);
-                                }
-                                else {
+                                } else {
                                     strategy.warn.push(item);
                                 }
                             });
@@ -1246,12 +1358,11 @@ export class WebApi extends Api {
                         if (remoteMutations) {
                             usedSyncMethod = 'cursor';
                             this.debug.log(`SYNC: Got ${remoteMutations.length} remote mutations`, remoteMutations);
-                            const promises = remoteMutations.map(m => {
+                            const promises = remoteMutations.map((m) => {
                                 const cachePath = `${this.dbname}/cache/${m.path}`;
                                 if (m.type === 'update') {
                                     return cacheApi.update(cachePath, m.value, { context: m.context });
-                                }
-                                else if (m.type === 'set') {
+                                } else if (m.type === 'set') {
                                     return cacheApi.set(cachePath, m.value, { context: m.context });
                                 }
                             });
@@ -1261,22 +1372,26 @@ export class WebApi extends Api {
                     syncPromises.push(cursorPromise);
                 }
                 if (strategy.reload.length > 0) {
-                    this.debug.log(`SYNC reloading data for event paths ${strategy.reload.map(path => `"/${path}"`).join(', ')}`);
+                    this.debug.log(`SYNC reloading data for event paths ${strategy.reload.map((path) => `"/${path}"`).join(', ')}`);
                     const reloadPromise = (async () => {
-                        const promises = strategy.reload.map(path => {
+                        const promises = strategy.reload.map((path) => {
                             this.debug.verbose(`SYNC: load "/${path}"`);
                             return this.get(path, { cache_mode: 'bypass' }) // allow_cache: false
-                                .catch(err => {
-                                this.debug.error(`SYNC: could not load "/${path}"`, err);
-                                options.eventCallback && options.eventCallback('sync_pull_error', err);
-                            });
+                                .catch((err) => {
+                                    this.debug.error(`SYNC: could not load "/${path}"`, err);
+                                    options.eventCallback && options.eventCallback('sync_pull_error', err);
+                                });
                         });
                         await Promise.all(promises);
                     })();
                     syncPromises.push(reloadPromise);
                 }
                 if (strategy.fallback.length > 0) {
-                    this.debug.log(`SYNC using fallback functions for event(s) ${strategy.fallback.map(sub => `${sub.event} on "/${sub.path}"`).join(', ')}`);
+                    this.debug.log(
+                        `SYNC using fallback functions for event(s) ${strategy.fallback
+                            .map((sub) => `${sub.event} on "/${sub.path}"`)
+                            .join(', ')}`
+                    );
                     const fallbackPromise = (async () => {
                         const promises = strategy.fallback.map(async (sub) => {
                             this.debug.verbose(`SYNC: running fallback for event ${sub.event} on "/${sub.path}"`);
@@ -1285,8 +1400,7 @@ export class WebApi extends Api {
                                     throw new Error(`DEV ERROR: Not expecting "reload" as fallback`);
                                 }
                                 await sub.settings.syncFallback();
-                            }
-                            catch (err) {
+                            } catch (err) {
                                 this.debug.error(`SYNC: error running fallback function for ${sub.event} on "/${sub.path}"`, err);
                                 options.eventCallback && options.eventCallback('sync_fallback_error', err);
                             }
@@ -1296,46 +1410,52 @@ export class WebApi extends Api {
                     syncPromises.push(fallbackPromise);
                 }
                 if (strategy.warn.length > 0) {
-                    this.debug.warn(`SYNC warning: unable to sync event(s) ${strategy.warn.map(item => `${item.events.map(event => `"${event}"`).join(', ')} on "/${item.path}"`).join(', ')}. To resolve this, provide syncFallback functions for these events`);
+                    this.debug.warn(
+                        `SYNC warning: unable to sync event(s) ${strategy.warn
+                            .map((item) => `${item.events.map((event) => `"${event}"`).join(', ')} on "/${item.path}"`)
+                            .join(', ')}. To resolve this, provide syncFallback functions for these events`
+                    );
                 }
                 // Wait until they're all done
                 await Promise.all(syncPromises);
                 // Wait shortly to allow any pending temp cache events to fire
-                await new Promise(resolve => setTimeout(resolve, 10));
+                await new Promise((resolve) => setTimeout(resolve, 10));
                 // Unsubscribe temp cache subscriptions
-                subscriptions.forEach(sub => {
+                subscriptions.forEach((sub) => {
                     if (typeof sub.tempCallback !== 'function') {
                         throw new Error('DEV ERROR: tempCallback must be a function');
                     }
                     cacheApi.unsubscribe(PathInfo.getChildPath(`${this.dbname}/cache`, sub.path), sub.event, sub.tempCallback);
                     delete sub.tempCallback;
                 });
-            }
-            else if (!this._cache) {
+            } else if (!this._cache) {
                 // Not using cache
                 const syncPromises = [];
                 // No cache database used
                 // Until acebase-server supports getting missed events with a cursor (in addition to getting mutations),
                 // there is no way for the client to determine exact data changes at this moment - we have no previous values.
                 // We can only fetch fresh data for 'value' events, run syncFallback functions and warn about all other events
-                subscriptionPaths.forEach(path => {
+                subscriptionPaths.forEach((path) => {
                     const subs = subscriptionsFor(path);
                     const warnEvents = [];
-                    subs.filter(sub => sub.event !== 'value').forEach(sub => {
+                    subs.filter((sub) => sub.event !== 'value').forEach((sub) => {
                         if (typeof sub.settings.syncFallback === 'function') {
                             syncPromises.push(sub.settings.syncFallback());
-                        }
-                        else {
+                        } else {
                             !warnEvents.includes(sub.event) && warnEvents.push(sub.event);
                         }
                     });
                     if (warnEvents.length > 0) {
-                        this.debug.warn(`Subscriptions ${warnEvents.join(', ')} on path "${path}" might have missed events while offline. Data should be reloaded!`);
+                        this.debug.warn(
+                            `Subscriptions ${warnEvents.join(
+                                ', '
+                            )} on path "${path}" might have missed events while offline. Data should be reloaded!`
+                        );
                     }
-                    const valueSubscriptions = subs.filter(sub => sub.event === 'value');
+                    const valueSubscriptions = subs.filter((sub) => sub.event === 'value');
                     if (valueSubscriptions.length > 0) {
-                        const p = this.get(path, { allow_cache: false }).then(value => {
-                            valueSubscriptions.forEach(subscr => subscr.callback(null, path, value)); // No previous value!
+                        const p = this.get(path, { allow_cache: false }).then((value) => {
+                            valueSubscriptions.forEach((subscr) => subscr.callback(null, path, value)); // No previous value!
                         });
                         syncPromises.push(p);
                     }
@@ -1343,13 +1463,12 @@ export class WebApi extends Api {
                 await Promise.all(syncPromises);
             }
             // Update subscription sync stats
-            subscriptions.forEach(sub => sub.lastSynced = Date.now());
+            subscriptions.forEach((sub) => (sub.lastSynced = Date.now()));
             this.debug.verbose(`SYNC done`);
             const info = { local: totalPendingChanges, remote: totalRemoteChanges, method: usedSyncMethod, cursor };
             options.eventCallback && options.eventCallback('sync_done', info);
             return info;
-        }
-        catch (err) {
+        } catch (err) {
             this.debug.error(`SYNC error`, err);
             options.eventCallback && options.eventCallback('sync_error', err);
             throw err;
@@ -1366,14 +1485,14 @@ export class WebApi extends Api {
             throw new Error('No cursor or timestamp given');
         }
         const query = Object.keys(filter)
-            .map(key => {
-            let val = filter[key];
-            if (key === 'for') {
-                val = encodeURIComponent(JSON.stringify(val));
-            }
-            return typeof val !== 'undefined' ? `${key}=${val}` : null;
-        })
-            .filter(p => p != null)
+            .map((key) => {
+                let val = filter[key];
+                if (key === 'for') {
+                    val = encodeURIComponent(JSON.stringify(val));
+                }
+                return typeof val !== 'undefined' ? `${key}=${val}` : null;
+            })
+            .filter((p) => p != null)
             .join('&');
         const { data, context } = await this._request({ url: `${this.url}/sync/mutations/${this.dbname}?${query}`, includeContext: true });
         const mutations = Transport.deserialize2(data);
@@ -1390,14 +1509,14 @@ export class WebApi extends Api {
             throw new Error('No cursor or timestamp given');
         }
         const query = Object.keys(filter)
-            .map(key => {
-            let val = filter[key];
-            if (key === 'for') {
-                val = encodeURIComponent(JSON.stringify(val));
-            }
-            return typeof val !== 'undefined' ? `${key}=${val}` : null;
-        })
-            .filter(p => p != null)
+            .map((key) => {
+                let val = filter[key];
+                if (key === 'for') {
+                    val = encodeURIComponent(JSON.stringify(val));
+                }
+                return typeof val !== 'undefined' ? `${key}=${val}` : null;
+            })
+            .filter((p) => p != null)
             .join('&');
         const { data, context } = await this._request({ url: `${this.url}/sync/changes/${this.dbname}?${query}`, includeContext: true });
         const changes = Transport.deserialize2(data);
@@ -1407,16 +1526,23 @@ export class WebApi extends Api {
         // Remove all previous mutations on this exact path, and descendants
         const escapedPath = path.replace(/([.*+?\\$^\(\)\[\]\{\}])/g, '\\$1'); // Replace any character that could cripple the regex. NOTE: nobody should use these characters in their data paths in the first place.
         const re = new RegExp(`^${escapedPath}(?:\\[|/|$)`); // matches path, path/child, path[0], path[0]/etc, path/child/etc/etc
-        await this._cache?.db.query(`${this.dbname}/pending`)
-            .filter('path', 'matches', re)
-            .remove();
+        await this._cache?.db.query(`${this.dbname}/pending`).filter('path', 'matches', re).remove();
         // Add new mutation
-        return this._cache?.db.api.set(`${this.dbname}/pending/${ID.generate()}`, { type: value !== null ? 'set' : 'remove', path, data: value, context });
+        return this._cache?.db.api.set(`${this.dbname}/pending/${ID.generate()}`, {
+            type: value !== null ? 'set' : 'remove',
+            path,
+            data: value,
+            context
+        });
     }
-    set(path, value, options = {
-        allow_cache: true,
-        context: {},
-    }) {
+    set(
+        path,
+        value,
+        options = {
+            allow_cache: true,
+            context: {}
+        }
+    ) {
         // TODO: refactor allow_cache to cache_mode
         if (!options.context) {
             options.context = {};
@@ -1429,11 +1555,17 @@ export class WebApi extends Api {
             id: ID.generate(),
             op: 'set',
             path,
-            flow: useCache ? useServer ? 'parallel' : 'cache' : 'server',
+            flow: useCache ? (useServer ? 'parallel' : 'cache') : 'server'
         };
         const updateServer = async () => {
             const data = JSON.stringify(Transport.serialize(value));
-            const { context } = await this._request({ method: 'PUT', url: `${this.url}/data/${this.dbname}/${path}`, data, context: options.context, includeContext: true });
+            const { context } = await this._request({
+                method: 'PUT',
+                url: `${this.url}/data/${this.dbname}/${path}`,
+                data,
+                context: options.context,
+                includeContext: true
+            });
             Object.assign(options.context, context); // Add to request context
             const cursor = context?.acebase_cursor;
             return { cursor }; // And return the cursor
@@ -1444,10 +1576,14 @@ export class WebApi extends Api {
         const cachePath = PathInfo.getChildPath(`${this.dbname}/cache`, path);
         let rollbackValue;
         const updateCache = () => {
-            return this.cache.db.api.transaction(cachePath, (currentValue) => {
-                rollbackValue = currentValue;
-                return value;
-            }, { context: options.context });
+            return this.cache.db.api.transaction(
+                cachePath,
+                (currentValue) => {
+                    rollbackValue = currentValue;
+                    return value;
+                },
+                { context: options.context }
+            );
         };
         const rollbackCache = async () => {
             await cachePromise; // Must be ready first before we can rollback to previous value
@@ -1457,15 +1593,12 @@ export class WebApi extends Api {
             await this._addCacheSetMutation(path, value, options.context);
         };
         const cachePromise = updateCache();
-        const tryCachePromise = cachePromise
-            .then(() => ({ success: true, error: null }))
-            .catch(err => ({ success: false, error: err }));
+        const tryCachePromise = cachePromise.then(() => ({ success: true, error: null })).catch((err) => ({ success: false, error: err }));
         const serverPromise = !useServer ? null : updateServer();
-        const tryServerPromise = !useServer ? null : serverPromise
-            .then(() => ({ success: true, error: null }))
-            .catch(err => ({ success: false, error: err }));
-        Promise.all([tryCachePromise, tryServerPromise])
-            .then(([cacheResult, serverResult]) => {
+        const tryServerPromise = !useServer
+            ? null
+            : serverPromise.then(() => ({ success: true, error: null })).catch((err) => ({ success: false, error: err }));
+        Promise.all([tryCachePromise, tryServerPromise]).then(([cacheResult, serverResult]) => {
             const networkError = serverPromise && !serverResult?.success && serverResult?.error?.isNetworkError === true;
             if (serverPromise && !networkError) {
                 // Server update succeeded, or failed with a non-network related reason
@@ -1475,24 +1608,25 @@ export class WebApi extends Api {
                         // Cache update failed for some reason?
                         this.debug.error(`Failed to set cache for "${path}". Error: `, cacheResult.error);
                     }
-                }
-                else {
+                } else {
                     // Server update failed (with a non-network related reason)
                     if (cacheResult.success) {
                         // Cache update did succeed, rollback to previous value
-                        this.debug.error(`Failed to set server value for "${path}", rolling back cache to previous value. Error:`, serverResult?.error);
-                        rollbackCache().catch(err => {
+                        this.debug.error(
+                            `Failed to set server value for "${path}", rolling back cache to previous value. Error:`,
+                            serverResult?.error
+                        );
+                        rollbackCache().catch((err) => {
                             this.debug.error(`Failed to roll back cache? Error:`, err);
                         });
                     }
                 }
-            }
-            else if (cacheResult.success) {
+            } else if (cacheResult.success) {
                 // Server was not updated (because we're offline, or a network error occurred), cache update was successful.
                 // Add pending sync action
-                addPendingTransaction().catch(err => {
+                addPendingTransaction().catch((err) => {
                     this.debug.error(`Failed to add pending sync action for "${path}", rolling back cache to previous value. Error:`, err);
-                    rollbackCache().catch(err => {
+                    rollbackCache().catch((err) => {
                         this.debug.error(`Failed to roll back cache? Error:`, err);
                     });
                 });
@@ -1505,10 +1639,14 @@ export class WebApi extends Api {
         // return server promise by default, so caller can handle potential authorization issues
         return this._cache?.priority === 'cache' ? cachePromise : serverPromise;
     }
-    update(path, updates, options = {
-        allow_cache: true,
-        context: {},
-    }) {
+    update(
+        path,
+        updates,
+        options = {
+            allow_cache: true,
+            context: {}
+        }
+    ) {
         // TODO: refactor allow_cache to cache_mode
         const useCache = this._cache && options && options.allow_cache !== false;
         const useServer = this.isConnected;
@@ -1518,11 +1656,17 @@ export class WebApi extends Api {
             id: ID.generate(),
             op: 'update',
             path,
-            flow: useCache ? useServer ? 'parallel' : 'cache' : 'server',
+            flow: useCache ? (useServer ? 'parallel' : 'cache') : 'server'
         };
         const updateServer = async () => {
             const data = JSON.stringify(Transport.serialize(updates));
-            const { context } = await this._request({ method: 'POST', url: `${this.url}/data/${this.dbname}/${path}`, data, context: options.context, includeContext: true });
+            const { context } = await this._request({
+                method: 'POST',
+                url: `${this.url}/data/${this.dbname}/${path}`,
+                data,
+                context: options.context,
+                includeContext: true
+            });
             Object.assign(options.context, context); // Add to request context
             const cursor = context.acebase_cursor;
             return { cursor }; // And return the cursor
@@ -1539,7 +1683,7 @@ export class WebApi extends Api {
             rollbackValue = result.value;
             if (typeof rollbackValue === 'object' && rollbackValue !== null) {
                 // current cache value is an object, set properties being created now to null so they'll be deleted upon rollback
-                properties.forEach(prop => {
+                properties.forEach((prop) => {
                     if (!(prop in rollbackValue) && updates[prop] !== null) {
                         // Property being updated doesn't exist in current value, set to null
                         rollbackValue[prop] = null;
@@ -1553,8 +1697,7 @@ export class WebApi extends Api {
             if (typeof rollbackValue === 'object' && rollbackValue !== null && Object.keys(rollbackValue).length > 0) {
                 // previous cache value is an object with at least 1 property
                 return cacheApi.update(cachePath, rollbackValue, { context: options.context });
-            }
-            else {
+            } else {
                 // previous cache value was not an object or did not have any properties
                 return cacheApi.set(cachePath, rollbackValue, { context: options.context });
             }
@@ -1605,23 +1748,22 @@ export class WebApi extends Api {
                 }
                 return {
                     path: pathInfo.childPath(prop),
-                    value: updates[prop],
+                    value: updates[prop]
                 };
             });
             // Store new pending 'set' operations (null values will be stored as 'remove')
-            const promises = mutations.map(m => this._addCacheSetMutation(m.path, m.value, options.context));
+            const promises = mutations.map((m) => this._addCacheSetMutation(m.path, m.value, options.context));
             await Promise.all(promises);
         };
         const cachePromise = updateCache();
-        const tryCachePromise = cachePromise
-            .then(() => ({ success: true, error: null }))
-            .catch(err => ({ success: false, error: err }));
+        const tryCachePromise = cachePromise.then(() => ({ success: true, error: null })).catch((err) => ({ success: false, error: err }));
         const serverPromise = !useServer ? null : updateServer();
-        const tryServerPromise = !useServer ? { executed: false, success: false, error: null } : serverPromise
-            .then(() => ({ executed: true, success: true, error: null }))
-            .catch(err => ({ executed: true, success: false, error: err }));
-        Promise.all([tryCachePromise, tryServerPromise])
-            .then(([cacheResult, serverResult]) => {
+        const tryServerPromise = !useServer
+            ? { executed: false, success: false, error: null }
+            : serverPromise
+                  .then(() => ({ executed: true, success: true, error: null }))
+                  .catch((err) => ({ executed: true, success: false, error: err }));
+        Promise.all([tryCachePromise, tryServerPromise]).then(([cacheResult, serverResult]) => {
             const networkError = serverResult.executed && !serverResult.success && serverResult.error.isNetworkError === true;
             if (serverResult.executed && !networkError) {
                 // Server update succeeded, or failed with a non-network related reason
@@ -1631,24 +1773,25 @@ export class WebApi extends Api {
                         // Cache update failed for some reason?
                         this.debug.error(`Failed to update cache for "${path}". Error: `, cacheResult.error);
                     }
-                }
-                else {
+                } else {
                     // Server update failed
                     if (cacheResult.success) {
                         // Cache update did succeed, rollback to previous value
-                        this.debug.error(`Failed to update server value for "${path}", rolling back cache to previous value. Error:`, serverResult.error);
-                        rollbackCache().catch(err => {
+                        this.debug.error(
+                            `Failed to update server value for "${path}", rolling back cache to previous value. Error:`,
+                            serverResult.error
+                        );
+                        rollbackCache().catch((err) => {
                             this.debug.error(`Failed to roll back cache? Error:`, err);
                         });
                     }
                 }
-            }
-            else if (cacheResult.success) {
+            } else if (cacheResult.success) {
                 // Server was not updated, cache update was successful.
                 // Add pending sync action
-                addPendingTransaction().catch(err => {
+                addPendingTransaction().catch((err) => {
                     this.debug.error(`Failed to add pending sync action for "${path}", rolling back cache to previous value. Error:`, err);
-                    rollbackCache().catch(err => {
+                    rollbackCache().catch((err) => {
                         this.debug.error(`Failed to roll back cache? Error:`, err);
                     });
                 });
@@ -1664,9 +1807,12 @@ export class WebApi extends Api {
     /**
      * @returns Returns a promise that resolves with the value, context and optionally a server cursor
      */
-    async get(path, options = {
-        cache_mode: 'allow',
-    }) {
+    async get(
+        path,
+        options = {
+            cache_mode: 'allow'
+        }
+    ) {
         if (typeof options.cache_mode !== 'string') {
             options.cache_mode = 'allow';
         }
@@ -1703,10 +1849,11 @@ export class WebApi extends Api {
                 // }
                 if (!filtered) {
                     const cachePath = PathInfo.getChildPath(`${this.dbname}/cache`, path);
-                    this._cache.db.api.set(cachePath, value, { context: { acebase_operation: 'update_cache', acebase_server_context: context } })
-                        .catch(err => {
-                        this.debug.error(`Error caching data for "/${path}"`, err);
-                    });
+                    this._cache.db.api
+                        .set(cachePath, value, { context: { acebase_operation: 'update_cache', acebase_server_context: context } })
+                        .catch((err) => {
+                            this.debug.error(`Error caching data for "/${path}"`, err);
+                        });
                 }
             }
             return { value, context, cursor };
@@ -1719,7 +1866,7 @@ export class WebApi extends Api {
             let { value, context } = result;
             if (!('value' in result && 'context' in result)) {
                 console.warn(`Missing context from cache results. Update your acebase package`);
-                value = result, context = {};
+                (value = result), (context = {});
             }
             if (value === null && throwOnNull) {
                 throw new CachedValueUnavailableError(path);
@@ -1738,16 +1885,14 @@ export class WebApi extends Api {
             let syncResult;
             try {
                 syncResult = await this.updateCache(path, options.cache_cursor);
-            }
-            catch (err) {
+            } catch (err) {
                 // Failed to update cache, we might be offline. Proceed with cache value
             }
             const { value, context } = await getCacheValue(false); // don't throw on null value, it was updated from the server just now
             if (syncResult) {
                 context.acebase_cursor = syncResult.new_cursor;
                 context.acebase_origin = 'hybrid';
-            }
-            else {
+            } else {
                 context.acebase_cursor = options.cache_cursor;
                 context.acebase_origin = 'cache';
             }
@@ -1768,7 +1913,8 @@ export class WebApi extends Api {
         }
         // Get both, use cached value if available and server version takes too long
         return new Promise((resolve, reject) => {
-            let wait = true, done = false;
+            let wait = true,
+                done = false;
             const gotValue = (source, val) => {
                 this.debug.verbose(`Got ${source} value of "${path}":`, val);
                 if (done) {
@@ -1780,11 +1926,10 @@ export class WebApi extends Api {
                     this.debug.verbose(`Using server value for "${path}"`);
                     context.acebase_origin = 'server';
                     resolve({ value, context, cursor });
-                }
-                else if (value === null) {
+                } else if (value === null) {
                     // Cached value is not available
                     if (!wait) {
-                        const serverError = errors.find(e => e.source === 'server')?.error;
+                        const serverError = errors.find((e) => e.source === 'server')?.error;
                         if (serverError.isNetworkError) {
                             // On network related errors, we thought we were connected but apparently weren't.
                             // If we had known this up-front, getCachedValue(true) would have been executed and
@@ -1792,19 +1937,20 @@ export class WebApi extends Api {
                             return reject(new CachedValueUnavailableError(path));
                         }
                         // Could not get server value because of a non-network related issue - possibly unauthorized access
-                        const error = new CachedValueUnavailableError(path, `Value for "${path}" not found in cache, and server value could not be loaded. See serverError for more details`);
+                        const error = new CachedValueUnavailableError(
+                            path,
+                            `Value for "${path}" not found in cache, and server value could not be loaded. See serverError for more details`
+                        );
                         error.serverError = serverError;
                         return reject(error);
                     }
-                }
-                else if (!wait) {
+                } else if (!wait) {
                     // Cached results, don't wait for server value
                     done = true;
                     this.debug.verbose(`Using cache value for "${path}"`);
                     context.acebase_origin = 'cache';
                     resolve({ value, context });
-                }
-                else {
+                } else {
                     // Cached results, wait 1s before resolving with this value, server value might follow soon
                     setTimeout(() => {
                         if (done) {
@@ -1822,20 +1968,23 @@ export class WebApi extends Api {
                 errors.push({ source, error });
                 if (errors.length === 2) {
                     // Both failed, reject with server error
-                    reject(errors.find(e => e.source === 'server')?.error);
+                    reject(errors.find((e) => e.source === 'server')?.error);
                 }
             };
             getServerValue()
-                .then(val => gotValue('server', val))
-                .catch(err => (wait = false, gotError('server', err)));
+                .then((val) => gotValue('server', val))
+                .catch((err) => ((wait = false), gotError('server', err)));
             getCacheValue(false)
-                .then(val => gotValue('cache', val))
-                .catch(err => gotError('cache', err));
+                .then((val) => gotValue('cache', val))
+                .catch((err) => gotError('cache', err));
         });
     }
-    exists(path, options = {
-        allow_cache: true,
-    }) {
+    exists(
+        path,
+        options = {
+            allow_cache: true
+        }
+    ) {
         // TODO: refactor allow_cache to cache_mode
         // TODO: refactor to include context in return value: acebase_origin: 'cache' or 'server'
         const useCache = this._cache && options.allow_cache !== false;
@@ -1847,21 +1996,20 @@ export class WebApi extends Api {
         };
         const getServerExists = () => {
             return this._request({ url: `${this.url}/exists/${this.dbname}/${path}` })
-                .then(res => res.exists)
-                .catch(err => {
-                throw err;
-            });
+                .then((res) => res.exists)
+                .catch((err) => {
+                    throw err;
+                });
         };
         if (!useCache) {
             return getServerExists();
-        }
-        else if (!this.isConnected) {
+        } else if (!this.isConnected) {
             return getCacheExists();
-        }
-        else {
+        } else {
             // Check both
             return new Promise((resolve, reject) => {
-                let wait = true, done = false;
+                let wait = true,
+                    done = false;
                 const gotExists = (source, exists) => {
                     if (done) {
                         return;
@@ -1869,13 +2017,11 @@ export class WebApi extends Api {
                     if (source === 'server') {
                         done = true;
                         resolve(exists);
-                    }
-                    else if (!wait) {
+                    } else if (!wait) {
                         // Cached results, don't wait for server value
                         done = true;
                         resolve(exists);
-                    }
-                    else {
+                    } else {
                         // Cached results, wait 1s before resolving with this value, server value might follow soon
                         setTimeout(() => {
                             if (done) {
@@ -1891,15 +2037,15 @@ export class WebApi extends Api {
                     errors.push({ source, error });
                     if (errors.length === 2) {
                         // Both failed, reject with server error
-                        reject(errors.find(e => e.source === 'server'));
+                        reject(errors.find((e) => e.source === 'server'));
                     }
                 };
                 getServerExists()
-                    .then(exists => gotExists('server', exists))
-                    .catch(err => (wait = false, gotError('server', err)));
+                    .then((exists) => gotExists('server', exists))
+                    .catch((err) => ((wait = false), gotError('server', err)));
                 getCacheExists()
-                    .then(exists => gotExists('cache', exists))
-                    .catch(err => gotError('cache', err));
+                    .then((exists) => gotExists('cache', exists))
+                    .catch((err) => gotError('cache', err));
             });
         }
     }
@@ -1912,11 +2058,10 @@ export class WebApi extends Api {
             if (typeof data === 'object') {
                 // Convert object to querystring
                 data = Object.keys(data)
-                    .filter(key => typeof data[key] !== 'undefined')
-                    .map(key => key + '=' + encodeURIComponent(JSON.stringify(data[key])))
+                    .filter((key) => typeof data[key] !== 'undefined')
+                    .map((key) => key + '=' + encodeURIComponent(JSON.stringify(data[key])))
                     .join('&');
-            }
-            else if (typeof data !== 'string' || !data.includes('=')) {
+            } else if (typeof data !== 'string' || !data.includes('=')) {
                 throw new Error('data must be an object, or a string with query parameters, like "index=3&name=Something"');
             }
             url += `?` + data;
@@ -1938,14 +2083,15 @@ export class WebApi extends Api {
      * If the local path does not exist or no cursor is given, its entire value will be loaded from the server and stored in cache. If no cache database is used, an error will be thrown.
      */
     async updateCache(
-    /**
-     * Path to update. The root path will be used if not given, synchronizing the entire database.
-     */
-    path = '', 
-    /**
-     * A previously acquired cursor to update the cache with. If not specified, `path`'s entire value will be loaded from the server
-     */
-    cursor) {
+        /**
+         * Path to update. The root path will be used if not given, synchronizing the entire database.
+         */
+        path = '',
+        /**
+         * A previously acquired cursor to update the cache with. If not specified, `path`'s entire value will be loaded from the server
+         */
+        cursor
+    ) {
         if (!this._cache) {
             throw new Error(`No cache database used`);
         }
@@ -1965,8 +2111,7 @@ export class WebApi extends Api {
             const options = { context: ch.context, suppress_events: false };
             if (ch.type === 'update') {
                 await cacheApi.update(cachePath, ch.value, options);
-            }
-            else if (ch.type === 'set') {
+            } else if (ch.type === 'set') {
                 await cacheApi.set(cachePath, ch.value, options);
             }
         }
@@ -1994,12 +2139,17 @@ export class WebApi extends Api {
         }
         const request = {
             query,
-            options,
+            options
         };
-        if (options.monitor === true || (typeof options.monitor === 'object' && (options.monitor.add || options.monitor.change || options.monitor.remove))) {
+        if (
+            options.monitor === true ||
+            (typeof options.monitor === 'object' && (options.monitor.add || options.monitor.change || options.monitor.remove))
+        ) {
             console.assert(typeof options.eventHandler === 'function', `no eventHandler specified to handle realtime changes`);
             if (!this.socket) {
-                throw new Error(`Cannot create realtime query because websocket is not connected. Check your AceBaseClient network.realtime setting`);
+                throw new Error(
+                    `Cannot create realtime query because websocket is not connected. Check your AceBaseClient network.realtime setting`
+                );
             }
             request.query_id = ID.generate();
             request.client_id = this.socket.id;
@@ -2007,7 +2157,12 @@ export class WebApi extends Api {
         }
         const reqData = JSON.stringify(Transport.serialize(request));
         try {
-            const { data, context } = await this._request({ method: 'POST', url: `${this.url}/query/${this.dbname}/${path}`, data: reqData, includeContext: true });
+            const { data, context } = await this._request({
+                method: 'POST',
+                url: `${this.url}/query/${this.dbname}/${path}`,
+                data: reqData,
+                includeContext: true
+            });
             const results = Transport.deserialize(data);
             context.acebase_origin = 'server';
             const stop = async () => {
@@ -2016,13 +2171,12 @@ export class WebApi extends Api {
                 await _websocketRequest(this.socket, 'query-unsubscribe', { query_id: request.query_id }, this.accessToken);
             };
             return { results: results.list, context, stop };
-        }
-        catch (err) {
+        } catch (err) {
             throw err;
         }
     }
     async createIndex(path, key, options) {
-        if (options && options.config && Object.values(options.config).find(val => typeof val === 'function')) {
+        if (options && options.config && Object.values(options.config).find((val) => typeof val === 'function')) {
             throw new Error(`Cannot create an index with callback functions through a client. Move your code serverside`);
         }
         const version = this._serverVersion.split('.');
@@ -2030,8 +2184,7 @@ export class WebApi extends Api {
             // acebase-server v1.10+ has a new dedicated endpoint at /index/dbname/create
             const data = JSON.stringify({ path, key, options });
             return await this._request({ method: 'POST', url: `${this.url}/index/${this.dbname}/create`, data });
-        }
-        else {
+        } else {
             const data = JSON.stringify({ action: 'create', path, key, options });
             return await this._request({ method: 'POST', url: `${this.url}/index/${this.dbname}`, data });
         }
@@ -2045,15 +2198,14 @@ export class WebApi extends Api {
         if (version.length === 3 && +version[0] >= 1 && +version[1] >= 10) {
             const data = JSON.stringify({ fileName });
             return this._request({ method: 'POST', url: `${this.url}/index/${this.dbname}/delete`, data });
-        }
-        else {
+        } else {
             throw new Error(`not supported, requires acebase-server 1.10 or higher`);
         }
     }
     reflect(path, type, args) {
         let url = `${this.url}/reflect/${this.dbname}/${path}?type=${type}`;
         if (typeof args === 'object') {
-            const query = Object.keys(args).map(key => {
+            const query = Object.keys(args).map((key) => {
                 return `${key}=${args[key]}`;
             });
             if (query.length > 0) {
@@ -2066,19 +2218,19 @@ export class WebApi extends Api {
         options.format = 'json';
         options.type_safe = options.type_safe !== false;
         const url = `${this.url}/export/${this.dbname}/${path}?format=${options.format}&type_safe=${options.type_safe ? 1 : 0}`;
-        return this._request({ url, dataReceivedCallback: chunk => write(chunk) });
+        return this._request({ url, dataReceivedCallback: (chunk) => write(chunk) });
     }
     import(path, read, options = { format: 'json', suppress_events: false }) {
         options.format = 'json';
         options.suppress_events = options.suppress_events === true;
         const url = `${this.url}/import/${this.dbname}/${path}?format=${options.format}&suppress_events=${options.suppress_events ? 1 : 0}`;
-        return this._request({ method: 'POST', url, dataRequestCallback: length => read(length) });
+        return this._request({ method: 'POST', url, dataRequestCallback: (length) => read(length) });
     }
     get serverPingUrl() {
         return `${this.url}/ping/${this.dbname}`;
     }
     async getServerInfo() {
-        const info = await this._request({ url: `${this.url}/info/${this.dbname}` }).catch(err => {
+        const info = await this._request({ url: `${this.url}/info/${this.dbname}` }).catch((err) => {
             // Prior to acebase-server v0.9.37, info was at /info (no dbname attached)
             if (!err.isNetworkError) {
                 this.debug.warn(`Could not get server info, update your acebase server version`);
@@ -2090,7 +2242,7 @@ export class WebApi extends Api {
     }
     setSchema(path, schema) {
         if (schema !== null) {
-            schema = (new SchemaDefinition(schema)).text;
+            schema = new SchemaDefinition(schema).text;
         }
         const data = JSON.stringify({ action: 'set', path, schema });
         return this._request({ method: 'POST', url: `${this.url}/schema/${this.dbname}`, data });

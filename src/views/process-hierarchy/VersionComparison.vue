@@ -5,7 +5,7 @@
             <div class="header-left">
                 <v-btn variant="text" size="small" @click="goBack">
                     <v-icon start>{{ dialogMode ? 'mdi-close' : 'mdi-arrow-left' }}</v-icon>
-                    {{ dialogMode ? ($t('common.close') || '닫기') : ($t('versionComparison.back') || 'Back') }}
+                    {{ dialogMode ? $t('common.close') || '닫기' : $t('versionComparison.back') || 'Back' }}
                 </v-btn>
                 <v-icon class="mx-2" size="20">mdi-compare-horizontal</v-icon>
                 <span class="text-subtitle-1 font-weight-bold">
@@ -13,20 +13,10 @@
                 </span>
             </div>
             <div class="header-right">
-                <v-btn
-                    variant="outlined"
-                    size="small"
-                    :disabled="changes.length === 0"
-                    @click="exportDiff"
-                >
+                <v-btn variant="outlined" size="small" :disabled="changes.length === 0" @click="exportDiff">
                     {{ $t('versionComparison.exportDiff') || 'Export Diff' }}
                 </v-btn>
-                <v-btn
-                    color="primary"
-                    size="small"
-                    :disabled="!versionBData || selectedVersionB === '__current__'"
-                    @click="applyChanges"
-                >
+                <v-btn color="primary" size="small" :disabled="!versionBData || selectedVersionB === '__current__'" @click="applyChanges">
                     <v-icon start size="16">mdi-backup-restore</v-icon>
                     {{ $t('versionComparison.rollback') || '이전 버전으로 되돌리기' }}
                 </v-btn>
@@ -65,7 +55,11 @@
                 <div v-if="!selectedProcessId" class="empty-process-placeholder">
                     <v-icon size="48" color="grey-lighten-1">mdi-file-compare</v-icon>
                     <div class="text-body-1 text-medium-emphasis mt-3">
-                        {{ dialogMode ? ($t('versionComparison.loadingProcess') || '프로세스 불러오는 중…') : ($t('versionComparison.selectProcessToCompare') || '비교할 프로세스를 왼쪽 목록에서 선택하세요') }}
+                        {{
+                            dialogMode
+                                ? $t('versionComparison.loadingProcess') || '프로세스 불러오는 중…'
+                                : $t('versionComparison.selectProcessToCompare') || '비교할 프로세스를 왼쪽 목록에서 선택하세요'
+                        }}
                     </div>
                     <div class="text-caption text-medium-emphasis mt-1">
                         {{ $t('versionComparison.selectProcessHint') || '프로세스를 선택하면 버전 간 차이를 비교할 수 있습니다' }}
@@ -202,15 +196,8 @@
                 <v-divider />
 
                 <div class="diff-list" v-if="changes.length > 0">
-                    <div
-                        v-for="(change, i) in changes"
-                        :key="i"
-                        class="diff-item pa-3"
-                    >
-                        <span
-                            class="diff-badge"
-                            :class="'diff-badge-' + change.type"
-                        >
+                    <div v-for="(change, i) in changes" :key="i" class="diff-item pa-3">
+                        <span class="diff-badge" :class="'diff-badge-' + change.type">
                             {{ change.type }}
                         </span>
                         <div class="diff-item-content mt-1">
@@ -267,15 +254,32 @@ function extractBpmnElements(xml) {
         const doc = parser.parseFromString(xml, 'text/xml');
 
         const relevantSelectors = [
-            'task', 'userTask', 'serviceTask', 'manualTask', 'scriptTask', 'sendTask', 'receiveTask', 'businessRuleTask',
-            'startEvent', 'endEvent', 'intermediateThrowEvent', 'intermediateCatchEvent', 'boundaryEvent',
-            'exclusiveGateway', 'parallelGateway', 'inclusiveGateway', 'eventBasedGateway', 'complexGateway',
-            'subProcess', 'callActivity',
+            'task',
+            'userTask',
+            'serviceTask',
+            'manualTask',
+            'scriptTask',
+            'sendTask',
+            'receiveTask',
+            'businessRuleTask',
+            'startEvent',
+            'endEvent',
+            'intermediateThrowEvent',
+            'intermediateCatchEvent',
+            'boundaryEvent',
+            'exclusiveGateway',
+            'parallelGateway',
+            'inclusiveGateway',
+            'eventBasedGateway',
+            'complexGateway',
+            'subProcess',
+            'callActivity',
             'sequenceFlow',
-            'participant', 'lane'
+            'participant',
+            'lane'
         ];
 
-        relevantSelectors.forEach(tag => {
+        relevantSelectors.forEach((tag) => {
             // getElementsByTagNameNS로 네임스페이스 정확히 처리
             const found = doc.getElementsByTagNameNS(BPMN_NS, tag);
             for (let i = 0; i < found.length; i++) {
@@ -320,8 +324,8 @@ function computeBpmnDiff(oldXml, newXml) {
     const oldElements = extractBpmnElements(oldXml);
     const newElements = extractBpmnElements(newXml);
 
-    const oldMap = new Map(oldElements.map(el => [el.id, el]));
-    const newMap = new Map(newElements.map(el => [el.id, el]));
+    const oldMap = new Map(oldElements.map((el) => [el.id, el]));
+    const newMap = new Map(newElements.map((el) => [el.id, el]));
 
     const changes = [];
     const diffActivitiesA = {}; // Version A (new) 에 표시할 마커
@@ -335,7 +339,7 @@ function computeBpmnDiff(oldXml, newXml) {
                 id,
                 name: el.name,
                 elementType: el.elementType,
-                description: buildDescription('added', el),
+                description: buildDescription('added', el)
             });
             diffActivitiesA[id] = 'added';
         }
@@ -349,7 +353,7 @@ function computeBpmnDiff(oldXml, newXml) {
                 id,
                 name: el.name,
                 elementType: el.elementType,
-                description: buildDescription('removed', el),
+                description: buildDescription('removed', el)
             });
             diffActivitiesB[id] = 'deleted';
         }
@@ -374,7 +378,7 @@ function computeBpmnDiff(oldXml, newXml) {
                                 id: ref,
                                 name: movedEl.name || ref,
                                 elementType: movedEl.elementType,
-                                description: `Moved to ${newEl.name || 'another lane'}`,
+                                description: `Moved to ${newEl.name || 'another lane'}`
                             });
                         }
                     }
@@ -389,7 +393,7 @@ function computeBpmnDiff(oldXml, newXml) {
                         id,
                         name: newEl.name || oldEl.name,
                         elementType: newEl.elementType,
-                        description: buildModifiedDescription(oldEl, newEl),
+                        description: buildModifiedDescription(oldEl, newEl)
                     });
                     diffActivitiesA[id] = 'modified';
                     diffActivitiesB[id] = 'modified';
@@ -405,7 +409,7 @@ function computeBpmnDiff(oldXml, newXml) {
                     id,
                     name: newEl.name || oldEl.name,
                     elementType: newEl.elementType,
-                    description: buildModifiedDescription(oldEl, newEl),
+                    description: buildModifiedDescription(oldEl, newEl)
                 });
                 diffActivitiesA[id] = 'modified';
                 diffActivitiesB[id] = 'modified';
@@ -445,29 +449,29 @@ function buildModifiedDescription(oldEl, newEl) {
 
 function formatElementTypeName(type) {
     const map = {
-        'task': 'Task',
-        'userTask': 'User Task',
-        'serviceTask': 'Service Task',
-        'manualTask': 'Manual Task',
-        'scriptTask': 'Script Task',
-        'sendTask': 'Send Task',
-        'receiveTask': 'Receive Task',
-        'businessRuleTask': 'Business Rule Task',
-        'startEvent': 'Start Event',
-        'endEvent': 'End Event',
-        'intermediateThrowEvent': 'Intermediate Event',
-        'intermediateCatchEvent': 'Intermediate Event',
-        'boundaryEvent': 'Boundary Event',
-        'exclusiveGateway': 'Gateway',
-        'parallelGateway': 'Gateway',
-        'inclusiveGateway': 'Gateway',
-        'eventBasedGateway': 'Gateway',
-        'complexGateway': 'Gateway',
-        'subProcess': 'Sub Process',
-        'callActivity': 'Call Activity',
-        'sequenceFlow': 'Sequence Flow',
-        'participant': 'Participant',
-        'lane': 'Lane',
+        task: 'Task',
+        userTask: 'User Task',
+        serviceTask: 'Service Task',
+        manualTask: 'Manual Task',
+        scriptTask: 'Script Task',
+        sendTask: 'Send Task',
+        receiveTask: 'Receive Task',
+        businessRuleTask: 'Business Rule Task',
+        startEvent: 'Start Event',
+        endEvent: 'End Event',
+        intermediateThrowEvent: 'Intermediate Event',
+        intermediateCatchEvent: 'Intermediate Event',
+        boundaryEvent: 'Boundary Event',
+        exclusiveGateway: 'Gateway',
+        parallelGateway: 'Gateway',
+        inclusiveGateway: 'Gateway',
+        eventBasedGateway: 'Gateway',
+        complexGateway: 'Gateway',
+        subProcess: 'Sub Process',
+        callActivity: 'Call Activity',
+        sequenceFlow: 'Sequence Flow',
+        participant: 'Participant',
+        lane: 'Lane'
     };
     return map[type] || type;
 }
@@ -476,13 +480,13 @@ export default {
     name: 'VersionComparison',
     components: {
         ProcessHierarchyTree,
-        BpmnUengineViewer,
+        BpmnUengineViewer
     },
     props: {
         /** 다이얼로그로 열릴 때 true (닫기 버튼·emit close) */
         dialogMode: { type: Boolean, default: false },
         /** 다이얼로그 모드에서 초기 선택할 프로세스 id (definition path) */
-        initialProcessId: { type: String, default: '' },
+        initialProcessId: { type: String, default: '' }
     },
     data() {
         return {
@@ -516,7 +520,7 @@ export default {
             leftPanelWidth: 240,
             resizing: false,
             resizeStartX: 0,
-            resizeStartWidth: 0,
+            resizeStartWidth: 0
         };
     },
     computed: {
@@ -525,28 +529,26 @@ export default {
             // "Current (latest saved)" 항목
             items.push({
                 title: this.$t('versionComparison.currentVersion') || 'Current (latest)',
-                value: '__current__',
+                value: '__current__'
             });
             // 버전 목록 (최신순)
-            this.versions.forEach(v => {
+            this.versions.forEach((v) => {
                 items.push({
                     title: `v${v.version}${v.version_tag === 'major' ? ' (major)' : ''}`,
-                    value: v.version,
+                    value: v.version
                 });
             });
             return items;
-        },
+        }
     },
     async mounted() {
         await this.loadInitialData();
 
         // 다이얼로그 모드: initialProcessId 사용 / 페이지 모드: URL query 사용
-        const processId = this.dialogMode
-            ? (this.initialProcessId || '').trim()
-            : (this.$route?.query?.processId || '');
+        const processId = this.dialogMode ? (this.initialProcessId || '').trim() : this.$route?.query?.processId || '';
         if (processId) {
-            const def = this.definitionList.find(d => d.id === processId || d.file_name === processId);
-            const name = def ? (def.name || processId) : (processId.split('/').pop() || processId).replace(/\.bpmn$/i, '');
+            const def = this.definitionList.find((d) => d.id === processId || d.file_name === processId);
+            const name = def ? def.name || processId : (processId.split('/').pop() || processId).replace(/\.bpmn$/i, '');
             this.handleSelectProcess(processId, name);
         }
 
@@ -575,8 +577,8 @@ export default {
                     backend.listDefinition('', { match: { tenant_id: window.$tenantName } }),
                     storage.list('proc_def_version', {
                         sort: 'desc',
-                        orderBy: 'timeStamp',
-                    }),
+                        orderBy: 'timeStamp'
+                    })
                 ]);
                 this.procMap = procMapResult;
                 this.metricsMap = metricsResult;
@@ -617,7 +619,7 @@ export default {
                         latestVersionMap[rawId] = String(sorted[0].version);
                     });
                 } else if (versionList && versionList.length > 0) {
-                    versionList.forEach(v => {
+                    versionList.forEach((v) => {
                         const defId = v.proc_def_id;
                         if (!defId) return;
                         if (!latestVersionMap[defId]) {
@@ -627,7 +629,7 @@ export default {
                 }
 
                 const defs = listForVersion;
-                defs.forEach(def => {
+                defs.forEach((def) => {
                     const id = def.id || def.file_name;
                     if (id && latestVersionMap[id]) {
                         def.version = latestVersionMap[id];
@@ -661,7 +663,7 @@ export default {
             try {
                 const versionList = await backend.getDefinitionVersions(id, {
                     sort: 'desc',
-                    orderBy: 'version',
+                    orderBy: 'version'
                 });
 
                 if (versionList && versionList.length > 0) {
@@ -693,31 +695,27 @@ export default {
             const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
             try {
                 if (this.selectedVersionA === '__current__') {
-                    const def = this.definitionList.find(
-                        d => d.id === this.selectedProcessId || d.file_name === this.selectedProcessId
-                    );
+                    const def = this.definitionList.find((d) => d.id === this.selectedProcessId || d.file_name === this.selectedProcessId);
                     let xml = def?.bpmn || '';
                     if (isUEngine && !xml) {
-                        xml = await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn' }) || '';
+                        xml = (await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn' })) || '';
                     }
                     this.versionAXml = xml;
                     this.versionAData = {
                         version: 'current',
                         timeStamp: def?.updated_at || def?.created_at || '',
-                        owner: def?.owner || '',
+                        owner: def?.owner || ''
                     };
                 } else {
-                    const v = this.versions.find(
-                        ver => String(ver.version) === String(this.selectedVersionA)
-                    );
+                    const v = this.versions.find((ver) => String(ver.version) === String(this.selectedVersionA));
                     if (v) {
                         let xml = v.snapshot || '';
                         if (isUEngine && !xml) {
                             const snap = await backend.getDefinitionVersions(this.selectedProcessId, {
                                 key: 'snapshot',
-                                match: { version: v.version },
+                                match: { version: v.version }
                             });
-                            xml = (snap && snap[0] && snap[0].snapshot) ? snap[0].snapshot : '';
+                            xml = snap && snap[0] && snap[0].snapshot ? snap[0].snapshot : '';
                         }
                         this.versionAXml = xml;
                         this.versionAData = v;
@@ -735,31 +733,27 @@ export default {
             const isUEngine = typeof window !== 'undefined' && window.$mode === 'uEngine';
             try {
                 if (this.selectedVersionB === '__current__') {
-                    const def = this.definitionList.find(
-                        d => d.id === this.selectedProcessId || d.file_name === this.selectedProcessId
-                    );
+                    const def = this.definitionList.find((d) => d.id === this.selectedProcessId || d.file_name === this.selectedProcessId);
                     let xml = def?.bpmn || '';
                     if (isUEngine && !xml) {
-                        xml = await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn' }) || '';
+                        xml = (await backend.getRawDefinition(this.selectedProcessId, { type: 'bpmn' })) || '';
                     }
                     this.versionBXml = xml;
                     this.versionBData = {
                         version: 'current',
                         timeStamp: def?.updated_at || def?.created_at || '',
-                        owner: def?.owner || '',
+                        owner: def?.owner || ''
                     };
                 } else {
-                    const v = this.versions.find(
-                        ver => String(ver.version) === String(this.selectedVersionB)
-                    );
+                    const v = this.versions.find((ver) => String(ver.version) === String(this.selectedVersionB));
                     if (v) {
                         let xml = v.snapshot || '';
                         if (isUEngine && !xml) {
                             const snap = await backend.getDefinitionVersions(this.selectedProcessId, {
                                 key: 'snapshot',
-                                match: { version: v.version },
+                                match: { version: v.version }
                             });
-                            xml = (snap && snap[0] && snap[0].snapshot) ? snap[0].snapshot : '';
+                            xml = snap && snap[0] && snap[0].snapshot ? snap[0].snapshot : '';
                         }
                         this.versionBXml = xml;
                         this.versionBData = v;
@@ -830,7 +824,7 @@ export default {
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
-                    minute: '2-digit',
+                    minute: '2-digit'
                 });
             } catch {
                 return timestamp;
@@ -846,7 +840,7 @@ export default {
             lines.push(`Version B: ${this.selectedVersionB === '__current__' ? 'Current' : 'v' + this.selectedVersionB}`);
             lines.push('');
             lines.push('Changes:');
-            this.changes.forEach(c => {
+            this.changes.forEach((c) => {
                 lines.push(`  [${c.type.toUpperCase()}] ${this.formatElementType(c.elementType)}: ${c.name || c.id}`);
                 if (c.description) lines.push(`    ${c.description}`);
             });
@@ -864,21 +858,22 @@ export default {
             // Version B(이전)의 XML로 현재 프로세스를 롤백
             if (!this.versionBXml || !this.selectedProcessId) return;
 
-            const versionLabel = this.selectedVersionB === '__current__'
-                ? (this.$t('versionComparison.currentVersion') || 'Current')
-                : 'v' + this.selectedVersionB;
+            const versionLabel =
+                this.selectedVersionB === '__current__'
+                    ? this.$t('versionComparison.currentVersion') || 'Current'
+                    : 'v' + this.selectedVersionB;
 
-            const confirmMsg = this.$t('versionComparison.rollbackConfirm', { version: versionLabel })
-                || `${versionLabel} 버전으로 되돌리시겠습니까?`;
+            const confirmMsg =
+                this.$t('versionComparison.rollbackConfirm', { version: versionLabel }) || `${versionLabel} 버전으로 되돌리시겠습니까?`;
             if (!confirm(confirmMsg)) return;
 
             try {
                 await backend.putRawDefinition(this.versionBXml, this.selectedProcessId, {
-                    name: this.selectedProcessName,
+                    name: this.selectedProcessName
                 });
                 if (this.$toast) {
-                    const successMsg = this.$t('versionComparison.rollbackSuccess', { version: versionLabel })
-                        || `${versionLabel} 버전으로 되돌렸습니다.`;
+                    const successMsg =
+                        this.$t('versionComparison.rollbackSuccess', { version: versionLabel }) || `${versionLabel} 버전으로 되돌렸습니다.`;
                     this.$toast.success(successMsg);
                 }
                 this.$emit('rollbackDone');
@@ -904,8 +899,8 @@ export default {
         },
         stopResize() {
             this.resizing = false;
-        },
-    },
+        }
+    }
 };
 </script>
 
@@ -1090,9 +1085,15 @@ export default {
     height: 8px;
     border-radius: 50%;
 }
-.dot-added { background: #4caf50; }
-.dot-modified { background: #ff9800; }
-.dot-removed { background: #f44336; }
+.dot-added {
+    background: #4caf50;
+}
+.dot-modified {
+    background: #ff9800;
+}
+.dot-removed {
+    background: #f44336;
+}
 
 /* Diff list */
 .diff-list {

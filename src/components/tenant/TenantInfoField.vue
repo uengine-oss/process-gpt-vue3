@@ -5,8 +5,9 @@
                 <v-list>
                     <template v-for="(guideSlide, index) in guideSlides" :key="index">
                         <v-list-item
-                            v-for="(item, itemIndex) in guideSlide.items" :key="itemIndex"
-                            :class="{'active-slide': activeIndex === index + '_' + itemIndex}"
+                            v-for="(item, itemIndex) in guideSlide.items"
+                            :key="itemIndex"
+                            :class="{ 'active-slide': activeIndex === index + '_' + itemIndex }"
                             @click="scrollToSlide(index, itemIndex)"
                         >
                             <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
@@ -14,24 +15,20 @@
                     </template>
                 </v-list>
             </v-col>
-            <v-col cols="9" class="tenant-info-box pa-4"
-                style="height:calc(100vh - 50px); overflow:auto;"
-                @scroll="handleScroll"
-            >
+            <v-col cols="9" class="tenant-info-box pa-4" style="height: calc(100vh - 50px); overflow: auto" @scroll="handleScroll">
                 <template v-for="(guideSlide, index) in guideSlides" :key="index">
                     <div v-for="(item, itemIndex) in guideSlide.items" :key="itemIndex" class="mb-16">
                         <h2 class="text-grey200" :ref="'slide' + index + '_' + itemIndex">{{ $t(item.title) }}</h2>
                         <template v-for="(image, imageIndex) in item.images" :key="imageIndex">
-                            <img :src="image" :class="image == '/src/assets/images/tenant/help/1.png' ? 'create-account-img' : 'tenant-info-image'"/>
+                            <img
+                                :src="image"
+                                :class="image == '/src/assets/images/tenant/help/1.png' ? 'create-account-img' : 'tenant-info-image'"
+                            />
                         </template>
-                        <div style="font-size:18px;" v-for="(desc, descIndex) in item.description" :key="descIndex" v-html="$t(desc)"></div>
+                        <div style="font-size: 18px" v-for="(desc, descIndex) in item.description" :key="descIndex" v-html="$t(desc)"></div>
                         <template v-for="(textField, textFieldIndex) in item.textFields" :key="textFieldIndex">
                             <div v-if="textField.value" class="d-flex tenant-info-text-filed">
-                                <VTextField
-                                    :value="getTenantUrl(value.id)" 
-                                    type="text"
-                                    readonly
-                                ></VTextField>
+                                <VTextField :value="getTenantUrl(value.id)" type="text" readonly></VTextField>
                                 <v-tooltip text="Copy">
                                     <template v-slot:activator="{ props }">
                                         <v-btn v-bind="props" icon variant="text" @click="copyToClipboard">
@@ -40,7 +37,9 @@
                                     </template>
                                 </v-tooltip>
                             </div>
-                            <VTextField v-else v-model="value.id"
+                            <VTextField
+                                v-else
+                                v-model="value.id"
                                 :label="textField.label"
                                 :type="textField.type"
                                 :ref="textField.ref"
@@ -54,15 +53,16 @@
                     </div>
                 </template>
                 <v-row no-gutters class="pa-0 pb-16">
-                    <v-btn 
-                        size="large" 
-                        class="mt-2" 
-                        color="primary"  
+                    <v-btn
+                        size="large"
+                        class="mt-2"
+                        color="primary"
                         rounded="pill"
                         type="submit"
                         :loading="isLoading"
                         @click="createInfoTenant()"
-                    >생성하기</v-btn>
+                        >생성하기</v-btn
+                    >
                 </v-row>
             </v-col>
         </v-row>
@@ -88,7 +88,7 @@ export default {
     props: {
         modelValue: {
             type: Object,
-            required: true,
+            required: true
         },
         isEdit: {
             type: Boolean,
@@ -102,10 +102,10 @@ export default {
     computed: {
         value: {
             get() {
-                return this.modelValue
+                return this.modelValue;
             },
             set(value) {
-                this.$emit('update:modelValue', value)
+                this.$emit('update:modelValue', value);
             }
         }
     },
@@ -113,7 +113,7 @@ export default {
     data: () => ({
         activeIndex: 0,
         guideSlides: [
-            // { 
+            // {
             //     step: 1,
             //     items: [
             //         {
@@ -246,20 +246,18 @@ export default {
                 items: [
                     {
                         title: 'tenantInfoField.step4',
-                        description: [
-                            'tenantInfoField.step4-text'
-                        ],
+                        description: ['tenantInfoField.step4-text'],
                         textFields: [
                             {
                                 label: '회사 ID',
                                 type: 'text',
                                 model: 'id',
-                                ref: 'tenantId',
-                            },
+                                ref: 'tenantId'
+                            }
                         ]
-                    },
+                    }
                 ]
-            },
+            }
             // {
             //     step: 2,
             //     items: [
@@ -281,21 +279,20 @@ export default {
             //         }
             //     ]
             // }
-        ],
+        ]
     }),
 
-    async created() {
-    },
+    async created() {},
 
     methods: {
         getModel(model) {
-            return model
+            return model;
         },
         createInfoTenant() {
             this.$emit('beforeCreateTenant');
         },
         handleScroll() {
-            const slideKeys = Object.keys(this.$refs).filter(key => key.startsWith('slide'));
+            const slideKeys = Object.keys(this.$refs).filter((key) => key.startsWith('slide'));
             slideKeys.forEach((key) => {
                 const slides = this.$refs[key];
                 slides.forEach((slide) => {
@@ -394,7 +391,7 @@ export default {
                         this.$refs.tenantId.focus();
                     } catch (e) {
                         this.$emit('stopLoading');
-                        throw new Error("STEP1의 사용할 회사명 입력하기에서 회사 ID를 입력해주세요.");
+                        throw new Error('STEP1의 사용할 회사명 입력하기에서 회사 ID를 입력해주세요.');
                     }
                 }
 
@@ -405,7 +402,9 @@ export default {
                             this.$refs.tenantId.focus();
                         } catch (e) {
                             this.$emit('stopLoading');
-                            throw new Error(`STEP1의 사용할 회사명 입력하기에서 '${this.value.id}'는 이미 존재하는 회사 ID입니다. 다른 ID를 사용해주세요.`);
+                            throw new Error(
+                                `STEP1의 사용할 회사명 입력하기에서 '${this.value.id}'는 이미 존재하는 회사 ID입니다. 다른 ID를 사용해주세요.`
+                            );
                         }
                     }
                 }
@@ -417,11 +416,14 @@ export default {
 
         copyToClipboard() {
             const textToCopy = getTenantUrl(this.value.id).replace(/^https?:\/\//, '');
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                this.$emit('showSnackbar', 'Copied to clipboard');
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-            });
+            navigator.clipboard
+                .writeText(textToCopy)
+                .then(() => {
+                    this.$emit('showSnackbar', 'Copied to clipboard');
+                })
+                .catch((err) => {
+                    console.error('Failed to copy: ', err);
+                });
         },
 
         filterDomainInput(event) {
@@ -438,28 +440,28 @@ export default {
     background-color: #f0f0f0; /* Change this to your desired highlight color */
 }
 .tenant-info-image {
-    width:70%;
-    margin-top:20px;
+    width: 70%;
+    margin-top: 20px;
 }
 
 .tenant-info-text-filed {
-    width:70%;
-    margin-top:20px;
+    width: 70%;
+    margin-top: 20px;
 }
 
 .create-account-img {
-    width:35%;
+    width: 35%;
 }
 
-@media only screen and (max-width:1280px) {
+@media only screen and (max-width: 1280px) {
     .tenant-info-image {
-        width:100%;
+        width: 100%;
     }
     .tenant-info-text-filed {
-        width:100%;
+        width: 100%;
     }
     .create-account-img {
-        width:100%;
+        width: 100%;
     }
 }
 </style>

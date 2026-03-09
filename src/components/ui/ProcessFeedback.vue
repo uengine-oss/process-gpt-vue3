@@ -5,12 +5,8 @@
                 <v-icon>mdi-information</v-icon>
                 <span class="text-h6 ml-2">{{ $t('ProcessFeedback.applyTitle') }}</span>
             </div>
-            <v-skeleton-loader
-                v-if="isGenerating || isSubmitting"
-                type="image"
-                class="mx-auto"
-            ></v-skeleton-loader>
-            
+            <v-skeleton-loader v-if="isGenerating || isSubmitting" type="image" class="mx-auto"></v-skeleton-loader>
+
             <!-- 데스크톱 테이블 뷰 -->
             <v-table v-else-if="!isGenerating && !isSubmitting && !isMobile" class="diff-table">
                 <thead>
@@ -30,28 +26,18 @@
                     </tr>
                     <tr v-for="(item, key) in diffItems" :key="key" v-if="hasChanges">
                         <td class="text-center">
-                            <v-checkbox v-model="item.accepted"
-                                hide-details
-                                color="primary"
-                                density="compact"
-                            />
+                            <v-checkbox v-model="item.accepted" hide-details color="primary" density="compact" />
                         </td>
                         <td>{{ item.title }}</td>
                         <td>
                             <div v-if="Array.isArray(item.before)">
                                 <v-list density="compact" class="diff-list">
-                                    <v-list-item
-                                        v-for="(listItem, index) in item.before"
-                                        :key="`${key}-before-${index}`"
-                                        class="px-2"
-                                    >
+                                    <v-list-item v-for="(listItem, index) in item.before" :key="`${key}-before-${index}`" class="px-2">
                                         <v-list-item-title class="text-body-2">
                                             <template v-if="typeof listItem === 'object' && listItem.name">
                                                 <div class="font-weight-medium">{{ listItem.name }}</div>
                                             </template>
-                                            <template v-else>
-                                                {{index+1}}. {{ listItem }}
-                                            </template>
+                                            <template v-else> {{ index + 1 }}. {{ listItem }} </template>
                                         </v-list-item-title>
                                     </v-list-item>
                                 </v-list>
@@ -61,20 +47,40 @@
                                     <div class="pa-2">
                                         <div class="gwt-section-title">{{ $t('ProcessFeedback.goodExample') }}</div>
                                         <div v-if="item.before && item.before.good_example && item.before.good_example.length > 0">
-                                            <div v-for="(ex, gi) in item.before.good_example" :key="`${key}-before-good-${gi}`" class="gwt-card">
-                                                <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text">{{ ex.given }}</span></div>
-                                                <div class="gwt-row"><span class="gwt-label">when</span><span class="gwt-text">{{ ex.when }}</span></div>
-                                                <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text">{{ ex.then }}</span></div>
+                                            <div
+                                                v-for="(ex, gi) in item.before.good_example"
+                                                :key="`${key}-before-good-${gi}`"
+                                                class="gwt-card"
+                                            >
+                                                <div class="gwt-row">
+                                                    <span class="gwt-label">given</span><span class="gwt-text">{{ ex.given }}</span>
+                                                </div>
+                                                <div class="gwt-row">
+                                                    <span class="gwt-label">when</span><span class="gwt-text">{{ ex.when }}</span>
+                                                </div>
+                                                <div class="gwt-row">
+                                                    <span class="gwt-label">then</span><span class="gwt-text">{{ ex.then }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                         <div class="gwt-divider"></div>
                                         <div class="gwt-section-title">{{ $t('ProcessFeedback.badExample') }}</div>
                                         <div v-if="item.before && item.before.bad_example && item.before.bad_example.length > 0">
-                                            <div v-for="(ex, bi) in item.before.bad_example" :key="`${key}-before-bad-${bi}`" class="gwt-card">
-                                                <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text">{{ ex.given }}</span></div>
-                                                <div class="gwt-row"><span class="gwt-label">when</span><span class="gwt-text">{{ ex.when }}</span></div>
-                                                <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text">{{ ex.then }}</span></div>
+                                            <div
+                                                v-for="(ex, bi) in item.before.bad_example"
+                                                :key="`${key}-before-bad-${bi}`"
+                                                class="gwt-card"
+                                            >
+                                                <div class="gwt-row">
+                                                    <span class="gwt-label">given</span><span class="gwt-text">{{ ex.given }}</span>
+                                                </div>
+                                                <div class="gwt-row">
+                                                    <span class="gwt-label">when</span><span class="gwt-text">{{ ex.when }}</span>
+                                                </div>
+                                                <div class="gwt-row">
+                                                    <span class="gwt-label">then</span><span class="gwt-text">{{ ex.then }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
@@ -93,33 +99,28 @@
                                 <template v-if="diffItems[key] && diffItems[key].changed">
                                     <!-- Diff UI 적용된 배열 표시 -->
                                     <div class="diff-list pa-2 align-center">
-                                        <div v-for="(diffItem, index) in calculateArrayDiff(item.before, item.after).after"
+                                        <div
+                                            v-for="(diffItem, index) in calculateArrayDiff(item.before, item.after).after"
                                             :key="`${key}-after-diff-${index}`"
                                             :class="['diff-list-item', diffItem.type]"
                                         >
                                             <span class="diff-icon"></span>
-                                            <span class="text-body-2">{{index+1}}. {{ diffItem.text }}</span>
+                                            <span class="text-body-2">{{ index + 1 }}. {{ diffItem.text }}</span>
                                         </div>
                                     </div>
                                 </template>
                                 <template v-else>
                                     <!-- 기본 배열 표시 -->
-                                <v-list density="compact" class="diff-list">
-                                    <v-list-item
-                                        v-for="(listItem, index) in item.after"
-                                        :key="`${key}-after-${index}`"
-                                        class="px-2"
-                                    >
-                                        <v-list-item-title class="text-body-2">
-                                            <template v-if="typeof listItem === 'object' && listItem.name">
-                                                <div class="font-weight-medium">{{ listItem.name }}</div>
-                                            </template>
-                                            <template v-else>
-                                                {{index+1}}. {{ listItem }}
-                                            </template>
-                                        </v-list-item-title>
-                                    </v-list-item>
-                                </v-list>
+                                    <v-list density="compact" class="diff-list">
+                                        <v-list-item v-for="(listItem, index) in item.after" :key="`${key}-after-${index}`" class="px-2">
+                                            <v-list-item-title class="text-body-2">
+                                                <template v-if="typeof listItem === 'object' && listItem.name">
+                                                    <div class="font-weight-medium">{{ listItem.name }}</div>
+                                                </template>
+                                                <template v-else> {{ index + 1 }}. {{ listItem }} </template>
+                                            </v-list-item-title>
+                                        </v-list-item>
+                                    </v-list>
                                 </template>
                             </div>
                             <div v-else-if="typeof item.after === 'object'">
@@ -127,7 +128,15 @@
                                     <div class="pa-2">
                                         <div class="gwt-section-title">{{ $t('ProcessFeedback.goodExample') }}</div>
                                         <div v-if="item.after && item.after.good_example">
-                                            <div v-for="(ex, gi) in calculateGwtArrayDiff(item.before && item.before.good_example, item.after.good_example)" :key="`${key}-after-good-${gi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
+                                            <div
+                                                v-for="(ex, gi) in calculateGwtArrayDiff(
+                                                    item.before && item.before.good_example,
+                                                    item.after.good_example
+                                                )"
+                                                :key="`${key}-after-good-${gi}`"
+                                                class="gwt-card"
+                                                :class="[{ added: ex.__isNew }]"
+                                            >
                                                 <div class="gwt-row">
                                                     <span class="gwt-label">given</span>
                                                     <span class="gwt-text">
@@ -152,7 +161,15 @@
                                         <div class="gwt-divider"></div>
                                         <div class="gwt-section-title">{{ $t('ProcessFeedback.badExample') }}</div>
                                         <div v-if="item.after && item.after.bad_example">
-                                            <div v-for="(ex, bi) in calculateGwtArrayDiff(item.before && item.before.bad_example, item.after.bad_example)" :key="`${key}-after-bad-${bi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
+                                            <div
+                                                v-for="(ex, bi) in calculateGwtArrayDiff(
+                                                    item.before && item.before.bad_example,
+                                                    item.after.bad_example
+                                                )"
+                                                :key="`${key}-after-bad-${bi}`"
+                                                class="gwt-card"
+                                                :class="[{ added: ex.__isNew }]"
+                                            >
                                                 <div class="gwt-row">
                                                     <span class="gwt-label">given</span>
                                                     <span class="gwt-text">
@@ -184,12 +201,13 @@
                                                 v-for="(diffWord, index) in calculateStringDiff(item.before, item.after).after"
                                                 :key="`${key}-word-${index}`"
                                                 :class="['diff-word', diffWord.type]"
-                                            >{{ diffWord.text }}</span>
+                                                >{{ diffWord.text }}</span
+                                            >
                                         </div>
                                     </template>
                                     <template v-else>
                                         <!-- 기본 문자열 표시 -->
-                                    <div class="text-body-2 pa-2">{{ item.after }}</div>
+                                        <div class="text-body-2 pa-2">{{ item.after }}</div>
                                     </template>
                                 </template>
                             </div>
@@ -200,12 +218,7 @@
 
             <!-- 모바일 카드 뷰 -->
             <div v-else-if="!isGenerating && !isSubmitting && isMobile" class="mobile-diff-view">
-                <v-card
-                    v-if="!hasChanges"
-                    class="mb-2"
-                    elevation="1"
-                    variant="outlined"
-                >
+                <v-card v-if="!hasChanges" class="mb-2" elevation="1" variant="outlined">
                     <v-card-text class="text-center py-4">
                         <v-icon class="mr-2">mdi-information</v-icon>
                         {{ $t('ProcessFeedback.noChanges') }}
@@ -220,21 +233,20 @@
                     variant="outlined"
                 >
                     <div class="pa-2">
-                            <v-checkbox v-model="item.accepted"
-                                :label="item.title"
-                                color="primary"
-                                density="compact"
-                                hide-details
-                            />
-                        </div>
-                    
+                        <v-checkbox v-model="item.accepted" :label="item.title" color="primary" density="compact" hide-details />
+                    </div>
+
                     <v-card-text class="pt-0">
                         <!-- 반영 전 -->
                         <div class="mb-2">
-                            <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">{{ $t('ProcessFeedback.columnBefore') }}</div>
+                            <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">
+                                {{ $t('ProcessFeedback.columnBefore') }}
+                            </div>
                             <div class="mobile-content-box">
                                 <div v-if="Array.isArray(item.before)">
-                                    <div v-if="item.before.length === 0" class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
+                                    <div v-if="item.before.length === 0" class="text-grey text-body-2">
+                                        {{ $t('ProcessFeedback.noContent') }}
+                                    </div>
                                     <div v-else>
                                         <div
                                             v-for="(listItem, index) in item.before"
@@ -242,11 +254,9 @@
                                             class="text-body-2 mb-1"
                                         >
                                             <template v-if="typeof listItem === 'object' && listItem.name">
-                                                {{index+1}}. {{ listItem.name }}
+                                                {{ index + 1 }}. {{ listItem.name }}
                                             </template>
-                                            <template v-else>
-                                                {{index+1}}. {{ listItem }}
-                                            </template>
+                                            <template v-else> {{ index + 1 }}. {{ listItem }} </template>
                                         </div>
                                     </div>
                                 </div>
@@ -258,23 +268,28 @@
 
                         <!-- 반영 후 -->
                         <div>
-                            <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">{{ $t('ProcessFeedback.columnAfter') }}</div>
+                            <div class="text-body-2 font-weight-medium mb-1 text-grey-darken-1">
+                                {{ $t('ProcessFeedback.columnAfter') }}
+                            </div>
                             <div class="mobile-content-box">
                                 <div v-if="Array.isArray(item.after)">
                                     <template v-if="diffItems[key] && diffItems[key].changed">
                                         <!-- Diff UI 적용된 배열 표시 -->
-                                        <div v-for="(diffItem, index) in calculateArrayDiff(item.before, item.after).after"
+                                        <div
+                                            v-for="(diffItem, index) in calculateArrayDiff(item.before, item.after).after"
                                             :key="`${key}-mobile-after-diff-${index}`"
                                             :class="['mobile-diff-item', diffItem.type]"
                                             class="pa-2 align-center"
                                         >
                                             <span class="diff-icon-mobile"></span>
-                                            <span class="text-body-2">{{index+1}}. {{ diffItem.text }}</span>
+                                            <span class="text-body-2">{{ index + 1 }}. {{ diffItem.text }}</span>
                                         </div>
                                     </template>
                                     <template v-else>
                                         <!-- 기본 배열 표시 -->
-                                        <div v-if="item.after.length === 0" class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
+                                        <div v-if="item.after.length === 0" class="text-grey text-body-2">
+                                            {{ $t('ProcessFeedback.noContent') }}
+                                        </div>
                                         <div v-else>
                                             <div
                                                 v-for="(listItem, index) in item.after"
@@ -282,11 +297,9 @@
                                                 class="text-body-2 mb-1"
                                             >
                                                 <template v-if="typeof listItem === 'object' && listItem.name">
-                                                    {{index+1}}. {{ listItem.name }}
+                                                    {{ index + 1 }}. {{ listItem.name }}
                                                 </template>
-                                                <template v-else>
-                                                    {{index+1}}. {{ listItem }}
-                                                </template>
+                                                <template v-else> {{ index + 1 }}. {{ listItem }} </template>
                                             </div>
                                         </div>
                                     </template>
@@ -296,20 +309,66 @@
                                         <div class="text-body-2">
                                             <div class="gwt-section-title">{{ $t('ProcessFeedback.goodExample') }}</div>
                                             <div v-if="item.after && item.after.good_example">
-                                                <div v-for="(ex, gi) in calculateGwtArrayDiff(item.before && item.before.good_example, item.after.good_example)" :key="`${key}-m-after-good-${gi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
-                                                    <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text"><span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span></span></div>
-                                                    <div class="gwt-row"><span class="gwt-label">when</span><span class="gwt-text"><span :class="['diff-word', ex.when.type]">{{ ex.when.text }}</span></span></div>
-                                                    <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text"><span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span></span></div>
+                                                <div
+                                                    v-for="(ex, gi) in calculateGwtArrayDiff(
+                                                        item.before && item.before.good_example,
+                                                        item.after.good_example
+                                                    )"
+                                                    :key="`${key}-m-after-good-${gi}`"
+                                                    class="gwt-card"
+                                                    :class="[{ added: ex.__isNew }]"
+                                                >
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">given</span
+                                                        ><span class="gwt-text"
+                                                            ><span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span></span
+                                                        >
+                                                    </div>
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">when</span
+                                                        ><span class="gwt-text"
+                                                            ><span :class="['diff-word', ex.when.type]">{{ ex.when.text }}</span></span
+                                                        >
+                                                    </div>
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">then</span
+                                                        ><span class="gwt-text"
+                                                            ><span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span></span
+                                                        >
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
                                             <div class="gwt-divider"></div>
                                             <div class="gwt-section-title">{{ $t('ProcessFeedback.badExample') }}</div>
                                             <div v-if="item.after && item.after.bad_example">
-                                                <div v-for="(ex, bi) in calculateGwtArrayDiff(item.before && item.before.bad_example, item.after.bad_example)" :key="`${key}-m-after-bad-${bi}`" class="gwt-card" :class="[{ added: ex.__isNew }]">
-                                                    <div class="gwt-row"><span class="gwt-label">given</span><span class="gwt-text"><span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span></span></div>
-                                                    <div class="gwt-row"><span class="gwt-label">when</span><span class="gwt-text"><span :class="['diff-word', ex.when.type]">{{ ex.when.text }}</span></span></div>
-                                                    <div class="gwt-row"><span class="gwt-label">then</span><span class="gwt-text"><span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span></span></div>
+                                                <div
+                                                    v-for="(ex, bi) in calculateGwtArrayDiff(
+                                                        item.before && item.before.bad_example,
+                                                        item.after.bad_example
+                                                    )"
+                                                    :key="`${key}-m-after-bad-${bi}`"
+                                                    class="gwt-card"
+                                                    :class="[{ added: ex.__isNew }]"
+                                                >
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">given</span
+                                                        ><span class="gwt-text"
+                                                            ><span :class="['diff-word', ex.given.type]">{{ ex.given.text }}</span></span
+                                                        >
+                                                    </div>
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">when</span
+                                                        ><span class="gwt-text"
+                                                            ><span :class="['diff-word', ex.when.type]">{{ ex.when.text }}</span></span
+                                                        >
+                                                    </div>
+                                                    <div class="gwt-row">
+                                                        <span class="gwt-label">then</span
+                                                        ><span class="gwt-text"
+                                                            ><span :class="['diff-word', ex.then.type]">{{ ex.then.text }}</span></span
+                                                        >
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div v-else class="text-grey text-body-2">{{ $t('ProcessFeedback.noContent') }}</div>
@@ -323,7 +382,8 @@
                                                     v-for="(diffWord, index) in calculateStringDiff(item.before, item.after).after"
                                                     :key="`${key}-mobile-word-${index}`"
                                                     :class="['diff-word', diffWord.type]"
-                                                >{{ diffWord.text }}</span>
+                                                    >{{ diffWord.text }}</span
+                                                >
                                             </div>
                                         </template>
                                         <template v-else>
@@ -340,22 +400,19 @@
 
             <v-row v-if="!isGenerating && !isSubmitting" class="ma-0 pa-0 mt-2">
                 <v-spacer></v-spacer>
+                <v-btn @click="closeFeedback" color="gray" variant="elevated" class="rounded-pill" density="compact">{{
+                    $t('Common.cancel')
+                }}</v-btn>
                 <v-btn
-                    @click="closeFeedback"
-                    color="gray"
-                    variant="elevated" 
-                    class="rounded-pill"
-                    density="compact"
-                >{{ $t('Common.cancel') }}</v-btn>
-                <v-btn 
                     v-if="hasChanges"
                     @click="saveFeedbackDiff"
                     :disabled="!hasSelectedItems"
                     color="primary"
-                    variant="elevated" 
+                    variant="elevated"
                     class="rounded-pill ml-2"
                     density="compact"
-                >{{ $t('ProcessFeedback.applyButton') }}</v-btn>
+                    >{{ $t('ProcessFeedback.applyButton') }}</v-btn
+                >
             </v-row>
         </v-card-text>
 
@@ -364,9 +421,9 @@
                 <v-icon size="small">mdi-information-outline</v-icon>
                 <span class="text-body-1 font-weight-bold ml-2">{{ $t('ProcessFeedback.inputTitle') }}</span>
                 <div class="ml-auto d-flex align-center">
-                    <v-btn 
+                    <v-btn
                         icon
-                        variant="text" 
+                        variant="text"
                         density="compact"
                         :loading="isGenerating"
                         :disabled="isGenerating || !task"
@@ -380,7 +437,7 @@
                 </div>
             </div>
 
-            <v-textarea 
+            <v-textarea
                 v-model="feedbackValue"
                 :label="$t('ProcessFeedback.feedbackLabel')"
                 :disabled="isGenerating || isSubmitting"
@@ -388,21 +445,21 @@
                 hide-details
             />
             <div class="d-flex justify-end align-center mt-4">
-                <v-btn 
+                <v-btn
                     @click="closeFeedback"
                     color="gray"
-                    variant="elevated" 
+                    variant="elevated"
                     class="rounded-pill mr-2"
                     density="compact"
                     :disabled="isSubmitting"
                 >
                     {{ $t('Common.cancel') }}
                 </v-btn>
-                <v-btn 
+                <v-btn
                     @click="submitFeedback"
                     :disabled="!feedbackValue"
                     color="primary"
-                    variant="elevated" 
+                    variant="elevated"
                     class="rounded-pill"
                     density="compact"
                     :loading="isSubmitting"
@@ -415,13 +472,13 @@
 </template>
 
 <script>
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
     props: {
         lastMessage: Object,
-        task: Object,
+        task: Object
     },
     data() {
         return {
@@ -477,18 +534,18 @@ export default {
                 instruction: '',
                 conditionExamples: {}
             }
-        }
+        };
     },
     computed: {
         isMobile() {
             return window.innerWidth <= 768;
         },
         hasSelectedItems() {
-            return Object.values(this.diffItems).some(item => item.accepted);
+            return Object.values(this.diffItems).some((item) => item.accepted);
         },
         hasChanges() {
-            return Object.keys(this.diffItems).length > 0 && Object.values(this.diffItems).some(item => item.changed);
-        },
+            return Object.keys(this.diffItems).length > 0 && Object.values(this.diffItems).some((item) => item.changed);
+        }
     },
     mounted() {
         this.isApplyMode = false;
@@ -497,14 +554,15 @@ export default {
         // Diff UI 관련 메서드들
         calculateStringDiff(before, after) {
             if (!before || !after) return { before: before || '', after: after || '' };
-            
+
             const beforeWords = before.split(' ');
             const afterWords = after.split(' ');
             const beforeResult = [];
             const afterResult = [];
-            
-            let i = 0, j = 0;
-            
+
+            let i = 0,
+                j = 0;
+
             while (i < beforeWords.length || j < afterWords.length) {
                 if (i >= beforeWords.length) {
                     // 추가된 단어들
@@ -545,53 +603,53 @@ export default {
                     }
                 }
             }
-            
+
             return { before: beforeResult, after: afterResult };
         },
-        
+
         calculateArrayDiff(before, after) {
             if (!Array.isArray(before)) before = [];
             if (!Array.isArray(after)) after = [];
-            
-            const beforeItems = before.map(item => ({ 
-                text: typeof item === 'object' && item.name ? item.name : item, 
-                type: 'unchanged' 
+
+            const beforeItems = before.map((item) => ({
+                text: typeof item === 'object' && item.name ? item.name : item,
+                type: 'unchanged'
             }));
             const afterItems = [];
-            
+
             // 기존 항목들 처리
             before.forEach((beforeItem, index) => {
                 const beforeText = typeof beforeItem === 'object' && beforeItem.name ? beforeItem.name : beforeItem;
-                const found = after.find(afterItem => {
+                const found = after.find((afterItem) => {
                     const afterText = typeof afterItem === 'object' && afterItem.name ? afterItem.name : afterItem;
                     return beforeText === afterText;
                 });
-                
+
                 if (!found) {
                     beforeItems[index].type = 'removed';
                 }
             });
-            
+
             // 새 항목들 처리
             after.forEach((afterItem) => {
                 const afterText = typeof afterItem === 'object' && afterItem.name ? afterItem.name : afterItem;
-                const found = before.find(beforeItem => {
+                const found = before.find((beforeItem) => {
                     const beforeText = typeof beforeItem === 'object' && beforeItem.name ? beforeItem.name : beforeItem;
                     return beforeText === afterText;
                 });
-                
+
                 if (found) {
                     afterItems.push({ text: afterText, type: 'unchanged' });
                 } else {
                     afterItems.push({ text: afterText, type: 'added' });
                 }
             });
-            
+
             return { before: beforeItems, after: afterItems };
         },
 
         calculateGwtArrayDiff(beforeArr, afterArr) {
-            const normArr = (arr) => Array.isArray(arr) ? arr : [];
+            const normArr = (arr) => (Array.isArray(arr) ? arr : []);
             const before = normArr(beforeArr);
             const after = normArr(afterArr);
             const getKey = (it) => (it && (it.given || it.then || it.when)) || JSON.stringify(it || {});
@@ -605,22 +663,22 @@ export default {
                         __isNew: true,
                         given: { text: a.given || '', type: 'added' },
                         when: { text: a.when || '', type: 'added' },
-                        then: { text: a.then || '', type: 'added' },
+                        then: { text: a.then || '', type: 'added' }
                     };
                 }
                 return {
                     __isNew: false,
                     given: { text: a.given || '', type: (a.given || '') === (b.given || '') ? 'unchanged' : 'added' },
                     when: { text: a.when || '', type: (a.when || '') === (b.when || '') ? 'unchanged' : 'added' },
-                    then: { text: a.then || '', type: (a.then || '') === (b.then || '') ? 'unchanged' : 'added' },
+                    then: { text: a.then || '', type: (a.then || '') === (b.then || '') ? 'unchanged' : 'added' }
                 };
             });
         },
-        
+
         closeFeedback() {
             this.$emit('closeFeedback');
         },
-        
+
         async getFeedback() {
             if (!this.task || this.isGenerating) {
                 return;
@@ -630,7 +688,7 @@ export default {
             const obj = {
                 processDefinitionId: this.task.procDefId,
                 activityId: this.task.activityId,
-                taskId: this.task.id,
+                taskId: this.task.id
             };
             try {
                 const items = await backend.getFeedback(obj);
@@ -684,7 +742,7 @@ export default {
             }
             this.$emit('applyFeedback', this.task);
 
-            Object.keys(this.diffItems).forEach(key => {
+            Object.keys(this.diffItems).forEach((key) => {
                 if (this.diffItems[key].accepted) {
                     this.feedbackDiff[key] = this.diffItems[key].after;
                     if (key == 'conditionExamples') {
@@ -693,13 +751,12 @@ export default {
                 }
             });
             if (this.feedbackDiff && this.feedbackDiff.inputData) {
-                this.feedbackDiff.inputData = this.feedbackDiff.inputData.map(item => item.key);
+                this.feedbackDiff.inputData = this.feedbackDiff.inputData.map((item) => item.key);
             }
             await backend.applyFeedback(this.feedbackDiff, this.task.id);
-        },
-
+        }
     }
-}
+};
 </script>
 
 <style scoped>
@@ -970,11 +1027,11 @@ export default {
     .diff-card .v-card-title {
         padding: 6px 8px 4px 8px !important;
     }
-    
+
     .diff-card .v-card-text {
         padding: 0 8px 8px 8px !important;
     }
-    
+
     .mobile-content-box {
         font-size: 14px;
         line-height: 1.4;

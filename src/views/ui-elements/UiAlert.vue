@@ -27,7 +27,6 @@ const breadcrumbs = ref([
         href: '#'
     }
 ]);
-
 </script>
 
 <template>
@@ -40,32 +39,32 @@ const breadcrumbs = ref([
                     <!-- Basic -->
                     <v-col cols="12">
                         <UiChildCard title="Basic">
-                            <Basic/>
+                            <Basic />
                         </UiChildCard>
                     </v-col>
                     <!-- Filled -->
                     <v-col cols="12">
                         <UiChildCard title="Filled">
-                            <Filled/>
+                            <Filled />
                         </UiChildCard>
                     </v-col>
                     <!-- Outlined -->
                     <v-col cols="12">
                         <UiChildCard title="Outlined">
-                            <Outlined/>
+                            <Outlined />
                         </UiChildCard>
                     </v-col>
-                    
+
                     <!-- Description -->
                     <v-col cols="12">
                         <UiChildCard title="Description">
-                            <Description/>
+                            <Description />
                         </UiChildCard>
                     </v-col>
                     <!-- With Action -->
                     <v-col cols="12">
                         <UiChildCard title="Action">
-                            <Action/>
+                            <Action />
                         </UiChildCard>
                     </v-col>
                     <!-- With Icons -->
@@ -74,11 +73,11 @@ const breadcrumbs = ref([
                             <!-- <Icons/> -->
                         </UiChildCard>
                     </v-col>
-                    
+
                     <!-- Closable -->
                     <v-col cols="12">
                         <UiChildCard title="Closable">
-                            <Closable/>
+                            <Closable />
                         </UiChildCard>
                     </v-col>
                 </v-row>

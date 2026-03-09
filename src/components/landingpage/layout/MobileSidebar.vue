@@ -87,13 +87,20 @@ const customizer = useCustomizerStore();
         </v-list> -->
         <v-list class="py-0 px-2">
             <v-list-item rounded="md">
-                <v-btn variant="text" class="custom-hover-primary px-0 text-left" flat
-                    href="https://demos.wrappixel.com/premium/vue/modernize-vuejs/docs/index.html" target="_blank">
+                <v-btn
+                    variant="text"
+                    class="custom-hover-primary px-0 text-left"
+                    flat
+                    href="https://demos.wrappixel.com/premium/vue/modernize-vuejs/docs/index.html"
+                    target="_blank"
+                >
                     <h5 class="text-subtitle-1">Documentation</h5>
                 </v-btn>
             </v-list-item>
             <v-list-item class="mt-2" rounded="md">
-                <v-btn class="custom-hover-primary bg-primary" block flat href="/auth/login" target="_blank">{{ $t('mainPage.login') }}</v-btn>
+                <v-btn class="custom-hover-primary bg-primary" block flat href="/auth/login" target="_blank">{{
+                    $t('mainPage.login')
+                }}</v-btn>
             </v-list-item>
         </v-list>
     </div>

@@ -28,4 +28,4 @@ class PCMAudioProcessor extends AudioWorkletProcessor {
     }
 }
 
-registerProcessor("audio-processor-worklet", PCMAudioProcessor);
+registerProcessor('audio-processor-worklet', PCMAudioProcessor);

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
-const dialogm1 = ref("");
+import { ref } from 'vue';
+const dialogm1 = ref('');
 const dialog = ref(false);
 </script>
 
@@ -37,12 +37,8 @@ const dialog = ref(false);
                 </v-card-text>
                 <v-divider></v-divider>
                 <v-card-actions>
-                    <v-btn color="error" variant="tonal" @click="dialog = false" class="px-4 rounded-pill">
-                        Close
-                    </v-btn>
-                    <v-btn color="success" variant="tonal" @click="dialog = false" class="px-4 rounded-pill">
-                        Save
-                    </v-btn>
+                    <v-btn color="error" variant="tonal" @click="dialog = false" class="px-4 rounded-pill"> Close </v-btn>
+                    <v-btn color="success" variant="tonal" @click="dialog = false" class="px-4 rounded-pill"> Save </v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>

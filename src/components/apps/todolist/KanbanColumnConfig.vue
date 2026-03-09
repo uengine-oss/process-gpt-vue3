@@ -1,8 +1,7 @@
-<template>
-</template>
+<template></template>
 
 <script>
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -37,7 +36,7 @@ export default {
         offset: 10,
         currentPage: 0,
         dialog: false,
-        userList: [],
+        userList: []
     }),
     async mounted() {
         await this.loadUserInfo();
@@ -45,14 +44,14 @@ export default {
     computed: {
         mode() {
             return window.$mode;
-        },    
+        }
     },
     methods: {
         async loadUserInfo() {
             try {
                 // 슈퍼베이스에서 사용자 목록 가져오기
                 const userList = await backend.getUserList();
-                
+
                 // 사용자 목록 저장
                 if (userList && userList.length > 0) {
                     this.userList = userList;
@@ -60,9 +59,9 @@ export default {
             } catch (error) {
                 console.error('Error in loadUserInfo:', error);
             }
-        },
-    },
-}
+        }
+    }
+};
 </script>
 
 <style>
@@ -73,4 +72,3 @@ export default {
     z-index: 1000;
 }
 </style>
-

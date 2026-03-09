@@ -1,9 +1,9 @@
 import en from './en.json';
-import ko from './ko.json'
+import ko from './ko.json';
 
 const messages = {
     en: en,
-    ko: ko,
+    ko: ko
 };
 
 export default messages;

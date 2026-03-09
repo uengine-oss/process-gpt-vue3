@@ -11,12 +11,10 @@ const items = shallowRef([
     { tab: 'Friends', icon: UsersIcon, href: '/apps/user/profiletwo/friends' },
     { tab: 'Gallery', icon: PhotoIcon, href: '/apps/user/profiletwo/gallery' }
 ]);
-
-
 </script>
 
 <template>
-    <v-card elevation="10" class="overflow-hidden" >
+    <v-card elevation="10" class="overflow-hidden">
         <img :src="profileBg" alt="profile" class="w-100" />
         <div>
             <v-row class="mt-1">
@@ -55,29 +53,27 @@ const items = shallowRef([
                 <v-col cols="12" lg="4" class="d-flex align-center justify-center justify-lg-end order-sm-third text-sm-right text-center">
                     <div class="d-sm-flex align-center justify-sm-space-between justify-center px-sm-10 py-1 gap-3">
                         <div class="d-flex gap-3">
-                        <v-btn icon variant="flat" size="x-small" color="primary" class="btn-brand-facebook"
-                            ><BrandFacebookIcon size="16"
-                        /></v-btn>
-                        <v-btn icon variant="flat" size="x-small" color="info" class="btn-brand-twitter"
-                            ><BrandTwitterIcon size="16"
-                        /></v-btn>
-                        <v-btn icon variant="flat" size="x-small" color="secondary" class="btn-brand-dribbble"
-                            ><BrandDribbbleIcon size="16"
-                        /></v-btn>
-                        <v-btn icon variant="flat" size="x-small" color="error" class="btn-brand-youtube"
-                            ><BrandYoutubeIcon size="16"
-                        /></v-btn>
+                            <v-btn icon variant="flat" size="x-small" color="primary" class="btn-brand-facebook"
+                                ><BrandFacebookIcon size="16"
+                            /></v-btn>
+                            <v-btn icon variant="flat" size="x-small" color="info" class="btn-brand-twitter"
+                                ><BrandTwitterIcon size="16"
+                            /></v-btn>
+                            <v-btn icon variant="flat" size="x-small" color="secondary" class="btn-brand-dribbble"
+                                ><BrandDribbbleIcon size="16"
+                            /></v-btn>
+                            <v-btn icon variant="flat" size="x-small" color="error" class="btn-brand-youtube"
+                                ><BrandYoutubeIcon size="16"
+                            /></v-btn>
                         </div>
-                        <v-btn  color="primary" class="px-6 mt-sm-0 mt-4" size="large">Add to Story</v-btn>
+                        <v-btn color="primary" class="px-6 mt-sm-0 mt-4" size="large">Add to Story</v-btn>
                     </div>
                 </v-col>
-                <v-col md="12" class="order-sm-last"> 
+                <v-col md="12" class="order-sm-last">
                     <v-tabs v-model="tab" color="primary" dark class="profiletab bg-lightinfo">
                         <v-tab v-for="item in items" :key="item.tab" :to="item.href" class="text-grey200">
-                            <component :is="item.icon" size="18" stroke-width="1.5"
-                                    class="mr-sm-2 text-h6 text-grey200 icon">
-                                </component>
-                                <span class="d-sm-flex d-none">{{ item.tab }}</span>
+                            <component :is="item.icon" size="18" stroke-width="1.5" class="mr-sm-2 text-h6 text-grey200 icon"> </component>
+                            <span class="d-sm-flex d-none">{{ item.tab }}</span>
                         </v-tab>
                     </v-tabs>
                 </v-col>
@@ -110,11 +106,11 @@ const items = shallowRef([
         background: transparent;
     }
 }
-.profiletab{
-    .v-tab.v-tab{
-        &.v-slide-group-item--active{
+.profiletab {
+    .v-tab.v-tab {
+        &.v-slide-group-item--active {
             color: rgb(var(--v-theme-primary)) !important;
-            .icon{
+            .icon {
                 color: rgb(var(--v-theme-primary)) !important;
             }
         }

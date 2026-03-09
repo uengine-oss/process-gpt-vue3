@@ -21,8 +21,6 @@ import image4 from '@/assets/images/profile/user4.jpg';
 import image5 from '@/assets/images/profile/user5.jpg';
 import image6 from '@/assets/images/profile/user6.jpg';
 
-
-
 // types
 export type KeyedObject = {
     [key: string]: string | number | KeyedObject | any;
@@ -33,39 +31,39 @@ export type KeyedObject = {
 const photos: KeyedObject[] = [
     {
         id: '#1Photos',
-        avatar: image1,
+        avatar: image1
     },
     {
         id: '#2Photos',
-        avatar: image2,
+        avatar: image2
     },
     {
         id: '#3Photos',
-        avatar: image3,
+        avatar: image3
     },
     {
         id: '#4Photos',
-        avatar: image4,
+        avatar: image4
     },
     {
         id: '#5Photos',
-        avatar: image5,
+        avatar: image5
     },
     {
         id: '#6Photos',
-        avatar: image6,
+        avatar: image6
     },
     {
         id: '#7Photos',
-        avatar: image1,
+        avatar: image1
     },
     {
         id: '#8Photos',
-        avatar: image2,
+        avatar: image2
     },
     {
         id: '#9Photos',
-        avatar: image3,
+        avatar: image3
     }
 ];
 

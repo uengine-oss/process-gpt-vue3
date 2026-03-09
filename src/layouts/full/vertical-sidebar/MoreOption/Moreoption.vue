@@ -17,5 +17,6 @@ import { CircleIcon } from 'vue-tabler-icons';
         </template>
         <v-list-item-title>
             {{ $t(item.title) }}
-    </v-list-item-title>
-</v-list-item></template>
+        </v-list-item-title>
+    </v-list-item>
+</template>

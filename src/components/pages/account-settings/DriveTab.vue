@@ -1,32 +1,61 @@
 <template>
     <v-card elevation="10">
         <v-card-text class="pt-2">
-            <v-alert
-                v-if="driveFolderJobStatus === 'running'"
-                type="info"
-                variant="tonal"
-                class="mb-4"
-            >
+            <v-alert v-if="driveFolderJobStatus === 'running'" type="info" variant="tonal" class="mb-4">
                 {{ $t('accountTab.driveIndexingInProgress') }}
-                <span v-if="driveFolderJobProgress && (driveFolderJobProgress.total || driveFolderJobProgress.processed || driveFolderJobProgress.failed)">
-                    ({{ driveFolderJobProgress.processed || 0 }}/{{ driveFolderJobProgress.total || '?' }}, failed: {{ driveFolderJobProgress.failed || 0 }})
+                <span
+                    v-if="
+                        driveFolderJobProgress &&
+                        (driveFolderJobProgress.total || driveFolderJobProgress.processed || driveFolderJobProgress.failed)
+                    "
+                >
+                    ({{ driveFolderJobProgress.processed || 0 }}/{{ driveFolderJobProgress.total || '?' }}, failed:
+                    {{ driveFolderJobProgress.failed || 0 }})
                 </span>
             </v-alert>
             <div class="mt-6">
                 <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.clientId') }}</v-label>
-                <v-text-field color="primary" variant="outlined" type="text" v-model="driveInfo.client_id" hide-details :disabled="!isEditMode"></v-text-field>
+                <v-text-field
+                    color="primary"
+                    variant="outlined"
+                    type="text"
+                    v-model="driveInfo.client_id"
+                    hide-details
+                    :disabled="!isEditMode"
+                ></v-text-field>
             </div>
             <div class="mt-6">
                 <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.clientSecret') }}</v-label>
-                <v-text-field color="primary" variant="outlined" type="password" v-model="driveInfo.client_secret" hide-details :disabled="!isEditMode"></v-text-field>
+                <v-text-field
+                    color="primary"
+                    variant="outlined"
+                    type="password"
+                    v-model="driveInfo.client_secret"
+                    hide-details
+                    :disabled="!isEditMode"
+                ></v-text-field>
             </div>
             <div class="mt-6">
                 <v-label class="mb-2 font-weight-medium">Redirect URI</v-label>
-                <v-text-field color="primary" variant="outlined" type="text" v-model="driveInfo.redirect_uri" hide-details :disabled="!isEditMode"></v-text-field>
+                <v-text-field
+                    color="primary"
+                    variant="outlined"
+                    type="text"
+                    v-model="driveInfo.redirect_uri"
+                    hide-details
+                    :disabled="!isEditMode"
+                ></v-text-field>
             </div>
             <div class="mt-6">
                 <v-label class="mb-2 font-weight-medium">{{ $t('accountTab.folderId') }}</v-label>
-                <v-text-field color="primary" variant="outlined" type="text" v-model="driveInfo.drive_folder_id" hide-details :disabled="!isEditMode"></v-text-field>
+                <v-text-field
+                    color="primary"
+                    variant="outlined"
+                    type="text"
+                    v-model="driveInfo.drive_folder_id"
+                    hide-details
+                    :disabled="!isEditMode"
+                ></v-text-field>
             </div>
         </v-card-text>
 
@@ -39,24 +68,13 @@
                 color="success"
                 variant="elevated"
                 class="rounded-pill"
-            >{{ $t('accountTab.processDocuments') }}</v-btn>
+                >{{ $t('accountTab.processDocuments') }}</v-btn
+            >
             <div v-if="isEditMode">
-                <v-btn @click="cancelEdit"
-                    color="grey"
-                    variant="elevated"
-                    class="rounded-pill mr-2"
-                >{{ $t('accountTab.cancel') }}</v-btn>
-                <v-btn @click="saveDriveInfo"
-                    color="primary"
-                    variant="elevated"
-                    class="rounded-pill"
-                >{{ $t('accountTab.save') }}</v-btn>
+                <v-btn @click="cancelEdit" color="grey" variant="elevated" class="rounded-pill mr-2">{{ $t('accountTab.cancel') }}</v-btn>
+                <v-btn @click="saveDriveInfo" color="primary" variant="elevated" class="rounded-pill">{{ $t('accountTab.save') }}</v-btn>
             </div>
-            <v-btn v-else @click="startEdit"
-                color="primary"
-                variant="elevated"
-                class="rounded-pill"
-            >{{ $t('accountTab.edit') }}</v-btn>
+            <v-btn v-else @click="startEdit" color="primary" variant="elevated" class="rounded-pill">{{ $t('accountTab.edit') }}</v-btn>
         </v-card-actions>
     </v-card>
 </template>
@@ -79,9 +97,9 @@ export default {
             client_id: '',
             client_secret: '',
             drive_folder_id: '',
-            redirect_uri: '',
+            redirect_uri: ''
         },
-        savedDriveInfo: null,
+        savedDriveInfo: null
     }),
     computed: {
         canProcessDriveFolder() {
@@ -101,8 +119,8 @@ export default {
                 if (newVal.code && newVal.state && newVal.scope) {
                     this.getOAuth();
                 }
-            },
-        },
+            }
+        }
     },
     async mounted() {
         const value = await backend.getDriveInfo();
@@ -175,7 +193,7 @@ export default {
             this.driveFolderJobProgress = {
                 total: res?.total ?? res?.progress?.total,
                 processed: res?.processed ?? res?.progress?.processed,
-                failed: res?.failed ?? res?.progress?.failed,
+                failed: res?.failed ?? res?.progress?.failed
             };
             this.driveFolderJobError = res?.error || null;
 
@@ -252,7 +270,7 @@ export default {
                     this.savedDriveInfo = JSON.parse(JSON.stringify(this.driveInfo));
                     this.isEditMode = false;
                 },
-                successMsg: "구글 드라이브 연동 정보가 저장되었습니다."
+                successMsg: '구글 드라이브 연동 정보가 저장되었습니다.'
             });
         },
         processDriveFolderDocuments() {

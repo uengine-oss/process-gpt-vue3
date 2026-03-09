@@ -12,13 +12,13 @@ export default class AIGenerator {
      * @param {string} options.azureResource - Azure 리소스 이름 (Azure 사용시 필수)
      * @param {string} options.azureDeployment - Azure 배포 이름 (Azure 사용시 필수)
      * @param {string} options.azureApiVersion - Azure API 버전 (기본값: '2024-02-15-preview')
-     * 
+     *
      * 사용 예시:
      * // OpenAI 사용
      * const generator = new AIGenerator(client, { provider: 'openai' });
-     * 
+     *
      * // Azure OpenAI 사용
-     * const generator = new AIGenerator(client, { 
+     * const generator = new AIGenerator(client, {
      *   provider: 'azure',
      *   azureResource: 'your-resource-name',
      *   azureDeployment: 'your-deployment-name',
@@ -69,7 +69,7 @@ export default class AIGenerator {
         }
 
         this.cacheReplayDelay = this.options.cacheReplayDelay ? this.options.cacheReplayDelay : 3000;
-        
+
         // Vite dev server에서는 /langchain-chat 프록시를 사용하고,
         // 빌드/배포(nginx)에서는 /completion prefix 경로를 사용한다.
         this.backendUrl = import.meta.env.DEV ? '/langchain-chat' : '/completion/langchain-chat';
@@ -78,7 +78,7 @@ export default class AIGenerator {
             temperature: 1,
             frequency_penalty: 0,
             presence_penalty: 0
-        }
+        };
 
         const llmConfig = getLLMConfig(options?.llmPurpose || 'default');
         this.forced_vendor = llmConfig.vendor;
@@ -103,18 +103,15 @@ export default class AIGenerator {
         this.backgroundRequestId = requestId;
         this.backgroundChatRoomId = chatRoomId;
         this.lastMessageData = messageData;
-        
+
         // ChatBackgroundManager에 등록
-        import('./ChatBackgroundManager.js').then(({ default: ChatBgManager }) => {
-            ChatBgManager.registerBackgroundRequest(
-                requestId, 
-                this, 
-                chatRoomId, 
-                messageData
-            );
-        }).catch(error => {
-            console.error('[AIGenerator] ChatBackgroundManager 로드 실패:', error);
-        });
+        import('./ChatBackgroundManager.js')
+            .then(({ default: ChatBgManager }) => {
+                ChatBgManager.registerBackgroundRequest(requestId, this, chatRoomId, messageData);
+            })
+            .catch((error) => {
+                console.error('[AIGenerator] ChatBackgroundManager 로드 실패:', error);
+            });
     }
 
     generateHashKey(str) {
@@ -216,12 +213,12 @@ export default class AIGenerator {
                 headers: authHeaders,
                 credentials: 'include'
             });
-            if(response.status == 401){
+            if (response.status == 401) {
                 // access_token이 만료되어서 접속이 안되는 경우가 있기 때문에 이런 경우, 강재로 세션을 갱신 후, 재시도
                 const backend = BackendFactory.createBackend();
                 const tenantId = window.$tenantName;
-                await backend.setTenant(tenantId)
-                
+                await backend.setTenant(tenantId);
+
                 response = await fetch(`${this.backendUrl}/sanity-check`, {
                     headers: this.getAuthHeaders(),
                     credentials: 'include'
@@ -245,31 +242,28 @@ export default class AIGenerator {
         let me = this;
 
         let messages = this.createMessages();
-        let messagesToSend
-        if(this.client.genType == 'form'){
+        let messagesToSend;
+        if (this.client.genType == 'form') {
             messagesToSend = await this.createMessagesAsync(this.previousMessages);
         } else {
             messagesToSend = await this.createMessagesAsync();
         }
-        if(messagesToSend && messagesToSend.length > 0)
-            messages = messagesToSend;
+        if (messagesToSend && messagesToSend.length > 0) messages = messagesToSend;
 
         if (this.returnCache(messages)) return;
 
-        
         const isBackendConnected = await this.checkBackendConnection();
         if (!isBackendConnected) {
-            const errorMessage = "Failed to connect to the backend server for AI communication. Please check if the backend is operational.";
+            const errorMessage =
+                'Failed to connect to the backend server for AI communication. Please check if the backend is operational.';
 
             console.error(errorMessage);
             alert(errorMessage);
-            if (me.client.onError)
-                me.client.onError({ message: errorMessage });
+            if (me.client.onError) me.client.onError({ message: errorMessage });
 
             me.state = 'error';
             return;
         }
-
 
         let responseCnt = 0;
 
@@ -290,12 +284,12 @@ export default class AIGenerator {
         // });
 
         // this.provider = apiProvider?.value || 'openai';
-        
+
         // const response = await storage.getObject('api_key', {
         //     match: {
         //         key: this.provider
         //     }
-        // }); 
+        // });
         // const apiToken = response?.value || null;
         // if(!apiToken){
         //     const errorMessage = `${this.provider.toUpperCase()} API 키가 설정되지 않았습니다. 관리자에게 문의하세요.`;
@@ -308,7 +302,7 @@ export default class AIGenerator {
         // // Provider에 따라 URL과 헤더 설정
         // let url, headers;
         // if (this.provider === 'azure') {
-            
+
         //     this.azureEndpoint = "https://multiagent-openai-service.openai.azure.com";
         //     this.azureDeployment = "gpt-4.1-mini";
         //     this.azureApiVersion = "2024-02-15-preview";
@@ -328,16 +322,16 @@ export default class AIGenerator {
         //         "Authorization": "Bearer " + apiToken
         //     };
         // }
-        
+
         // const xhr = new XMLHttpRequest();
         // xhr.open("POST", url);
-        
+
         // // 헤더 설정
         // Object.keys(headers).forEach(key => {
         //     xhr.setRequestHeader(key, headers[key]);
         // });
-        
-        if(this.client.chatRoomId){
+
+        if (this.client.chatRoomId) {
             xhr.originalChatRoomId = this.client.chatRoomId;
         }
 
@@ -352,31 +346,33 @@ export default class AIGenerator {
             // console.log("Data: " + xhr.responseText);
             const newUpdates = xhr.responseText.replace('data: [DONE]', '').trim().split('data: ').filter(Boolean);
 
-            const newUpdatesParsed = newUpdates.map((update) => {
-                try {
-                    const parsed = JSON.parse(update);
+            const newUpdatesParsed = newUpdates
+                .map((update) => {
+                    try {
+                        const parsed = JSON.parse(update);
 
-                    if (parsed.error) {
-                        if (me.client.onError) {
-                            me.client.onError(parsed.error);
+                        if (parsed.error) {
+                            if (me.client.onError) {
+                                me.client.onError(parsed.error);
+                            }
+                            throw new Error(parsed.error.message);
                         }
-                        throw new Error(parsed.error.message);
-                    }
 
-                    currentResId = parsed.id;
-                    if (!me.gptResponseId) {
-                        me.gptResponseId = parsed.id;
+                        currentResId = parsed.id;
+                        if (!me.gptResponseId) {
+                            me.gptResponseId = parsed.id;
+                        }
+                        if (parsed.choices.length > 0 && parsed.choices[0].finish_reason == 'length') {
+                            me.finish_reason = 'length';
+                        }
+
+                        return parsed.choices[0]?.delta?.content || parsed.choices[0]?.message?.content || '';
+                    } catch (parseError) {
+                        console.warn('[AIGenerator] JSON 파싱 실패, 청크 건너뜀:', parseError.message);
+                        return '';
                     }
-                    if (parsed.choices.length > 0 && parsed.choices[0].finish_reason == 'length') {
-                        me.finish_reason = 'length';
-                    }
-                    
-                    return parsed.choices[0]?.delta?.content || parsed.choices[0]?.message?.content || '';
-                } catch (parseError) {
-                    console.warn('[AIGenerator] JSON 파싱 실패, 청크 건너뜀:', parseError.message);
-                    return '';
-                }
-            }).filter(Boolean);
+                })
+                .filter(Boolean);
 
             const newUpdatesJoined = newUpdatesParsed.join('');
             if (newUpdatesJoined.includes(': null')) {
@@ -405,32 +401,32 @@ export default class AIGenerator {
         xhr.onerror = function () {
             console.error('XHR 요청 실패:', xhr);
             me.state = 'error';
-            const errorMessage = "AI 서버와 통신 중 네트워크 오류가 발생했습니다.";
-            
+            const errorMessage = 'AI 서버와 통신 중 네트워크 오류가 발생했습니다.';
+
             if (me.client.onError) {
                 me.client.onError({ message: errorMessage });
             }
         };
-        
-        xhr.onreadystatechange = function() {
+
+        xhr.onreadystatechange = function () {
             if (xhr.readyState === 4 && xhr.status !== 200) {
                 console.error('HTTP 응답 에러:', xhr.status, xhr.statusText);
                 me.state = 'error';
-                
-                let errorMessage = "AI 서버로부터 요청이 실패했습니다. ";
-                
+
+                let errorMessage = 'AI 서버로부터 요청이 실패했습니다. ';
+
                 if (xhr.status === 401 || xhr.status === 403) {
-                    errorMessage += "인증 오류가 발생했습니다. API 키를 확인해주세요.";
+                    errorMessage += '인증 오류가 발생했습니다. API 키를 확인해주세요.';
                 } else if (xhr.status === 404) {
-                    errorMessage += "요청한 리소스를 찾을 수 없습니다.";
+                    errorMessage += '요청한 리소스를 찾을 수 없습니다.';
                 } else if (xhr.status === 429) {
-                    errorMessage += "너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.";
+                    errorMessage += '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.';
                 } else if (xhr.status >= 500) {
-                    errorMessage += "서버 오류가 발생했습니다. (상태 코드: " + xhr.status + ")";
+                    errorMessage += '서버 오류가 발생했습니다. (상태 코드: ' + xhr.status + ')';
                 } else {
-                    errorMessage += "오류 코드: " + xhr.status;
+                    errorMessage += '오류 코드: ' + xhr.status;
                 }
-                
+
                 if (me.client.onError) {
                     me.client.onError({ message: errorMessage });
                 }
@@ -441,7 +437,7 @@ export default class AIGenerator {
             console.log('End to Success - onloadend', xhr);
             me.state = 'end';
             let model = me.createModel(me.modelJson);
-            console.log("[*][AIGenerator] 백엔드 서버에서 최종적인 응답 데이터 구축 완료", {modelJson: me.modelJson});
+            console.log('[*][AIGenerator] 백엔드 서버에서 최종적인 응답 데이터 구축 완료', { modelJson: me.modelJson });
 
             if (me.isBackgroundMode) {
                 // 백그라운드 모드에서는 매니저를 통해 처리
@@ -453,7 +449,7 @@ export default class AIGenerator {
                 }
 
                 if (!me.stopSignaled) {
-                    if(me.client.genType && me.client.genType == 'form'){
+                    if (me.client.genType && me.client.genType == 'form') {
                         if (me.client.onFormCreated) {
                             me.client.onFormCreated(model);
                         }
@@ -465,7 +461,7 @@ export default class AIGenerator {
                             me.client.onModelCreated(model);
                         }
                         if (me.client.onGenerationFinished) {
-                            if(xhr.originalChatRoomId){
+                            if (xhr.originalChatRoomId) {
                                 me.client.onGenerationFinished(model, xhr.originalChatRoomId);
                             } else {
                                 me.client.onGenerationFinished(model);
@@ -487,11 +483,11 @@ export default class AIGenerator {
 
         this._addDetailHighToImageUrl(messages);
         const data = {
-            vendor: this.forced_vendor || this.vendor,  // OpenAI API에서는 불필요
+            vendor: this.forced_vendor || this.vendor, // OpenAI API에서는 불필요
             model: this.forced_model || this.model,
             messages: messages,
             stream: this.options.isStream || true,
-            modelConfig: this.forced_model_config || this.modelConfig  // OpenAI API에서는 불필요
+            modelConfig: this.forced_model_config || this.modelConfig // OpenAI API에서는 불필요
             // temperature: this.forced_model_config?.temperature || this.modelConfig.temperature,
             // top_p: this.forced_model_config?.top_p || 0.9,
             // frequency_penalty: this.forced_model_config?.frequency_penalty || this.modelConfig.frequency_penalty,
@@ -507,7 +503,7 @@ export default class AIGenerator {
             me.stopSignaled = false;
         }
 
-        console.log("[*][AIGenerator] 백엔드 서버로 LLM 요청 데이터 전송", {requestData: data});
+        console.log('[*][AIGenerator] 백엔드 서버로 LLM 요청 데이터 전송', { requestData: data });
         xhr.send(JSON.stringify(data));
     }
 
@@ -520,9 +516,9 @@ export default class AIGenerator {
     }
 
     _addDetailHighToImageUrl(messages) {
-        messages.forEach(message => {
-            if(!message.content || typeof message.content !== 'object') return;
-            message.content.forEach(content => {
+        messages.forEach((message) => {
+            if (!message.content || typeof message.content !== 'object') return;
+            message.content.forEach((content) => {
                 if (content.type === 'image_url' && content.image_url) {
                     content.image_url.detail = 'high';
                 }
@@ -552,7 +548,7 @@ export default class AIGenerator {
     }
 
     async createMessagesAsync() {
-        return []
+        return [];
     }
 
     continue() {
@@ -566,21 +562,23 @@ export default class AIGenerator {
 
     handleBackgroundComplete(model) {
         console.log('[AIGenerator] 백그라운드 완료 처리 시작');
-        import('./ChatBackgroundManager.js').then(({ default: ChatBgManager }) => {
-            ChatBgManager.handleBackgroundComplete(
-                this.backgroundRequestId, 
-                model,
-                this.backgroundChatRoomId // 원래 채팅방 ID 전달
-            );
-            
-            // 백그라운드 모드 종료
-            this.isBackgroundMode = false;
-            this.backgroundRequestId = null;
-            this.backgroundChatRoomId = null;
-            this.lastMessageData = null;
-            console.log('[AIGenerator] 백그라운드 모드 종료됨');
-        }).catch(error => {
-            console.error('[AIGenerator] 백그라운드 완료 처리 실패:', error);
-        });
+        import('./ChatBackgroundManager.js')
+            .then(({ default: ChatBgManager }) => {
+                ChatBgManager.handleBackgroundComplete(
+                    this.backgroundRequestId,
+                    model,
+                    this.backgroundChatRoomId // 원래 채팅방 ID 전달
+                );
+
+                // 백그라운드 모드 종료
+                this.isBackgroundMode = false;
+                this.backgroundRequestId = null;
+                this.backgroundChatRoomId = null;
+                this.lastMessageData = null;
+                console.log('[AIGenerator] 백그라운드 모드 종료됨');
+            })
+            .catch((error) => {
+                console.error('[AIGenerator] 백그라운드 완료 처리 실패:', error);
+            });
     }
 }

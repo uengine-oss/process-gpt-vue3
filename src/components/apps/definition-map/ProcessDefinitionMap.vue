@@ -59,22 +59,24 @@
                         :class="globalIsMobile.value ? 'justify-end flex-shrink-0' : ''"
                         style="gap: 8px; flex: 1; min-width: 0; justify-content: flex-end"
                     >
-                        <!-- 검색 기능: 아이콘 클릭 시 입력 필드 확대 (확대 전에는 아이콘만, 테두리 없음) -->
+                        <!-- 검색 기능 -->
                         <div
                             v-if="!gs"
                             class="d-flex align-center header-search overflow-hidden"
                             :class="{
-                                'header-search-expanded border border-borderColor rounded-pill': isSearchExpanded
+                                'header-search-expanded border border-borderColor rounded-pill': isSearchExpanded || globalIsMobile.value
                             }"
                         >
                             <div
+                                v-if="!globalIsMobile.value"
                                 class="header-search-icon-wrap d-flex align-center justify-center flex-shrink-0"
                                 @click="toggleSearchExpand"
                             >
                                 <Icons :icon="'magnifer-linear'" :size="20" />
                             </div>
+                            <Icons v-else :icon="'magnifer-linear'" :size="20" class="ml-3 flex-shrink-0" />
                             <v-text-field
-                                v-show="isSearchExpanded"
+                                v-show="isSearchExpanded || globalIsMobile.value"
                                 ref="searchInput"
                                 :model-value="searchInputValue"
                                 @update:model-value="searchInputValue = $event"
@@ -99,89 +101,141 @@
                             <Icons :icon="'arrow-go-back'" />
                         </v-btn>
                     </div>
-                    <!-- 미분류 프로세스 관리 버튼 -->
-                    <v-tooltip
-                        v-if="enableEdit && orphanProcessCount > 0"
-                        :text="$t('processDefinitionMap.manageOrphans') || '미분류 프로세스 관리'"
-                    >
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="openOrphanDialog">
-                                <v-badge :content="orphanProcessCount" color="warning" overlap>
-                                    <v-icon size="20">mdi-folder-question</v-icon>
-                                </v-badge>
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                    <!-- PC: 툴팁 + 아이콘 버튼 -->
+                    <template v-if="!globalIsMobile.value">
+                        <v-tooltip
+                            v-if="enableEdit && orphanProcessCount > 0"
+                            :text="$t('processDefinitionMap.manageOrphans') || '미분류 프로세스 관리'"
+                        >
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" :size="24" class="ml-3" @click="openOrphanDialog">
+                                    <v-badge :content="orphanProcessCount" color="warning" overlap>
+                                        <v-icon size="20">mdi-folder-question</v-icon>
+                                    </v-badge>
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
 
-                    <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" class="ml-3" @click="closePDM()" icon variant="text" :size="24">
-                                <Icons :icon="'close'" :size="20" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                        <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" class="ml-3" @click="closePDM()" icon variant="text" :size="24">
+                                    <Icons :icon="'close'" :size="20" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props"
-                                @click="openAlertDialog"
-                                icon variant="text"
-                                size="24"
-                            >
-                                <Icons :icon="'pencil'" :size="18" />
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinitionMap.unlock') }}</span>
-                    </v-tooltip>
+                        <v-tooltip v-if="!gs" :text="$t('processDefinitionMap.downloadImage')">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
+                                    <Icons :icon="'image-download'" />
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
-                                <Icons :icon="'save'" :size="24" />
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinitionMap.lock') }}</span>
-                    </v-tooltip>
+                        <v-tooltip location="bottom" v-if="useLock && !lock && isAdmin && !isViewMode">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" @click="openAlertDialog" icon variant="text" size="24">
+                                    <Icons :icon="'pencil'" :size="18" />
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processDefinitionMap.unlock') }}</span>
+                        </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
-                                <LockIcon width="24" height="24" />
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinitionMap.unlock') }}</span>
-                    </v-tooltip>
+                        <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName == editUser">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" size="24" class="cp-lock" @click="openAlertDialog">
+                                    <Icons :icon="'save'" :size="24" />
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processDefinitionMap.lock') }}</span>
+                        </v-tooltip>
 
-                    <v-tooltip location="bottom" v-if="!useLock">
-                        <template v-slot:activator="{ props }">
-                            <v-btn
-                                v-bind="props"
-                                icon
-                                variant="text"
-                                size="24"
-                                @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
-                            >
-                                <Icons :icon="'save'" />
-                            </v-btn>
-                        </template>
-                        <span>{{ $t('processDefinitionMap.save') }}</span>
-                    </v-tooltip>
+                        <v-tooltip location="bottom" v-if="useLock && lock && isAdmin && userName != editUser">
+                            <template v-slot:activator="{ props }">
+                                <v-btn v-bind="props" icon variant="text" size="24" @click="openAlertDialog">
+                                    <LockIcon width="24" height="24" />
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processDefinitionMap.unlock') }}</span>
+                        </v-tooltip>
 
-                    <v-tooltip v-if="!gs" :text="$t('processDefinitionMap.downloadImage')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" @click="capturePng">
-                                <Icons :icon="'image-download'" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                        <v-tooltip location="bottom" v-if="!useLock">
+                            <template v-slot:activator="{ props }">
+                                <v-btn
+                                    v-bind="props"
+                                    icon
+                                    variant="text"
+                                    size="24"
+                                    @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
+                                >
+                                    <Icons :icon="'save'" />
+                                </v-btn>
+                            </template>
+                            <span>{{ $t('processDefinitionMap.save') }}</span>
+                        </v-tooltip>
+                    </template>
 
-                    <v-tooltip v-if="isExecutionByProject" :text="$t('organizationChartDefinition.close')">
-                        <template v-slot:activator="{ props }">
-                            <v-btn v-bind="props" icon variant="text" size="24" @click="closePDM()">
-                                <Icons :icon="'close'" :size="20" />
-                            </v-btn>
-                        </template>
-                    </v-tooltip>
+                    <!-- 모바일: 텍스트 버튼 가로 배치, 우측 정렬 -->
+                    <div v-else class="d-flex align-center ga-2" style="justify-content: flex-end">
+                        <v-btn
+                            v-if="enableEdit && orphanProcessCount > 0"
+                            @click="openOrphanDialog"
+                            color="gray"
+                            rounded="pill"
+                            variant="flat"
+                            size="small"
+                            >{{ $t('processDefinitionMap.mobileOrphanBtn') }} ({{ orphanProcessCount }})</v-btn
+                        >
+
+                        <v-btn v-if="!gs" @click="capturePng" color="gray" rounded="pill" variant="flat" size="small">{{
+                            $t('processDefinitionMap.mobileDownloadImageBtn')
+                        }}</v-btn>
+
+                        <v-btn v-if="isExecutionByProject" @click="closePDM()" color="gray" rounded="pill" variant="flat" size="small">{{
+                            $t('processDefinitionMap.mobileCloseBtn')
+                        }}</v-btn>
+
+                        <v-btn
+                            v-if="useLock && !lock && isAdmin && !isViewMode"
+                            @click="openAlertDialog"
+                            color="primary"
+                            rounded="pill"
+                            variant="flat"
+                            size="small"
+                            >{{ $t('processDefinitionMap.mobileEditBtn') }}</v-btn
+                        >
+
+                        <v-btn
+                            v-if="useLock && lock && isAdmin && userName == editUser"
+                            @click="openAlertDialog"
+                            color="primary"
+                            rounded="pill"
+                            variant="flat"
+                            size="small"
+                            class="cp-lock"
+                            >{{ $t('processDefinitionMap.save') }}</v-btn
+                        >
+
+                        <v-btn
+                            v-if="useLock && lock && isAdmin && userName != editUser"
+                            @click="openAlertDialog"
+                            color="gray"
+                            rounded="pill"
+                            variant="flat"
+                            size="small"
+                            >{{ $t('processDefinitionMap.mobileEditBtn') }}</v-btn
+                        >
+
+                        <v-btn
+                            v-if="!useLock"
+                            @click="mode === 'uEngine' ? openSaveConfirmDialog() : saveProcess()"
+                            color="primary"
+                            rounded="pill"
+                            variant="flat"
+                            size="small"
+                            >{{ $t('processDefinitionMap.save') }}</v-btn
+                        >
+                    </div>
                 </div>
 
                 <!-- 편집 사용자 표시 -->
@@ -549,52 +603,154 @@
         </v-dialog>
 
         <!-- 미분류 프로세스 관리 다이얼로그 -->
-        <v-dialog v-model="orphanDialog.show" max-width="700" scrollable>
-            <v-card class="rounded-lg">
-                <v-card-title class="d-flex align-center pa-4">
-                    <v-icon class="mr-2" color="warning">mdi-folder-question</v-icon>
-                    {{ $t('processDefinitionMap.orphanManagement') || '미분류 프로세스 관리' }}
-                    <v-chip size="small" color="warning" class="ml-2">{{ orphanProcesses.length }}</v-chip>
-                    <v-spacer></v-spacer>
-                    <v-btn icon variant="text" size="small" @click="orphanDialog.show = false">
+        <v-dialog v-model="orphanDialog.show" :fullscreen="isMobile" :max-width="isMobile ? '100%' : '700px'" scrollable persistent>
+            <v-card>
+                <v-card-title class="d-flex justify-space-between pa-4 ma-0 pb-0">
+                    <div class="d-flex align-center">
+                        {{ $t('processDefinitionMap.orphanManagement') || '미분류 프로세스 관리' }}
+                        <v-chip size="small" color="warning" variant="tonal" class="ml-2">{{ orphanProcesses.length }}</v-chip>
+                    </div>
+                    <v-btn variant="text" density="compact" icon @click="orphanDialog.show = false">
                         <v-icon>mdi-close</v-icon>
                     </v-btn>
                 </v-card-title>
 
-                <v-divider />
-
-                <v-card-text class="pa-0" style="max-height: 400px">
+                <v-card-text class="pa-0" style="overflow-y: auto">
                     <v-list v-if="orphanProcesses.length > 0">
-                        <v-list-item v-for="proc in orphanProcesses" :key="proc.id" class="orphan-process-item">
-                            <template #prepend>
-                                <v-checkbox v-model="orphanDialog.selectedProcesses" :value="proc.id" hide-details density="compact" />
-                            </template>
+                        <template v-for="proc in orphanProcesses" :key="proc.id">
+                            <v-list-item
+                                class="orphan-process-item"
+                                :style="assignDialog.expandedId === proc.id ? 'background: rgba(var(--v-theme-primary), 0.1);' : ''"
+                            >
+                                <template #prepend>
+                                    <v-checkbox v-model="orphanDialog.selectedProcesses" :value="proc.id" hide-details density="compact" />
+                                </template>
 
-                            <v-list-item-title>{{ proc.name }}</v-list-item-title>
-                            <v-list-item-subtitle class="text-caption">ID: {{ proc.id }}</v-list-item-subtitle>
+                                <v-list-item-title style="white-space: normal; word-break: break-word">{{ proc.name }}</v-list-item-title>
+                                <v-list-item-subtitle class="text-caption" style="white-space: normal; word-break: break-all"
+                                    >ID: {{ proc.id }}</v-list-item-subtitle
+                                >
 
-                            <template #append>
-                                <v-btn variant="tonal" color="primary" size="small" @click="openAssignDialog(proc)">
-                                    {{ $t('processDefinitionMap.assignCategory') || '분류하기' }}
-                                </v-btn>
-                            </template>
-                        </v-list-item>
+                                <template #append>
+                                    <v-btn color="gray" rounded variant="flat" size="small" @click="toggleAssignPanel(proc)">
+                                        {{
+                                            assignDialog.expandedId === proc.id
+                                                ? $t('processDefinitionMap.closeAssign')
+                                                : $t('processDefinitionMap.assignCategory')
+                                        }}
+                                    </v-btn>
+                                </template>
+                            </v-list-item>
+                            <!-- 인라인 분류 패널 -->
+                            <div
+                                v-if="assignDialog.expandedId === proc.id"
+                                class="pa-4"
+                                style="background: rgba(var(--v-theme-primary), 0.1)"
+                            >
+                                <v-select
+                                    v-model="assignDialog.selectedMega"
+                                    :items="megaProcessOptions"
+                                    :label="$t('processDefinitionMap.selectMega')"
+                                    item-title="name"
+                                    item-value="id"
+                                    return-object
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    class="mb-3"
+                                >
+                                    <template #prepend-item>
+                                        <v-list-item @click="showNewMegaInput = true">
+                                            <template #prepend><v-icon color="primary">mdi-plus</v-icon></template>
+                                            <v-list-item-title class="text-primary">{{
+                                                $t('processDefinitionMap.createNewMega')
+                                            }}</v-list-item-title>
+                                        </v-list-item>
+                                        <v-divider class="my-1" />
+                                    </template>
+                                </v-select>
+                                <v-text-field
+                                    v-if="showNewMegaInput"
+                                    v-model="assignDialog.newMegaName"
+                                    :label="$t('processDefinitionMap.newMegaName')"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    class="mb-3"
+                                    @keyup.enter="createNewMega"
+                                >
+                                    <template #append-inner>
+                                        <v-btn variant="text" color="primary" size="small" @click="createNewMega">{{
+                                            $t('processDefinitionMap.createBtn')
+                                        }}</v-btn>
+                                    </template>
+                                </v-text-field>
+                                <v-select
+                                    v-model="assignDialog.selectedMajor"
+                                    :items="majorProcessOptions"
+                                    :label="$t('processDefinitionMap.selectMajor')"
+                                    item-title="name"
+                                    item-value="id"
+                                    return-object
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    :disabled="!assignDialog.selectedMega"
+                                >
+                                    <template #prepend-item>
+                                        <v-list-item @click="showNewMajorInput = true" :disabled="!assignDialog.selectedMega">
+                                            <template #prepend><v-icon color="primary">mdi-plus</v-icon></template>
+                                            <v-list-item-title class="text-primary">{{
+                                                $t('processDefinitionMap.createNewMajor')
+                                            }}</v-list-item-title>
+                                        </v-list-item>
+                                        <v-divider class="my-1" />
+                                    </template>
+                                </v-select>
+                                <v-text-field
+                                    v-if="showNewMajorInput && assignDialog.selectedMega"
+                                    v-model="assignDialog.newMajorName"
+                                    :label="$t('processDefinitionMap.newMajorName')"
+                                    variant="outlined"
+                                    density="compact"
+                                    hide-details
+                                    class="mt-3"
+                                    @keyup.enter="createNewMajor"
+                                >
+                                    <template #append-inner>
+                                        <v-btn variant="text" color="primary" size="small" @click="createNewMajor">{{
+                                            $t('processDefinitionMap.createBtn')
+                                        }}</v-btn>
+                                    </template>
+                                </v-text-field>
+                                <div class="d-flex justify-end mt-3">
+                                    <v-btn
+                                        color="primary"
+                                        rounded="pill"
+                                        variant="flat"
+                                        size="small"
+                                        :disabled="!assignDialog.selectedMega || !assignDialog.selectedMajor"
+                                        @click="assignProcessesToCategory"
+                                        >{{ $t('processDefinitionMap.confirmAssign') }}</v-btn
+                                    >
+                                </div>
+                            </div>
+                        </template>
                     </v-list>
                     <v-alert v-else type="info" variant="tonal" class="ma-4">
-                        {{ $t('processDefinitionMap.noOrphans') || '미분류 프로세스가 없습니다.' }}
+                        {{ $t('processDefinitionMap.noOrphans') }}
                     </v-alert>
                 </v-card-text>
 
-                <v-divider v-if="orphanProcesses.length > 0" />
-
-                <v-card-actions v-if="orphanProcesses.length > 0" class="pa-4">
-                    <v-btn variant="text" size="small" @click="selectAllOrphans">
-                        {{ $t('common.selectAll') || '전체 선택' }}
+                <v-card-actions v-if="orphanProcesses.length > 0" class="d-flex justify-end align-center pa-4">
+                    <v-btn color="gray" rounded="pill" variant="flat" size="small" @click="selectAllOrphans">
+                        {{ $t('processDefinitionMap.selectAll') }}
                     </v-btn>
-                    <v-spacer></v-spacer>
                     <v-btn
-                        variant="flat"
                         color="primary"
+                        rounded="pill"
+                        variant="flat"
+                        size="small"
                         :disabled="orphanDialog.selectedProcesses.length === 0"
                         @click="openBulkAssignDialog"
                     >
@@ -605,166 +761,37 @@
             </v-card>
         </v-dialog>
 
-        <!-- 분류 이동 다이얼로그 -->
-        <v-dialog v-model="assignDialog.show" max-width="500">
-            <v-card class="rounded-lg pa-4">
-                <v-card-title class="px-0 pt-0">
-                    {{ $t('processDefinitionMap.assignToCategory') || '카테고리 지정' }}
-                </v-card-title>
-
-                <v-card-text class="px-0">
-                    <div class="text-body-2 mb-3">
-                        {{
-                            assignDialog.processList.length > 1
-                                ? `${assignDialog.processList.length}개 프로세스를 분류합니다.`
-                                : `"${assignDialog.processList[0]?.name || ''}" 프로세스를 분류합니다.`
-                        }}
-                    </div>
-
-                    <!-- Mega Process 선택 -->
-                    <v-select
-                        v-model="assignDialog.selectedMega"
-                        :items="megaProcessOptions"
-                        :label="$t('processDefinitionMap.selectMega') || 'Mega Process 선택'"
-                        item-title="name"
-                        item-value="id"
-                        return-object
-                        variant="outlined"
-                        density="comfortable"
-                        class="mb-3"
-                    >
-                        <template #prepend-item>
-                            <v-list-item @click="showNewMegaInput = true">
-                                <template #prepend>
-                                    <v-icon color="primary">mdi-plus</v-icon>
-                                </template>
-                                <v-list-item-title class="text-primary">
-                                    {{ $t('processDefinitionMap.createNewMega') || '새 Mega Process 생성' }}
-                                </v-list-item-title>
-                            </v-list-item>
-                            <v-divider class="my-2" />
-                        </template>
-                    </v-select>
-
-                    <!-- 새 Mega 입력 -->
-                    <v-text-field
-                        v-if="showNewMegaInput"
-                        v-model="assignDialog.newMegaName"
-                        :label="$t('processDefinitionMap.newMegaName') || '새 Mega Process 이름'"
-                        variant="outlined"
-                        density="comfortable"
-                        class="mb-3"
-                        @keyup.enter="createNewMega"
-                    >
-                        <template #append>
-                            <v-btn variant="text" color="primary" @click="createNewMega">
-                                {{ $t('common.create') || '생성' }}
-                            </v-btn>
-                        </template>
-                    </v-text-field>
-
-                    <!-- Major Process 선택 -->
-                    <v-select
-                        v-model="assignDialog.selectedMajor"
-                        :items="majorProcessOptions"
-                        :label="$t('processDefinitionMap.selectMajor') || 'Major Process 선택'"
-                        item-title="name"
-                        item-value="id"
-                        return-object
-                        variant="outlined"
-                        density="comfortable"
-                        :disabled="!assignDialog.selectedMega"
-                    >
-                        <template #prepend-item>
-                            <v-list-item @click="showNewMajorInput = true" :disabled="!assignDialog.selectedMega">
-                                <template #prepend>
-                                    <v-icon color="primary">mdi-plus</v-icon>
-                                </template>
-                                <v-list-item-title class="text-primary">
-                                    {{ $t('processDefinitionMap.createNewMajor') || '새 Major Process 생성' }}
-                                </v-list-item-title>
-                            </v-list-item>
-                            <v-divider class="my-2" />
-                        </template>
-                    </v-select>
-
-                    <!-- 새 Major 입력 -->
-                    <v-text-field
-                        v-if="showNewMajorInput && assignDialog.selectedMega"
-                        v-model="assignDialog.newMajorName"
-                        :label="$t('processDefinitionMap.newMajorName') || '새 Major Process 이름'"
-                        variant="outlined"
-                        density="comfortable"
-                        class="mt-3"
-                        @keyup.enter="createNewMajor"
-                    >
-                        <template #append>
-                            <v-btn variant="text" color="primary" @click="createNewMajor">
-                                {{ $t('common.create') || '생성' }}
-                            </v-btn>
-                        </template>
-                    </v-text-field>
-                </v-card-text>
-
-                <v-card-actions class="px-0 pb-0">
-                    <v-spacer></v-spacer>
-                    <v-btn variant="text" @click="assignDialog.show = false">
-                        {{ $t('common.cancel') || '취소' }}
-                    </v-btn>
-                    <v-btn
-                        color="primary"
-                        variant="flat"
-                        :disabled="!assignDialog.selectedMega || !assignDialog.selectedMajor"
-                        @click="assignProcessesToCategory"
-                    >
-                        {{ $t('common.confirm') || '확인' }}
-                    </v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
+        <!-- 분류 다이얼로그 제거됨 - 인라인 확장 패널로 대체 -->
     </div>
 </template>
 
 <script>
 import domtoimage from 'dom-to-image';
 import DefinitionMapList from './DefinitionMapList.vue';
-import ProcessMenu from './ProcessMenu.vue';
 import SubProcessDetail from './SubProcessDetail.vue';
 import ViewProcessDetails from './ViewProcessDetails.vue';
 import ProcessDefinitionChat from '@/components/ProcessDefinitionChat.vue';
 import ProcessDefinitionMarketPlace from '@/components/ProcessDefinitionMarketPlace.vue';
-import Chat from '@/components/ui/Chat.vue';
 import DetailComponent from '@/components/ui-components/details/DetailComponent.vue';
 import MetricsView from './MetricsView.vue';
 import MainChatInput from '@/components/MainChatInput.vue';
-import AgentChatActions from '@/components/AgentChatActions.vue';
 import ChatModule from '@/components/ChatModule.vue';
 import WorkAssistantGenerator from '@/components/ai/WorkAssistantGenerator.js';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 import { processGptAgent } from '@/constants/processGptAgent';
 
-import * as jsondiff from 'jsondiffpatch';
-var jsondiffpatch = jsondiff.create({
-    objectHash: function (obj, index) {
-        return '$$index:' + index;
-    }
-});
-
 export default {
     mixins: [ChatModule],
     components: {
-        ProcessMenu,
         ViewProcessDetails,
         SubProcessDetail,
         DefinitionMapList,
         ProcessDefinitionChat,
         ProcessDefinitionMarketPlace,
-        Chat,
         DetailComponent,
         MetricsView,
-        MainChatInput,
-        AgentChatActions
+        MainChatInput
     },
     props: {
         componentName: {
@@ -893,6 +920,7 @@ export default {
         },
         assignDialog: {
             show: false,
+            expandedId: null,
             processList: [],
             selectedMega: null,
             selectedMajor: null,
@@ -992,7 +1020,7 @@ export default {
                     action: () => {
                         this.openMarketplaceDialog = true;
                     }
-                },
+                }
                 // {
                 //     show: this.componentName === 'DefinitionMapList' && this.isAdmin,
                 //     icon: 'file-tree',
@@ -1411,7 +1439,9 @@ export default {
                         createdAt: nowIso
                     })
                 );
-            } catch (e) {}
+            } catch (e) {
+                // ignore
+            }
 
             // definition-map 패널은 열지 않고 /chat으로 이동
             this.showFullScreenChat = false;
@@ -2528,14 +2558,22 @@ export default {
          * 단일 프로세스 분류 다이얼로그 열기
          */
         openAssignDialog(process) {
-            this.assignDialog.processList = [process];
+            this.toggleAssignPanel(process);
+        },
+        toggleAssignPanel(proc) {
+            if (!proc || this.assignDialog.expandedId === proc.id) {
+                this.assignDialog.expandedId = null;
+                this.assignDialog.processList = [];
+            } else {
+                this.assignDialog.expandedId = proc.id;
+                this.assignDialog.processList = [proc];
+            }
             this.assignDialog.selectedMega = null;
             this.assignDialog.selectedMajor = null;
             this.assignDialog.newMegaName = '';
             this.assignDialog.newMajorName = '';
             this.showNewMegaInput = false;
             this.showNewMajorInput = false;
-            this.assignDialog.show = true;
         },
 
         /**
@@ -2653,8 +2691,8 @@ export default {
             // 3. 저장
             await this.saveProcess();
 
-            // 4. 다이얼로그 닫기
-            this.assignDialog.show = false;
+            // 4. 패널 닫기
+            this.assignDialog.expandedId = null;
             this.orphanDialog.selectedProcesses = this.orphanDialog.selectedProcesses.filter((id) => !processIds.includes(id));
 
             // 5. 토스트 메시지

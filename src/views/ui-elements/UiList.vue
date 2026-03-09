@@ -40,50 +40,50 @@ const breadcrumbs = ref([
                     <!-- Basic -->
                     <v-col cols="12" lg="6">
                         <UiChildCard title="Simple List">
-                            <SimpleList/>
+                            <SimpleList />
                         </UiChildCard>
                     </v-col>
                     <!-- Nested List -->
                     <v-col cols="12" lg="6">
                         <UiChildCard title="Nested List">
-                           <NestedList/>
+                            <NestedList />
                         </UiChildCard>
                     </v-col>
                     <!-- Folder List -->
                     <v-col cols="12" lg="6">
                         <UiChildCard title="Folder List">
-                            <FolderList/>
+                            <FolderList />
                         </UiChildCard>
                     </v-col>
                     <!-- DisabledList-->
                     <v-col cols="12" lg="6">
                         <UiChildCard title="Disabled List">
-                           <DisabledList/>
+                            <DisabledList />
                         </UiChildCard>
                     </v-col>
                     <!-- Radio Button List -->
                     <v-col cols="12" lg="6">
                         <UiChildCard title="Switch List">
-                           <SwitchList/>
+                            <SwitchList />
                         </UiChildCard>
                     </v-col>
-                    
+
                     <!-- Rounded List -->
                     <v-col cols="12" lg="6">
                         <UiChildCard title="Rounded List">
-                            <RoundedList/>
+                            <RoundedList />
                         </UiChildCard>
                     </v-col>
                     <!-- Custom Aligned List -->
                     <v-col cols="12" lg="6">
                         <UiChildCard title="Custom Aligned List">
-                            <CustomAlignList/>
+                            <CustomAlignList />
                         </UiChildCard>
                     </v-col>
                     <!-- Scrollable List -->
                     <v-col cols="12" lg="6">
                         <UiChildCard title="Scrollable List">
-                            <ScrollableList/>
+                            <ScrollableList />
                         </UiChildCard>
                     </v-col>
                 </v-row>

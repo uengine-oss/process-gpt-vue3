@@ -27,8 +27,8 @@ export type ThemeTypes = {
         surface?: string;
         grey100?: string;
         grey200?: string;
-        darkbg?:string;
-        bglight?:string;
-        bgdark?:string;
+        darkbg?: string;
+        bglight?: string;
+        bgdark?: string;
     };
 };

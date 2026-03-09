@@ -85,14 +85,14 @@ export function useTerminology() {
     function filterTerms(terms: TerminologyItem[], input: string): string[] {
         if (!input || input.trim() === '') {
             // 입력값이 없으면 상위 10개 반환
-            return terms.slice(0, 10).map(t => t.term);
+            return terms.slice(0, 10).map((t) => t.term);
         }
 
         const loweredInput = input.toLowerCase();
         return terms
-            .filter(t => t.term.toLowerCase().includes(loweredInput))
+            .filter((t) => t.term.toLowerCase().includes(loweredInput))
             .slice(0, 10)
-            .map(t => t.term);
+            .map((t) => t.term);
     }
 
     /**
@@ -130,17 +130,18 @@ export function useTerminology() {
             const supabase = window.$supabase;
             if (!supabase) return false;
 
-            const { error: dbError } = await supabase
-                .from('standard_terminology')
-                .upsert({
+            const { error: dbError } = await supabase.from('standard_terminology').upsert(
+                {
                     tenant_id: tenantId,
                     category,
                     term,
                     description,
                     usage_count: 1
-                }, {
+                },
+                {
                     onConflict: 'tenant_id,category,term'
-                });
+                }
+            );
 
             if (dbError) {
                 console.warn('용어 추가 실패:', dbError);
@@ -167,7 +168,7 @@ export function useTerminology() {
         const searchInput = ref('');
 
         // 초기 로드
-        loadTerminology(category).then(items => {
+        loadTerminology(category).then((items) => {
             terms.value = items;
         });
 
@@ -183,7 +184,10 @@ export function useTerminology() {
             updateSuggestions,
             recordUsage: (term: string) => recordUsage(category, term),
             addTerm: (term: string, desc?: string) => addTerm(category, term, desc),
-            refresh: () => loadTerminology(category).then(items => { terms.value = items; })
+            refresh: () =>
+                loadTerminology(category).then((items) => {
+                    terms.value = items;
+                })
         };
     }
 

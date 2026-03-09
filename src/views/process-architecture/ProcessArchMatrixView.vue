@@ -14,11 +14,7 @@
                                 <div class="corner-diagonal"></div>
                             </div>
                         </th>
-                        <th
-                            v-for="megaProc in megaProcesses"
-                            :key="megaProc.id"
-                            class="mega-header-cell"
-                        >
+                        <th v-for="megaProc in megaProcesses" :key="megaProc.id" class="mega-header-cell">
                             <div class="mega-header-inner">
                                 <span class="mega-name">{{ megaProc.name }}</span>
                                 <span class="mega-count">{{ getMegaProcessCount(megaProc.id) }}</span>
@@ -27,18 +23,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr
-                        v-for="(domain, dIdx) in displayDomains"
-                        :key="domain.id"
-                        :class="{ 'row-alt': dIdx % 2 === 1 }"
-                    >
+                    <tr v-for="(domain, dIdx) in displayDomains" :key="domain.id" :class="{ 'row-alt': dIdx % 2 === 1 }">
                         <!-- Domain cell (sticky left) -->
                         <td class="domain-cell" :style="domainCellStyle(domain)">
                             <div class="domain-inner">
-                                <div
-                                    class="domain-color-bar"
-                                    :style="{ background: domain.color || '#78909C' }"
-                                ></div>
+                                <div class="domain-color-bar" :style="{ background: domain.color || '#78909C' }"></div>
                                 <div class="domain-info">
                                     <span class="domain-name">{{ domain.name }}</span>
                                     <span class="domain-count">{{ getDomainProcessCount(domain.id) }} proc</span>
@@ -47,55 +36,38 @@
                         </td>
 
                         <!-- Process cells -->
-                        <td
-                            v-for="megaProc in megaProcesses"
-                            :key="`${domain.id}-${megaProc.id}`"
-                            class="process-cell"
-                        >
+                        <td v-for="megaProc in megaProcesses" :key="`${domain.id}-${megaProc.id}`" class="process-cell">
                             <div class="cell-content">
                                 <template v-if="getProcesses(domain.id, megaProc.id).length > 0">
-                                    <div
-                                        v-for="proc in getProcesses(domain.id, megaProc.id)"
-                                        :key="proc.id"
-                                        class="process-card"
-                                    >
+                                    <div v-for="proc in getProcesses(domain.id, megaProc.id)" :key="proc.id" class="process-card">
                                         <div class="process-card-header">
-                                            <span
-                                                class="process-link"
-                                                @click="$emit('navigate', proc.id, proc.name)"
-                                            >
+                                            <span class="process-link" @click="$emit('navigate', proc.id, proc.name)">
                                                 {{ proc.name }}
                                             </span>
-                                            <span
-                                                v-if="proc.sub_proc_list && proc.sub_proc_list.length > 0"
-                                                class="sub-badge"
-                                            >
+                                            <span v-if="proc.sub_proc_list && proc.sub_proc_list.length > 0" class="sub-badge">
                                                 {{ proc.sub_proc_list.length }}
                                             </span>
                                         </div>
 
                                         <!-- Expandable sub process list -->
-                                        <div
-                                            v-if="proc.sub_proc_list && proc.sub_proc_list.length > 0"
-                                            class="sub-section"
-                                        >
-                                            <button
-                                                class="sub-toggle"
-                                                @click="toggleCell(`${domain.id}-${megaProc.id}-${proc.id}`)"
-                                            >
+                                        <div v-if="proc.sub_proc_list && proc.sub_proc_list.length > 0" class="sub-section">
+                                            <button class="sub-toggle" @click="toggleCell(`${domain.id}-${megaProc.id}-${proc.id}`)">
                                                 <v-icon size="12" class="mr-1">
-                                                    {{ expandedCells.has(`${domain.id}-${megaProc.id}-${proc.id}`) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                                                    {{
+                                                        expandedCells.has(`${domain.id}-${megaProc.id}-${proc.id}`)
+                                                            ? 'mdi-chevron-up'
+                                                            : 'mdi-chevron-down'
+                                                    }}
                                                 </v-icon>
-                                                {{ expandedCells.has(`${domain.id}-${megaProc.id}-${proc.id}`)
-                                                    ? $t('processArchitecture.matrix.collapse')
-                                                    : `${proc.sub_proc_list.length} sub` }}
+                                                {{
+                                                    expandedCells.has(`${domain.id}-${megaProc.id}-${proc.id}`)
+                                                        ? $t('processArchitecture.matrix.collapse')
+                                                        : `${proc.sub_proc_list.length} sub`
+                                                }}
                                             </button>
 
                                             <transition name="slide-y">
-                                                <div
-                                                    v-if="expandedCells.has(`${domain.id}-${megaProc.id}-${proc.id}`)"
-                                                    class="sub-list"
-                                                >
+                                                <div v-if="expandedCells.has(`${domain.id}-${megaProc.id}-${proc.id}`)" class="sub-list">
                                                     <div
                                                         v-for="sub in proc.sub_proc_list"
                                                         :key="sub.id"
@@ -110,10 +82,7 @@
                                                             :class="['fav-btn', { 'is-fav': favorites?.has(sub.id) }]"
                                                             @click.stop="emit('toggleFavorite', sub.id)"
                                                         >
-                                                            <v-icon
-                                                                size="12"
-                                                                :color="favorites?.has(sub.id) ? 'amber' : 'grey-lighten-1'"
-                                                            >
+                                                            <v-icon size="12" :color="favorites?.has(sub.id) ? 'amber' : 'grey-lighten-1'">
                                                                 {{ favorites?.has(sub.id) ? 'mdi-star' : 'mdi-star-outline' }}
                                                             </v-icon>
                                                         </v-btn>
@@ -173,9 +142,7 @@ const displayDomains = computed(() => {
 
 function getProcesses(domainId: string, megaProcessId: string): any[] {
     if (!props.metricsMap?.processes) return [];
-    return props.metricsMap.processes.filter(
-        (proc: any) => proc.domain_id === domainId && proc.mega_process_id === megaProcessId
-    );
+    return props.metricsMap.processes.filter((proc: any) => proc.domain_id === domainId && proc.mega_process_id === megaProcessId);
 }
 
 function getMegaProcessCount(megaId: string): number {
@@ -188,10 +155,10 @@ function getDomainProcessCount(domainId: string): number {
     return props.metricsMap.processes.filter((p: any) => p.domain_id === domainId).length;
 }
 
-function domainCellStyle(domain: any) {
+function domainCellStyle(domain: any): Record<string, string> {
     return {
         '--domain-color': domain.color || '#78909C'
-    };
+    } as Record<string, string>;
 }
 
 function toggleCell(key: string) {
@@ -515,13 +482,7 @@ function toggleCell(key: string) {
     align-items: center;
     justify-content: center;
     min-height: 48px;
-    background: repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 6px,
-        #f1f5f9 6px,
-        #f1f5f9 7px
-    );
+    background: repeating-linear-gradient(-45deg, transparent, transparent 6px, #f1f5f9 6px, #f1f5f9 7px);
     border-radius: 6px;
 }
 

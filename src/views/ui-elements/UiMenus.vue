@@ -4,10 +4,10 @@ import { ref } from 'vue';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
 import UiChildCard from '@/components/shared/UiChildCard.vue';
 
-import MenusAnchor from "@/components/ui-components/menus/MenusAnchor.vue";
-import MenusHover from "@/components/ui-components/menus/MenusHover.vue";
-import MenusActivatorTooltip from "@/components/ui-components/menus/MenusActivatorTooltip.vue";
-import MenusPopover from "@/components/ui-components/menus/MenusPopover.vue";
+import MenusAnchor from '@/components/ui-components/menus/MenusAnchor.vue';
+import MenusHover from '@/components/ui-components/menus/MenusHover.vue';
+import MenusActivatorTooltip from '@/components/ui-components/menus/MenusActivatorTooltip.vue';
+import MenusPopover from '@/components/ui-components/menus/MenusPopover.vue';
 // common components
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 // theme breadcrumb
@@ -24,8 +24,6 @@ const breadcrumbs = ref([
         href: '#'
     }
 ]);
-
-
 </script>
 
 <template>

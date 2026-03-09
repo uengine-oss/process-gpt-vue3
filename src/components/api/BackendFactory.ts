@@ -16,7 +16,7 @@ class BackendFactory extends Window {
             w[warnedKey].add(key);
             console.warn(
                 `[Backend] '${method}' returned null/undefined (mode=${mode}). ` +
-                `This is a feature added/used in other mode(s) and may be implemented later.`,
+                    `This is a feature added/used in other mode(s) and may be implemented later.`,
                 detail
             );
         };
@@ -37,7 +37,7 @@ class BackendFactory extends Window {
                 // objects
                 getCreditBalance: { available: 0, used: 0, total: 0 },
                 // booleans
-                enableRework: false,
+                enableRework: false
             };
             if (method in defaults) return defaults[method];
             if (method.startsWith('watch')) return () => {};
@@ -87,20 +87,21 @@ class BackendFactory extends Window {
                             (prop.startsWith('watch') ||
                                 prop.startsWith('list') ||
                                 prop.endsWith('List') ||
-                                prop in {
-                                    getAgentList: true,
-                                    getDataSourceList: true,
-                                    extractDatasourceSchema: true,
-                                    listMarketplaceDefinition: true,
-                                    getGroupList: true,
-                                    getMCPTools: true,
-                                    getMCPLists: true,
-                                    fetchNotifications: true,
-                                    getEventList: true,
-                                    getCreditBalance: true,
-                                    enableRework: true
-                                }) &&
-                            (isAxiosError ? (status === 404 || (typeof status === 'number' && status >= 500)) : true);
+                                prop in
+                                    {
+                                        getAgentList: true,
+                                        getDataSourceList: true,
+                                        extractDatasourceSchema: true,
+                                        listMarketplaceDefinition: true,
+                                        getGroupList: true,
+                                        getMCPTools: true,
+                                        getMCPLists: true,
+                                        fetchNotifications: true,
+                                        getEventList: true,
+                                        getCreditBalance: true,
+                                        enableRework: true
+                                    }) &&
+                            (isAxiosError ? status === 404 || (typeof status === 'number' && status >= 500) : true);
 
                         if (shouldSkipInUEngine) {
                             warnOnce(prop, { args, reason: 'threw', status, error });
@@ -135,8 +136,8 @@ class BackendFactory extends Window {
                     throw new Error('Invalid backend type');
             }
         } catch (error) {
-             console.error('백엔드 어댑터 초기화 실패:', error)
-            throw new Error(`어댑터 초기화 실패: ${error.message}`)
+            console.error('백엔드 어댑터 초기화 실패:', error);
+            throw new Error(`어댑터 초기화 실패: ${error.message}`);
         }
     }
 }

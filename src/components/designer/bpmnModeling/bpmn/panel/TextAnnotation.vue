@@ -40,12 +40,12 @@ export default {
     async mounted() {},
     computed: {},
     watch: {
-        "copyText": {
+        copyText: {
             deep: true,
             handler: _.debounce(function (newVal) {
-                    this.$emit("update:text", newVal)
+                this.$emit('update:text', newVal);
             }, 200)
-        },
+        }
     },
     methods: {}
 };

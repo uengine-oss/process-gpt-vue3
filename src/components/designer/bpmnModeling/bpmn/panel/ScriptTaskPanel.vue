@@ -2,7 +2,7 @@
     <div v-if="copyUengineProperties">
         <div class="mb-6 mt-6">
             <div>{{ $t('BpmnPropertyPanel.scriptType') }}</div>
-            <v-card variant="outlined" class="pa-2" style="border-radius:8px !important;">
+            <v-card variant="outlined" class="pa-2" style="border-radius: 8px !important">
                 <v-radio-group v-model="copyUengineProperties.language">
                     <v-radio
                         id="Javascript"
@@ -13,7 +13,12 @@
                     ></v-radio>
                     <v-radio id="Java" name="Java" value="1" label="Java" style="margin-right: 8px !important; font-size: 15px"></v-radio>
                 </v-radio-group>
-                <v-textarea :label="$t('BpmnPropertyPanel.script')" v-model="copyUengineProperties.script" :disabled="isViewMode" style="width: 100%"></v-textarea>
+                <v-textarea
+                    :label="$t('BpmnPropertyPanel.script')"
+                    v-model="copyUengineProperties.script"
+                    :disabled="isViewMode"
+                    style="width: 100%"
+                ></v-textarea>
                 <GenerateScriptPanel v-model="copyUengineProperties.script" :language="languageLabel" />
                 <DetailComponent
                     :title="$t('ScriptTaskPanel.scriptDescriptionTitle')"
@@ -35,17 +40,10 @@
                 ></v-autocomplete>
             </v-row>
         </div>
-        <DetailComponent
-            style="padding-bottom:20px;"
-            :title="$t('ScriptTaskPanel.returnTitle')"
-        />
+        <DetailComponent style="padding-bottom: 20px" :title="$t('ScriptTaskPanel.returnTitle')" />
         <!-- Lead Time -->
         <div class="mt-4">
-            <LeadTimeInput
-                v-model="copyUengineProperties.leadTime"
-                :label="$t('leadTime.title') || 'Lead Time'"
-                :disabled="isViewMode"
-            />
+            <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
         <div class="mt-3" v-if="mode == 'ProcessGPT'">
             <KeyValueField
@@ -62,7 +60,10 @@
                 <v-btn
                     v-for="color in presetColors"
                     :key="color.value"
-                    :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }"
+                    :style="{
+                        backgroundColor: color.value,
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                    }"
                     size="small"
                     icon
                     :disabled="isViewMode"
@@ -87,13 +88,29 @@
                         </v-card-actions>
                     </v-card>
                 </v-menu>
-                <v-btn v-if="copyUengineProperties.taskColor" variant="text" size="small" color="error" :disabled="isViewMode" @click="resetTaskColor">
+                <v-btn
+                    v-if="copyUengineProperties.taskColor"
+                    variant="text"
+                    size="small"
+                    color="error"
+                    :disabled="isViewMode"
+                    @click="resetTaskColor"
+                >
                     <v-icon size="small">mdi-close</v-icon>
                     {{ $t('BpmnPropertyPanel.resetColor') || '초기화' }}
                 </v-btn>
             </v-row>
             <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
-                <div :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }" class="mr-2"></div>
+                <div
+                    :style="{
+                        backgroundColor: copyUengineProperties.taskColor,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc'
+                    }"
+                    class="mr-2"
+                ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
             </div>
         </div>
@@ -207,9 +224,9 @@ export default {
             me.processVariables = [];
             me.copyUengineProperties = {};
 
-            if(me.definition) me.copyDefinition = JSON.parse(JSON.stringify(me.definition));
+            if (me.definition) me.copyDefinition = JSON.parse(JSON.stringify(me.definition));
 
-            if(me.copyDefinition) {
+            if (me.copyDefinition) {
                 me.processVariables = me.copyDefinition.processVariables
                     .filter((variable) => variable.type !== 'Form')
                     .map((variable) => ({
@@ -218,12 +235,12 @@ export default {
                         defaultValue: variable.defaultValue
                     }));
             }
-          
+
             me.bpmnModeler = store.getModeler;
 
             if (me.uengineProperties) {
                 me.copyUengineProperties = JSON.parse(JSON.stringify(me.uengineProperties));
-            } 
+            }
 
             // _type 고정
             me.copyUengineProperties._type = 'org.uengine.kernel.ScriptActivity';
@@ -238,14 +255,14 @@ export default {
                 this.copyUengineProperties.language = '0';
             }
 
-            if(me.copyUengineProperties.out) {
+            if (me.copyUengineProperties.out) {
                 // let tmp = this.processVariables.find((element) => element['name'] === this.copyUengineProperties.out.name);
                 me.selectedOut = me.copyUengineProperties.out.name;
             }
 
             // ProcessGPT 모드에서만 쓰는 사용자 속성
             if (window.$mode === 'ProcessGPT') {
-                if(!me.copyUengineProperties.customProperties) me.copyUengineProperties.customProperties = [];
+                if (!me.copyUengineProperties.customProperties) me.copyUengineProperties.customProperties = [];
                 if (!Array.isArray(me.copyUengineProperties.customProperties)) me.copyUengineProperties.customProperties = [];
             } else if (me.copyUengineProperties && me.copyUengineProperties.hasOwnProperty('customProperties')) {
                 delete me.copyUengineProperties.customProperties;
@@ -253,7 +270,7 @@ export default {
         },
         beforeSave() {
             const { script, language, out, customProperties } = this.copyUengineProperties;
-            
+
             const updateProperties = {
                 _type: 'org.uengine.kernel.ScriptActivity',
                 script: script || '',
@@ -323,7 +340,7 @@ export default {
             // this.paramKey = ""
             // this.paramValue = ""
         },
-        
+
         addCheckpoint() {
             this.copyUengineProperties.checkpoints.push({ checkpoint: this.checkpointMessage.checkpoint });
             this.$emit('update:uengineProperties', this.copyUengineProperties);

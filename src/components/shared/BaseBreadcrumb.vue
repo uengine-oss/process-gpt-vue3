@@ -8,7 +8,7 @@ const props = defineProps({
 </script>
 
 <template>
-    <v-card class="overflow-hidden mb-7" elevation="0" >
+    <v-card class="overflow-hidden mb-7" elevation="0">
         <v-card-text class="pa-6">
             <div class="d-sm-flex d-block justify-content-between py-0 align-center">
                 <h4 class="text-h4 flex-grow-1">{{ title }}</h4>
@@ -18,7 +18,7 @@ const props = defineProps({
                             <v-icon>mdi-circle-small</v-icon>
                         </template>
                         <template v-slot:title="{ item }">
-                            <h6 class="text-medium-emphasis ">{{ item.title }}</h6>
+                            <h6 class="text-medium-emphasis">{{ item.title }}</h6>
                         </template>
                     </v-breadcrumbs>
                 </div>

@@ -56,7 +56,7 @@ const radialBarchartOptions = computed(() => {
                     }
                 }
             }
-        },
+        }
     };
 });
 
@@ -70,12 +70,12 @@ const radarOptions = computed(() => {
             type: 'radar',
             height: 300,
             fontFamily: `inherit`,
-             toolbar: {
-                    show: false,
-                },
+            toolbar: {
+                show: false
+            }
         },
         colors: ['#0b70fb'],
-        labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+        labels: ['January', 'February', 'March', 'April', 'May', 'June']
     };
 });
 
@@ -83,7 +83,7 @@ const radarChart = {
     series: [
         {
             name: 'Sales',
-            data: [80, 50, 30, 40, 100, 20],
+            data: [80, 50, 30, 40, 100, 20]
         }
     ]
 };

@@ -1,32 +1,28 @@
 <template>
     <div>
         <div class="mb-2 mt-4">
-
             <v-col class="pa-0 pr-2" style="margin-bottom: 10px">
                 <div>Headers</div>
-                <v-row v-for="(header, idx) in copyUengineProperties.headers" :key="idx" style="margin-left: 13px; margin-top: 10px;">
-                    <v-row style="align-self: center;">
-                        <div style="font-size: 15px; width: 50%;"> {{ header.name }}</div>
-                        <div style="font-size: 15px; width: 40%;"> {{ header.value }}</div>
+                <v-row v-for="(header, idx) in copyUengineProperties.headers" :key="idx" style="margin-left: 13px; margin-top: 10px">
+                    <v-row style="align-self: center">
+                        <div style="font-size: 15px; width: 50%">{{ header.name }}</div>
+                        <div style="font-size: 15px; width: 40%">{{ header.value }}</div>
                     </v-row>
-                    <v-btn variant="text" density="comfortable" size="x-small" icon="mdi-delete" @click="removeHeader(header)" style="margin-right: 7px;"></v-btn>
+                    <v-btn
+                        variant="text"
+                        density="comfortable"
+                        size="x-small"
+                        icon="mdi-delete"
+                        @click="removeHeader(header)"
+                        style="margin-right: 7px"
+                    ></v-btn>
                 </v-row>
-                <v-row style="margin-left: 0px; margin-top: 20px; margin-bottom: 20px;">
-                    <v-text-field class="delete-input-details"
-                        v-model="newHeader.name"
-                        label="Key"
-                        required
-                        hide-details
-                    ></v-text-field>
-                    <v-text-field class="delete-input-details"
-                        v-model="newHeader.value"
-                        label="value"
-                        required
-                        hide-details
-                    ></v-text-field>
+                <v-row style="margin-left: 0px; margin-top: 20px; margin-bottom: 20px">
+                    <v-text-field class="delete-input-details" v-model="newHeader.name" label="Key" required hide-details></v-text-field>
+                    <v-text-field class="delete-input-details" v-model="newHeader.value" label="value" required hide-details></v-text-field>
                     <v-btn variant="text" density="comfortable" icon="mdi-plus" @click="addHeader()"></v-btn>
                 </v-row>
-            </v-col>   
+            </v-col>
 
             <v-row class="ma-0 pa-0">
                 <v-col cols="3" class="pa-0 pr-2">
@@ -43,10 +39,7 @@
                     <v-text-field :label="$t('BpmnPropertyPanel.apiUrl')" v-model="copyUengineProperties.uriTemplate"></v-text-field>
                 </v-col>
             </v-row>
-            <DetailComponent
-                :title="$t('ServiceTaskPanel.methodTypeDescriptionTitle')"
-                :details="methodTypeDescription"
-            />
+            <DetailComponent :title="$t('ServiceTaskPanel.methodTypeDescriptionTitle')" :details="methodTypeDescription" />
         </div>
         <div style="height: 40%" v-if="copyUengineProperties.method != 'GET'">
             <v-row class="ma-0 pa-0" style="height: 100%">
@@ -62,27 +55,19 @@
         <div align="right" @click="generateAPI">
             <v-btn prepend-icon rounded color="primary">
                 <template v-slot:prepend>
-                    <Icons :icon="'magic'"  />
+                    <Icons :icon="'magic'" />
                 </template>
                 {{ $t('ServiceTaskPanel.generation') }}
             </v-btn>
         </div>
         <!-- <v-btn block text rounded color="primary" class="my-3" @click="isOpenFieldMapper = !isOpenFieldMapper">{{ $t('ServiceTaskPanel.dataMapping') }}</v-btn> -->
         <div v-if="!isLoading">
-            <EventSynchronizationForm
-                v-model="tempOutputMapping"
-                :definition="copyDefinition"
-            />
+            <EventSynchronizationForm v-model="tempOutputMapping" :definition="copyDefinition" />
         </div>
         <!-- Lead Time -->
         <div class="mt-4">
-            <LeadTimeInput
-                v-model="copyUengineProperties.leadTime"
-                :label="$t('leadTime.title') || 'Lead Time'"
-                :disabled="isViewMode"
-            />
+            <LeadTimeInput v-model="copyUengineProperties.leadTime" :label="$t('leadTime.title') || 'Lead Time'" :disabled="isViewMode" />
         </div>
-
 
         <!-- Schema-based Properties -->
         <div class="mt-4">
@@ -112,7 +97,10 @@
                 <v-btn
                     v-for="color in presetColors"
                     :key="color.value"
-                    :style="{ backgroundColor: color.value, border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc' }"
+                    :style="{
+                        backgroundColor: color.value,
+                        border: copyUengineProperties.taskColor === color.value ? '3px solid #1976D2' : '1px solid #ccc'
+                    }"
                     size="small"
                     icon
                     :disabled="isViewMode"
@@ -124,29 +112,15 @@
 
             <!-- Custom Color Picker -->
             <v-row class="ma-0 pa-0 align-center">
-                <v-menu
-                    v-model="showColorPicker"
-                    :close-on-content-click="false"
-                    location="bottom"
-                >
+                <v-menu v-model="showColorPicker" :close-on-content-click="false" location="bottom">
                     <template v-slot:activator="{ props }">
-                        <v-btn
-                            v-bind="props"
-                            :disabled="isViewMode"
-                            variant="outlined"
-                            size="small"
-                            class="mr-2"
-                        >
+                        <v-btn v-bind="props" :disabled="isViewMode" variant="outlined" size="small" class="mr-2">
                             <v-icon start size="small">mdi-palette</v-icon>
                             {{ $t('BpmnPropertyPanel.customColor') || '사용자 정의 색상' }}
                         </v-btn>
                     </template>
                     <v-card min-width="300">
-                        <v-color-picker
-                            v-model="customColor"
-                            mode="hexa"
-                            hide-inputs
-                        ></v-color-picker>
+                        <v-color-picker v-model="customColor" mode="hexa" hide-inputs></v-color-picker>
                         <v-card-actions>
                             <v-btn size="small" @click="showColorPicker = false">{{ $t('common.cancel') || '취소' }}</v-btn>
                             <v-btn size="small" color="primary" @click="applyCustomColor">{{ $t('common.confirm') || '적용' }}</v-btn>
@@ -170,7 +144,13 @@
             <!-- Current Color Preview -->
             <div v-if="copyUengineProperties.taskColor" class="mt-2 d-flex align-center">
                 <div
-                    :style="{ backgroundColor: copyUengineProperties.taskColor, width: '24px', height: '24px', borderRadius: '4px', border: '1px solid #ccc' }"
+                    :style="{
+                        backgroundColor: copyUengineProperties.taskColor,
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '4px',
+                        border: '1px solid #ccc'
+                    }"
                     class="mr-2"
                 ></div>
                 <span class="text-caption">{{ copyUengineProperties.taskColor }}</span>
@@ -266,12 +246,17 @@ export default {
         }
 
         // uriTemplate / method / payloadTemplate
-        if (typeof this.copyUengineProperties.uriTemplate !== 'string') this.copyUengineProperties.uriTemplate = this.copyUengineProperties.uriTemplate ? String(this.copyUengineProperties.uriTemplate) : '';
+        if (typeof this.copyUengineProperties.uriTemplate !== 'string')
+            this.copyUengineProperties.uriTemplate = this.copyUengineProperties.uriTemplate
+                ? String(this.copyUengineProperties.uriTemplate)
+                : '';
         if (!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET';
         this.copyUengineProperties.method = String(this.copyUengineProperties.method).toUpperCase();
         if (typeof this.copyUengineProperties.inputPayloadTemplate !== 'string') {
             this.copyUengineProperties.inputPayloadTemplate =
-                this.copyUengineProperties.inputPayloadTemplate == null ? '' : JSON.stringify(this.copyUengineProperties.inputPayloadTemplate);
+                this.copyUengineProperties.inputPayloadTemplate == null
+                    ? ''
+                    : JSON.stringify(this.copyUengineProperties.inputPayloadTemplate);
         }
 
         // flags
@@ -280,9 +265,13 @@ export default {
 
         // headers 정규화 (HttpHeader[])
         if (!Array.isArray(this.copyUengineProperties.headers)) {
-            this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }];
+            this.copyUengineProperties.headers = [
+                { name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }
+            ];
         } else if (this.copyUengineProperties.headers.length === 0) {
-            this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }];
+            this.copyUengineProperties.headers = [
+                { name: 'Content-Type', value: 'application/json', _type: 'org.uengine.kernel.bpmn.HttpHeader' }
+            ];
         } else {
             this.copyUengineProperties.headers = this.copyUengineProperties.headers.map((h) => ({
                 name: h?.name ?? h?.key ?? '',
@@ -297,27 +286,32 @@ export default {
         }
         if (typeof this.copyUengineProperties.outputMapping.eventType !== 'string') this.copyUengineProperties.outputMapping.eventType = '';
         if (!Array.isArray(this.copyUengineProperties.outputMapping.attributes)) this.copyUengineProperties.outputMapping.attributes = [];
-        if (!this.copyUengineProperties.outputMapping.mappingContext || typeof this.copyUengineProperties.outputMapping.mappingContext !== 'object') {
+        if (
+            !this.copyUengineProperties.outputMapping.mappingContext ||
+            typeof this.copyUengineProperties.outputMapping.mappingContext !== 'object'
+        ) {
             this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] };
         }
         if (!Array.isArray(this.copyUengineProperties.outputMapping.mappingContext.mappingElements)) {
             this.copyUengineProperties.outputMapping.mappingContext.mappingElements = [];
         }
 
-        if(!this.copyUengineProperties) this.copyUengineProperties = {}
-        if(!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{"name": "Content-Type", "value":"application/json"}]
-        if(!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET'
-        if(!this.copyUengineProperties.outputMapping) this.copyUengineProperties.outputMapping = {} 
-        if(!this.copyUengineProperties.outputMapping.attributes) this.copyUengineProperties.outputMapping.attributes = []
-        if(!this.copyUengineProperties.outputMapping.mappingContext) this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] }        
-        if(!this.copyUengineProperties.outputMapping.mappingContext) this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] }        
-        if(!this.tempOutputMapping) this.tempOutputMapping = {}
-        this.tempOutputMapping.eventSynchronization = JSON.parse(JSON.stringify(this.copyUengineProperties.outputMapping)) 
-        if(!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [{key: 'test', value: 'value'}];
-        if(!this.copyUengineProperties.schemaProperties) this.copyUengineProperties.schemaProperties = {};
+        if (!this.copyUengineProperties) this.copyUengineProperties = {};
+        if (!this.copyUengineProperties.headers) this.copyUengineProperties.headers = [{ name: 'Content-Type', value: 'application/json' }];
+        if (!this.copyUengineProperties.method) this.copyUengineProperties.method = 'GET';
+        if (!this.copyUengineProperties.outputMapping) this.copyUengineProperties.outputMapping = {};
+        if (!this.copyUengineProperties.outputMapping.attributes) this.copyUengineProperties.outputMapping.attributes = [];
+        if (!this.copyUengineProperties.outputMapping.mappingContext)
+            this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] };
+        if (!this.copyUengineProperties.outputMapping.mappingContext)
+            this.copyUengineProperties.outputMapping.mappingContext = { mappingElements: [] };
+        if (!this.tempOutputMapping) this.tempOutputMapping = {};
+        this.tempOutputMapping.eventSynchronization = JSON.parse(JSON.stringify(this.copyUengineProperties.outputMapping));
+        if (!this.copyUengineProperties.customProperties) this.copyUengineProperties.customProperties = [{ key: 'test', value: 'value' }];
+        if (!this.copyUengineProperties.schemaProperties) this.copyUengineProperties.schemaProperties = {};
 
-       if(typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
-            this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate)
+        if (typeof this.copyUengineProperties.inputPayloadTemplate != 'string') {
+            this.copyUengineProperties.inputPayloadTemplate = JSON.stringify(this.copyUengineProperties.inputPayloadTemplate);
         }
 
         Object.keys(this.requiredKeyLists).forEach((key) => {
@@ -337,7 +331,7 @@ export default {
             methodList: ['GET', 'POST', 'PUT', 'PATCH'],
             copyUengineProperties: null,
             tempOutputMapping: {},
-            newHeader:{
+            newHeader: {
                 name: '',
                 value: ''
             },
@@ -370,8 +364,8 @@ export default {
             isOpenFieldMapper: false,
             methodTypeDescription: [
                 {
-                    title: 'SendTaskPanel.methodTypeDescriptionSubTitle1',
-                },
+                    title: 'SendTaskPanel.methodTypeDescriptionSubTitle1'
+                }
             ],
             mapperDescription: [
                 {
@@ -379,8 +373,8 @@ export default {
                 },
                 {
                     title: 'BpmnPropertyPanel.mapperDescriptionSubTitle2',
-                    image: "EventSynchronizationFomVariablesHowToUse.gif"
-                },
+                    image: 'EventSynchronizationFomVariablesHowToUse.gif'
+                }
             ],
             // Color picker
             showColorPicker: false,
@@ -452,7 +446,6 @@ export default {
 
                     return null;
                 };
-                
 
                 me.replaceToExpandableNode = function (nodeKey) {
                     if (nodeKey.indexOf(`[${key}].`) != -1) {
@@ -469,15 +462,15 @@ export default {
     computed: {},
     watch: {},
     methods: {
-        addHeader(){
+        addHeader() {
             this.copyUengineProperties.headers.push(this.newHeader);
             this.newHeader = {
                 name: '',
                 value: ''
             };
         },
-        removeHeader(header){
-            if(!header) return;
+        removeHeader(header) {
+            if (!header) return;
             this.copyUengineProperties.headers.splice(this.copyUengineProperties.headers.indexOf(header), 1);
         },
         saveMapperJson(jsonString) {
@@ -487,9 +480,18 @@ export default {
             // this.$emit('update:uEngineProperties', this.copyUengineProperties);
         },
         beforeSave() {
-            this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization
-            const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties, schemaProperties } = this.copyUengineProperties;
-            this.copyUengineProperties = { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties, schemaProperties };
+            this.copyUengineProperties.outputMapping = this.tempOutputMapping.eventSynchronization;
+            const { method, uriTemplate, headers, inputPayloadTemplate, outputMapping, customProperties, schemaProperties } =
+                this.copyUengineProperties;
+            this.copyUengineProperties = {
+                method,
+                uriTemplate,
+                headers,
+                inputPayloadTemplate,
+                outputMapping,
+                customProperties,
+                schemaProperties
+            };
             this.$emit('update:uengineProperties', this.copyUengineProperties);
         },
         onSchemaPropertiesUpdate(properties) {
@@ -633,7 +635,7 @@ export default {
                     console.warn('Could not refresh task visual:', e);
                 }
             }
-        },
+        }
     }
 };
 </script>

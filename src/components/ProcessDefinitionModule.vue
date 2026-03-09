@@ -6,7 +6,7 @@ import FormGenerator from './ai/FormDesignGenerator';
 import DefinitionOptimizer from './ai/DefinitionOptimizer';
 import FormDefinitionModule from './FormDefinitionModule.vue';
 import BPMNXmlGenerator from './BPMNXmlGenerator.vue';
-import partialParse from "partial-json-parser";
+import partialParse from 'partial-json-parser';
 import JSON5 from 'json5';
 import { getCurrentUserTeamName } from '@/utils/organizationUtils';
 import { getBpmnModelService } from '@/services/bpmnModelService';
@@ -19,7 +19,7 @@ export default {
         processVariables: [],
         processDefinition: {
             processDefinitionId: `new_process_${Date.now()}`,
-            processDefinitionName: '',
+            processDefinitionName: ''
         },
         bpmn: null,
         definitionChangeCount: 0,
@@ -36,8 +36,8 @@ export default {
         datasourceSchema: null,
         definitionOptimizer: null,
         useOptimize: false,
-        lastSavedXML: '',  // 마지막 저장된 XML (변경 감지용)
-        lastSavedXMLHash: '',  // 마지막 저장된 XML 해시
+        lastSavedXML: '', // 마지막 저장된 XML (변경 감지용)
+        lastSavedXMLHash: '' // 마지막 저장된 XML 해시
     }),
     computed: {
         lastPath() {
@@ -51,7 +51,7 @@ export default {
     },
     mounted() {
         // 최신 XML 반영된 processDefinition을 콜백으로 전달
-        this.EventBus.on('get-process-definition', async(callback) => {
+        this.EventBus.on('get-process-definition', async (callback) => {
             let xmlString = this.bpmn;
             // BPMN 모델러가 있으면 모델러의 현재 XML 사용 (편집 중인 최신 상태 반영)
             const modeler = useBpmnStore().getModeler;
@@ -74,42 +74,41 @@ export default {
             if (this.processDefinition && this.processDefinition.elements) {
                 // 메인 프로세스와 서브프로세스의 모든 activities를 수집
                 const allActivities = this.collectAllActivities(this.processDefinition);
-                
+
                 this.generateFormTask = {};
 
                 let externalCustomerActs = null;
                 if (this.processDefinition.roles && this.processDefinition.roles.length > 0) {
-                    const externalCustomer = this.processDefinition.roles.find(role => role.endpoint == "external_customer");
+                    const externalCustomer = this.processDefinition.roles.find((role) => role.endpoint == 'external_customer');
                     if (externalCustomer && externalCustomer.name) {
-                        externalCustomerActs = allActivities.filter(act => act.role == externalCustomer.name);
+                        externalCustomerActs = allActivities.filter((act) => act.role == externalCustomer.name);
                     }
                 }
-                
+
                 for (const activity of allActivities) {
                     let inputs = null;
                     if (externalCustomerActs && externalCustomerActs.length > 0) {
                         if (activity.id == externalCustomerActs[0].id) {
                             if (window.$i18n.global.locale == 'ko') {
-                                inputs = "이메일(*필드명은 customer_email)";
+                                inputs = '이메일(*필드명은 customer_email)';
                             } else {
-                                inputs = "email(*field name is customer_email)";
+                                inputs = 'email(*field name is customer_email)';
                             }
                         }
                     }
                     if (activity.outputData && activity.outputData.length > 0) {
-                        inputs = inputs ? inputs + ", " + activity.outputData.join(', ') : activity.outputData.join(', ');
+                        inputs = inputs ? inputs + ', ' + activity.outputData.join(', ') : activity.outputData.join(', ');
                     }
-                    
-                    if (inputs) { 
+
+                    if (inputs) {
                         this.generateFormTask[activity.id] = 'generating';
 
                         let generateMsg = `Please refer to the following and create a form.`;
 
-                        if (inputs)
-                        generateMsg += ` Fields to enter: ${inputs}.`;
+                        if (inputs) generateMsg += ` Fields to enter: ${inputs}.`;
 
                         const isUseDataSource = localStorage.getItem('isUseDataSource');
-                        if(isUseDataSource == 'true') {
+                        if (isUseDataSource == 'true') {
                             generateMsg += `
                             Please place all fields in one area and arrange them vertically.
 
@@ -124,33 +123,31 @@ export default {
                         let messageWriting = this.messages[this.messages.length - 1];
                         messageWriting.isLoading = false;
                         this.messages.push({
-                            "role": "system",
-                            "content": `${activity.name} 활동의 폼 생성이 완료되었습니다.`,
-                            "timeStamp": Date.now(),
-                            "contentType": "html",
-                            "htmlContent": formHtml,
-                            "jsonContent": {}
+                            role: 'system',
+                            content: `${activity.name} 활동의 폼 생성이 완료되었습니다.`,
+                            timeStamp: Date.now(),
+                            contentType: 'html',
+                            htmlContent: formHtml,
+                            jsonContent: {}
                         });
                     }
                 }
-                
+
                 // 모든 폼 생성이 완료된 후 최종 메시지 추가
                 if (allActivities.length > 0) {
                     this.messages.push({
-                        "role": "system",
-                        "content": `모든 활동에 대한 폼 생성을 완료했습니다.`,
-                        "timeStamp": Date.now()
+                        role: 'system',
+                        content: `모든 활동에 대한 폼 생성을 완료했습니다.`,
+                        timeStamp: Date.now()
                     });
-                    
+
                     this.$try({
                         context: this,
-                        action: () => {
-                        },
+                        action: () => {},
                         successMsg: this.$t('successMsg.formGenerationCompleted')
-                    })
-
+                    });
                 }
-                
+
                 this.generateFormTask = {};
             }
         },
@@ -158,26 +155,25 @@ export default {
         // 메인 프로세스와 서브프로세스의 모든 activities를 재귀적으로 수집하는 함수
         collectAllActivities(processDefinition) {
             const allActivities = [];
-            
+
             // 메인 프로세스의 activities 수집
             if (processDefinition.elements) {
-                const mainActivities = processDefinition.elements.filter(element => 
-                    element.elementType === 'Activity' && 
-                    element.type === 'UserActivity'
+                const mainActivities = processDefinition.elements.filter(
+                    (element) => element.elementType === 'Activity' && element.type === 'UserActivity'
                 );
                 allActivities.push(...mainActivities);
             }
-            
+
             // 서브프로세스의 activities 수집
             if (processDefinition.subProcesses && processDefinition.subProcesses.length > 0) {
                 for (const subProcess of processDefinition.subProcesses) {
                     if (subProcess.children && subProcess.children.activities) {
-                        const subActivities = subProcess.children.activities.filter(activity => 
-                            activity.type === 'userTask' || activity.type === 'emailTask'
+                        const subActivities = subProcess.children.activities.filter(
+                            (activity) => activity.type === 'userTask' || activity.type === 'emailTask'
                         );
                         allActivities.push(...subActivities);
                     }
-                    
+
                     // 서브프로세스 내의 서브프로세스도 재귀적으로 처리
                     if (subProcess.children && subProcess.children.subProcesses && subProcess.children.subProcesses.length > 0) {
                         const nestedSubProcess = {
@@ -188,7 +184,7 @@ export default {
                     }
                 }
             }
-            
+
             return allActivities;
         },
         async generateForm(generateMsg, activity) {
@@ -198,18 +194,18 @@ export default {
                 let formHtml = null;
                 const formGenerator = new FormGenerator(me, {
                     isStream: true,
-                    preferredLanguage: 'Korean',
+                    preferredLanguage: 'Korean'
                 });
                 formGenerator.client.genType = 'form';
                 formGenerator.client.onFormCreated = async (response) => {
                     let messageWriting = me.messages[me.messages.length - 1];
                     messageWriting.jsonContent = response;
-                }
+                };
                 formGenerator.client.onFormGenerationFinished = async (response) => {
                     try {
                         let jsonData = this.extractLastJSON(response);
                         if (jsonData.htmlOutput) {
-                            const html = await me.keditorContentHTMLToDynamicFormHTML(jsonData.htmlOutput)
+                            const html = await me.keditorContentHTMLToDynamicFormHTML(jsonData.htmlOutput);
                             const info = await me.saveFormData(html, activity.id);
                             if (info && info.id && info.html) {
                                 formHtml = info.html;
@@ -233,9 +229,9 @@ export default {
                                 let messageWriting = me.messages[me.messages.length - 1];
                                 messageWriting.isLoading = false;
                                 me.messages.push({
-                                    "role": "system",
-                                    "content": `${activity.name} 활동의 폼 생성이 실패했습니다. 다시 시도해주세요.`,
-                                    "timeStamp": Date.now()
+                                    role: 'system',
+                                    content: `${activity.name} 활동의 폼 생성이 실패했습니다. 다시 시도해주세요.`,
+                                    timeStamp: Date.now()
                                 });
                                 reject(error);
                             }
@@ -244,24 +240,22 @@ export default {
                         retry();
                     }
                 };
-                formGenerator.previousMessages = [
-                    ...formGenerator.previousMessageFormats
-                ];
+                formGenerator.previousMessages = [...formGenerator.previousMessageFormats];
 
                 this.userInputs = {
-                    requestType: "Create",
+                    requestType: 'Create',
                     request: generateMsg,
-                    existingForm: "",
+                    existingForm: '',
                     imageUrl: null
                 };
 
                 formGenerator.generate();
                 me.messages.push({
-                    "role": "system",
-                    "content": `${activity.name} 활동의 폼을 생성합니다.`,
-                    "timeStamp": Date.now(),
-                    "isLoading": true
-                })
+                    role: 'system',
+                    content: `${activity.name} 활동의 폼을 생성합니다.`,
+                    timeStamp: Date.now(),
+                    isLoading: true
+                });
             });
         },
         async saveFormData(html, activityId) {
@@ -271,7 +265,7 @@ export default {
             } else {
                 formId = `${activityId}_form`;
             }
-            formId = formId.toLowerCase().replace(/[/.]/g, "_").replace(/#/g, "_");
+            formId = formId.toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
             if (this.lastPath) {
                 if (this.lastPath == 'chat' || this.lastPath == 'definition-map') {
                     localStorage.setItem(formId, html);
@@ -333,12 +327,12 @@ export default {
                     values = [];
                     ext.set('values', values);
                 }
-                let uprops = values.find(v => v.$type === 'uengine:Properties');
+                let uprops = values.find((v) => v.$type === 'uengine:Properties');
                 if (!uprops) {
                     uprops = bpmnFactory.create('uengine:Properties', { json: '' });
                     values.push(uprops);
                 }
-                
+
                 // role이 전달되면 기존 properties에 role 추가/업데이트
                 if (role !== undefined) {
                     let propsJson = {};
@@ -361,7 +355,7 @@ export default {
         },
         applySubprocessProperties(modeler, subProcesses) {
             const list = Array.isArray(subProcesses) ? subProcesses : [];
-            list.forEach(sp => {
+            list.forEach((sp) => {
                 if (sp && sp.id && typeof sp.properties === 'string') {
                     this.upsertElementJsonProperties(modeler, sp.id, sp.properties);
                 }
@@ -433,21 +427,21 @@ export default {
             if (modification.value) {
                 const modeling = modeler.get('modeling');
                 const elementRegistry = modeler.get('elementRegistry');
-                
+
                 console.log('********');
                 console.log(modification);
                 console.log('********');
-                
+
                 // 첫 번째 시도: ID로 직접 찾기
                 let elementToRemove = elementRegistry.get(modification.value.id);
-                
+
                 // 두 번째 시도: beforeActivity가 있는 경우, 이 활동에서 시작하는 연결 찾기
                 if (!elementToRemove && modification.beforeActivity) {
                     const allElements = elementRegistry.getAll();
-                    const sequenceFlows = allElements.filter(el => el.type === 'bpmn:SequenceFlow');
-                    
+                    const sequenceFlows = allElements.filter((el) => el.type === 'bpmn:SequenceFlow');
+
                     // 시작 활동(beforeActivity)에서 나가는 시퀀스 플로우 찾기
-                    elementToRemove = sequenceFlows.find(flow => {
+                    elementToRemove = sequenceFlows.find((flow) => {
                         // source가 businessObject.sourceRef.id에 있을 것으로 예상
                         if (flow.businessObject && flow.businessObject.sourceRef) {
                             return flow.businessObject.sourceRef.id === modification.beforeActivity;
@@ -455,7 +449,7 @@ export default {
                         return false;
                     });
                 }
-                
+
                 // 요소를 찾았다면 삭제
                 if (elementToRemove) {
                     modeling.removeElements([elementToRemove]);
@@ -468,7 +462,7 @@ export default {
         toggleVersionDialog(open) {
             // Version Dialog
             this.versionDialog = open;
-            this.loading = false
+            this.loading = false;
             // try {
             //     if (open) {
             //         if (this.$refs.definitionComponent.copyProcessDefinition) {
@@ -488,7 +482,7 @@ export default {
                 action: async () => {
                     me.loading = true;
                     me.saveSchedule(info, '1.0');
-                    await me.setDefinitionInfo(info)
+                    await me.setDefinitionInfo(info);
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
                     let xmlObj;
@@ -502,7 +496,7 @@ export default {
                         const modeling = modeler.get('modeling');
 
                         // Pool(Participant) 이름을 프로세스명으로 설정
-                        const participants = elementRegistry.filter(el => el.type === 'bpmn:Participant');
+                        const participants = elementRegistry.filter((el) => el.type === 'bpmn:Participant');
                         if (participants.length > 0 && info.name) {
                             modeling.updateProperties(participants[0], { name: info.name });
                         }
@@ -510,7 +504,7 @@ export default {
                         // Lane 이름을 사용자 팀명으로 설정 (기본값인 경우에만)
                         const userTeamName = await getCurrentUserTeamName();
                         if (userTeamName) {
-                            const lanes = elementRegistry.filter(el => el.type === 'bpmn:Lane');
+                            const lanes = elementRegistry.filter((el) => el.type === 'bpmn:Lane');
                             if (lanes.length > 0) {
                                 const firstLane = lanes[0];
                                 const laneName = firstLane.businessObject?.name;
@@ -544,7 +538,7 @@ export default {
                             retryCount++;
                             if (retryCount < maxRetries) {
                                 console.log(`XML 저장 재시도 중... (${retryCount}/${maxRetries})`);
-                                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                                await new Promise((resolve) => setTimeout(resolve, retryDelay));
                             } else {
                                 console.error('최대 재시도 횟수 초과. XML 저장 실패.');
                                 throw new Error('XML 저장 실패');
@@ -552,8 +546,7 @@ export default {
                         }
                     }
 
-                    
-                    let newProcessDefinition
+                    let newProcessDefinition;
 
                     if (xmlObj && xmlObj.xml && window.$mode == 'ProcessGPT') {
                         if (!window.$jms) {
@@ -562,18 +555,19 @@ export default {
                                 modeler = store.getModeler;
                                 xmlObj = await modeler.saveXML({ format: true, preamble: true });
                                 newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
-                                if (newProcessDefinition != null && (
-                                    (newProcessDefinition.data && newProcessDefinition.data.length > 0) ||
-                                    (newProcessDefinition.roles && newProcessDefinition.roles.length > 0) ||
-                                    (newProcessDefinition.events && newProcessDefinition.events.length > 0) ||
-                                    (newProcessDefinition.elements && newProcessDefinition.elements.length > 0) ||
-                                    (newProcessDefinition.gateways && newProcessDefinition.gateways.length > 0) ||
-                                    (newProcessDefinition.sequences && newProcessDefinition.sequences.length > 0)
-                                )) {
+                                if (
+                                    newProcessDefinition != null &&
+                                    ((newProcessDefinition.data && newProcessDefinition.data.length > 0) ||
+                                        (newProcessDefinition.roles && newProcessDefinition.roles.length > 0) ||
+                                        (newProcessDefinition.events && newProcessDefinition.events.length > 0) ||
+                                        (newProcessDefinition.elements && newProcessDefinition.elements.length > 0) ||
+                                        (newProcessDefinition.gateways && newProcessDefinition.gateways.length > 0) ||
+                                        (newProcessDefinition.sequences && newProcessDefinition.sequences.length > 0))
+                                ) {
                                     break;
                                 }
                                 retryCount++;
-                                await new Promise(resolve => setTimeout(resolve, 500));
+                                await new Promise((resolve) => setTimeout(resolve, 500));
                             }
                         } else {
                             newProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
@@ -585,7 +579,7 @@ export default {
                         }
 
                         if (!me.processDefinition) {
-                            me.processDefinition = newProcessDefinition
+                            me.processDefinition = newProcessDefinition;
                         } else {
                             // if (me.processDefinition.roles) {
                             //     newProcessDefinition.roles = newProcessDefinition.roles.map(newRole => {
@@ -604,13 +598,13 @@ export default {
                                 // 기존 processDefinition에서 activities 찾기 (activities 또는 elements에서)
                                 let oldActivities = [];
                                 if (me.processDefinition.elements) {
-                                    oldActivities = me.processDefinition.elements.filter(el => el.elementType === 'Activity');
+                                    oldActivities = me.processDefinition.elements.filter((el) => el.elementType === 'Activity');
                                 }
-                                
+
                                 // tool 정보 복원
                                 if (oldActivities.length > 0) {
-                                    newProcessDefinition.activities = newProcessDefinition.activities.map(newActivity => {
-                                        const oldActivity = oldActivities.find(oldActivity => oldActivity.id === newActivity.id);
+                                    newProcessDefinition.activities = newProcessDefinition.activities.map((newActivity) => {
+                                        const oldActivity = oldActivities.find((oldActivity) => oldActivity.id === newActivity.id);
                                         if (oldActivity && oldActivity.tool) {
                                             newActivity.tool = oldActivity.tool;
                                         }
@@ -627,7 +621,7 @@ export default {
                         }
                         info.definition = me.processDefinition;
                     }
-                    
+
                     // ensure subprocess properties are written back into BPMN before saving
                     try {
                         const modeler = store.getModeler;
@@ -639,82 +633,82 @@ export default {
                     // update element roles in properties from XML (without propsJson interference)
                     try {
                         const modeler = store.getModeler;
-                        
+
                         // 현재 XML로 lane 기반 role 추출 (propsJson 영향 없이 순수 lane 정보만)
                         const tempXml = await modeler.saveXML({ format: true, preamble: true });
                         const parser = new xml2js.Parser({ explicitArray: false, mergeAttrs: true });
                         const xmlResult = await parser.parseStringPromise(tempXml.xml);
-                        
+
                         // lane 역색인 생성 (elementId -> laneName)
                         const laneMap = new Map();
                         const processes = xmlResult['bpmn:definitions']?.['bpmn:process'];
                         const procList = Array.isArray(processes) ? processes : [processes];
-                        
-                        procList.forEach(proc => {
+
+                        procList.forEach((proc) => {
                             const laneSet = proc?.['bpmn:laneSet'];
                             if (laneSet) {
                                 const lanes = laneSet['bpmn:lane'];
                                 const laneList = Array.isArray(lanes) ? lanes : lanes ? [lanes] : [];
-                                laneList.forEach(lane => {
+                                laneList.forEach((lane) => {
                                     const refs = lane['bpmn:flowNodeRef'];
                                     const refList = Array.isArray(refs) ? refs : refs ? [refs] : [];
-                                    refList.forEach(ref => {
+                                    refList.forEach((ref) => {
                                         laneMap.set(ref, lane.name);
                                     });
                                 });
                             }
                         });
-                        
+
                         // lane 정보를 사용해서 properties 업데이트
                         if (me.processDefinition.activities) {
-                            me.processDefinition.activities.forEach(act => {
+                            me.processDefinition.activities.forEach((act) => {
                                 const laneName = laneMap.get(act.id);
                                 if (laneName) {
                                     this.upsertElementJsonProperties(modeler, act.id, null, laneName);
                                 }
                             });
                         }
-                        
+
                         if (me.processDefinition.events) {
-                            me.processDefinition.events.forEach(evt => {
+                            me.processDefinition.events.forEach((evt) => {
                                 const laneName = laneMap.get(evt.id);
                                 if (laneName) {
                                     this.upsertElementJsonProperties(modeler, evt.id, null, laneName);
                                 }
                             });
                         }
-                        
+
                         if (me.processDefinition.gateways) {
-                            me.processDefinition.gateways.forEach(gw => {
+                            me.processDefinition.gateways.forEach((gw) => {
                                 const laneName = laneMap.get(gw.id);
                                 if (laneName) {
                                     this.upsertElementJsonProperties(modeler, gw.id, null, laneName);
                                 }
                             });
                         }
-                        
+
                         // 업데이트된 properties를 반영하기 위해 다시 XML 생성
                         xmlObj = await modeler.saveXML({ format: true, preamble: true });
-                        
+
                         // properties가 업데이트된 XML로 processDefinition 다시 생성 (한 번에 동기화)
                         const updatedProcessDefinition = await me.convertXMLToJSON(xmlObj.xml);
                         updatedProcessDefinition.data = me.processVariables;
-                        
+
                         // tool 정보 복원
                         if (updatedProcessDefinition.activities && me.processDefinition.activities) {
-                            updatedProcessDefinition.activities = updatedProcessDefinition.activities.map(newActivity => {
-                                const oldActivity = me.processDefinition.activities.find(old => old.id === newActivity.id);
+                            updatedProcessDefinition.activities = updatedProcessDefinition.activities.map((newActivity) => {
+                                const oldActivity = me.processDefinition.activities.find((old) => old.id === newActivity.id);
                                 if (oldActivity && oldActivity.tool) {
                                     newActivity.tool = oldActivity.tool;
                                 }
                                 return newActivity;
                             });
                         }
-                        
+
                         if (info.name && info.name != '') {
                             updatedProcessDefinition.processDefinitionName = info.name;
                         }
-                        
+
                         me.processDefinition = updatedProcessDefinition;
                         info.definition = me.processDefinition;
                     } catch (e) {
@@ -751,7 +745,7 @@ export default {
                         bpmn: me.bpmn,
                         def: me.processDefinition
                     };
-                    this.$emit("modelCreated", processInfo);
+                    this.$emit('modelCreated', processInfo);
 
                     if (window.$mode !== 'uEngine') {
                         me.disableChat = true;
@@ -762,7 +756,7 @@ export default {
 
                     me.loading = false;
                     await me.toggleVersionDialog(false);
-                    me.$emit('closeConsultingDialog', true)
+                    me.$emit('closeConsultingDialog', true);
                 },
                 onFail: (e) => {
                     console.log(e);
@@ -804,7 +798,7 @@ export default {
 
                 // Insert new mappings
                 if (organizations.length > 0) {
-                    const insertData = organizations.map(org => ({
+                    const insertData = organizations.map((org) => ({
                         tenant_id: tenantId,
                         proc_def_id: procDefId,
                         organization_id: org.id,
@@ -812,9 +806,7 @@ export default {
                         organization_type: org.type || 'team'
                     }));
 
-                    const { error: insertError } = await supabase
-                        .from('process_organizations')
-                        .insert(insertData);
+                    const { error: insertError } = await supabase.from('process_organizations').insert(insertData);
 
                     if (insertError) {
                         console.error('[updateProcessOrganizations] Error inserting mappings:', insertError);
@@ -897,7 +889,11 @@ export default {
                                         console.log('[extractOrganizationsFromLanes] roleResolutionContext:', roleCtx);
 
                                         if (roleCtx._type === 'Organization' && roleCtx.organizationId) {
-                                            console.log('[extractOrganizationsFromLanes] Found Organization:', roleCtx.organizationId, roleCtx.organizationName);
+                                            console.log(
+                                                '[extractOrganizationsFromLanes] Found Organization:',
+                                                roleCtx.organizationId,
+                                                roleCtx.organizationName
+                                            );
                                             if (!seenIds.has(roleCtx.organizationId)) {
                                                 seenIds.add(roleCtx.organizationId);
                                                 organizations.push({
@@ -909,7 +905,12 @@ export default {
                                         }
                                     }
                                 } catch (parseError) {
-                                    console.warn('[extractOrganizationsFromLanes] Failed to parse lane properties:', parseError, 'ext:', ext);
+                                    console.warn(
+                                        '[extractOrganizationsFromLanes] Failed to parse lane properties:',
+                                        parseError,
+                                        'ext:',
+                                        ext
+                                    );
                                 }
                             }
                         }
@@ -924,20 +925,20 @@ export default {
         },
         async saveSchedule(info, version) {
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(info.prevSnapshot, "text/xml");
+            const xmlDoc = parser.parseFromString(info.prevSnapshot, 'text/xml');
 
-            const startEvents = xmlDoc.getElementsByTagName("bpmn:startEvent");
+            const startEvents = xmlDoc.getElementsByTagName('bpmn:startEvent');
 
             for (let i = 0; i < startEvents.length; i++) {
                 let result = {};
                 const event = startEvents[i];
-                const timer = event.getElementsByTagName("bpmn:timerEventDefinition")[0];
+                const timer = event.getElementsByTagName('bpmn:timerEventDefinition')[0];
 
                 if (timer) {
-                    const extensionElements = event.getElementsByTagName("bpmn:extensionElements")[0];
+                    const extensionElements = event.getElementsByTagName('bpmn:extensionElements')[0];
                     if (!extensionElements) continue;
 
-                    const uengineJson = extensionElements.querySelector("uengine\\:json, json");
+                    const uengineJson = extensionElements.querySelector('uengine\\:json, json');
                     if (!uengineJson || !uengineJson.textContent) continue;
 
                     let cronExpression = null;
@@ -945,18 +946,18 @@ export default {
                         const json = JSON.parse(uengineJson.textContent);
                         cronExpression = json.expression;
                     } catch (e) {
-                        console.warn("Invalid uengine:json in startEvent", e);
+                        console.warn('Invalid uengine:json in startEvent', e);
                         continue;
                     }
 
                     result = {
                         proc_def_id: info.proc_def_id,
-                        event_id: event.getAttribute("id"),
-                        name: event.getAttribute("name") || "",
+                        event_id: event.getAttribute('id'),
+                        name: event.getAttribute('name') || '',
                         cronExpression: cronExpression,
                         version: version
                     };
-                    
+
                     backend.setSchedule(result);
                 }
             }
@@ -979,16 +980,16 @@ export default {
                         const plane = diag?.['bpmndi:BPMNPlane'] || {};
                         const shapes = A(plane?.['bpmndi:BPMNShape']);
                         for (const sh of shapes) {
-                        const be = sh?.bpmnElement || sh?.['@_bpmnElement'] || sh?.['bpmnElement'];
-                        const b = sh?.['dc:Bounds'] || sh?.['dc:bounds'] || sh?.['Bounds'];
-                        if (!be || !b) continue;
-                        const num = (v) => (v == null ? NaN : Number(v));
-                        const x = num(b.x ?? b['@_x']);
-                        const y = num(b.y ?? b['@_y']);
-                        const w = num(b.width ?? b['@_width']);
-                        const h = num(b.height ?? b['@_height']);
-                        if (Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(w) || Number.isNaN(h)) continue;
-                        idx[be] = { x, y, w, h };
+                            const be = sh?.bpmnElement || sh?.['@_bpmnElement'] || sh?.['bpmnElement'];
+                            const b = sh?.['dc:Bounds'] || sh?.['dc:bounds'] || sh?.['Bounds'];
+                            if (!be || !b) continue;
+                            const num = (v) => (v == null ? NaN : Number(v));
+                            const x = num(b.x ?? b['@_x']);
+                            const y = num(b.y ?? b['@_y']);
+                            const w = num(b.width ?? b['@_width']);
+                            const h = num(b.height ?? b['@_height']);
+                            if (Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(w) || Number.isNaN(h)) continue;
+                            idx[be] = { x, y, w, h };
                         }
                     }
                     return idx;
@@ -998,7 +999,13 @@ export default {
 
                 // ---------- utils ----------
                 const ensureArray = (x) => (Array.isArray(x) ? x : x ? [x] : []);
-                const safeJson = (s, f = null) => { try { return s ? JSON.parse(s) : f; } catch { return f; } };
+                const safeJson = (s, f = null) => {
+                    try {
+                        return s ? JSON.parse(s) : f;
+                    } catch {
+                        return f;
+                    }
+                };
 
                 // ① JSON 파싱 캐시(문자열 → 객체 변환 1회만)
                 const jsonCache = new WeakMap();
@@ -1042,8 +1049,7 @@ export default {
                 let instanceNamePattern = null;
                 let data = [];
 
-                const participants =
-                result['bpmn:definitions']?.['bpmn:collaboration']?.['bpmn:participant'] || {};
+                const participants = result['bpmn:definitions']?.['bpmn:collaboration']?.['bpmn:participant'] || {};
 
                 function extractVariables(process) {
                     const props = process['bpmn:extensionElements']?.['uengine:properties'];
@@ -1052,17 +1058,17 @@ export default {
                     if (!vars) return [];
                     const arr = ensureArray(vars);
                     if (window.$mode == 'ProcessGPT') {
-                        return arr.map(v => ({
-                        name: v.name,
-                        description: v.description || `${v.name} description`,
-                        type: v.type
+                        return arr.map((v) => ({
+                            name: v.name,
+                            description: v.description || `${v.name} description`,
+                            type: v.type
                         }));
                     }
-                    return arr.map(v => ({
+                    return arr.map((v) => ({
                         name: v.name,
                         description: v.description || `${v.name} description`,
                         type: v.type,
-                        defaultValue: v['uengine:json'] ? (safeJson(v['uengine:json'])?.defaultValue ?? null) : null
+                        defaultValue: v['uengine:json'] ? safeJson(v['uengine:json'])?.defaultValue ?? null : null
                     }));
                 }
 
@@ -1072,7 +1078,7 @@ export default {
                     for (const lane of lanesArr) {
                         const refs = ensureArray(lane['bpmn:flowNodeRef']);
                         for (const id of refs) {
-                        if (!map.has(id)) map.set(id, lane.name || 'Unknown');
+                            if (!map.has(id)) map.set(id, lane.name || 'Unknown');
                         }
                     }
                     return map;
@@ -1084,14 +1090,15 @@ export default {
 
                     // 1) 좌상단(x,y) 점이 들어가는 Lane 하나 선택
                     if (nodeRect) {
-                        const px = nodeRect.x, py = nodeRect.y;
+                        const px = nodeRect.x,
+                            py = nodeRect.y;
                         const candidates = [...A(childLanes), ...A(parentLanes)];
                         for (const lane of candidates) {
-                        const r = DI_INDEX && DI_INDEX[lane.id];
-                        if (!r) continue;
-                        if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) {
-                            return lane.name || 'Unknown';
-                        }
+                            const r = DI_INDEX && DI_INDEX[lane.id];
+                            if (!r) continue;
+                            if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) {
+                                return lane.name || 'Unknown';
+                            }
                         }
                     }
 
@@ -1099,8 +1106,8 @@ export default {
                     const buildLaneIndex = (lanesArr = []) => {
                         const map = new Map();
                         for (const lane of lanesArr) {
-                        const refs = A(lane['bpmn:flowNodeRef'] || lane.flowNodeRef);
-                        for (const id of refs) if (!map.has(id)) map.set(id, lane.name || 'Unknown');
+                            const refs = A(lane['bpmn:flowNodeRef'] || lane.flowNodeRef);
+                            for (const id of refs) if (!map.has(id)) map.set(id, lane.name || 'Unknown');
                         }
                         return map;
                     };
@@ -1124,7 +1131,6 @@ export default {
                     }
                     return val == null ? '' : String(val);
                 };
-
 
                 // ---------- 재귀 파서 ----------
                 function processSubProcess(subProcessTmp, processId) {
@@ -1192,32 +1198,32 @@ export default {
                                 : [{ ...val, type: key.replace('bpmn:', ''), process: proc.id }];
                             gateways = gateways.concat(list);
                         } else if (key.includes('subProcess')) {
-                        const subs = processSubProcess(val, proc.id);
+                            const subs = processSubProcess(val, proc.id);
 
-                        subs.forEach((sp) => {
-                            const subRes = processBpmnProcess(sp);
+                            subs.forEach((sp) => {
+                                const subRes = processBpmnProcess(sp);
 
-                            // childrenRaw 보관(원형 유지)
-                            sp.childrenRaw = {
-                            events: subRes.events.slice(),
-                            activities: subRes.activities.slice(),
-                            gateways: subRes.gateways.slice(),
-                            subProcesses: subRes.subProcesses.slice(),
-                            sequences: subRes.sequenceFlows.slice(),
-                            lanes: subRes.lanes.slice(),
-                            data: subRes.data.slice()
-                            };
+                                // childrenRaw 보관(원형 유지)
+                                sp.childrenRaw = {
+                                    events: subRes.events.slice(),
+                                    activities: subRes.activities.slice(),
+                                    gateways: subRes.gateways.slice(),
+                                    subProcesses: subRes.subProcesses.slice(),
+                                    sequences: subRes.sequenceFlows.slice(),
+                                    lanes: subRes.lanes.slice(),
+                                    data: subRes.data.slice()
+                                };
 
-                            // flatten 유지(나중에 재배치할 거라 그대로 합침)
-                            events = events.concat(subRes.events);
-                            activities = activities.concat(subRes.activities);
-                            gateways = gateways.concat(subRes.gateways);
-                            lanes = lanes.concat(subRes.lanes);
-                            sequenceFlows = sequenceFlows.concat(subRes.sequenceFlows);
-                            data = data.concat(subRes.data);
-                        });
+                                // flatten 유지(나중에 재배치할 거라 그대로 합침)
+                                events = events.concat(subRes.events);
+                                activities = activities.concat(subRes.activities);
+                                gateways = gateways.concat(subRes.gateways);
+                                lanes = lanes.concat(subRes.lanes);
+                                sequenceFlows = sequenceFlows.concat(subRes.sequenceFlows);
+                                data = data.concat(subRes.data);
+                            });
 
-                        subProcesses = subProcesses.concat(subs);
+                            subProcesses = subProcesses.concat(subs);
                         }
                     });
 
@@ -1226,18 +1232,18 @@ export default {
                         if (!key.includes('Event')) return;
                         let evList = Array.isArray(proc[key]) ? proc[key] : [proc[key]];
                         evList.forEach((ev) => {
-                        if (ev && ev.attachedToRef) {
-                            const attachedActivity = activities.find((a) => a.id == ev.attachedToRef);
-                            const attachedSubProcess = subProcesses.find((s) => s.id == ev.attachedToRef);
-                            if (attachedActivity) {
-                            attachedActivity.attachedEvents = attachedActivity.attachedEvents || [];
-                            attachedActivity.attachedEvents.push(ev.id);
+                            if (ev && ev.attachedToRef) {
+                                const attachedActivity = activities.find((a) => a.id == ev.attachedToRef);
+                                const attachedSubProcess = subProcesses.find((s) => s.id == ev.attachedToRef);
+                                if (attachedActivity) {
+                                    attachedActivity.attachedEvents = attachedActivity.attachedEvents || [];
+                                    attachedActivity.attachedEvents.push(ev.id);
+                                }
+                                if (attachedSubProcess) {
+                                    attachedSubProcess.attachedEvents = attachedSubProcess.attachedEvents || [];
+                                    attachedSubProcess.attachedEvents.push(ev.id);
+                                }
                             }
-                            if (attachedSubProcess) {
-                            attachedSubProcess.attachedEvents = attachedSubProcess.attachedEvents || [];
-                            attachedSubProcess.attachedEvents.push(ev.id);
-                            }
-                        }
                         });
                     });
 
@@ -1267,8 +1273,7 @@ export default {
                         role: resolveRole(ev.id, lanesForRole, parentLanes),
                         process: ev.process,
                         definitionType: definitionType ? definitionType[0] : null,
-                        properties:
-                        ev['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                        properties: ev['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
                     };
                 };
 
@@ -1277,8 +1282,8 @@ export default {
                     task.name = activity.name;
                     task.id = activity.id;
                     task.type = activity.type;
-                    task.description = '' //`${activity.name} description`;
-                    task.instruction = '' //`${activity.name} instruction`;
+                    task.description = ''; //`${activity.name} description`;
+                    task.instruction = ''; //`${activity.name} instruction`;
                     task.process = activity.process;
                     task.attachedEvents = activity.attachedEvents || null;
                     task.agent = '';
@@ -1312,11 +1317,11 @@ export default {
                         task.outputData = propsJson.outputData || task.outputData;
                         task.tool = propsJson.tool || task.tool;
                     }
-                    
+
                     if (propsJson && propsJson.variableForHtmlFormContext && propsJson.variableForHtmlFormContext.name) {
                         task.tool = `formHandler:${propsJson.variableForHtmlFormContext.name}`;
                     }
-                    
+
                     return task;
                 };
 
@@ -1327,13 +1332,9 @@ export default {
                     description: (gateway.name || 'Gateway') + ' description',
                     process: gateway.process,
                     role: resolveRole(gateway.id, lanesForRole, parentLanes),
-                    condition:
-                        window.$mode == 'ProcessGPT'
-                        ? gateway.condition || ''
-                        : ((getPropsJson(gateway) || {})?.condition || ''),
-                    properties:
-                        gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
-                    });
+                    condition: window.$mode == 'ProcessGPT' ? gateway.condition || '' : (getPropsJson(gateway) || {})?.condition || '',
+                    properties: gateway['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                });
 
                 const buildSequence = (flow) => {
                     let condition = '';
@@ -1349,8 +1350,7 @@ export default {
                         source: flow.sourceRef || flow.source,
                         target: flow.targetRef || flow.target,
                         condition,
-                        properties:
-                        flow['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
+                        properties: flow['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}'
                     };
                 };
 
@@ -1397,7 +1397,7 @@ export default {
                         }
                         return {
                             name: lane.name,
-                            endpoint : endpoint,
+                            endpoint: endpoint,
                             resolutionRule: lane.resolutionRule,
                             default: defaultEndpoint
                         };
@@ -1416,31 +1416,30 @@ export default {
 
                         data: (raw.data || []).slice(),
                         roles: buildRolesFromLanes(childLanes),
-                        events: (raw.events || []).map(ev => buildEvent(ev, childLanes, parentLanes)),
-                        activities: (raw.activities || []).map(a => buildActivity(a, childLanes, parentLanes)),
-                        gateways: (raw.gateways || []).map(g => buildGateway(g, childLanes, parentLanes)),
+                        events: (raw.events || []).map((ev) => buildEvent(ev, childLanes, parentLanes)),
+                        activities: (raw.activities || []).map((a) => buildActivity(a, childLanes, parentLanes)),
+                        gateways: (raw.gateways || []).map((g) => buildGateway(g, childLanes, parentLanes)),
                         sequences: (raw.sequences || raw.sequenceFlows || []).map(buildSequence),
 
                         subProcesses: (raw.subProcesses || []).map((childSp) => {
-                        const propsJson = getPropsJson(childSp) || {};
-                        return {
-                            id: childSp.id,
-                            name: childSp.name,
-                            role: resolveRole(childSp.id, childLanes, parentLanes),
-                            type: childSp.type,
-                            process: childSp.process,
-                            duration: propsJson?.duration ? propsJson.duration : 5,
-                            properties:
-                            childSp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
-                            attachedEvents: childSp.attachedEvents || null,
-                            // 재귀
-                            children: buildSubprocessChildren(
-                            childSp.childrenRaw,
-                            INHERIT_LANE_TO_CHILDREN ? (childLanes.length ? childLanes : parentLanes) : [],
-                            parentProcName,
-                            parentProcId
-                            )
-                        };
+                            const propsJson = getPropsJson(childSp) || {};
+                            return {
+                                id: childSp.id,
+                                name: childSp.name,
+                                role: resolveRole(childSp.id, childLanes, parentLanes),
+                                type: childSp.type,
+                                process: childSp.process,
+                                duration: propsJson?.duration ? propsJson.duration : 5,
+                                properties: childSp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
+                                attachedEvents: childSp.attachedEvents || null,
+                                // 재귀
+                                children: buildSubprocessChildren(
+                                    childSp.childrenRaw,
+                                    INHERIT_LANE_TO_CHILDREN ? (childLanes.length ? childLanes : parentLanes) : [],
+                                    parentProcName,
+                                    parentProcId
+                                )
+                            };
                         })
                     };
                 };
@@ -1517,32 +1516,25 @@ export default {
                             default: defaultEndpoint
                         };
                     }),
-                    events: [
-                        ...event.map((ev) => buildEvent(ev, lanes, []))
-                    ],
-                    activities: [
-                        ...activities.map((activity) => buildActivity(activity, lanes, []))
-                    ],
+                    events: [...event.map((ev) => buildEvent(ev, lanes, []))],
+                    activities: [...activities.map((activity) => buildActivity(activity, lanes, []))],
                     subProcesses: [
                         ...subProcesses.map((sp) => {
-                        const propsJson = getPropsJson(sp) || {};
-                        return {
-                            id: sp.id,
-                            name: sp.name,
-                            type: sp.type,
-                            role: resolveRole(sp.id, lanes, []),
-                            process: sp.process,
-                            duration: propsJson?.duration ? propsJson.duration : 5,
-                            properties:
-                            sp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
-                            attachedEvents: sp.attachedEvents || null,
-                            children: buildSubprocessChildren(sp.childrenRaw, lanes, definitionName, processDefinitionId)
-                        };
+                            const propsJson = getPropsJson(sp) || {};
+                            return {
+                                id: sp.id,
+                                name: sp.name,
+                                type: sp.type,
+                                role: resolveRole(sp.id, lanes, []),
+                                process: sp.process,
+                                duration: propsJson?.duration ? propsJson.duration : 5,
+                                properties: sp['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'] || '{}',
+                                attachedEvents: sp.attachedEvents || null,
+                                children: buildSubprocessChildren(sp.childrenRaw, lanes, definitionName, processDefinitionId)
+                            };
                         })
                     ],
-                    gateways: [
-                        ...gateways.map((gateway) => buildGateway(gateway, lanes, []))
-                    ],
+                    gateways: [...gateways.map((gateway) => buildGateway(gateway, lanes, []))],
                     sequences: sequenceFlows.map((flow) => buildSequence(flow)),
                     participants: participants,
                     instanceNamePattern: instanceNamePattern
@@ -1564,7 +1556,7 @@ export default {
                 let reordered = this.reorderActivitiesBySequence(jsonData);
 
                 // 모든 서브프로세스 ID 수집(중첩 포함) — subProcesses는 전체 플랫 수집이라 충분
-                const subprocIds = new Set((reordered.subProcesses || []).map(sp => sp.id));
+                const subprocIds = new Set((reordered.subProcesses || []).map((sp) => sp.id));
 
                 // 최종 강제: 이벤트/액티비티/게이트웨이에서 서브 기원은 맨 끝
                 reordered.events = moveSubprocToEnd(reordered.events, subprocIds);
@@ -1573,13 +1565,12 @@ export default {
                 // sequences는 요구사항에 없으므로 유지 (원하면 동일 규칙 적용 가능)
 
                 return reordered;
-
             } catch (error) {
                 console.error('Error parsing XML:', error);
                 throw error;
             }
         },
-        
+
         // 시퀀스 정보를 활용하여 activities 순서를 재정렬하는 함수
         reorderActivitiesBySequence(jsonData) {
             try {
@@ -1590,15 +1581,15 @@ export default {
                 // 시퀀스로부터 그래프 구조 생성
                 const graph = {};
                 const inDegree = {};
-                
+
                 // 모든 노드 초기화
-                [...jsonData.events, ...jsonData.activities, ...jsonData.gateways].forEach(node => {
+                [...jsonData.events, ...jsonData.activities, ...jsonData.gateways].forEach((node) => {
                     graph[node.id] = [];
                     inDegree[node.id] = 0;
                 });
 
                 // 시퀀스로부터 그래프 간선 추가
-                jsonData.sequences.forEach(seq => {
+                jsonData.sequences.forEach((seq) => {
                     if (graph[seq.source] && inDegree.hasOwnProperty(seq.target)) {
                         graph[seq.source].push(seq.target);
                         inDegree[seq.target]++;
@@ -1606,8 +1597,8 @@ export default {
                 });
 
                 // 시작 노드 찾기 (보통 start_event이지만 inDegree가 0인 노드들 중에서)
-                let startNodes = Object.keys(inDegree).filter(node => inDegree[node] === 0);
-                
+                let startNodes = Object.keys(inDegree).filter((node) => inDegree[node] === 0);
+
                 if (startNodes.length === 0) {
                     // 순환이 있는 경우 원래 순서 유지
                     return jsonData;
@@ -1620,16 +1611,16 @@ export default {
 
                 while (queue.length > 0) {
                     const currentNode = queue.shift();
-                    
+
                     if (visited.has(currentNode)) {
                         continue;
                     }
-                    
+
                     visited.add(currentNode);
                     visitedOrder.push(currentNode);
-                    
+
                     // 다음 노드들을 큐에 추가 (inDegree 감소시키면서)
-                    graph[currentNode].forEach(nextNode => {
+                    graph[currentNode].forEach((nextNode) => {
                         inDegree[nextNode]--;
                         if (inDegree[nextNode] === 0 && !visited.has(nextNode)) {
                             queue.push(nextNode);
@@ -1638,36 +1629,35 @@ export default {
                 }
 
                 // activities만 추출하여 순서대로 재정렬
-                const activityIds = jsonData.activities.map(activity => activity.id);
-                const orderedActivityIds = visitedOrder.filter(id => activityIds.includes(id));
-                
+                const activityIds = jsonData.activities.map((activity) => activity.id);
+                const orderedActivityIds = visitedOrder.filter((id) => activityIds.includes(id));
+
                 // 순서대로 activities 재배열
                 const reorderedActivities = [];
-                orderedActivityIds.forEach(id => {
-                    const activity = jsonData.activities.find(act => act.id === id);
+                orderedActivityIds.forEach((id) => {
+                    const activity = jsonData.activities.find((act) => act.id === id);
                     if (activity) {
                         reorderedActivities.push(activity);
                     }
                 });
 
                 // 혹시 누락된 activities가 있다면 마지막에 추가
-                jsonData.activities.forEach(activity => {
-                    if (!reorderedActivities.find(act => act.id === activity.id)) {
+                jsonData.activities.forEach((activity) => {
+                    if (!reorderedActivities.find((act) => act.id === activity.id)) {
                         reorderedActivities.push(activity);
                     }
                 });
 
                 jsonData.activities = reorderedActivities;
                 return jsonData;
-                
             } catch (error) {
                 console.error('Error reordering activities:', error);
                 // 에러 발생 시 원래 데이터 반환
                 return jsonData;
             }
         },
-        async setDefinitionInfo(info) {  
-            return new Promise (function (resolve) {
+        async setDefinitionInfo(info) {
+            return new Promise(function (resolve) {
                 const store = useBpmnStore();
                 let modeler = store.getModeler;
                 const definitions = modeler.getDefinitions();
@@ -1706,19 +1696,18 @@ export default {
 
                 let processJson;
                 if (uengineProperties.json) {
-                    processJson = JSON.parse(uengineProperties.json);    
+                    processJson = JSON.parse(uengineProperties.json);
                 } else {
                     processJson = {};
                 }
                 processJson.definitionName = info.name;
-                processJson.version = info.version
-                processJson.shortDescription = {"text": info.message}
+                processJson.version = info.version;
+                processJson.shortDescription = { text: info.message };
 
-                uengineProperties.json = JSON.stringify(processJson)
+                uengineProperties.json = JSON.stringify(processJson);
                 // processJson.instanceNamePattern ? processJson.instanceNamePattern : '';
-                resolve()
-
-            })
+                resolve();
+            });
         },
         async saveModel(info, xml) {
             var me = this;
@@ -1727,9 +1716,9 @@ export default {
                 action: async () => {
                     if (window.$mode == 'uEngine') {
                         // uEngine
-                        console.log(info)
+                        console.log(info);
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
-                        if(info.release) {
+                        if (info.release) {
                             await backend.releaseVersion(info.releaseName);
                         }
                     } else {
@@ -1740,26 +1729,27 @@ export default {
                                 processDefinitionName: info.name
                             };
                         }
-                        if (me.processDefinition.processDefinitionId == 'definition-map') me.processDefinition.processDefinitionId = info.proc_def_id
+                        if (me.processDefinition.processDefinitionId == 'definition-map')
+                            me.processDefinition.processDefinitionId = info.proc_def_id;
 
                         // 최초 저장 시 폼 정보 저장
                         if (me.$route.fullPath.includes('/chat') || me.$route.fullPath.includes('/definition-map')) {
                             if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
                                 me.processDefinition.data = [];
                                 me.processDefinition.activities.forEach(async (activity) => {
-                                    let formId
+                                    let formId;
                                     if (activity.tool && activity.tool.includes('formHandler:')) {
                                         formId = activity.tool.replace('formHandler:', '');
                                     } else {
-                                        formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`; 
-                                    }                                    
+                                        formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`;
+                                    }
                                     let formHtml = localStorage.getItem(formId);
                                     if (formHtml) {
                                         const options = {
                                             type: 'form',
                                             proc_def_id: info.proc_def_id,
                                             activity_id: activity.id
-                                        }
+                                        };
                                         await backend.putRawDefinition(formHtml, formId, options);
                                         localStorage.removeItem(formId);
                                     }
@@ -1789,10 +1779,10 @@ export default {
                     }
                     me.EventBus.emit('definitions-updated');
 
-                    if(!info.skipSaveProcMap){
+                    if (!info.skipSaveProcMap) {
                         // 최신 정의 체계도 불러오기
                         me.processDefinitionMap = await backend.getProcessDefinitionMap();
-                        
+
                         // BPMN XML에서 mega/major 프로세스 ID 추출
                         let megaProcessId = null;
                         let majorProcessId = null;
@@ -1804,11 +1794,13 @@ export default {
                                 megaProcessId = processElement.getAttribute('megaProcessId');
                                 majorProcessId = processElement.getAttribute('majorProcessId');
                             }
-                            console.log(`[정의체계도] 프로세스 추가 - Mega: ${megaProcessId}, Major: ${majorProcessId}, Process: ${info.proc_def_id}`);
+                            console.log(
+                                `[정의체계도] 프로세스 추가 - Mega: ${megaProcessId}, Major: ${majorProcessId}, Process: ${info.proc_def_id}`
+                            );
                         } catch (e) {
                             console.warn('Failed to parse XML for mega/major process IDs:', e);
                         }
-                        
+
                         // proc_map에 해당 프로세스가 이미 있는지 확인
                         let processExists = false;
                         if (me.processDefinitionMap && me.processDefinitionMap.mega_proc_list) {
@@ -1816,9 +1808,7 @@ export default {
                                 if (megaProc.major_proc_list) {
                                     for (const majorProc of megaProc.major_proc_list) {
                                         if (majorProc.sub_proc_list) {
-                                            const existingProc = majorProc.sub_proc_list.find(
-                                                sub => sub.id === info.proc_def_id
-                                            );
+                                            const existingProc = majorProc.sub_proc_list.find((sub) => sub.id === info.proc_def_id);
                                             if (existingProc) {
                                                 processExists = true;
                                                 // 기존 프로세스는 이름만 업데이트
@@ -1831,7 +1821,7 @@ export default {
                                 if (processExists) break;
                             }
                         }
-                        
+
                         // 신규 프로세스인 경우 proc_map에 추가
                         if (!processExists) {
                             // proc_map 구조 초기화
@@ -1841,17 +1831,16 @@ export default {
                             if (!me.processDefinitionMap.mega_proc_list) {
                                 me.processDefinitionMap.mega_proc_list = [];
                             }
-                            
+
                             // mega/major 정보가 없거나 "미분류"인 경우
-                            if (!megaProcessId || !majorProcessId || 
-                                megaProcessId === '미분류' || majorProcessId === '미분류') {
+                            if (!megaProcessId || !majorProcessId || megaProcessId === '미분류' || majorProcessId === '미분류') {
                                 console.log(`[정의체계도] 미분류 프로세스로 추가`);
-                                
+
                                 // "미분류" 메가 프로세스 찾기 (기존 것 재사용)
                                 let unclassifiedMega = me.processDefinitionMap.mega_proc_list.find(
-                                    mega => mega.id === 'unclassified' || mega.name === '미분류'
+                                    (mega) => mega.id === 'unclassified' || mega.name === '미분류'
                                 );
-                                
+
                                 if (!unclassifiedMega) {
                                     console.log(`[정의체계도] 미분류 Mega 프로세스 생성`);
                                     unclassifiedMega = {
@@ -1863,12 +1852,12 @@ export default {
                                 } else {
                                     console.log(`[정의체계도] 기존 미분류 Mega 프로세스 사용`);
                                 }
-                                
+
                                 // "미분류" 메이저 프로세스 찾기 (기존 것 재사용)
                                 let unclassifiedMajor = unclassifiedMega.major_proc_list.find(
-                                    major => major.id === 'unclassified_major' || major.name === '미분류'
+                                    (major) => major.id === 'unclassified_major' || major.name === '미분류'
                                 );
-                                
+
                                 if (!unclassifiedMajor) {
                                     console.log(`[정의체계도] 미분류 Major 프로세스 생성`);
                                     unclassifiedMajor = {
@@ -1880,7 +1869,7 @@ export default {
                                 } else {
                                     console.log(`[정의체계도] 기존 미분류 Major 프로세스 사용`);
                                 }
-                                
+
                                 // 서브 프로세스 추가
                                 if (!unclassifiedMajor.sub_proc_list) {
                                     unclassifiedMajor.sub_proc_list = [];
@@ -1895,9 +1884,9 @@ export default {
                                 // mega/major 정보가 있는 경우
                                 // 메가 프로세스 찾기: id 또는 name으로 검색 (기존 것 재사용)
                                 let megaProc = me.processDefinitionMap.mega_proc_list.find(
-                                    mega => mega.id === megaProcessId || mega.name === megaProcessId
+                                    (mega) => mega.id === megaProcessId || mega.name === megaProcessId
                                 );
-                                
+
                                 if (!megaProc) {
                                     // 기존에 없으면 새로 생성
                                     console.log(`[정의체계도] 새 Mega 프로세스 생성: ${megaProcessId}`);
@@ -1910,15 +1899,15 @@ export default {
                                 } else {
                                     console.log(`[정의체계도] 기존 Mega 프로세스 사용: ${megaProc.name} (id: ${megaProc.id})`);
                                 }
-                                
+
                                 // 메이저 프로세스 찾기: id 또는 name으로 검색 (기존 것 재사용)
                                 if (!megaProc.major_proc_list) {
                                     megaProc.major_proc_list = [];
                                 }
                                 let majorProc = megaProc.major_proc_list.find(
-                                    major => major.id === majorProcessId || major.name === majorProcessId
+                                    (major) => major.id === majorProcessId || major.name === majorProcessId
                                 );
-                                
+
                                 if (!majorProc) {
                                     // 기존에 없으면 새로 생성
                                     console.log(`[정의체계도] 새 Major 프로세스 생성: ${majorProcessId}`);
@@ -1931,7 +1920,7 @@ export default {
                                 } else {
                                     console.log(`[정의체계도] 기존 Major 프로세스 사용: ${majorProc.name} (id: ${majorProc.id})`);
                                 }
-                                
+
                                 // 서브 프로세스 추가
                                 if (!majorProc.sub_proc_list) {
                                     majorProc.sub_proc_list = [];
@@ -1944,7 +1933,7 @@ export default {
                                 console.log(`[정의체계도] 프로세스 추가 완료: ${info.name} → ${megaProc.name}/${majorProc.name}`);
                             }
                         }
-                        
+
                         // 업데이트된 proc_map 저장
                         await backend.putProcessDefinitionMap(me.processDefinitionMap);
                     }
@@ -1967,7 +1956,7 @@ export default {
                 }
             });
         },
-        
+
         async optimizeDefinition(processDefinition) {
             if (!processDefinition || !processDefinition.activities) {
                 processDefinition = await this.convertXMLToJSON(this.bpmn);
@@ -1975,92 +1964,95 @@ export default {
 
             return new Promise((resolve, reject) => {
                 if (processDefinition) {
-                    backend.listDefinition('form_def', {
-                        match: {
-                            proc_def_id: processDefinition.processDefinitionId
-                        }
-                    }).then(formList => {
-                        const formFields = formList.map((item) => {
-                            const obj = {};
-                            obj[item.id] = item.fieldsJson;
-                            return obj;
-                        });
-
-                        const definitionOptimizerClient = {
-                            onGenerationFinished: (response) => {
-                                let jsonData = this.extractJSON(response);
-                                if (jsonData && jsonData.includes('{')){
-                                    try {
-                                        jsonData = JSON.parse(jsonData);
-                                    } catch(e) {
-                                        try {
-                                            jsonData = partialParse(jsonData)
-                                        } catch(e) {
-                                            console.log(e)
-                                        }
-                                    }
-                                } else {
-                                    jsonData = null
-                                }
-
-                                if (jsonData && jsonData.activities && jsonData.activities.length > 0) {
-                                    const activities = jsonData.activities;
-                                    activities.forEach(item => {
-                                        const activityId = item.activity_id;
-                                        const activity = processDefinition.activities.find(activity => activity.id === activityId);
-                                        if (activity) {
-                                            activity.inputData = item.input_fields;
-                                        }
-                                    });
-                                }
-
-                                if (jsonData && jsonData.gateways && jsonData.gateways.length > 0) {
-                                    const gateways = jsonData.gateways;
-                                    gateways.forEach(item => {
-                                        const gatewayId = item.gateway_id;
-                                        const gateway = processDefinition.gateways.find(gateway => gateway.id === gatewayId);
-                                        if (gateway) {
-                                            gateway.conditionData = item.condition_fields;
-                                        }
-                                    });
-                                }
-
-                                const options = {
-                                    definition: processDefinition
-                                }
-                                backend.putRawDefinition(this.bpmn, processDefinition.processDefinitionId, options);
-                                this.$try({
-                                    context: this,
-                                    action: () => {
-                                        this.useOptimize = false;
-                                        this.optimization = null;
-                                    },
-                                    successMsg: '프로세스 정의 최적화가 완료되었습니다.'
-                                });
-                                resolve();
-                            },
-                            onModelCreated: (response) => {
-                                this.optimization = response;
+                    backend
+                        .listDefinition('form_def', {
+                            match: {
+                                proc_def_id: processDefinition.processDefinitionId
                             }
-                        }
+                        })
+                        .then((formList) => {
+                            const formFields = formList.map((item) => {
+                                const obj = {};
+                                obj[item.id] = item.fieldsJson;
+                                return obj;
+                            });
 
-                        this.definitionOptimizer = new DefinitionOptimizer(definitionOptimizerClient, {
-                            isStream: true,
-                            preferredLanguage: "Korean",
-                            processDefinition: processDefinition,
-                            formFields: formFields
+                            const definitionOptimizerClient = {
+                                onGenerationFinished: (response) => {
+                                    let jsonData = this.extractJSON(response);
+                                    if (jsonData && jsonData.includes('{')) {
+                                        try {
+                                            jsonData = JSON.parse(jsonData);
+                                        } catch (e) {
+                                            try {
+                                                jsonData = partialParse(jsonData);
+                                            } catch (e) {
+                                                console.log(e);
+                                            }
+                                        }
+                                    } else {
+                                        jsonData = null;
+                                    }
+
+                                    if (jsonData && jsonData.activities && jsonData.activities.length > 0) {
+                                        const activities = jsonData.activities;
+                                        activities.forEach((item) => {
+                                            const activityId = item.activity_id;
+                                            const activity = processDefinition.activities.find((activity) => activity.id === activityId);
+                                            if (activity) {
+                                                activity.inputData = item.input_fields;
+                                            }
+                                        });
+                                    }
+
+                                    if (jsonData && jsonData.gateways && jsonData.gateways.length > 0) {
+                                        const gateways = jsonData.gateways;
+                                        gateways.forEach((item) => {
+                                            const gatewayId = item.gateway_id;
+                                            const gateway = processDefinition.gateways.find((gateway) => gateway.id === gatewayId);
+                                            if (gateway) {
+                                                gateway.conditionData = item.condition_fields;
+                                            }
+                                        });
+                                    }
+
+                                    const options = {
+                                        definition: processDefinition
+                                    };
+                                    backend.putRawDefinition(this.bpmn, processDefinition.processDefinitionId, options);
+                                    this.$try({
+                                        context: this,
+                                        action: () => {
+                                            this.useOptimize = false;
+                                            this.optimization = null;
+                                        },
+                                        successMsg: '프로세스 정의 최적화가 완료되었습니다.'
+                                    });
+                                    resolve();
+                                },
+                                onModelCreated: (response) => {
+                                    this.optimization = response;
+                                }
+                            };
+
+                            this.definitionOptimizer = new DefinitionOptimizer(definitionOptimizerClient, {
+                                isStream: true,
+                                preferredLanguage: 'Korean',
+                                processDefinition: processDefinition,
+                                formFields: formFields
+                            });
+
+                            this.definitionOptimizer.generate();
+                        })
+                        .catch((error) => {
+                            console.error('Form list retrieval failed:', error);
+                            reject(error);
                         });
-
-                        this.definitionOptimizer.generate();
-                    }).catch(error => {
-                        console.error('Form list retrieval failed:', error);
-                        reject(error);
-                    });
                 } else {
                     resolve();
                 }
             });
         }
-    },
+    }
 };
 </script>

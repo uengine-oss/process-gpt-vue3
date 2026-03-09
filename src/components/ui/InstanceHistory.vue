@@ -1,51 +1,32 @@
 <template>
     <v-card class="instance-history" elevation="10">
-        <slot name="header"> 
+        <slot name="header">
             <v-row class="ma-0 pa-4 pb-2 align-center">
-                <v-card-title class="pa-0">
-                    인스턴스 업무 히스토리
-                </v-card-title>
+                <v-card-title class="pa-0"> 인스턴스 업무 히스토리 </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn
-                    variant="text"
-                    density="compact"
-                    :loading="loading"
-                    :disabled="!resolvedInstId"
-                    @click="load"
-                >
+                <v-btn variant="text" density="compact" :loading="loading" :disabled="!resolvedInstId" @click="load">
                     <v-icon class="mr-1">mdi-refresh</v-icon>
                     새로고침
                 </v-btn>
             </v-row>
-        
+
             <v-divider></v-divider>
         </slot>
-        
 
         <slot name="body">
             <div class="instance-history__body">
-                <v-alert
-                    v-if="!resolvedInstId"
-                    type="info"
-                    variant="tonal"
-                    density="compact"
-                    class="ma-4"
-                >
+                <v-alert v-if="!resolvedInstId" type="info" variant="tonal" density="compact" class="ma-4">
                     인스턴스 ID가 없습니다.
                 </v-alert>
 
                 <template v-else>
                     <div class="instance-history__header pa-4 pb-2">
                         <div class="d-flex align-center flex-wrap ga-2">
-                            <div class="text-subtitle-1 font-weight-semibold">
-                                ID: {{ resolvedInstId }}
-                            </div>
+                            <div class="text-subtitle-1 font-weight-semibold">ID: {{ resolvedInstId }}</div>
                             <v-chip v-if="resolvedInstance?.status" size="x-small" variant="outlined">
                                 {{ resolvedInstance.status }}
                             </v-chip>
-                            <v-chip v-if="taskCount != null" size="x-small" variant="outlined">
-                                태스크 {{ taskCount }}개
-                            </v-chip>
+                            <v-chip v-if="taskCount != null" size="x-small" variant="outlined"> 태스크 {{ taskCount }}개 </v-chip>
                         </div>
 
                         <v-text-field
@@ -63,11 +44,7 @@
 
                     <v-row class="ma-0 pa-0 instance-history__content">
                         <!-- 좌측: 태스크 목록 -->
-                        <v-col
-                            cols="12"
-                            :md="selectedTask ? 7 : 12"
-                            class="pa-0 instance-history__left"
-                        >
+                        <v-col cols="12" :md="selectedTask ? 7 : 12" class="pa-0 instance-history__left">
                             <v-data-table
                                 :items="filteredTasks"
                                 :headers="headers"
@@ -82,13 +59,13 @@
                                 @click:row="onRowClick"
                             >
                                 <template #item.taskId="{ item }">
-                                    <span style="font-variant-numeric: tabular-nums;">
+                                    <span style="font-variant-numeric: tabular-nums">
                                         {{ item.taskId ?? '-' }}
                                     </span>
                                 </template>
 
                                 <template #item.title="{ item }">
-                                    <span class="text-truncate" style="display: inline-block; max-width: 100%;">
+                                    <span class="text-truncate" style="display: inline-block; max-width: 100%">
                                         {{ item.title || '(이름 없음)' }}
                                     </span>
                                 </template>
@@ -112,17 +89,13 @@
                                 </template>
 
                                 <template #item.delegated="{ item }">
-                                    <v-chip
-                                        size="x-small"
-                                        :color="item.delegated ? 'warning' : 'default'"
-                                        variant="outlined"
-                                    >
+                                    <v-chip size="x-small" :color="item.delegated ? 'warning' : 'default'" variant="outlined">
                                         {{ item.delegated ? '위임' : '-' }}
                                     </v-chip>
                                 </template>
 
                                 <template #item.assignee="{ item }">
-                                    <span class="text-truncate" style="display: inline-block; max-width: 160px;">
+                                    <span class="text-truncate" style="display: inline-block; max-width: 160px">
                                         {{ item.assignee || '-' }}
                                     </span>
                                 </template>
@@ -142,17 +115,10 @@
                         </v-col>
 
                         <!-- 우측: 히스토리/상세(읽기 전용) -->
-                        <v-col
-                            v-if="selectedTask"
-                            cols="12"
-                            md="5"
-                            class="pa-0 instance-history__right"
-                        >
+                        <v-col v-if="selectedTask" cols="12" md="5" class="pa-0 instance-history__right">
                             <div class="pa-4">
                                 <div class="d-flex align-center">
-                                    <div class="text-subtitle-1 font-weight-semibold">
-                                        선택 태스크
-                                    </div>
+                                    <div class="text-subtitle-1 font-weight-semibold">선택 태스크</div>
                                     <v-spacer></v-spacer>
                                     <v-chip size="x-small" variant="outlined">
                                         {{ selectedTask.status || '-' }}
@@ -178,10 +144,9 @@
                                         {{ selectedTask.title || '(이름 없음)' }}
                                     </div>
                                     <div class="text-caption text-grey-darken-1 mt-1">
-                                        TaskId: {{ selectedTask.taskId }} |
-                                        담당자: {{ selectedTask.assignee || '-' }} |
-                                        위임: {{ selectedTask.delegated ? 'Y' : 'N' }} |
-                                        선점: {{ selectedTask.claimedEligible ? (selectedTask.claimed ? 'Y' : 'N') : '-' }}
+                                        TaskId: {{ selectedTask.taskId }} | 담당자: {{ selectedTask.assignee || '-' }} | 위임:
+                                        {{ selectedTask.delegated ? 'Y' : 'N' }} | 선점:
+                                        {{ selectedTask.claimedEligible ? (selectedTask.claimed ? 'Y' : 'N') : '-' }}
                                     </div>
 
                                     <v-divider class="my-3"></v-divider>
@@ -234,14 +199,14 @@ export default {
         instance: {
             type: Object,
             required: false,
-            default: null,
+            default: null
         },
         // 외부에서 instId만 넘기는 경우
         instId: {
             type: [String, Number],
             required: false,
-            default: null,
-        },
+            default: null
+        }
     },
     data: () => ({
         loading: false,
@@ -257,8 +222,8 @@ export default {
             { title: '위임', key: 'delegated', sortable: true, width: 80 },
             { title: '담당자', key: 'assignee', sortable: true, width: 140 },
             { title: '시작', key: 'startDate', sortable: true, width: 120 },
-            { title: '종료', key: 'endDate', sortable: true, width: 120 },
-        ],
+            { title: '종료', key: 'endDate', sortable: true, width: 120 }
+        ]
     }),
     computed: {
         headers() {
@@ -282,17 +247,27 @@ export default {
             return Array.isArray(this.tasks) ? this.tasks.length : 0;
         },
         filteredTasks() {
-            const q = String(this.search || '').trim().toLowerCase();
+            const q = String(this.search || '')
+                .trim()
+                .toLowerCase();
             if (!q) return this.tasks;
             return (this.tasks || []).filter((t) => {
                 return (
-                    String(t.taskId ?? '').toLowerCase().includes(q) ||
-                    String(t.title ?? '').toLowerCase().includes(q) ||
-                    String(t.status ?? '').toLowerCase().includes(q) ||
-                    String(t.assignee ?? '').toLowerCase().includes(q)
+                    String(t.taskId ?? '')
+                        .toLowerCase()
+                        .includes(q) ||
+                    String(t.title ?? '')
+                        .toLowerCase()
+                        .includes(q) ||
+                    String(t.status ?? '')
+                        .toLowerCase()
+                        .includes(q) ||
+                    String(t.assignee ?? '')
+                        .toLowerCase()
+                        .includes(q)
                 );
             });
-        },
+        }
     },
     watch: {
         instance: {
@@ -303,16 +278,16 @@ export default {
                     this.resolvedInstance = newVal;
                 }
                 await this.load();
-            },
+            }
         },
-        '$route': {
+        $route: {
             deep: true,
             async handler(newVal, oldVal) {
                 if (newVal?.params?.instId !== oldVal?.params?.instId) {
                     await this.load();
                 }
-            },
-        },
+            }
+        }
     },
     async mounted() {
         await this.load();
@@ -349,26 +324,10 @@ export default {
             // 다양한 모드/백엔드의 worklist를 통일된 형태로 변환
             const taskId = item?.taskId ?? item?.id ?? item?.task?.taskId ?? null;
             const status = item?.status ?? item?.task?.status ?? null;
-            const title =
-                item?.title ||
-                item?.name ||
-                item?.task?.title ||
-                item?.task?.activity_name ||
-                item?.task?.name ||
-                '';
+            const title = item?.title || item?.name || item?.task?.title || item?.task?.activity_name || item?.task?.name || '';
             // uEngine worklist에는 endpoint(아이디)와 resName(표시명)이 같이 내려올 수 있음
-            const endpoint =
-                item?.username ||
-                item?.endpoint ||
-                item?.task?.username ||
-                item?.task?.endpoint ||
-                null;
-            const resName =
-                item?.resName ||
-                item?.res_name ||
-                item?.task?.resName ||
-                item?.task?.res_name ||
-                null;
+            const endpoint = item?.username || item?.endpoint || item?.task?.username || item?.task?.endpoint || null;
+            const resName = item?.resName || item?.res_name || item?.task?.resName || item?.task?.res_name || null;
             // 화면에는 resName을 우선 표시 (없으면 endpoint fallback)
             const assignee = resName || endpoint || null;
 
@@ -405,7 +364,7 @@ export default {
                 startDate: item?.startDate ?? item?.start_date ?? item?.task?.startDate ?? null,
                 endDate: item?.endDate ?? item?.end_date ?? item?.task?.endDate ?? null,
                 dueDate: item?.dueDate ?? item?.due_date ?? item?.task?.dueDate ?? null,
-                raw: item,
+                raw: item
             };
         },
         async load() {
@@ -446,7 +405,7 @@ export default {
                 },
                 finalAction: () => {
                     me.loading = false;
-                },
+                }
             });
         },
         onRowClick(event, row) {
@@ -457,8 +416,8 @@ export default {
         },
         closeSelectedTask() {
             this.selectedTask = null;
-        },
-    },
+        }
+    }
 };
 </script>
 

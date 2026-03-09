@@ -1,10 +1,9 @@
-import AIGenerator from "./AIGenerator";
+import AIGenerator from './AIGenerator';
 
 export default class AgentChatGenerator extends AIGenerator {
-
     constructor(client, language) {
         super(client, language);
-        this.model = "gpt-4o"
+        this.model = 'gpt-4o';
         this.options = {};
     }
 
@@ -22,7 +21,7 @@ export default class AgentChatGenerator extends AIGenerator {
                 text: this.message,
                 chat_room_id: this.chatRoomId,
                 options: this.options
-            }
+            };
 
             if (this.client.messages) {
                 this.client.messages.push({
@@ -34,7 +33,7 @@ export default class AgentChatGenerator extends AIGenerator {
                     isLoading: true
                 });
             }
-            
+
             const response = await fetch('/completion/multi-agent/chat', {
                 method: 'POST',
                 headers: {
@@ -42,7 +41,7 @@ export default class AgentChatGenerator extends AIGenerator {
                 },
                 body: JSON.stringify(data)
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 const result = data.response;
@@ -54,7 +53,7 @@ export default class AgentChatGenerator extends AIGenerator {
                     this.client.afterModelCreated(model);
                 }
                 this.client.messages = this.client.messages.filter((message) => {
-                    return !message.isLoading;  
+                    return !message.isLoading;
                 });
                 if (this.client.afterGenerationFinished) {
                     await this.client.afterGenerationFinished(model);
@@ -71,7 +70,7 @@ export default class AgentChatGenerator extends AIGenerator {
             throw error;
         }
     }
-    
+
     createModel(data) {
         if (typeof data === 'string') {
             try {
@@ -92,12 +91,12 @@ export default class AgentChatGenerator extends AIGenerator {
                 content: result.content,
                 htmlContent: result.html_content,
                 searchResults: result.search_results
-            }
+            };
         } else if (result.type === 'information') {
             modelJson = {
                 work: 'Mem0AgentInformation',
                 content: result.content
-            }
+            };
         }
         return modelJson;
     }

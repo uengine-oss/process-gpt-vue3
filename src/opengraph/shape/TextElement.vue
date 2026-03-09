@@ -1,43 +1,35 @@
 <template>
-  <div>
-    <slot>
-    </slot>
-  </div>
+    <div>
+        <slot> </slot>
+    </div>
 </template>
 
 <script>
-  import OpengraphElement from './OpengraphElement.vue'
-  export default {
+import OpengraphElement from './OpengraphElement.vue';
+export default {
     mixins: [OpengraphElement],
     name: 'text-element',
     props: {},
     computed: {},
     data: function () {
-      return {}
+        return {};
     },
     watch: {
         text: function (newVal) {
             var me = this;
             // // console.log('newVal: ', newVal)
-            this.props.text = newVal
+            this.props.text = newVal;
             // // console.log(this.props.text)
-
         }
     },
-    mounted: function () {
-
-    },
+    mounted: function () {},
     methods: {
-      generateShape: function () {
-        var me = this;
-        return new OG.shape.TextShape(me.text);
-      }
+        generateShape: function () {
+            var me = this;
+            return new OG.shape.TextShape(me.text);
+        }
     }
-  }
+};
 </script>
 
-
-<style scoped lang="scss" rel="stylesheet/scss">
-
-</style>
-
+<style scoped lang="scss" rel="stylesheet/scss"></style>

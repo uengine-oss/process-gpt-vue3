@@ -2,12 +2,7 @@
     <div class="main-chat-input-container" :class="containerVariantClass">
         <!-- 예시 문구들 (메인/시스템 채팅에서만 사용) -->
         <div v-if="showExamples" class="example-prompts">
-            <div
-                v-for="(example, index) in examples"
-                :key="index"
-                class="example-chip"
-                @click="selectExample(example)"
-            >
+            <div v-for="(example, index) in examples" :key="index" class="example-chip" @click="selectExample(example)">
                 <v-icon size="16" class="mr-1">{{ example.icon }}</v-icon>
                 <span>{{ example.text }}</span>
             </div>
@@ -81,20 +76,18 @@ export default {
         // 데스크탑 음성 에이전트 활성화 여부 (버튼 하이라이트용)
         desktopVoiceActive: {
             type: Boolean,
-            default: false,
+            default: false
         },
         // 말하기/듣기 버튼 노출 여부 (1:1 에이전트 대화일 때만 true)
         enableDesktopVoice: {
             type: Boolean,
-            default: false,
-        },
+            default: false
+        }
     },
     emits: ['sendMessage', 'recording-mode-change', 'stopMessage', 'desktop-voice-toggle'],
     computed: {
         containerVariantClass() {
-            return this.variant === 'inline'
-                ? 'main-chat-input-container--inline'
-                : 'main-chat-input-container--panel';
+            return this.variant === 'inline' ? 'main-chat-input-container--inline' : 'main-chat-input-container--panel';
         },
         examples() {
             return [
@@ -123,7 +116,7 @@ export default {
     },
     data() {
         return {
-            isDragOver: false,
+            isDragOver: false
         };
     },
     methods: {
@@ -235,7 +228,7 @@ export default {
 
 @media (max-width: 768px) {
     .main-chat-input-container {
-        padding: 8px;
+        padding: 0px;
     }
 
     .example-prompts {
@@ -249,4 +242,3 @@ export default {
     }
 }
 </style>
-

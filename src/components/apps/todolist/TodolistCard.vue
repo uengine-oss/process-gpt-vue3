@@ -2,16 +2,11 @@
     <v-card elevation="10">
         <div class="pa-4" :class="this.globalIsMobile.value ? 'todolist-card-box-is-mobile' : 'todolist-card-box'">
             <div class="d-flex align-center justify-space-between ml-2 mt-1">
-                <h5 class="text-h5 font-weight-semibold">{{ ($t('todoList.title')) }}</h5>
+                <h5 class="text-h5 font-weight-semibold">{{ $t('todoList.title') }}</h5>
                 <v-spacer></v-spacer>
-                
+
                 <!-- 정렬 옵션 -->
-                <v-chip
-                    variant="outlined"
-                    color="gray"
-                    class="sort-chip-select-wrapper mr-3"
-                    size="small"
-                >
+                <v-chip variant="outlined" color="gray" class="sort-chip-select-wrapper mr-3" size="small">
                     <v-select
                         v-model="sortOption"
                         :items="sortOptions"
@@ -22,7 +17,7 @@
                         hide-details
                     >
                         <template v-slot:selection="{ item }">
-                            <span style="font-size: 13px;">{{ item.raw.label }}</span>
+                            <span style="font-size: 13px">{{ item.raw.label }}</span>
                         </template>
                     </v-select>
                 </v-chip>
@@ -41,9 +36,7 @@
             />
         </div>
 
-        <v-dialog v-model="dialog" max-width="500" persistent
-            :fullscreen="isMobile"
-        >
+        <v-dialog v-model="dialog" max-width="500" persistent :fullscreen="isMobile">
             <TodoDialog :todolist="todolist" @close="closeDialog" />
         </v-dialog>
     </v-card>
@@ -53,7 +46,7 @@
 import KanbanBoard from './KanbanBoard.vue';
 import TodoDialog from './TodoDialog.vue';
 
-import BackendFactory from "@/components/api/BackendFactory";
+import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 
 export default {
@@ -126,13 +119,13 @@ export default {
         },
         filteredTodolist() {
             // 삭제된 인스턴스들의 proc_inst_id 배열 생성
-            const deletedInstanceIds = this.deletedInstances ? this.deletedInstances.map(instance => instance.proc_inst_id) : [];
-            
+            const deletedInstanceIds = this.deletedInstances ? this.deletedInstances.map((instance) => instance.proc_inst_id) : [];
+
             return this.todolist
-                .filter(column => column.id !== 'TODO')  // TODO 컬럼 제외
-                .map(column => ({
+                .filter((column) => column.id !== 'TODO') // TODO 컬럼 제외
+                .map((column) => ({
                     ...column,
-                    tasks: column.tasks.filter(task => {
+                    tasks: column.tasks.filter((task) => {
                         // rootInstId와 instId 둘 다 삭제된 인스턴스 리스트에 없을 때만 표시
                         return !deletedInstanceIds.includes(task.rootInstId) && !deletedInstanceIds.includes(task.instId);
                     })
@@ -148,7 +141,7 @@ export default {
             // this.loadWorkListByStatus('TODO'),
             this.loadWorkListByStatus('DONE')
         ]);
-        
+
         this.EventBus.on('todolist-updated', async () => {
             await this.reloadAllTodoList();
         });
@@ -157,7 +150,7 @@ export default {
         async reloadAllTodoList() {
             const userId = localStorage.getItem('uid');
             const mode = window.$mode;
-            
+
             // 각 status별로 현재까지 로드된 데이터만 다시 불러오기
             const reloadPromises = this.todolist.map(async (column) => {
                 const status = column.id;
@@ -167,19 +160,20 @@ export default {
                     status: status,
                     userId: userId
                 };
-                
+
                 let worklist = await backend.getWorkList(requestOptions);
-                
+
                 if (!worklist) worklist = [];
-                
+
                 // 컬럼 tasks 업데이트 (콤마로 구분된 user_id 필드에서 정확히 userId가 포함되는지 확인)
-                column.tasks = worklist.filter(item => {
+                column.tasks = worklist.filter((item) => {
                     // uEngine 모드에서는 Worklist 상태 'NEW'를 진행중으로 분류(InstanceTodo.vue와 동일)
-                    if (status === 'IN_PROGRESS' && (
-                        item.status === 'IN_PROGRESS' ||
-                        item.status === 'SUBMITTED' ||
-                        (mode === 'uEngine' && (item.status === 'NEW' || item.status === 'Running'))
-                    )) {
+                    if (
+                        status === 'IN_PROGRESS' &&
+                        (item.status === 'IN_PROGRESS' ||
+                            item.status === 'SUBMITTED' ||
+                            (mode === 'uEngine' && (item.status === 'NEW' || item.status === 'Running')))
+                    ) {
                         return true;
                     } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
                         return true;
@@ -191,12 +185,12 @@ export default {
                     return false;
                 });
             });
-            
+
             await Promise.all(reloadPromises);
         },
         async loadDeletedInstance() {
             try {
-                this.deletedInstances = await backend.getDeletedInstances()
+                this.deletedInstances = await backend.getDeletedInstances();
             } catch (error) {
                 console.error('삭제된 인스턴스 로딩 중 오류 발생:', error);
             }
@@ -205,21 +199,21 @@ export default {
             if (this.loading[columnId]) {
                 return;
             }
-            
+
             if (!this.hasMore[columnId]) {
                 return;
             }
-            
+
             this.pages[columnId]++;
             this.loadWorkListByStatus(columnId);
         },
         async loadWorkListByStatus(status) {
             const me = this;
             const mode = window.$mode;
-            
+
             // 로딩 시작
             me.loading[status] = true;
-            
+
             try {
                 const userId = localStorage.getItem('uid');
                 let requestOptions = {
@@ -240,23 +234,24 @@ export default {
 
                 let worklist = await backend.getWorkList(requestOptions);
                 if (!worklist) worklist = [];
-                                
+
                 // 더 이상 데이터가 없는지 확인
                 if (worklist.length < me.pageSize) {
                     me.hasMore[status] = false;
                 }
-                
-                const column = me.todolist.find(x => x.id === status);
-                
-                worklist.forEach(function(item) {
+
+                const column = me.todolist.find((x) => x.id === status);
+
+                worklist.forEach(function (item) {
                     // 상태별 매칭 (IN_PROGRESS는 SUBMITTED도 포함)
                     let shouldAdd = false;
                     // uEngine 모드에서는 Worklist 상태 'NEW'를 진행중으로 분류(InstanceTodo.vue와 동일)
-                    if (status === 'IN_PROGRESS' && (
-                        item.status === 'IN_PROGRESS' ||
-                        item.status === 'SUBMITTED' ||
-                        (mode === 'uEngine' && (item.status === 'NEW' || item.status === 'Running'))
-                    )) {
+                    if (
+                        status === 'IN_PROGRESS' &&
+                        (item.status === 'IN_PROGRESS' ||
+                            item.status === 'SUBMITTED' ||
+                            (mode === 'uEngine' && (item.status === 'NEW' || item.status === 'Running')))
+                    ) {
                         shouldAdd = true;
                     } else if (status === 'TODO' && (item.status === 'TODO' || item.status === 'NEW' || item.status === 'DRAFT')) {
                         shouldAdd = true;
@@ -267,7 +262,7 @@ export default {
                     }
 
                     if (shouldAdd) {
-                        const taskExist = column.tasks.find(task => task.taskId === item.taskId);
+                        const taskExist = column.tasks.find((task) => task.taskId === item.taskId);
                         if (!taskExist) {
                             column.tasks.push(item);
                         }
@@ -282,15 +277,15 @@ export default {
         },
         updateStatus(taskId, originColumnId) {
             let task;
-            this.todolist.forEach(column => {
-                let foundTask = column.tasks.find(task => task.taskId === taskId);
+            this.todolist.forEach((column) => {
+                let foundTask = column.tasks.find((task) => task.taskId === taskId);
                 if (foundTask) {
                     task = foundTask;
-                    column.tasks = column.tasks.filter(task => task.taskId !== taskId);
+                    column.tasks = column.tasks.filter((task) => task.taskId !== taskId);
                 }
             });
             if (task) {
-                this.todolist.find(column => column.id === originColumnId).tasks.push(task);
+                this.todolist.find((column) => column.id === originColumnId).tasks.push(task);
             }
         },
         openDialog() {
@@ -300,5 +295,5 @@ export default {
             this.dialog = false;
         }
     }
-}
+};
 </script>

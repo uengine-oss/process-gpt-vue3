@@ -13,8 +13,16 @@
             </v-card>
         </v-dialog>
 
-        <v-data-table v-model="selected" :headers="dataHeaders" :items="value" :items-per-page="5" item-key="name"
-            show-select :hide-default-header="selected.length > 0" @dblclick:row="editForm">
+        <v-data-table
+            v-model="selected"
+            :headers="dataHeaders"
+            :items="value"
+            :items-per-page="5"
+            item-key="name"
+            show-select
+            :hide-default-header="selected.length > 0"
+            @dblclick:row="editForm"
+        >
             <template v-slot:header="{ dataHeaders }">
                 <thead v-if="selected.length > 0" class="v-data-table-header">
                     <tr>
@@ -37,13 +45,16 @@
                 Add
             </v-btn>
 
-
             <v-dialog v-model="updateDialogEnabled" max-width="400">
                 <v-card>
                     <v-card-title>Edit</v-card-title>
                     <v-card-text>
-                        <bpmn-object-form v-if="updateDialogEnabled" :formData="formData" :categories="categories"
-                            :classList="classList"></bpmn-object-form>
+                        <bpmn-object-form
+                            v-if="updateDialogEnabled"
+                            :formData="formData"
+                            :categories="categories"
+                            :classList="classList"
+                        ></bpmn-object-form>
                     </v-card-text>
                     <v-card-actions>
                         <v-spacer></v-spacer>
@@ -56,8 +67,12 @@
             <v-card>
                 <v-card-title>New</v-card-title>
                 <v-card-text>
-                    <bpmn-object-form v-if="addDialogEnabled" :formData="formData" :categories="categories"
-                        :classList="classList"></bpmn-object-form>
+                    <bpmn-object-form
+                        v-if="addDialogEnabled"
+                        :formData="formData"
+                        :categories="categories"
+                        :classList="classList"
+                    ></bpmn-object-form>
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -70,20 +85,20 @@
 </template>
 
 <script>
-import CommonStorageBase from '../../storage/CommonStorageBase'
-import BpmnObjectForm from './BpmnObjectForm.vue'
-import _ from 'lodash'
+import CommonStorageBase from '../../storage/CommonStorageBase';
+import BpmnObjectForm from './BpmnObjectForm.vue';
+import _ from 'lodash';
 // var _ = require('lodash');
 
 export default {
     mixins: [CommonStorageBase],
     name: 'bpmn-object-grid',
     components: {
-        'bpmn-object-form': BpmnObjectForm,
+        'bpmn-object-form': BpmnObjectForm
     },
     props: {
         value: Array,
-        fullFledged: Boolean,
+        fullFledged: Boolean
     },
     data: function () {
         return {
@@ -98,7 +113,7 @@ export default {
                 defaultValueInString: '',
                 global: false,
                 persistOption: '',
-                typeClassName: '',
+                typeClassName: ''
             },
             categories: [
                 {
@@ -110,51 +125,50 @@ export default {
                 {
                     text: 'Name',
                     align: 'start',
-                    value: 'name',
+                    value: 'name'
                 },
                 {
                     text: 'Display Name',
-                    value: 'displayName',
+                    value: 'displayName'
                 },
                 {
                     text: 'Default Value In String',
-                    value: 'defaultValueInString',
+                    value: 'defaultValueInString'
                 },
                 {
                     text: 'Global',
-                    value: 'global',
+                    value: 'global'
                 },
                 {
                     text: 'Persist Option',
-                    value: 'persistOption',
+                    value: 'persistOption'
                 },
                 {
                     text: '변수 유형',
-                    value: 'typeClassName',
-                },
+                    value: 'typeClassName'
+                }
             ],
             dc: {
                 title: '데이터 삭제',
                 contentHtml: '해당 데이터를 삭제 하시겠습니까?',
                 cancel: 'No',
-                ok: 'Yes',
+                ok: 'Yes'
             },
             // class definition
             tabLists: {
-                'every': { lists: [] },
-                'mine': { lists: [] },
-                'share': { lists: [] },
-                'local': { lists: [] }
+                every: { lists: [] },
+                mine: { lists: [] },
+                share: { lists: [] },
+                local: { lists: [] }
             },
             projectList: [],
-            classList: [],
-        }
+            classList: []
+        };
     },
-    watch: {
-    },
+    watch: {},
     created: function () {
         if (this.selected) {
-            this.selected = []
+            this.selected = [];
         }
 
         // class definition setting
@@ -166,13 +180,13 @@ export default {
                 name: '',
                 displayName: {
                     text: '',
-                    _type: "org.uengine.contexts.TextContext"
+                    _type: 'org.uengine.contexts.TextContext'
                 },
                 defaultValueInString: '',
                 global: false,
                 persistOption: '',
-                typeClassName: '',
-            }
+                typeClassName: ''
+            };
             if (this.classList.length > 0) {
                 this.categories = [
                     {
@@ -183,25 +197,24 @@ export default {
                         displayName: 'Class',
                         value: 'class'
                     }
-                ]
+                ];
             }
             this.addDialogEnabled = true;
         },
         enterForm() {
             var me = this;
-            if (!me.value)
-                me.value = []
+            if (!me.value) me.value = [];
             me.value.push(me.formData);
-            me.formData = {
+            (me.formData = {
                 name: '',
                 displayName: '',
                 defaultValueInString: '',
                 global: false,
                 persistOption: '',
-                typeClassName: '',
-            },
-                me.addDialogEnabled = false;
-            me.$emit("input", me.value);
+                typeClassName: ''
+            }),
+                (me.addDialogEnabled = false);
+            me.$emit('input', me.value);
         },
         editForm(event, value) {
             var me = this;
@@ -214,109 +227,109 @@ export default {
                 return me.selected.indexOf(item) < 0;
             });
             me.value = filter;
-            me.$emit("input", me.value);
+            me.$emit('input', me.value);
             me.selected = [];
             me.deleteDialog = false;
         },
 
         async getProjectList() {
-            var me = this
+            var me = this;
             try {
-                var uid = localStorage.getItem("uid") ? localStorage.getItem("uid") : 'anyone'
+                var uid = localStorage.getItem('uid') ? localStorage.getItem('uid') : 'anyone';
 
                 var option = {
-                    sort: "desc",
+                    sort: 'desc',
                     orderBy: 'lastModifiedDate',
                     size: null,
                     startAt: null,
-                    endAt: null,
-                }
+                    endAt: null
+                };
 
                 // Local
-                var localSnapshots = await me.list(`localstorage://localLists`)
+                var localSnapshots = await me.list(`localstorage://localLists`);
                 if (localSnapshots) {
-                    var lists = JSON.parse(localSnapshots)
-                    var filter = []
+                    var lists = JSON.parse(localSnapshots);
+                    var filter = [];
 
                     filter = lists.sort(function (a, b) {
                         return b.lastModifiedDate - a.lastModifiedDate;
-                    })
-                    me.tabLists.local.lists = filter
+                    });
+                    me.tabLists.local.lists = filter;
                 }
 
                 // Mine
-                var mineSnapshots = await me.list(`db://userLists/${uid}/mine`, option)
+                var mineSnapshots = await me.list(`db://userLists/${uid}/mine`, option);
                 if (mineSnapshots) {
-                    me.tabLists.every.lists = []
+                    me.tabLists.every.lists = [];
                     mineSnapshots.forEach(async function (snapshot) {
-                        var project = snapshot
-                        var projectId = snapshot.key
-                        project.isServerProject = true
+                        var project = snapshot;
+                        var projectId = snapshot.key;
+                        project.isServerProject = true;
 
                         if (!project.projectId) {
-                            project.projectId = projectId
+                            project.projectId = projectId;
                         }
                         if (!project.authorProfile) {
-                            project.authorProfile = null
+                            project.authorProfile = null;
                         }
-                        me.tabLists.mine.lists.push(project)
-                    })
+                        me.tabLists.mine.lists.push(project);
+                    });
                 }
 
                 // Share
-                var shareSnapshots = await me.list(`db://userLists/${uid}/share`, option)
+                var shareSnapshots = await me.list(`db://userLists/${uid}/share`, option);
                 if (shareSnapshots) {
-                    me.tabLists.every.lists = []
+                    me.tabLists.every.lists = [];
                     shareSnapshots.forEach(async function (snapshot) {
-                        var project = snapshot
-                        var projectId = snapshot.key
-                        project.isServerProject = true
+                        var project = snapshot;
+                        var projectId = snapshot.key;
+                        project.isServerProject = true;
 
                         if (!project.projectId) {
-                            project.projectId = projectId
+                            project.projectId = projectId;
                         }
                         if (!project.authorProfile) {
-                            project.authorProfile = null
+                            project.authorProfile = null;
                         }
-                        me.tabLists.share.lists.push(project)
-                    })
+                        me.tabLists.share.lists.push(project);
+                    });
                 }
 
                 // Public
-                var pulicSnapshots = await me.list(`db://userLists/everyone/share`, option)
+                var pulicSnapshots = await me.list(`db://userLists/everyone/share`, option);
                 if (pulicSnapshots) {
-                    me.tabLists.every.lists = []
+                    me.tabLists.every.lists = [];
                     pulicSnapshots.forEach(async function (snapshot) {
-                        var project = snapshot
-                        var projectId = snapshot.key
-                        project.isServerProject = true
+                        var project = snapshot;
+                        var projectId = snapshot.key;
+                        project.isServerProject = true;
 
                         if (!project.projectId) {
-                            project.projectId = projectId
+                            project.projectId = projectId;
                         }
                         if (!project.authorProfile) {
-                            project.authorProfile = null
+                            project.authorProfile = null;
                         }
-                        me.tabLists.every.lists.push(project)
-                    })
+                        me.tabLists.every.lists.push(project);
+                    });
                 }
 
                 Object.values(me.tabLists).forEach(function (tabValue) {
-                    me.projectList = me.filterUmlClass(tabValue.lists)
-                })
+                    me.projectList = me.filterUmlClass(tabValue.lists);
+                });
 
                 me.$nextTick(function () {
                     if (me.projectList.length > 0) {
-                        me.classList = []
+                        me.classList = [];
                         me.projectList.forEach(function (project) {
                             if (project.isServerProject) {
-                                me.getClassDefinitions(project.projectId)
+                                me.getClassDefinitions(project.projectId);
                             }
-                        })
+                        });
                     }
-                })
+                });
             } catch (e) {
-                console.log(e.message)
+                console.log(e.message);
             }
         },
         reversedChildren(snapshot) {
@@ -334,7 +347,7 @@ export default {
                         filters.push(project);
                     }
                 }
-            })
+            });
             return filters;
         },
         async getClassDefinitions(projectId) {
@@ -350,15 +363,15 @@ export default {
                             if (elements) {
                                 Object.values(elements).forEach(function (definition) {
                                     if (definition) {
-                                        me.classList.push(definition)
+                                        me.classList.push(definition);
                                     }
-                                })
+                                });
                             }
                         }
                     }
-                })
+                });
             }
         }
     }
-}
+};
 </script>

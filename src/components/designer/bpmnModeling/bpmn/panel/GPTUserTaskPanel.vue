@@ -1,9 +1,6 @@
 <template>
-    
     <div>
-        <v-tabs v-model="activeTab"
-            class="pl-4 pr-4"
-        >
+        <v-tabs v-model="activeTab" class="pl-4 pr-4">
             <v-tab value="setting">{{ $t('BpmnPropertyPanel.setting') }}</v-tab>
             <v-tab value="inputData">{{ $t('BpmnPropertyPanel.referenceInfo') }}</v-tab>
             <v-tab value="edit">{{ $t('BpmnPropertyPanel.edit') }}</v-tab>
@@ -25,11 +22,7 @@
                 />
 
                 <!-- Manual Links (Phase 4-1) -->
-                <ManualLinkField
-                    v-model="activity.manualLinks"
-                    :disabled="isViewMode"
-                    class="mb-4"
-                />
+                <ManualLinkField v-model="activity.manualLinks" :disabled="isViewMode" class="mb-4" />
 
                 <!-- System Name / Menu Name -->
                 <v-row class="ma-0 pa-0 mb-4">
@@ -54,7 +47,13 @@
                 </v-row>
 
                 <!-- Duration -->
-                <v-text-field v-model="activity.duration" :label="$t('BpmnPropertyPanel.duration')" :suffix="$t('BpmnPropertyPanel.days')" type="number" class="mb-4"></v-text-field>
+                <v-text-field
+                    v-model="activity.duration"
+                    :label="$t('BpmnPropertyPanel.duration')"
+                    :suffix="$t('BpmnPropertyPanel.days')"
+                    type="number"
+                    class="mb-4"
+                ></v-text-field>
 
                 <!-- Future Status (Phase 2-2) -->
                 <v-select
@@ -119,21 +118,17 @@
                     <v-icon start size="16">mdi-auto-fix</v-icon>
                     {{ $t('processSummary.generateSummary') }}
                 </v-btn>
-                
+
                 <!-- Instruction -->
-                <Instruction
-                    v-model="activity.instruction"
-                    :mention-candidates="mentionCandidates"
-                    class="mb-4"
-                ></Instruction>
-                
+                <Instruction v-model="activity.instruction" :mention-candidates="mentionCandidates" class="mb-4"></Instruction>
+
                 <v-divider class="mb-2"></v-divider>
-                
+
                 <!-- Checkpoints -->
                 <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-2"></Checkpoints>
-                
+
                 <v-divider class="mb-4"></v-divider>
-                
+
                 <!-- Attachments -->
                 <!-- <div>
                     <v-file-input
@@ -156,7 +151,7 @@
                 <AgentSelectField
                     v-model="activity"
                     :backend="backend"
-                    @update:modelValue="(newVal) => activity = newVal"
+                    @update:modelValue="(newVal) => (activity = newVal)"
                     class="mb-4"
                 ></AgentSelectField>
 
@@ -188,7 +183,7 @@
                 </div>
 
                 <v-divider class="mb-4"></v-divider>
-                
+
                 <!-- Custom Properties (Key-Value) -->
                 <KeyValueField
                     v-model="activity.customProperties"
@@ -220,7 +215,14 @@
                         <v-card-text class="pa-4">
                             <div class="mb-3 text-subtitle-1">{{ getFormTitle(formId) }}</div>
                             <v-row>
-                                <v-col cols="12" lg="6" md="6" sm="12" v-for="field in getFormFields(formId)" :key="`${formId}-${field.fieldId}`">
+                                <v-col
+                                    cols="12"
+                                    lg="6"
+                                    md="6"
+                                    sm="12"
+                                    v-for="field in getFormFields(formId)"
+                                    :key="`${formId}-${field.fieldId}`"
+                                >
                                     <v-checkbox
                                         v-model="field.selected"
                                         :label="field.fieldName"
@@ -239,12 +241,7 @@
             </v-window-item>
 
             <v-window-item v-for="tab in ['edit', 'preview']" :key="tab" :value="tab">
-                <FormDefinition
-                    ref="formDefinition"
-                    :type="tab"
-                    :formId="formId"
-                    v-model="tempFormHtml"
-                />
+                <FormDefinition ref="formDefinition" :type="tab" :formId="formId" v-model="tempFormHtml" />
             </v-window-item>
         </v-window>
     </div>
@@ -338,8 +335,8 @@ export default {
         }
 
         // processDefinition에서 기본값 설정 (편집 내용이 사라진 경우 폴백 처리)
-        if(this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
-            const activity = this.processDefinition.activities.find(activity => activity.id === this.element.id);
+        if (this.processDefinition && this.processDefinition.activities && this.processDefinition.activities.length > 0) {
+            const activity = this.processDefinition.activities.find((activity) => activity.id === this.element.id);
             if (activity) {
                 this.activity = { ...this.activity, ...activity };
             }
@@ -353,11 +350,13 @@ export default {
             if (this.copyUengineProperties.checkpoints !== undefined) this.activity.checkpoints = this.copyUengineProperties.checkpoints;
             if (this.copyUengineProperties.agent !== undefined) this.activity.agent = this.copyUengineProperties.agent;
             if (this.copyUengineProperties.agentMode !== undefined) this.activity.agentMode = this.copyUengineProperties.agentMode;
-            if (this.copyUengineProperties.orchestration !== undefined && this.copyUengineProperties.orchestration !== 'none') this.activity.orchestration = this.copyUengineProperties.orchestration;
+            if (this.copyUengineProperties.orchestration !== undefined && this.copyUengineProperties.orchestration !== 'none')
+                this.activity.orchestration = this.copyUengineProperties.orchestration;
             if (this.copyUengineProperties.attachments !== undefined) this.activity.attachments = this.copyUengineProperties.attachments;
             if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
             if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
-            if (this.copyUengineProperties.customProperties !== undefined) this.activity.customProperties = this.copyUengineProperties.customProperties;
+            if (this.copyUengineProperties.customProperties !== undefined)
+                this.activity.customProperties = this.copyUengineProperties.customProperties;
             if (this.copyUengineProperties.systemName !== undefined) this.activity.systemName = this.copyUengineProperties.systemName;
             if (this.copyUengineProperties.menuName !== undefined) this.activity.menuName = this.copyUengineProperties.menuName;
             if (this.copyUengineProperties.manualLinks !== undefined) this.activity.manualLinks = this.copyUengineProperties.manualLinks;
@@ -365,9 +364,13 @@ export default {
         }
 
         if (this.activity.inputData) {
-            const formIds = [...new Set(this.activity.inputData.map((item) => {
-                return item.split(".")[0]
-            }))]
+            const formIds = [
+                ...new Set(
+                    this.activity.inputData.map((item) => {
+                        return item.split('.')[0];
+                    })
+                )
+            ];
             this.selectedForms = formIds;
         }
     },
@@ -388,7 +391,7 @@ export default {
                 return this.$route.params.pathMatch[this.$route.params.pathMatch.length - 1];
             }
             return null;
-        },
+        }
     },
     watch: {
         activeTab: {
@@ -399,7 +402,7 @@ export default {
                     if (oldVal === 'edit' && this.$refs.formDefinition && this.$refs.formDefinition[0]) {
                         this.tempFormHtml = this.$refs.formDefinition[0].getFormHTML();
                     }
-                    
+
                     // 참조정보 탭으로 들어갈 때 이전 폼 목록 로드
                     if (newVal === 'inputData') {
                         await this.getPreviousForms();
@@ -426,18 +429,18 @@ export default {
                 });
             }
         },
-        selectedForms:{
+        selectedForms: {
             deep: true,
             handler() {
-                this.updateInputData()
-            },
+                this.updateInputData();
+            }
         },
         formFields: {
             deep: true,
             handler() {
-                this.updateInputData()
+                this.updateInputData();
             }
-        },
+        }
     },
     computed: {
         // Phase 2-2: Future Status options
@@ -457,9 +460,14 @@ export default {
         // Phase 2-4: Available capabilities (static list, can be extended)
         availableCapabilities() {
             return [
-                'Data Analysis', 'Decision Making', 'Exception Handling',
-                'Customer Communication', 'Quality Review', 'Compliance Check',
-                'Technical Expertise', 'Process Improvement'
+                'Data Analysis',
+                'Decision Making',
+                'Exception Handling',
+                'Customer Communication',
+                'Quality Review',
+                'Compliance Check',
+                'Technical Expertise',
+                'Process Improvement'
             ];
         }
     },
@@ -476,20 +484,25 @@ export default {
                 const elementRegistry = modeler.get('elementRegistry');
                 const elements = elementRegistry.getAll();
                 const elementsText = elements
-                    .filter(el => el.type && (el.type.includes('Task') || el.type.includes('Event') || el.type.includes('Gateway')))
-                    .map(el => `[${el.type.replace('bpmn:', '')}] ${el.businessObject?.name || el.id}`)
+                    .filter((el) => el.type && (el.type.includes('Task') || el.type.includes('Event') || el.type.includes('Gateway')))
+                    .map((el) => `[${el.type.replace('bpmn:', '')}] ${el.businessObject?.name || el.id}`)
                     .join('\n');
 
-                const generator = new ProcessSummaryGenerator({
-                    onModelCreated: () => {},
-                    onGenerationFinished: (result) => {
-                        if (result) {
-                            this.activity.description = typeof result === 'string' ? result : result.text || '';
+                const generator = new ProcessSummaryGenerator(
+                    {
+                        onModelCreated: () => {},
+                        onGenerationFinished: (result) => {
+                            if (result) {
+                                this.activity.description = typeof result === 'string' ? result : result.text || '';
+                            }
+                            this.isGeneratingSummary = false;
+                        },
+                        onModelStopped: () => {
+                            this.isGeneratingSummary = false;
                         }
-                        this.isGeneratingSummary = false;
                     },
-                    onModelStopped: () => { this.isGeneratingSummary = false; }
-                }, { elementsText, preferredLanguage: window.countryCode === 'ko' ? 'Korean' : 'English' });
+                    { elementsText, preferredLanguage: window.countryCode === 'ko' ? 'Korean' : 'English' }
+                );
 
                 await generator.generate();
             } catch (e) {
@@ -510,9 +523,7 @@ export default {
 
                             // 기본 LLM(숨김 기본 에이전트)은 멘션 후보에서 제외
                             const username = (agent.username || '').toString();
-                            const isHiddenDefault =
-                                agent.is_hidden === true ||
-                                agent.is_default === true && username === '기본 LLM';
+                            const isHiddenDefault = agent.is_hidden === true || (agent.is_default === true && username === '기본 LLM');
                             if (isHiddenDefault) return;
 
                             const id = agent.id || agent.user_id || agent.uid;
@@ -539,9 +550,7 @@ export default {
                 if (this.backend && this.backend.getTenantSkills && window.$tenantName) {
                     const result = await this.backend.getTenantSkills(window.$tenantName);
                     const tenantSkills = result && result.skills;
-                    const list = Array.isArray(tenantSkills)
-                        ? tenantSkills
-                        : (tenantSkills && tenantSkills.skills) || [];
+                    const list = Array.isArray(tenantSkills) ? tenantSkills : (tenantSkills && tenantSkills.skills) || [];
 
                     list.forEach((skill) => {
                         if (!skill) return;
@@ -586,10 +595,11 @@ export default {
         },
         async init() {
             var me = this;
-            if(me.isPreviewMode){
-                me.activeTab = 'preview'
+            if (me.isPreviewMode) {
+                me.activeTab = 'preview';
             }
-            me.formId = me.activity.tool != '' && me.activity.tool.includes('formHandler:') ? me.activity.tool.replace('formHandler:', '') : '';
+            me.formId =
+                me.activity.tool != '' && me.activity.tool.includes('formHandler:') ? me.activity.tool.replace('formHandler:', '') : '';
             if (!me.formId || me.formId == '' || me.formId == 'defaultform') {
                 let formId = '';
                 if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
@@ -597,7 +607,7 @@ export default {
                 } else {
                     formId = me.processDefinition.processDefinitionId + '_' + me.element.id + '_form';
                 }
-                formId = formId.toLowerCase().replace(/[/.]/g, "_");
+                formId = formId.toLowerCase().replace(/[/.]/g, '_');
                 me.formId = formId;
             }
 
@@ -607,7 +617,7 @@ export default {
                     proc_def_id: me.processDefinitionId,
                     activity_id: me.element.id
                 }
-            }
+            };
             if (me.lastPath) {
                 if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
                     me.tempFormHtml = localStorage.getItem(me.formId);
@@ -618,20 +628,20 @@ export default {
                 me.tempFormHtml = localStorage.getItem(me.formId);
             }
 
-            if(!me.tempFormHtml) {
+            if (!me.tempFormHtml) {
                 me.tempFormHtml = await me.backend.getRawDefinition('defaultform', { type: 'form' });
             }
-            
+
             me.copyDefinition = me.definition;
         },
         async beforeSave() {
             var me = this;
-            
+
             const options = {
                 type: 'form',
                 proc_def_id: me.processDefinition.processDefinitionId,
                 activity_id: me.element.id
-            }
+            };
 
             if (me.$refs.formDefinition && me.activeTab == 'edit') {
                 me.tempFormHtml = me.$refs.formDefinition[0].getFormHTML();
@@ -640,7 +650,7 @@ export default {
             if (me.tempFormHtml && me.tempFormHtml != '') {
                 if (me.lastPath) {
                     if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
-                        if(me.formId == 'defaultform') {
+                        if (me.formId == 'defaultform') {
                             me.formId = me.element.id + '_form';
                         }
                         localStorage.setItem(me.formId, me.tempFormHtml);
@@ -652,7 +662,7 @@ export default {
                 }
             }
             me.activity.tool = `formHandler:${me.formId}`;
-            if (me.activity.checkpoints && me.activity.checkpoints.join() == "") {
+            if (me.activity.checkpoints && me.activity.checkpoints.join() == '') {
                 me.activity.checkpoints = [];
             }
 
@@ -704,21 +714,21 @@ export default {
                     // EventBus를 통해 최신 processDefinition을 가져와서 바로 처리
                     me.EventBus.emit('get-process-definition', async (processDefinition) => {
                         console.log('[GPTUserTaskPanel] 콜백 수신:', processDefinition);
-                        
+
                         if (!processDefinition || !processDefinition.activities) {
                             console.error('[GPTUserTaskPanel] processDefinition이 비어있거나 activities가 없습니다.');
                             return;
                         }
-                        
+
                         const prevForms = await me.backend.getPreviousForms(me.element.id, processDefinition);
                         console.log('[GPTUserTaskPanel] 조회된 이전 폼:', prevForms);
-                        
+
                         me.availableForms = prevForms.map((form) => {
                             return {
                                 formId: form.id,
                                 title: form.title,
                                 fields: form.fields_json || []
-                            }
+                            };
                         });
                     });
                 }
@@ -729,24 +739,24 @@ export default {
                 return;
             }
 
-            const inputData = []
-            this.selectedForms.forEach(formId => {
+            const inputData = [];
+            this.selectedForms.forEach((formId) => {
                 if (this.formFields[formId]) {
-                    this.formFields[formId].forEach(field => {
+                    this.formFields[formId].forEach((field) => {
                         if (field.selected) {
-                            inputData.push(`${formId}.${field.fieldId}`)
+                            inputData.push(`${formId}.${field.fieldId}`);
                         }
-                    })
+                    });
                 }
-            })
-            
-            this.activity.inputData = inputData
+            });
+
+            this.activity.inputData = inputData;
         },
         getFormTitle(formId) {
             if (this.availableForms.length == 0) {
                 return formId;
             }
-            return this.availableForms.find(form => form.formId === formId).title;
+            return this.availableForms.find((form) => form.formId === formId).title;
         },
         getFormFields(formId) {
             if (this.formFields.length == 0) {

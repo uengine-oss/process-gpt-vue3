@@ -101,7 +101,8 @@ const getLightSecondary = computed(() => {
         return themeColors.CYAN_THEME.colors.lightsecondary;
     } else if (custmizer.actTheme === 'ORANGE_THEME') {
         return themeColors.ORANGE_THEME.colors.lightsecondary;
-    } if (custmizer.actTheme === 'DARK_AQUA_THEME') {
+    }
+    if (custmizer.actTheme === 'DARK_AQUA_THEME') {
         return DarkThemeColors.DARK_AQUA_THEME.colors.lightsecondary;
     } else if (custmizer.actTheme === 'DARK_PURPLE_THEME') {
         return DarkThemeColors.DARK_PURPLE_THEME.colors.lightsecondary;
@@ -129,7 +130,8 @@ const getTextGrey100 = computed(() => {
         return themeColors.CYAN_THEME.colors.grey100;
     } else if (custmizer.actTheme === 'ORANGE_THEME') {
         return themeColors.ORANGE_THEME.colors.grey100;
-    } if (custmizer.actTheme === 'DARK_AQUA_THEME') {
+    }
+    if (custmizer.actTheme === 'DARK_AQUA_THEME') {
         return DarkThemeColors.DARK_AQUA_THEME.colors.grey100;
     } else if (custmizer.actTheme === 'DARK_PURPLE_THEME') {
         return DarkThemeColors.DARK_PURPLE_THEME.colors.grey100;
@@ -146,7 +148,6 @@ const getTextGrey100 = computed(() => {
     }
 });
 
-
 const getLightborder = computed(() => {
     if (custmizer.actTheme === 'AQUA_THEME') {
         return themeColors.AQUA_THEME.colors.borderColor;
@@ -158,7 +159,8 @@ const getLightborder = computed(() => {
         return themeColors.CYAN_THEME.colors.borderColor;
     } else if (custmizer.actTheme === 'ORANGE_THEME') {
         return themeColors.ORANGE_THEME.colors.borderColor;
-    } if (custmizer.actTheme === 'DARK_AQUA_THEME') {
+    }
+    if (custmizer.actTheme === 'DARK_AQUA_THEME') {
         return DarkThemeColors.DARK_AQUA_THEME.colors.borderColor;
     } else if (custmizer.actTheme === 'DARK_PURPLE_THEME') {
         return DarkThemeColors.DARK_PURPLE_THEME.colors.borderColor;
@@ -186,7 +188,8 @@ const getWarning = computed(() => {
         return themeColors.CYAN_THEME.colors.warning;
     } else if (custmizer.actTheme === 'ORANGE_THEME') {
         return themeColors.ORANGE_THEME.colors.warning;
-    } if (custmizer.actTheme === 'DARK_AQUA_THEME') {
+    }
+    if (custmizer.actTheme === 'DARK_AQUA_THEME') {
         return DarkThemeColors.DARK_AQUA_THEME.colors.warning;
     } else if (custmizer.actTheme === 'DARK_PURPLE_THEME') {
         return DarkThemeColors.DARK_PURPLE_THEME.colors.warning;
@@ -214,7 +217,8 @@ const getError = computed(() => {
         return themeColors.CYAN_THEME.colors.error;
     } else if (custmizer.actTheme === 'ORANGE_THEME') {
         return themeColors.ORANGE_THEME.colors.error;
-    } if (custmizer.actTheme === 'DARK_AQUA_THEME') {
+    }
+    if (custmizer.actTheme === 'DARK_AQUA_THEME') {
         return DarkThemeColors.DARK_AQUA_THEME.colors.error;
     } else if (custmizer.actTheme === 'DARK_PURPLE_THEME') {
         return DarkThemeColors.DARK_PURPLE_THEME.colors.error;
@@ -230,7 +234,6 @@ const getError = computed(() => {
         return themeColors.BLUE_THEME.colors.error;
     }
 });
-
 
 const getLight100 = computed(() => {
     if (
@@ -255,4 +258,4 @@ const getLight100 = computed(() => {
     }
 });
 
-export { getPrimary, getSecondary, getLightPrimary, getLightSecondary, getLight100,getLightborder,getTextGrey100,getWarning,getError };
+export { getPrimary, getSecondary, getLightPrimary, getLightSecondary, getLight100, getLightborder, getTextGrey100, getWarning, getError };

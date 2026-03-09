@@ -99,29 +99,28 @@ export const useReviewBoardStore = defineStore({
             rejected: 0,
             archived: 0,
             total: 0
-        } as PipelineSummary,
+        } as PipelineSummary
     }),
 
     getters: {
         // Kanban 컬럼별 아이템
-        draftItems: (state) => state.items.filter(i => i.state === 'draft'),
-        reviewItems: (state) => state.items.filter(i => i.state === 'in_review'),
-        approvedItems: (state) => state.items.filter(i =>
-            ['public_feedback', 'final_edit'].includes(i.state)
-        ),
-        publishedItems: (state) => state.items.filter(i => i.state === 'published'),
-        rejectedItems: (state) => state.items.filter(i => i.state === 'rejected'),
+        draftItems: (state) => state.items.filter((i) => i.state === 'draft'),
+        reviewItems: (state) => state.items.filter((i) => i.state === 'in_review'),
+        approvedItems: (state) => state.items.filter((i) => ['public_feedback', 'final_edit'].includes(i.state)),
+        publishedItems: (state) => state.items.filter((i) => i.state === 'published'),
+        rejectedItems: (state) => state.items.filter((i) => i.state === 'rejected'),
 
         // Critical Alert: 공람 D-7 이하 또는 7일 이상 정체
         criticalAlerts: (state): ReviewItem[] => {
-            return state.items.filter(item => {
-                if (item.public_feedback_days_remaining !== null &&
+            return state.items.filter((item) => {
+                if (
+                    item.public_feedback_days_remaining !== null &&
                     item.public_feedback_days_remaining !== undefined &&
-                    item.public_feedback_days_remaining <= 7) {
+                    item.public_feedback_days_remaining <= 7
+                ) {
                     return true;
                 }
-                if (item.days_since_update && item.days_since_update >= 7 &&
-                    !['published', 'archived', 'cancelled'].includes(item.state)) {
+                if (item.days_since_update && item.days_since_update >= 7 && !['published', 'archived', 'cancelled'].includes(item.state)) {
                     return true;
                 }
                 return false;
@@ -129,23 +128,29 @@ export const useReviewBoardStore = defineStore({
         },
 
         // 공람 D-day 포맷
-        publicFeedbackDday: () => (item: ReviewItem): string | null => {
-            if (!item.public_feedback_ends_at) return null;
-            const end = new Date(item.public_feedback_ends_at);
-            const now = new Date();
-            const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            if (diff > 0) return `D-${diff}`;
-            if (diff === 0) return 'D-Day';
-            return `D+${Math.abs(diff)}`;
-        },
+        publicFeedbackDday:
+            () =>
+            (item: ReviewItem): string | null => {
+                if (!item.public_feedback_ends_at) return null;
+                const end = new Date(item.public_feedback_ends_at);
+                const now = new Date();
+                const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                if (diff > 0) return `D-${diff}`;
+                if (diff === 0) return 'D-Day';
+                return `D+${Math.abs(diff)}`;
+            },
 
         // 활성 인박스 아이템
         activeInboxItems(state): ReviewItem[] {
             switch (state.activeInbox) {
-                case 'approval': return state.approvalInboxItems;
-                case 'reopen': return state.reopenItems;
-                case 'submissions': return state.submissionItems;
-                default: return state.items;
+                case 'approval':
+                    return state.approvalInboxItems;
+                case 'reopen':
+                    return state.reopenItems;
+                case 'submissions':
+                    return state.submissionItems;
+                default:
+                    return state.items;
             }
         },
 
@@ -163,9 +168,11 @@ export const useReviewBoardStore = defineStore({
         },
 
         // 병렬 승인 완료 여부
-        isParallelApprovalComplete: () => (item: ReviewItem): boolean => {
-            return item.hq_status === 'approved' && item.field_status === 'approved';
-        },
+        isParallelApprovalComplete:
+            () =>
+            (item: ReviewItem): boolean => {
+                return item.hq_status === 'approved' && item.field_status === 'approved';
+            }
     },
 
     actions: {
@@ -206,18 +213,21 @@ export const useReviewBoardStore = defineStore({
 
         // 모든 인박스 병렬 로드
         async fetchAllInboxes() {
-            await Promise.all([
-                this.fetchInboxData('approval'),
-                this.fetchInboxData('reopen'),
-                this.fetchInboxData('submissions'),
-            ]);
+            await Promise.all([this.fetchInboxData('approval'), this.fetchInboxData('reopen'), this.fetchInboxData('submissions')]);
         },
 
         // Pipeline 집계 계산
         computePipelineSummary() {
             const summary: PipelineSummary = {
-                draft: 0, in_review: 0, public_feedback: 0, final_edit: 0,
-                published: 0, reopen_requested: 0, rejected: 0, archived: 0, total: 0
+                draft: 0,
+                in_review: 0,
+                public_feedback: 0,
+                final_edit: 0,
+                published: 0,
+                reopen_requested: 0,
+                rejected: 0,
+                archived: 0,
+                total: 0
             };
             for (const item of this.items) {
                 if (item.state in summary) {
@@ -259,10 +269,15 @@ export const useReviewBoardStore = defineStore({
 
         // === 워크플로우 액션 ===
 
-        async submitForReview(procDefId: string, comment?: string, version?: string, reviewers?: {
-            hq?: { id: string; name: string };
-            field?: { id: string; name: string };
-        }) {
+        async submitForReview(
+            procDefId: string,
+            comment?: string,
+            version?: string,
+            reviewers?: {
+                hq?: { id: string; name: string };
+                field?: { id: string; name: string };
+            }
+        ) {
             const result = await backend.submitForReview(procDefId, comment, version, reviewers);
             await this.fetchBoardData();
             return result;
@@ -339,6 +354,6 @@ export const useReviewBoardStore = defineStore({
 
         async getSnapshots(reviewId: string) {
             return backend.getSnapshots(reviewId);
-        },
+        }
     }
 });

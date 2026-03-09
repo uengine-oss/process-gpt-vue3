@@ -1,4 +1,4 @@
-import TenantAware from "./TenantAware";
+import TenantAware from './TenantAware';
 
 export default class StorageBaseAbstract extends TenantAware {
     constructor(client) {
@@ -13,7 +13,7 @@ export default class StorageBaseAbstract extends TenantAware {
             savedCoin: 0,
             savedToolTime: 0,
             consultingTime: 0,
-            authorized: null,
+            authorized: null
         };
         this.userImage = null;
         this.isLogin = false;
@@ -21,47 +21,47 @@ export default class StorageBaseAbstract extends TenantAware {
     }
 
     _getMetadata(path) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _list(path, metadata, tenant) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     async _get(path, tenant) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _put(path, string) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _push(path, string) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _delete(path) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _getURL(path, tenant) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _signUp(path, userInfo) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _signIn(path, metadata, tenant) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _signOut(path, metadata, tenant) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     _isConnection(path, callback) {
-        throw new Error("must be implemented");
+        throw new Error('must be implemented');
     }
 
     isConnection(path, callback) {
@@ -101,10 +101,8 @@ export default class StorageBaseAbstract extends TenantAware {
     async getObject(path, tenant) {
         try {
             var string = await this._get(path, tenant);
-            if (typeof string == 'string')
-                var data = JSON.parse(string);
-            else
-                var data = string;
+            if (typeof string == 'string') var data = JSON.parse(string);
+            else var data = string;
 
             return data;
         } catch (e) {
@@ -209,39 +207,38 @@ export default class StorageBaseAbstract extends TenantAware {
     }
 
     async getUserPurchaseLists() {
-        var me = this
+        var me = this;
         if (me.isLogin) {
             try {
-                var convertEmail = me.userInfo.email.replace(/\./gi, '_')
-                var version = 0
-                version = await me.getString(`db://enrolledUsers/${convertEmail}/version`)
+                var convertEmail = me.userInfo.email.replace(/\./gi, '_');
+                var version = 0;
+                version = await me.getString(`db://enrolledUsers/${convertEmail}/version`);
 
                 me.watch(`db://enrolledUsers/${convertEmail}/purchaseItemSnapshots/coin`, function (item) {
                     if (item) {
-                        me.userInfo.savedCoin = Number(item)
+                        me.userInfo.savedCoin = Number(item);
                     } else {
-                        me.userInfo.savedCoin = 0
+                        me.userInfo.savedCoin = 0;
                     }
                 });
                 me.watch(`db://enrolledUsers/${convertEmail}/purchaseItemSnapshots/ideTime`, function (item) {
                     if (item) {
-                        me.userInfo.savedToolTime = Number(item)
+                        me.userInfo.savedToolTime = Number(item);
                     } else {
-                        me.userInfo.savedToolTime = 0
+                        me.userInfo.savedToolTime = 0;
                     }
                 });
                 me.watch(`db://enrolledUsers/${convertEmail}/purchaseItemSnapshots/consultingTime`, function (item) {
                     if (item) {
-                        me.userInfo.consultingTime = Number(item)
+                        me.userInfo.consultingTime = Number(item);
                     } else {
-                        me.userInfo.consultingTime = 0
+                        me.userInfo.consultingTime = 0;
                     }
                 });
             } catch (e) {
-                console.log(e)
-                alert(e)
+                console.log(e);
+                alert(e);
             }
         }
     }
-    
-};
+}

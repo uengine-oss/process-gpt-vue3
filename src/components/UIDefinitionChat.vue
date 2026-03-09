@@ -16,12 +16,16 @@
                             <div class="d-flex flex-row-reverse pr-2">
                                 <v-tooltip>
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-bind="props"
-                                            icon variant="text" size="small"
+                                        <v-btn
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
+                                            size="small"
                                             class="text-medium-emphasis mr-2"
                                             @click="openSaveDialog"
                                         >
-                                            <Icons :icon="'save'"
+                                            <Icons
+                                                :icon="'save'"
                                                 :class="{
                                                     'icon-heartbit': isChanged
                                                 }"
@@ -33,9 +37,11 @@
 
                                 <v-tooltip location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <v-btn v-if="isLoadedForm" 
-                                            v-bind="props" 
-                                            icon variant="text"
+                                        <v-btn
+                                            v-if="isLoadedForm"
+                                            v-bind="props"
+                                            icon
+                                            variant="text"
                                             class="text-medium-emphasis"
                                             density="comfortable"
                                             @click="openDeleteDialog"
@@ -57,7 +63,7 @@
                     <v-tab value="preview">{{ $t('uiDefinition.preview') }}</v-tab>
                 </v-tabs>
                 <v-window v-model="currentTabName" class="fill-height">
-                    <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto;">
+                    <v-window-item value="edit" class="fill-height mt-12" style="overflow-y: auto">
                         <mashup
                             v-if="isShowMashup"
                             ref="mashup"
@@ -73,7 +79,12 @@
 
                     <v-window-item value="preview" class="fill-height mt-10 pa-5" style="overflow-y: auto">
                         <template v-if="isShowPreview">
-                            <DynamicForm ref="dynamicForm" :readonly="isReadOnlyForm" :formHTML="previewHTML" v-model="previewFormValues"></DynamicForm>
+                            <DynamicForm
+                                ref="dynamicForm"
+                                :readonly="isReadOnlyForm"
+                                :formHTML="previewHTML"
+                                v-model="previewFormValues"
+                            ></DynamicForm>
 
                             <template v-if="dev.isDevMode">
                                 <!-- readonly 체크 변경 -->
@@ -108,11 +119,7 @@
                         <div class="d-flex flex-row-reverse" style="height: 0px; position: relative; bottom: 35px; left: 10px">
                             <v-tooltip>
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-bind="props"
-                                        icon variant="text"
-                                        class="text-medium-emphasis"
-                                        @click="openSaveDialog"
-                                    >
+                                    <v-btn v-bind="props" icon variant="text" class="text-medium-emphasis" @click="openSaveDialog">
                                         <Icons :icon="'save'" />
                                     </v-btn>
                                 </template>
@@ -121,11 +128,14 @@
 
                             <v-tooltip location="bottom">
                                 <template v-slot:activator="{ props }">
-                                    <v-btn v-if="isLoadedForm" 
-                                        v-bind="props" 
-                                        icon  variant="text" 
+                                    <v-btn
+                                        v-if="isLoadedForm"
+                                        v-bind="props"
+                                        icon
+                                        variant="text"
                                         class="text-medium-emphasis"
-                                        @click="openDeleteDialog">
+                                        @click="openDeleteDialog"
+                                    >
                                         <TrashIcon size="24" />
                                     </v-btn>
                                 </template>
@@ -139,8 +149,12 @@
     </v-card>
 
     <v-dialog v-model="isOpenSaveDialog">
-        <form-design-save-panel @onClose="isOpenSaveDialog = false" @onSave="tryToSaveFormDefinition" :savedId="(loadFormId === 'chat') ? null : loadFormId"
-            :formNameByUrl="formNameByUrl">
+        <form-design-save-panel
+            @onClose="isOpenSaveDialog = false"
+            @onSave="tryToSaveFormDefinition"
+            :savedId="loadFormId === 'chat' ? null : loadFormId"
+            :formNameByUrl="formNameByUrl"
+        >
         </form-design-save-panel>
     </v-dialog>
 
@@ -151,22 +165,13 @@
                     {{ $t('uiDefinition.deleteFormMessage') }}
                 </v-card-title>
                 <v-spacer></v-spacer>
-                <v-btn @click="isOpenDeleteDialog = false"
-                    class="ml-auto" 
-                    variant="text" 
-                    density="compact"
-                    icon
-                >
+                <v-btn @click="isOpenDeleteDialog = false" class="ml-auto" variant="text" density="compact" icon>
                     <v-icon>mdi-close</v-icon>
                 </v-btn>
             </v-row>
             <v-row class="ma-0 pa-4">
                 <v-spacer></v-spacer>
-                <v-btn @click="deleteForm"
-                    color="error"
-                    rounded 
-                    variant="flat" 
-                >
+                <v-btn @click="deleteForm" color="error" rounded variant="flat">
                     {{ $t('uiDefinition.delete') }}
                 </v-btn>
             </v-row>
@@ -195,10 +200,7 @@ var jsondiffpatch = jsondiff.create({
 });
 
 export default {
-    mixins: [
-        ChatModule,
-        FormDefinitionTestTerminal
-    ],
+    mixins: [ChatModule, FormDefinitionTestTerminal],
     name: 'UIDefinitionChat',
     components: {
         Chat,
@@ -224,7 +226,7 @@ export default {
         prevFormOutput: '', // 폼 디자이너에게 이미 이전에 생성된 HTML 결과물을 전달하기 위해서
         prevMessageFormat: '', // 사용자가 KEditor를 변경할때마다 해당 포맷을 기반으로 System 메시지를 재구축해서 보내기 위해서
 
-        storedFormDefHTML: "",
+        storedFormDefHTML: '',
         isOpenSaveDialog: false,
         currentTabName: '',
         isShowMashup: false,
@@ -241,7 +243,7 @@ export default {
         loadFormId: '',
         isLoadedForm: false,
 
-        kEditorContentBeforeSave: "",
+        kEditorContentBeforeSave: '',
         isAIUpdated: false,
         isRoutedWithUnsaved: false,
 
@@ -255,18 +257,16 @@ export default {
     }),
     async created() {
         const reloadOnConnectionFailure = async () => {
-            if(!(await this.backend.checkDBConnection())) {
+            if (!(await this.backend.checkDBConnection())) {
                 const reloadOnConnectionSuccess = async () => {
-                    if(await this.backend.checkDBConnection())
-                        this.$router.go(0);
-                    else
-                        setTimeout(reloadOnConnectionSuccess, 500);
-                }
+                    if (await this.backend.checkDBConnection()) this.$router.go(0);
+                    else setTimeout(reloadOnConnectionSuccess, 500);
+                };
                 setTimeout(reloadOnConnectionSuccess, 500);
             }
-        }
+        };
         if (this.backend) {
-            reloadOnConnectionFailure()
+            reloadOnConnectionFailure();
         }
 
         this.generator = new ChatGenerator(this, {
@@ -278,18 +278,18 @@ export default {
         // #region 프로세스 정의에서 폼 생성 요청으로 새 탭을 열었을 경우, 이를 적절하게 처리
         const urlParams = new URLSearchParams(window.location.search);
         const processDefUrlData = urlParams.get('process_def_url_data');
-        if(processDefUrlData) {
+        if (processDefUrlData) {
             this.processDefUrlData = JSON.parse(decodeURIComponent(atob(processDefUrlData)));
             this.beforeSendMessage({
-                "image": null,
-                "text": this.processDefUrlData.initPrompt,
-                "mentionedUsers": []
+                image: null,
+                text: this.processDefUrlData.initPrompt,
+                mentionedUsers: []
             });
 
             this.formNameByUrl = this.processDefUrlData.formName;
         }
 
-        if(window.location.pathname.includes('/ui-definitions/defaultform')) {
+        if (window.location.pathname.includes('/ui-definitions/defaultform')) {
             this.isDefaultFormMode = true;
         }
         // #endregion
@@ -303,29 +303,23 @@ export default {
             handler(newVal, oldVal) {
                 if (!newVal.path.startsWith('/ui-definitions')) return;
 
-                if(this.isRoutedWithUnsaved) {
+                if (this.isRoutedWithUnsaved) {
                     this.isRoutedWithUnsaved = false;
                     return;
                 }
 
                 if (newVal.path !== oldVal.path) {
-                    if(this.$refs.mashup) {
-                        if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
+                    if (this.$refs.mashup) {
+                        if (this.isAIUpdated || this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave) {
                             const answer = window.confirm(this.$t('changePath'));
-                            if (answer)
-                                this.loadData();
+                            if (answer) this.loadData();
                             else {
                                 this.isRoutedWithUnsaved = true;
                                 this.$router.push(oldVal.path);
                             }
-                        }
-                        else
-                            this.loadData();
-                    }
-                    else
-                        this.loadData();
-                }
-                else this.isShowMashup = true;
+                        } else this.loadData();
+                    } else this.loadData();
+                } else this.isShowMashup = true;
             }
         },
 
@@ -346,12 +340,11 @@ export default {
         },
 
         openSaveDialog() {
-            if(this.isDefaultFormMode) {
+            if (this.isDefaultFormMode) {
                 this.tryToSaveFormDefinition({ id: 'defaultform' });
             } else {
                 this.isOpenSaveDialog = true;
             }
-
         },
 
         openDeleteDialog() {
@@ -385,12 +378,11 @@ export default {
         keditorContentHTMLToDynamicFormHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
 
-
             // 이름 중복 여부를 검사하기 위해서
             const nameSet = new Set();
-            (dom.querySelectorAll('[name]')).forEach((el) => {
+            dom.querySelectorAll('[name]').forEach((el) => {
                 const name = el.getAttribute('name');
-                if(!name || name.length <= 0) return;
+                if (!name || name.length <= 0) return;
 
                 if (nameSet.has(name)) {
                     throw new Error(`'${name}' 이름이 중복되어 있습니다.`);
@@ -398,101 +390,95 @@ export default {
                 nameSet.add(name);
             });
 
-
             const rows = dom.querySelectorAll('div.row');
 
             // rows의 is_multidata_mode가 true인 경우, 그 안에는 code-field가 존재하면 안되며, 그럴경우, 예외 발생
-            for(let i = 0; i < rows.length; i++) {
+            for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
-                if (isMultiDataMode === "true") {
+                if (isMultiDataMode === 'true') {
                     const codeField = row.querySelector('code-field');
-                    if(codeField) throw new Error(`multidataMode가 설정된 레이아웃 안에 code-field가 존재할 수 없습니다.`);
+                    if (codeField) throw new Error(`multidataMode가 설정된 레이아웃 안에 code-field가 존재할 수 없습니다.`);
                 }
             }
-            
 
-            rows.forEach(row => {
+            rows.forEach((row) => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
-                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                if (!isMultiDataMode || isMultiDataMode === 'false') {
                     // row의 부모 노드를 계속 탐색해서. 그 노드가 is_multidata_mode="true"의 속성을 가졌는지 확인함
                     let isPerentNodeMultiDataMode = false;
                     let parentNode = row.parentNode;
-                    while(parentNode && parentNode.tagName.toLowerCase() !== 'body') {
-                        if(parentNode.getAttribute('is_multidata_mode') === "true") {
+                    while (parentNode && parentNode.tagName.toLowerCase() !== 'body') {
+                        if (parentNode.getAttribute('is_multidata_mode') === 'true') {
                             isPerentNodeMultiDataMode = true;
                             break;
                         }
                         parentNode = parentNode.parentNode;
                     }
-                    
 
                     const newRow = document.createElement('row-layout');
-                    
 
-                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
-                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
-                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+                    newRow.setAttribute('name', row.getAttribute('name') ?? '');
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? '');
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? 'false');
 
-                    newRow.setAttribute('v-model', (isPerentNodeMultiDataMode) ? 'item' : 'formValues');
+                    newRow.setAttribute('v-model', isPerentNodeMultiDataMode ? 'item' : 'formValues');
                     newRow.setAttribute('v-slot', 'slotProps');
-
 
                     const innerRow = document.createElement('div');
                     innerRow.setAttribute('class', 'row');
 
-                    Array.from(row.children).forEach(child => {
+                    Array.from(row.children).forEach((child) => {
                         innerRow.appendChild(child);
                     });
 
+                    $(innerRow)
+                        .children('[class^="col-sm-"]')
+                        .children('[name]')
+                        .each(function () {
+                            var field = $(this)[0];
 
-                    $(innerRow).children('[class^="col-sm-"]').children('[name]').each(function () {
-                        var field = ($(this))[0];
-                        
-                        if(field.tagName.toLowerCase() === "code-field") {
-                            const name = field.getAttribute('name');
-                            field.setAttribute('v-model', `codeInfos['${name}']`);
+                            if (field.tagName.toLowerCase() === 'code-field') {
+                                const name = field.getAttribute('name');
+                                field.setAttribute('v-model', `codeInfos['${name}']`);
 
-                            const event_type = field.getAttribute('event_type');
-                            if(event_type === "click") {
-                                field.setAttribute('v-on:on_click', `executeCode('${name}')`);
+                                const event_type = field.getAttribute('event_type');
+                                if (event_type === 'click') {
+                                    field.setAttribute('v-on:on_click', `executeCode('${name}')`);
+                                }
+                            } else {
+                                const name = field.getAttribute('name');
+                                field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
                             }
-                        } else {
-                            const name = field.getAttribute('name');
-                            field.setAttribute('v-model', `slotProps.modelValue['${name}']`);
-                        }
-                    });
-
+                        });
 
                     newRow.appendChild(innerRow);
 
                     row.parentNode.replaceChild(newRow, row);
                 } else {
-                    if((!row.getAttribute('name')) || (row.getAttribute('name').length <= 0)) {
+                    if (!row.getAttribute('name') || row.getAttribute('name').length <= 0) {
                         throw new Error(`multidataMode가 설정된 레이아웃에 'name' 속성이 없습니다.`);
                     }
 
                     // row의 부모 노드를 계속 탐색해서. 그 노드가 is_multidata_mode="true"의 속성을 가졌는지 확인함
                     let isPerentNodeMultiDataMode = false;
                     let parentNode = row.parentNode;
-                    while(parentNode && parentNode.tagName.toLowerCase() !== 'body') {
-                        if(parentNode.getAttribute('is_multidata_mode') === "true") {
+                    while (parentNode && parentNode.tagName.toLowerCase() !== 'body') {
+                        if (parentNode.getAttribute('is_multidata_mode') === 'true') {
                             isPerentNodeMultiDataMode = true;
                             break;
                         }
                         parentNode = parentNode.parentNode;
                     }
 
-
                     const newRow = document.createElement('row-layout');
 
                     newRow.setAttribute('name', row.getAttribute('name'));
-                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? '');
                     newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode'));
 
-                    newRow.setAttribute('v-model', (isPerentNodeMultiDataMode) ? 'item' : 'formValues');
+                    newRow.setAttribute('v-model', isPerentNodeMultiDataMode ? 'item' : 'formValues');
                     newRow.setAttribute('v-slot', 'slotProps');
-
 
                     const containerDiv = document.createElement('div');
                     containerDiv.setAttribute('v-for', '(item, index) in slotProps.modelValue');
@@ -506,7 +492,7 @@ export default {
                     const rowDiv = document.createElement('div');
                     rowDiv.classList.add('row');
 
-                    Array.from(row.children).forEach(child => {
+                    Array.from(row.children).forEach((child) => {
                         rowDiv.appendChild(child);
                     });
 
@@ -514,20 +500,22 @@ export default {
 
                     newRow.appendChild(containerDiv);
 
-                    $(newRow).children('div').children('div.row')
-                        .children('[class^="col-sm-"]').children('[name]').each(function () {
-                        var field = ($(this))[0];
-                        const name = field.getAttribute('name');
-                        field.setAttribute('v-model', `item['${name}']`);
-                    })
-
+                    $(newRow)
+                        .children('div')
+                        .children('div.row')
+                        .children('[class^="col-sm-"]')
+                        .children('[name]')
+                        .each(function () {
+                            var field = $(this)[0];
+                            const name = field.getAttribute('name');
+                            field.setAttribute('v-model', `item['${name}']`);
+                        });
 
                     row.parentNode.replaceChild(newRow, row);
                 }
             });
 
-
-            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace('<br>', '\n');
         },
 
         /**
@@ -536,82 +524,89 @@ export default {
         dynamicFormHTMLToKeditorContentHTML(html) {
             const dom = new DOMParser().parseFromString(html, 'text/html');
 
-
             const rows = dom.querySelectorAll('row-layout');
-            rows.forEach(row => {
+            rows.forEach((row) => {
                 const isMultiDataMode = row.getAttribute('is_multidata_mode');
-                if (!isMultiDataMode || (isMultiDataMode === 'false')) {
+                if (!isMultiDataMode || isMultiDataMode === 'false') {
                     const newRow = document.createElement('div');
-                    
 
-                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
-                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
-                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+                    newRow.setAttribute('name', row.getAttribute('name') ?? '');
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? '');
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? 'false');
 
                     newRow.setAttribute('class', 'row');
 
-
                     // Array.from(row.firstChild.children)
-                    Array.from(row.firstElementChild.children).forEach(child => {
+                    Array.from(row.firstElementChild.children).forEach((child) => {
                         newRow.appendChild(child);
                     });
 
-                    $(newRow).children('[class^="col-sm-"]').children('[v-model]').each(function () {
-                        var field = ($(this))[0];
-                        
-                        field.removeAttribute('v-model');
-                    });
+                    $(newRow)
+                        .children('[class^="col-sm-"]')
+                        .children('[v-model]')
+                        .each(function () {
+                            var field = $(this)[0];
 
-                    $(newRow).children('[class^="col-sm-"]').children('*').each(function () {
-                        var field = ($(this))[0];
-                        
-                        Array.from(field.attributes).forEach(attr => {
-                            if (attr.name.startsWith('v-on:')) {
-                                field.removeAttribute(attr.name);
-                            }
+                            field.removeAttribute('v-model');
                         });
-                    });
 
+                    $(newRow)
+                        .children('[class^="col-sm-"]')
+                        .children('*')
+                        .each(function () {
+                            var field = $(this)[0];
+
+                            Array.from(field.attributes).forEach((attr) => {
+                                if (attr.name.startsWith('v-on:')) {
+                                    field.removeAttribute(attr.name);
+                                }
+                            });
+                        });
 
                     row.parentNode.replaceChild(newRow, row);
                 } else {
                     const newRow = document.createElement('div');
-                    
 
-                    newRow.setAttribute('name', row.getAttribute('name') ?? "");
-                    newRow.setAttribute('alias', row.getAttribute('alias') ?? "");
-                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? "false");
+                    newRow.setAttribute('name', row.getAttribute('name') ?? '');
+                    newRow.setAttribute('alias', row.getAttribute('alias') ?? '');
+                    newRow.setAttribute('is_multidata_mode', row.getAttribute('is_multidata_mode') ?? 'false');
 
                     newRow.setAttribute('class', 'row');
 
-
-                    $(row).children('div').children('div.row')
-                        .children('[class^="col-sm-"]').each(function () {
-                        var field = ($(this))[0];
-                        newRow.appendChild(field);
-                    })
-
-                    $(newRow).children('[class^="col-sm-"]').children('[v-model]').each(function () {
-                        var field = ($(this))[0];
-                        field.removeAttribute('v-model');
-                    })
-
-                    $(newRow).children('[class^="col-sm-"]').children('*').each(function () {
-                        var field = ($(this))[0];
-                        Array.from(field.attributes).forEach(attr => {
-                            if (attr.name.startsWith('v-on:')) {
-                                field.removeAttribute(attr.name);
-                            }
+                    $(row)
+                        .children('div')
+                        .children('div.row')
+                        .children('[class^="col-sm-"]')
+                        .each(function () {
+                            var field = $(this)[0];
+                            newRow.appendChild(field);
                         });
-                    })
 
+                    $(newRow)
+                        .children('[class^="col-sm-"]')
+                        .children('[v-model]')
+                        .each(function () {
+                            var field = $(this)[0];
+                            field.removeAttribute('v-model');
+                        });
+
+                    $(newRow)
+                        .children('[class^="col-sm-"]')
+                        .children('*')
+                        .each(function () {
+                            var field = $(this)[0];
+                            Array.from(field.attributes).forEach((attr) => {
+                                if (attr.name.startsWith('v-on:')) {
+                                    field.removeAttribute(attr.name);
+                                }
+                            });
+                        });
 
                     row.parentNode.replaceChild(newRow, row);
                 }
             });
 
-
-            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
+            return dom.body.innerHTML.replace(/&quot;/g, `'`).replace('<br>', '\n');
         },
 
         /**
@@ -619,7 +614,7 @@ export default {
          */
         async saveFormDefinition({ id, html }) {
             const existingForm = await this.backend.getRawDefinition(id, { type: 'form_def' });
-            if (existingForm && existingForm.id !== "defaultform") {
+            if (existingForm && existingForm.id !== 'defaultform') {
                 if (!confirm(`'${id}'는 이미 존재하는 폼 디자인 ID 입니다! 그래도 저장하시겠습니까?`)) return;
             }
 
@@ -631,22 +626,22 @@ export default {
             this.isOpenSaveDialog = false;
 
             this.kEditorContentBeforeSave = this.$refs.mashup.getKEditorContentHtml();
-            this.isAIUpdated = false
+            this.isAIUpdated = false;
 
-            if(this.processDefUrlData) {
+            if (this.processDefUrlData) {
                 const channel = new BroadcastChannel(this.processDefUrlData.channelId);
                 channel.postMessage({
-                    "name": this.processDefUrlData.formName,
-                    "id": id
-                })
+                    name: this.processDefUrlData.formName,
+                    id: id
+                });
 
                 window.close();
             }
         },
 
         onClickPreviewSubmitButton() {
-            const error = this.$refs.dynamicForm.validate()
-            if (error && error.length > 0) alert(error)
+            const error = this.$refs.dynamicForm.validate();
+            if (error && error.length > 0) alert(error);
 
             if (this.dev.isDevMode) this.dev.previewFormValues = JSON.stringify(this.previewFormValues);
             else alert(JSON.stringify(this.previewFormValues));
@@ -664,15 +659,15 @@ export default {
             this.loadFormId = this.$route.params.pathMatch.join('/');
             if (this.loadFormId.startsWith('/')) {
                 this.loadFormId = this.loadFormId.substring(1);
-            } 
-            this.isLoadedForm = (this.loadFormId && this.loadFormId != 'chat' && this.loadFormId != 'definition-map')
+            }
+            this.isLoadedForm = this.loadFormId && this.loadFormId != 'chat' && this.loadFormId != 'definition-map';
 
             this.isAIUpdated = false;
             this.messages = [];
             if (this.isLoadedForm) {
                 try {
-                    this.storedFormDefHTML = (await this.backend.getRawDefinition(this.loadFormId, { type: 'form' }));
-                } catch(error) {
+                    this.storedFormDefHTML = await this.backend.getRawDefinition(this.loadFormId, { type: 'form' });
+                } catch (error) {
                     alert(`'${this.loadFormId}' ID 를 가지는 폼 디자인 정보가 없습니다! 새 폼 만들기 화면으로 이동됩니다.`);
                     this.$router.push(`/ui-definitions/chat`);
                     this.isShowMashup = true;
@@ -685,7 +680,7 @@ export default {
 
                 this.isShowMashup = true;
             } else {
-                if(this.$refs.mashup) this.$refs.mashup.clearStat();
+                if (this.$refs.mashup) this.$refs.mashup.clearStat();
                 this.isShowMashup = true;
             }
         },
@@ -727,8 +722,7 @@ export default {
                 messageWriting.content = messageWriting.content.replace(messageWriting.jsonContent, '');
 
                 // messageWriting.jsonContent에 내용이 있어도, messageWriting.content에 내용이 없으면 메시지가 표시되지 않기때문에 추가함
-                if(messageWriting.content.length == 0) messageWriting.content = "요청하신 폼 수정이 완료되었습니다."
-                
+                if (messageWriting.content.length == 0) messageWriting.content = '요청하신 폼 수정이 완료되었습니다.';
 
                 // 생성된 HTML을 보여주기 위해서
                 if (messageWriting.jsonContent) {
@@ -743,7 +737,7 @@ export default {
 
                 this.isChanged = true;
             } catch (error) {
-                console.log("[*] 폼 생성 관련 AI 응답 처리 과정에서 오류 발생!", {response, error});
+                console.log('[*] 폼 생성 관련 AI 응답 처리 과정에서 오류 발생!', { response, error });
             }
         },
 
@@ -849,78 +843,79 @@ export default {
                 const s4 = () => {
                     return Math.floor((1 + Math.random()) * 0x10000)
                         .toString(16)
-                    .substring(1);
-                }
+                        .substring(1);
+                };
 
-                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4()
-            }
+                return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+            };
 
             console.log('### 로드시킬 HTML 텍스트 ###');
             console.log(htmlTextToLoad);
 
             const dom = new DOMParser().parseFromString(htmlTextToLoad, 'text/html');
 
-
             // 만약 AI 생성오류 등으로 row안에 있는 col-sm-{숫자}의 총합이 12가 아니라면 모든 내용을 col-sm-12에 담아버림
             dom.querySelectorAll('div.row').forEach((row) => {
+                let totalColSpaceSum = 0;
+                $(row)
+                    .children('[class^="col-sm-"]')
+                    .each(function () {
+                        var col = $(this)[0];
 
-                let totalColSpaceSum = 0
-                $(row).children('[class^="col-sm-"]').each(function () {
-                    var col = ($(this))[0];
+                        const colClassMatch = col.className.match(/col-sm-(\d+)/);
+                        if (colClassMatch) {
+                            const colSize = parseInt(colClassMatch[1], 10);
+                            totalColSpaceSum += colSize;
+                        }
+                    });
 
-                    const colClassMatch = col.className.match(/col-sm-(\d+)/);
-                    if (colClassMatch) {
-                        const colSize = parseInt(colClassMatch[1], 10);
-                        totalColSpaceSum += colSize;
-                    }
-                });
-
-                if(totalColSpaceSum !== 12) {
+                if (totalColSpaceSum !== 12) {
                     const newCol = document.createElement('div');
                     newCol.setAttribute('class', 'col-sm-12');
 
-                    $(row).children('[class^="col-sm-"]').each(function () {
-                        var col = ($(this))[0];
-                        Array.from(col.children).forEach(child => {
-                            newCol.appendChild(child);
+                    $(row)
+                        .children('[class^="col-sm-"]')
+                        .each(function () {
+                            var col = $(this)[0];
+                            Array.from(col.children).forEach((child) => {
+                                newCol.appendChild(child);
+                            });
                         });
-                    });
 
                     row.innerHTML = '';
                     row.appendChild(newCol);
                 }
-
             });
 
             // 만약, AI가 class='row' 바깥에 section으로 감싸라는 지시를 제대로 따르지 못했을 경우, 적절하게 처리하기 위해서
-            let isInvalidSectionParsing = false
+            let isInvalidSectionParsing = false;
             dom.querySelectorAll('div.row').forEach((row) => {
                 if (row.parentElement.tagName.toLowerCase() !== 'section') {
-                    isInvalidSectionParsing = true
+                    isInvalidSectionParsing = true;
                 }
             });
 
             dom.querySelectorAll('section').forEach((section) => {
-                if(section.children.length !== 1) {
-                    isInvalidSectionParsing = true
+                if (section.children.length !== 1) {
+                    isInvalidSectionParsing = true;
                 }
             });
 
-            if(isInvalidSectionParsing) {
+            if (isInvalidSectionParsing) {
                 // 특정 컴포넌트 안의 내용을 남겨주고, 그 컴포넌트를 제거 시킴
                 const removeParentComponent = (parentComponent) => {
                     const parentSection = parentComponent.parentElement;
                     while (parentComponent.firstChild) {
                         parentSection.insertBefore(parentComponent.firstChild, parentComponent);
                     }
-                        parentSection.removeChild(parentComponent);
-                }
+                    parentSection.removeChild(parentComponent);
+                };
 
                 const removeParentComponentByQuerySelector = (query) => {
-                    dom.querySelectorAll(query).forEach(parentComponent => {
-                        removeParentComponent(parentComponent)
-                    })
-                }
+                    dom.querySelectorAll(query).forEach((parentComponent) => {
+                        removeParentComponent(parentComponent);
+                    });
+                };
 
                 removeParentComponentByQuerySelector('section');
 
@@ -930,7 +925,6 @@ export default {
                     section.appendChild(row);
                 });
             }
-
 
             // 컨테이너인 경우, data-type 속성을 추가해서 KEditor에서 인식할 수 있도록 만들기 위해서서
             const nodes = dom.querySelectorAll('[class^="col-sm-"]');
@@ -953,11 +947,9 @@ export default {
 
                 // 속성중에서 items인 경우, 키와 값 각각이 [가-힣a-zA-Z0-9_\-. ]에 해당하는 문자가 아닌 경우, 전부 제거함
                 if (component.hasAttribute('items')) {
-                    if(component.getAttribute('items').length == 0) {
+                    if (component.getAttribute('items').length == 0) {
                         component.setAttribute('items', '[]');
-                    }
-                    else if(component.getAttribute('items') !== "[]") {
-                     
+                    } else if (component.getAttribute('items') !== '[]') {
                         try {
                             // AI가 메뉴얼을 따르지 않고, '[A, B, ..., C]'와 같이 나열 연산자를 사용할 경우, 제거시켜버름
                             let items = JSON.parse(
@@ -985,7 +977,6 @@ export default {
                             console.log(error);
                             component.setAttribute('items', '[]');
                         }
-
                     }
                 }
 
@@ -1026,24 +1017,28 @@ export default {
                 }
             });
 
-
             // Section이 없는 경우, Section으로 감싸서 새로 생성하고, 있는 경우 그대로 사용함
-            if(dom.body.querySelectorAll("section").length == 0) {
+            if (dom.body.querySelectorAll('section').length == 0) {
                 const rows = Array.from(dom.body.querySelectorAll('.row'));
-                dom.body.innerHTML = rows.map(row => {
-                    const section = document.createElement('section');
-                    section.innerHTML = row.outerHTML;
-                    return section.outerHTML;
-                }).join('').replace(/&quot;/g, `'`);
+                dom.body.innerHTML = rows
+                    .map((row) => {
+                        const section = document.createElement('section');
+                        section.innerHTML = row.outerHTML;
+                        return section.outerHTML;
+                    })
+                    .join('')
+                    .replace(/&quot;/g, `'`);
             }
-            
 
             // KEdtior에서 인식할 수 있도록 클래스 추가하기
-            Array.from(dom.body.querySelectorAll("section")).forEach(section => {
+            Array.from(dom.body.querySelectorAll('section')).forEach((section) => {
                 section.setAttribute('class', 'keditor-container');
             });
-            const loadedValidHTML = Array.from(dom.body.children).map(section => section.outerHTML).join('').replace(/&quot;/g, `'`).replace("<br>", "\n")
-
+            const loadedValidHTML = Array.from(dom.body.children)
+                .map((section) => section.outerHTML)
+                .join('')
+                .replace(/&quot;/g, `'`)
+                .replace('<br>', '\n');
 
             console.log('### 로드된 유효 HTML 텍스트 ###');
             console.log(loadedValidHTML);
@@ -1088,7 +1083,7 @@ export default {
                 }
             });
 
-            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace("<br>", "\n");
+            const modifiedPrevFormOutput = dom.body.outerHTML.replace(/&quot;/g, `'`).replace('<br>', '\n');
             console.log('### 수정된 이전 폼 출력 ###');
             console.log(modifiedPrevFormOutput);
             return modifiedPrevFormOutput;
@@ -1124,9 +1119,9 @@ export default {
             me.$try({
                 context: me,
                 action: async () => {
-                    await this.backend.deleteDefinition(this.loadFormId, {type: 'form'});
+                    await this.backend.deleteDefinition(this.loadFormId, { type: 'form' });
                     this.isOpenDeleteDialog = false;
-                    if(window.location.pathname.includes('/ui-definitions/defaultform')) {
+                    if (window.location.pathname.includes('/ui-definitions/defaultform')) {
                         await this.$router.push('/ui-definitions/defaultform');
                     } else {
                         await this.$router.push('/ui-definitions/chat');
@@ -1138,15 +1133,15 @@ export default {
         }
     },
 
-    beforeDestroy() {
+    beforeUnmount() {
         this.kEditorInput = null;
     },
 
     async beforeRouteLeave(to, from, next) {
         // 에러로 인해서 로드가 되지 않을 경우, 별도의 검사를 수행하지 않음
-        if(!(this.$refs.mashup)) return next();
+        if (!this.$refs.mashup) return next();
 
-        if(this.isAIUpdated || (this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave)) {
+        if (this.isAIUpdated || this.$refs.mashup.getKEditorContentHtml() != this.kEditorContentBeforeSave) {
             const answer = window.confirm(this.$t('changePath'));
             if (answer) {
                 next();
@@ -1156,7 +1151,7 @@ export default {
         } else {
             next();
         }
-    },
+    }
 };
 </script>
 

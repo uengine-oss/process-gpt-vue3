@@ -11,14 +11,14 @@
                     <span class="current">{{ currentPage.title }}</span>
                 </div>
             </div>
-            
+
             <div class="markdown-content" v-html="renderedContent" @click="handleContentClick"></div>
         </div>
     </div>
 </template>
 
 <script>
-import markdownLoader from './utils/markdownLoader.js'
+import markdownLoader from './utils/markdownLoader.js';
 
 export default {
     name: 'TutorialContent',
@@ -36,7 +36,7 @@ export default {
         return {
             renderedContent: '',
             currentMarkdownData: null
-        }
+        };
     },
     computed: {
         previousPage() {
@@ -72,7 +72,7 @@ export default {
             try {
                 // 마크다운 파일 로드
                 const markdownData = await markdownLoader.loadMarkdownFile(page.markdownFile);
-                
+
                 if (markdownData) {
                     this.currentMarkdownData = markdownData;
                     this.renderedContent = markdownData.renderedContent;
@@ -90,7 +90,7 @@ export default {
             return page.section || '기타';
         },
         findPageIndex(page) {
-            return this.allPages.findIndex(p => p.path === page?.path);
+            return this.allPages.findIndex((p) => p.path === page?.path);
         },
         navigatePage(page) {
             this.$emit('page-selected', page);
@@ -99,11 +99,11 @@ export default {
         // 마크다운 콘텐츠 내 링크 클릭 처리
         handleContentClick(event) {
             let target = event.target;
-            
+
             // 부모 요소들을 검사하여 tutorial-link 클래스를 가진 요소 찾기
             let linkElement = null;
             let currentElement = target;
-            
+
             // 최대 5단계까지 부모 요소 검사
             for (let i = 0; i < 5; i++) {
                 if (currentElement && currentElement.classList && currentElement.classList.contains('tutorial-link')) {
@@ -113,11 +113,11 @@ export default {
                 currentElement = currentElement.parentElement;
                 if (!currentElement) break;
             }
-            
+
             if (linkElement) {
                 event.preventDefault();
                 const targetPath = linkElement.getAttribute('data-target');
-                
+
                 if (targetPath) {
                     // 부모 컴포넌트로 링크 클릭 이벤트 전달
                     this.$emit('tutorial-link-clicked', targetPath);
@@ -125,7 +125,7 @@ export default {
             }
         }
     }
-}
+};
 </script>
 
 <style scoped>
@@ -241,7 +241,7 @@ export default {
     max-width: 60vw;
     height: auto;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     margin: 8px 0px 48px 0px;
     display: block;
 }
@@ -352,16 +352,16 @@ export default {
         margin-left: 0;
         padding-top: 80px; /* 모바일 햄버거 버튼 공간 확보 */
     }
-    
+
     .content-area {
         padding: 20px;
     }
-    
+
     .content-navigation {
         flex-direction: column;
         gap: 12px;
     }
-    
+
     .nav-btn {
         max-width: none;
         width: 100%;

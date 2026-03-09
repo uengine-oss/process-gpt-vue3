@@ -2,9 +2,9 @@
 import { ref } from 'vue';
 import UiParentCard from '@/components/shared/UiParentCard.vue';
 
-import SimpleTooltip from "@/components/ui-components/tooltip/SimpleTooltip.vue";
-import IconTooltip from "@/components/ui-components/tooltip/IconTooltip.vue";
-import ToggleTolltip from "@/components/ui-components/tooltip/ToggleTolltip.vue";
+import SimpleTooltip from '@/components/ui-components/tooltip/SimpleTooltip.vue';
+import IconTooltip from '@/components/ui-components/tooltip/IconTooltip.vue';
+import ToggleTolltip from '@/components/ui-components/tooltip/ToggleTolltip.vue';
 // common components
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 // theme breadcrumb
@@ -21,7 +21,6 @@ const breadcrumbs = ref([
         href: '#'
     }
 ]);
-
 </script>
 <template>
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs"></BaseBreadcrumb>
@@ -29,17 +28,17 @@ const breadcrumbs = ref([
     <v-row>
         <v-col cols="12" md="6">
             <UiParentCard title="Simple">
-                <SimpleTooltip/>
+                <SimpleTooltip />
             </UiParentCard>
         </v-col>
         <v-col cols="12" md="6">
             <UiParentCard title="Icon">
-                <IconTooltip/>
+                <IconTooltip />
             </UiParentCard>
         </v-col>
         <v-col cols="12">
             <UiParentCard title="Toggle Tolltip">
-                <ToggleTolltip/>
+                <ToggleTolltip />
             </UiParentCard>
         </v-col>
     </v-row>
