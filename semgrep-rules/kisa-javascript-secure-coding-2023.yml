@@ -46,7 +46,10 @@ rules:
     metadata:
       guide: "Javascript_시큐어코딩_가이드(2023)"
       section: "입력데이터 검증 및 표현 > XSS"
-    pattern: $EL.innerHTML = $VALUE
+    patterns:
+      - pattern: $EL.innerHTML = $VALUE
+      - pattern-not: $EL.innerHTML = DOMPurify.sanitize(...)
+      - pattern-not: $EL.innerHTML = DOMPurify.sanitize($VALUE)
 
   - id: kisa.js.xss.no-dangerously-set-inner-html
     message: "[KISA JS Guide] XSS: React dangerouslySetInnerHTML 사용 시 엄격한 필터링 필요"
@@ -120,7 +123,7 @@ rules:
     metadata:
       guide: "Javascript_시큐어코딩_가이드(2023)"
       section: "보안기능 > 부적절한 인증서 유효성 검증"
-    pattern: rejectUnauthorized: false
+    pattern: "rejectUnauthorized: false"
 
   - id: kisa.js.supplychain.no-download-without-integrity
     message: "[KISA JS Guide] 무결성 검사 없는 코드 다운로드 위험(import from URL)"
