@@ -1,8 +1,5 @@
 <template>
-    <div
-        class="align-center pa-2 sub-process-style pr-3 pl-3"
-        :class="isProcessLocked() ? 'sub-process-disabled' : 'cursor-pointer sub-process-hover'"
-    >
+    <div class="align-center pa-2 sub-process-style pr-3 pl-3 cursor-pointer sub-process-hover">
         <div v-if="!processDialogStatus || processType === 'add'">
             <ProcessTooltip
                 :processInfo="processTooltipInfo"
@@ -12,28 +9,29 @@
                 @mouseenter.native="loadProcessInfo"
             >
                 <template #default="tooltipProps">
-                    <h6
-                        v-bind="tooltipProps"
-                        @click="handleClick"
-                        @dblclick.stop="handleDoubleClick"
-                        @mouseenter="loadProcessInfo"
-                        class="text-subtitle-2 font-weight-semibold ma-0 pa-0"
-                        :class="{ 'text-disabled': isProcessLocked() }"
-                    >
-                        {{ value.name }}
-                    </h6>
+                    <div class="d-flex align-center" style="gap: 8px">
+                        <h6
+                            v-bind="tooltipProps"
+                            @click="handleClick"
+                            @dblclick.stop="handleDoubleClick"
+                            @mouseenter="loadProcessInfo"
+                            class="text-subtitle-2 font-weight-semibold ma-0 pa-0 flex-grow-1"
+                        >
+                            {{ value.name }}
+                        </h6>
+                        <v-chip
+                            v-if="isNew(value.id) && !enableEdit"
+                            color="primary"
+                            variant="outlined"
+                            size="x-small"
+                            class="flex-shrink-0"
+                        >
+                            New
+                        </v-chip>
+                    </div>
                 </template>
             </ProcessTooltip>
             <div class="d-flex align-center mt-1" style="gap: 4px">
-                <ProgressBadge
-                    v-if="showStatusBadge && processStatus === 'draft'"
-                    type="status"
-                    :status="processStatus"
-                    :customText="draftBadgeText"
-                    size="x-small"
-                    :showIcon="true"
-                />
-                <v-chip v-if="isNew(value.id) && !enableEdit" color="primary" variant="outlined" size="x-small">New</v-chip>
                 <v-spacer />
                 <v-btn
                     v-if="isExecutionByProject"
@@ -107,7 +105,6 @@ import ProcessMenu from './ProcessMenu.vue';
 import ProcessDialog from './ProcessDialog.vue';
 import BaseProcess from './BaseProcess.vue';
 import BackendFactory from '@/components/api/BackendFactory';
-import ProgressBadge from '@/components/ui/ProgressBadge.vue';
 import ProcessTooltip from '@/components/ui/ProcessTooltip.vue';
 import OwnerSettingDialog from '@/components/ui/OwnerSettingDialog.vue';
 import { getOrganizationProvider } from '@/providers/organization';
@@ -116,7 +113,6 @@ export default {
     components: {
         ProcessMenu,
         ProcessDialog,
-        ProgressBadge,
         ProcessTooltip,
         OwnerSettingDialog
     },
@@ -126,11 +122,6 @@ export default {
         parent: Object,
         enableEdit: Boolean,
         isExecutionByProject: Boolean,
-        // 상태 뱃지 표시 여부
-        showStatusBadge: {
-            type: Boolean,
-            default: true
-        },
         // 툴팁 표시 여부
         showTooltip: {
             type: Boolean,
@@ -155,22 +146,11 @@ export default {
             taskCount: 0,
             completionRate: 0
         },
-        processStatus: null,
-        lockUserName: '',
         tooltipLoaded: false,
         // PAL 전용: 서브프로세스 설정 다이얼로그
         subprocessSettingsDialog: false,
         subprocessSettingsCommonModule: false
     }),
-    computed: {
-        draftBadgeText() {
-            if (this.processStatus === 'draft' && this.lockUserName) {
-                const label = this.$t('progressBadge.processEditing');
-                return `${label}(${this.lockUserName})`;
-            }
-            return '';
-        }
-    },
     async created() {
         this.checkedProcess = JSON.parse(localStorage.getItem('checkedProcess')) || [];
 
@@ -182,11 +162,6 @@ export default {
             }
         };
         window.addEventListener('closeAllProcessDialogs', this._closeDialogHandler);
-
-        // 컴포넌트 생성 시 프로세스 상태 정보 로드 (뱃지 표시용)
-        if (this.showStatusBadge) {
-            this.loadProcessStatus();
-        }
     },
     beforeUnmount() {
         window.removeEventListener('closeAllProcessDialogs', this._closeDialogHandler);
@@ -195,19 +170,8 @@ export default {
         isNew(id) {
             return !this.checkedProcess.includes(id);
         },
-        isProcessLocked() {
-            return this.processStatus === 'draft';
-        },
         handleClick() {
             if (this.isExecutionByProject) return;
-            if (this.isProcessLocked()) {
-                this.$try({
-                    action: async () => {},
-                    warningMsg: this.$t('SubProcess.lockedWarning', { name: this.lockUserName })
-                });
-                return;
-            }
-
             if (window.$mode == 'ProcessGPT') {
                 this.goProcess(this.value.id, 'sub');
             } else {
@@ -220,13 +184,6 @@ export default {
         },
         handleDoubleClick() {
             if (this.isExecutionByProject) return;
-            if (this.isProcessLocked()) {
-                this.$try({
-                    action: async () => {},
-                    warningMsg: this.$t('SubProcess.lockedWarning', { name: this.lockUserName })
-                });
-                return;
-            }
             const path = this.value.id ?? this.value.path;
             if (!path) return;
             // PAL 모드 또는 uEngine 모드: 더블클릭 시 SubProcessDetail 화면으로 이동
@@ -330,32 +287,6 @@ export default {
             }
         },
         /**
-         * 프로세스 상태만 가볍게 로드 (뱃지 표시용)
-         * lock 테이블에 있으면 '작성중(draft)', 없으면 '완료(published)'
-         */
-        async loadProcessStatus() {
-            try {
-                const supabase = window.$supabase;
-                if (!supabase) return;
-
-                const { data: lockData } = await supabase
-                    .from('lock')
-                    .select('id, user_id')
-                    .eq('id', this.value.id)
-                    .eq('tenant_id', window.$tenantName)
-                    .maybeSingle();
-
-                if (lockData) {
-                    this.processStatus = 'draft';
-                    if (lockData.user_id) {
-                        this.lockUserName = await this.resolveOwnerName(lockData.user_id);
-                    }
-                }
-            } catch (error) {
-                console.error('프로세스 상태 로드 실패:', error);
-            }
-        },
-        /**
          * 프로세스 정보를 로드하여 툴팁에 표시
          */
         async loadProcessInfo() {
@@ -372,22 +303,6 @@ export default {
                     const definition = procDef.definition;
                     const activities = definition?.activities || [];
 
-                    let status = null;
-                    let lockUserId = '';
-                    const supabase = window.$supabase;
-                    if (supabase) {
-                        const { data: lockData } = await supabase
-                            .from('lock')
-                            .select('id, user_id')
-                            .eq('id', this.value.id)
-                            .eq('tenant_id', window.$tenantName)
-                            .maybeSingle();
-                        if (lockData) {
-                            status = 'draft';
-                            lockUserId = lockData.user_id || '';
-                        }
-                    }
-
                     // owner ID를 이름으로 변환
                     let ownerName = '';
                     if (procDef.owner) {
@@ -398,19 +313,12 @@ export default {
                         id: this.value.id,
                         name: procDef.name || this.value.name,
                         owner: ownerName,
-                        status: status,
+                        status: null,
                         updatedAt: procDef.updated_at,
                         description: definition?.description || '',
                         taskCount: activities.length,
                         completionRate: 0
                     };
-
-                    this.processStatus = status;
-                    if (lockUserId) {
-                        this.lockUserName = await this.resolveOwnerName(lockUserId);
-                    } else {
-                        this.lockUserName = '';
-                    }
                     this.tooltipLoaded = true;
                 }
             } catch (error) {
@@ -460,9 +368,5 @@ export default {
 }
 .sub-process-hover:hover {
     background-color: #e7ecf0 !important;
-}
-.sub-process-disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 </style>
