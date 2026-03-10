@@ -2224,6 +2224,8 @@
         "selectAtLeastOneParticipant": "참여자를 하나 이상 선택해주세요."
     },
     "userListing": {
+        "loading": "유저 목록을 불러오는 중...",
+        "empty": "표시할 유저가 없습니다.",
         "search": "검색",
         "chat": "채팅"
     },

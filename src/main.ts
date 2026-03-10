@@ -15,7 +15,7 @@ import { createApp } from 'vue';
 import VueTablerIcons from 'vue-tabler-icons';
 import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar';
+import { PerfectScrollbarPlugin } from 'vue3-perfect-scrollbar';
 import App from './App.vue';
 import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
@@ -428,7 +428,7 @@ async function initializeApp() {
 
     app.use(router);
     // app.component('EasyDataTable', Vue3EasyDataTable);
-    app.use(PerfectScrollbar);
+    app.use(PerfectScrollbarPlugin);
     app.use(createPinia());
     app.use(VCalendar, {});
     app.use(VueTablerIcons);

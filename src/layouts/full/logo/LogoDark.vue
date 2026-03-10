@@ -1,6 +1,6 @@
 <template>
     <div class="logo">
-        <RouterLink to="/definition-map">
+        <RouterLink to="/process-architecture">
             <img v-if="mode == 'ProcessGPT'" :src="logo" alt="home" style="width: 160px" />
             <img v-else :src="uEngine6Logo" alt="home" style="width: 160px" />
         </RouterLink>

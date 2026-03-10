@@ -1922,6 +1922,8 @@
         "selectAtLeastOneParticipant": "Please select at least one participant."
     },
     "userListing": {
+        "loading": "Loading users...",
+        "empty": "No users to display.",
         "search": "User search",
         "chat": "Chat"
     },

@@ -17,7 +17,7 @@
 
         <div v-if="isLoading" class="loading-state">
             <v-progress-circular indeterminate size="24" color="primary"></v-progress-circular>
-            <span class="ml-2 text-caption">{{ $t('UserList.loading') || '유저 목록을 불러오는 중...' }}</span>
+            <span class="ml-2 text-caption">{{ $t('userListing.loading') || '유저 목록을 불러오는 중...' }}</span>
         </div>
 
         <div v-else-if="filteredUsers.length === 0" class="empty-state">
@@ -25,7 +25,7 @@
             <span class="text-caption text-grey">
                 {{
                     users.length === 0
-                        ? $t('UserList.empty') || '표시할 유저가 없습니다.'
+                        ? $t('userListing.empty') || '표시할 유저가 없습니다.'
                         : (searchValue || '').trim()
                         ? '검색 > 검색결과 없음'
                         : $t('userListing.search') || '검색'

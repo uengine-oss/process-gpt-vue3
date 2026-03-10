@@ -46,7 +46,7 @@
                         density="comfortable"
                         v-bind="props"
                         class="text-medium-emphasis"
-                        :to="'/definition-map'"
+                        :to="'/process-architecture'"
                         @click="closeChatPanelIfOpen"
                     >
                         <Icons :icon="'write'" />
@@ -80,7 +80,7 @@
                     <NavItem v-else-if="!item.disable" class="leftPadding" :item="item" />
                     <!---End Single Item-->
                 </template>
-                <v-btn variant="text" class="text-medium-emphasis d-flex align-center" :to="'/definition-map'" v-if="pal">
+                <v-btn variant="text" class="text-medium-emphasis d-flex align-center" :to="'/process-architecture'" v-if="!pal">
                     <Icons :icon="'write'" class="mr-2" />
                     <span>{{ $t('processDefinitionMap.title') }}</span>
                 </v-btn>
@@ -135,7 +135,7 @@
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
-                <div v-if="mode !== 'uEngine' || !pal" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !pal" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
@@ -180,7 +180,7 @@
                 </div>
 
                 <!-- 유저 목록 -->
-                <div v-if="(mode !== 'uEngine' && !gs) || !pal" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && !pal" class="mb-4">
                     <div class="d-flex align-center ml-2">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
@@ -195,7 +195,7 @@
                 </div>
 
                 <!-- 스킬 타이틀 + 목록 -->
-                <div v-if="(mode !== 'uEngine' && !gs) || !pal" class="mb-4">
+                <div v-if="mode !== 'uEngine' && !gs && !pal" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.skills') }}
@@ -214,7 +214,7 @@
                 </div>
 
                 <!-- Analytics 타이틀 + 목록 -->
-                <div v-if="analyticsItem.length > 0 && !gs" class="mb-4">
+                <div v-if="analyticsItem.length > 0" class="mb-4">
                     <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2 mb-2">
                         {{ $t('VerticalSidebar.analytics') }}
                     </div>
@@ -237,7 +237,7 @@
                 </div>
 
                 <!-- 정의관리 타이틀 + 목록 (NavCollapse 컴포넌트 내부의 dropDown 폴더 내부 index.vue 컴포넌트에 실제 리스트 UI가 있음) -->
-                <v-col class="pa-0">
+                <v-col v-if="!pal" class="pa-0">
                     <!-- definition menu item -->
                     <template v-for="(item, index) in definitionItem" :key="item.title">
                         <!-- Item Sub Header -->
@@ -275,7 +275,7 @@
                     </template>
                 </v-col>
                 <!-- 프로세스 섹션: 프로세스 정의 + 옆 작은 버튼 클릭 시 업로드/내보내기 드롭다운 -->
-                <v-col v-if="processSectionListItems.length > 0" class="pa-0">
+                <v-col v-if="processSectionListItems.length > 0 && !pal" class="pa-0">
                     <v-list-item
                         v-for="item in processSectionListItems"
                         :key="item.title"
@@ -320,7 +320,7 @@
                         </template>
                     </v-list-item>
                 </v-col>
-                <v-col class="pa-0">
+                <v-col v-if="!pal" class="pa-0">
                     <ExpandableList
                         v-if="definitionList && definitionList.children"
                         :items="definitionList.children"
@@ -672,64 +672,17 @@ export default {
             // Analytics 메뉴
             this.analyticsItem = [
                 {
-                    title: 'analytics.dashboard',
+                    title: 'analysisDashboard.title',
                     icon: 'dashboard',
                     BgColor: 'primary',
-                    to: '/analytics',
+                    to: '/analysis-dashboard',
                     disable: false
-                },
-                {
-                    title: 'analytics.heatmap',
-                    icon: 'ibm-process-mining',
-                    BgColor: 'primary',
-                    to: '/analytics/heatmap',
-                    disable: false
-                },
-                {
-                    title: 'analytics.kpi',
-                    icon: 'strategy',
-                    BgColor: 'primary',
-                    to: '/analytics/kpi',
-                    disable: false
-                },
-                {
-                    title: 'analytics.pivot',
-                    icon: 'tuning-square-2-linear',
-                    BgColor: 'primary',
-                    to: '/analytics/pivot',
-                    disable: false
-                },
-                {
-                    title: 'analytics.performance',
-                    icon: 'graph-up-linear',
-                    BgColor: 'primary',
-                    to: '/analytics/performance',
-                    disable: false
-                },
-                {
-                    title: 'analytics.query',
-                    icon: 'chat-round-line-linear',
-                    BgColor: 'primary',
-                    to: '/analytics/query',
-                    disable: false
-                },
-                ...(this.pal
-                    ? []
-                    : [
-                          {
-                              title: 'analytics.heatmap',
-                              icon: 'ibm-process-mining',
-                              BgColor: 'primary',
-                              to: '/analytics/heatmap',
-                              disable: false
-                          }
-                      ])
+                }
             ];
-
             // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
-            if (this.pal) {
-                this.analyticsItem = [];
-            }
+            // if (this.pal) {
+            //     this.analyticsItem = [];
+            // }
 
             if (!this.JMS) {
                 this.definitionItem.forEach((item) => {

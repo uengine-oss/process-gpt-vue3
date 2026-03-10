@@ -9,7 +9,7 @@
                 <div class="hero-buttons">
                     <!-- 텍스트를 중앙 정렬하기 위해 flex와 justify-center 클래스 추가 -->
                     <!-- '시작하기' 버튼과 동일한 구조로 마켓플레이스 버튼 정렬 (to, color, class, height 순서로 통일) -->
-                    <v-btn @click="gotoStart()" to="/definition-map" color="#1976D2" class="rounded-pill" height="48">{{
+                    <v-btn @click="gotoStart()" to="/process-architecture" color="#1976D2" class="rounded-pill" height="48">{{
                         $t('HeroSection.betaTestButton')
                     }}</v-btn>
                     <v-btn color="#6c757d" class="rounded-pill" height="48">
@@ -81,7 +81,7 @@ export default {
 
             if (window.$isTenantServer) gotoUrl = '/tenant/manage';
             // 둘 다 '/definition-map'으로 이동하도록 수정
-            else gotoUrl = '/definition-map';
+            else gotoUrl = '/process-architecture';
 
             await this.$router.push(gotoUrl);
         }
