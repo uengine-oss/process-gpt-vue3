@@ -32,7 +32,7 @@
             </v-row>
             
             <div :class="isMobile ? 'Process-gpt-execute-mobile-layout' : 'd-flex'">
-                <div v-if="isSimulate == 'false'" class="pa-4">
+                <div v-if="isSimulate == 'false'" class="pa-4" :style="roleMappingPanelStyle">
                     <v-row class="ma-0 pa-0">
                         <div class="text-h5 font-weight-semibold">{{ $t('ProcessGPTExecute.roleMapping') }}</div>
                     </v-row>
@@ -48,7 +48,7 @@
                             ></user-select-field>
                         </div>
                     </div>
-                    <div v-if="isSimulate == 'false'">
+                    <div v-if="isSimulate == 'false' && !gs">
                         <div class="text-h5 font-weight-semibold">{{ $t('InstanceCard.source') }}</div>
                         <InstanceSource 
                             ref="instanceSourceRef"
@@ -73,6 +73,7 @@
                             :deployDefinitionId="deployDefinitionId"
                             :deployVersion="deployVersion"
                             :disableAdvancedResearch="disableAdvancedResearch"
+                            :hideAgentMonitorTab="gs"
                             @close="closeDialog"
                             @executeProcess="executeProcess"
                             @backToPrevStep="backToPrevStep"
@@ -206,6 +207,16 @@ export default {
         window.removeEventListener('resize', this.checkIfMobile);
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
+        roleMappingPanelStyle() {
+            // gs 모드에서 소스 영역이 사라져도 역할 지정 영역 가독성을 유지하도록 폭 확보
+            if (!this.isMobile && this.gs && this.isSimulate === 'false') {
+                return 'min-width: 300px; width: 300px;';
+            }
+            return '';
+        },
         isFinishedAgentGeneration() {
             return this.$refs.workItemRef && this.$refs.workItemRef.isFinishedAgentGeneration || false;
         },
@@ -217,6 +228,171 @@ export default {
         }
     },
     methods: {
+        async getOrganizationChartRoot() {
+            const supabase = window.$supabase;
+            const tenantId = window.$tenantName || 'default';
+            if (!supabase) return null;
+            const { data, error } = await supabase
+                .from('configuration')
+                .select('value')
+                .eq('key', 'organization')
+                .eq('tenant_id', tenantId)
+                .maybeSingle();
+            if (error || !data?.value) return null;
+            const orgValue = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+            return orgValue?.chart || orgValue || null;
+        },
+        findTeamNodeById(node, teamId) {
+            if (!node || !teamId) return null;
+            if ((node.id === teamId || node?.data?.id === teamId) && node?.data?.isTeam) {
+                return node;
+            }
+            if (Array.isArray(node.children)) {
+                for (const child of node.children) {
+                    const found = this.findTeamNodeById(child, teamId);
+                    if (found) return found;
+                }
+            }
+            return null;
+        },
+        findTeamNodeByName(node, teamName) {
+            if (!node || !teamName) return null;
+            const normalizedTarget = String(teamName).trim();
+            const nodeName = node?.data?.name || node?.name || '';
+            if (node?.data?.isTeam && String(nodeName).trim() === normalizedTarget) {
+                return node;
+            }
+            if (Array.isArray(node.children)) {
+                for (const child of node.children) {
+                    const found = this.findTeamNodeByName(child, normalizedTarget);
+                    if (found) return found;
+                }
+            }
+            return null;
+        },
+        collectMemberIdsFromTeamNode(teamNode) {
+            const memberIds = [];
+            const traverse = (node) => {
+                if (!node || !Array.isArray(node.children)) return;
+                node.children.forEach((child) => {
+                    const isTeam = !!child?.data?.isTeam;
+                    if (isTeam) {
+                        traverse(child);
+                        return;
+                    }
+                    const id = child?.id || child?.data?.id || null;
+                    if (id) memberIds.push(id);
+                });
+            };
+            traverse(teamNode);
+            return Array.from(new Set(memberIds));
+        },
+        async getTeamMemberIds(teamId, chartRoot = null) {
+            const root = chartRoot || await this.getOrganizationChartRoot();
+            if (!root || !teamId) return [];
+            const teamNode = this.findTeamNodeById(root, teamId);
+            if (!teamNode) return [];
+            return this.collectMemberIdsFromTeamNode(teamNode);
+        },
+        async getTeamMemberIdsByName(teamName, chartRoot = null) {
+            const root = chartRoot || await this.getOrganizationChartRoot();
+            if (!root || !teamName) return [];
+            const teamNode = this.findTeamNodeByName(root, teamName);
+            if (!teamNode) return [];
+            return this.collectMemberIdsFromTeamNode(teamNode);
+        },
+        findMemberIdsByName(node, memberName) {
+            if (!node || !memberName) return [];
+            const target = String(memberName).trim();
+            const result = [];
+            const traverse = (current) => {
+                if (!current) return;
+                const isTeam = !!current?.data?.isTeam;
+                const currentName = String(current?.data?.name || current?.name || '').trim();
+                const currentId = current?.id || current?.data?.id || null;
+                if (!isTeam && currentId && currentName === target) {
+                    result.push(currentId);
+                }
+                if (Array.isArray(current.children)) {
+                    current.children.forEach(child => traverse(child));
+                }
+            };
+            traverse(node);
+            return Array.from(new Set(result));
+        },
+        async getMemberIdsByName(memberName, chartRoot = null) {
+            const root = chartRoot || await this.getOrganizationChartRoot();
+            if (!root || !memberName) return [];
+            return this.findMemberIdsByName(root, memberName);
+        },
+        async expandEndpointWithTeamMembers(endpointList, chartRoot = null) {
+            const normalized = this.normalizeEndpointList(endpointList);
+            if (normalized.length === 0) {
+                return { expandedEndpoint: [], teamMappedCount: 0 };
+            }
+            const expanded = [];
+            let teamMappedCount = 0;
+            for (const endpointId of normalized) {
+                const members = await this.getTeamMemberIds(endpointId, chartRoot);
+                if (members.length > 0) {
+                    expanded.push(...members);
+                    teamMappedCount += 1;
+                } else {
+                    expanded.push(endpointId);
+                }
+            }
+            return {
+                expandedEndpoint: Array.from(new Set(expanded)),
+                teamMappedCount
+            };
+        },
+        async getGroupTeamIds(groupId) {
+            const supabase = window.$supabase;
+            const tenantId = window.$tenantName || 'default';
+            if (!supabase || !groupId) return [];
+            const { data, error } = await supabase
+                .from('org_chart_group_teams')
+                .select('team_id')
+                .eq('tenant_id', tenantId)
+                .eq('group_id', groupId);
+            if (error || !Array.isArray(data)) return [];
+            return data.map(item => item.team_id).filter(Boolean);
+        },
+        async resolveOrganizationMembers(role, chartRoot = null) {
+            const ctx = role?.roleResolutionContext || {};
+            if (ctx?._type !== 'Organization') return [];
+            const organizationType = ctx.organizationType;
+            const organizationId = ctx.organizationId;
+            const organizationName = ctx.organizationName;
+
+            // 1) root > team > user 구조 기본 처리:
+            // organizationType이 없더라도 organizationId/organizationName을 팀으로 우선 해석
+            let teamMembers = [];
+            if (organizationId) {
+                teamMembers = await this.getTeamMemberIds(organizationId, chartRoot);
+            }
+            if (teamMembers.length === 0 && organizationName) {
+                teamMembers = await this.getTeamMemberIdsByName(organizationName, chartRoot);
+            }
+            if (teamMembers.length > 0) {
+                return teamMembers;
+            }
+
+            // 2) group 테이블 연동이 있는 경우에만 group 처리
+            if (organizationType === 'team') {
+                return [];
+            }
+            if (organizationType === 'group') {
+                const teamIds = await this.getGroupTeamIds(organizationId);
+                const memberIds = [];
+                for (const teamId of teamIds) {
+                    const ids = await this.getTeamMemberIds(teamId, chartRoot);
+                    memberIds.push(...ids);
+                }
+                return Array.from(new Set(memberIds));
+            }
+            return [];
+        },
         normalizeEndpointList(value) {
             if (Array.isArray(value)) {
                 return value.map(v => String(v || '').trim()).filter(Boolean);
@@ -313,38 +489,60 @@ export default {
                 }
 
                 const roles = me.processDefinition.roles;
-                me.roleMappings = roles.map((role) => {
-                    let roleEndpoint = me.normalizeEndpointList(role.endpoint);
+                const chartRoot = await this.getOrganizationChartRoot();
+                me.roleMappings = await Promise.all(roles.map(async (role) => {
+                    const rawRoleEndpoint = me.normalizeEndpointList(role.endpoint);
+                    const endpointExpansion = await this.expandEndpointWithTeamMembers(rawRoleEndpoint, chartRoot);
+                    let roleEndpoint = endpointExpansion.expandedEndpoint;
                     const roleDefault = me.normalizeEndpointList(role.default);
+                    const organizationMembers = await this.resolveOrganizationMembers(role, chartRoot);
+                    const autoResolvedMembers = organizationMembers.length > 0
+                        ? organizationMembers
+                        : roleEndpoint;
+                    if (autoResolvedMembers.length > 0) {
+                        roleEndpoint = autoResolvedMembers;
+                    }
 
                     if (role.name == startActivity.role) {
                         const uid = localStorage.getItem('uid');
-                        roleEndpoint = uid ? [uid] : [];
+                        if (uid && autoResolvedMembers.length === 0) {
+                            roleEndpoint = [uid];
+                        }
                     }
+
+                    const resolvedEndpoint = autoResolvedMembers.length > 0
+                        ? autoResolvedMembers
+                        : (roleDefault.length > 0 ? roleDefault : roleEndpoint);
 
                     return {
                         name: role.name,
-                        endpoint: roleDefault.length > 0 ? roleDefault : roleEndpoint,
+                        endpoint: resolvedEndpoint,
                         resolutionRule: role.resolutionRule,
                         default: roleDefault
                     };
-                });
+                }));
 
 
-                const hasAnyDefaultRole = me.roleMappings.some(role =>
-                    Array.isArray(role.default) ? role.default.length > 0 : !!role.default
+                // endpoint가 이미 채워진 role(직접 사용자 지정/조직팀 매핑)은 completion/role-binding 호출 없이 그대로 사용
+                const unresolvedRoles = me.roleMappings.filter(
+                    role => me.normalizeEndpointList(role.endpoint).length === 0
                 );
 
-                if (!hasAnyDefaultRole) {
-                    const roleBindings = await backend.bindRole(me.processDefinition.roles, me.processDefinition.id);
-                    if (roleBindings && roleBindings.length > 0) {
-                        roleBindings.forEach((roleBinding) => {
-                            let role = me.roleMappings.find((role) => role.name === roleBinding.roleName);
-                            if(role && me.normalizeEndpointList(role.endpoint).length === 0) {
-                                role['endpoint'] = roleBinding.userId ? [roleBinding.userId] : [];
-                                role['default'] = roleBinding.userId ? [roleBinding.userId] : [];
-                            }
-                        })
+                const shouldCallRoleBinding = unresolvedRoles.length > 0;
+                if (shouldCallRoleBinding) {
+                    try {
+                        const roleBindings = await backend.bindRole(me.processDefinition.roles, me.processDefinition.id);
+                        if (roleBindings && roleBindings.length > 0) {
+                            roleBindings.forEach((roleBinding) => {
+                                const role = me.roleMappings.find((item) => item.name === roleBinding.roleName);
+                                if (role && me.normalizeEndpointList(role.endpoint).length === 0) {
+                                    role.endpoint = roleBinding.userId ? [roleBinding.userId] : [];
+                                    role.default = roleBinding.userId ? [roleBinding.userId] : [];
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        // role-binding 실패 시에도 실행 UI가 멈추지 않도록 무시(수동 지정 endpoint 사용)
                     }
                 }
             }

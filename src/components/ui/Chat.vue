@@ -3376,8 +3376,17 @@ export default {
             const me = this;
             const imageFile = e?.target?.files?.[0];
             if (!imageFile) return;
-            
-            if (window.location.hostname !== 'localhost') {
+
+            const hostname = (window.location.hostname || '').toLowerCase();
+            const isLocalHost =
+                hostname === 'localhost' ||
+                hostname === '127.0.0.1' ||
+                hostname === '0.0.0.0' ||
+                hostname.startsWith('192.168.') ||
+                hostname.startsWith('10.') ||
+                hostname.endsWith('.local');
+
+            if (!isLocalHost) {
                 const originalName = imageFile.name || '';
                 const lastDot = originalName.lastIndexOf('.');
                 const extRaw = lastDot > -1 ? originalName.slice(lastDot) : '';
@@ -3410,45 +3419,48 @@ export default {
                 const fileName = hasUnsafeChars
                     ? `uploads/${uuid}${ext}`
                     : `uploads/${originalName}`;
-                const data = await backend.uploadImage(fileName, imageFile);
-                if (data && data.path) {
-                    const imageUrl = await backend.getImageUrl(data.path);
-                    me.attachedImages.push({
-                        id: Date.now(),
-                        url: imageUrl,
-                        file: imageFile
-                    });
-                }
-            } else {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const imgElement = document.createElement("img");
-                    imgElement.src = event.target.result;
-                    imgElement.onload = () => {
-                        const canvas = document.createElement("canvas");
-                        // AI Vision 분석을 위해 고해상도 유지 (최대 2048px)
-                        const max_width = 2048;
-                        const scaleSize = imgElement.width > max_width ? max_width / imgElement.width : 1;
-                        canvas.width = imgElement.width * scaleSize;
-                        canvas.height = imgElement.height * scaleSize;
-
-                        const ctx = canvas.getContext("2d");
-                        ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
-                        // AI가 이미지를 제대로 인식할 수 있도록 높은 품질 유지 (0.9 = 90% 품질)
-                        const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 0.9);
-
-                        // 이미지 배열에 추가
-                        me.attachedImages.push({
-                            id: Date.now(),
-                            url: srcEncoded,
-                            file: imageFile
-                        });
-                    };
-                };
-                if (imageFile) {
-                    reader.readAsDataURL(imageFile);
+                try {
+                    const data = await backend.uploadImage(fileName, imageFile);
+                    if (data && data.path) {
+                        const imageUrl = await backend.getImageUrl(data.path);
+                        if (imageUrl) {
+                            me.attachedImages.push({
+                                id: Date.now(),
+                                url: imageUrl,
+                                file: imageFile
+                            });
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    // 업로드 실패 시 로컬 미리보기(base64)로 폴백
                 }
             }
+
+            // 로컬 환경 또는 업로드 실패 시 공통 폴백
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const imgElement = document.createElement("img");
+                imgElement.src = event.target.result;
+                imgElement.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    const max_width = 2048;
+                    const scaleSize = imgElement.width > max_width ? max_width / imgElement.width : 1;
+                    canvas.width = imgElement.width * scaleSize;
+                    canvas.height = imgElement.height * scaleSize;
+
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+                    const srcEncoded = ctx.canvas.toDataURL("image/jpeg", 0.9);
+
+                    me.attachedImages.push({
+                        id: Date.now(),
+                        url: srcEncoded,
+                        file: imageFile
+                    });
+                };
+            };
+            reader.readAsDataURL(imageFile);
         },
         capture() {
             this.$refs.captureImg.value = '';

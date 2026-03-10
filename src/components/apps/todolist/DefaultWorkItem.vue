@@ -168,9 +168,13 @@ export default {
         mode() {
             return window.$mode;
         },
+        gs() {
+            return window.$gs;
+        },
         showTaskReturnButton() {
             // 태스크 반송은 현재 uEngine 모드에서만 구현
             if (this.mode !== 'uEngine') return false;
+            if (this.gs) return false;
             if (this.isDryRun) return false;
             if (this.isCompleted) return false;
             // 기존 버튼 노출 조건(위임상태 제외)을 그대로 따름

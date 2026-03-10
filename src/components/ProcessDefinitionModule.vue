@@ -1196,7 +1196,8 @@ export default {
                             name: lane.name,
                             endpoint : endpoint,
                             resolutionRule: lane.resolutionRule,
-                            default: defaultEndpoint
+                            default: defaultEndpoint,
+                            roleResolutionContext: laneJson?.roleResolutionContext || null
                         };
                     });
                 };
@@ -1311,7 +1312,8 @@ export default {
                             name: lane.name,
                             endpoint: endpoint,
                             resolutionRule: lane.resolutionRule,
-                            default: defaultEndpoint
+                            default: defaultEndpoint,
+                            roleResolutionContext: laneJson?.roleResolutionContext || null
                         };
                     }),
                     events: [

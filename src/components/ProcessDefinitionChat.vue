@@ -1631,58 +1631,7 @@ export default {
                         if(unknown.processDefinitionName){
                             this.projectName = unknown.processDefinitionName
                         }
-                        if (unknown.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
-                            if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == unknown.megaProcessId)) {
-                                this.processDefinitionMap.mega_proc_list.push({
-                                    name: unknown.megaProcessId,
-                                    id: unknown.megaProcessId,
-                                    major_proc_list: [
-                                        {
-                                            name: unknown.majorProcessId,
-                                            id: unknown.majorProcessId,
-                                            sub_proc_list: [
-                                                {
-                                                    id: unknown.processDefinitionId,
-                                                    name: unknown.processDefinitionName
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                });
-                            }
-                            if (unknown.majorProcessId) {
-                                this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
-                                    if (megaProcess.name == unknown.megaProcessId) {
-                                        if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == unknown.majorProcessId)) {
-                                            const idx = megaProcess.major_proc_list.findIndex(
-                                                (majorProcess) => majorProcess.name == unknown.majorProcessId
-                                            );
-                                            if (
-                                                !megaProcess.major_proc_list[idx].sub_proc_list.some(
-                                                    (subProcess) => subProcess.id == unknown.processDefinitionId
-                                                )
-                                            ) {
-                                                megaProcess.major_proc_list[idx].sub_proc_list.push({
-                                                    id: unknown.processDefinitionId,
-                                                    name: unknown.processDefinitionName
-                                                });
-                                            }
-                                        } else {
-                                            megaProcess.major_proc_list.push({
-                                                name: unknown.majorProcessId,
-                                                id: unknown.majorProcessId,
-                                                sub_proc_list: [
-                                                    {
-                                                        id: unknown.processDefinitionId,
-                                                        name: unknown.processDefinitionName
-                                                    }
-                                                ]
-                                            });
-                                        }
-                                    }
-                                });
-                            }
-                        }
+                        await this.updateProcessDefinitionMap(unknown);
                         const store = useBpmnStore();
                         const modeler = store.getModeler;
                         if (unknown.modifications) {
@@ -2376,60 +2325,82 @@ export default {
             console.log('CrewAI 사용 여부:', this.useCrewAI ? '활성화' : '비활성화');
         },
 
-        // 프로세스 정의 체계도 업데이트 (기존 로직에서 추출)
+        normalizeProcessCategory(processDefinition) {
+            const rawMega = String(processDefinition?.megaProcessId || '').trim();
+            const rawMajor = String(processDefinition?.majorProcessId || '').trim();
+            return {
+                megaProcessId: rawMega || '미분류',
+                majorProcessId: rawMajor || '미분류',
+            };
+        },
+        async ensureProcessDefinitionMapInitialized() {
+            if (!this.processDefinitionMap) {
+                this.processDefinitionMap = await backend.getProcessDefinitionMap();
+            }
+            if (!this.processDefinitionMap || typeof this.processDefinitionMap !== 'object') {
+                this.processDefinitionMap = {};
+            }
+            if (!Array.isArray(this.processDefinitionMap.mega_proc_list)) {
+                this.processDefinitionMap.mega_proc_list = [];
+            }
+        },
+        // 프로세스 정의 체계도 업데이트
         async updateProcessDefinitionMap(processDefinition) {
             try {
-                if (processDefinition.megaProcessId && this.processDefinitionMap && this.processDefinitionMap.mega_proc_list) {
-                    if (!this.processDefinitionMap.mega_proc_list.some((megaProcess) => megaProcess.name == processDefinition.megaProcessId)) {
-                        this.processDefinitionMap.mega_proc_list.push({
-                            name: processDefinition.megaProcessId,
-                            id: processDefinition.megaProcessId,
-                            major_proc_list: [
-                                {
-                                    name: processDefinition.majorProcessId,
-                                    id: processDefinition.majorProcessId,
-                                    sub_proc_list: [
-                                        {
-                                            id: processDefinition.processDefinitionId,
-                                            name: processDefinition.processDefinitionName
-                                        }
-                                    ]
-                                }
-                            ]
-                        });
-                    }
-                    if (processDefinition.majorProcessId) {
-                        this.processDefinitionMap.mega_proc_list.forEach((megaProcess) => {
-                            if (megaProcess.name == processDefinition.megaProcessId) {
-                                if (megaProcess.major_proc_list.some((majorProcess) => majorProcess.name == processDefinition.majorProcessId)) {
-                                    const idx = megaProcess.major_proc_list.findIndex(
-                                        (majorProcess) => majorProcess.name == processDefinition.majorProcessId
-                                    );
-                                    if (
-                                        !megaProcess.major_proc_list[idx].sub_proc_list.some(
-                                            (subProcess) => subProcess.id == processDefinition.processDefinitionId
-                                        )
-                                    ) {
-                                        megaProcess.major_proc_list[idx].sub_proc_list.push({
-                                            id: processDefinition.processDefinitionId,
-                                            name: processDefinition.processDefinitionName
-                                        });
-                                    }
-                                } else {
-                                    megaProcess.major_proc_list.push({
-                                        name: processDefinition.majorProcessId,
-                                        id: processDefinition.majorProcessId,
-                                        sub_proc_list: [
-                                            {
-                                                id: processDefinition.processDefinitionId,
-                                                name: processDefinition.processDefinitionName
-                                            }
-                                        ]
-                                    });
-                                }
-                            }
-                        });
-                    }
+                if (!processDefinition?.processDefinitionId) return;
+
+                await this.ensureProcessDefinitionMapInitialized();
+                const { megaProcessId, majorProcessId } = this.normalizeProcessCategory(processDefinition);
+
+                let megaProcess = this.processDefinitionMap.mega_proc_list.find(
+                    (mega) => mega?.id === megaProcessId || mega?.name === megaProcessId
+                );
+                if (!megaProcess) {
+                    megaProcess = {
+                        id: megaProcessId,
+                        name: megaProcessId,
+                        major_proc_list: [],
+                    };
+                    this.processDefinitionMap.mega_proc_list.push(megaProcess);
+                }
+
+                if (!Array.isArray(megaProcess.major_proc_list)) {
+                    megaProcess.major_proc_list = [];
+                }
+
+                let majorProcess = megaProcess.major_proc_list.find(
+                    (major) => major?.id === majorProcessId || major?.name === majorProcessId
+                );
+                if (!majorProcess) {
+                    majorProcess = {
+                        id: majorProcessId,
+                        name: majorProcessId,
+                        sub_proc_list: [],
+                    };
+                    megaProcess.major_proc_list.push(majorProcess);
+                }
+
+                if (!Array.isArray(majorProcess.sub_proc_list)) {
+                    majorProcess.sub_proc_list = [];
+                }
+
+                const alreadyExists = majorProcess.sub_proc_list.some((subProc) => {
+                    const subId = String(subProc?.id || '');
+                    const subPath = String(subProc?.path || '');
+                    return subId === processDefinition.processDefinitionId || subPath === processDefinition.processDefinitionId;
+                });
+
+                if (!alreadyExists) {
+                    majorProcess.sub_proc_list.push({
+                        id: processDefinition.processDefinitionId,
+                        path: processDefinition.processDefinitionId,
+                        name: processDefinition.processDefinitionName || processDefinition.processDefinitionId
+                    });
+                }
+
+                await backend.putProcessDefinitionMap(this.processDefinitionMap);
+                if (this.generator) {
+                    this.generator.setProcessDefinitionMap(this.processDefinitionMap);
                 }
             } catch (error) {
                 console.error('프로세스 정의 체계도 업데이트 실패:', error);

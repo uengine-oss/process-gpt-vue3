@@ -149,11 +149,9 @@ export default {
             this.$emit('clickPlayBtn', value)
         },
         editProcess(process) {
-            const index = this.value.major_proc_list.findIndex(item => item.id === process.id);
-            if (index > -1) {
-                this.value.major_proc_list[index].name = process.name;
-                this.value.major_proc_list[index].domain = process.domain;
-            }
+            // mega 수정은 현재 mega 항목(this.value) 자체를 갱신해야 함
+            this.value.id = process.id;
+            this.value.name = process.name;
         },
     },
 }

@@ -189,7 +189,7 @@
                         <div>
                             <div class="pa-4 instance-card-kanban-board-box">
                                 <div :class="buttonContainerClass" :style="buttonContainerStyle">
-                                    <v-avatar v-if="mode === 'ProcessGPT'"
+                                    <v-avatar v-if="mode === 'ProcessGPT' && !gs"
                                         @click="openDialog"
                                         :color="!isMobile ? '' : 'primary'"
                                     >
@@ -445,6 +445,11 @@ export default {
                 // PC에서는 액티비티 탭을 숨김 (프로세스 탭에 통합됨)
                 items = items.filter(item => item.value !== 'workhistory');
             }
+
+            // gs 모드에서는 인스턴스 내부 "소스" 탭 숨김
+            if (this.gs) {
+                items = items.filter(item => item.value !== 'source');
+            }
             
             return items;
         },
@@ -474,6 +479,9 @@ export default {
         },
         isMobile() {
             return this.$vuetify.display.width <= 768;
+        },
+        gs() {
+            return window.$gs;
         },
         buttonContainerClass() {
             return this.isMobile ? '' : 'd-flex align-center justify-end ml-2 mr-2';

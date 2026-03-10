@@ -12,7 +12,8 @@ import { createApp } from 'vue';
 import VueTablerIcons from 'vue-tabler-icons';
 import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar';
+import * as Vue3PerfectScrollbar from 'vue3-perfect-scrollbar';
+import 'perfect-scrollbar/css/perfect-scrollbar.css';
 import App from './App.vue';
 import vuetify from './plugins/vuetify';
 import hammerDirective from '@/components/directive/hammerDirective';
@@ -38,7 +39,7 @@ import setLocale from './plugins/setLocale';
 // icon
 import { Icon, addCollection } from '@iconify/vue';
 import solarIcons from '@iconify-json/solar/icons.json';
-addCollection(solarIcons);
+addCollection(solarIcons as any);
 import Icons from '@/components/ui-components/Icons.vue'
 import InfoAlert from '@/components/ui/InfoAlert.vue'
 
@@ -73,6 +74,10 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import ganttastic from '@infectoone/vue-ganttastic'
 import { ref } from 'vue';
+
+const PerfectScrollbarComponent =
+    (Vue3PerfectScrollbar as any).PerfectScrollbar ||
+    (Vue3PerfectScrollbar as any).default;
 
 // 동적 언어 설정 함수
 async function detectLanguage(): Promise<'ko' | 'en'> {
@@ -428,7 +433,9 @@ async function initializeApp() {
 
     app.use(router);
     // app.component('EasyDataTable', Vue3EasyDataTable);
-    app.component('perfect-scrollbar', PerfectScrollbar);
+    if (PerfectScrollbarComponent) {
+        app.component('perfect-scrollbar', PerfectScrollbarComponent);
+    }
     app.use(createPinia());
     app.use(VCalendar, {});
     app.use(VueTablerIcons);

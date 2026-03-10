@@ -587,6 +587,10 @@ export default {
             type: String,
             default: '',
         },
+        hideAgentMonitorTab: {
+            type: Boolean,
+            default: false
+        },
     },
     components: {
         // ProcessDefinition,
@@ -977,10 +981,15 @@ export default {
                 }
                 
                 // currentRunningResearchMethod가 있으면 agent-monitor 탭 추가
-                if (!this.gs && this.currentRunningResearchMethod && !tabs.find(t => t.value === 'agent-monitor')) {
+                if (!this.hideAgentMonitorTab && this.currentRunningResearchMethod && !tabs.find(t => t.value === 'agent-monitor')) {
                     tabs.push({ value: 'agent-monitor', label: this.$t('WorkItem.agentMonitor') });
                 }
-                
+
+                // 초기 실행 다이얼로그에서만 "에이전트에 맡기기" 탭 숨김
+                if (this.hideAgentMonitorTab) {
+                    tabs = tabs.filter(tab => tab.value !== 'agent-monitor');
+                }
+
                 return tabs;
                 
             } else {
@@ -1042,7 +1051,7 @@ export default {
         },
         currentRunningResearchMethod(newValue) {
             // currentRunningResearchMethod가 있으면 agent-monitor 탭으로 변경
-            if (newValue && !(this.gs && this.isSimulate == 'true')) {
+            if (newValue && !this.hideAgentMonitorTab) {
                 this.selectedTab = 'agent-monitor';
             }
         },
@@ -1067,7 +1076,7 @@ export default {
         selectedAgent: {
             handler(newVal) {
                 if (newVal && newVal.agentMode && newVal.agentMode !== 'none') {
-                    if (newVal.orchestration === 'default' && !(this.gs && this.isSimulate == 'true')) {
+                    if (newVal.orchestration === 'default' && !this.hideAgentMonitorTab) {
                         this.beforeGenerateExample(null);
                     }
                 }

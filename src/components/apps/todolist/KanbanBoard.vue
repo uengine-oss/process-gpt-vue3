@@ -1,7 +1,7 @@
 <template>
     <div elevation="10">
         <v-row class="ma-0 pa-0 todo-task-column-box-pc">
-            <v-col v-for="column in columns" :key="column.id"
+            <v-col v-for="column in visibleColumns" :key="column.id"
                 class="pa-2 kanban-column"
                 :cols="columnCols"
             >
@@ -56,8 +56,18 @@ export default {
         }
     },
     computed: {
+        gs() {
+            return window.$gs;
+        },
+        visibleColumns() {
+            if (!Array.isArray(this.columns)) return [];
+            // gs 모드에서는 보류/반송(PENDING) 카드 영역 숨김
+            return this.gs ? this.columns.filter(column => column.id !== 'PENDING') : this.columns;
+        },
         columnCols() {
-            return Math.floor(12 / this.columns.length);
+            return this.visibleColumns.length > 0
+                ? Math.floor(12 / this.visibleColumns.length)
+                : 12;
         }
     },
     methods: {

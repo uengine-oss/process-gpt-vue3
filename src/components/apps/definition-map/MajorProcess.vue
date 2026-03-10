@@ -190,6 +190,14 @@ export default {
             }
             return this.filteredProcDefIds.includes(item.id);
         },
+        editProcess(process) {
+            // major 수정은 현재 major 항목(this.value) 자체를 갱신해야 함
+            this.value.id = process.id;
+            this.value.name = process.name;
+            if (Object.prototype.hasOwnProperty.call(process, 'domain')) {
+                this.value.domain = process.domain;
+            }
+        },
     },
 }
 </script>

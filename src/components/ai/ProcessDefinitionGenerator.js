@@ -155,6 +155,13 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
       12. If a non-sequence element includes a source, you must define a corresponding sequence element that connects from the source.
       13. If there is an external customer or participant in the role, the endpoint of that role is fixed as 'external_customer'.
       14. All activities must include at least one outputData entry. The outputData array must not be empty or omitted.
+      15. megaProcessId/majorProcessId classification rules (MUST):
+         - Always return both megaProcessId and majorProcessId as non-empty Korean strings.
+         - First, compare user intent with "프로세스 정의 체계도" and choose the most semantically appropriate existing mega/major.
+         - If a suitable major does not exist but a suitable mega exists, create a new major under that mega.
+         - If neither suitable mega nor major exists, create both as new Korean names.
+         - If the intent is ambiguous or confidence is low, set both to "미분류".
+      16. Do not omit megaProcessId or majorProcessId under any circumstance.
 
 
 
@@ -209,6 +216,10 @@ export default class ProcessDefinitionGenerator extends AIGenerator {
     \`\`\`
     ${jsonStructure}
     \`\`\`
+
+    추가 출력 제약:
+    - megaProcessId, majorProcessId는 반드시 포함하고 빈 문자열이면 안됨.
+    - 분류 판단이 애매하면 megaProcessId="미분류", majorProcessId="미분류"를 사용.
     `.trim();
   }
 

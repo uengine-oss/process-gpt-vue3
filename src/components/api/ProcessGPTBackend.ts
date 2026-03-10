@@ -172,7 +172,9 @@ class ProcessGPTBackend implements Backend {
                     await storage.delete('bpm_proc_inst', { match: { proc_def_id: defId } }),
                 ]);
 
-                return await storage.delete(`proc_def/${defId}`, { key: 'id' });
+                const deleted = await storage.delete(`proc_def/${defId}`, { key: 'id' });
+                await this.removeProcessFromDefinitionMap(defId);
+                return deleted;
 
                 // var procDef: any = await storage.getObject('proc_def', {
                 //     match: {
@@ -188,6 +190,51 @@ class ProcessGPTBackend implements Backend {
 
             //@ts-ignore
             throw new Error(e.message);
+        }
+    }
+
+    async removeProcessFromDefinitionMap(defId: string) {
+        try {
+            const targetId = String(defId || '').replace(/\.bpmn$/i, '').trim().toLowerCase();
+            if (!targetId) return;
+
+            const processMap = await this.getProcessDefinitionMap();
+            const megaList = processMap?.mega_proc_list;
+            if (!Array.isArray(megaList)) return;
+
+            let changed = false;
+            const shouldKeepSubProcess = (subProc: any) => {
+                const subId = String(subProc?.id || '').replace(/\.bpmn$/i, '').trim().toLowerCase();
+                const subPath = String(subProc?.path || '').replace(/\.bpmn$/i, '').trim().toLowerCase();
+                const shouldRemove = subId === targetId || subPath === targetId;
+                if (shouldRemove) changed = true;
+                return !shouldRemove;
+            };
+
+            const updatedMegaList = megaList.map((megaProc: any) => {
+                const majorList = Array.isArray(megaProc?.major_proc_list) ? megaProc.major_proc_list : [];
+                const updatedMajorList = majorList.map((majorProc: any) => {
+                    const subList = Array.isArray(majorProc?.sub_proc_list) ? majorProc.sub_proc_list : [];
+                    return {
+                        ...majorProc,
+                        sub_proc_list: subList.filter(shouldKeepSubProcess),
+                    };
+                });
+                return {
+                    ...megaProc,
+                    major_proc_list: updatedMajorList,
+                };
+            });
+
+            if (changed) {
+                await this.putProcessDefinitionMap({
+                    ...processMap,
+                    mega_proc_list: updatedMegaList,
+                });
+            }
+        } catch (error) {
+            // 프로세스 본 삭제는 성공했는데 맵 정리만 실패할 수 있으므로 경고만 남김
+            console.warn('[ProcessGPTBackend] Failed to sync proc_map after delete:', error);
         }
     }
 

@@ -51,7 +51,7 @@
                     ></ProcessDefinitionDisplay>
 
                     <v-combobox
-                        v-if="addType == 'major'"
+                        v-if="!gs && ((processType === 'add' && addType == 'major') || (processType === 'update' && type === 'major'))"
                         v-model="newProcess.domain"
                         :items="domainNames"
                         :label="$t('metricsView.domain') || '도메인'"
@@ -64,7 +64,7 @@
                     ></v-combobox>
 
                     <v-text-field
-                        v-if="addType != 'sub' || isNewDef"
+                        v-if="processType === 'update' || addType != 'sub' || isNewDef"
                         class="cp-process-id"
                         v-model="newProcess.name"
                         variant="outlined"
@@ -206,6 +206,9 @@ export default {
                 v => !!v || this.$t('processDialog.idRequired') || 'ID는 필수입니다.',
                 v => /^[a-z][a-z0-9_]*$/.test(v) || this.$t('processDialog.idInvalid') || '영문 소문자로 시작, 소문자/숫자/언더스코어만 허용'
             ];
+        },
+        gs() {
+            return window.$gs;
         }
     },
     watch: {
@@ -234,6 +237,7 @@ export default {
             } else if(this.processType == 'update') {
                 this.newProcess.id = this.process.id;
                 this.newProcess.name = this.process.name;
+                this.newProcess.domain = this.process.domain || '';
             }
         }
     },
