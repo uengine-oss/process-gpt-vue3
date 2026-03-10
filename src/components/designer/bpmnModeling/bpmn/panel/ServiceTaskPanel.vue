@@ -197,7 +197,7 @@ import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
 import BPMNAPIGenerator from '@/components/ai/BPMNAPIGenerator.js';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
-import yaml from 'yamljs';
+import yaml from 'yaml';
 import BackendFactory from '@/components/api/BackendFactory';
 import EventSynchronizationForm from '@/components/designer/EventSynchronizationForm.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';

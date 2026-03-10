@@ -2,7 +2,9 @@ server:
     port: 8088
 ---
 spring:
-    profiles: default
+    config:
+        activate:
+            on-profile: default
     cloud:
         gateway:
             #<<< API Gateway / Routes
@@ -16,31 +18,31 @@ spring:
                 - id: completion
                   uri: http://localhost:8000
                   predicates:
-                      - Path=/completion/**,
+                      - Path=/completion/**
                   filters:
                       - RewritePath=/completion/?(?<segment>.*), /$\{segment}
                 - id: claude-skills
                   uri: http://localhost:8765
                   predicates:
-                      - Path=/claude-skills/**,
+                      - Path=/claude-skills/**
                   filters:
                       - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
                 - id: memento
                   uri: http://localhost:8005
                   predicates:
-                      - Path=/memento/**,
+                      - Path=/memento/**
                   filters:
                       - RewritePath=/memento/?(?<segment>.*), /$\{segment}
                 - id: agent-feedback
                   uri: http://localhost:6789
                   predicates:
-                      - Path=/api/agent-feedback/**,
+                      - Path=/api/agent-feedback/**
                   filters:
                       - RewritePath=/api/agent-feedback/?(?<segment>.*), /api/$\{segment}
                 - id: voice
                   uri: http://localhost:3000
                   predicates:
-                      - Path=/voice/**,
+                      - Path=/voice/**
                   filters:
                       - RewritePath=/voice/?(?<segment>.*), /$\{segment}
                 - id: frontend
@@ -51,7 +53,7 @@ spring:
             globalcors:
                 corsConfigurations:
                     '[/**]':
-                        allowedOrigins:
+                        allowedOriginPatterns:
                             - '*'
                         allowedMethods:
                             - '*'
@@ -60,7 +62,9 @@ spring:
                         allowCredentials: true
 ---
 spring:
-    profiles: docker
+    config:
+        activate:
+            on-profile: docker
     cloud:
         gateway:
             # 기본 타임아웃 설정
@@ -131,7 +135,7 @@ spring:
                 - id: claude-skills
                   uri: http://claude-skills:8765
                   predicates:
-                      - Path=/claude-skills/**,
+                      - Path=/claude-skills/**
                   filters:
                       - RewritePath=/claude-skills/?(?<segment>.*), /$\{segment}
                   order: 20
@@ -374,7 +378,7 @@ spring:
             globalcors:
                 corsConfigurations:
                     '[/**]':
-                        allowedOrigins:
+                        allowedOriginPatterns:
                             - '*'
                         allowedMethods:
                             - '*'

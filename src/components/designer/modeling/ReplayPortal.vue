@@ -12,8 +12,6 @@ import EventStormingModelReplay from '../es-modeling/EventStormingModelReplay';
 // import StorageBase from "./StorageBase";
 import StorageBase from './ModelStorageBase';
 
-var jp = require('jsonpath');
-
 export default {
     name: 'replay-portal',
     props: {},

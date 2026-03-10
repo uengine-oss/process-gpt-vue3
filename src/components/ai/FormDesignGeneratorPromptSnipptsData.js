@@ -1,4 +1,4 @@
-// Reference to '/public/snippets/default/snippets.html' to provide container layouts and component information for AI form generation
+// Static prompt snippets used by the AI form generator.
 const formDesignGeneratorPromptSnipptsData = {
     // Container layout combinations that AI can use (col-sm-{number} combinations)
     // The sum of numbers in each array must equal 12 to maintain proper grid layout

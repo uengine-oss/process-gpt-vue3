@@ -135,7 +135,7 @@
                 </v-col>
 
                 <!-- 에이전트 타이틀 + 목록 (uEngine 모드에서는 숨김) -->
-                <div v-if="mode !== 'uEngine'" class="mb-4">
+                <div v-if="mode !== 'uEngine' || !pal" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.agentList') }}
@@ -180,7 +180,7 @@
                 </div>
 
                 <!-- 유저 목록 -->
-                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                <div v-if="(mode !== 'uEngine' && !gs) || !pal" class="mb-4">
                     <div class="d-flex align-center ml-2">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0">
                             {{ $t('VerticalSidebar.userList') || '유저 목록' }}
@@ -195,7 +195,7 @@
                 </div>
 
                 <!-- 스킬 타이틀 + 목록 -->
-                <div v-if="mode !== 'uEngine' && !gs" class="mb-4">
+                <div v-if="(mode !== 'uEngine' && !gs) || !pal" class="mb-4">
                     <v-row class="align-center pa-0 ma-0">
                         <div style="font-size: 14px" class="text-medium-emphasis cp-menu mt-0 ml-2">
                             {{ $t('VerticalSidebar.skills') }}

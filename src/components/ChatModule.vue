@@ -1,5 +1,5 @@
 <script>
-import jp from 'jsonpath';
+import jp from '@/utils/jsonPath';
 
 import partialParse from 'partial-json-parser';
 import BackendFactory from '@/components/api/BackendFactory';

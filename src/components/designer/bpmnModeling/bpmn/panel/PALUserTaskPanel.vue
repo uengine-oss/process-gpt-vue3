@@ -4,15 +4,23 @@
             {{ $t('PALUserTaskPanel.moveToTask') }}
         </v-btn>
         <div :class="isViewMode ? 'quill-editor-view-mode' : 'quill-editor-edit-mode'">
-            <quill-editor
-                :content="activity.description"
-                content-type="html"
-                class="mb-4"
-                style="max-height: 400px; overflow: auto"
-                :style="isViewMode ? 'border-radius:10px;' : ''"
-                :options="options"
-                @update:content="onTextChange"
-            ></quill-editor>
+            <div v-if="isViewMode" class="pal-rich-editor pal-rich-editor--readonly mb-4" v-html="sanitizedDescription"></div>
+            <div v-else class="mb-4">
+                <div class="pal-editor-toolbar mb-2">
+                    <v-btn size="small" variant="text" @click="applyFormat('bold')"><strong>B</strong></v-btn>
+                    <v-btn size="small" variant="text" @click="applyFormat('italic')"><em>I</em></v-btn>
+                    <v-btn size="small" variant="text" @click="applyFormat('underline')"><u>U</u></v-btn>
+                    <v-btn size="small" variant="text" @click="applyFormat('insertUnorderedList')">• List</v-btn>
+                    <v-btn size="small" variant="text" @click="applyFormat('insertOrderedList')">1. List</v-btn>
+                    <v-btn size="small" variant="text" @click="insertLink">Link</v-btn>
+                </div>
+                <div
+                    ref="descriptionEditor"
+                    class="pal-rich-editor"
+                    contenteditable="true"
+                    @input="onEditorInput"
+                ></div>
+            </div>
         </div>
         <Checkpoints v-model="activity.checkpoints" class="user-task-panel-check-points mb-4" :isViewMode="isViewMode"></Checkpoints>
         <div v-if="isPal && !isViewMode" class="link-save-container mb-4">
@@ -71,8 +79,7 @@ import Checkpoints from '@/components/designer/CheckpointsField.vue';
 import { defineAsyncComponent } from 'vue';
 const FormDefinition = defineAsyncComponent(() => import('@/components/FormDefinition.vue'));
 
-import { QuillEditor } from '@vueup/vue-quill';
-import '@vueup/vue-quill/dist/vue-quill.snow.css';
+import DOMPurify from 'dompurify';
 import BackendFactory from '@/components/api/BackendFactory';
 
 export default {
@@ -80,8 +87,7 @@ export default {
     components: {
         Instruction,
         Checkpoints,
-        FormDefinition,
-        QuillEditor
+        FormDefinition
     },
     props: {
         uengineProperties: Object,
@@ -146,35 +152,17 @@ export default {
     async mounted() {
         let me = this;
         await me.init();
+        me.syncEditorContent();
     },
     computed: {
         isPal() {
             return window.$pal;
         },
-        options() {
-            return {
-                // placeholder: this.$t('PALUserTaskPanel.insertDescription'),
-                readOnly: this.isViewMode,
-                modules: this.isViewMode
-                    ? { toolbar: false }
-                    : {
-                          toolbar: [
-                              [{ size: ['small', false, 'large', 'huge'] }], // custom dropdown
-                              [{ header: [1, 2, 3, 4, 5, 6, false] }],
-                              [{ font: [] }],
-                              ['bold', 'italic', 'underline'], // toggled buttons
-                              ['link', 'image', 'video'],
-                              [{ list: 'ordered' }, { list: 'bullet' }, { list: 'check' }],
-                              // [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-                              // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-                              // [{ 'direction': 'rtl' }],                         // text direction
-
-                              [{ color: [] }, { background: [] }], // dropdown with defaults from theme
-                              [{ align: [] }]
-                          ]
-                      },
-                theme: 'snow'
-            };
+        link() {
+            return this.activity.taskLink || '';
+        },
+        sanitizedDescription() {
+            return DOMPurify.sanitize(this.activity.description || '');
         }
     },
     watch: {
@@ -183,7 +171,13 @@ export default {
             handler(newVal, oldVal) {
                 this.EventBus.emit('process-definition-updated', this.processDefinition);
             }
-        }
+        },
+        'activity.description'() {
+            this.syncEditorContent();
+        },
+        isViewMode() {
+            this.$nextTick(() => this.syncEditorContent());
+        },
         // processDefinition: {
         //     deep: true,
         //     handler(newVal, oldVal) {
@@ -222,9 +216,38 @@ export default {
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);
         },
-        onTextChange(text) {
-            var me = this;
-            me.activity.description = text;
+        syncEditorContent() {
+            if (this.isViewMode) {
+                return;
+            }
+
+            this.$nextTick(() => {
+                const editor = this.$refs.descriptionEditor;
+                if (editor && editor.innerHTML !== (this.activity.description || '')) {
+                    editor.innerHTML = this.activity.description || '';
+                }
+            });
+        },
+        onEditorInput(event) {
+            this.activity.description = event.target.innerHTML;
+        },
+        applyFormat(command, value = null) {
+            const editor = this.$refs.descriptionEditor;
+            if (!editor) {
+                return;
+            }
+
+            editor.focus();
+            document.execCommand(command, false, value);
+            this.activity.description = editor.innerHTML;
+        },
+        insertLink() {
+            const url = window.prompt('URL을 입력하세요');
+            if (!url) {
+                return;
+            }
+
+            this.applyFormat('createLink', url);
         },
         onFileChange(files) {
             var me = this;
@@ -267,12 +290,25 @@ export default {
 .quill-editor-view {
     border-radius: 10px !important;
 }
-.quill-editor-edit-mode .ql-container {
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
+.pal-editor-toolbar {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
 }
-.quill-editor-edit-mode .ql-toolbar {
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
+.pal-rich-editor {
+    min-height: 180px;
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+    padding: 12px;
+    background: #fff;
+}
+.pal-rich-editor:focus {
+    outline: none;
+    border-color: rgb(var(--v-theme-primary));
+}
+.pal-rich-editor--readonly {
+    background: rgba(0, 0, 0, 0.02);
 }
 </style>

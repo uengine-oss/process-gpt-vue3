@@ -209,7 +209,7 @@ import { Icon } from '@iconify/vue';
 import Mapper from '@/components/designer/mapper/Mapper.vue';
 import KeyValueField from '@/components/designer/KeyValueField.vue';
 import LeadTimeInput from './LeadTimeInput.vue';
-import yaml from 'yamljs';
+import yaml from 'yaml';
 
 export default {
     name: 'receive-task-panel',

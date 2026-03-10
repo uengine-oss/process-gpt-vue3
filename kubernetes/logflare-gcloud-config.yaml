@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logflare-gcloud-config
+  namespace: default
+data:
+  gcloud.json: "{}"

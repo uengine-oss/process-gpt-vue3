@@ -22,7 +22,7 @@
 <script>
 import { commonSettingInfos } from './CommonSettingInfos.vue';
 import axios from 'axios';
-import jp from 'jsonpath';
+import jp from '@/utils/jsonPath';
 import BackendFactory from '@/components/api/BackendFactory';
 const backend = BackendFactory.createBackend();
 

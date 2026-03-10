@@ -4,7 +4,7 @@
 <script>
 import { useBpmnStore } from '@/stores/bpmn';
 import { Icon } from '@iconify/vue';
-import yaml from 'yamljs';
+import yaml from 'yaml';
 
 export default {
     name: 'collaboration-api-panel',
