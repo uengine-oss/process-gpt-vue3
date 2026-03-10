@@ -1006,13 +1006,33 @@ export default {
                         return f;
                     }
                 };
+                const decodeXmlEntities = (s) => {
+                    if (!s || typeof s !== 'string') return s;
+                    return s
+                        .replace(/&quot;/g, '"')
+                        .replace(/&#34;/g, '"')
+                        .replace(/&apos;/g, "'")
+                        .replace(/&#39;/g, "'")
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&amp;/g, '&');
+                };
 
                 // ① JSON 파싱 캐시(문자열 → 객체 변환 1회만)
                 const jsonCache = new WeakMap();
                 const getPropsJson = (node) => {
                     if (!node) return null;
-                    const str = node['bpmn:extensionElements']?.['uengine:properties']?.['uengine:json'];
-                    if (!str) return null;
+                    const first = (v) => (Array.isArray(v) ? v[0] : v);
+                    const ext = first(node['bpmn:extensionElements']);
+                    const props = first(ext?.['uengine:properties']);
+                    const raw =
+                        props?.['uengine:json'] ||
+                        props?.['json'] ||
+                        props?.$?.json ||
+                        null;
+                    if (!raw) return null;
+                    if (typeof raw !== 'string') return raw;
+                    const str = decodeXmlEntities(raw);
                     if (!jsonCache.has(node)) {
                         jsonCache.set(node, safeJson(str, null));
                     }
