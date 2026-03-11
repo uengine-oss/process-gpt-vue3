@@ -628,6 +628,21 @@ class ProcessGPTBackend implements Backend {
             if (!defId) return null;
 
             defId = defId.toLowerCase();
+            const compareVersion = (a?: string, b?: string) => {
+                const pa = String(a || '0')
+                    .split('.')
+                    .map((v) => parseInt(v, 10) || 0);
+                const pb = String(b || '0')
+                    .split('.')
+                    .map((v) => parseInt(v, 10) || 0);
+                const len = Math.max(pa.length, pb.length);
+                for (let i = 0; i < len; i += 1) {
+                    const av = pa[i] ?? 0;
+                    const bv = pb[i] ?? 0;
+                    if (av !== bv) return av > bv ? 1 : -1;
+                }
+                return 0;
+            };
 
             const procDef = await storage.getObject('proc_def', {
                 match: { id: defId }
@@ -671,9 +686,7 @@ class ProcessGPTBackend implements Backend {
 
             if (majorVersions && majorVersions.length > 0) {
                 majorVersions.sort((a: any, b: any) => {
-                    const va = parseFloat(a.version || '0') || 0;
-                    const vb = parseFloat(b.version || '0') || 0;
-                    return vb - va;
+                    return compareVersion(b.version, a.version);
                 });
 
                 const latest = majorVersions[0];
@@ -700,9 +713,7 @@ class ProcessGPTBackend implements Backend {
 
             if (minorVersions && minorVersions.length > 0) {
                 minorVersions.sort((a: any, b: any) => {
-                    const va = parseFloat(a.version || '0') || 0;
-                    const vb = parseFloat(b.version || '0') || 0;
-                    return vb - va;
+                    return compareVersion(b.version, a.version);
                 });
 
                 const latest = minorVersions[0];

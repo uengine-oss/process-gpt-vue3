@@ -151,7 +151,7 @@
 
         <v-card-text
             style="width: 100%"
-            :style="isMobile ? 'height: calc(100vh - 94px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 180px); padding: 10px;'"
+            :style="isMobile ? 'height: calc(100vh - 94px); padding: 10px 10px 0px 10px;' : 'height: calc(100vh - 188px); padding: 10px;'"
         >
             <ProcessDefinition
                 ref="processDefinitionRef"

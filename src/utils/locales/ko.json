@@ -1210,6 +1210,7 @@
     },
     "progressBadge": {
         "draft": "작성중",
+        "processEditing": "프로세스 편집중",
         "review": "검토중",
         "published": "완료",
         "public_review": "Public Review",
@@ -3190,7 +3191,8 @@
         "skipped": "건너뜀"
     },
     "SubProcess": {
-        "execute": "실행"
+        "execute": "실행",
+        "lockedWarning": "{name}님이 편집중인 프로세스입니다."
     },
     "ProcessInstanceChat": {
         "subprocessCreating": "서브프로세스 생성 중입니다...",
