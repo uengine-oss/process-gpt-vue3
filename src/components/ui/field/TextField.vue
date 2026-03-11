@@ -8,6 +8,9 @@
             :variant="localReadonly ? 'filled' : 'outlined'"
             :hide-details="hideDetails"
             :density="density"
+            :maxlength="isTextLikeType ? maxLength : undefined"
+            :error="isTextLikeType && showLimitWarning"
+            :error-messages="(isTextLikeType && showLimitWarning) ? [`최대 ${maxLength}자까지 입력 가능합니다.`] : []"
             @click="handleFieldClick"
             ref="textField"
         >
@@ -56,6 +59,8 @@ export default {
             localAlias: "",
             localType: "",
             localDisabled: false,
+            showLimitWarning: false,
+            maxLength: 127,
 
             settingInfos: [
                 commonSettingInfos["localName"],
@@ -84,7 +89,12 @@ export default {
         },
 
         localModelValue: {
-            handler() {
+            handler(newVal) {
+                if (this.isTextLikeType && newVal && newVal.length >= this.maxLength) {
+                    this.showLimitWarning = true;
+                } else {
+                    this.showLimitWarning = false;
+                }
                 this.$emit('update:modelValue', this.localModelValue)
             },
             deep: true,
@@ -93,6 +103,9 @@ export default {
     },
 
     computed: {
+        isTextLikeType() {
+            return ['text', 'email', 'url', 'password', 'tel'].includes(this.localType);
+        },
         isDateType() {
             return ['date', 'datetime-local', 'month', 'week', 'time'].includes(this.localType);
         }
@@ -183,5 +196,7 @@ export default {
 </script>
 
 <style lang="scss">
-
+.form-text-field .v-input__details {
+    padding: 8px 16px 16px 16px !important;
+}
 </style>
