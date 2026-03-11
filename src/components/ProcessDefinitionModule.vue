@@ -259,25 +259,46 @@ export default {
             });
         },
         async saveFormData(html, activityId) {
+            const activity =
+                this.processDefinition && Array.isArray(this.processDefinition.activities)
+                    ? this.processDefinition.activities.find((a) => a.id === activityId)
+                    : null;
+
             let formId = '';
-            if (this.processDefinition && this.processDefinition.processDefinitionId) {
+            const tool = activity?.tool || '';
+            const toolFormId = tool.includes('formHandler:') ? tool.replace('formHandler:', '') : '';
+
+            if (toolFormId && toolFormId !== 'defaultform') {
+                // 정의에 이미 명시된 커스텀 폼 ID를 그대로 사용
+                formId = toolFormId;
+            } else if (this.processDefinition && this.processDefinition.processDefinitionId) {
+                // defaultform 상태에서 편집 저장 시 액티비티 전용 폼으로 승격
                 formId = `${this.processDefinition.processDefinitionId}_${activityId}_form`;
             } else {
                 formId = `${activityId}_form`;
             }
+
             formId = formId.toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
-            if (this.lastPath) {
-                if (this.lastPath == 'chat' || this.lastPath == 'definition-map') {
-                    localStorage.setItem(formId, html);
-                } else {
-                    await backend.putRawDefinition(html, formId, {
-                        type: 'form',
-                        proc_def_id: this.processDefinition.processDefinitionId,
-                        activity_id: activityId
-                    });
-                }
+
+            if (activity && activity.tool !== `formHandler:${formId}`) {
+                activity.tool = `formHandler:${formId}`;
+            }
+
+            // 임시 편집본은 localStorage가 아닌 메모리(processDefinition.formDrafts)에 보관
+            if (!Array.isArray(this.processDefinition.formDrafts)) {
+                this.processDefinition.formDrafts = [];
+            }
+            const draft = {
+                id: formId,
+                html: html,
+                proc_def_id: this.processDefinition?.processDefinitionId || '',
+                activity_id: activityId
+            };
+            const existingIndex = this.processDefinition.formDrafts.findIndex((item) => item && item.activity_id === activityId);
+            if (existingIndex > -1) {
+                this.processDefinition.formDrafts[existingIndex] = draft;
             } else {
-                localStorage.setItem(formId, html);
+                this.processDefinition.formDrafts.push(draft);
             }
             return { id: formId, html: html };
         },
@@ -1752,18 +1773,37 @@ export default {
                         if (me.processDefinition.processDefinitionId == 'definition-map')
                             me.processDefinition.processDefinitionId = info.proc_def_id;
 
-                        // 최초 저장 시 폼 정보 저장
-                        if (me.$route.fullPath.includes('/chat') || me.$route.fullPath.includes('/definition-map')) {
-                            if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
-                                me.processDefinition.data = [];
-                                me.processDefinition.activities.forEach(async (activity) => {
-                                    let formId;
-                                    if (activity.tool && activity.tool.includes('formHandler:')) {
-                                        formId = activity.tool.replace('formHandler:', '');
-                                    } else {
-                                        formId = `${me.processDefinition.processDefinitionId}_${activity.id}_form`;
+                        // 폼 임시본(formDrafts)을 항상 함께 저장
+                        if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
+                            const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
+                            const procIdForForm = normalizeIdPart(info.proc_def_id || me.processDefinition.processDefinitionId);
+                            const formDrafts = Array.isArray(me.processDefinition.formDrafts) ? me.processDefinition.formDrafts : [];
+
+                            await Promise.all(
+                                me.processDefinition.activities.map(async (activity) => {
+                                    if (!activity || !activity.id) return;
+
+                                    const activityId = normalizeIdPart(activity.id);
+                                    const promotedFormId = `${procIdForForm}_${activityId}_form`;
+                                    const toolFormId =
+                                        activity.tool && activity.tool.includes('formHandler:')
+                                            ? activity.tool.replace('formHandler:', '')
+                                            : null;
+
+                                    let formId = toolFormId || promotedFormId;
+                                    let formHtml = null;
+                                    const activityDraft = formDrafts.find((draft) => draft && draft.activity_id === activity.id);
+
+                                    // defaultform 수정본은 activity 전용 폼 ID로 승격 저장
+                                    if (toolFormId === 'defaultform' && activityDraft && activityDraft.html) {
+                                        formId = promotedFormId;
+                                        formHtml = activityDraft.html;
+                                        activity.tool = `formHandler:${promotedFormId}`;
+                                    } else if (activityDraft && activityDraft.html) {
+                                        formId = activityDraft.id || formId;
+                                        formHtml = activityDraft.html;
                                     }
-                                    let formHtml = localStorage.getItem(formId);
+
                                     if (formHtml) {
                                         const options = {
                                             type: 'form',
@@ -1771,10 +1811,12 @@ export default {
                                             activity_id: activity.id
                                         };
                                         await backend.putRawDefinition(formHtml, formId, options);
-                                        localStorage.removeItem(formId);
                                     }
-                                });
-                            }
+                                })
+                            );
+
+                            // 프로세스 저장 완료 후 임시 폼 드래프트는 비움
+                            me.processDefinition.formDrafts = [];
                         }
 
                         me.processDefinition.processDefinitionId = info.proc_def_id
@@ -1791,6 +1833,8 @@ export default {
                         if (!me.processDefinition.processDefinitionId || !me.processDefinition.processDefinitionName) {
                             throw new Error('processDefinitionId or processDefinitionName is missing');
                         }
+                        // saveModel 내부에서 activity.tool이 바뀐 최신 정의를 proc_def.definition으로 저장하도록 동기화
+                        info.definition = me.processDefinition;
                         await backend.putRawDefinition(xml, info.proc_def_id, info);
                     }
                     // 신규 프로세스 이동.

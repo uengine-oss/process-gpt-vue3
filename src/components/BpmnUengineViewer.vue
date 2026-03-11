@@ -250,9 +250,11 @@ export default {
             this.fetchDiagram(this.url);
         } else if (this.bpmn) {
             this.diagramXML = this.bpmn;
+            this.importDiagram(this.bpmn, 'mounted:bpmn-prop');
         } else {
             this.diagramXML =
                 '<?xml version="1.0" encoding="UTF-8"?> <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:uengine="http://uengine" id="Definitions_0bfky9r" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="16.4.0"> <bpmn:process id="Process_1oscmbn" isExecutable="false"> <bpmn:extensionElements> <uengine:properties> </uengine:properties> </bpmn:extensionElements> </bpmn:process> <bpmndi:BPMNDiagram id="BPMNDiagram_1"> <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1oscmbn" /> </bpmndi:BPMNDiagram> </bpmn:definitions>';
+            this.importDiagram(this.diagramXML, 'mounted:default-empty');
         }
         this.initResizeObserver();
     },
@@ -276,7 +278,7 @@ export default {
             });
         },
         diagramXML(val) {
-            this.bpmnViewer.importXML(val);
+            this.importDiagram(val, 'watch:diagramXML');
         },
         taskStatus(val) {
             this.activityStatus = val;
@@ -312,6 +314,18 @@ export default {
         }
     },
     methods: {
+        importDiagram(xml, source = 'unknown') {
+            if (!this.bpmnViewer || !xml) return;
+            this.bpmnViewer
+                .importXML(xml)
+                .then(() => {
+                    this.onLoadEnd();
+                })
+                .catch((err) => {
+                    this.$emit('error', err);
+                    this.onLoadEnd();
+                });
+        },
         async setRoleMapping() {
             let self = this;
             const workList = await backend.getWorkListByInstId(this.instanceId);
@@ -1136,6 +1150,7 @@ export default {
                 })
                 .then((text) => {
                     self.diagramXML = text;
+                    self.importDiagram(text, 'fetchDiagram');
                 })
                 .catch((err) => {
                     self.$emit('error', err);

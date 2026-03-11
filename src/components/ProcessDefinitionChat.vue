@@ -750,8 +750,12 @@ export default {
                     const store = useBpmnStore();
                     const modeler = store.getModeler;
                     const xmlObj = await modeler.saveXML({ format: true, preamble: true });
-
-                    const shouldConfirm = xmlObj && xmlObj.xml && !this.isViewMode;
+                    const currentXml = xmlObj && xmlObj.xml ? xmlObj.xml : '';
+                    const normalizeXml = (xml) => (xml || '').replace(/\s+/g, '');
+                    const hasUnsavedByXml =
+                        !!currentXml && !!this.lastSavedXML && normalizeXml(currentXml) !== normalizeXml(this.lastSavedXML);
+                    const hasUnsavedChanges = !!this.isChanged || hasUnsavedByXml;
+                    const shouldConfirm = !!currentXml && !this.isViewMode && hasUnsavedChanges;
 
                     if (shouldConfirm) {
                         const answer = window.confirm(this.$t('changePath'));

@@ -1051,6 +1051,14 @@ export default {
                 this.selectedTab = 'agent-monitor';
             }
         },
+        bpmn(newVal, oldVal) {
+            const newLen = (newVal || '').length;
+
+            // 초기 렌더 타이밍에 bpmn 미로딩으로 chatbot 탭으로 떨어진 경우 복구
+            if (newLen > 0 && this.mode === 'ProcessGPT' && this.isTabAvailable('progress') && this.selectedTab === 'chatbot') {
+                this.selectedTab = 'progress';
+            }
+        },
         workItem: {
             async handler(newVal) {
                 if (newVal && newVal.worklist && newVal.worklist.taskId) {

@@ -354,7 +354,8 @@ export default {
                 this.activity.orchestration = this.copyUengineProperties.orchestration;
             if (this.copyUengineProperties.attachments !== undefined) this.activity.attachments = this.copyUengineProperties.attachments;
             if (this.copyUengineProperties.inputData !== undefined) this.activity.inputData = this.copyUengineProperties.inputData;
-            if (this.copyUengineProperties.tool !== undefined) this.activity.tool = this.copyUengineProperties.tool;
+            // tool의 기준은 processDefinition.activities이며, uengineProperties.tool은 보조값으로만 사용
+            if (this.copyUengineProperties.tool !== undefined && !this.activity.tool) this.activity.tool = this.copyUengineProperties.tool;
             if (this.copyUengineProperties.customProperties !== undefined)
                 this.activity.customProperties = this.copyUengineProperties.customProperties;
             if (this.copyUengineProperties.systemName !== undefined) this.activity.systemName = this.copyUengineProperties.systemName;
@@ -598,9 +599,19 @@ export default {
             if (me.isPreviewMode) {
                 me.activeTab = 'preview';
             }
+
+            // 패널 로드시 tool 기준을 processDefinition.activities 값으로 재정렬
+            const activityFromDefinition =
+                me.processDefinition && Array.isArray(me.processDefinition.activities)
+                    ? me.processDefinition.activities.find((activity) => activity.id === me.element.id)
+                    : null;
+            if (activityFromDefinition && activityFromDefinition.tool) {
+                me.activity.tool = activityFromDefinition.tool;
+            }
+
             me.formId =
                 me.activity.tool != '' && me.activity.tool.includes('formHandler:') ? me.activity.tool.replace('formHandler:', '') : '';
-            if (!me.formId || me.formId == '' || me.formId == 'defaultform') {
+            if (!me.formId || me.formId == '') {
                 let formId = '';
                 if (!me.processDefinition || !me.processDefinition.processDefinitionId) {
                     formId = me.element.id + '_form';
@@ -618,14 +629,21 @@ export default {
                     activity_id: me.element.id
                 }
             };
-            if (me.lastPath) {
-                if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
-                    me.tempFormHtml = localStorage.getItem(me.formId);
-                } else {
-                    me.tempFormHtml = await me.backend.getRawDefinition(me.formId, options);
-                }
+
+            // 폼 로딩 우선순위 통일:
+            // 1) 메모리 임시본(formDrafts) -> 2) DB(formId) -> 3) defaultform
+            const formDrafts = Array.isArray(me.processDefinition?.formDrafts) ? me.processDefinition.formDrafts : [];
+            const inMemoryDraft =
+                formDrafts.find((draft) => draft?.activity_id === me.element.id && draft?.id === me.formId) ||
+                formDrafts.find((draft) => draft?.activity_id === me.element.id);
+
+            if (inMemoryDraft && inMemoryDraft.html) {
+                me.tempFormHtml = inMemoryDraft.html;
             } else {
-                me.tempFormHtml = localStorage.getItem(me.formId);
+            me.tempFormHtml =
+                me.formId === 'defaultform'
+                    ? await me.backend.getRawDefinition(me.formId, { type: 'form' })
+                    : await me.backend.getRawDefinition(me.formId, options);
             }
 
             if (!me.tempFormHtml) {
@@ -637,31 +655,49 @@ export default {
         async beforeSave() {
             var me = this;
 
-            const options = {
-                type: 'form',
-                proc_def_id: me.processDefinition.processDefinitionId,
-                activity_id: me.element.id
-            };
-
             if (me.$refs.formDefinition && me.activeTab == 'edit') {
                 me.tempFormHtml = me.$refs.formDefinition[0].getFormHTML();
             }
 
+            // 저장 시 규칙 통일:
+            // - defaultform을 수정 저장하면 activity 전용 폼 ID로 승격
+            // - tool도 같은 ID로 즉시 갱신
+            if (me.formId === 'defaultform') {
+                const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
+                const procId = normalizeIdPart(me.processDefinition?.processDefinitionId || me.processDefinitionId);
+                const activityId = normalizeIdPart(me.element?.id);
+                if (procId && activityId) {
+                    me.formId = `${procId}_${activityId}_form`;
+                }
+            }
+
             if (me.tempFormHtml && me.tempFormHtml != '') {
-                if (me.lastPath) {
-                    if (me.lastPath == 'chat' || me.lastPath == 'definition-map') {
-                        if (me.formId == 'defaultform') {
-                            me.formId = me.element.id + '_form';
-                        }
-                        localStorage.setItem(me.formId, me.tempFormHtml);
-                    } else {
-                        await me.backend.putRawDefinition(me.tempFormHtml, me.formId, options);
-                    }
+                if (!Array.isArray(me.processDefinition.formDrafts)) {
+                    me.processDefinition.formDrafts = [];
+                }
+                const draft = {
+                    id: me.formId,
+                    html: me.tempFormHtml,
+                    proc_def_id: me.processDefinition?.processDefinitionId || me.processDefinitionId || '',
+                    activity_id: me.element.id
+                };
+                const existingIndex = me.processDefinition.formDrafts.findIndex((item) => item && item.activity_id === me.element.id);
+                if (existingIndex > -1) {
+                    me.processDefinition.formDrafts[existingIndex] = draft;
                 } else {
-                    localStorage.setItem(me.formId, me.tempFormHtml);
+                    me.processDefinition.formDrafts.push(draft);
                 }
             }
             me.activity.tool = `formHandler:${me.formId}`;
+
+            // processDefinition 활동 정보에도 tool 동기화
+            if (me.processDefinition && Array.isArray(me.processDefinition.activities)) {
+                const targetActivity = me.processDefinition.activities.find((activity) => activity.id === me.element.id);
+                if (targetActivity) {
+                    targetActivity.tool = me.activity.tool;
+                }
+            }
+
             if (me.activity.checkpoints && me.activity.checkpoints.join() == '') {
                 me.activity.checkpoints = [];
             }
@@ -685,6 +721,7 @@ export default {
             };
 
             me.$emit('update:uengineProperties', me.copyUengineProperties);
+            me.$emit('update:processDefinition', me.processDefinition);
         },
         onFileChange(files) {
             var me = this;

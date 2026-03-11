@@ -313,6 +313,10 @@ class ProcessGPTBackend implements Backend {
                 if (options.name) procDef.name = options.name;
                 if (options.owner) procDef.owner = options.owner;
                 if (options.type) procDef.type = options.type;
+                // 기존 정의도 함께 갱신되어야 activity.tool 변경이 proc_def.definition에 반영됨
+                if (Object.prototype.hasOwnProperty.call(options, 'definition')) {
+                    procDef.definition = options.definition;
+                }
             } else {
                 // 신규 프로세스: 초기 bpmn/definition 포함하여 생성
                 procDef = {
@@ -1243,7 +1247,7 @@ class ProcessGPTBackend implements Backend {
             if (formId) {
                 data = await storage.getObject('form_def', {
                     match: {
-                        formid: formId,
+                        id: formId,
                         tenant_id: window.$tenantName
                     }
                 });

@@ -3286,7 +3286,7 @@ export default {
 
                 const shouldShowConsultingNotice = parsedDirective?.user_request_type === 'start_process_consulting';
                 if (shouldShowConsultingNotice) {
-                    const consultingStartMessage = '프로세스 컨설팅을 시작합니다. 말씀하신 내용의 프로세스 초안을 작성하겠습니다.';
+                    const consultingStartMessage = '프로세스 컨설팅을 시작합니다. 말씀하신 내용의 프로세스 초안을 생성하겠습니다.';
                     if (this.messages[idx]) {
                         this.messages[idx].content = consultingStartMessage;
                         this.messages[idx].contentType = 'text';

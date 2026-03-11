@@ -38,7 +38,7 @@
                             ref="instanceSourceRef"
                             :isStarted="isStarted"
                             :instId="instId"
-                            :processDefinitionId="definitionId"
+                            :processDefinitionId="resolvedDefinitionId"
                         />
                     </div>
                 </div>
@@ -46,7 +46,7 @@
                     <div v-if="workItem != null">
                         <WorkItem
                             ref="workItemRef"
-                            :definitionId="definitionId"
+                            :definitionId="resolvedDefinitionId"
                             :dryRunWorkItem="workItem"
                             :isDryRun="true"
                             :isSimulate="isSimulate"
@@ -140,37 +140,44 @@ export default {
         isStarted: true
     }),
     async mounted() {
-        if (this.processDefinition && this.processDefinition.processDefinitionId) {
-            const defId = this.processDefinition.processDefinitionId;
-
+        const defId = this.resolvedDefinitionId;
+        if (defId) {
             if (this.isSimulate === 'false') {
                 // 실행 모드: 운영 버전(major 태그 최신) 기준으로 정의 로딩
-                const execDef = await backend.getExecutionDefinition(defId);
-                if (execDef) {
-                    if (execDef.definition) {
-                        Object.assign(this.processDefinition, execDef.definition);
+                try {
+                    const execDef = await backend.getExecutionDefinition(defId);
+                    if (execDef) {
+                        if (execDef.definition) {
+                            Object.assign(this.processDefinition, execDef.definition);
+                        }
+                        if (execDef.bpmn) {
+                            this.effectiveBpmn = execDef.bpmn;
+                        }
+                        // 프로세스 실행 시 complete 호출에 사용할 버전 정보 세팅
+                        if (execDef.version) {
+                            this.processDefinition.version = execDef.version;
+                        }
+                        if (execDef.version_tag) {
+                            this.processDefinition.version_tag = execDef.version_tag;
+                        }
                     }
-                    if (execDef.bpmn) {
-                        this.effectiveBpmn = execDef.bpmn;
-                    }
-                    // 프로세스 실행 시 complete 호출에 사용할 버전 정보 세팅
-                    if (execDef.version) {
-                        this.processDefinition.version = execDef.version;
-                    }
-                    if (execDef.version_tag) {
-                        this.processDefinition.version_tag = execDef.version_tag;
-                    }
+                } catch (e) {
+                    console.error(e);
                 }
             } else {
                 // 시뮬레이션 모드: 항상 proc_def(현재 정의) 기준으로 로딩
-                const simDef = await backend.getSimulationDefinition(defId);
-                if (simDef) {
-                    if (simDef.definition) {
-                        Object.assign(this.processDefinition, simDef.definition);
+                try {
+                    const simDef = await backend.getSimulationDefinition(defId);
+                    if (simDef) {
+                        if (simDef.definition) {
+                            Object.assign(this.processDefinition, simDef.definition);
+                        }
+                        if (simDef.bpmn) {
+                            this.effectiveBpmn = simDef.bpmn;
+                        }
                     }
-                    if (simDef.bpmn) {
-                        this.effectiveBpmn = simDef.bpmn;
-                    }
+                } catch (e) {
+                    console.error(e);
                 }
             }
 
@@ -190,6 +197,9 @@ export default {
         window.removeEventListener('resize', this.checkIfMobile);
     },
     computed: {
+        resolvedDefinitionId() {
+            return this.processDefinition?.processDefinitionId || this.definitionId || '';
+        },
         isFinishedAgentGeneration() {
             return (this.$refs.workItemRef && this.$refs.workItemRef.isFinishedAgentGeneration) || false;
         },
@@ -445,7 +455,7 @@ export default {
 
                 let input = {
                     process_instance_id: me.instId,
-                    process_definition_id: me.definitionId,
+                    process_definition_id: me.resolvedDefinitionId,
                     activity_id: me.workItem.activity.tracingTag,
                     role_mappings: me.roleMappings,
                     answer: answer,

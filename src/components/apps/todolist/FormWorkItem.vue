@@ -425,22 +425,7 @@ export default {
                             me.formDefId = activityTool.split(':')[1];
                         }
 
-                        // 2) tool 정보가 없으면 프로세스 정의 ID + 액티비티 ID 규칙을 그대로 적용
-                        if (
-                            !me.formDefId &&
-                            me.processDefinition &&
-                            me.processDefinition.processDefinitionId &&
-                            me.workItem &&
-                            me.workItem.activity &&
-                            me.workItem.activity.tracingTag
-                        ) {
-                            const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_');
-                            const procId = normalizeIdPart(me.processDefinition.processDefinitionId);
-                            const activityId = normalizeIdPart(me.workItem.activity.tracingTag);
-                            me.formDefId = `${procId}_${activityId}_form`;
-                        }
-
-                        // 3) 레거시 호환: 여전히 없으면 worklist.tool 기반으로 폼 ID 추론
+                        // 2) 레거시 호환: 여전히 없으면 worklist.tool 기반으로 폼 ID 추론
                         if (!me.formDefId) {
                             const tool = me.workItem?.worklist?.tool;
                             me.formDefId = tool && tool.includes(':') ? tool.split(':')[1] : null;
@@ -458,36 +443,17 @@ export default {
                         }
                     }
                     if (me.isSimulate == 'true' && window.location.pathname == '/definition-map') {
-                        const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_');
-                        const formId = me.workItem?.worklist?.adhoc
-                            ? 'defaultform'
-                            : me.processDefinition &&
-                              me.processDefinition.processDefinitionId &&
-                              me.workItem &&
-                              me.workItem.activity &&
-                              me.workItem.activity.tracingTag
-                            ? `${normalizeIdPart(me.processDefinition.processDefinitionId)}_${normalizeIdPart(
-                                  me.workItem.activity.tracingTag
-                              )}_form`
-                            : null;
+                        const formId = me.workItem?.worklist?.adhoc ? 'defaultform' : me.formDefId;
                         if (formId) {
                             me.html = localStorage.getItem(formId);
                         }
                     }
                     if (!me.html) {
-                        const options = {
-                            type: 'form',
-                            match: {
-                                proc_def_id: me.processDefinition
-                                    ? me.processDefinition.processDefinitionId
-                                    : me.workItem?.worklist?.defId
-                                    ? me.workItem.worklist.defId
-                                    : null,
-                                activity_id: me.workItem?.activity?.tracingTag ? me.workItem.activity.tracingTag : null
-                            }
-                        };
                         me.formInfo = await backend.getFormFields(me.formDefId);
                         me.html = me.formInfo?.html || null;
+                    }
+                    if (!me.html) {
+                        me.html = await backend.getRawDefinition(me.formDefId, { type: 'form' });
                     }
                     if (!me.html) {
                         me.formDefId = 'defaultform';
