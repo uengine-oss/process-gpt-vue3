@@ -16,6 +16,7 @@
                 v-model="name"
                 :label="$t('BpmnPropertyPanel.name')"
                 :disabled="isViewMode"
+                density="comfortable"
                 ref="cursor"
                 :items="termSuggestions"
                 :loading="termLoading"
@@ -76,7 +77,7 @@
             </v-btn>
         </v-row>
         <v-card-text
-            class="delete-input-details pa-0 pr-4 pl-4"
+            class="delete-input-details pa-0 pl-4"
             :style="isViewMode ? 'overflow: auto; flex: 1;' : 'overflow: auto; width: 50vw; min-width: 370px; height:calc(100% - 80px);'"
         >
             <div v-if="!(isGPTMode && panelName == 'gpt-user-task-panel')" :class="isViewMode ? 'pa-2 pb-0' : 'pa-4 pb-0'">
