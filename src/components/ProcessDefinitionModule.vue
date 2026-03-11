@@ -71,9 +71,10 @@ export default {
     },
     methods: {
         async checkedFormData() {
+            console.log('[FORM_DEBUG] checkedFormData called', { hasElements: !!this.processDefinition?.elements, hasActivities: !!this.processDefinition?.activities, procDefId: this.processDefinition?.processDefinitionId });
             if (this.processDefinition && this.processDefinition.elements) {
-                // 메인 프로세스와 서브프로세스의 모든 activities를 수집
                 const allActivities = this.collectAllActivities(this.processDefinition);
+                console.log('[FORM_DEBUG] allActivities', { count: allActivities.length, ids: allActivities.map(a => a.id), withOutputData: allActivities.filter(a => a.outputData?.length > 0).map(a => ({ id: a.id, outputData: a.outputData })) });
 
                 this.generateFormTask = {};
 
@@ -149,6 +150,7 @@ export default {
                 }
 
                 this.generateFormTask = {};
+                console.log('[FORM_DEBUG] checkedFormData finished', { formDraftsCount: this.processDefinition?.formDrafts?.length, drafts: (this.processDefinition?.formDrafts || []).map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
             }
         },
 
@@ -259,6 +261,7 @@ export default {
             });
         },
         async saveFormData(html, activityId) {
+            console.log('[FORM_DEBUG] saveFormData called', { activityId, htmlLength: html?.length, hasActivities: Array.isArray(this.processDefinition?.activities), activitiesCount: this.processDefinition?.activities?.length, procDefId: this.processDefinition?.processDefinitionId });
             const activity =
                 this.processDefinition && Array.isArray(this.processDefinition.activities)
                     ? this.processDefinition.activities.find((a) => a.id === activityId)
@@ -269,10 +272,8 @@ export default {
             const toolFormId = tool.includes('formHandler:') ? tool.replace('formHandler:', '') : '';
 
             if (toolFormId && toolFormId !== 'defaultform') {
-                // 정의에 이미 명시된 커스텀 폼 ID를 그대로 사용
                 formId = toolFormId;
             } else if (this.processDefinition && this.processDefinition.processDefinitionId) {
-                // defaultform 상태에서 편집 저장 시 액티비티 전용 폼으로 승격
                 formId = `${this.processDefinition.processDefinitionId}_${activityId}_form`;
             } else {
                 formId = `${activityId}_form`;
@@ -284,7 +285,6 @@ export default {
                 activity.tool = `formHandler:${formId}`;
             }
 
-            // 임시 편집본은 localStorage가 아닌 메모리(processDefinition.formDrafts)에 보관
             if (!Array.isArray(this.processDefinition.formDrafts)) {
                 this.processDefinition.formDrafts = [];
             }
@@ -300,6 +300,7 @@ export default {
             } else {
                 this.processDefinition.formDrafts.push(draft);
             }
+            console.log('[FORM_DEBUG] saveFormData done', { formId, draftCount: this.processDefinition.formDrafts.length, drafts: this.processDefinition.formDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
             return { id: formId, html: html };
         },
         extractPropertyNameAndIndex(jsonPath) {
@@ -504,6 +505,12 @@ export default {
                     me.loading = true;
                     me.saveSchedule(info, '1.0');
                     await me.setDefinitionInfo(info);
+
+                    const savedFormDrafts = Array.isArray(me.processDefinition?.formDrafts)
+                        ? [...me.processDefinition.formDrafts]
+                        : [];
+                    console.log('[FORM_DEBUG] saveDefinition start', { savedFormDraftsCount: savedFormDrafts.length, drafts: savedFormDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })) });
+
                     const store = useBpmnStore();
                     let modeler = store.getModeler;
                     let xmlObj;
@@ -601,6 +608,7 @@ export default {
 
                         if (!me.processDefinition) {
                             me.processDefinition = newProcessDefinition;
+                            if (savedFormDrafts.length > 0) me.processDefinition.formDrafts = savedFormDrafts;
                         } else {
                             // if (me.processDefinition.roles) {
                             //     newProcessDefinition.roles = newProcessDefinition.roles.map(newRole => {
@@ -636,6 +644,9 @@ export default {
 
                             me.processDefinition = newProcessDefinition;
                         }
+
+                        if (savedFormDrafts.length > 0) me.processDefinition.formDrafts = savedFormDrafts;
+                        console.log('[FORM_DEBUG] after Path1 processDefinition replaced', { formDraftsCount: me.processDefinition.formDrafts?.length, savedFormDraftsCount: savedFormDrafts.length });
 
                         if (info.name && info.name != '') {
                             me.processDefinition.processDefinitionName = info.name;
@@ -730,12 +741,19 @@ export default {
                             updatedProcessDefinition.processDefinitionName = info.name;
                         }
 
+                        if (savedFormDrafts.length > 0) {
+                            updatedProcessDefinition.formDrafts = savedFormDrafts;
+                        }
+
                         me.processDefinition = updatedProcessDefinition;
                         info.definition = me.processDefinition;
+                        console.log('[FORM_DEBUG] after Path2 processDefinition replaced', { formDraftsCount: me.processDefinition.formDrafts?.length });
                     } catch (e) {
                         console.warn('update element roles failed', e);
+                        console.log('[FORM_DEBUG] Path2 failed, current formDrafts', { formDraftsCount: me.processDefinition?.formDrafts?.length });
                     }
 
+                    console.log('[FORM_DEBUG] before saveModel', { formDraftsCount: me.processDefinition?.formDrafts?.length });
                     await me.saveModel(info, xmlObj.xml);
                     me.bpmn = xmlObj.xml;
 
@@ -1774,49 +1792,79 @@ export default {
                             me.processDefinition.processDefinitionId = info.proc_def_id;
 
                         // 폼 임시본(formDrafts)을 항상 함께 저장
-                        if (me.processDefinition.activities && me.processDefinition.activities.length > 0) {
-                            const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
-                            const procIdForForm = normalizeIdPart(info.proc_def_id || me.processDefinition.processDefinitionId);
-                            const formDrafts = Array.isArray(me.processDefinition.formDrafts) ? me.processDefinition.formDrafts : [];
+                        const normalizeIdPart = (id) => (id || '').toString().toLowerCase().replace(/[/.]/g, '_').replace(/#/g, '_');
+                        const procIdForForm = normalizeIdPart(info.proc_def_id || me.processDefinition.processDefinitionId);
+                        const formDrafts = Array.isArray(me.processDefinition.formDrafts) ? me.processDefinition.formDrafts : [];
+                        const activities = Array.isArray(me.processDefinition.activities) ? me.processDefinition.activities : [];
+                        console.log('[FORM_DEBUG] saveModel formDrafts check', { formDraftsCount: formDrafts.length, activitiesCount: activities.length, procIdForForm, drafts: formDrafts.map(d => ({ id: d.id, activity_id: d.activity_id, htmlLen: d.html?.length })), activityTools: activities.map(a => ({ id: a?.id, tool: a?.tool })) });
 
+                        if (formDrafts.length > 0) {
                             await Promise.all(
-                                me.processDefinition.activities.map(async (activity) => {
-                                    if (!activity || !activity.id) return;
+                                formDrafts
+                                    .filter((draft) => draft && draft.id && draft.html)
+                                    .map(async (draft) => {
+                                        const draftId = normalizeIdPart(draft.id);
+                                        const draftActivityId = draft.activity_id ? String(draft.activity_id) : null;
 
-                                    const activityId = normalizeIdPart(activity.id);
-                                    const promotedFormId = `${procIdForForm}_${activityId}_form`;
-                                    const toolFormId =
-                                        activity.tool && activity.tool.includes('formHandler:')
-                                            ? activity.tool.replace('formHandler:', '')
-                                            : null;
+                                        let targetActivity = activities.find((a) => a && a.id === draftActivityId) || null;
 
-                                    let formId = toolFormId || promotedFormId;
-                                    let formHtml = null;
-                                    const activityDraft = formDrafts.find((draft) => draft && draft.activity_id === activity.id);
+                                        if (!targetActivity) {
+                                            targetActivity =
+                                                activities.find((a) => {
+                                                    if (!a || !a.id) return false;
+                                                    return `${procIdForForm}_${normalizeIdPart(a.id)}_form` === draftId;
+                                                }) || null;
+                                        }
 
-                                    // defaultform 수정본은 activity 전용 폼 ID로 승격 저장
-                                    if (toolFormId === 'defaultform' && activityDraft && activityDraft.html) {
-                                        formId = promotedFormId;
-                                        formHtml = activityDraft.html;
-                                        activity.tool = `formHandler:${promotedFormId}`;
-                                    } else if (activityDraft && activityDraft.html) {
-                                        formId = activityDraft.id || formId;
-                                        formHtml = activityDraft.html;
-                                    }
+                                        let activityIdForSave = targetActivity?.id || draftActivityId;
+                                        if (!activityIdForSave && draftId.startsWith(`${procIdForForm}_`) && draftId.endsWith('_form')) {
+                                            activityIdForSave = draftId.slice(procIdForForm.length + 1, -5);
+                                        }
 
-                                    if (formHtml) {
+                                        if (targetActivity) {
+                                            targetActivity.tool = `formHandler:${draftId}`;
+                                        }
+
                                         const options = {
                                             type: 'form',
                                             proc_def_id: info.proc_def_id,
-                                            activity_id: activity.id
+                                            activity_id: activityIdForSave || draftActivityId || ''
                                         };
-                                        await backend.putRawDefinition(formHtml, formId, options);
-                                    }
-                                })
+                                        console.log('[FORM_DEBUG] saving form to DB', { draftId, activityIdForSave, options, htmlLen: draft.html?.length });
+                                        try {
+                                            const result = await backend.putRawDefinition(draft.html, draftId, options);
+                                            console.log('[FORM_DEBUG] putRawDefinition result', { draftId, result });
+                                        } catch (err) {
+                                            console.error('[FORM_DEBUG] putRawDefinition FAILED', { draftId, error: err });
+                                        }
+                                    })
                             );
 
-                            // 프로세스 저장 완료 후 임시 폼 드래프트는 비움
                             me.processDefinition.formDrafts = [];
+                        }
+
+                        if (activities.length > 0) {
+                            await Promise.all(
+                                activities.map(async (activity) => {
+                                    if (!activity || !activity.id || !activity.tool || !activity.tool.includes('formHandler:defaultform')) return;
+                                    const activityId = normalizeIdPart(activity.id);
+                                    const promotedFormId = `${procIdForForm}_${activityId}_form`;
+                                    const draft = formDrafts.find(
+                                        (item) =>
+                                            item &&
+                                            item.html &&
+                                            (normalizeIdPart(item.id) === promotedFormId || String(item.activity_id || '') === String(activity.id))
+                                    );
+                                    if (!draft) return;
+
+                                    activity.tool = `formHandler:${promotedFormId}`;
+                                    await backend.putRawDefinition(draft.html, promotedFormId, {
+                                        type: 'form',
+                                        proc_def_id: info.proc_def_id,
+                                        activity_id: activity.id
+                                    });
+                                })
+                            );
                         }
 
                         me.processDefinition.processDefinitionId = info.proc_def_id
