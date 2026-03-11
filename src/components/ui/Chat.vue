@@ -192,7 +192,7 @@
                                     </div>
 
                                     <!-- 자동 추천(초대) 카드 -->
-                                    <div v-else-if="message && message.__agentInviteRecommendation">
+                                    <div v-else>
                                         <div class="message-bubble-wrap message-bubble-wrap--other">
                                             <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
                                                 <div class="pa-3 pb-2">
@@ -236,7 +236,7 @@
                                                             @click="inviteAgentFromRecommendation(message, agent)"
                                                         >
                                                             <v-icon start size="14">mdi-sitemap</v-icon>
-                                                            {{ bpmn.process_name || bpmn.process_id }}
+                                                            {{ isRecommendationInvited(message, agent.id) ? '초대됨' : '초대' }}
                                                         </v-btn>
                                                     </div>
                                                 </div>
