@@ -411,22 +411,23 @@ export default {
         },
         async addAgent(selectedTeam, newAgent) {
             this.editNode = selectedTeam;
+            const newAgentSnapshot = JSON.parse(JSON.stringify(newAgent));
             const agent = {
-                id: newAgent.id,
-                name: newAgent.name,
-                data: newAgent
+                id: newAgentSnapshot.id,
+                name: newAgentSnapshot.name,
+                data: newAgentSnapshot
             };
             this.editNode.children.push(agent);
-            await this.backend.putAgent(newAgent);
+            await this.backend.putAgent(newAgentSnapshot);
 
             await this.updateNode();
             this.$refs.organizationChart.drawTree();
 
-            this.EventBus.emit('agentAdded', newAgent);
+            this.EventBus.emit('agentAdded', newAgentSnapshot);
 
             this.$nextTick(() => {
                 this.$nextTick(async () => {
-                    await this.$refs.organizationChart.selectAgentById(newAgent.id, newAgent);
+                    await this.$refs.organizationChart.selectAgentById(newAgentSnapshot.id, newAgentSnapshot);
                 });
             });
         },
