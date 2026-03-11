@@ -1943,3 +1943,8 @@ where u.agent_type = 'agent'
   and trim(u.skills) <> ''
   and trim(s) <> ''
 on conflict (user_id, tenant_id, skill_name) do nothing;
+
+-- documents 테이블 컬럼 추가 (drive folder, 작성시각)
+ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS drive_folder_id TEXT;
+ALTER TABLE public.documents ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+CREATE INDEX IF NOT EXISTS documents_drive_folder_id_idx ON public.documents (drive_folder_id);
