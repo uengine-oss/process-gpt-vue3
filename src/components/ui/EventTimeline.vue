@@ -376,6 +376,36 @@
                                     </div>
                                 </div>
 
+                                <!-- 파일 리스트 결과 (docx/hwpx 등) -->
+                                <div v-else-if="isFileListContent(item.payload)" class="result-files">
+                                    <div class="files-list">
+                                        <div
+                                            v-for="(file, idx) in getFileList(item.payload.content)"
+                                            :key="file.file_path || file.file_name || file.name || idx"
+                                            class="file-item"
+                                        >
+                                            <div class="file-header">
+                                                <span class="file-name">{{ file.file_name || file.name || `file-${idx + 1}` }}</span>
+                                                <div class="file-actions">
+                                                    <v-btn
+                                                        v-if="file.file_path"
+                                                        @click="openFileLink(file.file_path)"
+                                                        size="small"
+                                                        variant="elevated"
+                                                        color="primary"
+                                                        class="ml-2 download-btn"
+                                                        density="compact"
+                                                    >
+                                                        <v-icon size="small" class="mr-1">mdi-download</v-icon>
+                                                        {{ '다운로드' }}
+                                                    </v-btn>
+                                                </div>
+                                            </div>
+                                            <!-- 부가정보는 표시하지 않음 -->
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- 마크다운 결과 -->
                                 <div
                                     v-else-if="isMarkdownType(item.payload.crewType)"
@@ -711,6 +741,36 @@ export default {
                 crewType === 'react' ||
                 crewType === 'browser-automation-agent'
             );
+        },
+        isFileListContent(payload) {
+            const list = this.getFileList(payload?.content);
+            return Array.isArray(list) && list.length > 0;
+        },
+        getFileList(content) {
+            if (!content) return [];
+            let parsed = content;
+
+            if (typeof content === 'string') {
+                const trimmed = content.trim();
+                if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                    parsed = this.parseJson(trimmed, null);
+                } else {
+                    const start = trimmed.indexOf('[');
+                    const end = trimmed.lastIndexOf(']');
+                    if (start !== -1 && end > start) {
+                        parsed = this.parseJson(trimmed.slice(start, end + 1), null);
+                    }
+                }
+            }
+
+            if (Array.isArray(parsed)) return parsed;
+            if (parsed && typeof parsed === 'object') {
+                if (Array.isArray(parsed.files)) return parsed.files;
+                if (Array.isArray(parsed.results)) return parsed.results;
+                if (Array.isArray(parsed.data)) return parsed.data;
+            }
+
+            return [];
         },
         shouldShowExpandControls(payload) {
             if (payload.crewType === 'slide') return false;
@@ -1202,6 +1262,17 @@ export default {
                 console.error('파일 다운로드 중 오류 발생:', error);
                 alert('파일 다운로드에 실패했습니다.');
             }
+        },
+        openFileLink(url) {
+            if (!url) return;
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.download = '';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     }
 };
@@ -2546,6 +2617,34 @@ export default {
     color: #0056b3 !important;
     text-decoration: none;
     border-bottom-color: #0056b3;
+}
+
+.result-files {
+    padding: 12px;
+}
+
+.file-meta {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 6px;
+    word-break: break-all;
+}
+
+.file-link {
+    margin-top: 6px;
+    word-break: break-all;
+}
+
+.download-btn {
+    font-size: 12px;
+    padding: 3px 10px;
+    min-height: 24px;
+    height: 24px;
+    line-height: 1;
+}
+
+.download-btn :deep(.v-btn__content) {
+    line-height: 1;
 }
 
 /* 스크롤바 스타일 */

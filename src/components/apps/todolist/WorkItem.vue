@@ -702,6 +702,21 @@ export default {
                 }
             },
             {
+                value: 'deepResearchCustom',
+                label: 'AgentSelectInfo.orchestration.deepResearchCustom.title',
+                description: 'AgentSelectInfo.orchestration.deepResearchCustom.description',
+                advanced: true,
+                costKey: 'AgentSelectInfo.cost.medium',
+                detailDesc: {
+                    title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.title',
+                    details: [
+                        { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.0.title' },
+                        { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.1.title' },
+                        { title: 'AgentSelectInfo.orchestration.deepResearchCustom.detailDesc.details.2.title' }
+                    ]
+                }
+            },
+            {
                 value: 'crewaiAction',
                 label: 'AgentSelectInfo.orchestration.crewaiAction.title',
                 description: 'AgentSelectInfo.orchestration.crewaiAction.description',
@@ -1472,6 +1487,7 @@ export default {
                 // agent_orch가 설정되어 있으면 에이전트가 진행 중인 것으로 판단
                 const validOrchs = [
                     'crewai-deep-research',
+                'deep-research-custom',
                     'crewai-action',
                     'openai-deep-research',
                     'langchain-react',
@@ -1490,6 +1506,7 @@ export default {
         convertToOrchestrationMethod(researchMethod) {
             const mapping = {
                 crewaiDeepResearch: 'crewai-deep-research',
+                deepResearchCustom: 'deep-research-custom',
                 crewaiAction: 'crewai-action',
                 openaiDeepResearch: 'openai-deep-research',
                 langchainReact: 'langchain-react',
