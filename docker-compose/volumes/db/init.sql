@@ -1759,6 +1759,7 @@ create or replace function register_cron_intermidiated(
 )
 returns void
 language plpgsql
+security definer
 as $$
 declare
   v_job_name text;
@@ -1791,9 +1792,10 @@ create or replace function update_todolist_status(
 )
 returns void
 language plpgsql
+security definer
 as $$
 declare
-  v_job_name text := p_proc_inst_id || '__' || p_activity_id;
+  v_job_name text := p_proc_inst_id || '_' || p_activity_id;
 begin
   -- 상태를 SUBMITTED로 업데이트
   update todolist

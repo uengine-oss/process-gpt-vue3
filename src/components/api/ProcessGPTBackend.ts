@@ -1111,9 +1111,8 @@ class ProcessGPTBackend implements Backend {
                 }
                 list = await storage.list('todolist', filter);
             }
-            //  else {
-            //     list = list.filter((item: any) => item.tool !== null && item.tool !== undefined && item.tool !== '');
-            // }
+
+            list = list.filter((item: any) => !((!item.tool || item.tool === '') && item.description === 'start event'));
 
             // 페이지네이션 처리
             let paginatedList = list;
@@ -2674,9 +2673,11 @@ class ProcessGPTBackend implements Backend {
     async getWorkListByInstId(instId: number) {
         try {
             const list = await storage.list('todolist', { match: { proc_inst_id: instId } });
-            const worklist: any[] = list.map((item: any) => {
-                return this.returnWorkItemObject(item);
-            });
+            const worklist: any[] = list
+                .filter((item: any) => !((!item.tool || item.tool === '') && item.description === 'start event'))
+                .map((item: any) => {
+                    return this.returnWorkItemObject(item);
+                });
             return worklist;
         } catch (e) {
             //@ts-ignore
@@ -2687,9 +2688,11 @@ class ProcessGPTBackend implements Backend {
     async getWorkListByRootInstId(rootInstId: number) {
         try {
             const list = await storage.list('todolist', { match: { root_proc_inst_id: rootInstId } });
-            const worklist: any[] = list.map((item: any) => {
-                return this.returnWorkItemObject(item);
-            });
+            const worklist: any[] = list
+                .filter((item: any) => !((!item.tool || item.tool === '') && item.description === 'start event'))
+                .map((item: any) => {
+                    return this.returnWorkItemObject(item);
+                });
             return worklist;
         } catch (e) {
             //@ts-ignore
