@@ -209,7 +209,7 @@
         "monaco-editor": "0.52.0",
         "postcss-html": "^1.5.0",
         "pptxgenjs": "^4.0.0",
-        "prettier": "^2.5.1",
+        "prettier": "^3.8.1",
         "reveal.js": "^5.2.1",
         "sass": "^1.49.9",
         "sass-loader": "^10.5.2",
