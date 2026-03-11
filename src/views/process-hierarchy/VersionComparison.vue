@@ -45,6 +45,16 @@
         </div>
 
         <div class="comparison-body">
+            <!-- Loading Overlay -->
+            <v-overlay
+                :model-value="initialLoading"
+                contained
+                class="align-center justify-center"
+                persistent
+            >
+                <v-progress-circular indeterminate size="48" color="primary" />
+            </v-overlay>
+
             <!-- Left Panel: Process Tree -->
             <div class="comparison-left-panel" :style="{ width: leftPanelWidth + 'px' }">
                 <div class="tree-header">
@@ -516,6 +526,9 @@ export default {
             viewerKeyA: 0,
             viewerKeyB: 0,
 
+            // Loading state
+            initialLoading: false,
+
             // Diff results
             changes: [],
             diffActivitiesA: {},
@@ -642,6 +655,7 @@ export default {
         },
 
         async loadInitialData() {
+            this.initialLoading = true;
             try {
                 const [procMapResult, metricsResult, defList, versionList] = await Promise.all([
                     backend.getProcessDefinitionMap(),
@@ -650,6 +664,8 @@ export default {
                     storage.list('proc_def_version', {
                         sort: 'desc',
                         orderBy: 'timeStamp',
+                        match: { tenant_id: window.$tenantName },
+                        key: 'proc_def_id,version',
                     }),
                 ]);
                 this.procMap = procMapResult;
@@ -678,6 +694,8 @@ export default {
                 this.definitionList = defs;
             } catch (e) {
                 console.error('Failed to load initial data:', e);
+            } finally {
+                this.initialLoading = false;
             }
         },
 
@@ -995,6 +1013,7 @@ export default {
     display: flex;
     flex: 1;
     overflow: hidden;
+    position: relative;
 }
 
 /* Left Panel */

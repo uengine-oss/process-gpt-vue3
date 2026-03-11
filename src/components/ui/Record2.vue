@@ -9,7 +9,6 @@
 </template>
 
 <script>
-import gsap from 'gsap';
 import { Icon } from '@iconify/vue';
 
 export default {
@@ -28,6 +27,7 @@ export default {
             stream: null, // 마이크 스트림
             bars: [],
             REPORT: null,
+            animationFrameId: null,
             recorder: null,
             CONFIG: {
                 fps: 60,
@@ -39,6 +39,33 @@ export default {
         };
     },
     methods: {
+        animateBars(targetHeights) {
+            const startHeights = this.bars.map((bar) => bar.height);
+            const durationMs = this.CONFIG.duration * 1000;
+            const startedAt = performance.now();
+
+            if (this.animationFrameId) {
+                cancelAnimationFrame(this.animationFrameId);
+            }
+
+            const step = (now) => {
+                const progress = Math.min((now - startedAt) / durationMs, 1);
+                this.bars.forEach((bar, index) => {
+                    const from = startHeights[index] ?? 10;
+                    const to = targetHeights[index] ?? 10;
+                    bar.height = from + (to - from) * progress;
+                });
+                this.drawBars();
+
+                if (progress < 1) {
+                    this.animationFrameId = requestAnimationFrame(step);
+                } else {
+                    this.animationFrameId = null;
+                }
+            };
+
+            this.animationFrameId = requestAnimationFrame(step);
+        },
         async getMicrophoneInput() {
             if (!navigator.mediaDevices) {
                 alert('브라우저가 마이크 입력을 지원하지 않습니다.');
@@ -117,17 +144,13 @@ export default {
                 if (this.isRecording) {
                     this.analyser.getByteFrequencyData(this.dataArray);
                     if (this.volume > this.threshold) {
-                        gsap.to(this.bars, {
-                            duration: this.CONFIG.duration,
-                            height: (index) => {
-                                return 10 + gsap.utils.mapRange(0, 255, 0, 150)(this.dataArray[index]);
-                            }
-                        });
+                        const heights = this.bars.map((_, index) => 10 + (this.dataArray[index] / 255) * 150);
+                        this.animateBars(heights);
                     }
                     this.drawBars();
                 }
             };
-            gsap.ticker.add(this.REPORT);
+            this.REPORT();
         },
         genBars(size) {
             const canvasWidth = 300;
@@ -141,19 +164,14 @@ export default {
             }));
         },
         updateBars() {
-            gsap.to(this.bars, {
-                duration: this.CONFIG.duration,
-                height: (index) => {
-                    const newHeight = this.dataArray[index] / 255;
-                    return 10 + gsap.utils.mapRange(0, 1, 0, 250)(newHeight); // 바의 높이 범위를 증가시켜 더 잘 보이도록 설정
-                }
+            const heights = this.bars.map((_, index) => {
+                const newHeight = this.dataArray[index] / 255;
+                return 10 + newHeight * 250;
             });
+            this.animateBars(heights);
         },
         resetBars() {
-            gsap.to(this.bars, {
-                duration: this.CONFIG.duration,
-                height: 10
-            });
+            this.animateBars(this.bars.map(() => 10));
         },
         drawBar({ x, y, width, height, hue }) {
             const ctx = this.$refs.canvas.getContext('2d');
@@ -187,6 +205,11 @@ export default {
     mounted() {
         this.genBars(4);
         this.drawBars();
+    },
+    beforeUnmount() {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
     }
 };
 </script>

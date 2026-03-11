@@ -313,7 +313,7 @@ async function setupTenant() {
         Object.defineProperty(window, '$tenantName', {
             // uengine supabase 운영기 연결할때 사용
             // value: 'uengine',
-            value: 'localhost',
+            value: 'skt',
             writable: false,
             configurable: false
         });

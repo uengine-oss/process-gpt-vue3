@@ -1451,7 +1451,7 @@ class ProcessGPTBackend implements Backend {
      * 프로세스 정의 체계도 조회
      * @returns
      */
-    async getProcessDefinitionMap() {
+    async getProcessDefinitionMap(opts?: { skipPermissionFilter?: boolean }) {
         try {
             const isPal = window.$pal;
             const options = {
@@ -1474,6 +1474,11 @@ class ProcessGPTBackend implements Backend {
                     }
                 };
                 renameLabels(procMap.value);
+
+                // 권한 필터링 스킵 옵션 (프로세스 계층도 등 읽기 전용 뷰)
+                if (opts?.skipPermissionFilter) {
+                    return procMap.value;
+                }
 
                 // 권한 체크: PAL 모드 여부와 관계없이 권한이 설정되어 있으면 필터링 적용
                 const usePermissions = await this.checkUsePermissions();
@@ -9694,6 +9699,56 @@ class ProcessGPTBackend implements Backend {
         } catch (e) {
             console.error('[ProcessGPTBackend] softDeletePropertySchema error:', e);
             throw e;
+        }
+    }
+
+    /**
+     * 전체 프로세스 정의의 최신 버전 목록 조회 (proc_def_id, version만)
+     */
+    async getLatestVersionMap(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) {
+            const list = await storage.list('proc_def_version', {
+                sort: 'desc',
+                orderBy: 'timeStamp',
+            });
+            return list || [];
+        }
+
+        try {
+            // RLS가 tenant_id 필터링을 처리함
+            const { data, error } = await supabase
+                .from('proc_def_version')
+                .select('proc_def_id, version')
+                .order('timeStamp', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getLatestVersionMap error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * 전체 프로세스 정의의 승인 상태 일괄 조회
+     */
+    async getApprovalStateList(): Promise<any[]> {
+        const supabase = window.$supabase;
+        if (!supabase) return [];
+
+        try {
+            // RLS가 tenant_id 필터링을 처리함
+            const { data, error } = await supabase
+                .from('proc_def_approval_state')
+                .select('proc_def_id, state, created_at, updated_at')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('[ProcessGPTBackend] getApprovalStateList error:', e);
+            return [];
         }
     }
 }

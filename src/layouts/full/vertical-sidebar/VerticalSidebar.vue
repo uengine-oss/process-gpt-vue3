@@ -637,24 +637,20 @@ export default {
                     to: '/version-comparison',
                     disable: false
                 },
-                ...(this.pal
-                    ? []
-                    : [
-                          {
-                              title: 'reviewBoard.title',
-                              icon: 'submit-document',
-                              BgColor: 'primary',
-                              to: '/review-board',
-                              disable: false
-                          },
-                          {
-                              title: 'reviewBoard.myInbox',
-                              icon: 'submit-document',
-                              BgColor: 'primary',
-                              to: '/my-inbox',
-                              disable: false
-                          }
-                      ])
+                {
+                    title: 'reviewBoard.title',
+                    icon: 'submit-document',
+                    BgColor: 'primary',
+                    to: '/review-board',
+                    disable: false
+                },
+                {
+                    title: 'reviewBoard.myInbox',
+                    icon: 'submit-document',
+                    BgColor: 'primary',
+                    to: '/my-inbox',
+                    disable: false
+                }
             ];
 
             // 프로세스 섹션: 프로세스 정의(메인 행) + 옆 작은 버튼으로 드롭다운

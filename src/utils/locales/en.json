@@ -952,7 +952,8 @@
         "rollbackFailed": "Failed to rollback.",
         "selectProcessToCompare": "Select a process from the list on the left to compare",
         "selectProcessHint": "Select a process to compare differences between versions",
-        "noVersions": "No saved versions"
+        "noVersions": "No saved versions",
+        "syncScroll": "Sync Scroll"
     },
     "toolbarInfo": {
         "savedAgo": "Saved {n}m ago",

@@ -196,6 +196,10 @@ export interface Backend {
     // Agent Knowledge API
     setupAgentKnowledge(params: { agent_id: string; goal?: string | null; persona?: string | null }): Promise<any>;
 
+    // Process Hierarchy 일괄 조회 API
+    getLatestVersionMap(): Promise<any[]>;
+    getApprovalStateList(): Promise<any[]>;
+
     // 프로세스 정의 요소별 댓글 API (ElementCommentPanel)
     getElementComments(procDefId: string, elementId?: string): Promise<any[]>;
     getElementCommentCounts(procDefId: string): Promise<Record<string, { total: number; unresolved: number }>>;

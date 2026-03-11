@@ -38,7 +38,6 @@
     },
     "dependencies": {
         "@babel/parser": "^7.24.8",
-        "@balkangraph/orgchart.js": "^8.13.20",
         "@bpmn-io/properties-panel": "^3.16.0",
         "@casl/ability": "^6.2.0",
         "@casl/vue": "^2.2.0",
@@ -109,7 +108,6 @@
         "express": "^4.19.2",
         "file-saver": "^2.0.5",
         "firebase": "^12.10.0",
-        "gsap": "^3.12.5",
         "hammerjs": "^2.0.8",
         "highlight.js": "^11.9.0",
         "html-to-image": "^1.11.13",

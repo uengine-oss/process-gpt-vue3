@@ -368,31 +368,25 @@ export default {
         async loadInitialData() {
             this.loading = true;
             try {
-                const supabase = window.$supabase;
-                const promises = [
-                    backend.getProcessDefinitionMap(),
+                const [procMapResult, metricsResult, defList] = await Promise.all([
+                    (backend as any).getProcessDefinitionMap({ skipPermissionFilter: true }),
                     backend.getMetricsMap(),
-                    backend.listDefinition('', { match: { tenant_id: window.$tenantName } }),
-                    storage.list('proc_def_version', {
-                        sort: 'desc',
-                        orderBy: 'timeStamp',
-                    }),
-                ];
-                // proc_def_approval_state 일괄 조회
-                if (supabase) {
-                    promises.push(
-                        supabase
-                            .from('proc_def_approval_state')
-                            .select('proc_def_id, state, created_at, updated_at')
-                            .eq('tenant_id', window.$tenantName)
-                            .order('created_at', { ascending: false })
-                            .then(res => res.data || [])
-                    );
-                }
-
-                const [procMapResult, metricsResult, defList, versionList, approvalStates] = await Promise.all(promises);
+                    backend.listDefinition('', {}),
+                ]);
                 this.procMap = procMapResult;
                 this.metricsMap = metricsResult;
+
+                // 버전/승인 상태는 별도로 조회 (실패해도 목록 표시에 영향 없음)
+                let versionList = [];
+                let approvalStates = [];
+                try {
+                    [versionList, approvalStates] = await Promise.all([
+                        backend.getLatestVersionMap(),
+                        backend.getApprovalStateList(),
+                    ]);
+                } catch (e) {
+                    console.warn('Failed to load version/approval data:', e);
+                }
 
                 // 각 정의의 최신 버전 매핑
                 const latestVersionMap = {};

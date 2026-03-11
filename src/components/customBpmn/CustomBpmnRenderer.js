@@ -904,6 +904,7 @@ export default class CustomBpmnRenderer extends BaseRenderer {
             allConnections.forEach((otherConn) => {
                 if (otherConn.id === element.id) return;
                 const otherWaypoints = otherConn.waypoints;
+                if (!otherWaypoints || !otherWaypoints.length) return;
 
                 // Check each segment of current connection against each segment of other connection
                 for (let i = 0; i < currentWaypoints.length - 1; i++) {

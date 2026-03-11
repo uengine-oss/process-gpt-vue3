@@ -128,6 +128,7 @@ export default defineConfig({
         }
     },
     build: {
+        sourcemap: false,
         rollupOptions: {
             // Node.js 내장 모듈들을 외부 모듈로 처리하여 번들에서 제외
             external: ['https'],
