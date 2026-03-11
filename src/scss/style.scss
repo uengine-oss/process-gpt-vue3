@@ -31,7 +31,6 @@
 @import './components/VExpansionpanel';
 @import './components/VTimeline';
 @import './components/VDialog';
-@import './components/PropertyPanel';
 
 /*Landing page css*/
 @import 'landingpage/header';
@@ -44,4 +43,4 @@
 @import './pages/authentication';
 @import './pages/apps';
 
-@import 'vue3-perfect-scrollbar/style.css';
+@import 'vue3-perfect-scrollbar/dist/vue3-perfect-scrollbar.css';

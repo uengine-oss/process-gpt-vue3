@@ -9,7 +9,6 @@
         :style="{ '--label-font-size': labelFontSize + 'px' }"
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop"
-        @contextmenu.prevent="onContextMenu"
     >
         <!-- <v-btn @click="downloadSvg" color="primary">{{ $t('downloadSvg') }}</v-btn> -->
         <div v-if="isViewMode && !isPreviewMode" :class="isMobile ? 'mobile-position' : 'desktop-position'">
@@ -1354,8 +1353,6 @@ export default {
                         }
                     });
                 } else {
-                    // Edit 모드: 더블클릭 시 인라인 텍스트 편집 (표준 BPMN UX)
-                    // CallActivity와 Collaboration만 특별 처리
                     eventBus.on('element.dblclick', function (e) {
                         if (e.element.type.includes('CallActivity')) {
                             self.$emit('openDefinition', e.element.businessObject);
@@ -1378,34 +1375,8 @@ export default {
                                     }
                                 }
                             }
-                        }
-                        // Task, Event, Gateway 등은 directEditing이 자동 활성화됨 (인라인 텍스트 편집)
-                    });
-
-                    // Edit 모드: 우클릭 시 속성 패널 열기 (DOM 이벤트 사용)
-                    const canvas = self.bpmnViewer.get('canvas');
-                    const container = canvas.getContainer();
-                    container.addEventListener('contextmenu', function (event) {
-                        event.preventDefault();
-                        event.stopPropagation();
-
-                        // 클릭된 SVG 요소에서 data-element-id 찾기
-                        let target = event.target;
-                        let elementId = null;
-
-                        while (target && target !== container) {
-                            elementId = target.getAttribute('data-element-id');
-                            if (elementId) break;
-                            target = target.parentElement;
-                        }
-
-                        if (elementId) {
-                            // Root element나 빈 공간은 무시
-                            const elementRegistry = self.bpmnViewer.get('elementRegistry');
-                            const element = elementRegistry.get(elementId);
-                            if (element && element.type !== 'bpmn:Process' && element.type !== 'bpmn:Collaboration') {
-                                self.$emit('openPanel', elementId);
-                            }
+                        } else {
+                            self.$emit('openPanel', e.element.id);
                         }
                     });
                 }
@@ -2380,13 +2351,6 @@ export default {
             }
             ev.srcEvent.stopPropagation();
             ev.srcEvent.preventDefault();
-        },
-        onContextMenu(event) {
-            // 기본 브라우저 컨텍스트 메뉴 방지 (Edit 모드에서만)
-            // bpmn-js의 element.contextmenu 이벤트에서 패널을 열도록 처리
-            if (!this.isViewMode) {
-                event.preventDefault();
-            }
         },
         onDragOver(event) {
             // Enable drop
