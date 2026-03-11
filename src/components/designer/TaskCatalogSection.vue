@@ -101,7 +101,7 @@
                 <div
                     v-else
                     v-for="item in filteredItems"
-                    :key="item.id"
+                    :key="item?.id || `${item?.name || 'task'}-${item?.system_name || 'unknown'}`"
                     class="catalog-card"
                     draggable="true"
                     @dragstart="onDragStart($event, item)"
@@ -156,7 +156,8 @@ export default defineComponent({
         const catalogItems = computed(() => store.catalogItems);
 
         const systemOptions = computed(() => {
-            return systems.value.map((s) => ({ title: s.name, value: s.name }));
+            const safeSystems = Array.isArray(systems.value) ? systems.value : [];
+            return safeSystems.filter((s) => s && typeof s === 'object').map((s) => ({ title: s.name, value: s.name }));
         });
 
         const levelOptions = computed(() => {
@@ -176,7 +177,7 @@ export default defineComponent({
         });
 
         const filteredItems = computed(() => {
-            let items = catalogItems.value;
+            let items = Array.isArray(catalogItems.value) ? catalogItems.value.filter((item) => item && typeof item === 'object') : [];
 
             if (searchQuery.value) {
                 const query = searchQuery.value.toLowerCase();

@@ -128,11 +128,13 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
-                this.systems = await backend.getTaskSystems();
+                const systems = await backend.getTaskSystems();
+                this.systems = Array.isArray(systems) ? systems.filter((item) => item && typeof item === 'object') : [];
                 this.systemsLoaded = true;
             } catch (error: any) {
                 console.error('Failed to load task systems:', error);
                 this.error = error.message;
+                this.systems = [];
             } finally {
                 this.loading = false;
             }
@@ -184,11 +186,13 @@ export const useTaskCatalogStore = defineStore({
             this.error = null;
             try {
                 const backend = BackendFactory.createBackend();
-                this.catalogItems = await backend.getTaskCatalogList(options);
+                const catalogItems = await backend.getTaskCatalogList(options);
+                this.catalogItems = Array.isArray(catalogItems) ? catalogItems.filter((item) => item && typeof item === 'object') : [];
                 this.catalogLoaded = true;
             } catch (error: any) {
                 console.error('Failed to load task catalog:', error);
                 this.error = error.message;
+                this.catalogItems = [];
             } finally {
                 this.loading = false;
             }

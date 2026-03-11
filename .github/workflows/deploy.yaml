@@ -60,7 +60,14 @@ jobs:
         run: rm -rf node_modules
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          if [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       # OSS license compliance check for production dependencies.
       - name: License check
@@ -83,7 +90,12 @@ jobs:
           if-no-files-found: warn
 
       - name: Type check and build
-        run: NODE_OPTIONS="--max-old-space-size=4096" yarn build
+        run: |
+          if [ -f yarn.lock ]; then
+            NODE_OPTIONS="--max-old-space-size=4096" yarn build
+          else
+            NODE_OPTIONS="--max-old-space-size=4096" npm run build
+          fi
 
       - name: Package build artifact
         run: |

@@ -14,6 +14,8 @@ enum ErrorCode {
 }
 
 class ProcessGPTBackend implements Backend {
+    private hasWarnedMissingElementCommentCountView = false;
+
     // =========================
     // Business Rule raw-definition mock store (ProcessGPT 모드)
     // - uEngine 서버의 /definition/raw 저장 규약을 흉내내기 위해 localStorage를 사용한다.
@@ -7506,7 +7508,21 @@ class ProcessGPTBackend implements Backend {
                 };
             });
             return result;
-        } catch (e) {
+        } catch (e: any) {
+            const isMissingView =
+                e?.code === 'PGRST205' ||
+                (typeof e?.message === 'string' && e.message.includes('proc_def_element_comment_counts'));
+
+            if (isMissingView) {
+                if (!this.hasWarnedMissingElementCommentCountView) {
+                    console.warn(
+                        '[ProcessGPTBackend] proc_def_element_comment_counts 뷰/테이블이 없어 댓글 카운트 조회를 건너뜁니다.'
+                    );
+                    this.hasWarnedMissingElementCommentCountView = true;
+                }
+                return {};
+            }
+
             console.error('[ProcessGPTBackend] getElementCommentCounts error:', e);
             return {};
         }

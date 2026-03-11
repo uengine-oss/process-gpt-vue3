@@ -22,21 +22,21 @@
                 </div>
 
                 <!-- 자동 추천(초대) 카드 -->
-                <div v-else-if="message && message.__agentInviteRecommendation">
+                <div v-else-if="message && hasValidInviteRecommendation(message)">
                     <div class="message-bubble-wrap message-bubble-wrap--other">
                         <v-sheet class="other-message rounded-md pa-0 agent-panel-bubble">
                             <div class="pa-3 pb-2">
                                 <div class="text-body-2 font-weight-bold mb-1">적절한 담당자를 초대해볼까요?</div>
                                 <div
-                                    v-if="(message.__agentInviteRecommendation.reason || '').toString().trim()"
+                                    v-if="(message?.__agentInviteRecommendation?.reason || '').toString().trim()"
                                     class="text-caption text-medium-emphasis mb-2"
                                     style="word-break: break-word; overflow-wrap: break-word"
                                 >
-                                    {{ message.__agentInviteRecommendation.reason }}
+                                    {{ message?.__agentInviteRecommendation?.reason }}
                                 </div>
 
                                 <div
-                                    v-for="agent in message.__agentInviteRecommendation.recommendedAgents || []"
+                                    v-for="agent in message?.__agentInviteRecommendation?.recommendedAgents || []"
                                     :key="agent.id"
                                     class="d-flex align-center justify-space-between mb-2 pa-2 rounded-lg"
                                     style="gap: 10px; background: rgba(0, 0, 0, 0.03)"
@@ -326,6 +326,11 @@ export default {
         },
         shouldRenderAgentMessageBubble(message) {
             try {
+                // 추천 카드 메시지는 추천 대상이 없으면 일반 버블도 렌더링하지 않는다.
+                if (message?.__agentInviteRecommendation) {
+                    const recommendedAgents = message.__agentInviteRecommendation?.recommendedAgents;
+                    if (!Array.isArray(recommendedAgents) || recommendedAgents.length === 0) return false;
+                }
                 const text = (message?.content ?? '').toString().trim();
                 const hasText = !!text || !!message?.htmlContent || !!message?.jsonContent;
                 const hasImage = !!message?.image;
@@ -337,6 +342,14 @@ export default {
         },
         getLoadingLabel(message) {
             return message?.content || '생각 중...';
+        },
+        hasValidInviteRecommendation(message) {
+            try {
+                const recommendedAgents = message?.__agentInviteRecommendation?.recommendedAgents;
+                return Array.isArray(recommendedAgents) && recommendedAgents.length > 0;
+            } catch (e) {
+                return false;
+            }
         },
         getRunningToolCall(message) {
             try {

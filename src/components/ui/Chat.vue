@@ -191,58 +191,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 자동 추천(초대) 카드 -->
                                     <div v-else>
-                                        <div class="message-bubble-wrap message-bubble-wrap--other">
-                                            <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
-                                                <div class="pa-3 pb-2">
-                                                    <div class="text-body-2 font-weight-bold mb-1">적절한 담당자를 초대해볼까요?</div>
-                                                    <div
-                                                        v-if="(message.__agentInviteRecommendation.reason || '').toString().trim()"
-                                                        class="text-caption text-medium-emphasis mb-2"
-                                                    >
-                                                        {{ message.__agentInviteRecommendation.reason }}
-                                                    </div>
-
-                                                    <div
-                                                        v-for="agent in (message.__agentInviteRecommendation.recommendedAgents || [])"
-                                                        :key="agent.id"
-                                                        class="d-flex align-center justify-space-between mb-2 pa-2 rounded-lg"
-                                                        style="gap: 10px; background: rgba(0,0,0,0.03);"
-                                                    >
-                                                        <div class="d-flex align-center" style="gap: 10px; min-width: 0; flex: 1; overflow: hidden;">
-                                                            <v-avatar size="30" color="grey-lighten-3" style="flex-shrink: 0;">
-                                                                <v-img :src="agent.profile || '/images/chat-icon.png'" cover />
-                                                            </v-avatar>
-                                                            <div style="min-width: 0; flex: 1;">
-                                                                <div class="text-body-2 font-weight-medium" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                                                    {{ agent.username || agent.id }}
-                                                                </div>
-                                                                <div
-                                                                    class="text-caption text-medium-emphasis"
-                                                                    style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                                                                >
-                                                                    {{ agent.role || agent.description || agent.goal || '' }}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <v-btn
-                                                            size="small"
-                                                            color="primary"
-                                                            rounded
-                                                            variant="flat"
-                                                            style="flex-shrink: 0;"
-                                                            :disabled="isRecommendationInvited(message, agent.id)"
-                                                            @click="inviteAgentFromRecommendation(message, agent)"
-                                                        >
-                                                            <v-icon start size="14">mdi-sitemap</v-icon>
-                                                            {{ isRecommendationInvited(message, agent.id) ? '초대됨' : '초대' }}
-                                                        </v-btn>
-                                                    </div>
-                                                </div>
-                                            </v-sheet>
-                                        </div>
-
                                         <!-- 라우팅(에이전트 선정) 로딩: 아바타/헤더 없이 '...' 버블만 표시(상대방 버블 색상과 동일) -->
                                         <div v-if="message && message.__routingLoading">
                                             <div class="message-bubble-wrap message-bubble-wrap--other">
@@ -255,20 +204,27 @@
                                         </div>
 
                                         <!-- 자동 추천(초대) 카드 -->
-                                        <div v-else-if="message && message.__agentInviteRecommendation">
+                                        <div
+                                            v-else-if="
+                                                message &&
+                                                message.__agentInviteRecommendation &&
+                                                Array.isArray(message.__agentInviteRecommendation.recommendedAgents) &&
+                                                message.__agentInviteRecommendation.recommendedAgents.length > 0
+                                            "
+                                        >
                                             <div class="message-bubble-wrap message-bubble-wrap--other">
                                                 <v-sheet class="other-message rounded-md pa-0 chat-message-bubble">
                                                     <div class="pa-3">
                                                         <div class="text-body-2 font-weight-bold mb-1">적절한 담당자를 초대해볼까요?</div>
                                                         <div
-                                                            v-if="(message.__agentInviteRecommendation.reason || '').toString().trim()"
+                                                            v-if="(message?.__agentInviteRecommendation?.reason || '').toString().trim()"
                                                             class="text-caption text-medium-emphasis mb-3"
                                                         >
-                                                            {{ message.__agentInviteRecommendation.reason }}
+                                                            {{ message?.__agentInviteRecommendation?.reason }}
                                                         </div>
 
                                                         <div
-                                                            v-for="agent in message.__agentInviteRecommendation.recommendedAgents || []"
+                                                            v-for="agent in message?.__agentInviteRecommendation?.recommendedAgents || []"
                                                             :key="agent.id"
                                                             class="d-flex align-center justify-space-between mb-2"
                                                             style="gap: 12px"

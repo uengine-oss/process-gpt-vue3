@@ -2077,6 +2077,29 @@ export default {
         async afterGenerationFinished(response) {
             let jsonProcess = null;
             if (typeof response === 'string') {
+                const trimmedResponse = response.trim();
+                // GS 브랜치와 동일: JSON이 아닌 일반 텍스트 응답은 재시도/파싱 루프를 타지 않음
+                if (!trimmedResponse.includes('{')) {
+                    const lastIndex = this.messages.length - 1;
+                    if (lastIndex >= 0) {
+                        const lastMessage = this.messages[lastIndex];
+                        this.messages[lastIndex] = {
+                            ...lastMessage,
+                            role: 'system',
+                            content: response,
+                            timeStamp: Date.now(),
+                            isLoading: false
+                        };
+                    } else {
+                        this.messages.push({
+                            role: 'system',
+                            content: response,
+                            timeStamp: Date.now(),
+                            isLoading: false
+                        });
+                    }
+                    return;
+                }
                 try {
                     jsonProcess = await this.parseJsonProcess(response);
                 } catch (e) {
