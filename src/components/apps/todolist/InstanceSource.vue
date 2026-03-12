@@ -225,7 +225,7 @@ export default {
                     const day = String(today.getDate()).padStart(2, '0');
 
                     const options = {
-                        folder_path: `${defId}/${year}/${month}/${day}/${instId}/source/`,
+                        folder_path: `instances/${defId}/${year}/${month}/${day}/${instId}/source/`,
                         proc_inst_id: instId,
                         file_id: fileId
                     };

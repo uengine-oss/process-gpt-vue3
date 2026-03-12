@@ -280,7 +280,8 @@ export default {
         isLoading: false,
         delegateTaskDialog: false,
         inputFields: null,
-        isInitialized: false
+        isInitialized: false,
+        fileFieldNames: []
         // activeTab: 'direct-input', // 'direct-input' 또는 'chat'
     }),
     computed: {
@@ -314,6 +315,7 @@ export default {
                 this.html = this.disableFormHTML(this.html);
             }
             this.EventBus.emit('html-updated', this.html);
+            this.fileFieldNames = this.extractFileFieldNames(this.html);
 
             // HTML이 업데이트되면 chip 핸들러 다시 설정
             this.$nextTick(() => {
@@ -330,11 +332,26 @@ export default {
         var me = this;
         this.EventBus.on('form-values-updated', (formValues) => {
             if (formValues) {
-                Object.keys(formValues).forEach(function (key) {
-                    if (typeof me.formData[key] === 'string' && formValues[key] && typeof formValues[key] != 'string') {
-                        me.formData[key] = JSON.stringify(formValues[key]);
+                let incomingValues = formValues;
+                const fileList = me.extractFilePayload(incomingValues);
+                if (fileList && me.fileFieldNames.length > 0) {
+                    const targetKey = me.fileFieldNames[0];
+                    const hasTarget = incomingValues && typeof incomingValues === 'object' && targetKey in incomingValues;
+                    if (!hasTarget) {
+                        const normalizedFileValue = me.normalizeFileFieldValue(fileList);
+                        incomingValues = { ...(incomingValues || {}), [targetKey]: normalizedFileValue };
+                    }
+                }
+                Object.keys(incomingValues).forEach(function (key) {
+                    const normalizedValue = me.normalizeIncomingFormValue(key, incomingValues[key]);
+                    if (me.isFileFieldKey(key)) {
+                        me.formData[key] = normalizedValue;
+                        return;
+                    }
+                    if (typeof me.formData[key] === 'string' && normalizedValue && typeof normalizedValue != 'string') {
+                        me.formData[key] = JSON.stringify(normalizedValue);
                     } else {
-                        me.formData[key] = formValues[key];
+                        me.formData[key] = normalizedValue;
                     }
                 });
             }
@@ -376,6 +393,75 @@ export default {
         await this.init();
     },
     methods: {
+        extractFileFieldNames(html) {
+            if (!html) return [];
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const fields = Array.from(doc.querySelectorAll('file-field'));
+                const names = fields
+                    .map((field) => (field.getAttribute('name') || field.getAttribute('id') || '').trim())
+                    .filter((name) => name);
+                return Array.from(new Set(names));
+            } catch (error) {
+                console.warn('[FormWorkItem] file-field parse error:', error);
+                return [];
+            }
+        },
+        isFileFieldKey(key) {
+            if (!key) return false;
+            return Array.isArray(this.fileFieldNames) && this.fileFieldNames.includes(key);
+        },
+        normalizeIncomingFormValue(key, value) {
+            if (!this.isFileFieldKey(key)) return value;
+            return this.normalizeFileFieldValue(value);
+        },
+        extractFilePayload(payload) {
+            if (!payload) return null;
+            if (Array.isArray(payload)) return payload;
+            if (typeof payload !== 'object') return null;
+            if (Array.isArray(payload.docx_files)) return payload.docx_files;
+            if (Array.isArray(payload.hwpx_files)) return payload.hwpx_files;
+            if (Array.isArray(payload.files)) return payload.files;
+            if (Array.isArray(payload.results)) return payload.results;
+            if (Array.isArray(payload.data)) return payload.data;
+            return null;
+        },
+        normalizeFileFieldValue(value) {
+            if (!value) return value;
+            const guessNameFromPath = (path) => {
+                if (!path || typeof path !== 'string') return '';
+                const clean = path.split('?')[0].split('#')[0];
+                const parts = clean.split('/');
+                return parts[parts.length - 1] || '';
+            };
+            const pickFileMeta = (item) => {
+                if (!item || typeof item !== 'object') return null;
+                const path =
+                    item.file_path ||
+                    item.filePath ||
+                    item.path ||
+                    item.url ||
+                    item.publicUrl ||
+                    item.public_url ||
+                    item.file_url ||
+                    item.fileUrl ||
+                    item.storage_path;
+                const name = item.file_name || item.fileName || item.name || item.originalFileName || guessNameFromPath(path);
+                if (!path && !name) return null;
+                return { path: path || name, name: name || guessNameFromPath(path) };
+            };
+
+            if (Array.isArray(value)) {
+                const first = value.map(pickFileMeta).find((item) => item);
+                return first || value;
+            }
+            if (typeof value === 'object') {
+                const fileMeta = pickFileMeta(value);
+                return fileMeta || value;
+            }
+            return value;
+        },
         injectDeployTargetToBpmnField() {
             if (!this.deployDefinitionId || !this.html) return;
             try {

@@ -1,7 +1,7 @@
 <template>
     <div class="form-file-field">
         <v-file-input
-            v-if="!localReadonly && !localDisabled"
+            v-if="!localDisabled && (!localReadonly || allowReadonlyUpload)"
             :label="localAlias && localAlias.length > 0 ? localAlias : localName"
             v-model="selectedFiles"
             :variant="localReadonly ? 'filled' : 'outlined'"
@@ -17,9 +17,14 @@
         </div>
         <div v-if="localReadonly || localDisabled">
             <div v-for="file in selectedFiles" :key="file.name">
-                <div class="d-flex align-center cursor-pointer text-body-1" @click="downloadFile(file)">
-                    <v-icon>mdi-download</v-icon>
-                    <span class="ml-4">{{ file.originalFileName }}</span>
+                <div class="file-link-card d-flex align-center" @click="downloadFile(file)">
+                    <div class="file-link-icon">
+                        <v-icon size="18">mdi-file-download-outline</v-icon>
+                    </div>
+                    <div class="file-link-text">
+                        <div class="file-link-name">{{ file.originalFileName || file.name || file.path }}</div>
+                        <div class="file-link-sub">다운로드</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -56,6 +61,11 @@ export default {
         alias: String,
         disabled: String,
         readonly: String
+        ,
+        allowReadonlyUpload: {
+            type: Boolean,
+            default: true
+        }
     },
 
     data() {
@@ -97,6 +107,12 @@ export default {
                     }
                 });
             }
+        },
+        modelValue: {
+            deep: true,
+            async handler(newVal) {
+                await this.applyModelValue(newVal);
+            }
         }
     },
 
@@ -116,63 +132,7 @@ export default {
             this.EventBus.on('browser-use-files-generated', this.handleGeneratedFiles);
             console.log('[FileField] EventBus 리스너 등록 완료');
         }
-
-        if (this.modelValue && this.modelValue.path) {
-            try {
-                // modelValue 검증 - 올바른 파일 경로인지 확인
-                // if (typeof this.modelValue !== 'string' || this.modelValue.includes('[object Object]')) {
-                //     console.warn('[FileField] 잘못된 파일 경로 형식:', this.modelValue);
-                //     this.$emit('update:modelValue', "");
-                //     return;
-                // }
-
-                console.log('[FileField] 파일 다운로드 시도:', this.modelValue.path);
-                const response = await this.backend.downloadFile(this.modelValue.path);
-                if (response && response.error) {
-                    console.warn('[FileField] 파일 다운로드 응답 에러:', response.error);
-                    this.$emit('update:modelValue', { path: null, name: null });
-                } else if (response && response.file) {
-                    response.file.originalFileName = this.modelValue.name;
-                    response.file.path = this.modelValue.path;
-                    this.selectedFiles = [response.file];
-                    console.log('[FileField] 파일 다운로드 성공');
-                } else {
-                    console.warn('[FileField] 파일 다운로드 응답이 비어있음');
-                    this.$emit('update:modelValue', { path: null, name: null });
-                }
-            } catch (error) {
-                console.error('[FileField] 파일 다운로드 에러 발생:', error);
-                this.$emit('update:modelValue', { path: null, name: null });
-                // 에러를 부모 컴포넌트에 전달 (선택적)
-                this.$emit('download-error', error);
-            }
-        } else if (this.modelValue && typeof this.modelValue === 'string') {
-            try {
-                const response = await this.backend.downloadFile(this.modelValue);
-                if (response && response.file) {
-                    response.file.originalFileName = this.modelValue;
-                    response.file.path = this.modelValue;
-                    this.selectedFiles = [response.file];
-                }
-            } catch (error) {
-                console.error('[FileField] 파일 다운로드 에러 발생:', error);
-                this.selectedFiles = [
-                    {
-                        originalFileName: this.modelValue,
-                        path: this.modelValue,
-                        name: this.modelValue,
-                        fullPath: this.modelValue
-                    }
-                ];
-            }
-        } else {
-            this.selectedFiles = [
-                {
-                    path: null,
-                    name: null
-                }
-            ];
-        }
+        await this.applyModelValue(this.modelValue);
     },
 
     beforeUnmount() {
@@ -184,6 +144,136 @@ export default {
     },
 
     methods: {
+        isRemoteUrl(path) {
+            return typeof path === 'string' && /^https?:\/\//i.test(path);
+        },
+        async fetchFileFromUrl(url, fileName) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) return null;
+                const blob = await response.blob();
+                const name = fileName || url.split('?')[0].split('#')[0].split('/').pop() || 'file';
+                return new File([blob], name, { type: blob.type || 'application/octet-stream' });
+            } catch (error) {
+                console.error('[FileField] URL 파일 다운로드 실패:', error);
+                return null;
+            }
+        },
+        async applyModelValue(value) {
+            const currentPath =
+                this.selectedFiles && this.selectedFiles.length > 0
+                    ? this.selectedFiles[0].path || this.selectedFiles[0].name || null
+                    : null;
+
+            if (value && typeof value === 'object' && value.path && currentPath === value.path) return;
+            if (typeof value === 'string' && currentPath === value) return;
+
+            if (value && typeof value === 'object' && value.path) {
+                try {
+                    const path = value.path;
+                    const displayName = value.name || this.guessNameFromPath(path);
+                    if (this.isRemoteUrl(path)) {
+                        const remoteFile = await this.fetchFileFromUrl(path, displayName);
+                        if (remoteFile) {
+                            remoteFile.originalFileName = displayName || remoteFile.name;
+                            remoteFile.path = path;
+                            this.selectedFiles = [remoteFile];
+                            return;
+                        }
+                    }
+                    console.log('[FileField] 파일 다운로드 시도:', path);
+                    const response = await this.backend.downloadFile(path);
+                    if (response && response.error) {
+                        console.warn('[FileField] 파일 다운로드 응답 에러:', response.error);
+                        this.selectedFiles = [
+                            {
+                                name: displayName || path,
+                                originalFileName: displayName || path,
+                                path
+                            }
+                        ];
+                    } else if (response && response.file) {
+                        response.file.originalFileName = displayName || response.file.name || this.guessNameFromPath(path);
+                        response.file.path = path;
+                        this.selectedFiles = [response.file];
+                        console.log('[FileField] 파일 다운로드 성공');
+                    } else {
+                        console.warn('[FileField] 파일 다운로드 응답이 비어있음');
+                        this.selectedFiles = [
+                            {
+                                name: displayName || path,
+                                originalFileName: displayName || path,
+                                path
+                            }
+                        ];
+                    }
+                } catch (error) {
+                    console.error('[FileField] 파일 다운로드 에러 발생:', error);
+                    this.selectedFiles = [
+                        {
+                            name: value.name || value.path || '',
+                            originalFileName: value.name || value.path || '',
+                            path: value.path
+                        }
+                    ];
+                    this.$emit('download-error', error);
+                }
+                return;
+            }
+
+            if (value && typeof value === 'string') {
+                try {
+                    const displayName = this.guessNameFromPath(value);
+                    if (this.isRemoteUrl(value)) {
+                        const remoteFile = await this.fetchFileFromUrl(value, displayName);
+                        if (remoteFile) {
+                            remoteFile.originalFileName = remoteFile.name;
+                            remoteFile.path = value;
+                            this.selectedFiles = [remoteFile];
+                            return;
+                        }
+                    }
+                    const response = await this.backend.downloadFile(value);
+                    if (response && response.file) {
+                        response.file.originalFileName = displayName || response.file.name || value;
+                        response.file.path = value;
+                        this.selectedFiles = [response.file];
+                    } else {
+                        this.selectedFiles = [
+                            {
+                                name: displayName || value,
+                                originalFileName: displayName || value,
+                                path: value
+                            }
+                        ];
+                    }
+                } catch (error) {
+                    console.error('[FileField] 파일 다운로드 에러 발생:', error);
+                    this.selectedFiles = [
+                        {
+                            originalFileName: displayName || value,
+                            path: value,
+                            name: displayName || value,
+                            fullPath: value
+                        }
+                    ];
+                }
+                return;
+            }
+
+            this.selectedFiles = [
+                {
+                    path: null,
+                    name: null
+                }
+            ];
+        },
+        guessNameFromPath(path) {
+            if (!path || typeof path !== 'string') return '';
+            const clean = path.split('?')[0].split('#')[0];
+            const parts = clean.split('/');
+            return parts[parts.length - 1] || '';
+        },
         handleGeneratedFiles(data) {
             console.log('[FileField] EventBus로부터 파일 수신:', data);
 
@@ -283,7 +373,7 @@ export default {
             const url = URL.createObjectURL(file);
             const link = document.createElement('a');
             link.href = url;
-            link.download = file.originalFileName; // 원본 파일명 사용
+            link.download = file.originalFileName || file.name || 'download'; // 원본 파일명 사용
             link.target = '_blank';
             document.body.appendChild(link);
             link.click();
@@ -299,5 +389,50 @@ export default {
 <style lang="scss">
 .form-file-field {
     margin-bottom: 16px;
+}
+.form-file-field :deep(.v-file-input) {
+    margin-bottom: 32px;
+}
+.form-file-field .file-link-card {
+    margin-top: 10px;
+}
+.file-link-card {
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #e4e6ea;
+    border-radius: 10px;
+    background: #fafbfc;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.file-link-card:hover {
+    background: #ffffff;
+    border-color: #c7d2fe;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.file-link-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #eef2ff;
+    color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.file-link-text {
+    min-width: 0;
+}
+.file-link-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f2937;
+    word-break: break-all;
+}
+.file-link-sub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
 }
 </style>
