@@ -1414,8 +1414,13 @@
                             @keyup="handleTextareaCaretMove"
                             @click="handleTextareaCaretMove"
                             @paste="handlePaste"
+                            :maxlength="chatInputMaxLength"
+                            :error="showChatInputLimitWarning"
                         >
                         </v-textarea>
+                        <div v-if="showChatInputLimitWarning" class="chat-input-limit-warning">
+                            최대 {{ chatInputMaxLength }}자까지 입력 가능합니다.
+                        </div>
                         
                         <div v-if="showUserList" class="user-list mention-autocomplete-list" :style="mentionDropdownStyle">
                             <template v-if="!filteredUserList || filteredUserList.length === 0">
@@ -2030,6 +2035,8 @@ export default {
             isMicRecorderLoading: false,
             isReply: false,
             newMessage: '',
+            chatInputMaxLength: 4000,
+            showChatInputLimitWarning: false,
             hoverIndex: -1,
             editIndex: -1,
             editText: null,
@@ -2141,6 +2148,9 @@ export default {
                 this.newMessage = newVal
                 this.beforeSend()
             }
+        },
+        newMessage(newVal) {
+            this.showChatInputLimitWarning = newVal && newVal.length >= this.chatInputMaxLength;
         },
         newMessageInfo(newVal) {
             if (newVal && !this.isAtBottom) {
@@ -4516,5 +4526,12 @@ pre {
 .pdf2bpmn-bpmn-card {
   cursor: pointer;
   border-radius: 12px;
+}
+
+.chat-input-limit-warning {
+  color: rgb(var(--v-theme-error)) !important;
+  font-size: 12px !important;
+  margin-top: 4px !important;
+  padding-left: 16px !important;
 }
 </style>

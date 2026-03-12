@@ -710,8 +710,9 @@ export default {
         },
         handleError(error) {
             var me = this;
+            const errorDetail = error?.response?.data?.detail || error?.detail || error?.message || (typeof error === 'string' ? error : '');
             me.$try({}, null, {
-                errorMsg: `${me.processDefinition.processDefinitionName} 실행 중 오류가 발생했습니다: ${error}`
+                errorMsg: `${me.processDefinition.processDefinitionName} 실행 중 오류가 발생했습니다.${errorDetail ? '<br/>오류 내용: ' + errorDetail : ''}`
             })
         }
     }
