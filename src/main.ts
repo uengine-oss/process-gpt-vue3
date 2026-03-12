@@ -13,7 +13,6 @@ import { createClient } from '@supabase/supabase-js';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import VueTablerIcons from 'vue-tabler-icons';
-import VueApexCharts from 'vue3-apexcharts';
 import 'vue3-carousel/dist/carousel.css';
 import { PerfectScrollbarPlugin } from 'vue3-perfect-scrollbar';
 import App from './App.vue';
@@ -445,7 +444,6 @@ async function initializeApp() {
     app.use(i18n);
     app.use(i18nDirective);
     app.use(Maska);
-    app.use(VueApexCharts);
     app.use(vuetify).mount('#app');
     app.use(setLocale);
     //ScrollTop Use

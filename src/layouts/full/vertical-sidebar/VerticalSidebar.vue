@@ -617,6 +617,13 @@ export default {
             // PAL 모드에서는 프로세스 리뷰보드·내 수신함 숨김
             this.processItem = [
                 {
+                    title: 'organizationChartDefinition.title',
+                    icon: 'users-group-rounded-line-duotone',
+                    BgColor: 'primary',
+                    to: '/organization',
+                    disable: false
+                },
+                {
                     title: 'processArchitecture.title',
                     icon: 'sitemap',
                     BgColor: 'primary',

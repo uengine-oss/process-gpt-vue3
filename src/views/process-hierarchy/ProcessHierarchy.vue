@@ -39,6 +39,7 @@
                     :selectedId="selectedProcessId"
                     :collapsed="false"
                     @select="handleSelectProcess"
+                    @openPermission="handleOpenPermission"
                 />
                 <div class="resize-handle-left" @mousedown="startResizeLeft"></div>
             </template>
@@ -220,6 +221,17 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+        <!-- Permission Dialog -->
+        <v-dialog v-model="permissionDialog" max-width="560" persistent>
+            <PermissionDialog
+                v-if="permissionDialog && permissionProcess"
+                :procDef="permissionProcess"
+                :processMap="procMap"
+                :metricsMap="metricsMap"
+                @close:permissionDialog="permissionDialog = false"
+                @saved="permissionDialog = false"
+            />
+        </v-dialog>
     </v-card>
 </template>
 
@@ -231,6 +243,7 @@ import ProcessHierarchyTree from './ProcessHierarchyTree.vue';
 import ProcessHierarchyDesigner from './ProcessHierarchyDesigner.vue';
 import ProcessHierarchyProperties from './ProcessHierarchyProperties.vue';
 import ProcessDefinitionVersionDialog from '@/components/ProcessDefinitionVersionDialog.vue';
+import PermissionDialog from '@/components/apps/definition-map/PermissionDialog.vue';
 import { useBpmnStore } from '@/stores/bpmn';
 
 const backend = BackendFactory.createBackend();
@@ -243,6 +256,7 @@ export default {
         ProcessHierarchyDesigner,
         ProcessHierarchyProperties,
         ProcessDefinitionVersionDialog,
+        PermissionDialog,
     },
     data() {
         return {
@@ -278,6 +292,9 @@ export default {
             savedLeftWidth: 280,
             // [6.3.1] Version conflict
             conflictDialog: false,
+            // Permission dialog
+            permissionDialog: false,
+            permissionProcess: null,
             leftPanelWidth: 280,
             rightPanelWidth: 340,
             resizing: null,
@@ -369,7 +386,7 @@ export default {
             this.loading = true;
             try {
                 const [procMapResult, metricsResult, defList] = await Promise.all([
-                    (backend as any).getProcessDefinitionMap({ skipPermissionFilter: true }),
+                    backend.getProcessDefinitionMap({ skipPermissionFilter: true }),
                     backend.getMetricsMap(),
                     backend.listDefinition('', {}),
                 ]);
@@ -979,6 +996,11 @@ export default {
             } catch (e) {
                 console.warn('Focus element failed:', e);
             }
+        },
+
+        handleOpenPermission(sub) {
+            this.permissionProcess = sub;
+            this.permissionDialog = true;
         },
 
         toggleLeftPanel() {

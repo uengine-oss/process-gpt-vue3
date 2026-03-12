@@ -141,6 +141,9 @@ router.onError((error) => {
     console.error('[라우터] 라우팅 에러 발생:', error);
 
     const errorMessage = error?.message || error?.toString() || '';
+    const isOrganizationRoute =
+        typeof window !== 'undefined' &&
+        (window.location.pathname === '/organization' || window.location.pathname.startsWith('/organization/'));
 
     // 동적 임포트 실패 시 자동 복구
     if (
@@ -149,6 +152,11 @@ router.onError((error) => {
         errorMessage.includes('Cannot resolve component')
     ) {
         hasRouterError = true;
+
+        if (isOrganizationRoute) {
+            console.warn('[라우터] 조직도 페이지에서는 자동 새로고침을 건너뜁니다.');
+            return;
+        }
 
         // 사용자에게 알림
         if (window.$app_) {

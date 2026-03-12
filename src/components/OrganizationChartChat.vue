@@ -29,7 +29,6 @@
         </v-dialog>
     </v-col> -->
 
-    <!-- 기존 좌측 chat UI와 함께 동작하던 부분 다시 주석을 풀어 사용할 때 #apexTreeWrapper > svg 전체 검색 후 globalStyle.css의 768px(모바일 사이즈) 부분의 주석도 함께 풀어 사용 -->
     <v-card elevation="10">
         <AppBaseCard>
             <template v-slot:leftpart>
@@ -50,6 +49,7 @@
                     :key="organizationChart.id"
                     :userList="userList"
                     @updateNode="updateNode"
+                    @updateAgent="handleOrganizationAgentUpdate"
                     @addMember="openAddDialog"
                     @deleteAgent="handleDeleteAgentFromChart"
                     ref="organizationChart"
@@ -154,6 +154,34 @@ export default {
             }
 
             return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+        },
+        findNodeById(node, targetId) {
+            if (!node) return null;
+
+            if (node.id === targetId || node.data?.id === targetId) {
+                return node;
+            }
+
+            if (!Array.isArray(node.children)) {
+                return null;
+            }
+
+            for (const child of node.children) {
+                const found = this.findNodeById(child, targetId);
+                if (found) {
+                    return found;
+                }
+            }
+
+            return null;
+        },
+        resolveTeamNode(teamNode) {
+            const teamId = teamNode?.id || teamNode?.data?.id;
+            if (!teamId) {
+                return null;
+            }
+
+            return this.findNodeById(this.organizationChart, teamId);
         },
         async loadData(path) {
             const data = await this.getData(`configuration`, { match: { key: 'organization' } });
@@ -306,11 +334,13 @@ export default {
                 errorMsg: me.$t('organizationChartDefinition.addUserFailed')
             });
         },
-        async updateNode() {
+        async updateNode(updatedChart = null) {
+            const nextChart = JSON.parse(JSON.stringify(updatedChart || this.organizationChart || {}));
+            this.organizationChart = nextChart;
             var putObj = {
                 key: 'organization',
                 value: {
-                    chart: this.organizationChart
+                    chart: nextChart
                 }
             };
             if (this.organizationChartId) {
@@ -319,56 +349,67 @@ export default {
             await this.putObject('configuration', putObj, { onConflict: 'key,tenant_id' });
         },
         async updateTeam(type, editNode, newTeam) {
-            console.log('OrganizationChartChat - updateTeam 호출');
-            console.log('type:', type);
-            console.log('editNode:', editNode);
-            console.log('newTeam:', newTeam);
+            if (!Array.isArray(this.organizationChart.children)) {
+                this.organizationChart.children = [];
+            }
+
+            const rootChildren = this.organizationChart.children;
+            const currentTeamNode = this.resolveTeamNode(editNode);
 
             if (type == 'add') {
-                this.organizationChart.children.push({
+                rootChildren.push({
                     id: newTeam.id,
                     data: newTeam,
                     children: []
                 });
             } else if (type == 'delete') {
-                this.organizationChart.children = this.organizationChart.children.filter((child) => child.id !== editNode.id);
+                this.organizationChart.children = rootChildren.filter((child) => child.id !== currentTeamNode?.id);
             } else if (type == 'edit') {
-                console.log('팀 수정 전 organizationChart.children:', JSON.parse(JSON.stringify(this.organizationChart.children)));
-                const teamIndex = this.organizationChart.children.findIndex((team) => team.id === editNode.id);
-                console.log('수정할 팀 인덱스:', teamIndex);
+                const teamIndex = rootChildren.findIndex((team) => team.id === currentTeamNode?.id);
                 if (teamIndex !== -1) {
-                    console.log('수정 전 팀 데이터:', JSON.parse(JSON.stringify(this.organizationChart.children[teamIndex])));
-                    this.organizationChart.children[teamIndex].data = { ...editNode.data, ...newTeam };
-                    console.log('수정 후 팀 데이터:', JSON.parse(JSON.stringify(this.organizationChart.children[teamIndex])));
+                    rootChildren[teamIndex].data = { ...rootChildren[teamIndex].data, ...newTeam };
                 }
             }
             await this.updateNode();
-            this.$refs.organizationChart.drawTree();
         },
 
         // dialog 관련
         openAddDialog(value) {
-            this.editNode = value;
+            this.editNode = this.resolveTeamNode(value) || value;
             this.addDialog = true;
         },
         closeAddDialog() {
             this.addDialog = false;
         },
         async addUser(selectedTeam, addUserList, newUser) {
-            this.editNode = selectedTeam;
+            const currentTeamNode = this.resolveTeamNode(selectedTeam);
+            if (!currentTeamNode) {
+                return;
+            }
+
+            this.editNode = currentTeamNode;
+            if (!Array.isArray(this.editNode.children)) {
+                this.editNode.children = [];
+            }
             if (newUser) {
                 await this.createNewUser(newUser);
             }
             if (addUserList && addUserList.length > 0) {
-                this.editNode.children = addUserList;
+                this.editNode.children = addUserList.map((member) => ({
+                    ...member,
+                    data: {
+                        ...(member.data || {}),
+                        id: member.id,
+                        pid: currentTeamNode.id
+                    }
+                }));
 
                 // 사용자들의 department_id 업데이트
-                const teamId = selectedTeam.id;
-                const teamName = selectedTeam.data?.name || selectedTeam.name;
-                await this.updateUsersDepartment(addUserList, teamId, teamName);
+                const teamId = currentTeamNode.id;
+                const teamName = currentTeamNode.data?.name || currentTeamNode.name;
+                await this.updateUsersDepartment(this.editNode.children, teamId, teamName);
             }
             await this.updateNode();
-            this.$refs.organizationChart.drawTree();
         },
 
         /**
@@ -407,7 +448,15 @@ export default {
             }
         },
         async addAgent(selectedTeam, newAgent) {
-            this.editNode = selectedTeam;
+            const currentTeamNode = this.resolveTeamNode(selectedTeam);
+            if (!currentTeamNode) {
+                return;
+            }
+
+            this.editNode = currentTeamNode;
+            if (!Array.isArray(this.editNode.children)) {
+                this.editNode.children = [];
+            }
             const agent = {
                 id: newAgent.id,
                 name: newAgent.name,
@@ -417,7 +466,6 @@ export default {
             await this.backend.putAgent(newAgent);
 
             await this.updateNode();
-            this.$refs.organizationChart.drawTree();
 
             this.EventBus.emit('agentAdded', newAgent);
 

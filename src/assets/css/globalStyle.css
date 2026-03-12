@@ -831,40 +831,6 @@ hr {
     border: solid 2px black !important;
 }
 
-#apexTreeWrapper {
-    height: 100% !important;
-}
-
-#apexTreeWrapper > svg {
-    height: 99.2% !important;
-    width: 100% !important;
-}
-
-#apexTreeWrapper #toolbar {
-    gap:0px !important;
-}
-
-#apexTreeWrapper #toolbar #zoom-in,
-#apexTreeWrapper #toolbar #zoom-out,
-#apexTreeWrapper #toolbar #fit-screen,
-#apexTreeWrapper #toolbar #export {
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    border-radius: 6px;
-    margin:0 4px 2px 0;
-    border: none !important;
-}
-
-#apexTreeWrapper #toolbar #zoom-in:hover,
-#apexTreeWrapper #toolbar #zoom-out:hover,
-#apexTreeWrapper #toolbar #fit-screen:hover,
-#apexTreeWrapper #toolbar #export:hover {
-    background-color: #E0E0E0 !important;
-}
-
-.apextree-node > div {
-    border: none !important;
-}
-
 .node-content-btn-box {
     display: flex;
     flex-direction: row;
@@ -1497,11 +1463,6 @@ hr {
         display: block !important;
     }
 
-    /* #apexTreeWrapper > svg {
-        height: 96% !important;
-        width: 100% !important;
-    } */
-
     .node-info-btn {
         display: flex !important;
     }
@@ -1673,4 +1634,3 @@ hr {
     padding-top: 2px;
     cursor: pointer;
 }
-

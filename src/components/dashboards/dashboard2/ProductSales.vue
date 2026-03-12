@@ -1,78 +1,66 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { computed } from 'vue';
-import { getPrimary, getLightborder, getTextGrey100 } from '@/utils/UpdateColors';
+import { getPrimary, getLightborder } from '@/utils/UpdateColors';
+import AppEChart from '@/components/shared/AppEChart.vue';
 import { DotsVerticalIcon } from 'vue-tabler-icons';
-import { Icon } from '@iconify/vue';
 const items = ref([{ title: 'Action' }, { title: 'Another action' }, { title: 'Something else here' }]);
 
 /* Chart */
 const chartOptions = computed(() => {
     return {
-        series: [
-            {
-                name: 'Test Results',
-                data: [13, 15, 14, 17, 16, 19, 17]
-            }
-        ],
-        chart: {
-            height: 240,
-            type: 'area',
-            fontFamily: `inherit`,
-            foreColor: '#626b81',
-            toolbar: {
-                show: false
-            }
-        },
-        dataLabels: {
-            enabled: false
+        color: [getPrimary.value],
+        tooltip: {
+            trigger: 'axis'
         },
         grid: {
-            borderColor: getLightborder.value,
-            strokeDashArray: 4,
-            strokeWidth: 1,
-            padding: {
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0
-            }
+            top: 16,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            containLabel: true,
+            borderColor: getLightborder.value
         },
-        colors: [getPrimary.value],
-        fill: {
-            type: 'gradient',
-            gradient: {
-                shadeIntensity: 0,
-                inverseColors: false,
-                opacityFrom: 0.5,
-                opacityTo: 0,
-                stops: [20, 180]
-            }
-        },
-        stroke: {
-            curve: 'smooth',
-            width: '2'
-        },
-        xaxis: {
-            categories: ['2016', '2017', '2018', '2019', '2020', '2021', '2022'],
-            axisBorder: {
+        xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: ['2016', '2017', '2018', '2019', '2020', '2021', '2022'],
+            axisLine: {
                 show: false
             },
-            axisTicks: {
+            axisTick: {
                 show: false
             }
         },
-        yaxis: {
-            labels: {
-                show: false,
-                style: {
-                    colors: getTextGrey100.value
+        yAxis: {
+            type: 'value',
+            splitLine: {
+                lineStyle: {
+                    color: getLightborder.value,
+                    type: 'dashed'
                 }
             }
         },
-        tooltip: {
-            theme: 'dark'
-        }
+        axisPointer: {
+            lineStyle: {
+                color: getPrimary.value
+            }
+        },
+        series: [
+            {
+                name: 'Test Results',
+                type: 'line',
+                smooth: true,
+                showSymbol: false,
+                lineStyle: {
+                    width: 2
+                },
+                areaStyle: {
+                    opacity: 0.18
+                },
+                data: [13, 15, 14, 17, 16, 19, 17]
+            }
+        ]
     };
 });
 </script>
@@ -99,7 +87,7 @@ const chartOptions = computed(() => {
                 </div>
             </div>
             <div>
-                <apexchart type="area" height="240" :options="chartOptions" :series="chartOptions.series"> </apexchart>
+                <AppEChart :option="chartOptions" :height="240" />
                 <div class="d-flex align-center mt-2 gap-4">
                     <div class="d-flex align-center">
                         <v-avatar class="bg-lightprimary me-4">

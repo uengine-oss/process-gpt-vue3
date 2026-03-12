@@ -88,7 +88,7 @@ const allRoutes = [
     {
         name: 'organization',
         path: '/organization',
-        component: () => import('@/components/OrganizationChartChat.vue')
+        component: () => import('@/components/OrganizationPageShell.vue')
     },
     {
         name: 'definitions-with-tree',
@@ -366,41 +366,6 @@ const allRoutes = [
     //     component: () => import('@/views/style-animation/Typography.vue')
     // },
     // {
-    //     name: 'Line',
-    //     path: '/charts/line-chart',
-    //     component: () => import('@/views/charts/ApexLineChart.vue')
-    // },
-    // {
-    //     name: 'Area',
-    //     path: '/charts/area-chart',
-    //     component: () => import('@/views/charts/ApexAreaChart.vue')
-    // },
-    // {
-    //     name: 'Gredient',
-    //     path: '/charts/gredient-chart',
-    //     component: () => import('@/views/charts/ApexGredientChart.vue')
-    // },
-    // {
-    //     name: 'Column',
-    //     path: '/charts/column-chart',
-    //     component: () => import('@/views/charts/ApexColumnChart.vue')
-    // },
-    // {
-    //     name: 'Candlestick',
-    //     path: '/charts/candlestick-chart',
-    //     component: () => import('@/views/charts/ApexCandlestickChart.vue')
-    // },
-    // {
-    //     name: 'Donut & Pie',
-    //     path: '/charts/doughnut-pie-chart',
-    //     component: () => import('@/views/charts/ApexDonutPieChart.vue')
-    // },
-    // {
-    //     name: 'Radialbar & Radar',
-    //     path: '/charts/radialbar-chart',
-    //     component: () => import('@/views/charts/ApexRadialRadarChart.vue')
-    // },
-    // {
     //     name: 'Editor',
     //     path: '/forms/editor',
     //     component: () => import('@/views/forms/plugins/editor/Editor.vue')
@@ -546,7 +511,7 @@ const MainRoutes = {
         {
             name: 'organization',
             path: '/organization',
-            component: () => import('@/components/OrganizationChartChat.vue')
+            component: () => import('@/components/OrganizationPageShell.vue')
         },
         {
             name: 'definitions-with-tree',
@@ -792,41 +757,6 @@ const MainRoutes = {
         //     name: 'Typography',
         //     path: '/ui-components/typography',
         //     component: () => import('@/views/style-animation/Typography.vue')
-        // },
-        // {
-        //     name: 'Line',
-        //     path: '/charts/line-chart',
-        //     component: () => import('@/views/charts/ApexLineChart.vue')
-        // },
-        // {
-        //     name: 'Area',
-        //     path: '/charts/area-chart',
-        //     component: () => import('@/views/charts/ApexAreaChart.vue')
-        // },
-        // {
-        //     name: 'Gredient',
-        //     path: '/charts/gredient-chart',
-        //     component: () => import('@/views/charts/ApexGredientChart.vue')
-        // },
-        // {
-        //     name: 'Column',
-        //     path: '/charts/column-chart',
-        //     component: () => import('@/views/charts/ApexColumnChart.vue')
-        // },
-        // {
-        //     name: 'Candlestick',
-        //     path: '/charts/candlestick-chart',
-        //     component: () => import('@/views/charts/ApexCandlestickChart.vue')
-        // },
-        // {
-        //     name: 'Donut & Pie',
-        //     path: '/charts/doughnut-pie-chart',
-        //     component: () => import('@/views/charts/ApexDonutPieChart.vue')
-        // },
-        // {
-        //     name: 'Radialbar & Radar',
-        //     path: '/charts/radialbar-chart',
-        //     component: () => import('@/views/charts/ApexRadialRadarChart.vue')
         // },
         // {
         //     name: 'Editor',

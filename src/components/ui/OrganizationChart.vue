@@ -17,8 +17,22 @@
             </v-row>
         </div>
 
-        <!-- organization chart -->
-        <div id="tree" ref="tree" style="width: 100% !important; height: 100% !important"></div>
+        <VueFlow
+            ref="flowRef"
+            class="organization-chart-flow"
+            :nodes="flowNodes"
+            :edges="flowEdges"
+            :node-types="nodeTypes"
+            :default-viewport="{ zoom: 0.9, x: 40, y: 40 }"
+            :min-zoom="0.2"
+            :max-zoom="1.5"
+            :nodes-draggable="false"
+            :nodes-connectable="false"
+            :elements-selectable="true"
+            :fit-view-on-init="true"
+            @node-click="handleFlowNodeClick"
+            @pane-click="handlePaneClick"
+        />
 
         <!-- Agent Badges Diagram -->
         <AgentBadgesDiagram
@@ -50,13 +64,19 @@
 </template>
 
 <script>
-import ApexTree from 'apextree';
+import { markRaw } from 'vue';
+import { VueFlow } from '@vue-flow/core';
+import '@vue-flow/core/dist/style.css';
+import '@vue-flow/core/dist/theme-default.css';
 import OrganizationTeamDialog from './OrganizationTeamDialog.vue';
 import OrganizationEditDialog from './OrganizationEditDialog.vue';
 import AgentBadgesDiagram from './AgentBadgesDiagram.vue';
+import { buildOrganizationChartFlow } from './organization-chart/organizationChartFlow';
+import OrganizationChartFlowNode from './organization-chart/OrganizationChartFlowNode.vue';
 
 export default {
     components: {
+        VueFlow,
         OrganizationTeamDialog,
         OrganizationEditDialog,
         AgentBadgesDiagram
@@ -64,19 +84,31 @@ export default {
     props: {
         node: {
             type: Object,
-            default: {}
+            default: () => ({})
         }
     },
     data: () => ({
-        tree: null,
+        localNode: {},
+        flowNodes: [],
+        flowEdges: [],
+        transformedTreeRoot: null,
+        nodeTypes: {
+            root: markRaw(OrganizationChartFlowNode),
+            team: markRaw(OrganizationChartFlowNode),
+            member: markRaw(OrganizationChartFlowNode)
+        },
+        backend: null,
         userList: [],
         searchQuery: '',
         searchResults: [],
+        selectedNodeId: null,
 
         // dialog
         editNode: null,
         teamDialog: false,
+        teamDialogType: '',
         editDialog: false,
+        editDialogType: '',
 
         // badges diagram
         showBadgesDiagram: false,
@@ -90,102 +122,33 @@ export default {
     watch: {
         async node(newVal) {
             if (newVal && newVal.id && newVal.data) {
+                this.syncLocalNode(newVal);
                 await this.loadUserList();
                 this.drawTree();
             }
+        },
+        searchQuery() {
+            this.drawTree();
         }
     },
     async mounted() {
-        // 사용자 목록 로드
         await this.loadUserList();
-
         if (this.node && this.node.id && this.node.data) {
-            const options = {
-                contentKey: 'data',
-                nodeWidth: 155,
-                nodeHeight: 100,
-                childrenSpacing: 50,
-                siblingSpacing: 20,
-                direction: 'top',
-                enableExpandCollapse: false,
-                nodeTemplate: (content) => {
-                    // 실제 사용자 데이터 가져오기
-                    const userData = this.getUserData(content);
-                    const nodeId = content.renderNodeId || content.id;
-                    return `
-                    <div class='node-content' id='${nodeId}' data-original-id='${content.id}'>
-                        <div class="node-content-text-box">
-                            <div style="display: flex;">
-                                ${
-                                    content.id == 'root' || content.isTeam
-                                        ? ''
-                                        : userData.profile
-                                        ? `<img class="node-content-img" src='${userData.profile}' onerror="this.src='/images/defaultUser.png'" />`
-                                        : `<img class="node-content-img" src='/images/defaultUser.png' />`
-                                }
-                                <div style="flex: 1;"></div>
-                                
-                            </div>
-                            <div class="node-content-title-box" data-node-id="${content.id}">
-                                <div style="font-weight: bold; font-family: Arial; font-size: 14px;">${
-                                    userData.username || content.name
-                                }</div>
-                                ${userData.email ? `<div style="font-family: Arial; font-size: 12px">${userData.email}</div>` : ''}
-                                ${
-                                    userData.role
-                                        ? `<div style="font-family: Arial; color:gray; font-size: 11px">${userData.role}</div>`
-                                        : ''
-                                }
-                            </div>
-                        </div>
-                    </div>
-                    `;
-                },
-                enableToolbar: true
-            };
-            this.tree = new ApexTree(document.getElementById('tree'), options);
-            await this.drawTree();
-
-            document.addEventListener('click', (event) => {
-                const button = event.target.closest('.node-content-btn');
-                if (button) {
-                    event.stopPropagation();
-                    this.closeBadgesDiagram();
-
-                    // 버튼이 속한 노드 찾기 및 editNode 설정
-                    const nodeContent = button.closest('.node-content');
-                    if (nodeContent) {
-                        const originalId = nodeContent.getAttribute('data-original-id') || nodeContent.id;
-                        this.editNode = this.findOriginalNodeById(this.node, originalId);
-                    }
-
-                    if (button.classList.contains('add-team-btn')) {
-                        this.openTeamDialog('add');
-                    } else if (button.classList.contains('edit-team-btn')) {
-                        this.openTeamDialog('edit');
-                    } else if (button.classList.contains('delete-team-btn')) {
-                        this.openTeamDialog('delete');
-                    } else if (button.classList.contains('add-member-btn')) {
-                        this.$emit('addMember', this.editNode);
-                    } else if (button.classList.contains('edit-member-btn')) {
-                        this.openEditDialog('edit-user');
-                    } else if (button.classList.contains('delete-agent-btn')) {
-                        this.openEditDialog('delete');
-                    }
-                }
-            });
+            this.syncLocalNode(this.node);
+            this.drawTree();
         }
-
-        this.$refs.tree.addEventListener('click', this.handleNodeClick);
-        this.$refs.tree.addEventListener('contextmenu', this.handleNodeClick);
-
-        // 터치 이벤트 핸들러 추가
-        this.$refs.tree.addEventListener('touchstart', this.handleTouch, { passive: false });
-        this.$refs.tree.addEventListener('touchmove', this.handleTouch, { passive: false });
-        this.$refs.tree.addEventListener('touchend', this.handleTouch, { passive: false });
     },
 
     methods: {
+        cloneChartNode(node) {
+            return JSON.parse(JSON.stringify(node || {}));
+        },
+        syncLocalNode(node) {
+            this.localNode = this.cloneChartNode(node);
+        },
+        emitChartUpdate() {
+            this.$emit('updateNode', this.cloneChartNode(this.localNode));
+        },
         async loadUserList() {
             try {
                 // backend 인스턴스가 없으면 생성
@@ -243,7 +206,7 @@ export default {
         },
         getUserDataById(nodeId) {
             // 조직도 데이터에서 노드 찾기
-            const node = this.findNodeInTree(this.node, nodeId);
+            const node = this.findNodeInTree(this.localNode, nodeId);
             if (node) {
                 return this.getUserData(node.data || node);
             }
@@ -268,62 +231,22 @@ export default {
             return null;
         },
         drawTree() {
-            // 팀원들을 세로 배치하기 위한 데이터 변환
-            const transformedNode = this.transformForVerticalLayout(this.node);
-            this.tree.render(transformedNode);
+            const flowGraph = buildOrganizationChartFlow(this.localNode, this.getUserData, this.searchQuery);
+            this.flowNodes = flowGraph.nodes.map((node) => ({
+                ...node,
+                data: {
+                    ...node.data,
+                    selected: node.id === this.selectedNodeId,
+                    ...this.createNodeActions(node)
+                }
+            }));
+            this.flowEdges = flowGraph.edges;
+            this.transformedTreeRoot = flowGraph.transformedRoot;
+            this.searchResults = this.flowNodes.filter((node) => node.data.matchesSearch).map((node) => node.data.originalId || node.id);
 
-            // 검색 결과가 있으면 하이라이트 적용
-            if (this.searchResults.length > 0) {
-                this.applySearchHighlight();
-            }
-        },
-        transformForVerticalLayout(node) {
-            if (!node) return node;
-
-            // 깊은 복사를 통해 원본 데이터 보존
-            const clonedNode = JSON.parse(JSON.stringify(node));
-
-            // 자식 노드들을 변환
-            if (clonedNode.children && clonedNode.children.length > 0) {
-                clonedNode.children = clonedNode.children.map((child) => {
-                    const transformedChild = this.transformForVerticalLayout(child);
-
-                    // 팀 노드인 경우 팀원들을 세로로 연결
-                    if (
-                        transformedChild.data &&
-                        transformedChild.data.isTeam &&
-                        transformedChild.children &&
-                        transformedChild.children.length > 0
-                    ) {
-                        const teamId = transformedChild.id;
-
-                        // 동일 멤버가 여러 팀에 속할 때 노드 ID 충돌 방지를 위해 고유 렌더링 ID 부여
-                        transformedChild.children.forEach((member) => {
-                            const originalId = member.id;
-                            member.id = teamId + '__' + originalId;
-                            member.data.renderNodeId = teamId + '__' + originalId;
-                        });
-
-                        // 팀원들을 체인 형태로 연결
-                        const members = transformedChild.children;
-                        if (members.length > 1) {
-                            // 첫 번째 팀원부터 시작하여 체인 연결
-                            for (let i = 0; i < members.length - 1; i++) {
-                                members[i].children = [members[i + 1]];
-                            }
-                            // 마지막 팀원은 자식이 없음
-                            members[members.length - 1].children = [];
-
-                            // 팀의 자식은 첫 번째 팀원만
-                            transformedChild.children = [members[0]];
-                        }
-                    }
-
-                    return transformedChild;
-                });
-            }
-
-            return clonedNode;
+            this.$nextTick(() => {
+                this.$refs.flowRef?.fitView?.({ padding: 0.2, duration: 250 });
+            });
         },
         onSearchInput() {
             if (this.searchQuery.trim()) {
@@ -333,82 +256,11 @@ export default {
             }
         },
         performSearch() {
-            this.searchResults = [];
-            this.applySearchHighlight();
-        },
-        applySearchHighlight() {
-            // 검색어가 없으면 모든 하이라이트 제거
-            if (!this.searchQuery.trim()) {
-                this.clearSearch();
-                return;
-            }
-
-            // 모든 노드 검사하여 이름 기반으로 하이라이팅
-            const allNodes = document.querySelectorAll('.node-content');
-            allNodes.forEach((nodeEl) => {
-                const textBox = nodeEl.querySelector('.node-content-text-box');
-                if (textBox) {
-                    // 노드 ID로 사용자 데이터 찾기
-                    const nodeId = nodeEl.getAttribute('data-original-id') || nodeEl.id;
-                    const userData = this.getUserDataById(nodeId);
-                    const name = userData.username || userData.name || nodeId;
-
-                    // 이름이 검색어를 포함하는지 확인
-                    if (name && name.toLowerCase().includes(this.searchQuery.toLowerCase())) {
-                        // 하이라이트 적용
-                        textBox.style.backgroundColor = 'rgb(var(--v-theme-primary))';
-                        textBox.style.color = 'white';
-                        // 모든 텍스트 요소를 흰색으로 변경
-                        const textElements = textBox.querySelectorAll('div');
-                        textElements.forEach((textEl) => {
-                            textEl.style.color = 'white !important';
-                        });
-                        // 버튼들에 흰색 배경 적용
-                        const buttonElements = textBox.querySelectorAll('.node-content-btn');
-                        buttonElements.forEach((btnEl) => {
-                            btnEl.style.backgroundColor = 'white';
-                        });
-                    } else {
-                        // 하이라이트 제거
-                        textBox.style.backgroundColor = '';
-                        textBox.style.color = '';
-                        // 텍스트 요소들도 색상 초기화
-                        const textElements = textBox.querySelectorAll('div');
-                        textElements.forEach((textEl) => {
-                            textEl.style.color = '';
-                        });
-                        // 버튼 배경색 제거
-                        const buttonElements = textBox.querySelectorAll('.node-content-btn');
-                        buttonElements.forEach((btnEl) => {
-                            btnEl.style.backgroundColor = '';
-                        });
-                    }
-                }
-            });
+            this.drawTree();
         },
         clearSearch() {
-            this.searchQuery = '';
             this.searchResults = [];
-
-            // 모든 하이라이트 제거
-            const allNodes = document.querySelectorAll('.node-content');
-            allNodes.forEach((nodeEl) => {
-                const textBox = nodeEl.querySelector('.node-content-text-box');
-                if (textBox) {
-                    textBox.style.backgroundColor = '';
-                    textBox.style.color = '';
-                    // 텍스트 요소들도 색상 초기화
-                    const textElements = textBox.querySelectorAll('div');
-                    textElements.forEach((textEl) => {
-                        textEl.style.color = '';
-                    });
-                    // 아이콘들도 원래 색상으로 복원
-                    const iconElements = textBox.querySelectorAll('.node-content-icon');
-                    iconElements.forEach((iconEl) => {
-                        iconEl.style.filter = '';
-                    });
-                }
-            });
+            this.drawTree();
         },
         findNodeById(node, id) {
             if (node.id === id) {
@@ -439,67 +291,97 @@ export default {
             }
             return null;
         },
-        handleNodeClick(event) {
-            event.preventDefault();
-            const target = event.target.closest('.node-content');
-            if (target) {
-                if (this.previousTarget && this.previousTarget !== target) {
-                    const previousTextBox = this.previousTarget.querySelector('.node-content-text-box');
-                    if (previousTextBox) {
-                        previousTextBox.style.backgroundColor = '';
-                    }
-                }
-                // 원본 데이터에서 노드를 찾아서 사용
-                const originalId = target.getAttribute('data-original-id') || target.id;
-                const foundNode = this.findOriginalNodeById(this.node, originalId);
-                if (foundNode && foundNode.data) {
-                    this.editNode = foundNode;
+        createNodeActions(flowNode) {
+            const originalId = flowNode?.data?.originalId || flowNode?.id;
+            const targetNode = this.findOriginalNodeById(this.localNode, originalId);
 
-                    // Agent 클릭 시 뱃지 다이어그램 토글, 아닌 경우 닫기
-                    if (foundNode.data.isAgent) {
-                        // 이미 같은 Agent가 선택되어 있고 다이어그램이 열려있으면 닫기
-                        if (this.showBadgesDiagram && this.selectedAgent && this.selectedAgent.id === foundNode.data.id) {
-                            this.closeBadgesDiagram();
-                        } else {
-                            // users 테이블에서 최신 데이터 + 노드 데이터 병합 (노드 우선 → id/name 보장)
-                            const nodeData = foundNode.data || foundNode;
-                            const latestAgentData = this.getUserData(nodeData);
-                            const id = nodeData.id ?? foundNode.id ?? latestAgentData.id;
-                            const name =
-                                nodeData.name ??
-                                nodeData.username ??
-                                foundNode.name ??
-                                latestAgentData.name ??
-                                latestAgentData.username ??
-                                'Agent';
-                            const img = nodeData.img ?? nodeData.profile ?? latestAgentData.profile ?? latestAgentData.img;
-                            const profile = nodeData.profile ?? nodeData.img ?? latestAgentData.profile ?? latestAgentData.img;
-                            this.selectedAgent = {
-                                ...latestAgentData,
-                                ...nodeData,
-                                id,
-                                name: String(name || 'Agent').trim() || 'Agent',
-                                img: img || '/images/chat-icon.png',
-                                profile: profile || img || '/images/chat-icon.png'
-                            };
-                            this.showBadgesDiagram = true;
-                        }
-                    } else {
-                        this.closeBadgesDiagram();
+            if (!targetNode) {
+                return {};
+            }
+
+            if (flowNode.data.isRoot) {
+                return {
+                    addTeam: () => {
+                        this.editNode = targetNode;
+                        this.openTeamDialog('add');
                     }
+                };
+            }
+
+            if (flowNode.data.isTeam) {
+                return {
+                    addMember: () => {
+                        this.editNode = targetNode;
+                        this.$emit('addMember', this.cloneChartNode(targetNode));
+                    },
+                    editTeam: () => {
+                        this.editNode = targetNode;
+                        this.openTeamDialog('edit');
+                    },
+                    deleteTeam: () => {
+                        this.editNode = targetNode;
+                        this.openTeamDialog('delete');
+                    }
+                };
+            }
+
+            return {
+                editUser: () => {
+                    this.editNode = targetNode;
+                    this.openEditDialog('edit-user');
+                },
+                editAgent: () => {
+                    this.editNode = targetNode;
+                    this.openEditDialog('edit-agent');
+                },
+                deleteAgent: () => {
+                    this.editNode = targetNode;
+                    this.openEditDialog('delete');
                 }
-                const textBox = target.querySelector('.node-content-text-box');
-                if (textBox) {
-                    textBox.style.backgroundColor = `rgba(var(--v-theme-primary), 0.20)`;
+            };
+        },
+        handleFlowNodeClick(event) {
+            const flowNode = event?.node;
+            if (!flowNode) return;
+
+            const originalId = flowNode.data.originalId || flowNode.id;
+            const foundNode = this.findOriginalNodeById(this.localNode, originalId);
+            if (!foundNode?.data) return;
+
+            this.selectedNodeId = flowNode.id;
+            this.editNode = foundNode;
+            this.drawTree();
+
+            if (foundNode.data.isAgent) {
+                if (this.showBadgesDiagram && this.selectedAgent && this.selectedAgent.id === foundNode.data.id) {
+                    this.closeBadgesDiagram();
+                    return;
                 }
-                this.previousTarget = target;
+
+                const nodeData = foundNode.data || foundNode;
+                const latestAgentData = this.getUserData(nodeData);
+                const id = nodeData.id ?? foundNode.id ?? latestAgentData.id;
+                const name =
+                    nodeData.name ?? nodeData.username ?? foundNode.name ?? latestAgentData.name ?? latestAgentData.username ?? 'Agent';
+                const img = nodeData.img ?? nodeData.profile ?? latestAgentData.profile ?? latestAgentData.img;
+                const profile = nodeData.profile ?? nodeData.img ?? latestAgentData.profile ?? latestAgentData.img;
+                this.selectedAgent = {
+                    ...latestAgentData,
+                    ...nodeData,
+                    id,
+                    name: String(name || 'Agent').trim() || 'Agent',
+                    img: img || '/images/chat-icon.png',
+                    profile: profile || img || '/images/chat-icon.png'
+                };
+                this.showBadgesDiagram = true;
             } else {
-                if (this.previousTarget) {
-                    this.previousTarget.style.backgroundColor = '';
-                }
-                // 빈 공간 클릭 시에도 뱃지 다이어그램 닫기
                 this.closeBadgesDiagram();
             }
+        },
+        handlePaneClick() {
+            this.selectedNodeId = null;
+            this.drawTree();
+            this.closeBadgesDiagram();
         },
         closeBadgesDiagram() {
             this.showBadgesDiagram = false;
@@ -513,16 +395,11 @@ export default {
         async selectAgentById(agentId, fallbackData = null) {
             await this.loadUserList();
 
-            const foundNode = this.findOriginalNodeById(this.node, agentId);
+            const foundNode = this.findOriginalNodeById(this.localNode, agentId);
             const nodeData = (foundNode && (foundNode.data || foundNode)) || fallbackData;
             const isAgent = foundNode?.data?.isAgent ?? fallbackData?.isAgent ?? true;
 
             if (!nodeData || !isAgent) return;
-
-            if (this.previousTarget) {
-                const previousTextBox = this.previousTarget.querySelector('.node-content-text-box');
-                if (previousTextBox) previousTextBox.style.backgroundColor = '';
-            }
 
             if (foundNode) this.editNode = foundNode;
 
@@ -542,23 +419,15 @@ export default {
                 profile: profile || img || '/images/chat-icon.png'
             };
             this.showBadgesDiagram = true;
-
-            const idStr = String(agentId);
-            this.$nextTick(() => {
-                const el = document.querySelector(`[data-original-id="${idStr}"]`) || document.getElementById(idStr);
-                if (el) {
-                    const textBox = el.querySelector('.node-content-text-box');
-                    if (textBox) textBox.style.backgroundColor = 'rgba(var(--v-theme-primary), 0.20)';
-                    this.previousTarget = el;
-                }
-            });
+            this.selectedNodeId = this.flowNodes.find((node) => (node.data.originalId || node.id) === agentId)?.id || null;
+            this.drawTree();
         },
         handleAgentEditFromBadges(agentData) {
             // AgentBadgesDiagram에서 수정 버튼 클릭 시 호출
             // selectedAgent를 editNode로 설정하고 수정 다이얼로그 열기
             if (agentData) {
                 // 조직도에서 해당 에이전트 노드 찾기
-                const foundNode = this.findOriginalNodeById(this.node, agentData.id);
+                const foundNode = this.findOriginalNodeById(this.localNode, agentData.id);
                 if (foundNode) {
                     this.editNode = foundNode;
                     this.openEditDialog('edit-agent');
@@ -574,25 +443,26 @@ export default {
             this.teamDialogType = '';
         },
         async updateTeam(type, editNode, newTeam) {
+            const localEditNode = this.findOriginalNodeById(this.localNode, editNode?.id);
+
             if (type == 'add') {
-                this.node.children.push({
+                this.localNode.children.push({
                     id: newTeam.id,
                     data: newTeam,
                     children: []
                 });
             } else if (type == 'delete') {
-                this.node.children = await this.deleteNode(editNode, this.node.children);
+                this.localNode.children = await this.deleteNode(localEditNode || editNode, this.localNode.children);
             } else if (type == 'edit') {
-                if (editNode.data.isTeam) {
-                    this.node.children.forEach((team) => {
-                        if (team.id == editNode.id) {
-                            team = editNode;
-                        }
-                    });
+                if (localEditNode?.data?.isTeam) {
+                    localEditNode.data = {
+                        ...localEditNode.data,
+                        ...newTeam
+                    };
                 }
             }
             await this.drawTree();
-            this.$emit('updateNode');
+            this.emitChartUpdate();
             this.closeTeamDialog();
         },
         deleteNode(obj, children) {
@@ -619,64 +489,28 @@ export default {
         },
 
         async updateNode(type, editNode) {
+            const localEditNode = this.findOriginalNodeById(this.localNode, editNode?.id);
+
             if (type == 'edit' || type == 'edit-agent') {
-                this.node.children.forEach((team) => {
-                    if (team.id == editNode.id) {
-                        team = editNode;
+                if (localEditNode) {
+                    localEditNode.data = {
+                        ...localEditNode.data,
+                        ...(editNode?.data || {})
+                    };
+                    if (editNode?.children) {
+                        localEditNode.children = this.cloneChartNode(editNode.children);
                     }
-                });
+                }
                 // 에이전트 수정인 경우 정확한 타입으로 emit
                 const emitType = type === 'edit-agent' ? 'edit-agent' : 'edit';
-                this.$emit('updateAgent', emitType, editNode);
+                this.$emit('updateAgent', emitType, localEditNode || editNode);
             } else if (type == 'delete') {
-                this.node.children = await this.deleteNode(editNode, this.node.children);
-                this.$emit('updateAgent', type, editNode);
+                this.localNode.children = await this.deleteNode(localEditNode || editNode, this.localNode.children);
+                this.$emit('updateAgent', type, localEditNode || editNode);
             }
             await this.drawTree();
-            this.$emit('updateNode');
+            this.emitChartUpdate();
             this.closeEditDialog();
-        },
-        handleTouch(e) {
-            // 버튼 영역이면 터치 이벤트 처리하지 않음
-            if (e.target.closest('.node-content-btn')) {
-                return;
-            }
-
-            // 터치 끝날 때 클릭으로 처리 (모바일에서 더 안정적)
-            if (e.type === 'touchend' && e.changedTouches && e.changedTouches.length === 1) {
-                const touch = e.changedTouches[0];
-                const target = document.elementFromPoint(touch.clientX, touch.clientY);
-                const nodeContent = target?.closest('.node-content');
-
-                if (nodeContent) {
-                    // 직접 handleNodeClick 호출
-                    const syntheticEvent = {
-                        type: 'click',
-                        target: nodeContent,
-                        preventDefault: () => {},
-                        stopPropagation: () => {}
-                    };
-                    this.handleNodeClick(syntheticEvent);
-                }
-                e.preventDefault();
-                return;
-            }
-
-            // 기존 터치-마우스 변환 로직 (스크롤/줌을 위해 유지)
-            if (e.touches && e.touches.length === 1) {
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent(
-                    e.type === 'touchstart' ? 'mousedown' : e.type === 'touchmove' ? 'mousemove' : e.type === 'touchend' ? 'mouseup' : '',
-                    {
-                        bubbles: true,
-                        cancelable: true,
-                        clientX: touch.clientX,
-                        clientY: touch.clientY
-                    }
-                );
-                e.target.dispatchEvent(mouseEvent);
-                e.preventDefault();
-            }
         }
     }
 };
@@ -697,13 +531,16 @@ export default {
     height: 36px !important;
 }
 
-#tree {
-    width: 98% !important;
-    height: 99% !important;
+.organization-chart-flow {
+    width: 100%;
+    height: 100%;
+    background-color: #eef4fb;
+    background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 28%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
 }
 
 @media screen and (max-width: 768px) {
-    #tree {
+    .organization-chart-flow {
         height: calc(100vh - 40px) !important;
     }
 }

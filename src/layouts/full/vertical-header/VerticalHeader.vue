@@ -60,6 +60,13 @@ const sidebarItems = ref<SidebarItem[]>([
         disable: false,
         isVisible: true
     },
+    {
+        title: 'organizationChartDefinition.title',
+        icon: 'users-group-rounded-line-duotone',
+        to: '/organization',
+        disable: false,
+        isVisible: !(window as any).$pal
+    },
     // {
     //     title: 'headerMenu.schedule',
     //     icon: 'schedule',

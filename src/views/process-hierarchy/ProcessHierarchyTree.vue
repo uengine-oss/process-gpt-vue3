@@ -100,6 +100,15 @@
                                         <v-icon size="14" class="mr-2 ml-1">mdi-file-document-outline</v-icon>
                                         <span class="tree-node-label text-truncate">{{ sub.name }}</span>
                                         <div class="ml-auto d-flex align-center ga-1 flex-shrink-0">
+                                            <v-btn
+                                                icon
+                                                variant="text"
+                                                size="x-small"
+                                                class="permission-btn"
+                                                @click.stop="openPermission(sub)"
+                                            >
+                                                <v-icon size="14">mdi-lock-outline</v-icon>
+                                            </v-btn>
                                             <v-chip
                                                 v-if="getSubVersion(sub.id)"
                                                 size="x-small"
@@ -138,7 +147,7 @@ export default {
         hideHeader: { type: Boolean, default: false },
         collapsed: { type: Boolean, default: false },
     },
-    emits: ['select'],
+    emits: ['select', 'openPermission'],
     data() {
         return {
             searchText: '',
@@ -297,6 +306,10 @@ export default {
             this.$emit('select', sub.id, sub.name);
         },
 
+        openPermission(sub) {
+            this.$emit('openPermission', sub);
+        },
+
         getSubStatus(subId) {
             return this.definitionStatusMap[subId]?.status || '';
         },
@@ -369,6 +382,15 @@ export default {
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
+}
+
+.permission-btn {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.tree-node-sub:hover .permission-btn {
+    opacity: 1;
 }
 
 .version-chip {

@@ -2,61 +2,41 @@
 import { ref } from 'vue';
 import { computed } from 'vue';
 import { getPrimary, getLight100, getWarning, getError } from '@/utils/UpdateColors';
+import AppEChart from '@/components/shared/AppEChart.vue';
 import { CircleIcon, DotsVerticalIcon } from 'vue-tabler-icons';
 const items = ref([{ title: 'Action' }, { title: 'Another action' }, { title: 'Something else here' }]);
 
 /* Chart */
 const chartOptions = computed(() => {
+    const series = [5368, 3319, 3500, 4106];
+    const labels = ['5368', 'Direct Traffic', 'Refferal Traffic', 'Oragnic Traffic'];
+
     return {
-        series: [5368, 3319, 3500, 4106],
-        labels: ['5368', 'Direct Traffic', 'Refferal Traffic', 'Oragnic Traffic'],
-        chart: {
-            height: 280,
-            type: 'donut',
-            fontFamily: `inherit`,
-            foreColor: '#c6d1e9',
-            offsetX: -15
-        },
-
+        color: [getLight100.value, getWarning.value, getError.value, getPrimary.value],
         tooltip: {
-            theme: 'dark',
-            fillSeriesColor: false
+            trigger: 'item'
         },
-
-        colors: [getLight100.value, getWarning.value, getError.value, getPrimary.value],
-        dataLabels: {
-            enabled: false
-        },
-
         legend: {
             show: false
         },
-
-        stroke: {
-            show: false
-        },
-
-        plotOptions: {
-            pie: {
-                donut: {
-                    size: '75%',
-                    background: 'none',
-                    labels: {
-                        show: true,
-                        name: {
-                            show: true,
-                            fontSize: '18px',
-                            color: undefined,
-                            offsetY: 5
-                        },
-                        value: {
-                            show: false,
-                            color: '#98aab4'
-                        }
-                    }
-                }
+        series: [
+            {
+                type: 'pie',
+                radius: ['55%', '75%'],
+                center: ['42%', '50%'],
+                avoidLabelOverlap: true,
+                label: {
+                    show: false
+                },
+                labelLine: {
+                    show: false
+                },
+                data: labels.map((label, index) => ({
+                    value: series[index],
+                    name: label
+                }))
             }
-        }
+        ]
     };
 });
 </script>
@@ -85,7 +65,7 @@ const chartOptions = computed(() => {
 
             <v-row class="d-sm-flex align-center mt-sm-8 mt-5">
                 <v-col cols="12" lg="7" md="5">
-                    <apexchart type="donut" height="280" :options="chartOptions" :series="chartOptions.series"> </apexchart>
+                    <AppEChart :option="chartOptions" :height="280" />
                 </v-col>
                 <v-col cols="12" lg="5" md="7">
                     <div class="d-flex mb-6 pb-3">
