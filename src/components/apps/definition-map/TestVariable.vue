@@ -8,7 +8,7 @@
                 <v-tooltip :text="$t('TestVariable.start')">
                     <template v-slot:activator="{ props }">
                         <v-btn density="compact" icon flat @click="executeProcess" v-bind="props" style="margin-right: 5px">
-                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" :color="'rgb(var(--v-theme-primary))'" />
+                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" />
                         </v-btn>
                     </template>
                 </v-tooltip>
@@ -35,7 +35,7 @@
                 <v-tooltip :text="$t('TestVariable.start')">
                     <template v-slot:activator="{ props }">
                         <v-btn density="compact" icon flat @click="executeProcess" v-bind="props" style="margin-right: 5px">
-                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" :color="'rgb(var(--v-theme-primary))'" />
+                            <Icons :icon="'play-outline'" :size="17" stroke-width="1.5" />
                         </v-btn>
                     </template>
                 </v-tooltip>

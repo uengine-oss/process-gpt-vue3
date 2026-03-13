@@ -347,6 +347,8 @@ export default {
             .finally(() => {
                 try {
                     this.onLoadEnd();
+                    const minimap = this.bpmnViewer.get('minimap');
+                    if (minimap) minimap.open();
                 } catch (_) {}
             });
         this.initResizeObserver();
@@ -2766,10 +2768,10 @@ export default {
 
 /* Minimap styling - positioned above BPMN.io logo */
 .djs-minimap {
-    bottom: 40px !important;
+    bottom: 0px !important;
     top: auto !important;
-    right: 10px !important;
-    left: auto !important;
+    left: 0px !important;
+    right: auto !important;
 }
 
 .djs-minimap .toggle {
@@ -2810,8 +2812,8 @@ export default {
 
 @media only screen and (max-width: 768px) {
     .djs-minimap {
-        bottom: 50px !important;
-        right: 60px !important;
+        bottom: 0px !important;
+        left: 0px !important;
     }
 }
 </style>

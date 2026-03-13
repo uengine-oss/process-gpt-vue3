@@ -8,7 +8,7 @@
             style="padding: 10px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important"
         >
             <div style="display: flex; justify-content: center; align-items: center">
-                <Icons class="cp-variables-add" :icon="'plus'" :color="'#5eb2e8'" />
+                <Icons class="cp-variables-add" :icon="'plus'" />
                 <v-card-title class="pa-0 pl-4" style="color: #5eb2e8">{{ $t('BpmnPropertyPanel.generateScript') }}</v-card-title>
             </div>
         </v-card>

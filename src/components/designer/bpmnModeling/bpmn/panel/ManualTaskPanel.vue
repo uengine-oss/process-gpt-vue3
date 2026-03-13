@@ -110,7 +110,7 @@
                     style="padding: 5px; display: flex; justify-content: center; align-items: center; border-radius: 10px !important"
                 >
                     <div style="display: flex; justify-content: center; align-items: center">
-                        <Icons :icon="'plus'" :width="20" :height="20" :color="'#5eb2e8'" />
+                        <Icons :icon="'plus'" :width="20" :height="20" />
                     </div>
                 </v-card>
             </v-row>

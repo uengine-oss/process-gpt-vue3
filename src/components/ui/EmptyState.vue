@@ -50,7 +50,7 @@
                             </v-chip>
                             <v-card-text class="text-center pa-4 pb-0 flex-grow-1 d-flex flex-column justify-center">
                                 <div class="card-icon-vuetify mb-3">
-                                    <Icons :icon="option.icon" color="black" :size="50" />
+                                    <Icons :icon="option.icon" :size="50" />
                                 </div>
                                 <v-card-title class="card-title-vuetify pa-0 mb-2 d-flex align-center justify-center">
                                     <span>{{ $t(option.titleKey) }}</span>

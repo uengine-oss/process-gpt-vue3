@@ -145,7 +145,7 @@ export default defineComponent({
     setup(props, { emit }) {
         const store = useTaskCatalogStore();
 
-        const isCollapsed = ref(false);
+        const isCollapsed = ref(true);
         const showFilters = ref(false);
         const searchQuery = ref('');
         const selectedSystem = ref(null);
@@ -303,7 +303,7 @@ export default defineComponent({
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px;
-    background: rgba(var(--v-theme-primary));
+    background: gray;
     cursor: pointer;
     user-select: none;
 }

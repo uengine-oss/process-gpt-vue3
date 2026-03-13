@@ -38,10 +38,21 @@ function lightenColor(hex: string, percent: number): string {
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
+function getReadableOnPrimaryColor(hex: string): string {
+    const normalizedHex = hex.replace('#', '');
+    const r = parseInt(normalizedHex.substring(0, 2), 16);
+    const g = parseInt(normalizedHex.substring(2, 4), 16);
+    const b = parseInt(normalizedHex.substring(4, 6), 16);
+    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    return luminance > 0.6 ? '#000000' : '#FFFFFF';
+}
+
 function applyCustomPrimaryColor(color: string) {
     activeCustomColor.value = color;
     const activeThemeName = customizer.actTheme;
+    const onPrimaryColor = getReadableOnPrimaryColor(color);
     theme.themes.value[activeThemeName].colors.primary = color;
+    theme.themes.value[activeThemeName].colors['on-primary'] = onPrimaryColor;
     theme.themes.value[activeThemeName].colors.lightprimary = lightenColor(color, 0.85);
     theme.themes.value[activeThemeName].colors.background = lightenColor(color, 0.93);
 
@@ -55,7 +66,9 @@ function onPresetThemeSelect(themeName: string) {
     activeCustomColor.value = '';
     const preset = themeColors.value.find((t) => t.name === themeName);
     if (preset) {
+        const onPrimaryColor = getReadableOnPrimaryColor(preset.colorCode);
         theme.themes.value[themeName].colors.primary = preset.colorCode;
+        theme.themes.value[themeName].colors['on-primary'] = onPrimaryColor;
         theme.themes.value[themeName].colors.lightprimary = lightenColor(preset.colorCode, 0.85);
         pickerColor.value = preset.colorCode;
     }

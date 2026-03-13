@@ -21,7 +21,7 @@
                     v-else-if="localModelValue.length == 0"
                     :style="`background-color: ${hexToRgba(themeColor, 0.8)} !important; !important; border-radius: 8px; padding: 8px;`"
                 >
-                    <Icons :icon="'report'" color="white" />
+                    <Icons :icon="'report'" />
                 </div>
                 <div
                     v-else

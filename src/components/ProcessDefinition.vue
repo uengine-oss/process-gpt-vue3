@@ -355,7 +355,7 @@
                                     "
                                 >
                                     <div style="display: flex; justify-content: center; align-items: center">
-                                        <Icons class="cp-variables-add" :icon="'plus'" :color="'#5eb2e8'" />
+                                        <Icons class="cp-variables-add" :icon="'plus'" />
                                     </div>
                                 </v-card>
                             </v-row>
@@ -1468,8 +1468,8 @@ export default {
 /* Task Catalog Floating Panel */
 .task-catalog-floating-panel {
     position: absolute;
-    left: 0;
-    bottom: 0;
+    right: 8px;
+    bottom: 40px;
     width: 280px;
     z-index: 10;
     background: white;
@@ -1596,8 +1596,8 @@ export default {
 /* Task Catalog Floating Panel */
 .task-catalog-floating-panel {
     position: absolute;
-    left: 0;
-    bottom: 0;
+    right: 8px;
+    bottom: 40px;
     width: 280px;
     z-index: 10;
     background: white;
