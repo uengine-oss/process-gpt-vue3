@@ -770,6 +770,7 @@ async function syncDepartments() {
               </div>
               <div v-if="canRenderMonthlyTrend" class="chart-wrapper">
                 <Line
+                  :chartData="safeMonthlyTrendData"
                   :chartOptions="lineChartOptions"
                 />
               </div>
