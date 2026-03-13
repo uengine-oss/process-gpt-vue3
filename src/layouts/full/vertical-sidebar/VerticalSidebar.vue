@@ -718,18 +718,7 @@ export default {
                     BgColor: 'primary',
                     to: '/analytics/query',
                     disable: false
-                },
-                ...(this.pal
-                    ? []
-                    : [
-                          {
-                              title: 'analytics.heatmap',
-                              icon: 'ibm-process-mining',
-                              BgColor: 'primary',
-                              to: '/analytics/heatmap',
-                              disable: false
-                          }
-                      ])
+                }
             ];
 
             // PAL 모드에서는 분석(Analytics) 메뉴 전체 숨김
