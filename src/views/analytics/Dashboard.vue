@@ -13,7 +13,8 @@ import BackendFactory from '@/components/api/BackendFactory'
 import { olapApi, syncDepartmentsFromOrgChart } from '@/services/analyticsApi'
 
 const backend = BackendFactory.createBackend()
-
+const loading = ref(false)
+const syncing = ref(false)
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Filler)
 
