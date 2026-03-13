@@ -727,11 +727,13 @@ export default {
                 (task.crewType === 'report' && task.jobId.includes('final_report_merge')) ||
                 task.crewType === 'slide' ||
                 task.crewType === 'text' ||
-                task.crewType === 'result'
+                task.crewType === 'result' ||
+                this.isFileListContent(task)
             );
         },
         shouldShowSubmitButton(payload) {
-            return payload.isCompleted && this.isSubmittableTask(payload) && this.todoStatus?.agent_mode === 'DRAFT';
+            const agentMode = String(this.todoStatus?.agent_mode || '').toUpperCase();
+            return payload.isCompleted && this.isSubmittableTask(payload) && (agentMode === 'DRAFT' || agentMode === 'COMPLETE');
         },
         isMarkdownType(crewType) {
             return (

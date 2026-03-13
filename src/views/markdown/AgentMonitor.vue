@@ -183,6 +183,7 @@ export default {
             isCancelled: false,
             isLoading: false,
             isInitialLoading: true, // 초기 데이터 로딩 상태
+            latestFormData: null,
             selectedOrchestrationMethod: null, // 통합된 오케스트레이션 방식
             isDropdownOpen: false, // 드롭다운 열림 상태
             openBrowserAgent: false,
@@ -532,6 +533,30 @@ export default {
         // ========================================
         // 🔧 공통 유틸리티 메서드들
         // ========================================
+        isFileLikeValue(value) {
+            if (!value) return false;
+            if (typeof value === 'object') {
+                return !!(value.path || value.name || value.file_path || value.file_name || value.url || value.publicUrl || value.public_url);
+            }
+            if (typeof value === 'string') {
+                const lowered = value.toLowerCase();
+                if (lowered.startsWith('http://') || lowered.startsWith('https://')) return true;
+                if (lowered.includes('/storage/')) return true;
+                return ['.docx', '.hwpx', '.pdf', '.doc'].some((ext) => lowered.endsWith(ext));
+            }
+            return false;
+        },
+        hasFilePayload(payload) {
+            if (!payload || typeof payload !== 'object') return false;
+            if (Array.isArray(payload)) {
+                return payload.some((item) => this.isFileLikeValue(item));
+            }
+            const fileListKeys = ['docx_files', 'hwpx_files', 'files', 'results', 'data'];
+            if (fileListKeys.some((key) => Array.isArray(payload[key]) && payload[key].length > 0)) {
+                return true;
+            }
+            return Object.values(payload).some((value) => this.isFileLikeValue(value));
+        },
         handleError(error, defaultMessage = '오류가 발생했습니다') {
             const message = error?.message || error || defaultMessage;
             this.errorMessage = message;
@@ -791,12 +816,20 @@ export default {
             if (!payloadForSubmit || typeof payloadForSubmit !== 'object' || Array.isArray(payloadForSubmit)) {
                 payloadForSubmit = task.content ?? this.resolvePrimaryValue(original, task.crewType || 'text');
             }
-            const normalized = this.normalizeFormValues(payloadForSubmit);
-            // console.log('[AgentMonitor] submitTask!!', normalized);
-
+            let normalized = this.normalizeFormValues(payloadForSubmit);
+            const hasFilePayload = this.hasFilePayload(normalized);
+            if (!hasFilePayload && this.latestFormData && typeof this.latestFormData === 'object') {
+                const merged = { ...(normalized || {}) };
+                Object.keys(this.latestFormData).forEach((key) => {
+                    const value = this.latestFormData[key];
+                    if (this.isFileLikeValue(value)) {
+                        merged[key] = value;
+                    }
+                });
+                normalized = merged;
+            }
             // 의도 분석 결과 감지 및 emit (work 필드가 있는 경우)
             if (normalized && normalized.work) {
-                console.log('[AgentMonitor] 의도 분석 결과 감지:', normalized);
                 this.$emit('intent-detected', normalized);
                 this.EventBus.emit('agent-intent-result', normalized);
             }
@@ -1458,6 +1491,10 @@ export default {
             console.error('Supabase 세션 오류:', error);
         }
 
+        this.EventBus.on('formData-updated', (formData) => {
+            this.latestFormData = formData;
+        });
+
         await this.loadData();
         await this.fetchTodoStatus();
         const taskId = this.getTaskIdFromWorkItem();
@@ -1479,6 +1516,9 @@ export default {
     },
     beforeUnmount() {
         this.cleanup();
+        if (this.EventBus) {
+            this.EventBus.off('formData-updated');
+        }
         // 이벤트 리스너 제거
         document.removeEventListener('click', this.handleOutsideClick);
     }
